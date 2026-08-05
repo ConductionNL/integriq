@@ -142,6 +142,15 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
         $appManager = $this->createMock(IAppManager::class);
         $appManager->method('isInstalled')->with('workflowengine')->willReturn($enabled);
 
+        // On NC >= 32 the production helper prefers isEnabledForAnyone() and
+        // never reaches isInstalled(). Stubbing only the latter left the mock
+        // answering "not enabled" from its default return, so the enabled case
+        // registered nothing and the test failed for a reason that has nothing
+        // to do with what it checks. Stub whichever method this server has.
+        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
+            $appManager->method('isEnabledForAnyone')->with('workflowengine')->willReturn($enabled);
+        }
+
         return $appManager;
 
     }//end makeAppManagerMock()

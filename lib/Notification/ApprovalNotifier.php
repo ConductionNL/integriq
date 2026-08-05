@@ -30,10 +30,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Notification;
 
+use InvalidArgumentException;
 use OCA\OpenConnector\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
-use InvalidArgumentException;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 
@@ -83,6 +83,39 @@ class ApprovalNotifier implements INotifier
     }//end getName()
 
     /**
+     * The exception that declines a notification this notifier does not own.
+     *
+     * Every registered notifier is offered EVERY notification, so declining one
+     * that is not ours is the normal case, not an error. Nextcloud deprecated
+     * InvalidArgumentException for exactly this and logs a warning on each
+     * throw, which turned routine declines into a flood — dozens of identical
+     * warnings within one second on a single dashboard load, drowning the log
+     * that real problems surface in.
+     *
+     * The replacement is chosen at RUNTIME rather than named directly, because
+     * this app declares `min-version="28"` and UnknownNotificationException is
+     * `@since 30.0.0`. Referencing it unconditionally would turn a log-noise fix
+     * into a fatal error on NC 28 and 29 — which is what psalm caught here,
+     * analysing against the pinned `nextcloud/ocp: dev-stable29` stubs. It
+     * extends InvalidArgumentException, so callers behave identically either
+     * way and the fallback is a true equivalent rather than a degradation.
+     *
+     * @return InvalidArgumentException UnknownNotificationException where the platform has it.
+     *
+     * @spec openspec/specs/approval-workflow/spec.md
+     */
+    private function unknownNotification(): InvalidArgumentException
+    {
+        $class = 'OCP\\Notification\\UnknownNotificationException';
+        if (class_exists($class) === true) {
+            return new $class();
+        }
+
+        return new InvalidArgumentException();
+
+    }//end unknownNotification()
+
+    /**
      * Prepare an `approval_pending` notification for display: parsed
      * subject text, app icon, and parsed labels for the Approve/Reject
      * deep-link actions created by `ApprovalService::notifyApprovers()`.
@@ -92,18 +125,18 @@ class ApprovalNotifier implements INotifier
      *
      * @return INotification The prepared notification.
      *
-     * @throws InvalidArgumentException When this notifier does not own the notification's app/subject (INotifier contract).
+     * @throws InvalidArgumentException When this notifier does not own the notification's app/subject.
      *
      * @spec openspec/specs/approval-workflow/spec.md
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
         if ($notification->getApp() !== Application::APP_ID) {
-            throw new InvalidArgumentException();
+            throw $this->unknownNotification();
         }
 
         if ($notification->getSubject() !== 'approval_pending') {
-            throw new InvalidArgumentException();
+            throw $this->unknownNotification();
         }
 
         $l      = $this->l10nFactory->get(Application::APP_ID, $languageCode);

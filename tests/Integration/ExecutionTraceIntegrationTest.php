@@ -25,7 +25,7 @@
  *
  * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
  * @spec openspec/specs/execution-trace/spec.md#requirement-snapshot-redaction-before-any-step-is-buffered-req-003
- * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
  */
 
 declare(strict_types=1);

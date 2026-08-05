@@ -406,7 +406,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest(): void
     {
@@ -460,7 +460,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathScrubsSecretEchoedInResponseBody(): void
     {
@@ -505,7 +505,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl(): void
     {
@@ -2236,5 +2236,173 @@ class CallServiceTest extends TestCase
             'a guard short-circuit must fulfil with its synthetic CallLog, not reject'
         );
     }//end testCallAsyncFulfilsWithTheShortCircuitCallLog()
+
+
+    /**
+     * Invokes a private CallService method.
+     *
+     * @param string $method The private method name.
+     * @param mixed  ...$args The arguments to pass.
+     *
+     * @return mixed The method's return value.
+     */
+    private function callPrivate(string $method, ...$args)
+    {
+        $ref = new \ReflectionMethod(CallService::class, $method);
+        $ref->setAccessible(true);
+
+        return $ref->invoke($this->service, ...$args);
+
+    }//end callPrivate()
+
+
+    /**
+     * Every secret-bearing header must be replaced, and every other header kept verbatim.
+     *
+     * Guards the key-only iteration in redactSecretsFromConfig(): the loop walks
+     * array_keys($config['headers']) and writes back through $config['headers'][$name].
+     * A loop that iterated a copy, or that dropped the non-secret entries, would fail
+     * here rather than silently ship un-redacted credentials into a CallLog.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+     */
+    public function testRedactSecretsFromConfigRedactsSecretHeadersAndKeepsTheRest(): void
+    {
+        $redacted = $this->callPrivate(
+            'redactSecretsFromConfig',
+            [
+                'headers' => [
+                    'Authorization'       => 'Bearer super-secret',
+                    'Proxy-Authorization' => 'Basic abc',
+                    'Cookie'              => 'session=1',
+                    'Set-Cookie'          => 'session=1',
+                    'X-Api-Key'           => 'key-123',
+                    'Accept'              => 'application/json',
+                    'Content-Type'        => 'application/json',
+                ],
+            ]
+        );
+
+        foreach (['Authorization', 'Proxy-Authorization', 'Cookie', 'Set-Cookie', 'X-Api-Key'] as $secret) {
+            $this->assertSame(
+                '***REDACTED***',
+                $redacted['headers'][$secret],
+                sprintf('%s must be redacted before the config is persisted', $secret)
+            );
+        }
+
+        $this->assertSame(
+            'application/json',
+            $redacted['headers']['Accept'],
+            'a non-secret header must survive redaction unchanged'
+        );
+        $this->assertSame(
+            'application/json',
+            $redacted['headers']['Content-Type'],
+            'a non-secret header must survive redaction unchanged'
+        );
+        $this->assertCount(
+            7,
+            $redacted['headers'],
+            'redaction must not add or drop header entries'
+        );
+
+    }//end testRedactSecretsFromConfigRedactsSecretHeadersAndKeepsTheRest()
+
+
+    /**
+     * Secret query and form parameters are redacted; ordinary ones are untouched.
+     *
+     * Guards the key-only iteration over the `query` / `form_params` bags.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+     */
+    public function testRedactSecretsFromConfigRedactsSecretQueryAndFormParams(): void
+    {
+        $redacted = $this->callPrivate(
+            'redactSecretsFromConfig',
+            [
+                'query'       => [
+                    'api_key' => 'key-123',
+                    'page'    => '2',
+                ],
+                'form_params' => [
+                    'password' => 'hunter2',
+                    'locale'   => 'nl',
+                ],
+                'auth'        => ['alice', 'hunter2'],
+                'cert'        => '/etc/ssl/client.pem',
+                'ssl_key'     => '/etc/ssl/client.key',
+            ]
+        );
+
+        $this->assertSame('***REDACTED***', $redacted['query']['api_key'], 'a secret query param must be redacted');
+        $this->assertSame('2', $redacted['query']['page'], 'a non-secret query param must be preserved');
+        $this->assertSame('***REDACTED***', $redacted['form_params']['password'], 'a secret form param must be redacted');
+        $this->assertSame('nl', $redacted['form_params']['locale'], 'a non-secret form param must be preserved');
+        $this->assertSame('***REDACTED***', $redacted['auth'], 'basic-auth credentials must be redacted wholesale');
+        $this->assertSame('***REDACTED***', $redacted['cert'], 'a TLS certificate path must be redacted');
+        $this->assertSame('***REDACTED***', $redacted['ssl_key'], 'a TLS private-key path must be redacted');
+
+    }//end testRedactSecretsFromConfigRedactsSecretQueryAndFormParams()
+
+
+    /**
+     * A URL keeps its non-secret query parameters and loses only the secret ones.
+     *
+     * Guards the key-only iteration in redactSecretsFromUrl(), which writes back
+     * through $params[$name] while iterating array_keys($params).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+     */
+    public function testRedactSecretsFromUrlRedactsOnlyTheSecretParameters(): void
+    {
+        $redacted = $this->callPrivate(
+            'redactSecretsFromUrl',
+            'https://api.example.invalid/things?api_key=key-123&page=2&password=hunter2'
+        );
+
+        parse_str((string) parse_url($redacted, PHP_URL_QUERY), $params);
+
+        $this->assertSame('***REDACTED***', $params['api_key'], 'a secret query param must be redacted');
+        $this->assertSame('***REDACTED***', $params['password'], 'a secret query param must be redacted');
+        $this->assertSame('2', $params['page'], 'a non-secret query param must be preserved');
+        $this->assertStringStartsWith(
+            'https://api.example.invalid/things?',
+            $redacted,
+            'the URL path must be preserved verbatim'
+        );
+
+    }//end testRedactSecretsFromUrlRedactsOnlyTheSecretParameters()
+
+
+    /**
+     * A URL without a query string, or with nothing secret in it, is returned untouched.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+     */
+    public function testRedactSecretsFromUrlLeavesCleanUrlsUntouched(): void
+    {
+        $this->assertSame(
+            'https://api.example.invalid/things',
+            $this->callPrivate('redactSecretsFromUrl', 'https://api.example.invalid/things'),
+            'a URL with no query string must be returned unchanged'
+        );
+
+        $this->assertSame(
+            'https://api.example.invalid/things?page=2&sort=name',
+            $this->callPrivate('redactSecretsFromUrl', 'https://api.example.invalid/things?page=2&sort=name'),
+            'a URL with no secret parameters must be returned unchanged, not re-encoded'
+        );
+
+    }//end testRedactSecretsFromUrlLeavesCleanUrlsUntouched()
 
 }//end class

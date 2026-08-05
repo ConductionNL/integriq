@@ -330,7 +330,13 @@ class AuthenticationConfigTest extends TestCase
     public function testInfoXmlRegistersThisAsACommandAndNeverAsARepairStep(): void
     {
         $root = dirname(__DIR__, 3);
-        $xml  = simplexml_load_file($root.'/appinfo/info.xml');
+
+        // Read then parse, rather than simplexml_load_file(). Nextcloud's
+        // base.php installs an external-entity loader that returns null, and
+        // simplexml_load_file() resolves the FILE ITSELF through that loader —
+        // so it returns false for a perfectly valid document whenever a real NC
+        // is bootstrapped. simplexml_load_string() does not go through it.
+        $xml = simplexml_load_string((string) file_get_contents($root.'/appinfo/info.xml'));
 
         $this->assertNotFalse($xml, 'info.xml must parse (a double hyphen in an XML comment breaks it).');
 

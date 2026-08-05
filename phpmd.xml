@@ -97,7 +97,20 @@
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateField"/>
     <rule ref="rulesets/unusedcode.xml/UnusedLocalVariable"/>
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateMethod"/>
-    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter">
-        <exclude-pattern>*Migration*</exclude-pattern>
-    </rule>
+    <!-- UnusedFormalParameter is NOT in this ruleset. It lives alone in
+         phpmd-unusedparams.xml, which is run as a second leg by `composer phpmd`.
+
+         It used to sit here with a NESTED <exclude-pattern>*Migration*</exclude-pattern>,
+         which did nothing at all: PHPMD 2.15 honours exclude-pattern only as a DIRECT
+         CHILD of <ruleset>, and parses-then-discards a nested one. Measured on
+         phpmd 2.15.0 / PHP 8.4.22 with the baseline neutralised, this ruleset still
+         reported 152 UnusedFormalParameter hits inside lib/Migration.
+
+         Moving the pattern up to top level HERE would have worked - and would also
+         have dropped lib/Migration from every other rule in this file, silently
+         swallowing the 10 real non-UnusedFormalParameter findings that live there
+         (3 ExcessiveMethodLength, 3 ElseExpression, 2 NPathComplexity,
+         2 CyclomaticComplexity), because a top-level pattern is applied by PDepend
+         at file-collection time. Hence the separate ruleset.
+         See ConductionNL/.github#155 and ConductionNL/openconnector#1144. -->
 </ruleset>

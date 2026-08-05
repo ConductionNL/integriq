@@ -30,8 +30,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the current_page and message columns to the synchronization tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241210120155 extends SimpleMigrationStep
 {

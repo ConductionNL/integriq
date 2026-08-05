@@ -32,7 +32,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the initial OpenConnector table set on first install.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

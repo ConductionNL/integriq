@@ -43,6 +43,16 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
+      # Set explicitly, because the shared workflow's default flipped to `true`
+      # and this repo cannot honestly satisfy it yet. Every gate PASSES; what
+      # does not run is 4, 24 and 33, whose producers this repo does not switch
+      # on. Inheriting the new default would block the repo on that, and the
+      # usual response is to switch the control off everywhere — which costs
+      # more than it saves.
+      #
+      # Remove this line in the change that wires those producers up, so the
+      # coverage requirement arrives with the coverage.
+      hydra-gates-require-full-coverage: false
       enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true

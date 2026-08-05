@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds reference string columns to the jobs and synchronizations tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250107163601 extends SimpleMigrationStep
 {

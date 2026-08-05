@@ -28,8 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops the legacy authorization_configuration column from the consumers table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241218122708 extends SimpleMigrationStep
 {

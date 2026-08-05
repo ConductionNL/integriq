@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops notnull on origin/target id and hash columns on the contracts table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250109121103 extends SimpleMigrationStep
 {

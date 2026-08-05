@@ -43,7 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
  * @version   1.0.0
  * @link      https://github.com/OpenConnector/openconnector
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
