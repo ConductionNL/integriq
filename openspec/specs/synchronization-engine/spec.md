@@ -666,6 +666,41 @@ itself (including its `targetLastSynced` timestamp).
 - AND no target object is created or updated
 - AND no contract is created or updated
 
+#### Scenario: a test run tolerates the uuid-less contracts it necessarily produces
+
+- GIVEN a synchronization whose source objects have no previously-persisted
+  contract
+- WHEN a test run processes them
+- THEN the run completes and reports its result
+- AND no lookup is attempted for the contract references it never assigned —
+  persisting the contract is what would have assigned a uuid, and this
+  requirement forbids that
+
+#### Scenario: reference lists report references, not one slot per object
+
+- WHEN a run finalises its log
+- THEN `result.contracts`, `result.logs` and `result._embed.contracts` contain
+  only entries that reference something, with `_embed.contracts` compacted in
+  lockstep with `contracts` so the two stay aligned by position
+- AND the returned payload is identical to the persisted row, both being taken
+  from the same normalised log
+- AND the object tallies still report every processed object
+
+Notes: both scenarios are regression guards, covered by
+`SynchronizationServiceTestRunContractEmbedTest`.
+
+`POST .../{id}/test` answered 500 (`findContract(): Argument #1 ($id) must be
+of type string|int, null given`) for every first-ever dry run, because the
+embedding step mapped the null ids this requirement guarantees through a
+lookup typed to reject them.
+
+Separately, the engine appends to `contracts`/`logs` once per processed object
+whether or not there is a reference, so a 100-object dry run reported three
+hundred nulls. `SynchronizationLogService` had a normaliser for exactly this
+but applied it only to the copy headed for storage, so the API response and
+the stored row disagreed — the response carried the nulls, the row did not. It
+now normalises the log itself, which is what both are serialised from.
+
 ### Requirement: Ad-hoc Source resolution does not persist a new Source (REQ-012)
 
 The system SHALL use a transient, in-memory source configuration, and SHALL

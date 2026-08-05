@@ -1849,11 +1849,26 @@ class SynchronizationService
                 $result = $processResult['result'];
                 $result['_embed']['contracts'] = array_map(
                         function ($contractId) {
-                            // Contracts are addressed by their OpenRegister id/uuid; resolve
-                            // directly via the OR ObjectService (a missing contract is
-                            // tolerated as null). findContract may return an entity, a
-                            // plain array (OR ObjectService), or null — handle all three
-                            // findContract() always returns an array (or throws DoesNotExistException).
+                            // `contracts` is a sparse list of OpenRegister id/uuids: the
+                            // engine pushes `$contractUuid` unconditionally and leaves it
+                            // null whenever the contract carries no uuid. A test run is
+                            // the common case — synchronizeContract() returns the
+                            // in-memory contract without persisting it, so a contract
+                            // that did not already exist has no uuid at all, and every
+                            // entry for a first-time dry run is null.
+                            //
+                            // findContract() is typed `string|int`, so passing that
+                            // through is a TypeError (an uncaught 500 on the whole run),
+                            // not a lookup miss the catch below could absorb. Skip it:
+                            // there is genuinely nothing to resolve. Returning null keeps
+                            // this list positionally aligned with `contracts` itself.
+                            if ($contractId === null) {
+                                return null;
+                            }
+
+                            // A contract that has an id but no longer exists is tolerated
+                            // as null too — embedding is best-effort enrichment and must
+                            // not be able to fail the synchronization that produced it.
                             try {
                                 return $this->findContract(id: $contractId);
                             } catch (DoesNotExistException $exception) {

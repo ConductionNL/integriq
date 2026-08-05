@@ -127,6 +127,16 @@ class SynchronizationLogService
      */
     public function update(SynchronizationRunLog $log): SynchronizationRunLog
     {
+        // Normalise BEFORE the append-only early return, and write the result
+        // back onto the log rather than onto the outbound copy alone. The
+        // engine returns `$log->jsonSerialize()` to the controller, so
+        // normalising only the copy headed for storage made the API response
+        // and the persisted row disagree: a dry run answered with a hundred
+        // null `contracts` while the stored row carried an empty list.
+        // Idempotent — compacting an already-compacted result is a no-op — so
+        // running it ahead of the isPersisted() check is safe.
+        $log->setResult($this->normaliseResultReferences(result: $log->getResult()));
+
         // Append-only: never issue a second write for the same log.
         if ($log->isPersisted() === true) {
             return $log;
@@ -137,11 +147,6 @@ class SynchronizationLogService
         // If the log is successful, limit log retention to 1 hour.
         if (($object['message'] ?? null) === 'Success') {
             $object['expires'] = (new DateTime('+1 hour'))->format('c');
-        }
-
-        // Process contracts in results if they exist.
-        if (isset($object['result']['contracts']) === true && is_array($object['result']['contracts']) === true) {
-            $object['result']['contracts'] = $this->processContracts(contracts: $object['result']['contracts']);
         }
 
         // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
@@ -201,43 +206,101 @@ class SynchronizationLogService
     }//end normalize()
 
     /**
-     * Process contracts array to ensure it only contains valid UUIDs.
+     * Reduce one `contracts` entry to its uuid, or null when it has none.
      *
-     * @param array $contracts Array of contracts or contract objects.
+     * Entries reach the run-log either already as a uuid string or as a
+     * contract object, depending on which engine path recorded them.
      *
-     * @return array Processed array containing only valid UUIDs.
+     * @param mixed $contract A contract object, a uuid string, or anything else.
+     *
+     * @return string|null The uuid, or null when the entry references nothing.
      */
-    private function processContracts(array $contracts): array
+    private function resolveContractId(mixed $contract): ?string
     {
-        return array_values(
-            array_filter(
-                array_map(
-                    static function ($contract) {
-                        if (is_object($contract) === true) {
-                            // If it's an object with getUuid method, use that.
-                            if (method_exists($contract, 'getUuid') === true) {
-                                $uuid = $contract->getUuid();
-                                if (empty($uuid) === true) {
-                                    return null;
-                                }
+        if (\is_object($contract) === true) {
+            if (method_exists($contract, 'getUuid') === false) {
+                return null;
+            }
 
-                                return $uuid;
-                            }
+            $uuid = $contract->getUuid();
+            if (empty($uuid) === true) {
+                return null;
+            }
 
-                            return null;
-                        }
+            return (string) $uuid;
+        }
 
-                        // If it's already a string (UUID), return it.
-                        if (is_string($contract) === true) {
-                            return $contract;
-                        }
+        if (\is_string($contract) === true) {
+            return $contract;
+        }
 
-                        return null;
-                    },
-                    $contracts
+        return null;
+
+    }//end resolveContractId()
+
+    /**
+     * Compact the run-log's reference lists to the references that exist.
+     *
+     * `SynchronizationService` appends to `result.contracts` and `result.logs`
+     * once per processed object whether or not there is anything to reference,
+     * so a run that persists no contract records a null in each. A dry run
+     * persists nothing by definition (synchronization-engine REQ-011), which is
+     * how a 100-object test run ended up reporting a hundred nulls in each list
+     * plus a hundred more under `_embed.contracts` — three times the payload of
+     * the counters that carry the actual result, saying nothing the `objects`
+     * tallies do not already say.
+     *
+     * `_embed.contracts` is compacted in lockstep with `contracts` because
+     * `Flow\SynchronizationRunNode::objectsFrom()` pairs the two by position;
+     * dropping from one alone would misalign every later entry.
+     *
+     * @param array $result The run-log result payload.
+     *
+     * @return array The result with its reference lists compacted.
+     */
+    private function normaliseResultReferences(array $result): array
+    {
+        $contracts = ($result['contracts'] ?? null);
+        if (\is_array($contracts) === true) {
+            $embedded = ($result['_embed']['contracts'] ?? null);
+            $hasEmbed = \is_array($embedded);
+
+            $keptContracts = [];
+            $keptEmbedded  = [];
+            foreach (array_values($contracts) as $position => $contract) {
+                $uuid = $this->resolveContractId(contract: $contract);
+                if ($uuid === null) {
+                    continue;
+                }
+
+                $keptContracts[] = $uuid;
+                if ($hasEmbed === true) {
+                    // Always append, defaulting to null, so the embedded list
+                    // keeps exactly one entry per surviving contract even when
+                    // it was shorter than `contracts` to begin with.
+                    $keptEmbedded[] = (array_values($embedded)[$position] ?? null);
+                }
+            }
+
+            $result['contracts'] = $keptContracts;
+            if ($hasEmbed === true) {
+                $result['_embed']['contracts'] = $keptEmbedded;
+            }
+        }//end if
+
+        $logs = ($result['logs'] ?? null);
+        if (\is_array($logs) === true) {
+            $result['logs'] = array_values(
+                array_filter(
+                    $logs,
+                    static function ($logId) {
+                        return $logId !== null && $logId !== '';
+                    }
                 )
-            )
-        );
+            );
+        }
 
-    }//end processContracts()
+        return $result;
+
+    }//end normaliseResultReferences()
 }//end class
