@@ -410,7 +410,12 @@ class RecordInlineSecretMigrationStatusTest extends TestCase
         $infoXml = __DIR__.'/../../../appinfo/info.xml';
         $this->assertFileExists($infoXml);
 
-        $xml = simplexml_load_file($infoXml);
+        // Read then parse, rather than simplexml_load_file(). Nextcloud's
+        // base.php installs an external-entity loader that returns null, and
+        // simplexml_load_file() resolves the FILE ITSELF through that loader —
+        // so it returns false for a perfectly valid document whenever a real NC
+        // is bootstrapped. simplexml_load_string() does not go through it.
+        $xml = simplexml_load_string((string) file_get_contents($infoXml));
         $this->assertNotFalse($xml, 'info.xml must parse.');
 
         $steps = [];

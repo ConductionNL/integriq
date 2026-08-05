@@ -86,10 +86,17 @@ class ApplicationAppEnabledForAnyoneTest extends TestCase
      */
     public function testFallsBackToIsInstalledOnServersWithoutIsEnabledForAnyone(): void
     {
-        $this->assertFalse(
-            method_exists(IAppManager::class, 'isEnabledForAnyone'),
-            'precondition: the pinned OCP interface must predate isEnabledForAnyone() for this branch to be under test'
-        );
+        // Which IAppManager is loaded depends on where the suite runs. Bare, it
+        // is the pinned `nextcloud/ocp:dev-stable29` stub, which predates
+        // `isEnabledForAnyone()` — so this pre-32 branch is genuinely reachable
+        // and worth asserting. Inside a real NC >= 32 the server's own
+        // interface wins and the branch cannot be entered at all, so asserting
+        // it there would only be asserting the server's version.
+        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
+            $this->markTestSkipped(
+                'This server has isEnabledForAnyone(); the pre-32 fallback branch is unreachable here.'
+            );
+        }
 
         $appManager = $this->createMock(IAppManager::class);
         $appManager->expects($this->once())
@@ -133,9 +140,19 @@ class ApplicationAppEnabledForAnyoneTest extends TestCase
      */
     public function testPrefersIsEnabledForAnyoneWhenTheServerHasIt(): void
     {
-        $appManager = $this->getMockBuilder(IAppManager::class)
-            ->addMethods(['isEnabledForAnyone'])
-            ->getMockForAbstractClass();
+        // addMethods() refuses a method the interface already declares, and
+        // whether it declares one depends on which IAppManager is loaded: the
+        // pinned pre-32 stub when running bare, the server's own interface when
+        // running inside a real NC. Pick the builder call that matches, so the
+        // same test covers the >= 32 branch either way.
+        $builder = $this->getMockBuilder(IAppManager::class);
+        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
+            $builder->onlyMethods(['isEnabledForAnyone', 'isInstalled']);
+        } else {
+            $builder->addMethods(['isEnabledForAnyone']);
+        }
+
+        $appManager = $builder->getMockForAbstractClass();
         $appManager->expects($this->once())
             ->method('isEnabledForAnyone')
             ->with('workflowengine')

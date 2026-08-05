@@ -364,13 +364,29 @@ class BankfeedSyncServiceTest extends TestCase
      * broker it, the finalisation fails closed: nothing is persisted and no
      * plaintext token lands anywhere — REQ-006.
      *
-     * Note: in this unit environment `\OCP\Server` has no container, so the
-     * brokering attempt always fails — exactly the fail-closed path under test.
+     * The brokering failure is injected. This test used to rely on `\OCP\Server`
+     * having no container in the unit environment, which made it pass for a
+     * reason unrelated to what it checks: once the suite ran against a real
+     * Nextcloud the brokering SUCCEEDED, the connection was saved — correctly —
+     * and the test failed. A fail-closed path has to be closed on purpose to be
+     * evidence of anything.
      *
      * @return void
      */
     public function testFinaliseConsentFailsClosedWhenTokenCannotBeBrokered(): void
     {
+        $service = new BankfeedSyncService(
+            $this->objectService,
+            $this->logProvider,
+            $this->restProvider,
+            $this->eventService,
+            $this->l,
+            $this->logger,
+            static function (): object {
+                throw new \RuntimeException('credential store unavailable');
+            }
+        );
+
         $pending = $this->entity(
             [
                 'connectionId'         => 'conn-1',
@@ -395,7 +411,7 @@ class BankfeedSyncServiceTest extends TestCase
         );
 
         try {
-            $this->service->finaliseConsent(reference: 'REQ-1');
+            $service->finaliseConsent(reference: 'REQ-1');
             $this->fail('Expected Psd2ProviderException (fail closed on unbrokerable token)');
         } catch (Psd2ProviderException $exception) {
             // The token itself must never leak into the error message (REQ-006).
