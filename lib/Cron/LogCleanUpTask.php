@@ -20,6 +20,7 @@
 
 namespace OCA\OpenConnector\Cron;
 
+use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -77,7 +78,7 @@ class LogCleanUpTask extends TimedJob
      */
     private function cleanupSchema(string $schema): void
     {
-        $now     = (new \DateTime())->format('Y-m-d H:i:s');
+        $now     = (new DateTime())->format('Y-m-d H:i:s');
         $matches = $this->orObjectService->findAll(
                 config: [
                     'filters' => [

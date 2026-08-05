@@ -28,6 +28,7 @@ namespace OCA\OpenConnector\Service;
 use OCA\OpenConnector\AppInfo\Application;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * PKIoverheid certificate-chain / HMAC body-signature verifier for DSO STAM.
@@ -364,7 +365,7 @@ class DSOSignatureVerifierService
     {
         $path = tempnam(sys_get_temp_dir(), 'dso_pki_');
         if ($path === false) {
-            throw new \RuntimeException('Unable to allocate a temporary file for PKIoverheid chain validation.');
+            throw new RuntimeException('Unable to allocate a temporary file for PKIoverheid chain validation.');
         }
 
         file_put_contents($path, $pem);

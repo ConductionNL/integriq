@@ -451,7 +451,6 @@ class EventService
      */
     private function createEventMessage(ObjectEntity $event, ObjectEntity $subscription): ObjectEntity
     {
-        $eventData        = $event->getObject();
         $subscriptionData = $subscription->getObject();
 
         return $this->objectService->saveObject(

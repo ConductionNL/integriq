@@ -25,6 +25,7 @@
 
 namespace OCA\OpenConnector\Service;
 
+use Exception;
 use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -118,7 +119,7 @@ class SoftwareCatalogueService
         // Get the OpenRegister service.
         $openRegister = $this->objectService->getOpenRegisters();
         if ($openRegister === null) {
-            $deferred->reject(new \Exception('OpenRegister service is not available'));
+            $deferred->reject(new Exception('OpenRegister service is not available'));
             return $deferred->promise();
         }
 
@@ -194,7 +195,7 @@ class SoftwareCatalogueService
         // Get the OpenRegister service.
         $openRegister = $this->objectService->getOpenRegisters();
         if ($openRegister === null) {
-            $deferred->reject(new \Exception('OpenRegister service is not available'));
+            $deferred->reject(new Exception('OpenRegister service is not available'));
             return $deferred->promise();
         }
 

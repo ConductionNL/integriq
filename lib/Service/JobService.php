@@ -712,7 +712,6 @@ class JobService
     public function run(): array
     {
         // Fetch all jobs that are enabled and whose nextRun is in the past or null.
-        $now     = (new DateTime())->format('c');
         $matches = $this->objectService->findAll(
                 config: [
                     'filters' => [

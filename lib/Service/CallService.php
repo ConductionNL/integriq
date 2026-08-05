@@ -37,6 +37,7 @@
 namespace OCA\OpenConnector\Service;
 
 use Adbar\Dot;
+use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
@@ -51,6 +52,7 @@ use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
+use InvalidArgumentException;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Flow\FlowConfigGuard;
 use OCA\OpenConnector\Service\AuthenticationService;
@@ -63,6 +65,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
@@ -272,7 +275,7 @@ class CallService
             return null;
         }
 
-        return new \DateTime('now +'.max($retentions).'milliseconds');
+        return new DateTime('now +'.max($retentions).'milliseconds');
 
     }//end calculateExpires()
 
@@ -748,7 +751,7 @@ class CallService
                 'source'        => $source->getUuid(),
                 'statusCode'    => $statusCode,
                 'statusMessage' => $statusMessage,
-                'created'       => (new \DateTime())->format('c'),
+                'created'       => (new DateTime())->format('c'),
                 'expires'       => $this->formatExpires(expires: $expires),
             ],
             register: 'openconnector',
@@ -1439,7 +1442,7 @@ class CallService
         ];
 
         if (isset($config['headers']) === true && is_array($config['headers']) === true) {
-            foreach ($config['headers'] as $headerName => $headerValue) {
+            foreach (array_keys($config['headers']) as $headerName) {
                 if (in_array(strtolower((string) $headerName), $secretHeaderNames, true) === true) {
                     $config['headers'][$headerName] = $placeholder;
                     continue;
@@ -1461,7 +1464,7 @@ class CallService
         // Query and form parameters with secret-looking keys.
         foreach (['query', 'form_params'] as $bag) {
             if (isset($config[$bag]) === true && is_array($config[$bag]) === true) {
-                foreach ($config[$bag] as $paramName => $paramValue) {
+                foreach (array_keys($config[$bag]) as $paramName) {
                     if ($this->isSecretKeyName(name: (string) $paramName) === true) {
                         $config[$bag][$paramName] = $placeholder;
                     }
@@ -1521,7 +1524,7 @@ class CallService
         }
 
         $changed = false;
-        foreach ($params as $paramName => $paramValue) {
+        foreach (array_keys($params) as $paramName) {
             if ($this->isSecretKeyName(name: (string) $paramName) === true) {
                 $params[$paramName] = '***REDACTED***';
                 $changed            = true;
@@ -1735,7 +1738,7 @@ class CallService
             'statusMessage' => $data['response']['statusMessage'],
             'request'       => $data['request'],
             'response'      => $responseData,
-            'created'       => (new \DateTime())->format('c'),
+            'created'       => (new DateTime())->format('c'),
             'expires'       => $this->formatExpires(expires: $expiresChosen),
         ];
 
@@ -1791,7 +1794,7 @@ class CallService
             'statusMessage' => $data['response']['statusMessage'],
             'request'       => $data['request'],
             'response'      => $data['response'],
-            'created'       => (new \DateTime())->format('c'),
+            'created'       => (new DateTime())->format('c'),
         ];
 
         if ($trace !== null) {
@@ -2108,7 +2111,7 @@ class CallService
             // Unreachable in practice (see the pre-loop comment) — a hard
             // failure here is safer than silently returning a malformed
             // dispatch result.
-            throw new \RuntimeException('dispatchWithRetry() exited its retry loop without a response.');
+            throw new RuntimeException('dispatchWithRetry() exited its retry loop without a response.');
         }
 
         $timeEnd = microtime(true);
@@ -2697,7 +2700,7 @@ class CallService
         $prepared['url'] = (($sourceData['location'] ?? '').$endpoint);
 
         // Let's log the call.
-        $sourceData['lastCall'] = (new \DateTime())->format('c');
+        $sourceData['lastCall'] = (new DateTime())->format('c');
         // @todo: save the source.
         $prepared['sourceData'] = $sourceData;
 
@@ -2875,7 +2878,7 @@ class CallService
         // a caller passing the flag is told where to go instead of hitting a
         // return-type fatal.
         if ($asynchronous === true) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'CallService::call() is synchronous and returns an ObjectEntity call log. '
                 .'For concurrent dispatch use CallService::callAsync(), which returns a '
                 .'GuzzleHttp promise; see openspec/changes/parallel-file-fetch/design.md '
@@ -3010,7 +3013,7 @@ class CallService
         // the handle would close under N concurrent fetches with no deterministic
         // ordering. Reject it at the boundary rather than let it corrupt a save.
         if (is_resource($sink) === true) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'CallService::callAsync() requires a temp-file PATH as its sink, not a stream resource. '
                 .'Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under '
                 .'asynchronous dispatch happens outside the caller\'s control; see '

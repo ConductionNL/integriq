@@ -62,6 +62,7 @@ use Twig\Error\SyntaxError;
 use Twig\Loader\ArrayLoader;
 use Throwable;
 use Exception;
+use InvalidArgumentException;
 
 /**
  * MappingService — Twig-driven payload transformer.
@@ -217,7 +218,7 @@ class MappingService
                 schema: self::SCHEMA
             );
         } catch (DoesNotExistException $e) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping),
                 0,
                 $e
@@ -229,7 +230,7 @@ class MappingService
         }
 
         if ($object === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping)
             );
         }

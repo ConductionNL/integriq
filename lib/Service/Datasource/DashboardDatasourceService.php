@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Datasource;
 
+use DateTime;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
@@ -212,7 +213,7 @@ class DashboardDatasourceService
         }
 
         $value     = $this->evaluator->evaluate(data: $decoded, expr: $valueExpr);
-        $fetchedAt = (new \DateTime())->format(\DateTime::ATOM);
+        $fetchedAt = (new DateTime())->format(DateTime::ATOM);
 
         $entry = [
             'value'     => $value,
@@ -252,7 +253,7 @@ class DashboardDatasourceService
 
         return [
             'value'     => null,
-            'fetchedAt' => (new \DateTime())->format(\DateTime::ATOM),
+            'fetchedAt' => (new DateTime())->format(DateTime::ATOM),
             'stale'     => true,
         ];
 
