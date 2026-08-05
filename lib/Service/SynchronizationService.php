@@ -72,7 +72,7 @@ use Twig\Error\SyntaxError;
  * @package   OCA\OpenConnector\Service
  * @author    Conduction b.v.
  * @copyright 2024 Conduction b.v.
- * @license   AGPL-3.0-or-later
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
  * @link      https://github.com/ConductionNL/OpenConnector
  */

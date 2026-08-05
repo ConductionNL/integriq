@@ -20,11 +20,6 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 namespace OCA\OpenConnector\Migration;
 
 use Closure;
@@ -40,7 +35,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @category  Migration
  * @author    OpenConnector Team
  * @copyright 2024 OpenConnector
- * @license   AGPL-3.0
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
  * @link      https://github.com/OpenConnector/openconnector
  */
