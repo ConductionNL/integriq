@@ -110,21 +110,29 @@ hand-rolled on-demand OpenRegister installer was deliberately not carried over.
 
 ### Requirement: Run and test a synchronization (REQ-SYNCUI-005)
 
-The index row actions SHALL trigger a synchronization run (or dry-run test) against the
-backend and surface the outcome.
+The index row actions SHALL let the user run or dry-run a synchronization, gating the
+request behind a confirmation step that exposes the run flags and rendering the run log
+the backend returns. The handlers themselves SHALL only open that surface — the shared
+run/test modal specified by `app-shell-and-logs-ui` REQ-SHELLUI-004 — and SHALL make no
+request of their own.
 
 #### Scenario: Running a synchronization
 - WHEN the user invokes the "Run now" row action
-- THEN `runSynchronizationHandler` invokes the backend run and the outcome is surfaced
+- THEN `runSynchronizationHandler` opens the run modal for `synchronization/run`
+- AND the run fires only once the user confirms, with whichever of `force` /
+  `forceDeletion` they selected
+- AND the returned run log's object counters are rendered
 
 #### Scenario: Testing a synchronization
 - WHEN the user invokes the "Test (dry run)" row action
-- THEN `testSynchronizationHandler` invokes the backend dry-run and the outcome is surfaced
+- THEN `testSynchronizationHandler` opens the same modal for `synchronization/test`
+- AND the dry run's result is rendered rather than reduced to a toast
 
 Notes: `handlers/actionHandlers.js` — `runSynchronizationHandler` /
-`testSynchronizationHandler` row actions. The dry-run payload they receive is rendered
-by `modals/v2/SynchronizationEditorModal.vue` (REQ-SYNCUI-004); the handlers themselves
-still surface only a toast.
+`testSynchronizationHandler`, now bus emitters. The result rendering lives in
+`modals/v2/RunActionModal.vue` + `modals/v2/runTargets.js` (REQ-SHELLUI-004); the Test
+button inside the editor modal (REQ-SYNCUI-004) renders the same payload for the
+edit-mode dry run.
 
 ### Requirement: Table picker for the `nextcloud-table` source/target kind (REQ-SYNCUI-006)
 

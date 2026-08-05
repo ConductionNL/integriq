@@ -70,15 +70,18 @@ import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
-	testSourceHandler,
-	runJobHandler,
-	testJobHandler,
-	runSynchronizationHandler,
-	testSynchronizationHandler,
 	// Flows index row action (visual-flow-orchestration): manual run trigger.
 	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
+	testSourceHandler,
+	// The four run/test actions all open RunActionModal (REQ-SHELLUI-004), which
+	// owns the POST so the run can be gated behind the force flags the endpoints
+	// accept and the returned run log can be rendered rather than discarded.
+	runJobHandler,
+	testJobHandler,
+	runSynchronizationHandler,
+	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via

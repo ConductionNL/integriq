@@ -1603,7 +1603,8 @@
                         "id": "test",
                         "label": "Test (dry run)",
                         "icon": "CheckCircleOutline",
-                        "handler": "testJobHandler"
+                        "handler": "testJobHandler",
+                        "_note": "NOT a dry run. JobsController::test() calls the same executeJob() run() does with forceRun hardcoded true (job-scheduling REQ-002); the job executes for real and there is no dry-run mode for jobs anywhere in the engine. The label said 'Test (dry run)' until the shared run/test modal (REQ-SHELLUI-004) made the claim visible enough to be worth correcting."
                     },
                     {
                         "id": "view-job-logs",

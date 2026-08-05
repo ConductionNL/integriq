@@ -38,6 +38,10 @@ export const EVENT_OPEN_TEST_MAPPING = 'open-test-mapping'
 // Source "Test connection" modal — run a live request against a source and show the response.
 export const EVENT_OPEN_TEST_SOURCE = 'open-test-source'
 export const EVENT_OPEN_ADD_ENDPOINT_RULE = 'open-add-endpoint-rule'
+// Shared run/test modal for the Synchronizations and Jobs row actions. Payload
+// is `{ target: 'synchronization'|'job', mode: 'run'|'test', item }`; the pair
+// selects a descriptor in src/modals/v2/runTargets.js.
+export const EVENT_OPEN_RUN_ACTION = 'open-run-action'
 export const EVENT_OPEN_SUBSCRIPTION_SIGNING = 'open-subscription-signing'
 // connector-catalog-ui: Catalog detail dialog + configuration import/export dialogs.
 export const EVENT_OPEN_CATALOG_ITEM_DETAIL = 'open-catalog-item-detail'

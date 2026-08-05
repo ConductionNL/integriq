@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Unit tests for the manifest row-action handlers (src/handlers/actionHandlers.js):
- *   • the POST handlers hit the correct endpoint and toast success/error;
+ *   • the remaining POST handlers hit the correct endpoint and toast success/error;
  *   • viewLogsHandler maps actionId → destination route + query param;
  *   • the modal-opening handlers emit the right event on the shared bus.
+ *
+ * The four run/test handlers moved to the modal bus (REQ-SHELLUI-004): they used
+ * to POST and toast, and now open RunActionModal, which owns the request. The
+ * assertions here changed accordingly — what matters is the `{ target, mode }`
+ * pair, since that pair selects the descriptor that decides the endpoint.
  *
  * @nextcloud/axios + @nextcloud/dialogs are mocked so we can assert the
  * request URL and which toast fired; @nextcloud/router + @nextcloud/l10n are
@@ -32,6 +37,7 @@ import {
 	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	runFlowHandler,
 	viewLogsHandler,
 } from '../../src/handlers/actionHandlers.js'
 import { setRouter } from '../../src/handlers/routerRef.js'
@@ -40,6 +46,7 @@ import {
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_RUN_ACTION,
 } from '../../src/handlers/modalBus.js'
 
 beforeEach(() => {
@@ -64,42 +71,24 @@ describe('POST action handlers — endpoint + success toast', () => {
 		expect(showSuccess).not.toHaveBeenCalled()
 	})
 
-	it('runJobHandler posts to /api/jobs/run/{id}', async () => {
-		post.mockResolvedValueOnce({})
-		await runJobHandler({ item: { id: 3 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/jobs/run/3')
+	it('runFlowHandler posts to /api/flows/{id}/run', async () => {
+		post.mockResolvedValueOnce({ data: { status: 'completed' } })
+		await runFlowHandler({ item: { id: 3 } })
+		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/3/run')
 		expect(showSuccess).toHaveBeenCalledTimes(1)
 	})
 
-	it('testJobHandler posts to /api/jobs/test/{id}', async () => {
-		post.mockResolvedValueOnce({})
-		await testJobHandler({ item: { id: 3 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/jobs/test/3')
-	})
-
-	it('runSynchronizationHandler posts to /api/synchronizations/{id}/run', async () => {
-		post.mockResolvedValueOnce({})
-		await runSynchronizationHandler({ item: { id: 9 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/synchronizations/9/run')
-	})
-
-	it('testSynchronizationHandler posts to /api/synchronizations/{id}/test', async () => {
-		post.mockResolvedValueOnce({})
-		await testSynchronizationHandler({ item: { id: 9 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/synchronizations/9/test')
-	})
-
-	it('testSynchronizationHandler falls back to uuid when id is absent', async () => {
-		post.mockResolvedValueOnce({})
-		await testSynchronizationHandler({ item: { uuid: 'abc' } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/synchronizations/abc/test')
+	it('runFlowHandler falls back to uuid when id is absent', async () => {
+		post.mockResolvedValueOnce({ data: { status: 'completed' } })
+		await runFlowHandler({ item: { uuid: 'abc' } })
+		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/abc/run')
 	})
 })
 
 describe('POST action handlers — error path', () => {
 	it('shows an error toast (with server message) when the request rejects', async () => {
 		post.mockRejectedValueOnce({ response: { data: { message: 'boom' } } })
-		await runJobHandler({ item: { id: 1 } })
+		await runFlowHandler({ item: { id: 1 } })
 		expect(showError).toHaveBeenCalledTimes(1)
 		expect(showError.mock.calls[0][0]).toContain('boom')
 		expect(showSuccess).not.toHaveBeenCalled()
@@ -107,9 +96,53 @@ describe('POST action handlers — error path', () => {
 
 	it('tolerates an error with no structured detail', async () => {
 		post.mockRejectedValueOnce(new Error('network'))
-		await testJobHandler({ item: { id: 1 } })
+		await runFlowHandler({ item: { id: 1 } })
 		expect(showError).toHaveBeenCalledTimes(1)
 		expect(showError.mock.calls[0][0]).toContain('network')
+	})
+})
+
+describe('run/test handlers — open the shared run modal instead of posting', () => {
+	/**
+	 * Capture one emission on the run-action bus event.
+	 *
+	 * @param {Function} run The handler invocation to observe.
+	 * @return {object|undefined} The emitted payload.
+	 */
+	function captureRunAction(run) {
+		const spy = vi.fn()
+		modalBus.on(EVENT_OPEN_RUN_ACTION, spy)
+		run()
+		modalBus.off(EVENT_OPEN_RUN_ACTION, spy)
+		expect(spy).toHaveBeenCalledTimes(1)
+		return spy.mock.calls[0][0]
+	}
+
+	it.each([
+		['runSynchronizationHandler', runSynchronizationHandler, 'synchronization', 'run'],
+		['testSynchronizationHandler', testSynchronizationHandler, 'synchronization', 'test'],
+		['runJobHandler', runJobHandler, 'job', 'run'],
+		['testJobHandler', testJobHandler, 'job', 'test'],
+	])('%s emits open-run-action for %s/%s', (_name, handler, target, mode) => {
+		const item = { id: 9, name: 'row' }
+		const payload = captureRunAction(() => handler({ item }))
+		expect(payload).toEqual({ target, mode, item })
+	})
+
+	it('fires no request and no toast — the modal owns both', () => {
+		runSynchronizationHandler({ item: { id: 9 } })
+		testSynchronizationHandler({ item: { id: 9 } })
+		runJobHandler({ item: { id: 3 } })
+		testJobHandler({ item: { id: 3 } })
+		expect(post).not.toHaveBeenCalled()
+		expect(showSuccess).not.toHaveBeenCalled()
+		expect(showError).not.toHaveBeenCalled()
+	})
+
+	it('passes the whole row through, so the modal can read syncMode for the force-deletion guard', () => {
+		const item = { id: 9, name: 'row', syncMode: 'incremental' }
+		const payload = captureRunAction(() => runSynchronizationHandler({ item }))
+		expect(payload.item.syncMode).toBe('incremental')
 	})
 })
 
