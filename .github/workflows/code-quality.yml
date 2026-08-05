@@ -13,8 +13,33 @@ on:
     branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it carries the push-only "Coverage Baseline Check", which is the
+# whole push side of the coverage ratchet. And those two branches always have an
+# open PR whose `head_ref` IS the branch name: the standing "Release: merge
+# development into beta". `github.head_ref` on that PR run and `github.ref_name`
+# on the push run both render `development`, so both landed in the identical
+# group `quality-development`, and `cancel-in-progress` killed whichever started
+# first — always the push run, by ~9 seconds.
+#
+# Measured on the merge of #1151 (ddd74da4): run 31045325182, event `push`,
+# CANCELLED; run 31045337494, event `pull_request`, survived. Same pattern on
+# 3b9371f1, 75190bca and f2219e09 — four for four, so the push run on
+# `development` has never reached a verdict. "Coverage Baseline Check" therefore
+# reported `skipped` on the surviving run (correctly — it is push-only) while
+# never once executing on the run that could have run it. #1151 enabled a job
+# that could not reach a verdict: a dead gate of the permanently-pending shape,
+# which is invisible because a skipped job renders like a passing one.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
+  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
