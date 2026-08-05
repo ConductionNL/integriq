@@ -73,10 +73,12 @@
 			     work, and stacking sidesteps the input/textarea height gap. -->
 			<div class="cn-mapping-editor__identity">
 				<NcTextField v-model="draft.name"
-					:label="t('openconnector', 'Name')"
+					:label="nameLabel"
 					:error="!!nameError"
 					:helper-text="nameError"
-					:disabled="saving" />
+					:disabled="saving"
+					required
+					@blur="nameTouched = true" />
 				<NcTextArea v-model="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
@@ -199,7 +201,6 @@ import { showSuccess } from '@nextcloud/dialogs'
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
-import { useObjectStore } from '../../store/objectStore.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
 const NAME_PATTERN = /[\p{L}\p{N}]/u
@@ -241,31 +242,34 @@ export default {
 			type: Object,
 			default: null,
 		},
+		/**
+		 * Slot scope: persists the object through CnIndexPage's own save path
+		 * and refreshes the list. Saving here instead of calling this would
+		 * leave the index stale until a reload — the built-in refresh only
+		 * runs inside this handler — and would write to a different store
+		 * than the one the list reads from.
+		 */
+		confirm: {
+			type: Function,
+			default: null,
+		},
 		/** Slot scope: closes the form dialog on CnIndexPage. */
 		close: {
 			type: Function,
 			default: null,
 		},
-		/**
-		 * OpenRegister register slug. The `form-dialog` slot scope carries no
-		 * register/schema slug, so these mirror the manifest's
-		 * `pages[Mappings].config` values as defaults.
-		 */
-		register: {
-			type: String,
-			default: 'openconnector',
-		},
-		/** OpenRegister schema slug for the mapping object type. */
-		schemaSlug: {
-			type: String,
-			default: 'mapping',
-		},
 	},
 
 	data() {
 		return {
-			objectType: 'mapping',
 			draft: this.emptyDraft(),
+			/**
+			 * Whether the name field has been left at least once. The
+			 * "required" message waits for this so a freshly-opened Create
+			 * dialog does not greet the user with a red empty field — which is
+			 * exactly what the generic CnFormDialog did here.
+			 */
+			nameTouched: false,
 			inputJson: '{}',
 			inputError: '',
 			saving: false,
@@ -274,10 +278,6 @@ export default {
 	},
 
 	computed: {
-		/** Pinia object store — the same instance the detail page persists through. */
-		store() {
-			return useObjectStore()
-		},
 		isCreate() {
 			return !this.item
 		},
@@ -291,9 +291,26 @@ export default {
 		inputPlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
+		/**
+		 * Required marker on the label. NcTextField/NcInputField has no
+		 * `required` prop and renders no marker of its own, so the ` *`
+		 * suffix is appended here — the same convention CnFormDialog uses for
+		 * schema-required fields, so both dialogs read alike.
+		 *
+		 * @return {string} Label text.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		nameLabel() {
+			return this.t('openconnector', 'Name') + ' *'
+		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		nameError() {
-			if (!this.draft.name) return ''
+			if (!this.draft.name) {
+				return this.nameTouched
+					? this.t('openconnector', 'Name is required')
+					: ''
+			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
 				: this.t('openconnector', 'Name must contain at least one letter or number')
@@ -303,6 +320,10 @@ export default {
 			return !this.saving
 				&& !!this.draft.name
 				&& !this.nameError
+				// No `confirm` means the host did not bind the slot scope, so
+				// there is nothing to save through — better a disabled button
+				// than a click that silently does nothing.
+				&& typeof this.confirm === 'function'
 		},
 		/**
 		 * The draft merged over the persisted record, which is what the test
@@ -366,6 +387,7 @@ export default {
 		seedDraft() {
 			this.saveError = ''
 			this.inputError = ''
+			this.nameTouched = false
 			this.$refs.result?.reset()
 			if (!this.item) {
 				this.draft = this.emptyDraft()
@@ -381,27 +403,6 @@ export default {
 			}
 		},
 
-		/**
-		 * Register the `mapping` type on the shared object store the first
-		 * time the dialog persists. Mirrors `MappingDetailPage.ensureRegistered()`.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		ensureRegistered() {
-			const registry = this.store.objectTypeRegistry || {}
-			if (registry[this.objectType]) return
-			if (typeof this.store.registerObjectType !== 'function') return
-			this.store.registerObjectType(
-				this.objectType,
-				this.schemaSlug,
-				this.register,
-				{
-					registerSlug: this.register,
-					schemaSlug: this.schemaSlug,
-				},
-			)
-		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onTest() {
 			this.$refs.result?.run()
@@ -414,12 +415,18 @@ export default {
 		},
 
 		/**
-		 * Persist the draft. A draft with no `id` creates; otherwise the
-		 * draft is merged over the existing record so fields this dialog
-		 * does not edit (slug, version, configurations, …) survive.
+		 * Persist the draft through CnIndexPage's `confirm` binding rather
+		 * than saving here directly.
 		 *
-		 * The index list refreshes itself — the Mappings page runs in
-		 * self-fetch mode with live collection updates enabled.
+		 * That is load-bearing, not stylistic: the index's list refresh runs
+		 * inside its own save handler, so a dialog that persists on its own
+		 * leaves the table stale until a reload (the `or-collection-*` live
+		 * update only covers it where server push is actually delivered).
+		 * Going through `confirm` also keeps the write in the same store the
+		 * list reads from instead of a second cache of the same objects.
+		 *
+		 * The draft is merged over `item` so fields this dialog does not edit
+		 * (slug, version, configurations, …) survive; no `id` means create.
 		 *
 		 * @return {Promise<void>} Resolves once the save has settled.
 		 *
@@ -427,17 +434,10 @@ export default {
 		 */
 		async onSave() {
 			if (!this.canSave) return
-			this.ensureRegistered()
 			this.saving = true
 			this.saveError = ''
 			try {
-				const merged = { ...(this.item || {}), ...this.draft }
-				const saved = await this.store.saveObject(this.objectType, merged)
-				if (!saved) {
-					this.saveError = this.store.errors?.[this.objectType]?.message
-						|| this.t('openconnector', 'Failed to save mapping')
-					return
-				}
+				await this.confirm({ ...(this.item || {}), ...this.draft })
 				showSuccess(this.isCreate
 					? this.t('openconnector', 'Mapping created')
 					: this.t('openconnector', 'Mapping saved'))
