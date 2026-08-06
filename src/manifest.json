@@ -1772,10 +1772,7 @@
                 "rowAction": {
                     "id": "edit",
                     "handler": "navigate",
-                    "route": "SynchronizationDetail",
-                    "params": {
-                        "id": "{id}"
-                    }
+                    "route": "SynchronizationDetail"
                 },
                 "headerActions": [
                     {
@@ -1799,10 +1796,7 @@
                         "label": "Open full editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
-                        "route": "SynchronizationDetail",
-                        "params": {
-                            "id": "{id}"
-                        }
+                        "route": "SynchronizationDetail"
                     },
                     {
                         "id": "run",
@@ -2095,10 +2089,7 @@
                 "rowAction": {
                     "id": "edit",
                     "handler": "navigate",
-                    "route": "FlowDetail",
-                    "params": {
-                        "id": "{id}"
-                    }
+                    "route": "FlowDetail"
                 },
                 "actions": [
                     {
@@ -2106,10 +2097,7 @@
                         "label": "Open editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
-                        "route": "FlowDetail",
-                        "params": {
-                            "id": "{id}"
-                        }
+                        "route": "FlowDetail"
                     },
                     {
                         "id": "run",
