@@ -2169,6 +2169,22 @@ class SynchronizationService
 			$endpoint = str_replace(search: $target->getLocation(), replace: '', subject: $endpoint);
 		}
 
+		$endpoint = $targetConfig['endpoint'];
+
+		if (str_contains($endpoint, '{{') || str_contains($endpoint, '{%')) {
+			$endpoint = $this->mappingService->renderTemplateString(
+				$endpoint,
+				[
+					'endpoint' => $endpoint,
+					'object' => $object,
+					'originId' => $contract?->getOriginId(),
+					'targetId' => $contract?->getTargetId(),
+				]
+			);
+		}
+
+		$targetConfig['endpoint'] = $endpoint;
+
 		if ($mutationType === 'delete') {
 			$method = 'DELETE';
 
