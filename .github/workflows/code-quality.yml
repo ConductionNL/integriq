@@ -186,37 +186,39 @@ jobs:
       # ── Hydra mechanical gates ───────────────────────────────────────────
       # `enable-hydra-gates` defaults to FALSE, so this tier has never executed
       # here — the job reported `skipped`, which the Quality Report renders
-      # identically to a pass. Pinned to v1.0.1 so a change to the gate package
-      # cannot move this repo's verdict without a commit here.
-      # `enable-axe` deliberately NOT set: a vanilla Nextcloud 34 already carries
-      # serious/critical violations from core's own UI.
-      #
-      # v1.0.1 -> v1.3.0 (ConductionNL/.github#159). Two defects, one bump.
-      #
-      # 1. STALE. v1.0.1 is `f4d9756` (2026-08-03) and predates three gate
-      #    fixes, so every Hydra Gates run this repo has ever made executed a
-      #    script in which 16 gates reported PASS when their helper never ran
-      #    (#147), gate-33 had no axe report to read and never said so (#148),
-      #    and gates 6 and 7 reported PASS on an EMPTY scope (#149). A gate
-      #    that reports PASS without running emits a tick identical to a real
-      #    one, which is why nothing in this repo's history shows it.
-      #
-      # 2. RED. quality.yml is referenced `@main` while this package is
-      #    PINNED, so the two can desync — and on 2026-08-05 they did. #164
-      #    flipped `hydra-gates-require-full-coverage` to default TRUE, but
-      #    the accounting that makes that flag survivable (NOT APPLICABLE, as
-      #    distinct from a structural or a wiring gap) ships in the PACKAGE.
-      #    So every pin older than `f7eaf2a` now fails the coverage assertion
-      #    for gates it has no subject matter for. Measured diff-scoped,
-      #    exactly as CI scopes it:
-      #      v1.0.1  exit 98  FAIL — "GATES THAT DID NOT RUN: 24 33"
-      #      v1.3.0  exit 0   PASS — those gates named NOT APPLICABLE
-      #
-      # v1.3.0 is `f7eaf2a` = .github@main, tagged so the ref stays
-      # reproducible and a later gate change cannot move this repo's verdict
-      # without a commit here.
+      # identically to a pass.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.5.0
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
+      #
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
+      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
+      # reports serious/critical violations on core's OWN routes that DOM
+      # scoping does not remove. Enabling axe is a separate decision.
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
