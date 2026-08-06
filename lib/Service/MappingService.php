@@ -495,4 +495,23 @@ class MappingService
         return $this->mappingMapper->findAll();
     }
 
+    /**
+     * Render a Twig template string using the supplied context.
+     *
+     * @param string $template The Twig template string.
+     * @param array<string, mixed> $context Variables available in the template.
+     */
+    public function renderTemplateString(string $template, array $context = []): string
+    {
+        try {
+            return $this->twig->createTemplate($template)->render($context);
+        } catch (\Throwable $exception) {
+            throw new Exception(
+                'Failed to render Twig template string: ' . $exception->getMessage()
+            );
+
+            return $template;
+        }
+    }
+
 }
