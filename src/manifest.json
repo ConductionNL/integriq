@@ -1790,8 +1790,8 @@
                 ],
                 "actions": [
                     {
-                        "id": "open-editor",
-                        "label": "Open full editor",
+                        "id": "edit",
+                        "label": "Open editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
                         "route": "SynchronizationDetail"
