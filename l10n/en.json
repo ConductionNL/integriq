@@ -1218,7 +1218,20 @@
         "Synchronization items": "Synchronization items",
         "OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.": "OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.",
         "Path segments, split on commas. Left empty the backend derives them from the endpoint path.": "Path segments, split on commas. Left empty the backend derives them from the endpoint path.",
-        "Stored together as the endpoint's target id.": "Stored together as the endpoint's target id."
+        "Stored together as the endpoint's target id.": "Stored together as the endpoint's target id.",
+        "Conditions as JSON Logic": "Conditions as JSON Logic",
+        "Configure this type with the Open full editor row action.": "Configure this type with the Open full editor row action.",
+        "Create rule": "Create rule",
+        "Error response": "Error response",
+        "Execution order within the timing slot — lower runs first.": "Execution order within the timing slot — lower runs first.",
+        "Failed to save rule": "Failed to save rule",
+        "JSON Logic, evaluated against the incoming request data. Leave empty to always match.": "JSON Logic, evaluated against the incoming request data. Leave empty to always match.",
+        "Pick a request method": "Pick a request method",
+        "Rule created": "Rule created",
+        "Rule saved": "Rule saved",
+        "The error response is configured below.": "The error response is configured below.",
+        "The request method this rule applies to.": "The request method this rule applies to.",
+        "Whether the rule runs before or after the endpoint handles the request.": "Whether the rule runs before or after the endpoint handles the request."
     },
     "plurals": {}
 }

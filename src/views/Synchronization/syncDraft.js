@@ -14,11 +14,14 @@
  * same empty draft, the same kind/mode vocabularies and the same conditions
  * round-trip, and a second copy would drift the moment either is touched.
  *
- * Note `views/Rule/RuleDetailPage.vue` carries a *third* copy of the conditions
- * normaliser — rules and syncs share the JsonLogic shape deliberately, so
- * power-users can paste condition trees between them. Folding that one in is
- * worth doing but is a separate change; it is not imported here so this module
- * stays synchronization-only.
+ * The conditions normaliser used to exist here AND in
+ * `views/Rule/RuleDetailPage.vue` — rules and syncs share the JsonLogic shape
+ * deliberately, so power-users can paste condition trees between them. Both
+ * copies now come from `views/Rule/ruleDraft.js` and are re-exported below, so
+ * every current import path here keeps working. Only `serializeConditions()`
+ * stays local: it wraps the group in an array because the `synchronization`
+ * schema types `conditions` as `array<object>`, where the `rule` schema wants a
+ * bare object. See `serializeRuleConditions()` for that side.
  */
 
 import axios from '@nextcloud/axios'
@@ -27,14 +30,11 @@ import { generateUrl } from '@nextcloud/router'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 
-/**
- * Default empty root-group used when a synchronization has no conditions (or
- * when the persisted value isn't a recognisable JsonLogic group node).
- * Centralised so the visual builder and the raw-JSON textarea always agree on
- * the round-trip default shape — mirrors the EMPTY_ROOT_GROUP used in
- * RuleDetailPage so power-users can copy/paste between rules and syncs.
- */
-export const EMPTY_ROOT_GROUP = { and: [] }
+import { EMPTY_ROOT_GROUP, normaliseConditions } from '../Rule/ruleDraft.js'
+
+// Re-exported, not redefined: SynchronizationDetailPage,
+// SynchronizationEditorModal and SyncConfigWidget all import these from here.
+export { EMPTY_ROOT_GROUP, normaliseConditions }
 
 /**
  * Polymorphic type discriminator options shared between source and target.
@@ -107,44 +107,6 @@ export function emptyDraft() {
 		followUps: [],
 		conditions: { ...EMPTY_ROOT_GROUP },
 	}
-}
-
-/**
- * Coerce a persisted `conditions` value into the JsonLogic group node the
- * visual builder works with. The register schema types the field as
- * `array<object>`, but records exist carrying a bare string, a bare leaf, or a
- * single-element array wrapping a group — normalise the lot so the UI never
- * renders an inconsistent root. Inverted on save by `serializeConditions()`.
- *
- * @param {*} raw Persisted conditions value.
- * @return {object} JsonLogic group node — `{ and: [...] }` or `{ or: [...] }`.
- *
- * @spec openspec/specs/sync-editor-ui/spec.md
- */
-export function normaliseConditions(raw) {
-	if (raw === null || raw === undefined || raw === '') {
-		return { ...EMPTY_ROOT_GROUP }
-	}
-	if (typeof raw === 'string') {
-		try { return normaliseConditions(JSON.parse(raw)) } catch (_e) { return { ...EMPTY_ROOT_GROUP } }
-	}
-	if (Array.isArray(raw)) {
-		if (raw.length === 0) return { ...EMPTY_ROOT_GROUP }
-		// Single-item array wrapping a group → unwrap and recurse.
-		if (raw.length === 1 && raw[0] && typeof raw[0] === 'object' && !Array.isArray(raw[0])) {
-			return normaliseConditions(raw[0])
-		}
-		// Multi-item array of leaves → wrap with AND.
-		return { and: raw }
-	}
-	if (typeof raw === 'object') {
-		const keys = Object.keys(raw)
-		if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
-			return raw
-		}
-		return { and: [raw] }
-	}
-	return { ...EMPTY_ROOT_GROUP }
 }
 
 /**

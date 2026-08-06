@@ -1712,18 +1712,12 @@
                     "type",
                     "order"
                 ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "action",
-                    "timing",
-                    "type"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
+                "showEditAction": true,
                 "actions": [
                     {
                         "id": "view",
@@ -1734,6 +1728,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by RuleEditorModal. The `includeFields` list that used to sit here is gone with it: it produced free-text inputs for the enum-less `action`/`timing`/`type` strings and could reach neither `conditions` (a `type: object` property, dropped by fieldsFromSchema) nor `order` nor the nested `configuration.error.*` fields. Per-type parameters beyond `error` are authored on the RuleDetail page, which hosts all 18 views/Rule/actionForms/ components — that is what \"Open full editor\" navigates to.",
+            "slots": {
+                "form-dialog": "RuleEditorModal"
             }
         },
         {

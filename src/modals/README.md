@@ -24,13 +24,24 @@ each modal as a CnIndexPage `#form-dialog` slot component wired to
 endpoints.
 
 ESLint and webpack ignore this directory. Once a modal is reborn as a
-fresh bespoke component, the legacy file gets removed in the same PR.
+fresh bespoke component, the legacy file gets removed in the same PR —
+unless part of its behaviour has no v2 home yet, in which case say so in the
+table below rather than deleting the reference.
+
+Caveat on that first sentence: `eslint.config.js` intends `src/modals/v2/` to
+lint (it carries a `!src/modals/v2/**` un-ignore) but does not achieve it —
+`src/modals/**` matches the directory entry too, and `eslint src` prunes an
+ignored directory before the negation can match a file, so all of v2 is
+skipped. Verifiable by appending an unused const to any v2 file and running
+`npm run lint`. Fixing it un-ignores 13 previously unchecked files and
+surfaces ~25 JSDoc/attribute-order warnings in five of them, so it wants its
+own change rather than riding along with a feature.
 
 ## Files preserved
 
 | File | LoC | Replacement plan |
 |---|---|---|
-| `Rule/EditRule.vue` | 1888 | Bespoke rule-builder modal (visual condition/action editor) |
+| `Rule/EditRule.vue` | 1919 | **Partly extracted.** Its basic-field surface — name, description, conditions, timing, order, action, type and the `configuration.error.*` block — is reborn as `src/modals/v2/RuleEditorModal.vue`, wired to the Rules index through `pages[Rules].slots["form-dialog"]`. The file stays because the remaining 14 per-action-type blocks are not extracted from *here*: their bespoke forms live under `src/views/Rule/actionForms/` and are hosted by `RuleActionConfig` on the rule detail page, and only the `authentication`/API-key half still has behaviour with no v2 home — `buildAuthenticationConfiguration.js` (covered by `tests/vitest/buildAuthenticationConfiguration.spec.js`) is imported from nowhere else. Remove both once API-key authoring moves into `AuthenticationForm`. |
 | `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
 | `Endpoint/EditEndpoint.vue` | 451 | Bespoke endpoint create/edit modal |
 

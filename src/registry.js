@@ -51,6 +51,7 @@ import CatalogItemCard from './components/CatalogItemCard.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
+import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
 import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
@@ -148,6 +149,19 @@ export default {
 	// SyncMappingPicker, SyncReferenceList, RuleConditionGroup) — the shared
 	// draft/option/conditions logic lives in views/Synchronization/syncDraft.js.
 	SynchronizationEditorModal,
+
+	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
+	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
+	// value and whose operator select alone carries `min-width: 220px`, so the
+	// dialog has to be wider than NcDialog's `normal`. It restores the field set
+	// the pre-manifest EditRule modal had — conditions, order and the error
+	// response were all unreachable through the schema-driven form (enum-less
+	// `action`/`timing`/`type` strings, a `type: object` conditions property
+	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
+	// Per-type parameters beyond `error` stay on RuleDetailPage, which already
+	// hosts all 18 views/Rule/actionForms/ components; the shared option lists
+	// and conditions round-trip live in views/Rule/ruleDraft.js.
+	RuleEditorModal,
 
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below
