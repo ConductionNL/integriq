@@ -273,11 +273,25 @@ class ProductSubscriptionsController extends Controller
      * recent inbound `call_log` rows carrying this product's uuid
      * (design.md `GET /api/products/{productId}/analytics`).
      *
+     * The figures are PRODUCT-WIDE: they aggregate the call_log rows of every
+     * consumer of this product, so one subscriber could read another's traffic
+     * volume and error rate from them. That is operator information, not
+     * subscriber information — a per-subscriber view would be a different
+     * endpoint, scoped to the caller's own consumer.
+     *
      * @param string $productId The api_product's id.
      *
      * @return JSONResponse
      *
      * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
+     *
+     * ADMIN ONLY: `#[NoAdminRequired]` is deliberately NOT used here, the same
+     * posture and for the same reason as `subscribe()` above. Absence of the
+     * attribute IS the admin gate in Nextcloud — there is no positive
+     * "admin required" attribute for a plain controller method — so it is
+     * stated rather than left to be read out of a missing line. gate-5 was
+     * right to flag it: nothing here distinguished a deliberate admin-only
+     * endpoint from one whose author forgot the annotation.
      */
     public function analytics(string $productId): JSONResponse
     {
