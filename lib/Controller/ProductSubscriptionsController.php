@@ -35,6 +35,7 @@ use DateTime;
 use OCA\OpenConnector\Exception\ApprovalStateException;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -154,7 +155,11 @@ class ProductSubscriptionsController extends Controller
         );
 
         if ($requiresApproval === false) {
-            $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
+            try {
+                $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
+            } catch (ValidationException $e) {
+                return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+            }
 
             return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_CREATED);
         }
@@ -215,7 +220,11 @@ class ProductSubscriptionsController extends Controller
             comment: $comment
         );
 
-        $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: new DateTime());
+        try {
+            $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: new DateTime());
+        } catch (ValidationException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        }
 
         return new JSONResponse($this->summarizeSubscription(subscription: $subscription));
 
@@ -467,10 +476,21 @@ class ProductSubscriptionsController extends Controller
      * (REQ-APG-003/REQ-APG-004 — used both by the no-approval subscribe path
      * and by {@see approve()}).
      *
+     * Propagates rather than translating: this returns an ObjectEntity, so it
+     * has no JSONResponse to answer with. Both callers translate — see
+     * `subscribe()` and `approve()`. They did not until now, and a
+     * schema-resolution failure reached NC's dispatcher as a bare 500 on a
+     * request that should answer with a reason (#1167).
+     *
      * @param ObjectEntity $subscription The subscription to activate.
      * @param DateTime     $activatedAt  The activation timestamp.
      *
      * @return ObjectEntity The updated subscription.
+     *
+     * @throws ValidationException When the schema cannot be resolved for the
+     *                             subscription — OpenRegister's saveObject()
+     *                             raises this so a controller can answer 400
+     *                             rather than emit a raw TypeError 500.
      */
     private function activateSubscription(ObjectEntity $subscription, DateTime $activatedAt): ObjectEntity
     {

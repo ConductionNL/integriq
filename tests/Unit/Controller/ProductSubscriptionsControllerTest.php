@@ -342,4 +342,45 @@ class ProductSubscriptionsControllerTest extends TestCase
         $this->assertSame(0.05, $data['errorRate']);
     }//end testAnalyticsReflectsRecentTraffic()
 
+
+    /**
+     * `analytics()` is ADMIN ONLY, and nothing in the code says so positively.
+     *
+     * Nextcloud has no "admin required" attribute for a plain controller
+     * method: admin is what you get when `#[NoAdminRequired]` is ABSENT. So the
+     * posture is carried by a missing line, and a missing line is exactly what
+     * somebody adds without noticing — one `#[NoAdminRequired]` here would
+     * hand every subscriber the product-wide traffic and error figures of
+     * every OTHER subscriber, silently, with no test failing.
+     *
+     * This pins the absence. It is the only form the assertion can take.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
+     */
+    public function testAnalyticsIsAdminOnly(): void
+    {
+        $method     = new \ReflectionMethod(ProductSubscriptionsController::class, 'analytics');
+        $attributes = array_map(
+            static fn (\ReflectionAttribute $a): string => $a->getName(),
+            $method->getAttributes()
+        );
+
+        $this->assertNotContains(
+            \OCP\AppFramework\Http\Attribute\NoAdminRequired::class,
+            $attributes,
+            'analytics() returns PRODUCT-WIDE traffic and error figures aggregated across every '
+            .'consumer of the product. #[NoAdminRequired] would expose one subscriber\'s volume '
+            .'and error rate to another. If this endpoint is meant to be reachable by '
+            .'non-admins, it needs a per-consumer scope first, not this attribute.'
+        );
+
+        $this->assertNotContains(
+            \OCP\AppFramework\Http\Attribute\PublicPage::class,
+            $attributes,
+            'analytics() must never be a public page — it reads operator telemetry.'
+        );
+    }//end testAnalyticsIsAdminOnly()
+
 }//end class
