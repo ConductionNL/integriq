@@ -445,6 +445,10 @@ class CallService
 		// Let's make the call.
 		$time_start = microtime(true);
 
+		if (empty($config['json']) === true) {
+			unset($config['json']);
+		}
+
         if ($source->getType() === 'soap') {
 			// If the source type is SOAP, use the soap service.
 			// Warning: This functionality requires ext-soap and ext-xsd.
