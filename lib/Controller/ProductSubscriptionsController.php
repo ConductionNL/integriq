@@ -358,6 +358,16 @@ class ProductSubscriptionsController extends Controller
      * Fetch the bounded most-recent inbound `call_log` rows for a product
      * (design.md Decision 3 / `REQ-PROM-013` — 1000-row window).
      *
+     * NOTHING PROPAGATES OUT OF HERE. The lookup is wrapped in
+     * `catch (Throwable)`, which subsumes every exception the caller could
+     * translate — a `ValidationException` or `DoesNotExistException` from the
+     * object service included. Analytics is best-effort telemetry, so a failed
+     * lookup is logged and reported as no rows rather than failing the request:
+     * a product with no measurable traffic and a product whose call_log could
+     * not be read both answer zero, and only the log tells them apart.
+     *
+     * That is a deliberate choice and the reason this method has no `@throws`.
+     *
      * @param string $productId The api_product's id.
      *
      * @return array<int, array<string, mixed>> Each row's own fields.
