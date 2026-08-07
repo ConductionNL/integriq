@@ -825,6 +825,14 @@ export default {
 	outline: none;
 }
 
+/* The row's hover/focus tint animates. Readers who have asked their OS for
+   less motion get the same states instantly instead (WCAG 2.2 SC 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+	.cn-rules-editor__row {
+		transition: none;
+	}
+}
+
 .cn-rules-editor__row:hover {
 	background: var(--color-background-hover);
 }
