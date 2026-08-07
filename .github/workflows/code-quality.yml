@@ -68,6 +68,17 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
+      # Set explicitly, because the shared workflow defaults to
+      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. openconnector
+      # declares <app>openregister</app> as a hard dependency, and openregister
+      # declares min-version="32". On NC31 the E2E job logs
+      #   App "Open Register" cannot be installed because it is not compatible
+      #   with this version of the server.
+      # then continues with a WARNING, so the run proceeds without its central
+      # dependency and fails ~70s later on missing tables — which reads like a
+      # migration fault rather than a missing app. Testing a version the app
+      # cannot support produces red that says nothing. See issue #1172.
+      nextcloud-test-refs: '["stable32", "stable33"]'
       # Set explicitly, because the shared workflow's default flipped to `true`
       # and this repo cannot honestly satisfy it yet. Every gate PASSES; what
       # does not run is 4, 24 and 33, whose producers this repo does not switch
