@@ -36,7 +36,15 @@
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
         <app>openregister</app>
-        <nextcloud min-version="28" max-version="35"/>
+        <!--
+        min-version is 32, NOT 28, because <app>openregister</app> above is a HARD
+        dependency and openregister declares min-version="32". On NC 28-31 openregister
+        refuses to install ("cannot be installed because it is not compatible with this
+        version of the server"), and every openconnector entity is an OpenRegister
+        object — so the app cannot function there. Declaring 28 advertised a range
+        this app cannot deliver. See issue #1172.
+        -->
+        <nextcloud min-version="32" max-version="35"/>
         <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
