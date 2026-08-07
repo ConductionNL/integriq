@@ -223,6 +223,13 @@ class CatalogController extends Controller
      * @param array<string,mixed> $data The catalog_item's stored data.
      *
      * @return JSONResponse
+     *
+     * @throws DoesNotExistException Propagated from OpenRegister when the
+     *                               source this enables is deleted between the
+     *                               lookup and the write. Deliberately NOT
+     *                               translated here: the caller, `instantiate()`,
+     *                               owns the response envelope for every branch
+     *                               of this method and already catches it.
      */
     private function instantiateSourceBacked(array $data): JSONResponse
     {

@@ -89,11 +89,13 @@
                     "properties": {
                       "condition": {
                         "type": "object",
-                        "description": "JsonLogic rule for this branch"
+                        "description": "JsonLogic rule for this branch",
+                        "title": "Branch condition"
                       },
                       "nextStepOrder": {
                         "type": "integer",
-                        "description": "The order of the step to jump to when this branch's condition matches"
+                        "description": "The order of the step to jump to when this branch's condition matches",
+                        "title": "Next step order"
                       }
                     }
                   }
@@ -173,11 +175,13 @@
           "created": {
             "type": "string",
             "format": "date-time",
+            "description": "OR-managed creation timestamp",
             "title": "Created"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
+            "description": "OR-managed update timestamp",
             "title": "Updated"
           }
         },
@@ -227,11 +231,13 @@
           "startedAt": {
             "type": "string",
             "format": "date-time",
+            "description": "When this step began executing",
             "title": "Started At"
           },
           "finishedAt": {
             "type": "string",
             "format": "date-time",
+            "description": "When this step stopped executing, whatever its outcome. Null while the step is still running.",
             "title": "Finished At"
           },
           "error": {
@@ -242,6 +248,7 @@
           "created": {
             "type": "string",
             "format": "date-time",
+            "description": "OR-managed creation timestamp",
             "title": "Created"
           }
         },

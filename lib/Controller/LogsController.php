@@ -24,6 +24,7 @@ namespace OCA\OpenConnector\Controller;
 use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -195,7 +196,21 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log', _rbac: false, _multitenancy: false);
+        // `find()` does not only return null for a miss — it throws
+        // DoesNotExistException. Without this catch an unknown id was a 500
+        // rather than the 404 the null branch below was written to produce.
+        try {
+            $log = $this->orObjectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: 'synchronization_log',
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            $log = null;
+        }
+
         if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }
@@ -226,12 +241,27 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log', _rbac: false, _multitenancy: false);
-        if ($log === null) {
+        // Both calls throw DoesNotExistException rather than only returning
+        // null — including deleteObject(), which can lose a race with a
+        // concurrent delete between the read above and the write below. Either
+        // way the log is gone, which is the 404 this method already meant.
+        try {
+            $log = $this->orObjectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: 'synchronization_log',
+                _rbac: false,
+                _multitenancy: false
+            );
+            if ($log === null) {
+                return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
+            }
+
+            $this->orObjectService->deleteObject(uuid: $log->getUuid());
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
         }
 
-        $this->orObjectService->deleteObject(uuid: $log->getUuid());
         return new JSONResponse(['message' => $this->l->t('Log deleted successfully')]);
 
     }//end destroy()
