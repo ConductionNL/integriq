@@ -99,6 +99,45 @@ status. A real run SHALL re-report the true post-run gate from fresh raw reads.
 - **WHEN** any source still holds an inline secret or an unmappable field after a run
 - **THEN** `inline_secrets_clean` is `'0'` and Phase D must not remove the schema properties
 
+## Requirement: Phase D Remove Migrated Fields
+
+Once the gate above is clean, the `RemoveMigratedSourceSecretFields` repair step
+SHALL remove the four auto-migratable properties — `apikey`, `secret`,
+`password`, `jwt` — from the live `source` schema, and SHALL record the outcome
+in the `openconnector / inline_secret_fields_removed` appconfig flag.
+
+The removal SHALL be gated on a fresh computation from RAW (`_render: false`)
+reads, not on a cached or previously-reported gate value: a field is removed
+only when no source still holds an inline value for it.
+
+The step SHALL never be fatal. Leaving the properties on the schema is the safe
+pre-existing state, so any error — including OpenRegister being absent — SHALL
+leave the schema untouched, set the flag to `'0'`, and report why.
+
+#### Scenario: A clean instance loses the four properties
+
+- **GIVEN** no source holds an inline `apikey`, `secret`, `password` or `jwt`
+- **WHEN** the repair step runs
+- **THEN** those four properties MUST be removed from the live `source` schema
+- **AND** `inline_secret_fields_removed` MUST be `'1'`
+
+#### Scenario: One remaining inline secret keeps every property
+
+- **GIVEN** at least one source still holds an inline value for any of the four
+- **WHEN** the repair step runs
+- **THEN** NO property MUST be removed — not even one whose own field is clean
+- **AND** `inline_secret_fields_removed` MUST be `'0'`
+- **AND** the output MUST name the command that reports the breakdown
+
+#### Scenario: OpenRegister absent, or any error, leaves the schema alone
+
+- **GIVEN** OpenRegister is not installed, or the schema read/write throws
+- **WHEN** the repair step runs
+- **THEN** the step MUST NOT fail the upgrade
+- **AND** the schema MUST be left untouched
+- **AND** `inline_secret_fields_removed` MUST be `'0'` so the failure is visible
+  rather than indistinguishable from "nothing to do"
+
 ## Requirement: Authentication Config Audit
 
 `authenticationConfig` SHALL NOT be migrated to a `credentialRef`: it is VESTIGIAL —

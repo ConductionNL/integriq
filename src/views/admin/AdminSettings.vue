@@ -35,7 +35,7 @@ import DsoPkiSettings from './DsoPkiSettings.vue'
  * and exposes no `POST /api/settings/load` route (see appinfo/routes.php —
  * the standard /api/settings surface was removed in the OR-cutover).
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
  */
 export default {
