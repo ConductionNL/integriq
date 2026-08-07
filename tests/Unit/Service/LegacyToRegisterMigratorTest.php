@@ -140,9 +140,14 @@ class LegacyToRegisterMigratorTest extends TestCase
 
 
             /**
+             * NC33 tightened OCP\DB\IResult::fetchAssociative() to declare
+             * `: array|false`. An implementation without the native return type
+             * is a FATAL there ("must be compatible with"), while remaining valid
+             * on NC32 — so this mock silently pinned the suite to <=32.
+             *
              * @return array<string,mixed>|false
              */
-            public function fetchAssociative()
+            public function fetchAssociative(): array|false
             {
                 if (isset($this->rows[$this->cursor]) === false) {
                     return false;
@@ -213,6 +218,63 @@ class LegacyToRegisterMigratorTest extends TestCase
             public function rowCount(): int
             {
                 return count($this->rows);
+            }
+
+
+            /*
+             * The five members below exist ONLY because NC33 expanded
+             * OCP\DB\IResult. NC32 declares 6 methods (closeCursor, fetch,
+             * fetchAll, fetchColumn, fetchOne, rowCount); NC33 adds
+             * fetchAssociative, fetchNumeric, fetchAllAssociative,
+             * fetchAllNumeric, fetchFirstColumn, iterateNumeric and
+             * iterateAssociative.
+             *
+             * An anonymous class that implements the interface but omits them
+             * is a FATAL on NC33 while remaining valid on NC32 — so this mock
+             * silently pinned the whole suite to <=32.
+             */
+
+            public function fetchNumeric(): array|false
+            {
+                $row = $this->fetchAssociative();
+                if ($row === false) {
+                    return false;
+                }
+
+                return array_values($row);
+            }
+
+
+            public function fetchAllNumeric(): array
+            {
+                return array_map('array_values', $this->rows);
+            }
+
+
+            public function fetchFirstColumn(): array
+            {
+                return array_map(
+                    static function (array $row) {
+                        return reset($row);
+                    },
+                    $this->rows
+                );
+            }
+
+
+            public function iterateNumeric(): \Traversable
+            {
+                foreach ($this->rows as $row) {
+                    yield array_values($row);
+                }
+            }
+
+
+            public function iterateAssociative(): \Traversable
+            {
+                foreach ($this->rows as $row) {
+                    yield $row;
+                }
             }
         };
 
