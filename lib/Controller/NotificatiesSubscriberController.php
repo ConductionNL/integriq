@@ -264,7 +264,18 @@ class NotificatiesSubscriberController extends Controller
             return new JSONResponse(['error' => 'unauthorized'], Http::STATUS_UNAUTHORIZED);
         }
 
-        if ($this->authenticateCallback(abonnement: $abonnement) === false) {
+        // Read the credential here, at the denial, not inside the helper. This
+        // endpoint is #[PublicPage] — middleware admits the caller without a
+        // session — so this header is the ONLY thing between an anonymous
+        // request and an inbound notification, and the 401 below read as
+        // denying on nothing. The header name is per-abonnement (Decision 4);
+        // stripping the scheme and checking the key stay in the helper.
+        $abonnementData  = $abonnement->getObject();
+        $presentedApiKey = (string) $this->request->getHeader(
+            (string) ($abonnementData['authHeaderName'] ?? 'Authorization')
+        );
+
+        if ($this->authenticateCallback(abonnement: $abonnement, presentedApiKey: $presentedApiKey) === false) {
             return new JSONResponse(['error' => 'unauthorized'], Http::STATUS_UNAUTHORIZED);
         }
 
@@ -295,19 +306,24 @@ class NotificatiesSubscriberController extends Controller
      * authenticate SOME consumer, it must be the one bound to this
      * abonnementId).
      *
-     * @param ObjectEntity $abonnement The resolved abonnement.
+     * The header is READ BY THE CALLER and passed in, so the credential this
+     * endpoint authenticates with is visible at the point of denial rather than
+     * one call deep — see `callback()`.
+     *
+     * @param ObjectEntity $abonnement      The resolved abonnement.
+     * @param string       $presentedApiKey The raw header value the caller sent,
+     *                                      scheme prefix still attached.
      *
      * @return boolean True when the request is authenticated for this abonnement.
      *
      * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-callback-authentication-reuses-consumer-management-apikey-verification-req-002
      */
-    private function authenticateCallback(ObjectEntity $abonnement): bool
+    private function authenticateCallback(ObjectEntity $abonnement, string $presentedApiKey): bool
     {
         $abonnementData = $abonnement->getObject();
-        $headerName     = (string) ($abonnementData['authHeaderName'] ?? 'Authorization');
         $scheme         = (string) ($abonnementData['authScheme'] ?? '');
 
-        $presented = (string) $this->request->getHeader($headerName);
+        $presented = $presentedApiKey;
         if ($scheme !== '' && str_starts_with($presented, $scheme) === true) {
             $presented = substr($presented, strlen($scheme));
         }
