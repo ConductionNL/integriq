@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Spustiť synchronizáciu",
+    "Run a flow" : "Spustiť flow",
+    "Dispatch an event" : "Odoslať udalosť",
+    "Ping a source" : "Pingnúť zdroj",
     "Brokered credential" : "Sprostredkované prihlasovacie údaje",
     "Brokered credential (OpenRegister)" : "Sprostredkované prihlasovacie údaje (OpenRegister)",
     "Credential" : "Prihlasovacie údaje",

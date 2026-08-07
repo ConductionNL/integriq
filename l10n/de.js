@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Eine Synchronisierung ausführen",
+    "Run a flow" : "Einen Flow ausführen",
+    "Dispatch an event" : "Ein Ereignis auslösen",
+    "Ping a source" : "Eine Quelle anpingen",
     "Brokered credential" : "Vermittelte Zugangsdaten",
     "Brokered credential (OpenRegister)" : "Vermittelte Zugangsdaten (OpenRegister)",
     "Credential" : "Zugangsdaten",

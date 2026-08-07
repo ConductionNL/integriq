@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Suorita synkronointi",
+    "Run a flow" : "Suorita flow",
+    "Dispatch an event" : "Lähetä tapahtuma",
+    "Ping a source" : "Pingaa lähdettä",
     "Brokered credential" : "Välitetyt tunnistetiedot",
     "Brokered credential (OpenRegister)" : "Välitetyt tunnistetiedot (OpenRegister)",
     "Credential" : "Tunnistetiedot",

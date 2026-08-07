@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Rith sioncronú",
+    "Run a flow" : "Rith flow",
+    "Dispatch an event" : "Seol imeacht",
+    "Ping a source" : "Ping a dhéanamh ar fhoinse",
     "Brokered credential" : "Dintiúr bróicéirithe",
     "Brokered credential (OpenRegister)" : "Dintiúr bróicéirithe (OpenRegister)",
     "Credential" : "Dintiúr",

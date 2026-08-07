@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Palaist sinhronizāciju",
+    "Run a flow" : "Palaist flow",
+    "Dispatch an event" : "Nosūtīt notikumu",
+    "Ping a source" : "Pingot avotu",
     "Brokered credential" : "Starpniecības pieteikšanās dati",
     "Brokered credential (OpenRegister)" : "Starpniecības pieteikšanās dati (OpenRegister)",
     "Credential" : "Pieteikšanās dati",

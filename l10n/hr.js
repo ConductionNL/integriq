@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Pokreni sinkronizaciju",
+    "Run a flow" : "Pokreni flow",
+    "Dispatch an event" : "Pošalji događaj",
+    "Ping a source" : "Pingaj izvor",
     "Brokered credential" : "Posredovana vjerodajnica",
     "Brokered credential (OpenRegister)" : "Posredovana vjerodajnica (OpenRegister)",
     "Credential" : "Vjerodajnica",

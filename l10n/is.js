@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Keyra samstillingu",
+    "Run a flow" : "Keyra flæði",
+    "Dispatch an event" : "Senda atburð",
+    "Ping a source" : "Pinga uppsprettu",
     "Brokered credential" : "Miðluð auðkenni",
     "Brokered credential (OpenRegister)" : "Miðluð auðkenni (OpenRegister)",
     "Credential" : "Auðkenni",

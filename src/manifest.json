@@ -1572,11 +1572,46 @@
                     "jobClass",
                     "arguments",
                     "interval",
-                    "isEnabled"
+                    "timeSensitive",
+                    "allowParallelRuns",
+                    "isEnabled",
+                    "singleRun",
+                    "scheduleAfter",
+                    "userId",
+                    "logRetention",
+                    "errorRetention"
                 ],
+                "_fieldOverridesNote": "Field ORDER and the interval/logRetention defaults live in the job schema (lib/Settings/register.d/job-form-fields.json), not here — the schema owns the properties, so every surface reading it agrees. What is left here is only what a schema cannot or must not express: `jobClass`'s dropdown list (an enum in the schema would be enforced on save, breaking the seeded Example*Job rows and forbidding third-party Action classes), the `group` key that lays the four scheduling flags out two-up (JobFormFields reads it — fieldsFromSchema ends with Object.assign(field, overrides[key]), so arbitrary keys reach the field descriptor), and errorRetention's form-only prefill (a schema default would cut API-created jobs from 30-day to 1-day error-log retention).",
                 "fieldOverrides": {
+                    "description": {
+                        "widget": "textarea"
+                    },
+                    "jobClass": {
+                        "widget": "select",
+                        "enum": [
+                            "OCA\\OpenConnector\\Action\\SynchronizationAction",
+                            "OCA\\OpenConnector\\Action\\FlowAction",
+                            "OCA\\OpenConnector\\Action\\EventAction",
+                            "OCA\\OpenConnector\\Action\\PingAction"
+                        ]
+                    },
                     "arguments": {
                         "widget": "json"
+                    },
+                    "timeSensitive": {
+                        "group": "flags"
+                    },
+                    "allowParallelRuns": {
+                        "group": "flags"
+                    },
+                    "isEnabled": {
+                        "group": "flags"
+                    },
+                    "singleRun": {
+                        "group": "flags"
+                    },
+                    "errorRetention": {
+                        "default": 86400
                     }
                 },
                 "sidebar": {

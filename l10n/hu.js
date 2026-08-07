@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Szinkronizálás futtatása",
+    "Run a flow" : "Flow futtatása",
+    "Dispatch an event" : "Esemény küldése",
+    "Ping a source" : "Forrás pingelése",
     "Brokered credential" : "Közvetített hitelesítő adat",
     "Brokered credential (OpenRegister)" : "Közvetített hitelesítő adat (OpenRegister)",
     "Credential" : "Hitelesítő adat",

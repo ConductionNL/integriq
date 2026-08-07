@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Виконати синхронізацію",
+    "Run a flow" : "Виконати flow",
+    "Dispatch an event" : "Надіслати подію",
+    "Ping a source" : "Пропінгувати джерело",
     "Brokered credential" : "Посередницькі облікові дані",
     "Brokered credential (OpenRegister)" : "Посередницькі облікові дані (OpenRegister)",
     "Credential" : "Облікові дані",

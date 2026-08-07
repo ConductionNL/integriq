@@ -1301,7 +1301,11 @@
         "Validation schema (optional)": "Validation schema (optional)",
         "View full log": "View full log",
         "When enabled, properties from the input object are copied into the output unless an unset rule removes them. When disabled, the output contains only what the mapping rules produce.": "When enabled, properties from the input object are copied into the output unless an unset rule removes them. When disabled, the output contains only what the mapping rules produce.",
-        "Would have deleted": "Would have deleted"
+        "Would have deleted": "Would have deleted",
+        "Dispatch an event": "Dispatch an event",
+        "Ping a source": "Ping a source",
+        "Run a flow": "Run a flow",
+        "Run a synchronization": "Run a synchronization"
     },
     "plurals": {}
 }

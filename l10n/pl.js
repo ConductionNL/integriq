@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Uruchom synchronizację",
+    "Run a flow" : "Uruchom flow",
+    "Dispatch an event" : "Wyślij zdarzenie",
+    "Ping a source" : "Pinguj źródło",
     "Brokered credential" : "Poświadczenie pośredniczone",
     "Brokered credential (OpenRegister)" : "Poświadczenie pośredniczone (OpenRegister)",
     "Credential" : "Poświadczenie",

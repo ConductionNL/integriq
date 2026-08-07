@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Exequir ina sincronisaziun",
+    "Run a flow" : "Exequir in flow",
+    "Dispatch an event" : "Trametter in eveniment",
+    "Ping a source" : "Far in ping sin ina funtauna",
     "Brokered credential" : "Credenzial medià",
     "Brokered credential (OpenRegister)" : "Credenzial medià (OpenRegister)",
     "Credential" : "Credenzial",

@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Εκτέλεση συγχρονισμού",
+    "Run a flow" : "Εκτέλεση flow",
+    "Dispatch an event" : "Αποστολή συμβάντος",
+    "Ping a source" : "Ping σε πηγή",
     "Brokered credential" : "Διαμεσολαβημένο διαπιστευτήριο",
     "Brokered credential (OpenRegister)" : "Διαμεσολαβημένο διαπιστευτήριο (OpenRegister)",
     "Credential" : "Διαπιστευτήριο",

@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Käivita sünkroonimine",
+    "Run a flow" : "Käivita flow",
+    "Dispatch an event" : "Saada sündmus",
+    "Ping a source" : "Pingi allikat",
     "Brokered credential" : "Vahendatud mandaat",
     "Brokered credential (OpenRegister)" : "Vahendatud mandaat (OpenRegister)",
     "Credential" : "Mandaat",

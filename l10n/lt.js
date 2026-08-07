@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Vykdyti sinchronizavimą",
+    "Run a flow" : "Vykdyti flow",
+    "Dispatch an event" : "Išsiųsti įvykį",
+    "Ping a source" : "Pinguoti šaltinį",
     "Brokered credential" : "Tarpininkaujami prisijungimo duomenys",
     "Brokered credential (OpenRegister)" : "Tarpininkaujami prisijungimo duomenys (OpenRegister)",
     "Credential" : "Prisijungimo duomenys",

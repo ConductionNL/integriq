@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Kør en synkronisering",
+    "Run a flow" : "Kør et flow",
+    "Dispatch an event" : "Udsend en hændelse",
+    "Ping a source" : "Ping en kilde",
     "Brokered credential" : "Formidlede legitimationsoplysninger",
     "Brokered credential (OpenRegister)" : "Formidlede legitimationsoplysninger (OpenRegister)",
     "Credential" : "Legitimationsoplysninger",

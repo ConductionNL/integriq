@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Run a synchronization" : "Mexxi sinkronizzazzjoni",
+    "Run a flow" : "Mexxi flow",
+    "Dispatch an event" : "Ibgħat avveniment",
+    "Ping a source" : "Agħmel ping lil sors",
     "Brokered credential" : "Kredenzjal medjat",
     "Brokered credential (OpenRegister)" : "Kredenzjal medjat (OpenRegister)",
     "Credential" : "Kredenzjal",
