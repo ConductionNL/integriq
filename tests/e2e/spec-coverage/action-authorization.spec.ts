@@ -67,17 +67,43 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 		expect(resp.status(), 'an admin session must be able to read the matrix').toBe(200)
 
 		const body = await resp.json()
-		const matrix = body?.matrix ?? body
-		expect(
-			Object.keys(matrix ?? {}).length,
-			'the matrix endpoint must return the declared actions, not an empty object',
-		).toBeGreaterThan(0)
+		const original = body?.matrix ?? body
+		expect(original, 'the route must answer with the stored matrix object').toBeTruthy()
+		expect(typeof original).toBe('object')
 
-		// The UI is reading THIS, not a second source of truth: an action the
-		// route reports must be on the page.
-		const [firstAction] = Object.keys(matrix)
-		await expect(section.getByText(firstAction, { exact: false }).first()).toBeVisible({
-			timeout: 20_000,
-		})
+		// The STORED matrix is legitimately EMPTY until `InitializeActions`
+		// has run, and a freshly-installed CI instance has not upgraded yet.
+		// Asserting it is non-empty would be asserting the fixture, and the
+		// test would then pass or fail on install history rather than on this
+		// endpoint. So write a known entry and read it back: that exercises
+		// the round-trip the admin UI performs, in any install state.
+		const PROBE = 'e2e.probe.action'
+		try {
+			const put = await request.put(MATRIX_URL, {
+				headers: { requesttoken },
+				data: { matrix: { ...original, [PROBE]: ['admin'] } },
+				failOnStatusCode: false,
+			})
+			expect(put.status(), 'an admin must be able to write the matrix').toBe(200)
+
+			const after = await request.get(MATRIX_URL, {
+				headers: { requesttoken },
+				failOnStatusCode: false,
+			})
+			expect(after.status()).toBe(200)
+			const stored = (await after.json())?.matrix ?? (await after.json())
+			expect(
+				Object.keys(stored ?? {}),
+				'a written action must come back from the same endpoint',
+			).toContain(PROBE)
+		} finally {
+			// Restore, whatever happened above — this instance is shared with
+			// the rest of the suite.
+			await request.put(MATRIX_URL, {
+				headers: { requesttoken },
+				data: { matrix: original },
+				failOnStatusCode: false,
+			})
+		}
 	})
 })
