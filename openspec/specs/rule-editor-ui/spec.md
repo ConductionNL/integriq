@@ -14,13 +14,23 @@ Provides the rule editor frontend for OpenConnector, where users edit a rule's f
 
 The rule detail page SHALL fetch the active rule, expose its fields for editing,
 track a dirty flag, normalise the rule's `conditions` between string/array/object
-representations, and persist changes through the object store. Save and cancel
-actions reset or restore local state; a load failure surfaces an error message
-with a retry affordance.
+representations, and persist changes through the object store. Save persists local
+state and Discard restores it from the last persisted version; both are available
+only while the page is dirty. A load failure surfaces an error message with a
+retry affordance.
 
 #### Scenario: Editing a field marks the page dirty
 - WHEN the user changes a rule field via `updateField`
 - THEN the local copy is updated AND the `dirty` computed flag becomes true
+
+#### Scenario: Discard is unavailable with no unsaved edits
+- WHEN the page is not dirty
+- THEN the Discard action is disabled AND `resetEdits` is a no-op
+
+#### Scenario: Discard restores the last persisted version
+- WHEN the user discards while the page is dirty
+- THEN the local copy is replaced by the pristine snapshot AND any raw-conditions
+  JSON input is re-rendered from the restored condition tree
 
 #### Scenario: Conditions are normalised on input
 - WHEN the user types raw conditions JSON

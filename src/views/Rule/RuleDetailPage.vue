@@ -53,9 +53,12 @@
 		<template #actions>
 			<NcButton
 				type="secondary"
-				:disabled="saving"
-				@click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				:disabled="saving || !dirty"
+				@click="resetEdits">
+				<template #icon>
+					<UndoIcon :size="20" />
+				</template>
+				{{ t('openconnector', 'Discard') }}
 			</NcButton>
 			<NcButton
 				type="primary"
@@ -187,6 +190,7 @@ import {
 import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import { useObjectStore } from '../../store/objectStore.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import RuleConditionGroup from './RuleConditionGroup.vue'
@@ -212,6 +216,7 @@ export default {
 		CnDetailPage,
 		CodeJson,
 		ContentSave,
+		UndoIcon,
 		RuleConditionGroup,
 		RuleActionConfig,
 	},
@@ -502,9 +507,22 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		onCancel() {
-			if (!this.pristine) return
+		/**
+		 * Throw away unsaved edits and restore the last persisted version.
+		 * Named `resetEdits` to match FlowDetailPage/SynchronizationDetailPage,
+		 * which expose the same action behind the same "Discard" label — this
+		 * page used to call it "Cancel", which read like "leave the page".
+		 *
+		 * Guarded on `dirty` as well as disabled in the template: with nothing
+		 * changed there is nothing to restore, and re-stringifying the
+		 * conditions tree would only churn the raw-JSON textarea.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		resetEdits() {
+			if (!this.pristine || !this.dirty || this.saving) return
 			this.draft = JSON.parse(JSON.stringify(this.pristine))
 			this.rawConditionsError = ''
 			if (this.rawConditions) {
