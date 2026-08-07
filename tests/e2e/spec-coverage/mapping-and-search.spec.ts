@@ -37,7 +37,7 @@ const API_BASE = '/index.php/apps/openconnector/api'
 test.describe('REQ-UI-001: Mappings list page mounts', () => {
 	// @e2e mapping-and-search::mappings-list-page-mounts-and-shows-content
 	test('Mappings index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -61,7 +61,7 @@ test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
 	//
 	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-surface
 	test('Add Mapping creates a mapping and opens its detail editor', async ({ page }) => {
-		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
 		await createViaAddButtonAndOpenDetail(page, /Add Mapping/i, 'mapping', 'mappings')
 	})
 })

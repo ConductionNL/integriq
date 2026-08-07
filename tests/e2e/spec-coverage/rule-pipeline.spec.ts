@@ -30,7 +30,7 @@ import { APP_BASE } from './_helpers'
 test.describe('REQ-RULE-UI-001: Rules list page mounts', () => {
 	// @e2e rule-pipeline::rules-list-page-mounts-and-shows-content
 	test('Rules index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/rules`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/rules`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -40,7 +40,7 @@ test.describe('REQ-RULE-UI-001: Rules list page mounts', () => {
 test.describe('REQ-RULE-UI-001: Add Rule modal', () => {
 	// @e2e rule-pipeline::add-rule-button-opens-the-creation-modal
 	test('Add Rule button opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/rules`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/rules`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: 'Add Rule' })
 		await expect(addBtn, 'Add Rule button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
@@ -60,7 +60,7 @@ test.describe('REQ-RULE-UI-001: Rule detail page', () => {
 	// @e2e rule-pipeline::rule-detail-page-renders-for-an-existing-rule
 	test('Rule detail URL renders app-content without crashing', async ({ page }) => {
 		// Navigate directly to a detail-style URL; SPA gracefully handles nonexistent IDs
-		await page.goto(`${APP_BASE}/rules/__nonexistent__`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/rules/__nonexistent__`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)

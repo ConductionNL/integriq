@@ -159,7 +159,14 @@ class ExecutionTracesController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        $trace = $this->executionTraceService->find($id);
+        // `find()` returns null for a miss and propagates everything else, so
+        // a broken OpenRegister does not arrive here dressed as a 404.
+        try {
+            $trace = $this->executionTraceService->find($id);
+        } catch (DoesNotExistException $e) {
+            $trace = null;
+        }
+
         if ($trace === null) {
             return new JSONResponse(['error' => $this->l->t('Trace not found')], 404);
         }

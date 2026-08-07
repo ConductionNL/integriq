@@ -78,11 +78,11 @@
 				<table class="apiProductDetail__table">
 					<thead>
 						<tr>
-							<th>{{ t('openconnector', 'Name') }}</th>
-							<th>{{ t('openconnector', 'Requests / window') }}</th>
-							<th>{{ t('openconnector', 'Window (s)') }}</th>
-							<th>{{ t('openconnector', 'Requires approval') }}</th>
-							<th>{{ t('openconnector', 'Approver group') }}</th>
+							<th scope="col">{{ t('openconnector', 'Name') }}</th>
+							<th scope="col">{{ t('openconnector', 'Requests / window') }}</th>
+							<th scope="col">{{ t('openconnector', 'Window (s)') }}</th>
+							<th scope="col">{{ t('openconnector', 'Requires approval') }}</th>
+							<th scope="col">{{ t('openconnector', 'Approver group') }}</th>
 							<th />
 						</tr>
 					</thead>
@@ -569,8 +569,8 @@ export default {
 	align-items: center;
 }
 
-.apiProductDetail__tierForm input[type="text"],
-.apiProductDetail__tierForm input[type="number"] {
+.apiProductDetail__tierForm input[type='text'],
+.apiProductDetail__tierForm input[type='number'] {
 	padding: 6px 8px;
 	background: var(--color-main-background);
 	color: var(--color-main-text);

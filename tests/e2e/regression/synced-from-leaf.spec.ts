@@ -223,7 +223,10 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// reliable place to assert the rendered leaf in CI. (The leaf is
 		// app-agnostic — the data comes from the endpoint asserted above.)
 		await page.goto(`${NEXTCLOUD}/index.php/apps/openregister/`)
-		await page.waitForLoadState('networkidle').catch(() => undefined)
+		// ADR-074 rule 4: networkidle never settles on Nextcloud, so this only
+		// ever burned its timeout and swallowed it. The assertions below do the
+		// waiting.
+		await page.waitForLoadState('domcontentloaded').catch(() => undefined)
 
 		// OpenRegister's object-detail route takes NUMERIC register/schema ids.
 		// These were hardcoded as '14' and '53' — whatever OpenCatalogi's

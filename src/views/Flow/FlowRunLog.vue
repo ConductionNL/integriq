@@ -17,11 +17,15 @@
 			:description="t('openconnector', 'Trigger a run to see its trace here.')" />
 		<ul v-else class="flow-run-log__list">
 			<li v-for="run in runs" :key="run.id" class="flow-run-log__run">
-				<div class="flow-run-log__run-header" @click="toggle(run.id)">
+				<button
+					type="button"
+					class="flow-run-log__run-header"
+					:aria-expanded="!!expanded[run.id]"
+					@click="toggle(run.id)">
 					<span class="flow-run-log__status" :class="'flow-run-log__status--' + run.status">{{ run.status }}</span>
 					<span>{{ t('openconnector', 'Trigger: {trigger}', { trigger: run.triggerSource || 'unknown' }) }}</span>
 					<span>{{ formatDate(run.startedAt) }}</span>
-				</div>
+				</button>
 				<ul v-if="expanded[run.id]" class="flow-run-log__steps">
 					<li v-if="!stepLogs[run.id] || stepLogs[run.id].length === 0" class="flow-run-log__step">
 						{{ t('openconnector', 'Loading…') }}
@@ -148,10 +152,19 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
+/* A real <button>, not a clickable <div>: the row is a disclosure control, so
+   it needs the keyboard and role a native button already has. These are the
+   resets that make one look like the row it replaced. */
 .flow-run-log__run-header {
 	display: flex;
 	gap: 16px;
+	width: 100%;
 	padding: 8px 4px;
+	border: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
 	cursor: pointer;
 }
 
