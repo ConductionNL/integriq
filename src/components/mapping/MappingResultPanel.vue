@@ -12,9 +12,9 @@
 
   Three hosts share it, which is the point — before this component the
   save-to-register capability existed only in the orphaned
-  `src/modals/MappingTest/components/TestMappingResult.vue` (imported by
-  nothing since the Pinia cutover), so REQ-MAPUI-005 had no live
-  implementation at all:
+  `src/modals/MappingTest/components/TestMappingResult.vue`, which had been
+  imported by nothing since the Pinia cutover and is now deleted, so
+  REQ-MAPUI-005 had no live implementation at all:
 
     - MappingEditorModal   — Output column, live preview + footer Test button
     - MappingDetailPage    — live preview pane
@@ -70,8 +70,8 @@
 			<table>
 				<thead>
 					<tr>
-						<th>{{ t('openconnector', 'Field') }}</th>
-						<th>{{ t('openconnector', 'Errors') }}</th>
+						<th scope="col">{{ t('openconnector', 'Field') }}</th>
+						<th scope="col">{{ t('openconnector', 'Errors') }}</th>
 					</tr>
 				</thead>
 				<tbody>

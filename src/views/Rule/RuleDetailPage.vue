@@ -117,7 +117,7 @@
 					:placeholder="'0'"
 					@update:model-value="(value) => updateField('order', value === '' ? null : Number(value))" />
 				<div class="rule-detail-page__grid-full">
-					<label class="rule-detail-page__label" :for="'rule-description'">
+					<label class="rule-detail-page__label" for="rule-description">
 						{{ t('openconnector', 'Description') }}
 					</label>
 					<textarea
@@ -152,7 +152,11 @@
 				:removable="false"
 				@update="onConditionsUpdate" />
 			<div v-else class="rule-detail-page__raw-conditions">
+				<label class="rule-detail-page__label" for="rule-raw-conditions">
+					{{ t('openconnector', 'Conditions (JSON Logic)') }}
+				</label>
 				<textarea
+					id="rule-raw-conditions"
 					class="rule-detail-page__textarea rule-detail-page__textarea--code"
 					:value="rawConditionsDraft"
 					spellcheck="false"

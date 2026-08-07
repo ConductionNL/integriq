@@ -35,6 +35,7 @@ use DateTime;
 use OCA\OpenConnector\Exception\ApprovalStateException;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -154,7 +155,11 @@ class ProductSubscriptionsController extends Controller
         );
 
         if ($requiresApproval === false) {
-            $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
+            try {
+                $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
+            } catch (ValidationException $e) {
+                return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+            }
 
             return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_CREATED);
         }
@@ -215,7 +220,11 @@ class ProductSubscriptionsController extends Controller
             comment: $comment
         );
 
-        $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: new DateTime());
+        try {
+            $subscription = $this->activateSubscription(subscription: $subscription, activatedAt: new DateTime());
+        } catch (ValidationException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        }
 
         return new JSONResponse($this->summarizeSubscription(subscription: $subscription));
 
@@ -273,11 +282,25 @@ class ProductSubscriptionsController extends Controller
      * recent inbound `call_log` rows carrying this product's uuid
      * (design.md `GET /api/products/{productId}/analytics`).
      *
+     * The figures are PRODUCT-WIDE: they aggregate the call_log rows of every
+     * consumer of this product, so one subscriber could read another's traffic
+     * volume and error rate from them. That is operator information, not
+     * subscriber information — a per-subscriber view would be a different
+     * endpoint, scoped to the caller's own consumer.
+     *
      * @param string $productId The api_product's id.
      *
      * @return JSONResponse
      *
      * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
+     *
+     * ADMIN ONLY: `#[NoAdminRequired]` is deliberately NOT used here, the same
+     * posture and for the same reason as `subscribe()` above. Absence of the
+     * attribute IS the admin gate in Nextcloud — there is no positive
+     * "admin required" attribute for a plain controller method — so it is
+     * stated rather than left to be read out of a missing line. gate-5 was
+     * right to flag it: nothing here distinguished a deliberate admin-only
+     * endpoint from one whose author forgot the annotation.
      */
     public function analytics(string $productId): JSONResponse
     {
@@ -334,6 +357,16 @@ class ProductSubscriptionsController extends Controller
     /**
      * Fetch the bounded most-recent inbound `call_log` rows for a product
      * (design.md Decision 3 / `REQ-PROM-013` — 1000-row window).
+     *
+     * NOTHING PROPAGATES OUT OF HERE. The lookup is wrapped in
+     * `catch (Throwable)`, which subsumes every exception the caller could
+     * translate — a `ValidationException` or `DoesNotExistException` from the
+     * object service included. Analytics is best-effort telemetry, so a failed
+     * lookup is logged and reported as no rows rather than failing the request:
+     * a product with no measurable traffic and a product whose call_log could
+     * not be read both answer zero, and only the log tells them apart.
+     *
+     * That is a deliberate choice and the reason this method has no `@throws`.
      *
      * @param string $productId The api_product's id.
      *
@@ -453,10 +486,21 @@ class ProductSubscriptionsController extends Controller
      * (REQ-APG-003/REQ-APG-004 — used both by the no-approval subscribe path
      * and by {@see approve()}).
      *
+     * Propagates rather than translating: this returns an ObjectEntity, so it
+     * has no JSONResponse to answer with. Both callers translate — see
+     * `subscribe()` and `approve()`. They did not until now, and a
+     * schema-resolution failure reached NC's dispatcher as a bare 500 on a
+     * request that should answer with a reason (#1167).
+     *
      * @param ObjectEntity $subscription The subscription to activate.
      * @param DateTime     $activatedAt  The activation timestamp.
      *
      * @return ObjectEntity The updated subscription.
+     *
+     * @throws ValidationException When the schema cannot be resolved for the
+     *                             subscription — OpenRegister's saveObject()
+     *                             raises this so a controller can answer 400
+     *                             rather than emit a raw TypeError 500.
      */
     private function activateSubscription(ObjectEntity $subscription, DateTime $activatedAt): ObjectEntity
     {

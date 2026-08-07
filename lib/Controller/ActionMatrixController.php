@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\IRequest;
 /**
  * Admin-only controller exposing the action-authorization matrix (ADR-023).
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  */
 class ActionMatrixController extends Controller
 {
@@ -68,7 +68,7 @@ class ActionMatrixController extends Controller
      *
      * @return JSONResponse The matrix, action keys, and group IDs.
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function getMatrix(): JSONResponse
@@ -107,7 +107,7 @@ class ActionMatrixController extends Controller
      *
      * @return JSONResponse The normalized matrix after the write.
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function setMatrix(): JSONResponse

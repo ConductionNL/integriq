@@ -33,7 +33,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+ * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  *   threshold) — the class-level score is a sum-of-many-small-methods artifact, not a
  *   single tangled method.
  *
- * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+ * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
  */
 class OpenConnectorMetricsProvider implements IMetricsProvider
@@ -627,7 +627,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider
      *
      * @return MetricSample The circuit-breaker-state gauge sample set.
      *
-     * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+     * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
      */
     private function circuitBreakerStateSample(): MetricSample
     {
@@ -813,7 +813,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider
      *
      * @return MetricSample[] The provider's samples.
      *
-     * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+     * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
      */
     public function metrics(): array
     {

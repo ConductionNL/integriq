@@ -3834,6 +3834,7 @@
           "sourceId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/source",
             "description": "UUID of the openconnector Source describing the remote Notificaties API (location, auth)",
             "title": "Source ID"
           },
@@ -3870,6 +3871,7 @@
           "consumerId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/consumer",
             "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery. Cascade-deleted when the abonnement is deleted.",
             "title": "Consumer ID"
           },
@@ -4072,26 +4074,38 @@
               "type": "object",
               "properties": {
                 "key": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "Form field key",
+                  "description": "The Open Formulieren form field this attachment was submitted under."
                 },
                 "filename": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "Filename",
+                  "description": "The uploaded file's own name, as the submitter sent it."
                 },
                 "status": {
                   "type": "string",
                   "enum": [
                     "fetched",
                     "failed"
-                  ]
+                  ],
+                  "title": "Fetch status",
+                  "description": "Whether this attachment was retrieved and stored (fetched) or could not be (failed). Failure is per-attachment and does not fail the submission."
                 },
                 "fileId": {
-                  "type": "integer"
+                  "type": "integer",
+                  "title": "Nextcloud file ID",
+                  "description": "Id of the stored Nextcloud file. Present only when status is fetched."
                 },
                 "error": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "Fetch error",
+                  "description": "Why the fetch failed. Present only when status is failed."
                 },
                 "copiedToCase": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "title": "Copied to case",
+                  "description": "Whether this attachment was also copied onto the created Case during handoff."
                 }
               }
             },
@@ -4123,13 +4137,19 @@
             "description": "{register, schema, uuid} of the created Case, set after a successful handoff",
             "properties": {
               "register": {
-                "type": "string"
+                "type": "string",
+                "title": "Case register",
+                "description": "Slug of the OpenRegister register the Case was created in."
               },
               "schema": {
-                "type": "string"
+                "type": "string",
+                "title": "Case schema",
+                "description": "Slug of the schema the Case was created against."
               },
               "uuid": {
-                "type": "string"
+                "type": "string",
+                "title": "Case UUID",
+                "description": "UUID of the created Case object."
               }
             },
             "title": "Target Case"

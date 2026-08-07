@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
  * @spec openspec/specs/apphost-adoption/spec.md
  */
 
@@ -42,7 +42,7 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 /**
  * Seeds the action-authorization matrix on install, delegated to the engine.
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
  * @spec openspec/specs/apphost-adoption/spec.md
  */
 class InitializeActions extends GenericInitializeActions

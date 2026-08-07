@@ -31,7 +31,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\IUser;
  * dot-separated action name; this service checks the admin-configured
  * action-to-group mapping stored in IAppConfig.
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
 class ActionAuthService
 {
@@ -82,7 +82,7 @@ class ActionAuthService
      *
      * @throws OCSForbiddenException When the user's groups don't match the action's allowed groups.
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
      */
     public function requireAction(IUser $user, string $action): void
     {
@@ -124,7 +124,7 @@ class ActionAuthService
      *
      * @return bool True if the user may perform the action.
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
      */
     public function can(IUser $user, string $action): bool
     {
@@ -147,7 +147,7 @@ class ActionAuthService
      *
      * @return array<int, string>
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
      */
     public function getAllowedGroups(string $action): array
     {
@@ -165,7 +165,7 @@ class ActionAuthService
      *
      * @return array<string, array<int, string>>
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
      */
     public function getMatrix(): array
     {
@@ -214,7 +214,7 @@ class ActionAuthService
      *
      * @throws \JsonException When the matrix cannot be encoded.
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
      */
     public function setMatrix(array $matrix): void
     {
@@ -241,7 +241,7 @@ class ActionAuthService
      *
      * @return array<int, string>
      *
-     * @spec openspec/architecture/adr-023-action-authorization.md
+     * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
      */
     public function getActions(): array
     {

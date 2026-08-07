@@ -80,7 +80,7 @@ import { generateUrl } from '@nextcloud/router'
  * list. The synthetic `admin` column is always-on and disabled because
  * Nextcloud admins always pass ActionAuthService::requireAction().
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  */
 export default {
 	name: 'ActionAuthMatrix',
@@ -104,20 +104,20 @@ export default {
 
 	computed: {
 		// `admin` is always shown first as a disabled, always-on column.
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		displayGroups() {
 			const rest = this.groups.filter(g => g !== 'admin')
 			return ['admin', ...rest]
 		},
 	},
 
-	/** @spec openspec/architecture/adr-023-action-authorization.md */
+	/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 	async mounted() {
 		await this.load()
 	},
 
 	methods: {
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		async load() {
 			this.loading = true
 			this.error = ''
@@ -148,7 +148,7 @@ export default {
 		 * @param {string} action Action name identifying the matrix row.
 		 * @param {string} group Nextcloud group id identifying the column.
 		 *
-		 * @spec openspec/architecture/adr-023-action-authorization.md
+		 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
 		 */
 		isChecked(action, group) {
 			// Admins always pass regardless of the stored list.
@@ -169,7 +169,7 @@ export default {
 		 * @param {boolean} checked New checkbox state — true grants the group
 		 *   the action, false revokes it.
 		 *
-		 * @spec openspec/architecture/adr-023-action-authorization.md
+		 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
 		 */
 		toggle(action, group, checked) {
 			// The admin column is fixed and never persisted as a toggle.
@@ -186,7 +186,7 @@ export default {
 			this.matrix = { ...this.matrix, [action]: allowed }
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		async save() {
 			this.saving = true
 			try {

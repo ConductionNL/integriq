@@ -330,7 +330,11 @@
 						:removable="false"
 						@update="onConditionsUpdate" />
 					<div v-else class="sync-detail__raw-conditions">
+						<label class="sync-detail__label" for="sync-raw-conditions">
+							{{ t('openconnector', 'Conditions (JSON Logic)') }}
+						</label>
 						<textarea
+							id="sync-raw-conditions"
 							class="sync-detail__textarea sync-detail__textarea--code"
 							:value="rawConditionsDraft"
 							spellcheck="false"

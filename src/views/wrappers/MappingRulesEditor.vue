@@ -59,9 +59,9 @@
 						<thead>
 							<tr>
 								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th>{{ t('openconnector', 'Target property') }}</th>
-								<th>{{ t('openconnector', 'Template') }}</th>
-								<th class="cn-rules-editor__col-actions">
+								<th scope="col">{{ t('openconnector', 'Target property') }}</th>
+								<th scope="col">{{ t('openconnector', 'Template') }}</th>
+								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
@@ -146,9 +146,9 @@
 						<thead>
 							<tr>
 								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th>{{ t('openconnector', 'Property') }}</th>
-								<th>{{ t('openconnector', 'Cast type') }}</th>
-								<th class="cn-rules-editor__col-actions">
+								<th scope="col">{{ t('openconnector', 'Property') }}</th>
+								<th scope="col">{{ t('openconnector', 'Cast type') }}</th>
+								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
@@ -233,8 +233,8 @@
 						<thead>
 							<tr>
 								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th>{{ t('openconnector', 'Property') }}</th>
-								<th class="cn-rules-editor__col-actions">
+								<th scope="col">{{ t('openconnector', 'Property') }}</th>
+								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
@@ -867,6 +867,14 @@ export default {
 .cn-rules-editor__row:focus {
 	background: var(--color-background-hover);
 	box-shadow: inset 2px 0 0 var(--color-primary-element, var(--color-primary));
+}
+
+/* The row's hover/focus tint animates. Readers who have asked their OS for
+   less motion get the same states instantly instead (WCAG 2.2 SC 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+	.cn-rules-editor__row {
+		transition: none;
+	}
 }
 
 .cn-rules-editor__row--ghost {

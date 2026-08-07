@@ -7,6 +7,8 @@ OC.L10N.register(
     "Ping a source" : "Ping a source",
     "Discard" : "Discard",
     "Brokered credential" : "Brokered credential",
+    "Select dead letter {id}" : "Select dead letter {id}",
+    "Select delivery {id}" : "Select delivery {id}",
     "Brokered credential (OpenRegister)" : "Brokered credential (OpenRegister)",
     "Credential" : "Credential",
     "Dead letter queues" : "Dead letter queues",

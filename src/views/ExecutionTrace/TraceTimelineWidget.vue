@@ -15,7 +15,11 @@
 			:key="step.order"
 			class="traceTimeline__step"
 			:class="`traceTimeline__step--${step.status}`">
-			<div class="traceTimeline__row" @click="toggle(step.order)">
+			<button
+				type="button"
+				class="traceTimeline__row"
+				:aria-expanded="expanded.includes(step.order)"
+				@click="toggle(step.order)">
 				<span class="traceTimeline__order">{{ step.order }}</span>
 				<span class="traceTimeline__type">{{ step.type }}</span>
 				<span class="traceTimeline__name">{{ step.name }}</span>
@@ -23,7 +27,7 @@
 					{{ step.status }}
 				</span>
 				<span class="traceTimeline__duration">{{ step.durationMs }} ms</span>
-			</div>
+			</button>
 			<div v-if="expanded.includes(step.order)" class="traceTimeline__detail" data-testid="step-detail">
 				<div class="traceTimeline__detailCol">
 					<h4>{{ t('openconnector', 'Input') }}</h4>
@@ -104,11 +108,20 @@ export default {
 	overflow: hidden;
 }
 
+/* A real <button>, not a clickable <div>: the row is a disclosure control, so
+   it needs the keyboard and role a native button already has. These are the
+   resets that make one look like the row it replaced. */
 .traceTimeline__row {
 	display: flex;
 	align-items: center;
 	gap: 12px;
+	width: 100%;
 	padding: 8px 12px;
+	border: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
 	cursor: pointer;
 }
 
