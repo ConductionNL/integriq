@@ -1,6 +1,7 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Discard" : "Discard",
     "Brokered credential" : "Brokered credential",
     "Brokered credential (OpenRegister)" : "Brokered credential (OpenRegister)",
     "Credential" : "Credential",
