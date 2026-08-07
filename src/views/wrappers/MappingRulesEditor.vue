@@ -50,9 +50,9 @@
 				<thead>
 					<tr>
 						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-						<th>{{ t('openconnector', 'Target property') }}</th>
-						<th>{{ t('openconnector', 'Template') }}</th>
-						<th class="cn-rules-editor__col-actions">
+						<th scope="col">{{ t('openconnector', 'Target property') }}</th>
+						<th scope="col">{{ t('openconnector', 'Template') }}</th>
+						<th scope="col" class="cn-rules-editor__col-actions">
 							{{ t('openconnector', 'Actions') }}
 						</th>
 					</tr>
@@ -129,9 +129,9 @@
 				<thead>
 					<tr>
 						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-						<th>{{ t('openconnector', 'Property') }}</th>
-						<th>{{ t('openconnector', 'Cast type') }}</th>
-						<th class="cn-rules-editor__col-actions">
+						<th scope="col">{{ t('openconnector', 'Property') }}</th>
+						<th scope="col">{{ t('openconnector', 'Cast type') }}</th>
+						<th scope="col" class="cn-rules-editor__col-actions">
 							{{ t('openconnector', 'Actions') }}
 						</th>
 					</tr>
@@ -208,8 +208,8 @@
 				<thead>
 					<tr>
 						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-						<th>{{ t('openconnector', 'Property') }}</th>
-						<th class="cn-rules-editor__col-actions">
+						<th scope="col">{{ t('openconnector', 'Property') }}</th>
+						<th scope="col" class="cn-rules-editor__col-actions">
 							{{ t('openconnector', 'Actions') }}
 						</th>
 					</tr>

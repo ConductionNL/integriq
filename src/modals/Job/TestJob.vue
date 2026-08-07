@@ -42,31 +42,31 @@ import { jobStore, navigationStore } from '../../store/store.js'
 			<div v-if="jobStore.jobTest" class="jobTestTable">
 				<table>
 					<tr>
-						<th>{{ t('openconnector', 'UUID') }}</th>
+						<th scope="row">{{ t('openconnector', 'UUID') }}</th>
 						<td>{{ jobStore.jobTest.uuid }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Level') }}</th>
+						<th scope="row">{{ t('openconnector', 'Level') }}</th>
 						<td>{{ jobStore.jobTest.level }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Message') }}</th>
+						<th scope="row">{{ t('openconnector', 'Message') }}</th>
 						<td>{{ jobStore.jobTest.message }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Job ID') }}</th>
+						<th scope="row">{{ t('openconnector', 'Job ID') }}</th>
 						<td>{{ jobStore.jobTest.jobId }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Job List ID') }}</th>
+						<th scope="row">{{ t('openconnector', 'Job List ID') }}</th>
 						<td>{{ jobStore.jobTest.jobListId }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Job class') }}</th>
+						<th scope="row">{{ t('openconnector', 'Job class') }}</th>
 						<td>{{ jobStore.jobTest.jobClass || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Arguments') }}</th>
+						<th scope="row">{{ t('openconnector', 'Arguments') }}</th>
 						<td>
 							<ul>
 								<li v-for="(value, key) in jobStore.jobTest.arguments" :key="key">
@@ -76,19 +76,19 @@ import { jobStore, navigationStore } from '../../store/store.js'
 						</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Execution time') }}</th>
+						<th scope="row">{{ t('openconnector', 'Execution time') }}</th>
 						<td>{{ jobStore.jobTest.executionTime }} ms</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'User ID') }}</th>
+						<th scope="row">{{ t('openconnector', 'User ID') }}</th>
 						<td>{{ jobStore.jobTest.userId || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Session ID') }}</th>
+						<th scope="row">{{ t('openconnector', 'Session ID') }}</th>
 						<td>{{ jobStore.jobTest.sessionId || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>{{ t('openconnector', 'Stack Trace') }}</th>
+						<th scope="row">{{ t('openconnector', 'Stack Trace') }}</th>
 						<td>
 							<ol>
 								<li v-for="(step, index) in jobStore.jobTest.stackTrace" :key="index">

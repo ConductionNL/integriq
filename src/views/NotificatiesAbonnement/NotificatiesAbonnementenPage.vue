@@ -45,10 +45,10 @@
 		<table v-else class="notificatiesAbonnementen__table" data-testid="abonnementen-table">
 			<thead>
 				<tr>
-					<th>{{ t('openconnector', 'Name') }}</th>
-					<th>{{ t('openconnector', 'Kanalen') }}</th>
-					<th>{{ t('openconnector', 'Status') }}</th>
-					<th>{{ t('openconnector', 'Last error') }}</th>
+					<th scope="col">{{ t('openconnector', 'Name') }}</th>
+					<th scope="col">{{ t('openconnector', 'Kanalen') }}</th>
+					<th scope="col">{{ t('openconnector', 'Status') }}</th>
+					<th scope="col">{{ t('openconnector', 'Last error') }}</th>
 					<th />
 				</tr>
 			</thead>
