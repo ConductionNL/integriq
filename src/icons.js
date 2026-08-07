@@ -64,6 +64,7 @@ import LanConnect from 'vue-material-design-icons/LanConnect.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import Package from 'vue-material-design-icons/Package.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
@@ -149,6 +150,7 @@ export default {
 	LinkVariant,
 	MapMarkerPath,
 	MessageTextOutline,
+	Package,
 	PackageVariantClosed,
 	Pencil,
 	PencilOutline,
