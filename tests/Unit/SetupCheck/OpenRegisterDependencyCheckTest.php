@@ -46,7 +46,7 @@ class OpenRegisterDependencyCheckTest extends TestCase
     private function makeCheck(bool $installed): OpenRegisterDependencyCheck
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn($installed);
+        $appManager->method('isEnabledForAnyone')->with('openregister')->willReturn($installed);
 
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnArgument(0);

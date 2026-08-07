@@ -102,7 +102,7 @@
 	"require-dev": {
 		"edgedesign/phpqa": "^1.9",
 		"nextcloud/coding-standard": "^1.4",
-		"nextcloud/ocp": "dev-stable29",
+		"nextcloud/ocp": "^32.0",
 		"phpcsstandards/phpcsextra": "^1.5",
 		"phpmd/phpmd": "^2.15",
 		"phpmetrics/phpmetrics": "^2.8",

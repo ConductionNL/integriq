@@ -70,7 +70,7 @@ class OrganisationBridgeService
     public function getOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService
     {
         // Check if OpenRegister app is installed.
-        if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === false) {
+        if (in_array(needle: 'openregister', haystack: $this->appManager->getEnabledApps()) === false) {
             return null;
         }
 
