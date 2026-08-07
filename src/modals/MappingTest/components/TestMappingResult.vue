@@ -37,8 +37,8 @@ import { translate as t } from '@nextcloud/l10n'
 				<table>
 					<thead>
 						<tr>
-							<th>{{ t('openconnector', 'Field') }}</th>
-							<th>{{ t('openconnector', 'Errors') }}</th>
+							<th scope="col">{{ t('openconnector', 'Field') }}</th>
+							<th scope="col">{{ t('openconnector', 'Errors') }}</th>
 						</tr>
 					</thead>
 					<tbody>

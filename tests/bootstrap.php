@@ -224,6 +224,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/Exception/NotAuthorizedException.php';
         }
 
+        // ValidationException — what ProductSubscriptionsController catches to
+        // turn a failed activation into a 400 instead of a 500. Missing here
+        // made both of that test's failure cases error out on the NC stable31
+        // legs (no openregister checkout) while stable32 passed.
+        if (class_exists('OCA\\OpenRegister\\Exception\\ValidationException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Exception/ValidationException.php';
+        }
+
         // OCA\OpenRegister\Event\Object{Created,Updated,Deleted}Event stubs —
         // peer app not in vendor. Used by outbound-webhooks-activation's
         // CloudEventListenerTest to construct real event instances (PHPUnit

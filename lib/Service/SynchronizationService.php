@@ -4123,7 +4123,7 @@ class SynchronizationService
      *
      * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
      * @spec openspec/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
-     * @spec openspec/changes/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     private function updateTargetTable(
         array $synchronizationContract,
