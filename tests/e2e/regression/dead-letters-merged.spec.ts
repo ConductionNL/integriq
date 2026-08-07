@@ -77,10 +77,6 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 		// asserting only the button would pass even if neither surface rendered.
 		await expect(page.locator('[data-testid="dead-letters-events"]')).toBeVisible()
 		await expect(page.locator('[data-testid="dead-letters-sync"]')).toHaveCount(0)
-
-		// TEMPORARY SENTINEL — deliberate failure to prove this suite can go
-		// red. Removed in the next commit on this branch.
-		expect(1, 'SENTINEL: proving the e2e suite can fail').toBe(2)
 	})
 
 	test('switching queue swaps the mounted surface and reflects it in the URL', async ({ page }) => {
