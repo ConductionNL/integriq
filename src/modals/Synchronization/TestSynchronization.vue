@@ -40,34 +40,34 @@ import { getTheme } from '../../services/getTheme.js'
 				<div v-if="response" class="detailTable">
 					<table>
 						<tr>
-							<td><b>{{ t('openconnector', 'Status') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Status') }}:</th>
 							<td>{{ response?.statusText }} ({{ response?.status }})</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Response time') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Response time') }}:</th>
 							<td>{{ response?.responseTime ?? t('openconnector', 'Unknown') }} ({{ t('openconnector', 'Milliseconds') }})</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Size') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Size') }}:</th>
 							<td>{{ response?.size ?? t('openconnector', 'Unknown') }} ({{ t('openconnector', 'Bytes') }})</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Remote IP') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Remote IP') }}:</th>
 							<td>{{ response?.remoteIp ?? t('openconnector', 'Unknown') }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Headers') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Headers') }}:</th>
 							<td>
 								<table>
 									<tr v-for="(header, index) in response?.headers" :key="index">
-										<td><b>{{ header[0] }}:</b></td>
+										<th scope="row">{{ header[0] }}:</th>
 										<td>{{ header[1] }}</td>
 									</tr>
 								</table>
 							</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Body') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Body') }}:</th>
 							<td :class="`codeMirrorContainer ${getTheme()}`">
 								<CodeMirror v-model="responseBody"
 									:basic="true"

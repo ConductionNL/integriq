@@ -38,7 +38,7 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 test.describe('REQ-CON-UI-001: Consumers list page mounts', () => {
 	// @e2e consumer-management::consumers-list-page-mounts-and-shows-content
 	test('Consumers index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -71,7 +71,7 @@ test.describe('REQ-CON-UI-001: Add Consumer modal', () => {
 test.describe('REQ-WBHK-UI-001: Webhooks list page mounts', () => {
 	// @e2e consumer-management::webhooks-list-page-mounts-and-shows-content
 	test('Webhooks index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)

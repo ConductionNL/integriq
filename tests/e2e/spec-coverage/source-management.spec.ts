@@ -36,7 +36,7 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 test.describe('REQ-SRC-UI-001: Sources list page mounts', () => {
 	// @e2e source-management::sources-list-page-mounts-and-shows-content
 	test('Sources index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -65,7 +65,7 @@ test.describe('REQ-SRC-UI-001: Add Source modal', () => {
 test.describe('REQ-SRC-UI-001: Source logs sub-page', () => {
 	// @e2e source-management::source-logs-sub-page-mounts
 	test('Source logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/sources/logs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/sources/logs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })

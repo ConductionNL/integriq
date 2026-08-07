@@ -2,6 +2,9 @@ OC.L10N.register(
     "openconnector",
     {
     "Brokered credential" : "Brokered credential",
+    "Conditions (JSON Logic)" : "Conditions (JSON Logic)",
+    "Select dead letter {id}" : "Select dead letter {id}",
+    "Select delivery {id}" : "Select delivery {id}",
     "Brokered credential (OpenRegister)" : "Brokered credential (OpenRegister)",
     "Credential" : "Credential",
     "Dead letter queues" : "Dead letter queues",

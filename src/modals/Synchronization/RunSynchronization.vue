@@ -79,51 +79,51 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 				<div v-if="response" class="detailTable">
 					<table>
 						<tr>
-							<td><b>{{ t('openconnector', 'Message') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Message') }}:</th>
 							<td>{{ responseBody?.message }} (ms)</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Execution time') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Execution time') }}:</th>
 							<td>{{ responseBody?.executionTime }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'ID') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'ID') }}:</th>
 							<td>{{ responseBody?.id }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'UUID') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'UUID') }}:</th>
 							<td>{{ responseBody?.uuid }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Synchronization ID') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Synchronization ID') }}:</th>
 							<td>{{ responseBody?.synchronizationId }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Found') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Found') }}:</th>
 							<td>{{ responseBody?.result?.objects?.found }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Skipped') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Skipped') }}:</th>
 							<td>{{ responseBody?.result?.objects?.skipped }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Created') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Created') }}:</th>
 							<td>{{ responseBody?.result?.objects?.created }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Updated') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Updated') }}:</th>
 							<td>{{ responseBody?.result?.objects?.updated }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Deleted') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Deleted') }}:</th>
 							<td>{{ responseBody?.result?.objects?.deleted }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Objects Invalid') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Objects Invalid') }}:</th>
 							<td>{{ responseBody?.result?.objects?.invalid }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Contracts') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Contracts') }}:</th>
 							<td>
 								<div v-for="(contract, index) in responseBody?.result?.contracts" :key="index">
 									{{ contract }}
@@ -131,7 +131,7 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 							</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Logs') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Logs') }}:</th>
 							<td>
 								<div v-for="(log, index) in responseBody?.result?.logs" :key="index">
 									{{ log }}
@@ -139,27 +139,27 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 							</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'User ID') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'User ID') }}:</th>
 							<td>{{ responseBody?.userId }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Session ID') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Session ID') }}:</th>
 							<td>{{ responseBody?.sessionId }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Test Mode') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Test Mode') }}:</th>
 							<td>{{ responseBody?.test }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Force Mode') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Force Mode') }}:</th>
 							<td>{{ responseBody?.force }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Created') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Created') }}:</th>
 							<td>{{ responseBody?.created }}</td>
 						</tr>
 						<tr>
-							<td><b>{{ t('openconnector', 'Expires') }}:</b></td>
+							<th scope="row">{{ t('openconnector', 'Expires') }}:</th>
 							<td>{{ responseBody?.expires }}</td>
 						</tr>
 					</table>

@@ -3833,6 +3833,7 @@
           "sourceId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/source",
             "description": "UUID of the openconnector Source describing the remote Notificaties API (location, auth)",
             "title": "Source ID"
           },
@@ -3869,6 +3870,7 @@
           "consumerId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/consumer",
             "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery (REQ-002). Cascade-deleted when the abonnement is deleted (REQ-004).",
             "title": "Consumer ID"
           },

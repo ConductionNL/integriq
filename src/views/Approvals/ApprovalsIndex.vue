@@ -42,11 +42,11 @@
 		<table v-else class="approvals__table" data-testid="approvals-table">
 			<thead>
 				<tr>
-					<th>{{ t('openconnector', 'Status') }}</th>
-					<th>{{ t('openconnector', 'Approver group') }}</th>
-					<th>{{ t('openconnector', 'Requester') }}</th>
-					<th>{{ t('openconnector', 'Created') }}</th>
-					<th>{{ t('openconnector', 'Expires') }}</th>
+					<th scope="col">{{ t('openconnector', 'Status') }}</th>
+					<th scope="col">{{ t('openconnector', 'Approver group') }}</th>
+					<th scope="col">{{ t('openconnector', 'Requester') }}</th>
+					<th scope="col">{{ t('openconnector', 'Created') }}</th>
+					<th scope="col">{{ t('openconnector', 'Expires') }}</th>
 					<th />
 				</tr>
 			</thead>

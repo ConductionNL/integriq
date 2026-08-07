@@ -144,6 +144,14 @@ class ExecutionTraceService
      *
      * @return ObjectEntity|null The trace, or null when not found.
      *
+     * @spec exclude Not a CRUD pass-through with no callers (ADR-022). It pins
+     *       the register/schema pair, turns OR's rbac and multitenancy off —
+     *       a trace is infrastructure telemetry, not a tenant-owned object —
+     *       and converts a miss from a throw into null. Both callers
+     *       (ExecutionTracesController::show and replay() below) depend on
+     *       exactly that shape; deleting it duplicates five arguments and a
+     *       try/catch at each of them.
+     *
      * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
      */
     public function find(string $traceId): ?ObjectEntity

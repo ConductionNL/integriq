@@ -34,7 +34,7 @@ import { APP_BASE } from './_helpers'
 test.describe('REQ-UI-001: Synchronizations list page mounts', () => {
 	// @e2e synchronization-engine::synchronizations-list-page-mounts-and-shows-content
 	test('Synchronizations index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -44,7 +44,7 @@ test.describe('REQ-UI-001: Synchronizations list page mounts', () => {
 test.describe('REQ-UI-001: Add Synchronization modal', () => {
 	// @e2e synchronization-engine::add-synchronization-button-opens-the-creation-modal
 	test('Add Synchronization button opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: 'Add Synchronization' })
 		await expect(addBtn, 'Add Synchronization button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
@@ -63,7 +63,7 @@ test.describe('REQ-UI-001: Add Synchronization modal', () => {
 test.describe('REQ-UI-001: Synchronization contracts sub-page', () => {
 	// @e2e synchronization-engine::synchronization-contracts-sub-page-mounts
 	test('Synchronization contracts page mounts and shows main content', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations/contracts`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/synchronizations/contracts`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })
@@ -71,7 +71,7 @@ test.describe('REQ-UI-001: Synchronization contracts sub-page', () => {
 test.describe('REQ-UI-001: Synchronization logs sub-page', () => {
 	// @e2e synchronization-engine::synchronization-logs-sub-page-mounts
 	test('Synchronization logs page mounts and shows main content', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations/logs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/synchronizations/logs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })
