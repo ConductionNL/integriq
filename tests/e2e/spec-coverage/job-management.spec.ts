@@ -35,7 +35,7 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 test.describe('REQ-JOB-UI-001: Jobs list page mounts', () => {
 	// @e2e job-management::jobs-list-page-mounts-and-shows-content
 	test('Jobs index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/jobs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/jobs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -64,7 +64,7 @@ test.describe('REQ-JOB-UI-001: Add Job modal', () => {
 test.describe('REQ-JOB-UI-001: Job logs sub-page', () => {
 	// @e2e job-management::job-logs-sub-page-mounts
 	test('Job logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/jobs/logs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/jobs/logs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })

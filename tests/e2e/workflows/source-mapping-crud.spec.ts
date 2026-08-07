@@ -85,7 +85,9 @@ async function gotoIndex(page: Page, route: string): Promise<void> {
 	//     only resolves behind Apache + `.htaccess`; the `/index.php/` form
 	//     works in both.
 	await page.goto(`/index.php/apps/openconnector/#/${route}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForLoadState('networkidle').catch(() => {})
+	// ADR-074 rule 4: networkidle never settles on Nextcloud — this only ever
+	// burned its own timeout and swallowed it. The goto above already waits
+	// for domcontentloaded; the settle is the explicit pause below.
 	await page.waitForTimeout(1_000)
 }
 

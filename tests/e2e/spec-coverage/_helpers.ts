@@ -177,7 +177,10 @@ export async function navTo(page: Page, navLabel: string, expectedRoute: string)
 	await expect(navLink, `Nav entry "${navLabel}" must be present`).toBeVisible({ timeout: 20_000 })
 	await navLink.click()
 	await page.waitForURL((url) => url.toString().includes(expectedRoute), { timeout: 15_000 }).catch(() => {})
-	await page.waitForLoadState('networkidle').catch(() => {})
+	// ADR-074 rule 4: networkidle never settles on Nextcloud, so this waited
+	// out its own timeout and swallowed the error every time. The URL wait
+	// above is the real signal; callers assert on content after it.
+	await page.waitForLoadState('domcontentloaded').catch(() => {})
 }
 
 /**

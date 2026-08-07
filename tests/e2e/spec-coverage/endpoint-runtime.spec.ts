@@ -31,7 +31,7 @@ import { APP_BASE } from './_helpers'
 test.describe('REQ-EP-UI-001: Endpoints list page mounts', () => {
 	// @e2e endpoint-runtime::endpoints-list-page-mounts-and-shows-navigation-item
 	test('Endpoints index page renders inside app-content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -41,7 +41,7 @@ test.describe('REQ-EP-UI-001: Endpoints list page mounts', () => {
 test.describe('REQ-EP-UI-001: Add Endpoint modal', () => {
 	// @e2e endpoint-runtime::add-endpoint-button-opens-the-creation-modal
 	test('Add Endpoint button opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'domcontentloaded' })
 		// Wait for Vue to mount the list view
 		const addBtn = page.getByRole('button', { name: 'Add Endpoint' })
 		await expect(addBtn, 'Add Endpoint button must be visible').toBeVisible({ timeout: 20_000 })
@@ -77,7 +77,7 @@ test.describe('REQ-EP-UI-001: Endpoint detail page', () => {
 test.describe('REQ-EP-UI-001: Endpoint logs sub-page', () => {
 	// @e2e endpoint-runtime::endpoints-logs-sub-page-mounts
 	test('Endpoint logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/endpoints/logs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/endpoints/logs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })

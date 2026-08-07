@@ -35,7 +35,7 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 test.describe('REQ-CE-UI-001: Cloud Events list page mounts', () => {
 	// @e2e cloud-event-management::cloud-events-list-page-mounts-and-shows-content
 	test('Cloud Events index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/cloud-events/events`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/cloud-events/events`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -64,7 +64,7 @@ test.describe('REQ-CE-UI-001: Add Cloud Event modal', () => {
 test.describe('REQ-CE-UI-001: Cloud Event logs sub-page', () => {
 	// @e2e cloud-event-management::cloud-event-logs-sub-page-mounts
 	test('Cloud Event logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/cloud-events/logs`, { waitUntil: 'networkidle' })
+		await page.goto(`${APP_BASE}/cloud-events/logs`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })
