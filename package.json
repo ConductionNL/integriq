@@ -38,8 +38,6 @@
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
     "@conduction/nextcloud-vue": "2.2.0-vue3.3",
-    "@fortawesome/fontawesome-svg-core": "^6.5.2",
-    "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@mdi/js": "^7.4.47",
     "@nextcloud/auth": "^2.6.0",
     "@nextcloud/axios": "~2.5.2",
@@ -49,9 +47,7 @@
     "@nextcloud/l10n": "^3.4.1",
     "@nextcloud/router": "^2.0.1",
     "@nextcloud/vue": "^9.9.0",
-    "@vue/compat": "^3.5.13",
     "@vueuse/core": "^14.3.0",
-    "axios": "^1.7.3",
     "css-loader": "~7.1.1",
     "dexie": "^4.0.8",
     "dompurify": "^3.0.0",
