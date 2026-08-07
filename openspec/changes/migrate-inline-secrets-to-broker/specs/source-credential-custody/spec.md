@@ -120,6 +120,8 @@ leave the schema untouched, set the flag to `'0'`, and report why.
 - **WHEN** the repair step runs
 - **THEN** those four properties MUST be removed from the live `source` schema
 - **AND** `inline_secret_fields_removed` MUST be `'1'`
+- @e2e exclude a repair step runs during `occ upgrade`, before any browser
+  session exists — covered by PHPUnit
 
 #### Scenario: One remaining inline secret keeps every property
 
@@ -128,6 +130,7 @@ leave the schema untouched, set the flag to `'0'`, and report why.
 - **THEN** NO property MUST be removed — not even one whose own field is clean
 - **AND** `inline_secret_fields_removed` MUST be `'0'`
 - **AND** the output MUST name the command that reports the breakdown
+- @e2e exclude same — a repair step has no browser surface
 
 #### Scenario: OpenRegister absent, or any error, leaves the schema alone
 
@@ -137,6 +140,7 @@ leave the schema untouched, set the flag to `'0'`, and report why.
 - **AND** the schema MUST be left untouched
 - **AND** `inline_secret_fields_removed` MUST be `'0'` so the failure is visible
   rather than indistinguishable from "nothing to do"
+- @e2e exclude same — a repair step has no browser surface
 
 ## Requirement: Authentication Config Audit
 

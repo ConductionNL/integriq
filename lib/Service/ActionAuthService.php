@@ -31,7 +31,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\IUser;
  * dot-separated action name; this service checks the admin-configured
  * action-to-group mapping stored in IAppConfig.
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
 class ActionAuthService
 {

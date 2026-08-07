@@ -19,7 +19,7 @@ const ADMIN_SETTINGS_URL = '/index.php/settings/admin/openconnector'
 
 test.describe('action-authorization: the admin-facing matrix', () => {
 
-	// @e2e action-authorization::admin-sees-the-action-matrix
+	// @e2e action-authorization::an-administrator-sees-the-action-matrix-in-settings
 	test('an administrator sees the action matrix in settings', async ({ page }) => {
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
 

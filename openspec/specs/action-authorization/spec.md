@@ -112,7 +112,7 @@ Editing the matrix is the only supported way to broaden an action.
 - **WHEN** they open Administration settings → OpenConnector
 - **THEN** the Action authorization panel MUST render, listing the declared
   actions with their currently allowed groups
-- @e2e action-authorization::admin-sees-the-action-matrix
+- @e2e action-authorization::an-administrator-sees-the-action-matrix-in-settings
 
 #### Scenario: A non-admin cannot read or write the matrix
 
