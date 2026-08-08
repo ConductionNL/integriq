@@ -88,7 +88,11 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 // 57 materialised catalog_item cards with status badges + quick-filter chips
 // (confirmed live). Re-enabling these requires feature-flag seeding + a card
 // locator strategy that matches the real paginated/sidebar UI — separate
-// feature-test work, tracked outside this Vue-3 de-compat PR.
+// feature-test work.
+//
+// TRACKED IN #1187. (The original comment said this was "tracked outside this
+// Vue-3 de-compat PR" — no issue existed; #1187 is now that tracker and carries
+// the full re-enable checklist.)
 test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	// @e2e connector-catalog::catalog-lists-built-in-adapters-and-seeded-source-templates-by-category
 	test('catalog renders cards and the kind quick-filter narrows the grid', async ({ page }) => {
@@ -179,6 +183,8 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 // state (Enable/Instantiate depend on a dormant flag-gated / source-template
 // item). Not a Vue-3 migration regression — the detail dialog itself opens and
 // renders live; re-enabling needs feature seeding + a paginated locator.
+//
+// TRACKED IN #1187.
 test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', () => {
 	// @e2e connector-catalog::enable-action-flips-a-feature-flag-for-a-flag-gated-item
 	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({ page }) => {
