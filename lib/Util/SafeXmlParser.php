@@ -35,7 +35,26 @@ use SimpleXMLElement;
  * should use this class instead of calling simplexml_load_string() directly,
  * so that the XXE / SSRF defence is applied consistently.
  *
- * @spec openspec/changes/retrofit-2026-05-28-xml-xxe-hardening/tasks.md#task-1
+ * ANCHOR PROVENANCE. These tags used to point at
+ * `openspec/changes/retrofit-2026-05-28-xml-xxe-hardening/tasks.md#task-1`, a
+ * change directory that exists nowhere in this repository — it is recorded as
+ * unresolvable in
+ * `openspec/changes/archive/2026-07-16-spec-anchor-repair/residual-dangling.md`
+ * under "archived change dir not located (3)", which is exactly these three
+ * tags. A `@spec` pointing at a change dir is the wrong shape regardless: the
+ * canonical home is `openspec/specs/`.
+ *
+ * The requirement below is the only NORMATIVE statement in this repo of the
+ * contract this class implements — "Parsing MUST use `LIBXML_NONET` only,
+ * NEVER `LIBXML_NOENT`/`LIBXML_DTDLOAD`, so external entity expansion stays
+ * disabled". `Service\Stuf\StufXmlParser`, which is a thin delegate to THIS
+ * class, already carries that same anchor on all three of its tags, so the
+ * primitive and its delegate now agree rather than pointing at two places.
+ * (The XXE hazard written up in `openspec/specs/flow-token-helper/spec.md` is
+ * a "Notes" entry, not a Requirement, so it is not an anchorable target — and
+ * `FlowToken` reaches this hardening by calling this class.)
+ *
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
 class SafeXmlParser
 {
@@ -58,7 +77,7 @@ class SafeXmlParser
      *
      * @psalm-return SimpleXMLElement|false
      *
-     * @spec openspec/changes/retrofit-2026-05-28-xml-xxe-hardening/tasks.md#task-1
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
      */
     public static function parse(
         string $data,
@@ -97,7 +116,7 @@ class SafeXmlParser
      *
      * @psalm-suppress MixedMethodCall
      *
-     * @spec openspec/changes/retrofit-2026-05-28-xml-xxe-hardening/tasks.md#task-1
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
      */
     public static function loadDom(DOMDocument $dom, string $data, int $options=0): bool
     {
