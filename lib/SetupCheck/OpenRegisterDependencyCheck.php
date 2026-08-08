@@ -100,7 +100,7 @@ class OpenRegisterDependencyCheck implements ISetupCheck
      */
     public function run(): SetupResult
     {
-        if ($this->appManager->isInstalled(self::REQUIRED_APP) === false) {
+        if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false) {
             return SetupResult::error(
                 $this->l10n->t(
                     'OpenConnector requires the OpenRegister app — install and enable it. '

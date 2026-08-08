@@ -25,6 +25,7 @@ namespace OCA\OpenConnector\Service;
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Main adapter service for DSO-LV (Digitaal Stelsel Omgevingswet) integration.
@@ -306,7 +307,20 @@ class DSOAdapterService
                         mkdir(directory: $baseDir, permissions: 0755, recursive: true);
                     }
 
-                    file_put_contents(filename: $localPath, data: $response->getBody());
+                    // `IResponse::getBody()` is `@return null|resource|string`: it yields
+                    // null when the client was built with `'stream' => true`. This one is
+                    // not, so a string is what comes back in practice — but a null would
+                    // slip straight through file_put_contents(), write a ZERO-BYTE
+                    // attachment, and this method would then report status 'downloaded'
+                    // for it. Throwing puts the failure inside the retry/catch below,
+                    // where every other download failure is already handled. A resource
+                    // needs no guard: file_put_contents() streams it correctly.
+                    // Invisible until #1174 pinned nextcloud/ocp ^32.0; psalm reported it
+                    // as PossiblyNullArgument the moment it could see the real interface.
+                    file_put_contents(
+                        filename: $localPath,
+                        data: ($response->getBody() ?? throw new RuntimeException('DSO: bijlage response had an empty body'))
+                    );
 
                     $result['localPath'] = $localPath;
                     $result['status']    = 'downloaded';

@@ -79,17 +79,21 @@ parameters:
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
-        # nextcloud-event-hub: optional/bundled-app + newer-OCP event classes
-        # referenced only via ::class / instanceof (safe when absent). OCA\Tables\
-        # + OCA\Forms\ are optional App Store apps; OCP\Calendar\Events\ is real OCP
-        # but @since 32.0.0, newer than the pinned nextcloud/ocp: dev-stable29 stub.
+        # nextcloud-event-hub: optional-app event classes referenced only via
+        # ::class / instanceof (safe when absent). OCA\Tables\ + OCA\Forms\ are
+        # optional App Store apps, so they are genuinely not in the vendor tree.
+        #
+        # The two OCP\Calendar\Events\ patterns that used to sit here are GONE
+        # (#1174). They were justified by "@since 32.0.0, newer than the pinned
+        # nextcloud/ocp: dev-stable29 stub" — an accurate reason that stopped
+        # being true when this repo pinned nextcloud/ocp ^32.0. Those classes are
+        # now real, analysed OCP, and `reportUnmatchedIgnoredErrors: true`
+        # confirms both patterns match nothing.
         - '#unknown class OCA\\Tables\\#'
         - '#Class OCA\\Tables\\#'
         - '#unknown class OCA\\Forms\\#'
         - '#Class OCA\\Forms\\#'
         - '#on an unknown class OCA\\Forms\\#'
-        - '#unknown class OCP\\Calendar\\Events\\#'
-        - '#Class OCP\\Calendar\\Events\\#'
         # @throws referencing an OpenRegister exception class. PHPStan cannot resolve the
         # class to verify it is Throwable because OCA\OpenRegister is not on the analysis
         # path (see the ignores below). Same documented entry opencatalogi already carries.
