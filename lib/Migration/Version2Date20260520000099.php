@@ -172,9 +172,10 @@ class Version2Date20260520000099 extends SimpleMigrationStep
                 // -1 means the COUNT query failed, so the table's contents are
                 // UNKNOWN. Say that, rather than reporting "-1 row(s)", which
                 // reads like a count and hides that nothing was measured.
-                $detail = $rowCount < 0
-                    ? 'could not be counted (the COUNT query failed), so its contents are UNKNOWN'
-                    : sprintf('has %d row(s)', $rowCount);
+                $detail = sprintf('has %d row(s)', $rowCount);
+                if ($rowCount < 0) {
+                    $detail = 'could not be counted (the COUNT query failed), so its contents are UNKNOWN';
+                }//end if
 
                 $output->warning(
                     sprintf(
@@ -194,7 +195,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep
                 );
                 $skippedNonEmpty++;
                 continue;
-            }
+            }//end if
 
             $schema->dropTable($tableShort);
             $output->info(sprintf('chain-B/C cleanup: dropped empty legacy table `oc_%s`', $tableShort));
