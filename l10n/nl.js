@@ -1,7 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Conditions (JSON Logic)" : "Voorwaarden (JSON Logic)",
     "Dead letter queues" : "Dead letter-wachtrijen",
+    "Select dead letter {id}" : "Dead letter {id} selecteren",
+    "Select delivery {id}" : "Bezorging {id} selecteren",
     "Dead letters" : "Dead letters",
     "Synchronization items" : "Synchronisatie-items",
     "{ok} items processed" : "{ok} items verwerkt",

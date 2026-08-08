@@ -144,7 +144,19 @@ class ExecutionTraceService
      *
      * @return ObjectEntity|null The trace, or null when not found.
      *
+     * @spec exclude Not a CRUD pass-through with no callers (ADR-022). It pins
+     *       the register/schema pair, turns OR's rbac and multitenancy off —
+     *       a trace is infrastructure telemetry, not a tenant-owned object —
+     *       and converts a MISS from a throw into null. Both callers
+     *       (ExecutionTracesController::show and replay() below) depend on
+     *       exactly that shape; deleting it duplicates five arguments and a
+     *       try/catch at each of them.
+     *
      * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
+     *
+     * @throws \Throwable Anything that is not a miss — an OpenRegister outage,
+     *                    an unresolvable schema — reaches the caller. Only
+     *                    DoesNotExistException becomes null.
      */
     public function find(string $traceId): ?ObjectEntity
     {
@@ -156,7 +168,11 @@ class ExecutionTraceService
                 _rbac: false,
                 _multitenancy: false
             );
-        } catch (\Throwable $exception) {
+        } catch (DoesNotExistException $exception) {
+            // A miss is null. Everything else — an OpenRegister outage, a
+            // schema that will not resolve — propagates: this used to catch
+            // \Throwable, so a broken backend was indistinguishable from a
+            // trace that does not exist, and the UI showed a confident 404.
             return null;
         }
 

@@ -259,9 +259,9 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="extendList">
 						<div v-for="(item, idx) in ruleItem.configuration.extend_input.items" :key="idx" class="extendItem">
 							<div class="extendItemProperty">
-								<label>{{ t('openconnector', 'Property (dot path)') }}</label>
 								<NcTextField
 									v-model="item.property"
+									:label="t('openconnector', 'Property (dot path)')"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
@@ -304,15 +304,15 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="extendList">
 						<div v-for="(item, idx) in ruleItem.configuration.extend_external_input.properties" :key="idx" class="extendItem">
 							<div class="extendItemProperty">
-								<label>{{ t('openconnector', 'Property') }}</label>
 								<NcTextField
 									v-model="item.property"
+									:label="t('openconnector', 'Property')"
 									placeholder="path.to.url" />
 							</div>
 							<div class="extendItemProperty">
-								<label>{{ t('openconnector', 'Schema ID') }}</label>
 								<NcTextField
 									v-model="item.schema"
+									:label="t('openconnector', 'Schema ID')"
 									placeholder="schemaId" />
 							</div>
 							<NcButton class="remove-action"

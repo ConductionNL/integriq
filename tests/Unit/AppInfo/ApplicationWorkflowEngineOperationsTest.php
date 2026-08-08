@@ -115,8 +115,8 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
      *
      * with a docblock asserting that `isEnabledForAnyUser()` was "real, current
      * `OCP\App\IAppManager` API" merely missing from the older
-     * `nextcloud/ocp:dev-stable29` interface snapshot. Both halves were wrong:
-     * the method is in NEITHER the vendored NC 29 interface NOR NC 35's, and
+     * `nextcloud/ocp` interface snapshot then pinned. Both halves were wrong:
+     * the method is in NEITHER the vendored interface NOR NC 35's, and
      * `addMethods()` MANUFACTURED it on the generated mock. So the test asserted
      * against an API that does not exist, passed, and the production call it was
      * guarding raised `Call to undefined method` on every real server — silently,
@@ -128,10 +128,13 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
      * absent from the pinned stub — never as a way to make a call compile. Verify
      * against the real interface before reaching for it.
      *
-     * This mock now stubs `isInstalled()`, which IS on the vendored NC 29
-     * interface and is the branch `appEnabledForAnyone()` takes when the server predates
-     * `isEnabledForAnyone()` (`@since 32.0.0`) — which is exactly the situation in
-     * this test environment, since the pinned stub has no such method.
+     * This mock stubs `isEnabledForAnyone()`, the single method
+     * `appEnabledForAnyone()` now calls. Until #1174 it had to stub `isInstalled()`
+     * as well and pick between the two with a `method_exists()` probe, because
+     * `nextcloud/ocp` was pinned to `dev-stable29` — an interface snapshot that
+     * predates `isEnabledForAnyone()` (`@since 32.0.0`) — while info.xml declared
+     * `min-version="32"`. With the pin at `^32.0` the method is real interface
+     * API, `createMock()` stubs it for real, and the probe is gone.
      *
      * @param bool $enabled The value the app manager should report for `workflowengine`.
      *
@@ -140,16 +143,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
     private function makeAppManagerMock(bool $enabled): IAppManager
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('workflowengine')->willReturn($enabled);
-
-        // On NC >= 32 the production helper prefers isEnabledForAnyone() and
-        // never reaches isInstalled(). Stubbing only the latter left the mock
-        // answering "not enabled" from its default return, so the enabled case
-        // registered nothing and the test failed for a reason that has nothing
-        // to do with what it checks. Stub whichever method this server has.
-        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
-            $appManager->method('isEnabledForAnyone')->with('workflowengine')->willReturn($enabled);
-        }
+        $appManager->method('isEnabledForAnyone')->with('workflowengine')->willReturn($enabled);
 
         return $appManager;
 

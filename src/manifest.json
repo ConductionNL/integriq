@@ -1291,7 +1291,7 @@
                     {
                         "id": "con-subscriptions",
                         "type": "object-list",
-                        "icon": "PackageVariantClosed",
+                        "icon": "Package",
                         "title": "API Product subscriptions",
                         "content": {
                             "register": "openconnector",

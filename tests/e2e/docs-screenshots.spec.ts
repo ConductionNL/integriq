@@ -91,8 +91,10 @@ async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise
 /** Navigate to an OpenConnector (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
 	const url = route.startsWith('/index.php/') || route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route}`
-	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
-	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
+	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => { /* tolerate a 404 — caller decides */ })
+	// ADR-074 rule 4: idle never fires on Nextcloud, so waiting for it only
+	// burned a timeout. The 900ms settle below is what actually let the SPA
+	// paint before a screenshot.
 	await dismissFirstVisitOverlays(page)
 	await page.waitForTimeout(900)
 }

@@ -152,17 +152,20 @@
                 <referencedClass name="SoapFault"/>
                 <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
                 <referencedClass name="OCA\OpenConnector\Service\Rule"/>
-                <!-- nextcloud-event-hub: NC-core / bundled-app / optional-app event
-                     classes referenced only via `::class` (compile-time string) and
-                     instanceof (safe when the class is absent). OCP\Calendar\Events\*
-                     is real OCP but `@since 32.0.0`, newer than the pinned
-                     nextcloud/ocp: dev-stable29 dev dependency; OCA\DAV\* is an NC
+                <!-- nextcloud-event-hub: NC-core-app / optional-app event classes
+                     referenced only via `::class` (compile-time string) and
+                     instanceof (safe when the class is absent). OCA\DAV\* is an NC
                      core app; OCA\Tables\* / OCA\Forms\* are optional App Store apps —
                      none is present in the standalone vendor tree. See design.md
-                     Decision 1 and each listener's class docblock. -->
-                <referencedClass name="OCP\Calendar\Events\CalendarObjectCreatedEvent"/>
-                <referencedClass name="OCP\Calendar\Events\CalendarObjectUpdatedEvent"/>
-                <referencedClass name="OCP\Calendar\Events\CalendarObjectDeletedEvent"/>
+                     Decision 1 and each listener's class docblock.
+
+                     The three OCP\Calendar\Events\* entries that used to sit here are
+                     GONE (#1174). Their reason was "`@since 32.0.0`, newer than the
+                     pinned nextcloud/ocp: dev-stable29 dev dependency" — true when
+                     written, false once this repo pinned nextcloud/ocp ^32.0. Those
+                     classes now ship in vendor/nextcloud/ocp and psalm analyses them
+                     for real, so suppressing UndefinedClass on them would only hide a
+                     future rename. -->
                 <referencedClass name="OCA\DAV\Events\CachedCalendarObjectCreatedEvent"/>
                 <referencedClass name="OCA\DAV\Events\CachedCalendarObjectUpdatedEvent"/>
                 <referencedClass name="OCA\DAV\Events\CachedCalendarObjectDeletedEvent"/>
@@ -170,8 +173,8 @@
                 <referencedClass name="OCA\Tables\Event\RowUpdatedEvent"/>
                 <referencedClass name="OCA\Tables\Event\RowDeletedEvent"/>
                 <referencedClass name="OCA\Forms\Events\FormSubmittedEvent"/>
-                <!-- OCP\SystemTag\MapperEvent is present in stable29 stubs; listed for
-                     documentation completeness of the file-tag producer. -->
+                <!-- OCP\SystemTag\MapperEvent is real OCP present in the vendored stubs;
+                     listed for documentation completeness of the file-tag producer. -->
                 <referencedClass name="OCP\SystemTag\MapperEvent"/>
             </errorLevel>
         </UndefinedClass>

@@ -36,10 +36,11 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
-// SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
-// SPDX-License-Identifier: EUPL-1.2
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Service\SynchronizationContractService;

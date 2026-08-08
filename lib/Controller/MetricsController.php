@@ -111,7 +111,7 @@ class MetricsController extends Controller
     #[NoCSRFRequired]
     public function index(): TextPlainResponse
     {
-        if ($this->appManager->isInstalled(self::REQUIRED_APP) === false || $this->delegate === null) {
+        if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
             $response = new TextPlainResponse(
                 '# metrics unavailable: OpenConnector requires the OpenRegister app — install and enable it.'."\n",
                 Http::STATUS_SERVICE_UNAVAILABLE

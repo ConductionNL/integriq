@@ -1215,7 +1215,10 @@
         "The source test returned no response data.": "The source test returned no response data.",
         "Dead letter queues": "Dead letter queues",
         "Dead letters": "Dead letters",
-        "Synchronization items": "Synchronization items"
+        "Synchronization items": "Synchronization items",
+        "Conditions (JSON Logic)": "Conditions (JSON Logic)",
+        "Select dead letter {id}": "Select dead letter {id}",
+        "Select delivery {id}": "Select delivery {id}"
     },
     "plurals": {}
 }

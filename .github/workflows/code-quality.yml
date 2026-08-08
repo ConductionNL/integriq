@@ -13,8 +13,33 @@ on:
     branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it carries the push-only "Coverage Baseline Check", which is the
+# whole push side of the coverage ratchet. And those two branches always have an
+# open PR whose `head_ref` IS the branch name: the standing "Release: merge
+# development into beta". `github.head_ref` on that PR run and `github.ref_name`
+# on the push run both render `development`, so both landed in the identical
+# group `quality-development`, and `cancel-in-progress` killed whichever started
+# first — always the push run, by ~9 seconds.
+#
+# Measured on the merge of #1151 (ddd74da4): run 31045325182, event `push`,
+# CANCELLED; run 31045337494, event `pull_request`, survived. Same pattern on
+# 3b9371f1, 75190bca and f2219e09 — four for four, so the push run on
+# `development` has never reached a verdict. "Coverage Baseline Check" therefore
+# reported `skipped` on the surviving run (correctly — it is push-only) while
+# never once executing on the run that could have run it. #1151 enabled a job
+# that could not reach a verdict: a dead gate of the permanently-pending shape,
+# which is invisible because a skipped job renders like a passing one.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
+  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
@@ -43,23 +68,80 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
+      # Set explicitly, because the shared workflow defaults to
+      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. openconnector
+      # declares <app>openregister</app> as a hard dependency, and openregister
+      # declares min-version="32". On NC31 the E2E job logs
+      #   App "Open Register" cannot be installed because it is not compatible
+      #   with this version of the server.
+      # then continues with a WARNING, so the run proceeds without its central
+      # dependency and fails ~70s later on missing tables — which reads like a
+      # migration fault rather than a missing app. Testing a version the app
+      # cannot support produces red that says nothing. See issue #1172.
+      nextcloud-test-refs: '["stable32", "stable33"]'
       # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
       # the comment it replaced instructed: "Remove this line in the change
       # that wires those producers up, so the coverage requirement arrives with
       # the coverage."
       #
-      # The premise of that deferral does not survive the v1.3.0 pin. Gates 4
-      # and 33 were never starved by a producer this repo declines to switch
-      # on — under v1.3.0 they DECLARE themselves not applicable (measured:
-      # 4 not applicable, 58 of 59 applicable gates ran), so the default (ON)
-      # is satisfiable without wiring anything up.
+      # WHAT THE FLAG ACTUALLY DID. It is not a gate and it does not decide any
+      # finding. It answers one question: when a gate DID NOT RUN, is that a
+      # failure? The gate package sorts every non-run into three categories —
+      # `na` (subject matter absent: nothing is unverified), `structural`
+      # (subject matter EXISTS, nothing produced the gate's input) and `wiring`
+      # (the gate's own helper or tool is missing). Only `structural` and
+      # `wiring` count against coverage. With the flag set to false, a gate
+      # whose machinery had quietly stopped existing reported as green.
       #
-      # What the flag was actually masking is gate-24 integration-parity, which
-      # IS applicable here — this repo registers integration leaves but ships
-      # no `scripts/check-integration-parity.sh`, so the gate inspects nothing
-      # and its subject matter is UNVERIFIED. With the flag set that read as
-      # green. It is a real gap, and the fix is the parity script, not the
-      # escape hatch.
+      # That is not hypothetical in this fleet: a missing helper made gate-7
+      # report PASS over 11 real unguarded IDOR endpoints, and openregister
+      # reported `success` while its own log read "EXCEPT GATES 4 33, WHICH DID
+      # NOT RUN". A waiver here means openconnector's green does not include
+      # the coverage assertion at all.
+      #
+      # THE ORIGINAL DEFERRAL NO LONGER HOLDS, and not for the reason this PR
+      # first gave. Re-measured on `development` @5ab1c9df, FULL TREE, with the
+      # gate package cloned fresh from ConductionNL/.github@main (756fe89) —
+      # not the local submodule, which was 38 commits behind and is therefore a
+      # different program:
+      #
+      #   [hydra-gates] COVERAGE: 63 of 64 declared gates reported a result
+      #   (1 not applicable to this repo/diff; 63 of 63 applicable gates ran).
+      #
+      # ZERO structural skips, ZERO wiring skips. The single not-applicable is
+      # gate-33 axe-core, which declares itself so because this caller has not
+      # set `enable-axe` — a choice recorded a few lines below, not a gap. `na`
+      # does not count against coverage, so the requirement is satisfied.
+      #
+      # Gates 4 and 33 were never starved by a producer this repo declines to
+      # switch on; they declare themselves not applicable. And gate-24
+      # integration-parity — named by the first version of this comment as the
+      # real gap, which it then was — now PASSES: `scripts/check-integration-
+      # parity.sh` landed on `development` after this PR was opened, so the
+      # parity script arrived exactly as that comment said it should, ahead of
+      # the flag being dropped.
+      #
+      # PROOF THIS SETTING CAN STILL FAIL, rather than being inert. On the same
+      # tree, deleting `scripts/check-integration-parity.sh`:
+      #
+      #   [gate-24] integration-parity: SKIPPED (structural) — ... this repo
+      #   DOES register integration leaves ... server↔JS leaf parity is
+      #   UNVERIFIED
+      #   [hydra-gates] COVERAGE: 62 of 63 applicable gates ran
+      #
+      # which is precisely the shape the runner exits 98 on, and which
+      # quality.yml turns into `::error::hydra-gates passed every gate that
+      # ran, but a gate whose SUBJECT MATTER EXISTS did not report`. So this
+      # repo has live subject matter for the assertion; it is not being turned
+      # on over nothing.
+      #
+      # NOTE ON WHAT THIS DOES *NOT* CHANGE. Exit 98 is reached only when no
+      # gate FAILED — a run with failures is already red and exits with the
+      # failure count. Removing this line therefore adds a verdict where there
+      # was none; it cannot mask one. The same full-tree run still shows
+      # gate-38 and gate-57 failing on inherited debt in files no PR is
+      # touching; both are tracked separately and neither is in scope for a
+      # diff-scoped CI run.
       enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true
@@ -168,37 +250,39 @@ jobs:
       # ── Hydra mechanical gates ───────────────────────────────────────────
       # `enable-hydra-gates` defaults to FALSE, so this tier has never executed
       # here — the job reported `skipped`, which the Quality Report renders
-      # identically to a pass. Pinned to v1.0.1 so a change to the gate package
-      # cannot move this repo's verdict without a commit here.
-      # `enable-axe` deliberately NOT set: a vanilla Nextcloud 34 already carries
-      # serious/critical violations from core's own UI.
-      #
-      # v1.0.1 -> v1.3.0 (ConductionNL/.github#159). Two defects, one bump.
-      #
-      # 1. STALE. v1.0.1 is `f4d9756` (2026-08-03) and predates three gate
-      #    fixes, so every Hydra Gates run this repo has ever made executed a
-      #    script in which 16 gates reported PASS when their helper never ran
-      #    (#147), gate-33 had no axe report to read and never said so (#148),
-      #    and gates 6 and 7 reported PASS on an EMPTY scope (#149). A gate
-      #    that reports PASS without running emits a tick identical to a real
-      #    one, which is why nothing in this repo's history shows it.
-      #
-      # 2. RED. quality.yml is referenced `@main` while this package is
-      #    PINNED, so the two can desync — and on 2026-08-05 they did. #164
-      #    flipped `hydra-gates-require-full-coverage` to default TRUE, but
-      #    the accounting that makes that flag survivable (NOT APPLICABLE, as
-      #    distinct from a structural or a wiring gap) ships in the PACKAGE.
-      #    So every pin older than `f7eaf2a` now fails the coverage assertion
-      #    for gates it has no subject matter for. Measured diff-scoped,
-      #    exactly as CI scopes it:
-      #      v1.0.1  exit 98  FAIL — "GATES THAT DID NOT RUN: 24 33"
-      #      v1.3.0  exit 0   PASS — those gates named NOT APPLICABLE
-      #
-      # v1.3.0 is `f7eaf2a` = .github@main, tagged so the ref stays
-      # reproducible and a later gate change cannot move this repo's verdict
-      # without a commit here.
+      # identically to a pass.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.3.0
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
+      #
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
+      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
+      # reports serious/critical violations on core's OWN routes that DOM
+      # scoping does not remove. Enabling axe is a separate decision.
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE in the shared workflow, so

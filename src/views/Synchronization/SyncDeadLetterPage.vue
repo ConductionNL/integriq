@@ -68,12 +68,12 @@
 			<thead>
 				<tr>
 					<th />
-					<th>{{ t('openconnector', 'Synchronization') }}</th>
-					<th>{{ t('openconnector', 'Origin ID') }}</th>
-					<th>{{ t('openconnector', 'Status') }}</th>
-					<th>{{ t('openconnector', 'Retries') }}</th>
-					<th>{{ t('openconnector', 'Created') }}</th>
-					<th>{{ t('openconnector', 'Error') }}</th>
+					<th scope="col">{{ t('openconnector', 'Synchronization') }}</th>
+					<th scope="col">{{ t('openconnector', 'Origin ID') }}</th>
+					<th scope="col">{{ t('openconnector', 'Status') }}</th>
+					<th scope="col">{{ t('openconnector', 'Retries') }}</th>
+					<th scope="col">{{ t('openconnector', 'Created') }}</th>
+					<th scope="col">{{ t('openconnector', 'Error') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -81,6 +81,7 @@
 				<tr v-for="row in rows" :key="row.uuid || row.id">
 					<td>
 						<NcCheckboxRadioSwitch :model-value="isSelected(row)"
+							:aria-label="t('openconnector', 'Select dead letter {id}', { id: row.uuid || row.id })"
 							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ row.synchronization }}</td>
