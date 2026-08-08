@@ -42,6 +42,10 @@ async function gotoCatalog(page: Page): Promise<void> {
 // verified live: the "Export configuration" action opens ExportConfigurationDialog
 // with its (v9-migrated) NcSelect. Re-enabling needs the specs reworked to drive
 // the Actions menu + provisioned config groups — separate feature-test work.
+//
+// TRACKED IN #1187. (The rationale previously ended at "separate feature-test
+// work" with no tracker; #1187 carries the re-enable checklist for all four
+// skipped blocks in this suite.)
 test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 	// @e2e configuration-export-import::exporting-a-configuration-from-the-ui-produces-a-redacted-downloadable-file
 	test('export dialog downloads a JSON file with no credential fields', async ({ page }) => {
@@ -73,6 +77,10 @@ test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 	})
 })
 
+// SKIPPED — same rationale as REQ-006 above: the Import action lives in the
+// toolbar "Actions" overflow menu, not as a top-level button, and the preview
+// flow needs a seeded configuration group plus upload fixtures.
+// TRACKED IN #1187.
 test.describe.skip('REQ-007/REQ-008: Import preview + confirmation', () => {
 	// @e2e configuration-export-import::preview-classifies-creates-updates-and-collisions
 	test('uploading a document shows the creates/updates preview without writing', async ({ page }) => {
