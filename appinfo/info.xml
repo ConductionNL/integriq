@@ -24,8 +24,18 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenConnector</repository>
 	<dependencies>
-        <nextcloud min-version="28" max-version="32"/>
-        <php min-version="8.0" min-int-size="64"/>
+        <!--
+            Nextcloud minimum is 32 so this app can require PHP 8.3, which is the
+            fleet-wide standard. It also may not sit below the minimum of an app it
+            depends on: OpenRegister declares a Nextcloud minimum of 32 on its
+            development branch, and advertising a lower minimum here would offer a
+            version range in which that dependency refuses to install and this app
+            is non-functional. See openconnector issues 1172 and 1173.
+            The maximum is left at its existing value of 32 by this change; raising
+            it is tracked separately.
+        -->
+        <nextcloud min-version="32" max-version="32"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
