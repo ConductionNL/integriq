@@ -65,6 +65,8 @@ abstract class AbstractZgwResourceTranslator implements ZgwResourceTranslatorInt
      * @return void
      *
      * @throws ZgwLiteralLeakException Naming the first missing field.
+     *
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     protected function requireFields(array $payload, array $required): void
     {
@@ -91,6 +93,8 @@ abstract class AbstractZgwResourceTranslator implements ZgwResourceTranslatorInt
      * @return void
      *
      * @throws ZgwLiteralLeakException When the value is set but outside `$allowed`.
+     *
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     protected function guardEnum(array $payload, string $field, array $allowed): void
     {
@@ -119,6 +123,8 @@ abstract class AbstractZgwResourceTranslator implements ZgwResourceTranslatorInt
      * @return void
      *
      * @throws ZgwLiteralLeakException When the value is set but not an array.
+     *
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     protected function guardArrayField(array $payload, string $field): void
     {

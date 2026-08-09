@@ -89,6 +89,8 @@ class FlagSourceSecretsWriteOnly implements IRepairStep
      * @param IOutput $output The output interface.
      *
      * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
      */
     public function run(IOutput $output): void
     {

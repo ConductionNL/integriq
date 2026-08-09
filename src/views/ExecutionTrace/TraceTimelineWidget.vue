@@ -83,6 +83,16 @@ export default {
 		 * @param {object} value The already-redacted input/output snapshot.
 		 * @return {string}
 		 */
+		/**
+		 * Pretty-prints a step's input/output payload for the expanded detail.
+		 * Falls back to the stringified value on a circular structure rather
+		 * than throwing — a step whose payload cannot be serialised must still
+		 * render its place in the timeline.
+		 *
+		 * @param {*} value The step payload.
+		 * @return {string}
+		 * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
+		 */
 		formatJson(value) {
 			try {
 				return JSON.stringify(value ?? {}, null, 2)

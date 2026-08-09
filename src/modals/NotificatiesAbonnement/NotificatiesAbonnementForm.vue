@@ -141,6 +141,16 @@ export default {
 		isEdit() {
 			return !!(this.abonnement && (this.abonnement.id || this.abonnement.uuid))
 		},
+		/**
+		 * The `NcSelect` model for the Source. Falls back to a synthetic
+		 * `{id, label: id}` when the stored sourceId is not in the fetched
+		 * option set, so an abonnement bound to a Source the picker cannot
+		 * currently see still shows its binding instead of appearing unset —
+		 * which would invite an operator to silently rebind it on save.
+		 *
+		 * @return {object|null}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+		 */
 		selectedSource() {
 			const id = this.model.sourceId
 			if (!id) {
@@ -153,6 +163,15 @@ export default {
 	watch: {
 		open: {
 			immediate: true,
+			/**
+			 * Re-seeds the form from the `abonnement` prop each time the modal
+			 * opens, so a previous edit's values can never be saved onto a
+			 * different abonnement. Sources are fetched only once.
+			 *
+			 * @param {boolean} next Whether the modal is being shown.
+			 * @return {void}
+			 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+			 */
 			handler(next) {
 				if (next) {
 					this.resetFromProp()
@@ -169,6 +188,7 @@ export default {
 		/**
 		 * A fresh, empty form model.
 		 * @return {object}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		emptyModel() {
 			return {
@@ -182,6 +202,13 @@ export default {
 		/**
 		 * (Re)populate the form from the `abonnement` prop, or reset to empty
 		 * when creating.
+		 *
+		 * `kanalen` is flattened to bare names for the taggable select and
+		 * re-wrapped on save; entries without a `naam` are dropped rather than
+		 * carried through as blanks.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		resetFromProp() {
 			this.errors = {}
@@ -202,6 +229,13 @@ export default {
 
 		/**
 		 * Fetch the available Sources for the picker.
+		 *
+		 * A failure empties the option list rather than throwing: the picker
+		 * degrades to the synthetic option from {@link selectedSource}, so an
+		 * existing binding stays visible even when Sources cannot be listed.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		async fetchSources() {
 			this.sourcesLoading = true
@@ -226,6 +260,8 @@ export default {
 		/**
 		 * Handle a Source pick.
 		 * @param {object} option The picked NcSelect option.
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		onSourcePick(option) {
 			this.model.sourceId = option?.id || ''
@@ -234,6 +270,8 @@ export default {
 		/**
 		 * Handle a kanalen taggable-multi-select change.
 		 * @param {Array<string>} value The updated list of kanaal names.
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		onKanalenChange(value) {
 			this.kanaalNames = Array.isArray(value) ? value : []
@@ -241,6 +279,15 @@ export default {
 
 		/**
 		 * Validate + submit the create/update request.
+		 *
+		 * Both client-side rules run before the early return, so an operator
+		 * sees every problem at once rather than one per attempt. `kanalen` is
+		 * required here because REQ-006 makes a publish with no kanaal a
+		 * configuration error rather than a transient failure — catching it at
+		 * registration is the earliest honest point.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 		 */
 		async save() {
 			this.errors = {}

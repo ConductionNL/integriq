@@ -194,6 +194,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Initialises the promote flow each time the modal opens: state is
+		 * reset first, so a previous run's preview or half-entered rebindings
+		 * can never be confirmed against a newly chosen target.
+		 *
+		 * @param {boolean} isOpen Whether the modal is being shown.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.resetState()
@@ -208,6 +217,7 @@ export default {
 		 * Reset all step/selection/preview state on open.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
 		 */
 		resetState() {
 			this.step = 'select'
@@ -223,6 +233,7 @@ export default {
 		 * (same source ExportConfigurationDialog uses).
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-targets-existing-import-endpoints-req-002
 		 */
 		async fetchConfigurations() {
 			this.loadingConfigs = true
@@ -264,10 +275,28 @@ export default {
 			}
 		},
 
+		/**
+		 * Picks the configuration group to promote. A cleared select stores
+		 * null rather than an empty option, so `canPreview` blocks the preview
+		 * instead of posting an undefined `configurationId`.
+		 *
+		 * @param {object|null} option The chosen configuration option.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-targets-existing-import-endpoints-req-002
+		 */
 		onSelectConfig(option) {
 			this.selectedConfig = option || null
 		},
 
+		/**
+		 * Picks the target environment. Same null-on-clear rule as
+		 * {@link onSelectConfig} — promoting into an unset target is the one
+		 * mistake this modal must not make possible.
+		 *
+		 * @param {object|null} option The chosen environment option.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
+		 */
 		onSelectEnvironment(option) {
 			this.selectedEnvironment = option || null
 		},
@@ -277,6 +306,7 @@ export default {
 		 *
 		 * @param {{slug: string, field: string}} entry One `credentialRefsNeedingRebind[]` entry.
 		 * @return {string} The binding key.
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-credentialref-placeholders-are-re-bound-per-target-environment-never-resolved-to-a-secret-req-004
 		 */
 		bindingKey(entry) {
 			return `${entry.slug}|${entry.field}`
@@ -307,7 +337,13 @@ export default {
 		/**
 		 * Fetch the merged diff preview (REQ-003) and advance to step 2.
 		 *
+		 * Sends an EMPTY `credentialBindings` array deliberately: the preview
+		 * exists to discover which refs need rebinding, so sending the
+		 * operator's half-entered values here would pre-empt the very
+		 * classification being asked for.
+		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
 		 */
 		async runPreview() {
 			if (!this.canPreview) {
@@ -340,7 +376,12 @@ export default {
 		/**
 		 * Confirm the promotion (REQ-005: `confirmed: true`).
 		 *
+		 * `confirmed: true` is sent only from this handler, which is only
+		 * reachable from the preview step — so a promotion cannot be issued by
+		 * anyone who has not been shown the diff first.
+		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		async confirmPromotion() {
 			this.confirming = true
@@ -366,13 +407,26 @@ export default {
 		/**
 		 * Return to step 1 without losing the current selection.
 		 *
+		 * The preview is discarded on the way back, so returning and changing
+		 * the target cannot leave a stale diff on screen to be confirmed
+		 * against the new one.
+		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
 		 */
 		backToSelect() {
 			this.step = 'select'
 			this.preview = null
 		},
 
+		/**
+		 * Dismissal from the modal chrome. Abandoning at the preview step is
+		 * the negative path of REQ-005's explicit-confirmation rule: closing is
+		 * never a confirmation, and nothing is dispatched here.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
+		 */
 		onClose() {
 			this.close()
 		},
@@ -381,6 +435,7 @@ export default {
 		 * Ask ModalHost to close the modal.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		close() {
 			this.$emit('close')

@@ -712,6 +712,14 @@ export default {
 		},
 	},
 
+	/**
+	 * Feature-detects the Tables and Forms bridges so the sync-kind selector
+	 * only offers `nextcloud-table` / `nextcloud-form` when the backing app is
+	 * actually available to the acting user.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/sync-editor-ui/spec.md
+	 */
 	mounted() {
 		this.fetchTablesStatus()
 		this.fetchFormsStatus()
