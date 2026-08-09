@@ -1,8 +1,20 @@
 name: Code Quality
 
 on:
+  # `push` on main is the load-bearing one, and it was MISSING. Without it a
+  # push to the release branch built nothing at all — not red, not green,
+  # simply no run. Measured 2026-08-09: openconnector `main` had ZERO Code
+  # Quality runs on record, so nobody could say what state the branch users
+  # install was in. A branch with no runs shows no red.
+  #
+  # `development` has carried this trigger for some time; it never reached
+  # `main` because the corrected workflow travels the release train and no
+  # release has carried it across. See ConductionNL/.github#285.
+  push:
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
     branches: [main, master, development]
+  workflow_dispatch:
 
 concurrency:
   group: quality-${{ github.head_ref || github.ref }}
