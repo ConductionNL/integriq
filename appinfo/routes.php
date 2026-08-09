@@ -137,6 +137,12 @@ return [
 		['name' => 'lti#agsLineItem', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}', 'verb' => 'GET', 'requirements' => ['lineItemId' => '.+']],
 		['name' => 'lti#nrpsMembership', 'url' => '/api/lti/{deployment}/nrps/membership', 'verb' => 'GET'],
 		['name' => 'lti#jwks', 'url' => '/.well-known/lti/{registrationType}/{registrationUuid}/jwks.json', 'verb' => 'GET'],
+		// AGS outbound, Tool role (REQ-LTI-008) — admin-gated, CSRF-protected.
+		// Every route above is the PLATFORM role (inbound). Without this one the
+		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
+		// publishScore() was implemented and spec'd done but structurally
+		// unreachable (openconnector#1192).
+		['name' => 'lti#agsPublishScore', 'url' => '/api/lti/{deployment}/ags/publish-score', 'verb' => 'POST'],
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
 		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],

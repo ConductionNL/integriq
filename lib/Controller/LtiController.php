@@ -462,6 +462,69 @@ class LtiController extends Controller
     }//end rotateKey()
 
     // =========================================================================
+    // REQ-LTI-008 — AGS outbound (Tool role)
+    // =========================================================================
+
+    /**
+     * Publish a score to a Platform's AGS line item, acting as Tool.
+     *
+     * REQ-LTI-008 requires this direction, and `LtiAgsService::publishScore()`
+     * has implemented it since the LTI work landed — but nothing could ever
+     * call it. Every `lti#*` route was the PLATFORM role (inbound: a Tool
+     * calls us), so the Tool-role outbound half of REQ-LTI-008 was
+     * structurally unreachable: fully implemented, unit-tested by calling the
+     * service directly, and spec'd "done", with zero production callers
+     * (openconnector#1192). This is the seam that makes it reachable, and it
+     * is the same shape REQ-LTI-010 describes — a consuming app drives the
+     * deployment through openconnector's API.
+     *
+     * Admin-gated + CSRF-protected, matching `generateKey`/`rotateKey`: this
+     * is an operator-driven outbound call that spends this instance's signing
+     * key against a remote Platform, not something an external party may
+     * trigger. It is deliberately NOT `#[PublicPage]` like the inbound routes
+     * above.
+     *
+     * @param string $deployment The `lti_deployment` UUID route parameter (must reference an `lti_platform`).
+     *
+     * @return JSONResponse The upstream AGS status, or a rejection.
+     *
+     * @spec openspec/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function agsPublishScore(string $deployment): JSONResponse
+    {
+        $params      = $this->request->getParams();
+        $lineItemUrl = (string) ($params['lineItemUrl'] ?? '');
+        if ($lineItemUrl === '') {
+            return new JSONResponse(
+                data: ['error' => 'lineItemUrl is required'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $scorePayload = ($params['score'] ?? null);
+        if (is_array($scorePayload) === false) {
+            return new JSONResponse(
+                data: ['error' => 'score must be an object'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        try {
+            $result = $this->agsService->publishScore(
+                deploymentUuid: $deployment,
+                lineItemUrl: $lineItemUrl,
+                scorePayload: $scorePayload
+            );
+        } catch (LtiValidationException $exception) {
+            return $this->renderRejection(exception: $exception);
+        }
+
+        return new JSONResponse(data: $result);
+
+    }//end agsPublishScore()
+
+    // =========================================================================
     // REQ-LTI-011 — registration trust gate (Beheer > Authenticatie)
     // =========================================================================
 

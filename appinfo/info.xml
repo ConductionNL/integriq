@@ -43,8 +43,14 @@
         version of the server"), and every openconnector entity is an OpenRegister
         object — so the app cannot function there. Declaring 28 advertised a range
         this app cannot deliver. See issue #1172.
+
+        max-version is 34, NOT 35, for the same "do not advertise a range you
+        cannot deliver" reason in the other direction: NC 35 does not exist —
+        there is no tag, no branch, and this app's own CI matrix has no leg past
+        stable33. The rest of the fleet declares 34; openconnector was the only
+        repo claiming 35, so the claim was untested everywhere it mattered.
         -->
-        <nextcloud min-version="32" max-version="35"/>
+        <nextcloud min-version="32" max-version="34"/>
         <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
