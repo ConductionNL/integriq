@@ -26,6 +26,7 @@ use OCA\OpenConnector\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCA\OpenConnector\Util\SafeXmlParser;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
+use RuntimeException;
 
 /**
  * Reference `data-infra-connectors` adapter: an S3-compatible object-storage
@@ -468,13 +469,13 @@ class S3Adapter extends AbstractCategoryAdapterProvider
     {
         $result = $this->writeObject(bucket: $bucket, key: $key, content: $content);
         if ($result === null) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf('S3 write of "%s" to bucket "%s" did not complete.', $key, $bucket)
             );
         }
 
         if ($result['status'] < 200 || $result['status'] >= 300) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf(
                     'S3 write of "%s" to bucket "%s" was rejected upstream (status %d).',
                     $key,
