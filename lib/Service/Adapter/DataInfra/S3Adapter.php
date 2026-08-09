@@ -346,4 +346,149 @@ class S3Adapter extends AbstractCategoryAdapterProvider
         ];
 
     }//end get()
+
+    /**
+     * {@inheritDoc}
+     *
+     * Writes a new object into a bucket. This is the seam that makes the
+     * advertised `object-write` capability reachable: `getCapabilities()` has
+     * listed `object-write` since this adapter was scaffolded and
+     * {@see writeObject()} has been implemented all along, but neither
+     * `create()` nor `update()` was overridden — so every write arriving
+     * through the `IntegrationProvider` interface hit
+     * `AbstractIntegrationProvider`'s default and threw
+     * `NotImplementedException`. The capability was advertised to the admin UI
+     * and the OCS capabilities response while being structurally unreachable
+     * (openconnector#1191).
+     *
+     * `register`/`schema`/`objectId` are ignored — this adapter is
+     * instance-scoped, matching {@see list()} and {@see get()}.
+     *
+     * @param string              $register Ignored (instance-scoped adapter).
+     * @param string              $schema   Ignored (instance-scoped adapter).
+     * @param string              $objectId Ignored (instance-scoped adapter).
+     * @param array<string,mixed> $payload  `bucket` (required), `key` (required), `content` (optional, defaults to '').
+     *
+     * @return array<string,mixed> The written object's `bucket`, `key` and upstream `status`.
+     *
+     * @throws DoesNotExistException When `bucket` or `key` is missing from the payload.
+     * @throws \RuntimeException     When the upstream write fails.
+     *
+     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
+     *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
+     */
+    public function create(string $register, string $schema, string $objectId, array $payload): array
+    {
+        $bucket = (string) ($payload['bucket'] ?? '');
+        $key    = (string) ($payload['key'] ?? '');
+        if ($bucket === '' || $key === '') {
+            throw new DoesNotExistException(
+                'S3 create() requires both "bucket" and "key" in the payload.'
+            );
+        }
+
+        return $this->putObject(
+            bucket: $bucket,
+            key: $key,
+            content: (string) ($payload['content'] ?? '')
+        );
+
+    }//end create()
+
+    /**
+     * {@inheritDoc}
+     *
+     * Overwrites an existing object. S3 has no distinct update verb — a PUT to
+     * an existing key replaces it — so this shares {@see putObject()} with
+     * {@see create()}. The `$entityId` carries the target in the same
+     * `"bucket/key"` shape {@see get()} accepts, so a caller that read an
+     * object can write it back without re-deriving the address.
+     *
+     * @param string              $register Ignored (instance-scoped adapter).
+     * @param string              $schema   Ignored (instance-scoped adapter).
+     * @param string              $objectId Ignored (instance-scoped adapter).
+     * @param string              $entityId Expected shape `"bucket/key"`.
+     * @param array<string,mixed> $payload  `content` (optional, defaults to '').
+     *
+     * @return array<string,mixed> The written object's `bucket`, `key` and upstream `status`.
+     *
+     * @throws DoesNotExistException When `$entityId` is malformed.
+     * @throws \RuntimeException     When the upstream write fails.
+     *
+     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
+     *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
+     */
+    public function update(
+        string $register,
+        string $schema,
+        string $objectId,
+        string $entityId,
+        array $payload
+    ): array {
+        $parts = explode('/', $entityId, 2);
+        if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+            throw new DoesNotExistException('Expected entityId shape "bucket/key", got: '.$entityId);
+        }
+
+        [$bucket, $key] = $parts;
+
+        return $this->putObject(
+            bucket: $bucket,
+            key: $key,
+            content: (string) ($payload['content'] ?? '')
+        );
+
+    }//end update()
+
+    /**
+     * Shared write path for {@see create()} and {@see update()}.
+     *
+     * Turns {@see writeObject()}'s nullable/status-bearing return into the
+     * array-or-throw contract the `IntegrationProvider` interface specifies.
+     * A null return means the brokered request never completed (unconfigured
+     * credential, host-lock denial, transport error); a non-2xx status means
+     * the bucket rejected the write. Both are failures, and neither may be
+     * reported as a successful write.
+     *
+     * @param string $bucket  Bucket name.
+     * @param string $key     Object key.
+     * @param string $content Raw bytes to write.
+     *
+     * @return array<string,mixed> The written object's `bucket`, `key` and upstream `status`.
+     *
+     * @throws \RuntimeException When the write did not complete with a 2xx status.
+     *
+     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+     */
+    private function putObject(string $bucket, string $key, string $content): array
+    {
+        $result = $this->writeObject(bucket: $bucket, key: $key, content: $content);
+        if ($result === null) {
+            throw new \RuntimeException(
+                sprintf('S3 write of "%s" to bucket "%s" did not complete.', $key, $bucket)
+            );
+        }
+
+        if ($result['status'] < 200 || $result['status'] >= 300) {
+            throw new \RuntimeException(
+                sprintf(
+                    'S3 write of "%s" to bucket "%s" was rejected upstream (status %d).',
+                    $key,
+                    $bucket,
+                    $result['status']
+                )
+            );
+        }
+
+        return [
+            'bucket' => $bucket,
+            'key'    => $key,
+            'status' => $result['status'],
+        ];
+
+    }//end putObject()
 }//end class

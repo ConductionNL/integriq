@@ -34,12 +34,14 @@ namespace OCA\OpenConnector\Controller;
 use DateTime;
 use OCA\OpenConnector\Exception\ApprovalStateException;
 use OCA\OpenConnector\Service\ApprovalService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -104,6 +106,13 @@ class ProductSubscriptionsController extends Controller
      * Consumer create/edit today (`ConsumersController`) — `#[NoAdminRequired]`
      * is deliberately NOT used here (design.md Security Considerations).
      *
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting],
+     * the same positive declaration `SourcesController` and `MappingsController`
+     * already use for their administrative endpoints. A bare absence of
+     * `#[NoAdminRequired]` is indistinguishable from a forgotten annotation, so
+     * the gate is stated in an attribute the middleware enforces rather than in
+     * a comment nothing reads.
+     *
      * @param string $productId The api_product's id.
      *
      * @return JSONResponse 201 (active), 202 (pending_approval), 400 (unknown tier), or 404 (no such product).
@@ -111,6 +120,7 @@ class ProductSubscriptionsController extends Controller
      * @spec openspec/specs/api-product-gateway/spec.md#requirement-consumer-subscribes-to-an-api-product-at-a-tier-req-apg-003
      * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
      */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function subscribe(string $productId): JSONResponse
     {
         try {
@@ -294,14 +304,16 @@ class ProductSubscriptionsController extends Controller
      *
      * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
      *
-     * ADMIN ONLY: `#[NoAdminRequired]` is deliberately NOT used here, the same
-     * posture and for the same reason as `subscribe()` above. Absence of the
-     * attribute IS the admin gate in Nextcloud — there is no positive
-     * "admin required" attribute for a plain controller method — so it is
-     * stated rather than left to be read out of a missing line. gate-5 was
-     * right to flag it: nothing here distinguished a deliberate admin-only
-     * endpoint from one whose author forgot the annotation.
+     * ADMIN ONLY, and now declared rather than implied. The previous revision
+     * argued in prose that "absence of the attribute IS the admin gate" — but a
+     * comment is not enforced by anything, and it reads identically to an
+     * endpoint whose author simply forgot the annotation. These product-wide
+     * figures aggregate every consumer's call_log rows, so the distinction is
+     * load-bearing. #[AuthorizedAdminSetting] is the same positive, middleware-
+     * enforced declaration `SourcesController` and `MappingsController` already
+     * use, and it is what makes the posture readable to a reviewer and to CI.
      */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function analytics(string $productId): JSONResponse
     {
         try {
