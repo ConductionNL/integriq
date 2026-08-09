@@ -57,6 +57,8 @@ class MappingFunctionRegistrationListener implements IEventListener
      * @param Event $event The dispatched event.
      *
      * @return void
+     *
+     * @spec openspec/specs/authentication-twig/spec.md#requirement-twig-mapping-runtime-encoding-mapping-execution-file-lookup-slug-req-005
      */
     public function handle(Event $event): void
     {

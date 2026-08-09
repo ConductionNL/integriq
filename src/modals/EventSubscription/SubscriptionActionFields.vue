@@ -230,20 +230,49 @@ export default {
 			return this.formData?.action?.kind || 'webhook'
 		},
 
+		/**
+		 * The three dispatch kinds REQ-008 fixes: webhook, synchronization, job.
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+		 */
 		kindOptions() {
 			return KIND_OPTIONS
 		},
 
+		/**
+		 * The `NcSelect` model for the kind picker. Falls back to the first
+		 * option (webhook) rather than null, so the select is never rendered
+		 * unset for a subscription whose `action.kind` is absent — which is the
+		 * back-compat default REQ-008 assigns.
+		 * @return {object}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+		 */
 		selectedKindOption() {
 			return KIND_OPTIONS.find((option) => option.id === this.actionKind) || KIND_OPTIONS[0]
 		},
 
+		/**
+		 * The `NcSelect` model for a `synchronization`-kind target. Falls back
+		 * to a synthetic `{id, label: id}` when the stored id is not in the
+		 * fetched options, so a subscription pointing at a Synchronization the
+		 * picker cannot currently list still shows its binding instead of
+		 * appearing unset — saving from an unset picker would silently drop the
+		 * dispatch target.
+		 * @return {object|null}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+		 */
 		selectedSynchronization() {
 			const id = this.formData?.action?.synchronizationId
 			if (!id) return null
 			return this.synchronizationOptions.find((option) => option.id === id) || { id, label: id }
 		},
 
+		/**
+		 * The `NcSelect` model for a `job`-kind target, with the same
+		 * synthetic-fallback rule as {@link selectedSynchronization}.
+		 * @return {object|null}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+		 */
 		selectedJob() {
 			const id = this.formData?.action?.jobId
 			if (!id) return null
@@ -261,6 +290,16 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Lazily loads the target list for the newly chosen kind, once. The
+		 * two lists are fetched separately and only on demand: a webhook
+		 * subscription never needs either, and REQ-008 scopes each kind's
+		 * picker to its own entity type.
+		 *
+		 * @param {string} value The newly selected action kind.
+		 * @return {void}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+		 */
 		actionKind(value) {
 			if (value === 'synchronization' && this.synchronizationOptions.length === 0) {
 				this.fetchSynchronizations()
@@ -270,6 +309,15 @@ export default {
 		},
 	},
 
+	/**
+	 * Loads the target list for the kind an EXISTING subscription already
+	 * carries. Without this the watcher alone would never fire when editing —
+	 * `actionKind` does not change on open — and the picker would render empty
+	 * for a subscription that already has a target.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+	 */
 	created() {
 		if (this.actionKind === 'synchronization') {
 			this.fetchSynchronizations()

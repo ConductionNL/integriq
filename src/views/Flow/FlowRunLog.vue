@@ -71,6 +71,14 @@ export default {
 	watch: {
 		flowId: {
 			immediate: true,
+			/**
+			 * Reloads the run list when the routed flow changes, so navigating
+			 * between two flows cannot leave the previous flow's runs on
+			 * screen attributed to the new one.
+			 *
+			 * @return {void}
+			 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
+			 */
 			handler() {
 				this.fetchRuns()
 			},
@@ -78,6 +86,12 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Lists this flow's persisted `flow_run` records, newest first.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
+		 */
 		async fetchRuns() {
 			if (!this.flowId) return
 			this.loading = true
@@ -102,12 +116,30 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Expands or collapses one run, fetching its per-step trace the first
+		 * time it is opened. Fetching lazily keeps the index cheap for a flow
+		 * with many runs; the `!this.stepLogs[runId]` guard means re-collapsing
+		 * and re-expanding does not re-request.
+		 *
+		 * @param {string} runId The `flow_run` id.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
+		 */
 		async toggle(runId) {
 			this.expanded[runId] = !this.expanded[runId]
 			if (this.expanded[runId] && !this.stepLogs[runId]) {
 				await this.fetchStepLogs(runId)
 			}
 		},
+		/**
+		 * Lists one run's `flow_run_log` entries, ordered by `stepOrder` so the
+		 * trace reads in execution sequence rather than insertion order.
+		 *
+		 * @param {string} runId The `flow_run` id.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
+		 */
 		async fetchStepLogs(runId) {
 			try {
 				const response = await axios.get(
@@ -129,6 +161,15 @@ export default {
 				this.stepLogs[runId] = []
 			}
 		},
+		/**
+		 * Renders a run timestamp in the viewer's locale, returning the raw
+		 * value if it cannot be parsed — an unrecognised timestamp is still
+		 * more useful to an operator than a blank cell or "Invalid Date".
+		 *
+		 * @param {string} value The ISO timestamp.
+		 * @return {string}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
+		 */
 		formatDate(value) {
 			if (!value) return ''
 			try {

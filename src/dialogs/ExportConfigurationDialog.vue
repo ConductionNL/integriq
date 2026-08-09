@@ -88,6 +88,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Resets the selection and re-lists configurations on open. Clearing
+		 * `selected` matters: a retained selection from a previous open could
+		 * be exported without the operator having chosen it in this session.
+		 *
+		 * @param {boolean} isOpen Whether the dialog is being shown.
+		 * @return {void}
+		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.errorMessage = ''

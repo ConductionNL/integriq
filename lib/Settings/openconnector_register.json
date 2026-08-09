@@ -245,7 +245,8 @@
                         "type": "string",
                         "format": "uuid",
                         "title": "Credential ID",
-                        "description": "UUID of the broker credential to use. The primary, unambiguous form."
+                        "x-external-register": "openregister",
+                        "description": "UUID of the broker credential to use. The primary, unambiguous form. The credential itself lives in OpenRegister's credential broker, NOT in this register — openconnector never holds the secret, only this identifier. `x-external-register` records that the target is owned by another app, which is why there is no `$ref`: OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
                       },
                       "credentialName": {
                         "type": "string",
