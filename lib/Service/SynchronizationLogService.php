@@ -233,6 +233,13 @@ class SynchronizationLogService
         }
 
         if (\is_string($contract) === true) {
+            // An empty string references nothing, exactly like a null entry —
+            // keeping it would persist [''] and fan out a degenerate object in
+            // Flow. The `logs` list drops '' for the same reason.
+            if ($contract === '') {
+                return null;
+            }
+
             return $contract;
         }
 
@@ -267,6 +274,14 @@ class SynchronizationLogService
             $embedded = ($result['_embed']['contracts'] ?? null);
             $hasEmbed = \is_array($embedded);
 
+            // Reindexed once, outside the loop: re-running array_values() per
+            // contract rebuilt the whole embedded list on every iteration,
+            // making compaction O(n²) in the number of contracts.
+            $embeddedByPosition = [];
+            if ($hasEmbed === true) {
+                $embeddedByPosition = array_values($embedded);
+            }
+
             $keptContracts = [];
             $keptEmbedded  = [];
             foreach (array_values($contracts) as $position => $contract) {
@@ -280,7 +295,7 @@ class SynchronizationLogService
                     // Always append, defaulting to null, so the embedded list
                     // keeps exactly one entry per surviving contract even when
                     // it was shorter than `contracts` to begin with.
-                    $keptEmbedded[] = (array_values($embedded)[$position] ?? null);
+                    $keptEmbedded[] = ($embeddedByPosition[$position] ?? null);
                 }
             }
 
