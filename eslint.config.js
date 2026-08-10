@@ -30,9 +30,25 @@ module.exports = defineConfig([{
 	//
 	// `src/modals/v2/` is the post-extraction home for chain-C+ modals
 	// (Test mapping #835, Add endpoint rule #836, Job form fields #847)
-	// and must lint cleanly — explicitly un-ignored here so the global
-	// `src/modals/**` glob doesn't swallow it.
-	ignores: ['src/modals/**', '!src/modals/v2/**'],
+	// and must lint cleanly — kept out of the ignore set below.
+	//
+	// The globs name the legacy subdirectories one by one instead of the
+	// shorter `['src/modals/**', '!src/modals/v2/**']`. Any ignore glob
+	// that matches the `src/modals/v2` directory entry — `src/modals/**`
+	// and `src/modals/*` both do — prunes the whole directory, and ESLint
+	// cannot re-include a descendant of a pruned directory. The negation
+	// therefore never fired and all 14 files in v2 shipped unlinted.
+	// Adding a legacy modal directory means adding it here.
+	ignores: [
+		'src/modals/*.vue',
+		'src/modals/Endpoint/**',
+		'src/modals/EventDelivery/**',
+		'src/modals/EventSubscription/**',
+		'src/modals/NotificatiesAbonnement/**',
+		'src/modals/Rule/**',
+		'src/modals/Subscription/**',
+		'src/modals/Synchronization/**',
+	],
 }, {
 	extends: compat.extends('@nextcloud'),
 
