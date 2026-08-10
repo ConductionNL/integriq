@@ -380,8 +380,14 @@ export default {
 		 */
 		schemaOptions() {
 			const allowed = this.selectedRegister?.schemas
+			// Compared as strings, like every other id comparison in this file:
+			// a register's `schemas` array and the schemas endpoint do not agree
+			// on whether an id is a number or a string, and a strict `includes`
+			// silently matched nothing — leaving the picker empty and Create
+			// permanently disabled, since a complete target needs both halves.
+			const allowedIds = Array.isArray(allowed) ? allowed.map((id) => String(id)) : null
 			return this.schemas
-				.filter((schema) => !Array.isArray(allowed) || allowed.length === 0 || allowed.includes(schema.id))
+				.filter((schema) => allowedIds === null || allowedIds.length === 0 || allowedIds.includes(String(schema.id)))
 				.map((schema) => ({ id: schema.id, label: schema.title || schema.name || String(schema.id) }))
 		},
 
@@ -434,14 +440,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Resolve a select's current value from the form data, tolerating a
-		 * stored value that is not among the options.
-		 *
-		 * @param {string} key The field key.
-		 * @return {object|null} The matching option.
-		 * @spec exclude trivial select-value projection — presentation only
-		 */
 		/**
 		 * Example placeholder for a field, or '' when it has none.
 		 *

@@ -229,7 +229,7 @@
           },
           "configuration": {
             "type": "object",
-            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. `configuration.decompress: \"gzip\"` hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped,, change bulk-gzip-jsonl-ingestion). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
+            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. `configuration.decompress: \"gzip\"` hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
             "title": "Configuration",
             "properties": {
               "authentication": {
@@ -380,7 +380,7 @@
           },
           "circuitBreakerLastProbeAt": {
             "type": "integer",
-            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation,).",
+            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation).",
             "title": "Circuit Breaker Last Probe At"
           },
           "circuitBreakerThreshold": {
@@ -1596,7 +1596,7 @@
           },
           "sourceId": {
             "type": "string",
-            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post. Chain B's migrator branches on the format to translate (1) to (3). Cross.",
+            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = the canonical OpenRegister identifier. The migrator branches on the format to translate (1) to (3).",
             "title": "Source ID"
           },
           "sourceType": {
