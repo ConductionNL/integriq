@@ -232,6 +232,12 @@ export default {
 			isValid: true,
 			validationErrors: null,
 			savingResult: false,
+			// Monotonic run counter — see the sequence guard in run().
+			runSequence: 0,
+			// Which schema the result on screen was actually validated against.
+			// Compared with the picker in canSaveResult() so a schema swapped
+			// after the run cannot be mistaken for one the result passed.
+			validatedSchemaId: null,
 		}
 	},
 
@@ -277,13 +283,28 @@ export default {
 		 * `{ field: [message, …] }` map, but a bare string or a single-message
 		 * value shows up in older payloads — normalise both.
 		 *
+		 * A bare array is also an older shape. It passes `typeof === 'object'`,
+		 * so it used to reach `Object.keys()` and render its indices — "0", "1",
+		 * "2" — in the Field column as if they were property names. Those errors
+		 * carry no field, so the column is left blank instead.
+		 *
 		 * @return {Array<{field: string, messages: Array<string>}>} Table rows.
 		 *
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		validationErrorRows() {
 			const errors = this.validationErrors
-			if (!errors || typeof errors !== 'object') return []
+			if (!errors) return []
+			if (typeof errors === 'string') {
+				return [{ field: '', messages: [errors] }]
+			}
+			if (Array.isArray(errors)) {
+				return errors.map((entry) => ({
+					field: '',
+					messages: [this.formatValidationError(entry)],
+				}))
+			}
+			if (typeof errors !== 'object') return []
 			return Object.keys(errors).map((field) => {
 				const raw = errors[field]
 				const list = Array.isArray(raw) ? raw : [raw]
@@ -315,6 +336,11 @@ export default {
 				&& this.isValid
 				&& !!this.selectedSchema?.id
 				&& !!this.selectedRegister?.id
+				// The picker must still name the schema the result was validated
+				// against. With `auto` off (TestMappingModal) changing the schema
+				// does not re-run, so without this the enabled button would save a
+				// payload against a schema it was never checked against.
+				&& this.validatedSchemaId === this.selectedSchema?.id
 		},
 		/**
 		 * Reactivity key for the automatic re-run. Recomputing it is what
@@ -420,6 +446,12 @@ export default {
 			const parsedInput = this.parseInput()
 			if (parsedInput === null) return
 
+			// Sequence guard: the debounce narrows the window but does not close
+			// it — a run slower than the next keystroke's request can still land
+			// after it and overwrite the newer result (and its validity) with a
+			// stale one. Only the most recently started run may touch state.
+			const runId = ++this.runSequence
+
 			this.running = true
 			this.runError = ''
 			try {
@@ -435,10 +467,13 @@ export default {
 					generateUrl('/apps/openconnector/api/mappings/test'),
 					payload,
 				)
+				if (runId !== this.runSequence) return
 				this.result = response.data?.resultObject ?? response.data ?? null
 				this.isValid = response.data?.isValid !== false
 				this.validationErrors = response.data?.validationErrors ?? null
+				this.validatedSchemaId = this.selectedSchema?.id ?? null
 			} catch (err) {
+				if (runId !== this.runSequence) return
 				const status = err?.response?.status
 				const message = err?.response?.data?.message
 					|| err?.response?.data?.error
@@ -448,7 +483,9 @@ export default {
 					+ (status ? ` (${status})` : '')
 					+ (message ? `: ${message}` : '')
 			} finally {
-				this.running = false
+				// Guarded too: an older run finishing after a newer one started
+				// would otherwise clear the spinner while a request is still out.
+				if (runId === this.runSequence) this.running = false
 			}
 		},
 
@@ -460,11 +497,15 @@ export default {
 		 */
 		reset() {
 			this.scheduleRun?.cancel?.()
+			// Retire any in-flight run so its response cannot repopulate the
+			// surface this call just cleared.
+			this.runSequence++
 			this.running = false
 			this.runError = ''
 			this.result = null
 			this.isValid = true
 			this.validationErrors = null
+			this.validatedSchemaId = null
 		},
 
 		/**
