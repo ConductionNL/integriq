@@ -355,6 +355,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Seeds the enum-option cache before the first render.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+	 */
 	created() {
 		/**
 		 * Enum option cache, held off `data` deliberately: Vue's reactive proxy

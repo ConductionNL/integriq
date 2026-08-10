@@ -124,6 +124,8 @@ class SynchronizationLogService
      * @return SynchronizationRunLog The persisted (or unchanged) log value object.
      *
      * @throws \Exception When the OpenRegister save fails.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
      */
     public function update(SynchronizationRunLog $log): SynchronizationRunLog
     {

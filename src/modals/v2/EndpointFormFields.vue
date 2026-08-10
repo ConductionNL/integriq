@@ -321,12 +321,18 @@ export default {
 			return this.pickedRegisterId !== null ? this.pickedRegisterId : this.targetRegisterId
 		},
 
-		/** @return {number|null} Register id parsed from `targetId`. */
+		/**
+		 * @return {number|null} Register id parsed from `targetId`.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		targetRegisterId() {
 			return this.targetIdParts[0]
 		},
 
-		/** @return {number|null} Schema id parsed from `targetId`. */
+		/**
+		 * @return {number|null} Schema id parsed from `targetId`.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		targetSchemaId() {
 			return this.targetIdParts[1]
 		},
@@ -344,7 +350,10 @@ export default {
 			return [register || null, schema || null]
 		},
 
-		/** @return {object[]} Register select options. */
+		/**
+		 * @return {object[]} Register select options.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		registerOptions() {
 			return this.registers.map((register) => ({
 				id: register.id,
@@ -353,7 +362,10 @@ export default {
 			}))
 		},
 
-		/** @return {object|null} The register option currently in play. */
+		/**
+		 * @return {object|null} The register option currently in play.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		selectedRegister() {
 			if (this.activeRegisterId == null) return null
 			return this.registerOptions.find((option) => String(option.id) === String(this.activeRegisterId)) ?? null
@@ -373,13 +385,19 @@ export default {
 				.map((schema) => ({ id: schema.id, label: schema.title || schema.name || String(schema.id) }))
 		},
 
-		/** @return {object|null} The schema matching `targetId`'s second half. */
+		/**
+		 * @return {object|null} The schema matching `targetId`'s second half.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		selectedSchema() {
 			if (this.targetSchemaId == null) return null
 			return this.schemaOptions.find((option) => String(option.id) === String(this.targetSchemaId)) ?? null
 		},
 
-		/** @return {object[]} Currently-selected configuration options. */
+		/**
+		 * @return {object[]} Currently-selected configuration options.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		selectedConfigurations() {
 			const ids = this.formData?.configurations
 			if (!Array.isArray(ids)) return []
@@ -435,6 +453,17 @@ export default {
 			return FIELD_PLACEHOLDERS[key] || ''
 		},
 
+		/**
+		 * The `NcSelect` model for one enum field. Falls back to a synthetic
+		 * `{id, label}` when the stored value is not in the option set, so a
+		 * record carrying a value this build no longer offers still shows it
+		 * rather than rendering blank — an unset-looking select is what gets
+		 * silently overwritten on the next save.
+		 *
+		 * @param {string} key The field key (`method` or the target type).
+		 * @return {object|null} The selected option.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		selectedEnumOption(key) {
 			const current = this.formData?.[key]
 			if (!current) return null

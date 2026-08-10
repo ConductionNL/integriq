@@ -537,11 +537,17 @@ export default {
 		errorConfig() {
 			return { ...DEFAULT_ERROR_CONFIG, ...(this.draft?.configuration?.error || {}) }
 		},
-		/** @return {string} `order` as input text; empty when unset. */
+		/**
+		 * @return {string} `order` as input text; empty when unset.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		orderText() {
 			return this.draft?.order != null ? String(this.draft.order) : ''
 		},
-		/** @return {string} `configuration.error.code` as input text. */
+		/**
+		 * @return {string} `configuration.error.code` as input text.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		errorCodeText() {
 			const code = this.errorConfig.code
 			return code != null ? String(code) : ''

@@ -236,9 +236,22 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Per-instance id tying the schema picker's `<label for>` to the
+		 * NcSelect's own input. Instance-scoped via `uid` because this panel
+		 * can be mounted more than once on a page, and duplicate ids would
+		 * point every label at the first input (WCAG 1.3.1 / 4.1.2).
+		 * @return {string}
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		schemaInputId() {
 			return `cn-mapping-result-schema-${this.uid}`
 		},
+		/**
+		 * The same label-association id for the register picker.
+		 * @return {string}
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		registerInputId() {
 			return `cn-mapping-result-register-${this.uid}`
 		},
