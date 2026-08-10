@@ -30,11 +30,13 @@ import { generateUrl } from '@nextcloud/router'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 
-import { EMPTY_ROOT_GROUP, normaliseConditions } from '../Rule/ruleDraft.js'
+import { EMPTY_ROOT_GROUP, emptyRootGroup, normaliseConditions } from '../Rule/ruleDraft.js'
 
 // Re-exported, not redefined: SynchronizationDetailPage,
 // SynchronizationEditorModal and SyncConfigWidget all import these from here.
-export { EMPTY_ROOT_GROUP, normaliseConditions }
+// `emptyRootGroup()` is the one to reach for when the value is handed to the
+// conditions builder — see its docblock in ruleDraft.js.
+export { EMPTY_ROOT_GROUP, emptyRootGroup, normaliseConditions }
 
 /**
  * Polymorphic type discriminator options shared between source and target.
@@ -105,7 +107,7 @@ export function emptyDraft() {
 		targetSourceMapping: '',
 		actions: [],
 		followUps: [],
-		conditions: { ...EMPTY_ROOT_GROUP },
+		conditions: emptyRootGroup(),
 	}
 }
 

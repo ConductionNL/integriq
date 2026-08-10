@@ -395,7 +395,7 @@ import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 // Shared with modals/v2/SynchronizationEditorModal.vue — see syncDraft.js.
 import {
 	CURSOR_COMPARATOR_OPTIONS,
-	EMPTY_ROOT_GROUP,
+	emptyRootGroup,
 	NEXTCLOUD_FORM_OPTION,
 	NEXTCLOUD_TABLE_OPTION,
 	SYNC_MODE_OPTIONS,
@@ -799,7 +799,7 @@ export default {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
 				this.rawConditionsError = ''
-				this.onConditionsUpdate({ ...EMPTY_ROOT_GROUP })
+				this.onConditionsUpdate(emptyRootGroup())
 				return
 			}
 			try {
