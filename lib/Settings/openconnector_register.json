@@ -198,7 +198,6 @@
           },
           "documentation": {
             "type": "string",
-            "format": "uri",
             "description": "Public docs URL for the upstream API",
             "title": "Documentation URL"
           },
@@ -3974,7 +3973,7 @@
           },
           "fieldMapping": {
             "type": "object",
-            "description": "Contract field name (title|summary|channel|priority) -> {type: from|const|template, value: string}. Every mandatory field (title/summary/channel) MUST be a key. A declared from/template entry whose referenced key is absent at submission time errors (MappingResolutionException) rather than leaking the literal expression -.",
+            "description": "Contract field name (title|summary|channel|priority) -> {type: from|const|template, value: string}. Every mandatory field (title/summary/channel) MUST be a key. A declared from/template entry whose referenced key is absent at submission time errors (MappingResolutionException) rather than leaking the literal expression.",
             "additionalProperties": {
               "type": "object",
               "properties": {
