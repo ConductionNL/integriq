@@ -31,23 +31,21 @@
 // modal renders each `kind` generically.
 
 import { translate as t } from '@nextcloud/l10n'
+// Shared with handlers/actionHandlers.js — the two copies of this had already
+// drifted apart. See handlers/rowId.js.
+import { rowId } from '../../handlers/rowId.js'
+// Same table the "View logs" row action resolves against — see logTargets.js.
+import { logsLocation } from '../../handlers/logTargets.js'
 
 /**
- * Resolve a row's id the way every other row-action consumer does.
- *
- * @param {object} item The row object from the index page.
- * @return {string|null} The id, uuid, or null when neither is present.
- */
-function rowId(item) {
-	return item?.id || item?.uuid || item?.['@self']?.id || null
-}
-
-/**
- * Count the non-null entries of a uuid list.
+ * Count the real entries of a uuid list.
  *
  * `SynchronizationService` pushes `$contractUuid` / `$logUuid` unconditionally
- * and both stay null when the contract or log carries no uuid, so the arrays
- * are sparse in practice.
+ * and both stay null when the contract or log carries no uuid. Since
+ * `SynchronizationLogService::normaliseResultReferences()` those blanks are
+ * compacted out of both the persisted row and the response, so a current
+ * payload holds no gaps. The filter stays because this modal also renders
+ * run-logs written before that change, which are still sparse on disk.
  *
  * @param {Array|undefined} list The uuid list from `result.contracts` / `result.logs`.
  * @return {number} How many real uuids it holds.
@@ -282,9 +280,9 @@ function synchronizationSections(payload) {
 /**
  * Where "View full log" goes for a synchronization.
  *
- * Route/query pair matches `VIEW_LOGS_TARGETS` in handlers/actionHandlers.js so
- * the modal link and the "View logs" row action land on the same filtered page.
- * Test runs are persisted too — `synchronize()` finalises the log via
+ * Built from the same `VIEW_LOGS_TARGETS` entry the "View logs" row action
+ * resolves, so the modal link and the row action cannot drift onto different
+ * pages. Test runs are persisted too — `synchronize()` finalises the log via
  * `SynchronizationLogService::update()` before returning regardless of `isTest`
  * — so this link is valid for a dry run as well.
  *
@@ -292,12 +290,7 @@ function synchronizationSections(payload) {
  * @return {object|null} A router location, or null without an id.
  */
 function synchronizationLogsLink(item) {
-	const id = rowId(item)
-	if (id === null) {
-		return null
-	}
-
-	return { name: 'SynchronizationLogs', query: { synchronization: id } }
+	return logsLocation('view-synchronization-logs', rowId(item))
 }
 
 /**
@@ -392,12 +385,7 @@ function jobSections(payload) {
  * @return {object|null} A router location, or null without an id.
  */
 function jobLogsLink(item) {
-	const id = rowId(item)
-	if (id === null) {
-		return null
-	}
-
-	return { name: 'JobLogs', query: { job: id } }
+	return logsLocation('view-job-logs', rowId(item))
 }
 
 /**

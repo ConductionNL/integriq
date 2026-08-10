@@ -40,17 +40,8 @@ import {
 	EVENT_OPEN_PROMOTION,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
-
-/**
- * Extract a stable id from a row. OR returns rows with `id` set; legacy
- * call-sites sometimes only carry `uuid`. Prefer `id`, fall back to `uuid`.
- *
- * @param {object} item Row payload from the index page.
- * @return {string|number}
- */
-function rowId(item) {
-	return item.id || item.uuid
-}
+import { rowId } from './rowId.js'
+import { VIEW_LOGS_TARGETS } from './logTargets.js'
 
 /**
  * Build the toast detail suffix from an axios error. Surfaces the server's
@@ -241,14 +232,6 @@ export function openPromotionHandler() {
 // manifest requires nc-vue#330 to land first. Once that PR ships, this
 // handler can be deleted and the manifest entries can go back to
 // `handler: "navigate"` with a declarative `queryParam` field.
-const VIEW_LOGS_TARGETS = {
-	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
-	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
-	'view-job-logs': { route: 'JobLogs', queryParam: 'job' },
-	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronization' },
-	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: 'event' },
-}
-
 /**
  * Navigate from a parent index row to the corresponding logs page with
  * the parent id pre-filled as a URL query param.
