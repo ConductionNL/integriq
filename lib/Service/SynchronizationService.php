@@ -2618,6 +2618,8 @@ class SynchronizationService
      * @throws LoaderError
      * @throws SyntaxError
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
      */
     public function getObjectFromSource(array $synchronization, string $endpoint, string|int|null $source=null): array
     {

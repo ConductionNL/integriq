@@ -106,6 +106,15 @@ export default {
 		isOpen() {
 			return this.state === 'open'
 		},
+		/**
+		 * The consecutive-failure count backing the badge. Reads 0 once the
+		 * breaker has been manually reset locally, so the operator sees the
+		 * reset take effect immediately rather than the pre-reset count the
+		 * source object still carries until it is refetched.
+		 *
+		 * @return {number}
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+		 */
 		failureCount() {
 			if (this.localState === 'closed') {
 				return 0
@@ -127,6 +136,15 @@ export default {
 		},
 	},
 
+	/**
+	 * Starts the one-second tick that drives the cooldown countdown. The
+	 * remaining time is derived from `now` rather than decremented, so the
+	 * display stays correct if the tab is backgrounded and the interval is
+	 * throttled.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+	 */
 	mounted() {
 		this.tickTimer = setInterval(() => {
 			this.now = Math.floor(Date.now() / 1000)

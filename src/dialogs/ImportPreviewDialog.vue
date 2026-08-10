@@ -187,6 +187,16 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Resets on open. This clears `unresolvedAcknowledged` along with
+		 * everything else — without that, an operator who acknowledged
+		 * unresolved references for a previous import would find the confirm
+		 * button already unblocked for the next one.
+		 *
+		 * @param {boolean} isOpen Whether the dialog is being shown.
+		 * @return {void}
+		 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-surfaces-an-unresolvable-slug-reference-as-a-blocking-warning
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.reset()

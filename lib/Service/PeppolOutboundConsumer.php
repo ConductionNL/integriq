@@ -64,6 +64,8 @@ class PeppolOutboundConsumer implements IEventListener
      * @param Event $event The incoming event.
      *
      * @return void
+     *
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
      */
     public function handle(Event $event): void
     {

@@ -106,6 +106,8 @@ class RegisterBootstrapJob extends TimedJob
      * @param mixed $argument Unused.
      *
      * @return void
+     *
+     * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
      */
     protected function run($argument): void
     {
@@ -161,6 +163,8 @@ class RegisterBootstrapJob extends TimedJob
              * @param string $message Ignored.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function debug(string $message): void
             {
@@ -172,6 +176,8 @@ class RegisterBootstrapJob extends TimedJob
              * @param string $message Ignored.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function info($message): void
             {
@@ -180,9 +186,15 @@ class RegisterBootstrapJob extends TimedJob
             /**
              * Discard a warning.
              *
+             * The repair step's own warnings are not lost by being discarded
+             * here: {@see run()} logs the outcome, and REQ-001 requires every
+             * failure path to log through LoggerInterface as well as $output.
+             *
              * @param string $message Ignored.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function warning($message): void
             {
@@ -194,6 +206,8 @@ class RegisterBootstrapJob extends TimedJob
              * @param integer $max Ignored.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function startProgress($max=0): void
             {
@@ -206,6 +220,8 @@ class RegisterBootstrapJob extends TimedJob
              * @param string  $description Ignored.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function advance($step=1, $description=''): void
             {
@@ -215,6 +231,8 @@ class RegisterBootstrapJob extends TimedJob
              * Ignore progress completion.
              *
              * @return void
+             *
+             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
              */
             public function finishProgress(): void
             {

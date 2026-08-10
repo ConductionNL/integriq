@@ -253,6 +253,14 @@ export default {
 		},
 	},
 
+	/**
+	 * Loads the product and its four panels. Each load is independent so one
+	 * failing panel (analytics is admin-only, for instance) leaves the rest of
+	 * the page usable rather than blanking the whole detail view.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
+	 */
 	mounted() {
 		this.load()
 		this.loadEndpoints()

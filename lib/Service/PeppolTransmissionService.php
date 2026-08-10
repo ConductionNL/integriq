@@ -416,6 +416,8 @@ class PeppolTransmissionService
      * @return ObjectEntity The resolved source.
      *
      * @throws PeppolProviderException When no active Peppol source is configured.
+     *
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
      */
     public function resolveActiveSource(): ObjectEntity
     {

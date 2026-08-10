@@ -95,6 +95,8 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
      * same way and a future admin-settings UI has one place to write to.
      *
      * @return string The app-config key.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     protected function credentialConfigKey(): string
     {
@@ -107,6 +109,8 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
      * the admin has not yet configured one.
      *
      * @return string|null The credential UUID.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     protected function getCredentialId(): ?string
     {

@@ -282,4 +282,111 @@ class EudiWalletControllerTest extends TestCase
         $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
     }//end testRevokeWithoutBearerTokenIs401()
+
+    /**
+     * REQ-EUDI-003: the issuer-metadata document is what a wallet reads to
+     * discover where to send a credential request, so the two endpoint URLs it
+     * advertises are the contract. Both are asserted by value — a metadata
+     * document that merely "is a JSONResponse" would still be broken if it
+     * pointed a wallet at the wrong host.
+     *
+     * @return void
+     */
+    public function testIssuerMetadataAdvertisesTheResolvableCredentialAndTokenEndpoints(): void
+    {
+        $this->offerService->method('resolveOrganisationId')->willReturn('org-1');
+        $this->keyService->method('getJwks')->with('org-1')->willReturn(['keys' => []]);
+
+        $response = $this->controller->issuerMetadata();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+
+        $this->assertSame('https://example.test', $data['credential_issuer']);
+        $this->assertSame(
+            'https://example.test/index.php/apps/openconnector/api/eudi/credential',
+            $data['credential_endpoint']
+        );
+        $this->assertSame(
+            'https://example.test/index.php/apps/openconnector/api/eudi/token',
+            $data['token_endpoint']
+        );
+        $this->assertSame(['keys' => []], $data['jwks']);
+
+    }//end testIssuerMetadataAdvertisesTheResolvableCredentialAndTokenEndpoints()
+
+    /**
+     * REQ-EUDI-003: the two credential configurations a wallet may request are
+     * part of the published contract, and their `format` values are what the
+     * credential endpoint dispatches on (REQ-EUDI-007).
+     *
+     * @return void
+     */
+    public function testIssuerMetadataPublishesBothSupportedCredentialConfigurations(): void
+    {
+        $this->offerService->method('resolveOrganisationId')->willReturn('org-1');
+        $this->keyService->method('getJwks')->willReturn(['keys' => []]);
+
+        $configurations = $this->controller->issuerMetadata()
+            ->getData()['credential_configurations_supported'];
+
+        $this->assertArrayHasKey('edci-diploma', $configurations);
+        $this->assertSame('jwt_vc_json', $configurations['edci-diploma']['format']);
+        $this->assertSame('edci_diploma', $configurations['edci-diploma']['scope']);
+
+        $this->assertArrayHasKey('open-badges-3', $configurations);
+        $this->assertSame('dc+sd-jwt', $configurations['open-badges-3']['format']);
+        $this->assertSame('open-badges-3', $configurations['open-badges-3']['vct']);
+
+    }//end testIssuerMetadataPublishesBothSupportedCredentialConfigurations()
+
+    /**
+     * REQ-EUDI-007: the credential endpoint forwards the wallet's bearer token
+     * and its request body to the issuance service unchanged. Asserting the
+     * arguments is the point — a credential issued against the wrong token is
+     * the failure this endpoint exists to prevent.
+     *
+     * @return void
+     */
+    public function testCredentialForwardsTheBearerTokenAndBodyToIssuance(): void
+    {
+        $params = ['format' => 'jwt_vc_json', 'proof' => ['jwt' => 'proof-jwt']];
+
+        $this->request->method('getHeader')->with('Authorization')->willReturn('Bearer wallet-token');
+        $this->request->method('getParams')->willReturn($params);
+
+        $this->offerService->expects($this->once())
+            ->method('issueCredential')
+            ->with($this->identicalTo('wallet-token'), $this->identicalTo($params))
+            ->willReturn(['credential' => 'issued-vc']);
+
+        $response = $this->controller->credential();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame('issued-vc', $response->getData()['credential']);
+
+    }//end testCredentialForwardsTheBearerTokenAndBodyToIssuance()
+
+    /**
+     * REQ-EUDI-007: a rejected proof-of-possession must surface with the status
+     * and error code the exception declares, not be flattened into a generic
+     * failure a wallet cannot act on.
+     *
+     * @return void
+     */
+    public function testCredentialMapsAnIssuanceRejectionToItsDeclaredStatusAndCode(): void
+    {
+        $this->request->method('getHeader')->with('Authorization')->willReturn('Bearer wallet-token');
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->offerService->method('issueCredential')->willThrowException(
+            new EudiIssuanceException('proof of possession failed', 400, 'invalid_proof')
+        );
+
+        $response = $this->controller->credential();
+
+        $this->assertSame(400, $response->getStatus());
+        $this->assertSame('invalid_proof', $response->getData()['error']);
+
+    }//end testCredentialMapsAnIssuanceRejectionToItsDeclaredStatusAndCode()
 }//end class

@@ -45,7 +45,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return false for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -66,7 +66,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return true for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'openregister', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -94,7 +94,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return false for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -120,7 +120,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return false for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -145,7 +145,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return true for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'openregister', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -170,7 +170,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return false for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'files']);
 
         $container = $this->createMock(IContainer::class);
@@ -192,7 +192,7 @@ class OrganisationBridgeServiceTest extends TestCase
     {
         // Mock app manager to return false for openregister
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
+        $appManager->method('getEnabledApps')
             ->willReturn(['openconnector', 'files']);
 
         $container = $this->createMock(IContainer::class);
