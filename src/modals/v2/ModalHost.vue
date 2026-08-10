@@ -10,6 +10,8 @@
 
     1. The modals live outside the manifest-rendered router-view tree, so
        a page swap mid-test cannot unmount the modal from under the user.
+       RunActionModal depends on this: a synchronization run can outlive
+       several seconds of navigation, and its result must survive to be read.
     2. Each handler stays a plain function with no Vue-instance context —
        it just calls `modalBus.emit('open-foo', { item })` and the host
        picks it up.
@@ -32,6 +34,12 @@
 			:open="addEndpointRule.open"
 			:endpoint="addEndpointRule.endpoint"
 			@close="closeAddEndpointRule" />
+		<RunActionModal
+			:open="runAction.open"
+			:target="runAction.target"
+			:mode="runAction.mode"
+			:item="runAction.item"
+			@close="closeRunAction" />
 		<SubscriptionSigningModal
 			:open="subscriptionSigning.open"
 			:subscription="subscriptionSigning.subscription"
@@ -56,6 +64,7 @@
 import TestMappingModal from './TestMappingModal.vue'
 import TestSourceModal from './TestSourceModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
+import RunActionModal from './RunActionModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
 import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
@@ -66,6 +75,7 @@ import {
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CATALOG_ITEM_DETAIL,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
@@ -80,6 +90,7 @@ export default {
 		TestMappingModal,
 		TestSourceModal,
 		AddEndpointRuleModal,
+		RunActionModal,
 		SubscriptionSigningModal,
 		CatalogItemDetailDialog,
 		ImportPreviewDialog,
@@ -92,6 +103,7 @@ export default {
 			testMapping: { open: false, mapping: null },
 			testSource: { open: false, source: null },
 			addEndpointRule: { open: false, endpoint: null },
+			runAction: { open: false, target: '', mode: '', item: null },
 			subscriptionSigning: { open: false, subscription: null },
 			catalogItemDetail: { open: false, item: null },
 			configurationImport: { open: false },
@@ -105,6 +117,7 @@ export default {
 		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.on(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.on(EVENT_OPEN_RUN_ACTION, this.openRunAction)
 		modalBus.on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 		modalBus.on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
@@ -117,6 +130,7 @@ export default {
 		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.off(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.off(EVENT_OPEN_RUN_ACTION, this.openRunAction)
 		modalBus.off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 		modalBus.off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
@@ -148,6 +162,19 @@ export default {
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeAddEndpointRule() {
 			this.addEndpointRule = { open: false, endpoint: null }
+		},
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
+		openRunAction(payload) {
+			this.runAction = {
+				open: true,
+				target: (payload?.target ?? ''),
+				mode: (payload?.mode ?? ''),
+				item: (payload?.item ?? null),
+			}
+		},
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
+		closeRunAction() {
+			this.runAction = { open: false, target: '', mode: '', item: null }
 		},
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		openSubscriptionSigning(payload) {

@@ -1,7 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
-    "Conditions (JSON Logic)" : "Voorwaarden (JSON Logic)",
+    "Run a flow" : "Een flow uitvoeren",
+    "Dispatch an event" : "Een gebeurtenis versturen",
+    "Ping a source" : "Een bron pingen",
+    "Discard" : "Verwerpen",
     "Dead letter queues" : "Dead letter-wachtrijen",
     "Select dead letter {id}" : "Dead letter {id} selecteren",
     "Select delivery {id}" : "Bezorging {id} selecteren",
@@ -36,7 +39,7 @@ OC.L10N.register(
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "De referentie moet de aanroepende app \"openconnector\" toestaan in allowedApps. Let op: de app die de referentie heeft aangemaakt kan een andere zijn.",
     "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here." : "De OpenRegister-referentiebemiddelaar is niet beschikbaar (de openregister-app is uitgeschakeld of te oud). Bemiddelde referenties kunnen hier niet worden getoond.",
     "The transport used to reach this source." : "Het transport dat wordt gebruikt om deze bron te bereiken.",
-    "You have no brokered credentials yet. Create one in OpenRegister first." : "U heeft nog geen bemiddelde referenties. Maak er eerst een aan in OpenRegister.",
+    "You have no brokered credentials yet. Create one in OpenRegister first." : "Je hebt nog geen bemiddelde referenties. Maak er eerst een aan in OpenRegister.",
     "Address lookup temporarily unavailable" : "Adresopzoeking tijdelijk niet beschikbaar",
     "Query parameter q is required" : "Parameter q is vereist",
     "Address not found" : "Adres niet gevonden",

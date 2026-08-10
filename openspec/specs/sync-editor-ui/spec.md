@@ -5,7 +5,7 @@ status: done
 # sync-editor-ui Specification
 
 ## Purpose
-Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists, an edit modal that loads option collections and can install OpenRegister on demand, and modals to run or dry-run test a synchronization against the backend.
+Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists. Two surfaces share those components: the detail page at `/synchronizations/:id`, and a wide three-column create/edit modal on the Synchronizations index. Run and dry-run test are triggered from the index row actions, and the dry-run result is rendered in the modal.
 
 @e2e exclude Vue component-internal method/computed behaviour (updateDraft, normalizeForDiff dirty flag, normaliseConditions/serializeConditions round-trip, save guards) reverse-engineered from the synchronization detail-page .vue components — unit-level (vitest), not browser-observable; the synchronization detail-page render surface is covered by manifest-pages e2e under synchronization-engine
 ## Requirements
@@ -68,36 +68,71 @@ with fetched options.
 Notes: `SyncMappingPicker.vue` (8), `SyncMappingPreview.vue` (9),
 `SyncReferenceList.vue` (5).
 
-### Requirement: Synchronization edit modal (REQ-SYNCUI-004)
+### Requirement: Wide create/edit synchronization modal (REQ-SYNCUI-004)
 
-The edit modal SHALL load source/register/schema/rule/mapping option collections,
-react to source-type changes, install OpenRegister on demand, and submit the
-synchronization through the store. It supports launching the test flow and closing.
+The Synchronizations index SHALL offer a three-column create/edit modal — source,
+transform, and target — replacing the generic four-field form dialog. It is mounted
+through CnIndexPage's `form-dialog` slot, declared in the manifest as
+`pages[Synchronizations].slots["form-dialog"]`, and reuses the detail page's
+components rather than reimplementing them: `SyncConfigWidget`, `SyncMappingPicker`,
+`SyncReferenceList` and `RuleConditionGroup`, with the shared draft, option and
+condition logic in `views/Synchronization/syncDraft.js`.
 
-#### Scenario: Editing a synchronization
-- WHEN the user fills the modal and submits
-- THEN `editSynchronization` persists the synchronization and the modal closes
+All edits SHALL be held in a local draft and persisted only on save, so a
+synchronization can be configured completely before it first exists. Saving SHALL go
+through the slot's `confirm` binding so the index's own save path and list refresh run.
 
-#### Scenario: Option collections load
-- WHEN the modal mounts
-- THEN `getSources`/`getRegisterWithSchemas`/`getSourceTargetMappings`/`getRules` populate the selectors
+#### Scenario: creating a configured synchronization in one pass
 
-Notes: `EditSynchronization.vue` (12).
+- **WHEN** the user opens Add, fills in a name, picks a source kind and config, a
+  target kind and config, and a mapping
+- **THEN** a single save creates the synchronization with all of it
+- **AND** the row appears in the index without a manual reload
+
+#### Scenario: cancelling discards every edit
+
+- **WHEN** the user changes conditions, rules or mappings on an existing
+  synchronization and cancels
+- **THEN** nothing is persisted and the stored record is unchanged
+
+#### Scenario: the dry run is only offered where it can be honest
+
+- **GIVEN** `POST /api/synchronizations/{id}/test` resolves the saved record by id
+- **WHEN** the modal is in create mode
+- **THEN** the Test button is absent
+- **AND** in edit mode with unsaved changes it is disabled, explaining that the dry
+  run tests the saved version
+- **AND** when it runs, the returned result payload is rendered rather than discarded
+
+Notes: `modals/v2/SynchronizationEditorModal.vue`, `views/Synchronization/syncDraft.js`.
+Replaces the dead pre-manifest `modals/Synchronization/EditSynchronization.vue`, whose
+hand-rolled on-demand OpenRegister installer was deliberately not carried over.
 
 ### Requirement: Run and test a synchronization (REQ-SYNCUI-005)
 
-The run and test modals SHALL trigger a synchronization run (or dry-run test) against
-the backend, surface the result/log, and close.
+The index row actions SHALL let the user run or dry-run a synchronization, gating the
+request behind a confirmation step that exposes the run flags and rendering the run log
+the backend returns. The handlers themselves SHALL only open that surface — the shared
+run/test modal specified by `app-shell-and-logs-ui` REQ-SHELLUI-004 — and SHALL make no
+request of their own.
 
 #### Scenario: Running a synchronization
-- WHEN the user confirms the run modal
-- THEN `runSynchronization` invokes the backend run and the result is surfaced
+- WHEN the user invokes the "Run now" row action
+- THEN `runSynchronizationHandler` opens the run modal for `synchronization/run`
+- AND the run fires only once the user confirms, with whichever of `force` /
+  `forceDeletion` they selected
+- AND the returned run log's object counters are rendered
 
 #### Scenario: Testing a synchronization
-- WHEN the user confirms the test modal
-- THEN `testSynchronization` invokes the backend dry-run and the result is surfaced
+- WHEN the user invokes the "Test (dry run)" row action
+- THEN `testSynchronizationHandler` opens the same modal for `synchronization/test`
+- AND the dry run's result is rendered rather than reduced to a toast
 
-Notes: `RunSynchronization.vue` (2), `TestSynchronization.vue` (2).
+Notes: `handlers/actionHandlers.js` — `runSynchronizationHandler` /
+`testSynchronizationHandler`, now bus emitters. The result rendering lives in
+`modals/v2/RunActionModal.vue` + `modals/v2/runTargets.js` (REQ-SHELLUI-004); the Test
+button inside the editor modal (REQ-SYNCUI-004) renders the same payload for the
+edit-mode dry run.
 
 ### Requirement: Table picker for the `nextcloud-table` source/target kind (REQ-SYNCUI-006)
 
@@ -218,4 +253,3 @@ single-valued question types.
   a visible warning that referencing this text by name is ambiguous
   (`nextcloud-forms-connector` REQ-003), steering the user toward
   referencing by id instead
-

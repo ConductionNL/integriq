@@ -431,6 +431,8 @@ requirement does not itself define the deletion-safety guard (that is
 `nextcloud-table` is a recognised branch of that shared dispatch, not a
 type that silently no-ops or bypasses the guard.
 
+@e2e exclude backend Tables source/target adapter dispatch — covered by PHPUnit, not browser UI
+
 #### Scenario: source fetch dispatches to the Tables adapter
 
 - **GIVEN** a synchronization with `sourceType: nextcloud-table`
@@ -479,6 +481,8 @@ MUST NOT schedule an automatic retry sweep for `sync_item_dead_letter`
 entries (unlike event delivery's `EventRetryJob`), since item transformation
 and write failures are typically deterministic (mapping/config/data errors)
 rather than transient.
+
+@e2e exclude backend per-item isolation and dead-letter internals — covered by PHPUnit, not browser UI
 
 #### Scenario: one bad item does not abort the sync pass
 
@@ -531,6 +535,8 @@ changing either method's existing return type (an array of fetched objects).
 A `429` rate-limit response SHALL continue to be surfaced as a thrown
 `TooManyRequestsHttpException` (unchanged) and SHALL also be treated as an
 incomplete fetch by the caller catching it.
+
+@e2e exclude backend pagination fetch-completeness internals — covered by PHPUnit, not browser UI
 
 #### Scenario: a non-2xx page response marks the fetch incomplete
 
@@ -585,6 +591,8 @@ override SHALL be a distinct parameter from the pre-existing `force`
 parameter (which bypasses unchanged-hash skipping and is already applied
 automatically by event-driven re-syncs) so that automatic re-syncs can never
 silently bypass this guard.
+
+@e2e exclude backend deletion-guard internals — covered by PHPUnit, not browser UI
 
 #### Scenario: incomplete fetch blocks deletion entirely
 
@@ -642,6 +650,8 @@ or delete any `SynchronizationContract`, any target object, or any `Source`
 object, and SHALL NOT persist any change to the `Synchronization` entity
 itself (including its `targetLastSynced` timestamp).
 
+@e2e exclude backend dry-run write-suppression internals — covered by PHPUnit, not browser UI
+
 #### Scenario: a test run against a synchronization with existing synced objects deletes nothing
 
 - GIVEN a synchronization with 50 previously-synced objects and contracts
@@ -666,6 +676,41 @@ itself (including its `targetLastSynced` timestamp).
 - AND no target object is created or updated
 - AND no contract is created or updated
 
+#### Scenario: a test run tolerates the uuid-less contracts it necessarily produces
+
+- GIVEN a synchronization whose source objects have no previously-persisted
+  contract
+- WHEN a test run processes them
+- THEN the run completes and reports its result
+- AND no lookup is attempted for the contract references it never assigned —
+  persisting the contract is what would have assigned a uuid, and this
+  requirement forbids that
+
+#### Scenario: reference lists report references, not one slot per object
+
+- WHEN a run finalises its log
+- THEN `result.contracts`, `result.logs` and `result._embed.contracts` contain
+  only entries that reference something, with `_embed.contracts` compacted in
+  lockstep with `contracts` so the two stay aligned by position
+- AND the returned payload is identical to the persisted row, both being taken
+  from the same normalised log
+- AND the object tallies still report every processed object
+
+Notes: both scenarios are regression guards, covered by
+`SynchronizationServiceTestRunContractEmbedTest`.
+
+`POST .../{id}/test` answered 500 (`findContract(): Argument #1 ($id) must be
+of type string|int, null given`) for every first-ever dry run, because the
+embedding step mapped the null ids this requirement guarantees through a
+lookup typed to reject them.
+
+Separately, the engine appends to `contracts`/`logs` once per processed object
+whether or not there is a reference, so a 100-object dry run reported three
+hundred nulls. `SynchronizationLogService` had a normaliser for exactly this
+but applied it only to the copy headed for storage, so the API response and
+the stored row disagreed — the response carried the nulls, the row did not. It
+now normalises the log itself, which is what both are serialised from.
+
 ### Requirement: Ad-hoc Source resolution does not persist a new Source (REQ-012)
 
 The system SHALL use a transient, in-memory source configuration, and SHALL
@@ -674,6 +719,8 @@ an ad-hoc `source` location string that does not match any existing,
 admin-configured Source's `location`. Resolution against an already-configured
 Source (matching `location`) is unaffected and continues to reuse that
 persisted Source, including its rate-limit watermark state.
+
+@e2e exclude backend ad-hoc source-resolution internals — covered by PHPUnit, not browser UI
 
 #### Scenario: an ad-hoc location with no matching Source does not create one
 
@@ -699,6 +746,8 @@ The system SHALL log a warning identifying all duplicate contract ids, and
 SHALL NOT automatically delete or merge any of them, when processing a
 source object finds more than one `SynchronizationContract` for the same
 `(synchronizationId, originId)` pair.
+
+@e2e exclude backend contract-deduplication internals — covered by PHPUnit, not browser UI
 
 #### Scenario: a pre-existing duplicate contract pair is logged, not deleted
 
@@ -731,6 +780,8 @@ that everything downstream of the target write succeeded.
 This tightens REQ-013, which only requires duplicates to be *detected* after the
 fact. Persisting the mapping first makes the duplicate class structurally
 impossible rather than merely reportable.
+
+@e2e exclude backend contract-persistence ordering — covered by PHPUnit, not browser UI
 
 #### Scenario: a failure in the after-rules does not lose the mapping
 
@@ -840,6 +891,8 @@ with a logged warning and an empty result instead of attempting to parse the
 undecoded tar byte stream. A source presenting none of these signals MUST
 take the exact pre-existing JSON-then-XML-fallback code path, unchanged.
 
+@e2e exclude backend bulk gzip/JSONL ingestion internals — covered by PHPUnit, not browser UI
+
 #### Scenario: gzip-compressed JSONL bulk file is decompressed and parsed line-by-line
 
 - **GIVEN** a source whose fetched response has `encoding: "base64"` (a
@@ -937,6 +990,8 @@ presenting neither `configuration.format` value MUST take the exact
 pre-existing JSON-then-XML-fallback (and REQ-006 gzip/JSONL) code path,
 unchanged.
 
+@e2e exclude backend markdown/HTML source extraction internals — covered by PHPUnit, not browser UI
+
 #### Scenario: a markdown "awesome list" source is parsed into one record per list item
 
 - **GIVEN** a source with `configuration.format: "markdown"`
@@ -1019,6 +1074,8 @@ with `syncMode` absent or `full` MUST take the exact pre-existing code path —
 no `cursor` context key is added and `sourceConfig.query` values are passed
 through unrendered, unchanged from current behavior.
 
+@e2e exclude backend incremental cursor-filtered fetch internals — covered by PHPUnit, not browser UI
+
 #### Scenario: an incremental run injects the stored watermark into a templated endpoint
 
 - GIVEN a Synchronization with `syncMode: incremental`, `sourceConfig.endpoint:
@@ -1089,6 +1146,8 @@ run to throw, mirroring REQ-003's `getOriginId()` behavior for a missing
 `idPosition` — silently computing a watermark from an incomplete field
 would risk producing an incorrect (too-low) high-watermark that
 permanently skips sibling records on every subsequent run.
+
+@e2e exclude backend cursor-watermark internals — covered by PHPUnit, not browser UI
 
 #### Scenario: watermark advances after a complete fetch
 
@@ -1168,6 +1227,8 @@ accidentally delete against a partial incremental fetch. On this refusal,
 mirroring its existing `fetch_incomplete`-reason guard (REQ-010), and MUST
 return `0`.
 
+@e2e exclude backend deletion garbage-collection internals — covered by PHPUnit, not browser UI
+
 #### Scenario: incremental mode blocks deletion even on a complete fetch
 
 - GIVEN a Synchronization with `syncMode: incremental`, 100 existing
@@ -1241,6 +1302,8 @@ record for create/update via the existing hash-diff contract mechanism
 Synchronization: REQ-018's guard is keyed on `syncMode`, not on cursor
 state, and a reset-cursor call does not change `syncMode`.
 
+@e2e exclude backend cursor-reset internals — covered by PHPUnit/Newman, not browser UI
+
 #### Scenario: reset-cursor clears the watermark
 
 - GIVEN a Synchronization with `syncMode: incremental` and
@@ -1307,6 +1370,8 @@ matching `case`. `SynchronizationService::updateTarget()` MUST NOT gain a
 type: nextcloud-form`, unchanged from the base spec's existing `default`
 branch behaviour (`nextcloud-forms-connector` REQ-002 explicitly excludes a
 target/write direction).
+
+@e2e exclude backend Forms source adapter dispatch — covered by PHPUnit, not browser UI
 
 #### Scenario: source fetch dispatches to the Forms adapter
 

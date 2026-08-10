@@ -59,6 +59,16 @@ webpackConfig.entry = {
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
+	// Keep a linked @conduction/nextcloud-vue (`npm i ../nextcloud-vue`, which
+	// npm installs as a symlink) resolving its dependencies out of THIS app's
+	// node_modules. Webpack resolves symlinks to their real path by default, so
+	// the library's transitive requires would instead walk up from the sibling
+	// checkout — where its devDependency tree is incomplete for a browser build
+	// (`Can't resolve 'buffer'` from safe-buffer, reached via @nextcloud/files).
+	// It also guarantees the linked library shares this app's single Vue/Pinia
+	// copy, the same hazard the aliases below exist to prevent. No-op when the
+	// dependency is a normal registry install rather than a link.
+	symlinks: false,
 	// nc-vue's chunked ESM bundles @nextcloud/dialogs chunks that import
 	// Node's `path`; webpack 5 ships no core-module polyfills, so a CLEAN
 	// npm ci + build fails with "Can't resolve 'path'" without this

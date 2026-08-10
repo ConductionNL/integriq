@@ -19,13 +19,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { appDialog } from '../support/dialogs'
 // APP_BASE comes from _helpers.ts, the one place that knows both that the
 // router is hash-mode and that the URL needs the `/index.php/` prefix (without
 // it, PHP's built-in server on CI 404s the app directory and every assertion
 // below runs against a 404 page). This file used to keep a private copy of
 // that string that was missing the prefix.
-import { APP_BASE, createViaAddButtonAndOpenDetail } from './_helpers'
+import { APP_BASE, openAndDismissCreateModal } from './_helpers'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 const API_BASE = '/index.php/apps/openconnector/api'
@@ -45,24 +44,26 @@ test.describe('REQ-UI-001: Mappings list page mounts', () => {
 })
 
 test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
-	// This test used to assert "Add Mapping button opens modal/dialog" and
-	// failed with `Modal must open after clicking Add Mapping` — a true
-	// statement about a modal the app deliberately does not have.
+	// The editor is a modal again, so this asserts a modal again.
 	//
-	// `src/main.js` wraps the Mappings route in a `MappingsPageRenderer` that
-	// passes `onAdd: createMappingAndOpen`, and says why: "The Mappings index
-	// Add button must open the bespoke MappingDetail editor (a page) rather
-	// than the generic name/description form dialog." `createMappingAndOpen()`
-	// POSTs a new object to OpenRegister and routes to `MappingDetail`.
+	// It has now been both, because the app has been both. Originally it
+	// expected a dialog and failed once `createMappingAndOpen` replaced that
+	// with "POST an empty object, then route to MappingDetail"; it was rewritten
+	// to assert the routing instead. That behaviour was itself the defect —
+	// clicking Add minted a persisted "New mapping" shell before the user typed
+	// anything — and the Mappings page now declares
+	// `slots["form-dialog"] = "MappingEditorModal"`, so Add opens the editor
+	// over an unsaved draft and writes nothing until Create.
 	//
-	// So the contract asserted here is the real one, and it is a stronger check
-	// than the old one: the object must actually be persisted AND its editor
-	// must open. The helper deletes what it creates.
+	// Opening and dismissing is the whole contract here: this spec covers the
+	// creation SURFACE. That the surface actually persists is J2's job in
+	// tests/e2e/regression/journeys.spec.ts, which drives the dialog to Create
+	// and reads the object back out of OpenRegister.
 	//
 	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-surface
-	test('Add Mapping creates a mapping and opens its detail editor', async ({ page }) => {
+	test('Add Mapping opens the mapping editor modal', async ({ page }) => {
 		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
-		await createViaAddButtonAndOpenDetail(page, /Add Mapping/i, 'mapping', 'mappings')
+		await openAndDismissCreateModal(page, /Add Mapping/i)
 	})
 })
 

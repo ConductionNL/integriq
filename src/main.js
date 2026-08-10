@@ -22,7 +22,6 @@ import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import customComponents, { registry } from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
-import { createMappingAndOpen } from './handlers/actionHandlers.js'
 import appIcons from './icons.js'
 
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
@@ -93,25 +92,6 @@ function tryLoadTranslations() {
 // component-options object without altering the lib's internals.
 const RoutePageRenderer = { ...CnPageRenderer }
 
-// The Mappings index Add button must open the bespoke MappingDetail editor
-// (a page) rather than the generic name/description form dialog. The primary
-// Add button delegates to a parent `@add` listener when one is present
-// (CnIndexPage.onAddClick), so this thin wrapper — used only for the Mappings
-// route — attaches that listener while keeping the primary button intact.
-// CnPageRenderer forwards $listeners down to CnIndexPage, so `@add` here
-// reaches the button; all other routes use the plain RoutePageRenderer and
-// keep the default form-dialog create.
-const MappingsPageRenderer = {
-	name: 'MappingsPageRenderer',
-	// Vue 3 (ADR-066): native h() — the Vue-2 `{ on: { add } }` data object
-	// became a flat `onAdd` listener prop. CnPageRenderer forwards fall-through
-	// attrs (incl. onAdd) down to CnIndexPage, so `@add` still reaches the
-	// primary Add button.
-	render() {
-		return h(RoutePageRenderer, { onAdd: createMappingAndOpen })
-	},
-}
-
 // Collect the app's manifest.d/*.json fragments — require.context is resolved
 // by this app's own webpack build, so it stays app-local — then hand the base
 // manifest, fragments, and menu-layout to the shared pipeline.
@@ -132,7 +112,7 @@ function routesFromManifest(manifest) {
 	const routes = manifest.pages.map((page) => ({
 		name: page.id,
 		path: page.route,
-		component: page.id === 'Mappings' ? MappingsPageRenderer : RoutePageRenderer,
+		component: RoutePageRenderer,
 		props: page.route.includes(':'),
 	}))
 	// Legacy redirect: /cloud-events → /cloud-events/events (preserves bookmarks)

@@ -33,10 +33,10 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for mapping execution tests and persistence helpers.
@@ -61,6 +61,7 @@ class MappingsController extends Controller
      * @param IL10N                $l              The localization service.
      * @param IUserSession         $userSession    The user session.
      * @param ActionAuthService    $actionAuth     The action authorization service.
+     * @param LoggerInterface      $logger         Logger for non-fatal diagnostics.
      */
     public function __construct(
         $appName,
@@ -70,6 +71,7 @@ class MappingsController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -81,7 +83,6 @@ class MappingsController extends Controller
      * This method tests a mapping with provided input data and optional schema validation.
      *
      * @param SourceMappingService $objectService Source mapping service used to access OpenRegister.
-     * @param IURLGenerator        $urlGenerator  URL generator used to resolve schema URLs during validation.
      *
      * @return JSONResponse A JSON response containing the test results.
      *
@@ -121,7 +122,7 @@ class MappingsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function test(SourceMappingService $objectService, IURLGenerator $urlGenerator): JSONResponse
+    public function test(SourceMappingService $objectService): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -171,8 +172,28 @@ class MappingsController extends Controller
 
             $schemaId = $data['schema'];
             try {
-                $schema = $openRegisters->getMapper('schema')->find($schemaId);
+                // Resolve via setSchema(), NOT getMapper('schema').
+                //
+                // ObjectService::getMapper()'s first parameter is a REGISTER, not
+                // an entity-type name, and its non-numeric-string branch treats
+                // 'schema' as a caller type-hint — so it returned an
+                // *unconstrained* ObjectServiceMapperAdapter and find($schemaId)
+                // asked for an OBJECT with that id across every register. With a
+                // numeric schema id that then died inside OpenRegister
+                // (ObjectService::find() accepts int|string, GetObject::find()
+                // narrows to string) as a TypeError, which this catch cannot
+                // intercept — hence a 500 instead of the intended 404. Only
+                // `?schema=<slug>` ever appeared to work, and only by accident.
+                //
+                // setSchema() resolves numeric ids, uuids and slugs through
+                // SchemaMapper (with request-scoped caching) and rethrows
+                // DoesNotExistException, which is what this handler expects.
+                $schema = $openRegisters->setSchema($schemaId)->getCurrentSchemaEntity();
             } catch (DoesNotExistException $exception) {
+                $schema = null;
+            }//end try
+
+            if ($schema === null) {
                 return new JSONResponse(
                 data: [
                     'error'   => $this->l->t('Not found'),
@@ -218,7 +239,18 @@ class MappingsController extends Controller
 
         // Perform schema validation if both schema and validation are provided.
         if ($schema !== false && $validation !== false && $openRegisters !== null) {
-            $result = $openRegisters->validateObject(object: $resultObject, schemaObject: $schema->getSchemaObject($urlGenerator));
+            // Validation lives on the ValidateObject handler, reached via
+            // getValidateHandler(); ObjectService::validateObject() no longer
+            // exists (it was a delegating shim that went away when the object
+            // handlers were split out), so calling it raised a fatal "undefined
+            // method". Pass the Schema entity rather than a pre-built
+            // schemaObject: the handler derives that itself via
+            // getSchemaObject(), and it additionally runs unique-field and
+            // extended-type checks that a bare schemaObject argument skips.
+            $result = $openRegisters->getValidateHandler()->validateObject(
+                object: $resultObject,
+                schema: $schema
+            );
 
             $isValid = $result->isValid();
 
@@ -226,7 +258,7 @@ class MappingsController extends Controller
                 // Class imported without use because it only exists when OpenRegisters is installed.
                 $validationErrors = (new \Opis\JsonSchema\Errors\ErrorFormatter())->format(error: $result->error());
             }
-        }
+        }//end if
 
         // Return the result as a JSON response.
         return new JSONResponse(
@@ -305,6 +337,10 @@ class MappingsController extends Controller
                 $registerMapper = \OC::$server->get(RegisterMapper::class);
                 $data['availableRegisters'] = $registerMapper->findAll();
             } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[MappingsController] could not resolve RegisterMapper, returning empty register list: '.$e->getMessage(),
+                    ['exception' => $e]
+                );
                 $data['availableRegisters'] = [];
             }
         }

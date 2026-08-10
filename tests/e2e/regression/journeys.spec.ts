@@ -109,6 +109,7 @@ async function createViaUi(
 	schemaTitle: string,
 	name: string,
 	extraFields: Record<string, string> = {},
+	selectFields: Record<string, string> = {},
 ): Promise<string> {
 	// Locate and click the Add button. CnActionsBar renders the primary
 	// action as `<NcButton type="primary">Add {schemaTitle}</NcButton>`
@@ -155,6 +156,34 @@ async function createViaUi(
 		await field.click()
 		await field.pressSequentially(value, { delay: 5 })
 		await field.press('Tab')
+	}
+
+	// Fields the app renders as an NcSelect rather than a text input, which the
+	// loop above cannot drive: typing into a combobox filters its list but Tab
+	// commits nothing, so the field stays UNSET and CnFormDialog keeps Create
+	// disabled — with no clue as to which field is at fault. Open the listbox
+	// and click the option, the way the fleet's other NcSelect specs do.
+	//
+	// Endpoints need this because `EndpointFormFields` renders `method` (and
+	// `targetType`) as selects over a fixed vocabulary, where the plain schema
+	// form had a text input.
+	for (const [fieldLabel, value] of Object.entries(selectFields)) {
+		const combo = dialog
+			.getByRole('combobox', { name: new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i') })
+			.first()
+		await expect(
+			combo,
+			`"${fieldLabel}" select for ${schemaTitle} must be present in CnFormDialog`,
+		).toBeVisible({ timeout: 10_000 })
+		await combo.click()
+		const option = page
+			.getByRole('option', { name: new RegExp(`^\\s*${value}\\s*$`, 'i') })
+			.first()
+		await expect(
+			option,
+			`"${value}" must be offered as an option for "${fieldLabel}"`,
+		).toBeVisible({ timeout: 10_000 })
+		await option.click()
 	}
 
 	// Click the primary action — "Create" in create-mode (resolved by
@@ -546,40 +575,31 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 })
 
 test.describe('UI journey J2 — visually create a Mapping; assert it persists', () => {
-	// Mappings do NOT use the generic create dialog, deliberately. `src/main.js`
-	// wraps this route in a `MappingsPageRenderer` passing
-	// `onAdd: createMappingAndOpen`: "The Mappings index Add button must open
-	// the bespoke MappingDetail editor (a page) rather than the generic
-	// name/description form dialog." The handler POSTs a new object named
-	// "New mapping" and routes to `MappingDetail`.
+	const name = `pw-j2-mapping-${Date.now()}`
+
+	// Mappings are back on the generic create-dialog flow, so this journey is
+	// back on `createViaUi` like J1/J3/J4.
 	//
-	// This journey used to drive `createViaUi`, which waits for a CnFormDialog,
-	// and failed on `CnFormDialog opened after clicking Add` — a modal the app
-	// intentionally does not have. It now asserts the real flow end to end:
-	// the click persists an object AND opens its editor.
-	test('Add Mapping → object persisted → MappingDetail editor opens', async ({ page }) => {
+	// It previously asserted the opposite — that clicking Add immediately
+	// POSTed an object called "New mapping" and routed to `#/mappings/<id>`.
+	// That was `createMappingAndOpen`, and it was the defect, not the contract:
+	// the button minted a persisted empty shell before the user had typed
+	// anything, and every abandoned click left one behind. The Mappings page
+	// now declares `slots["form-dialog"] = "MappingEditorModal"`, so Add opens
+	// the editor with an unsaved draft and nothing is written until Create.
+	//
+	// MappingEditorModal satisfies the same contract createViaUi drives: an
+	// NcDialog (role=dialog), a "Name *" NcTextField, and a primary button
+	// reading "Create" in create mode.
+	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
 		await gotoRoute(page, '/mappings')
-
-		const addBtn = page.getByRole('button', { name: /Add\s+Mapping/i }).first()
-		await expect(addBtn, 'Add Mapping button must be visible on the index page').toBeVisible({ timeout: 20_000 })
-		await addBtn.click()
-
-		await expect
-			.poll(() => page.url(), {
-				message: 'clicking Add Mapping must open the MappingDetail editor',
-				timeout: 20_000,
-			})
-			.toMatch(/#\/mappings\/[^/]+$/)
-
-		const id = page.url().split('/').pop() as string
-		expect(id, 'the detail route must carry the new mapping id').toBeTruthy()
-		await expect(page.locator('main').first(), 'the mapping editor must render').toBeVisible({ timeout: 15_000 })
+		const id = await createViaUi(page, 'mapping', 'Mapping', name)
 
 		// Ground truth: the object really exists in OpenRegister.
 		const check = await page.request.get(`${OR}/mapping/${id}`, { failOnStatusCode: false })
-		expect(check.status(), 'the mapping the editor opened must be readable from OpenRegister').toBe(200)
+		expect(check.status(), 'the created mapping must be readable from OpenRegister').toBe(200)
 
-		await deleteViaApi(page, 'mapping', 'New mapping', id)
+		await deleteViaApi(page, 'mapping', name, id)
 	})
 })
 
@@ -605,8 +625,15 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 		// Keys are the labels CnFormDialog renders, which come from each
 		// property's schema `title` — `endpoint` is titled "Endpoint Path" and
 		// `method` "HTTP Method". Passing the property names found no input.
+		//
+		// `method` moved from the text bucket to the select bucket: the
+		// Endpoints page now declares the `form-fields` slot, and
+		// EndpointFormFields renders `method` as an NcSelect over a fixed
+		// vocabulary. Typing "GET" into a combobox and tabbing away selects
+		// nothing, which left `method` unset and Create disabled.
 		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
 			'Endpoint Path': '/pw-j4-endpoint',
+		}, {
 			'HTTP Method': 'GET',
 		})
 		await deleteViaApi(page, 'endpoint', name, id)

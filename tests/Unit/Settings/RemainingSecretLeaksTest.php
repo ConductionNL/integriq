@@ -209,11 +209,26 @@ class RemainingSecretLeaksTest extends TestCase
      * Every touched schema's version was bumped so OpenRegister re-imports it (it only
      * updates a schema when the incoming version exceeds the stored one).
      *
+     * The assertion is `>=`, not `===`, and that is the whole point. What this test
+     * protects is "the secret-control change actually re-imports", which is satisfied
+     * by the floor below AND by every later bump — a schema at 1.2.0 re-imports at
+     * least as surely as one at 1.1.0. Pinning the exact value asserted something
+     * stricter than the invariant and turned every subsequent, legitimate bump into a
+     * failure: `lti_platform`/`lti_tool` moved to 1.2.0 when their `signingKeys` /
+     * `status` / `identityPolicy` properties changed, which OpenRegister REQUIRES a
+     * bump for, and this test failed for doing the right thing.
+     *
+     * The true positive is unchanged: a schema left at or below its pre-change
+     * version still fails, because that is the case where OR silently keeps the old
+     * definition and the secret control never lands.
+     *
      * @return void
      */
     public function testTouchedSchemasHadTheirVersionBumped(): void
     {
-        $expected = [
+        // The version at which each schema's secret-control change landed. A schema
+        // MUST be at least here; going further is fine and expected.
+        $minimum = [
             // rule bumped 1.2.0 -> 1.3.0 in 99-rule-nested-auth-writeonly.json: the ocon#147
             // last residual makes `configuration.authentication.keys` write-only, closing the
             // admin-readable inbound-apiKey impersonation map the lockdown phase left open.
@@ -224,11 +239,19 @@ class RemainingSecretLeaksTest extends TestCase
             'eudi_status_list'      => '1.1.0',
         ];
 
-        foreach ($expected as $name => $version) {
-            $this->assertSame(
-                $version,
-                ($this->effectiveSchema($name)['version'] ?? null),
-                "The `$name` schema version must be bumped to $version so the secret-control change re-imports"
+        foreach ($minimum as $name => $floor) {
+            $actual = ($this->effectiveSchema($name)['version'] ?? null);
+
+            $this->assertNotNull(
+                $actual,
+                "The `$name` schema must declare a version — without one OpenRegister cannot "
+                ."decide whether to re-import, and the secret-control change never lands"
+            );
+
+            $this->assertTrue(
+                version_compare($actual, $floor, '>='),
+                "The `$name` schema version must be at least $floor so the secret-control change "
+                ."re-imports; found $actual"
             );
         }
     }//end testTouchedSchemasHadTheirVersionBumped()

@@ -97,6 +97,14 @@ Both methods carry `@NoAdminRequired` and `@NoCSRFRequired`.
 
 #### Notes
 
+- **UI surface:** both endpoints are invoked from the Jobs index row actions
+  through the shared run/test modal (`app-shell-and-logs-ui` REQ-SHELLUI-004),
+  which exposes `forceRun` and renders the returned `job_log`. Because
+  `test()` is `run()` with `forceRun` forced on — the engine has no dry-run
+  mode for jobs — the `test` row action is labelled "Force run (ignore
+  schedule)". It read "Test (dry run)" until that modal made the claim visible
+  enough to be worth correcting. The `null`-body case above is likewise
+  reported as "nothing was executed" rather than as a successful trigger.
 - **HIGH (IDOR / ADR-005 Rule 3 / OWASP A01:2021):** both endpoints are
   `@NoAdminRequired` / `@NoCSRFRequired` and accept arbitrary job UUIDs
   with no per-object authorization guard. Any authenticated user can

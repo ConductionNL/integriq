@@ -48,7 +48,11 @@ import {
 	openPromotionHandler,
 } from './handlers/actionHandlers.js'
 import CatalogItemCard from './components/CatalogItemCard.vue'
+import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
+import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
+import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
@@ -67,15 +71,18 @@ import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
-	testSourceHandler,
-	runJobHandler,
-	testJobHandler,
-	runSynchronizationHandler,
-	testSynchronizationHandler,
 	// Flows index row action (visual-flow-orchestration): manual run trigger.
 	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
+	testSourceHandler,
+	// The four run/test actions all open RunActionModal (REQ-SHELLUI-004), which
+	// owns the POST so the run can be gated behind the force flags the endpoints
+	// accept and the returned run log can be rendered rather than discarded.
+	runJobHandler,
+	testJobHandler,
+	runSynchronizationHandler,
+	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
@@ -113,12 +120,48 @@ export default {
 	// hide the embedded-secret fields while brokered (openconnector#102).
 	SourceFormFields,
 
+	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
+	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// pickers composing the polymorphic `targetId`, `endpointArray` as a
+	// comma-separated list, method/targetType selects (the schema declares both
+	// as plain strings, no enum), and a configurations multiselect.
+	EndpointFormFields,
+
 	// The Webhooks (event_subscription) page wires `form-fields` to
 	// SubscriptionActionFields so the CnFormDialog offers a delivery-action
 	// kind picker (Webhook/Synchronization/Job) and an optional custom
 	// retry-policy block — neither is a declarative schema widget. See
 	// nextcloud-event-hub REQ-008/REQ-009.
 	SubscriptionActionFields,
+
+	// The Mappings page wires `form-dialog` — not `form-fields` — to
+	// MappingEditorModal, restoring the wide three-column create/edit surface
+	// (input JSON | general + transform tabs | live output) the pre-manifest
+	// modal had. It has to replace the whole dialog rather than its content:
+	// CnIndexPage does not forward `size` to CnFormDialog, so a `form-fields`
+	// override can never be wider than NcDialog's `normal`.
+	MappingEditorModal,
+
+	// The Synchronizations page wires `form-dialog` to SynchronizationEditorModal
+	// for the same reason, restoring the source | transform | target modal the
+	// pre-manifest app had. It is a second host for the components
+	// SynchronizationDetailPage already uses (SyncConfigWidget,
+	// SyncMappingPicker, SyncReferenceList, RuleConditionGroup) — the shared
+	// draft/option/conditions logic lives in views/Synchronization/syncDraft.js.
+	SynchronizationEditorModal,
+
+	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
+	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
+	// value and whose operator select alone carries `min-width: 220px`, so the
+	// dialog has to be wider than NcDialog's `normal`. It restores the field set
+	// the pre-manifest EditRule modal had — conditions, order and the error
+	// response were all unreachable through the schema-driven form (enum-less
+	// `action`/`timing`/`type` strings, a `type: object` conditions property
+	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
+	// Per-type parameters beyond `error` stay on RuleDetailPage, which already
+	// hosts all 18 views/Rule/actionForms/ components; the shared option lists
+	// and conditions round-trip live in views/Rule/ruleDraft.js.
+	RuleEditorModal,
 
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below

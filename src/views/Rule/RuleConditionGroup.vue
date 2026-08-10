@@ -275,8 +275,6 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	padding-left: 16px;
-	border-left: 2px solid var(--color-border);
 }
 
 .rule-condition-group__actions {

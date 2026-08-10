@@ -107,9 +107,7 @@
 						<h3 class="cn-mapping-detail__section-title">
 							{{ t('openconnector', 'Live preview') }}
 						</h3>
-						<NcButton type="tertiary"
-							:disabled="previewLoading"
-							@click="resetPreview">
+						<NcButton type="tertiary" @click="resetPreview">
 							<template #icon>
 								<RestoreIcon :size="18" />
 							</template>
@@ -133,21 +131,10 @@
 						{{ sampleParseError }}
 					</p>
 
-					<div class="cn-mapping-detail__preview-output">
-						<div class="cn-mapping-detail__field-label cn-mapping-detail__preview-output-label">
-							<span>{{ t('openconnector', 'Output') }}</span>
-							<NcLoadingIcon v-if="previewLoading" :size="16" />
-						</div>
-						<NcNoteCard v-if="previewError" type="error">
-							<p>{{ previewError }}</p>
-						</NcNoteCard>
-						<pre v-else-if="previewOutput !== null"
-							class="cn-mapping-detail__pre"><!--
-							-->{{ formattedPreview }}</pre>
-						<p v-else class="cn-mapping-detail__preview-empty">
-							{{ t('openconnector', 'Output will appear here once a sample input and rules produce a result.') }}
-						</p>
-					</div>
+					<MappingResultPanel ref="result"
+						:mapping="mapping"
+						:input-object="sampleInput"
+						@input-error="sampleParseError = $event" />
 				</section>
 			</div>
 		</div>
@@ -161,67 +148,18 @@ import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
-	NcNoteCard,
 } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import debounce from 'lodash/debounce.js'
 
 import MappingRulesEditor from './MappingRulesEditor.vue'
+import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
+import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
 import { modalBus, EVENT_OPEN_TEST_MAPPING } from '../../handlers/modalBus.js'
 
 /** Default sample input shown until the user edits the textarea. */
 const DEFAULT_SAMPLE = '{}'
-
-/** Debounce delay for preview requests, in milliseconds. */
-const PREVIEW_DEBOUNCE_MS = 400
-
-/**
- * Normalise the `mapping` field (Twig-template map) of a Mapping object to
- * a plain JS object regardless of the storage shape (string or object).
- *
- * @param {*} raw The raw value from the Mapping record.
- * @return {object} Object with `{ targetProperty: template }` shape.
- */
-function asObjectMap(raw) {
-	if (!raw) return {}
-	if (typeof raw === 'string') {
-		try {
-			const parsed = JSON.parse(raw)
-			return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-				? parsed
-				: {}
-		} catch (_e) {
-			return {}
-		}
-	}
-	if (typeof raw === 'object' && !Array.isArray(raw)) return raw
-	return {}
-}
-
-/**
- * Normalise the `unset` field of a Mapping object to a plain string array.
- *
- * The legacy storage shape was a comma-separated string; current OR shape
- * is a JSON array. Either is accepted here.
- *
- * @param {*} raw The raw value from the Mapping record.
- * @return {Array<string>} List of property names to unset.
- */
-function asUnsetList(raw) {
-	if (!raw) return []
-	if (Array.isArray(raw)) {
-		return raw.filter((entry) => typeof entry === 'string' && entry.length > 0)
-	}
-	if (typeof raw === 'string') {
-		return raw.split(/ *, */g).filter(Boolean)
-	}
-	return []
-}
 
 export default {
 	name: 'MappingDetailPage',
@@ -229,10 +167,9 @@ export default {
 	components: {
 		CnDetailPage,
 		MappingRulesEditor,
+		MappingResultPanel,
 		NcButton,
 		NcCheckboxRadioSwitch,
-		NcLoadingIcon,
-		NcNoteCard,
 		PlayOutlineIcon,
 		RestoreIcon,
 	},
@@ -272,9 +209,6 @@ export default {
 			saving: false,
 			sampleInput: DEFAULT_SAMPLE,
 			sampleParseError: '',
-			previewLoading: false,
-			previewError: '',
-			previewOutput: null,
 		}
 	},
 
@@ -354,68 +288,18 @@ export default {
 		samplePlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		formattedPreview() {
-			try {
-				return JSON.stringify(this.previewOutput, null, 2)
-			} catch (_e) {
-				return String(this.previewOutput)
-			}
-		},
-		/**
-		 * Combined reactivity key for the preview watcher. Recomputing this
-		 * forces the debounced preview to refire whenever the rule shape or
-		 * sample input changes.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		previewSignal() {
-			return JSON.stringify({
-				mapping: this.mappingRules,
-				cast: this.castRules,
-				unset: this.unsetRules,
-				passThrough: !!this.mapping?.passThrough,
-				input: this.sampleInput,
-			})
-		},
-	},
-
-	watch: {
-		previewSignal: {
-			immediate: false,
-			/** @spec openspec/specs/mapping-editor-ui/spec.md */
-			handler() {
-				this.schedulePreview()
-			},
-		},
 	},
 
 	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	mounted() {
 		this.ensureRegistered()
-		const fetch = this.reload()
-		// Trigger the first preview render once data lands.
-		Promise.resolve(fetch).finally(() => this.schedulePreview())
+		this.reload()
 		// Live updates: or-object-{uuid} events refetch this mapping into the
 		// store cache; the `mapping` computed reads the cache directly, so no
 		// bridge callback is needed — reactivity re-renders the page.
 		if (this.resolvedId) {
 			this.syncLiveSubscription(this.objectType, this.resolvedId)
 		}
-	},
-
-	/** @spec openspec/specs/mapping-editor-ui/spec.md */
-	beforeUnmount() {
-		if (this.schedulePreview && this.schedulePreview.cancel) {
-			this.schedulePreview.cancel()
-		}
-	},
-
-	/** @spec openspec/specs/mapping-editor-ui/spec.md */
-	created() {
-		// Bind the debounced function on the instance so each component gets
-		// its own timer and `.cancel()` works on teardown.
-		this.schedulePreview = debounce(this.runPreview, PREVIEW_DEBOUNCE_MS)
 	},
 
 	methods: {
@@ -541,67 +425,16 @@ export default {
 		},
 
 		/**
-		 * Issue the live-preview request against `/api/mappings/test`. The
-		 * inflight indicator is shown next to the Output label so it
-		 * doesn't block edits in the rules table on the left.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		async runPreview() {
-			if (!this.hasMapping) return
-			let parsed
-			const raw = (this.sampleInput || '').trim()
-			try {
-				parsed = raw.length > 0 ? JSON.parse(raw) : {}
-			} catch (parseErr) {
-				this.sampleParseError = this.t(
-					'openconnector',
-					'Sample input is not valid JSON: {message}',
-					{ message: parseErr.message },
-				)
-				this.previewLoading = false
-				return
-			}
-			this.sampleParseError = ''
-			this.previewLoading = true
-			this.previewError = ''
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openconnector/api/mappings/test'),
-					{
-						inputObject: parsed,
-						mapping: this.mapping,
-					},
-				)
-				this.previewOutput = response.data?.resultObject ?? response.data ?? null
-			} catch (err) {
-				const status = err?.response?.status
-				const message = err?.response?.data?.message
-					|| err?.response?.data?.error
-					|| err?.message
-					|| ''
-				this.previewError = this.t('openconnector', 'Preview failed')
-					+ (status ? ` (${status})` : '')
-					+ (message ? `: ${message}` : '')
-			} finally {
-				this.previewLoading = false
-			}
-		},
-
-		/**
-		 * Clear sample input + output and cancel any pending request.
+		 * Clear sample input and result, and cancel any pending request. The
+		 * request lifecycle itself belongs to MappingResultPanel, so this
+		 * only resets the input this page owns and asks the panel to clear.
 		 *
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		resetPreview() {
-			if (this.schedulePreview && this.schedulePreview.cancel) {
-				this.schedulePreview.cancel()
-			}
 			this.sampleInput = DEFAULT_SAMPLE
 			this.sampleParseError = ''
-			this.previewOutput = null
-			this.previewError = ''
-			this.previewLoading = false
+			this.$refs.result?.reset()
 		},
 	},
 }
@@ -693,12 +526,6 @@ export default {
 	margin-top: 8px;
 }
 
-.cn-mapping-detail__preview-output-label {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
 .cn-mapping-detail__textarea {
 	width: 100%;
 	font-family: var(--font-face-monospace, monospace);
@@ -717,35 +544,4 @@ export default {
 	margin: 4px 0 0 0;
 }
 
-.cn-mapping-detail__preview-output {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	margin-top: 4px;
-}
-
-.cn-mapping-detail__pre {
-	background: var(--color-background-dark);
-	color: var(--color-main-text);
-	padding: 12px;
-	border-radius: var(--border-radius);
-	overflow: auto;
-	max-height: 360px;
-	font-family: var(--font-face-monospace, monospace);
-	font-size: 12px;
-	white-space: pre-wrap;
-	word-break: break-word;
-	margin: 0;
-}
-
-.cn-mapping-detail__preview-empty {
-	margin: 0;
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-maxcontrast);
-	border: 1px dashed var(--color-border);
-	border-radius: var(--border-radius);
-	font-style: italic;
-	font-size: 13px;
-}
 </style>

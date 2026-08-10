@@ -8,7 +8,7 @@
   Why a full custom page (not just an index-page slot like JobFormFields)?
   CnIndexPage's CnFormDialog gives you per-field overrides, but Rules
   need three structurally-distinct surfaces on the same edit screen:
-    1. Basic fields (name/description/timing/order)
+    1. Basic fields (name/description/action/timing/order)
     2. A recursive condition tree (this is what's actually NEW vs #828)
     3. An action picker + action-specific parameter form
 
@@ -17,6 +17,12 @@
   rule against incoming data. Promoting the rule edit surface to a
   full page mirrors what the legacy 1888-LoC modal effectively was,
   just decomposed into reusable Vue components.
+
+  `modals/v2/RuleEditorModal.vue` is a second host for (1) and (2) on the
+  Rules index, so a rule can be created complete instead of as a stub.
+  It stops short of (3) — only `error` gets its parameters there — and the
+  shared option lists, draft defaults and conditions round-trip live in
+  `ruleDraft.js` so the two surfaces cannot drift.
 
   Data flow:
     - Mount → register `rule` object type → fetchObject(`rule`, id)
@@ -47,9 +53,12 @@
 		<template #actions>
 			<NcButton
 				type="secondary"
-				:disabled="saving"
-				@click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				:disabled="saving || !dirty"
+				@click="resetEdits">
+				<template #icon>
+					<UndoIcon :size="20" />
+				</template>
+				{{ t('openconnector', 'Discard') }}
 			</NcButton>
 			<NcButton
 				type="primary"
@@ -67,14 +76,40 @@
 		<CnDetailCard :title="t('openconnector', 'Basics')" icon="icon-info">
 			<div class="rule-detail-page__grid">
 				<NcTextField
-					:label="t('openconnector', 'Name')"
+					:label="t('openconnector', 'Name') + ' *'"
 					:model-value="draft && draft.name ? String(draft.name) : ''"
 					@update:model-value="(value) => updateField('name', value)" />
-				<NcTextField
-					:label="t('openconnector', 'Timing')"
-					:model-value="draft && draft.timing ? String(draft.timing) : ''"
-					:placeholder="t('openconnector', 'e.g. before, after, on_error')"
-					@update:model-value="(value) => updateField('timing', value)" />
+				<!-- `action` is required on the rule schema, and until now this
+				     page had no editor for it at all — a rule created here was
+				     saved without the field the endpoint filters on. -->
+				<div>
+					<label class="rule-detail-page__label" for="rule-action">
+						{{ t('openconnector', 'Action') }} *
+					</label>
+					<NcSelect
+						input-id="rule-action"
+						:aria-label-combobox="t('openconnector', 'Action')"
+						:model-value="selectedAction"
+						:options="actionOptions"
+						:clearable="false"
+						:placeholder="t('openconnector', 'Pick a request method')"
+						@update:model-value="(option) => updateField('action', option?.id || '')" />
+				</div>
+				<!-- `before`/`after` are the only two values
+				     EndpointService::handleRuleProcessing() ever compares
+				     against, so this is a closed list, not free text. -->
+				<div>
+					<label class="rule-detail-page__label" for="rule-timing">
+						{{ t('openconnector', 'Timing') }}
+					</label>
+					<NcSelect
+						input-id="rule-timing"
+						:aria-label-combobox="t('openconnector', 'Timing')"
+						:model-value="selectedTiming"
+						:options="timingOptions"
+						:clearable="false"
+						@update:model-value="(option) => updateField('timing', option?.id || 'before')" />
+				</div>
 				<NcTextField
 					:label="t('openconnector', 'Order')"
 					type="number"
@@ -142,7 +177,9 @@
 			icon="icon-play">
 			<RuleActionConfig
 				:configuration="draft && draft.configuration ? draft.configuration : {}"
-				@update="onConfigurationUpdate" />
+				:type="draft && draft.type ? String(draft.type) : ''"
+				@update="onConfigurationUpdate"
+				@update:type="onActionTypeUpdate" />
 		</CnDetailCard>
 	</CnDetailPage>
 </template>
@@ -151,26 +188,25 @@
 import {
 	NcButton,
 	NcLoadingIcon,
+	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import { useObjectStore } from '../../store/objectStore.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleActionConfig from './RuleActionConfig.vue'
+import {
+	ACTION_OPTIONS,
+	TIMING_OPTIONS,
+	emptyRootGroup,
+	normaliseConditions,
+} from './ruleDraft.js'
 
 const OBJECT_TYPE = 'rule'
-
-/**
- * Default empty root-group used when a rule has no conditions yet (or
- * when the persisted value is not a recognisable group). Mirrors what
- * RuleConditionGroup itself falls back to, but centralised here so the
- * "raw JSON" editor and the visual builder both round-trip the same
- * default shape.
- */
-const EMPTY_ROOT_GROUP = { and: [] }
 
 export default {
 	name: 'RuleDetailPage',
@@ -178,11 +214,13 @@ export default {
 	components: {
 		NcButton,
 		NcLoadingIcon,
+		NcSelect,
 		NcTextField,
 		CnDetailCard,
 		CnDetailPage,
 		CodeJson,
 		ContentSave,
+		UndoIcon,
 		RuleConditionGroup,
 		RuleActionConfig,
 	},
@@ -246,15 +284,30 @@ export default {
 		/**
 		 * The conditions JsonLogic node coerced into a top-level group
 		 * shape (`{and:[...]}` or `{or:[...]}`). Legacy data may have
-		 * stored conditions as a string (CodeMirror text), an array,
-		 * or a single leaf — all of those normalise here so the visual
+		 * stored conditions as a string (raw-editor text), an array,
+		 * or a single leaf — all of those normalise so the visual
 		 * builder always has a group to render.
 		 *
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		rootConditionGroup() {
-			const raw = this.draft?.conditions
-			return this.normaliseConditions(raw)
+			return normaliseConditions(this.draft?.conditions)
+		},
+		/** @spec exclude static option list — presentation only */
+		actionOptions() {
+			return ACTION_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+		},
+		/** @spec exclude static option list — presentation only */
+		timingOptions() {
+			return TIMING_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+		},
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		selectedAction() {
+			return this.actionOptions.find((option) => option.id === this.draft?.action) || null
+		},
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		selectedTiming() {
+			return this.timingOptions.find((option) => option.id === this.draft?.timing) || this.timingOptions[0]
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dirty() {
@@ -305,44 +358,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Normalise persisted `conditions` into a root group node.
-		 * Accepts:
-		 *   - null/undefined → empty AND
-		 *   - JSON string (legacy CodeMirror text) → parse + recurse
-		 *   - Array → wrap as `{and: [...]}`
-		 *   - Leaf object → wrap as `{and: [<leaf>]}`
-		 *   - Group object (and/or) → returned as-is
-		 *
-		 * Centralising here means the visual builder gets a sane root
-		 * even from older rule rows that were saved via the legacy
-		 * raw-JSON editor.
-		 *
-		 * @param {*} raw The persisted conditions value.
-		 * @return {object} A JsonLogic group node.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		normaliseConditions(raw) {
-			if (raw === null || raw === undefined || raw === '') {
-				return { ...EMPTY_ROOT_GROUP }
-			}
-			if (typeof raw === 'string') {
-				try { return this.normaliseConditions(JSON.parse(raw)) } catch (_e) { return { ...EMPTY_ROOT_GROUP } }
-			}
-			if (Array.isArray(raw)) {
-				return { and: raw }
-			}
-			if (typeof raw === 'object') {
-				const keys = Object.keys(raw)
-				if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
-					return raw
-				}
-				return { and: [raw] }
-			}
-			return { ...EMPTY_ROOT_GROUP }
-		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async load() {
 			this.loading = true
@@ -427,6 +442,27 @@ export default {
 		},
 
 		/**
+		 * Mirror the picked action type onto the rule's **top-level** `type`.
+		 *
+		 * `EndpointService::handleRuleProcessing()` dispatches on
+		 * `$ruleData['type']`, and its `match` ends in
+		 * `throw new Exception('Unsupported rule type: ')` — so a rule that
+		 * carried the type only inside `configuration` (which is all this page
+		 * used to write) was never executed. `configuration.type` still moves
+		 * too, via `onConfigurationUpdate`: `RuleService::processCustomRule()`
+		 * reads it to sub-dispatch `type: 'custom'` rules, and RuleActionConfig
+		 * reads it to keep its own selection.
+		 *
+		 * @param {string} value The picked action type id.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		onActionTypeUpdate(value) {
+			if (!this.draft) return
+			this.draft.type = value
+		},
+
+		/**
 		 * Handle each keystroke in the raw-JSON conditions textarea: keep the
 		 * textarea draft verbatim, and only commit to `draft.conditions` when
 		 * the text parses. Empty input resets to an empty AND group; a parse
@@ -442,7 +478,7 @@ export default {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
 				this.rawConditionsError = ''
-				this.onConditionsUpdate({ ...EMPTY_ROOT_GROUP })
+				this.onConditionsUpdate(emptyRootGroup())
 				return
 			}
 			try {
@@ -475,9 +511,22 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		onCancel() {
-			if (!this.pristine) return
+		/**
+		 * Throw away unsaved edits and restore the last persisted version.
+		 * Named `resetEdits` to match FlowDetailPage/SynchronizationDetailPage,
+		 * which expose the same action behind the same "Discard" label — this
+		 * page used to call it "Cancel", which read like "leave the page".
+		 *
+		 * Guarded on `dirty` as well as disabled in the template: with nothing
+		 * changed there is nothing to restore, and re-stringifying the
+		 * conditions tree would only churn the raw-JSON textarea.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		resetEdits() {
+			if (!this.pristine || !this.dirty || this.saving) return
 			this.draft = JSON.parse(JSON.stringify(this.pristine))
 			this.rawConditionsError = ''
 			if (this.rawConditions) {

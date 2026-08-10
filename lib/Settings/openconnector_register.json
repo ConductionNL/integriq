@@ -69,7 +69,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.2.0",
+        "version": "1.4.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad — see local ADR-005.",
         "required": [
@@ -148,7 +148,7 @@
           },
           "authenticationConfig": {
             "type": "object",
-            "description": "DEPRECATED / VESTIGIAL (ocon#232) — NOTHING READS THIS FIELD. Use `configuration.authentication` instead (or, better, `configuration.authentication.credentialRef`). AuthenticationRuntime stopped reading `authenticationConfig` in commit b6470597 (2024-11-19) when it moved to `configuration.authentication.*`; the data was never migrated and the docs were never updated, so any credential written here is INERT and the call goes out unauthenticated. It remains declared (and `writeOnly: true`, see register.d/99-source-secrets-writeonly.json) purely so pre-existing values are not silently pruned — removal is per-instance and human-gated via `occ openconnector:authentication-config`. Stored unencrypted at rest until field encryption ships (local ADR-016).",
+            "description": "DEPRECATED / VESTIGIAL — NOTHING READS THIS FIELD. Use `configuration.authentication` instead (or, better, `configuration.authentication.credentialRef`). AuthenticationRuntime stopped reading `authenticationConfig` in commit b6470597 (2024-11-19) when it moved to `configuration.authentication.*`; the data was never migrated and the docs were never updated, so any credential written here is INERT and the call goes out unauthenticated. It remains declared (and `writeOnly: true`, see register.d/99-source-secrets-writeonly.json) purely so pre-existing values are not silently pruned — removal is per-instance and human-gated via `occ openconnector:authentication-config`. Stored unencrypted at rest until field encryption ships.",
             "title": "Authentication Configuration (deprecated, unused)"
           },
           "authorizationPassthroughMethod": {
@@ -228,7 +228,7 @@
           },
           "configuration": {
             "type": "object",
-            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. See http-call-engine spec REQ-SBC-001/002 (change source-broker-credentials). `configuration.decompress: \"gzip\"` (oc#97) hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped, see synchronization-engine spec REQ-006, change bulk-gzip-jsonl-ingestion). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
+            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. `configuration.decompress: \"gzip\"` hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
             "title": "Configuration",
             "properties": {
               "authentication": {
@@ -275,7 +275,7 @@
           },
           "logRetention": {
             "type": "integer",
-            "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s. See chain-B Note on retention unit conversion.",
+            "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s.",
             "title": "Log Retention"
           },
           "errorRetention": {
@@ -348,12 +348,12 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier for cross-environment portability (local ADR-015)",
+            "description": "Machine-readable identifier for cross-environment portability",
             "title": "Slug"
           },
           "retryPolicy": {
             "type": "object",
-            "description": "Retry policy applied by CallService around outbound dispatch. Fields: maxAttempts (integer, default 1 — 1 means today's single-attempt behavior, strictly opt-in per Source), backoffStrategy ('fixed'|'exponential', default 'fixed'), baseDelayMs (integer, default 500), maxDelayMs (integer, default 30000), jitter (boolean, default false — adds +/-10% uniform jitter), retryableStatusCodes (integer[], default [429, 502, 503, 504]), retryOnTimeout (boolean, default false — retry on a transport-level exception too). A Synchronization may widen/override this per-key via `synchronization.retryPolicyOverride`, merged in by the caller as `$config['retryPolicy']`. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "description": "Retry policy applied by CallService around outbound dispatch. Fields: maxAttempts (integer, default 1 — 1 means today's single-attempt behavior, strictly opt-in per Source), backoffStrategy ('fixed'|'exponential', default 'fixed'), baseDelayMs (integer, default 500), maxDelayMs (integer, default 30000), jitter (boolean, default false — adds +/-10% uniform jitter), retryableStatusCodes (integer[], default [429, 502, 503, 504]), retryOnTimeout (boolean, default false — retry on a transport-level exception too). A Synchronization may widen/override this per-key via `synchronization.retryPolicyOverride`, merged in by the caller as `$config['retryPolicy']`.",
             "title": "Retry Policy"
           },
           "circuitBreakerState": {
@@ -363,7 +363,7 @@
               "open"
             ],
             "default": "closed",
-            "description": "Persisted circuit breaker state for this Source. 'half-open' is never persisted — it is a derived read when 'open' AND circuitBreakerCooldownSeconds have elapsed since circuitBreakerOpenedAt (see PdokConnector::circuitState() for the reference state machine). See http-call-engine spec REQ-008 (change retry-and-circuit-breaker-policies).",
+            "description": "Persisted circuit breaker state for this Source. 'half-open' is never persisted — it is a derived read when 'open' AND circuitBreakerCooldownSeconds have elapsed since circuitBreakerOpenedAt (see PdokConnector::circuitState for the reference state machine).",
             "title": "Circuit Breaker State"
           },
           "circuitBreakerFailureCount": {
@@ -379,7 +379,7 @@
           },
           "circuitBreakerLastProbeAt": {
             "type": "integer",
-            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation, see design.md Trade-offs).",
+            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation).",
             "title": "Circuit Breaker Last Probe At"
           },
           "circuitBreakerThreshold": {
@@ -521,7 +521,7 @@
         "slug": "endpoint",
         "title": "Endpoint",
         "icon": "Api",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An inbound API endpoint mapping to a target (register/schema, api, job, synchronization)",
         "description": "An Endpoint exposes openconnector's inbound surface. Each endpoint has a polymorphic targetType/targetId pair (see local ADR-008) and routes incoming requests to the right kernel. Supports per-endpoint input/output mapping + rule pipelines.",
         "required": [
@@ -582,12 +582,12 @@
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`. See local ADR-008.",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`.",
             "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID (post-chain-B); for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID. See local ADR-008 + chain-B sourceId overload documentation.",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
             "title": "Target ID"
           },
           "conditions": {
@@ -638,18 +638,18 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)",
+            "description": "Machine-readable identifier",
             "title": "Slug"
           },
           "putPatchSemantics": {
             "type": "boolean",
-            "description": "When true, PUT requests to this endpoint MUST supply every mandatory field of the target schema (rejected with HTTP 400 otherwise) while PATCH remains a partial update. Opt-in per endpoint; existing endpoints default to false (pre-change behaviour unchanged). Added by the vng-klantinteracties-adapter change (REQ-EP-007).",
+            "description": "When true, PUT requests to this endpoint MUST supply every mandatory field of the target schema (rejected with HTTP 400 otherwise) while PATCH remains a partial update. Opt-in per endpoint; existing endpoints default to false (pre-change behaviour unchanged). Added by the vng-klantinteracties-adapter change.",
             "default": false,
             "title": "Enforce PUT/PATCH Semantics"
           },
           "vngFilterTranslation": {
             "type": "boolean",
-            "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change (REQ-006/REQ-007).",
+            "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change.",
             "default": false,
             "title": "Enable VNG Filter/Expand Translation"
           }
@@ -798,7 +798,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -811,7 +811,7 @@
           },
           "eventId": {
             "type": "integer",
-            "description": "Legacy integer FK to event (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)",
+            "description": "Legacy integer FK to event (kept during transition)",
             "title": "Event ID (Legacy)"
           },
           "event": {
@@ -824,7 +824,7 @@
           },
           "consumerId": {
             "type": "integer",
-            "description": "Legacy integer FK to consumer (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy integer FK to consumer (kept during transition)",
             "title": "Consumer ID (Legacy)"
           },
           "consumer": {
@@ -837,7 +837,7 @@
           },
           "subscriptionId": {
             "type": "integer",
-            "description": "Legacy integer FK to event_subscription (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy integer FK to event_subscription (kept during transition)",
             "title": "Subscription ID (Legacy)"
           },
           "subscription": {
@@ -957,7 +957,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -1029,7 +1029,7 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch (nextcloud-event-hub REQ-008, extended by notificaties-api-subscriber REQ-010). {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
+            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
@@ -1090,7 +1090,7 @@
           },
           "retryPolicy": {
             "type": "object",
-            "description": "Per-subscription retry/backoff override (nextcloud-event-hub REQ-009). {baseSeconds?, factor?, capSeconds?, maxRetries?} — each key independently overrides the corresponding class default (60s / x4 / 6h cap / 5 retries) used by EventService::deliverMessage/recordFailure when absent.",
+            "description": "Per-subscription retry/backoff override. {baseSeconds?, factor?, capSeconds?, maxRetries?} — each key independently overrides the corresponding class default (60s / x4 / 6h cap / 5 retries) used by EventService::deliverMessage/recordFailure when absent.",
             "title": "Retry Policy",
             "properties": {
               "baseSeconds": {
@@ -1179,7 +1179,7 @@
         },
         "title": "Job",
         "icon": "ClockOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A scheduled background task",
         "description": "A Job is a scheduled task discovered by Nextcloud's `\\OCP\\BackgroundJob\\TimedJob` subclass (JobTask). See local ADR-014 for the cron/job execution model.",
         "required": [
@@ -1323,7 +1323,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)",
+            "description": "Machine-readable identifier",
             "title": "Slug"
           }
         },
@@ -1351,7 +1351,7 @@
         "slug": "mapping",
         "title": "Mapping",
         "icon": "SwapHorizontal",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A transformation rule from one schema to another",
         "description": "A Mapping defines a transformation between two object shapes. Used by Endpoints (input/output mapping), Synchronizations (source-target mapping), and Rules. See local ADR-002.",
         "required": [
@@ -1431,7 +1431,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)",
+            "description": "Machine-readable identifier",
             "title": "Slug"
           }
         },
@@ -1459,7 +1459,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -1547,7 +1547,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)",
+            "description": "Machine-readable identifier",
             "title": "Slug"
           }
         },
@@ -1559,7 +1559,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1595,7 +1595,7 @@
           },
           "sourceId": {
             "type": "string",
-            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post-chain-B canonical OR identifier. Chain B's migrator branches on the format to translate (1) to (3). Cross-ref: chain-B REQ on sourceId 3-format branching.",
+            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = the canonical OpenRegister identifier. The migrator branches on the format to translate (1) to (3).",
             "title": "Source ID"
           },
           "sourceType": {
@@ -1620,7 +1620,7 @@
           },
           "sourceConfig": {
             "type": "object",
-            "description": "Source-specific configuration overrides. Notable recognised keys: `resultsPosition` (dot-path to the objects array in the response, or `_root`/`_object`); `format: \"jsonl\"` (oc#97) — the fetched (and, if gzip, decompressed) body is parsed as line-delimited JSON, one record per line, instead of whole-document JSON/XML — pair with `resultsPosition: \"_root\"` since the parsed line array IS the records list; `paginationQuery` (field name/dot-path to bump per page, default `page`); `paginationIn: \"body\"` (oc#94, default `\"query\"`) — substitutes the next page value into the source's static `configuration.body` JSON template at the `paginationQuery` dot-path instead of the query string, for POST-body sources (e.g. TED's v3 search) whose pagination cursor lives in the request body. See synchronization-engine spec REQ-006 (change bulk-gzip-jsonl-ingestion) and http-call-engine spec REQ-010 (change post-body-pagination); `deletionRatioThreshold` (float 0.0-1.0, default 0.10) — the maximum share of this synchronization's existing contracts that one cleanup pass may garbage-collect before the deletion-ratio guard aborts the pass (warning logged + SynchronizationDeletionGuardedEvent dispatched); override per synchronization for legitimately volatile sources, or supply the explicit `forceDeletion` run parameter for a one-off override. See synchronization-engine spec REQ-010 (change sync-safety-guardrails); `cursorField` (dot-path to the comparable cursor value on a fetched record, e.g. `updatedAt` — same dotted-path-lookup-with-throw convention as `idPosition`/`getOriginId()`) and `cursorComparator` (`gt`|`gte`, informational — the engine always takes the maximum observed value) — read only when the synchronization's top-level `syncMode` is `incremental`, to compute the persisted `cursorWatermark` after each complete fetch. See synchronization-engine spec REQ-016/REQ-017 (change cdc-incremental-sync).",
+            "description": "Source-specific configuration overrides. Notable recognised keys: `resultsPosition` (dot-path to the objects array in the response, or `_root`/`_object`); `format: \"jsonl\"` — the fetched (and, if gzip, decompressed) body is parsed as line-delimited JSON, one record per line, instead of whole-document JSON/XML — pair with `resultsPosition: \"_root\"` since the parsed line array IS the records list; `paginationQuery` (field name/dot-path to bump per page, default `page`); `paginationIn: \"body\"` (default `\"query\"`) — substitutes the next page value into the source's static `configuration.body` JSON template at the `paginationQuery` dot-path instead of the query string, for POST-body sources (e.g. TED's v3 search) whose pagination cursor lives in the request body. `deletionRatioThreshold` (float 0.0-1.0, default 0.10) — the maximum share of this synchronization's existing contracts that one cleanup pass may garbage-collect before the deletion-ratio guard aborts the pass (warning logged + SynchronizationDeletionGuardedEvent dispatched); override per synchronization for legitimately volatile sources, or supply the explicit `forceDeletion` run parameter for a one-off override. `cursorField` (dot-path to the comparable cursor value on a fetched record, e.g. `updatedAt` — same dotted-path-lookup-with-throw convention as `idPosition`/`getOriginId`) and `cursorComparator` (`gt`|`gte`, informational — the engine always takes the maximum observed value) — read only when the synchronization's top-level `syncMode` is `incremental`, to compute the persisted `cursorWatermark` after each complete fetch.",
             "title": "Source Configuration"
           },
           "sourceLastChanged": {
@@ -1651,12 +1651,12 @@
             "type": "string",
             "enum": ["full", "incremental"],
             "default": "full",
-            "description": "Fetch strategy for an extern→intern run. `full` (default, unchanged behavior) fetches the entire source result set every run and hash-diffs it against stored SynchronizationContracts, including garbage-collecting target objects no longer present in the source (`deleteInvalidObjects()`). `incremental` injects the stored `cursorWatermark` into the source request (via `{{ cursor }}` Twig templating on `sourceConfig.endpoint`/`sourceConfig.query`) so only records changed since the watermark are fetched, advances the watermark only after a complete, successful fetch, and NEVER runs `deleteInvalidObjects()` — an incremental fetch is a filtered subset of the source, so a target's absence from one run is not evidence of source deletion. An absent value is treated as `full` — no migration needed for existing Synchronizations. See synchronization-engine spec REQ-016/REQ-017/REQ-018 (change cdc-incremental-sync).",
+            "description": "Fetch strategy for an extern→intern run. `full` (default, unchanged behavior) fetches the entire source result set every run and hash-diffs it against stored SynchronizationContracts, including garbage-collecting target objects no longer present in the source (`deleteInvalidObjects`). `incremental` injects the stored `cursorWatermark` into the source request (via `{{ cursor }}` Twig templating on `sourceConfig.endpoint`/`sourceConfig.query`) so only records changed since the watermark are fetched, advances the watermark only after a complete, successful fetch, and NEVER runs `deleteInvalidObjects` — an incremental fetch is a filtered subset of the source, so a target's absence from one run is not evidence of source deletion. An absent value is treated as `full` — no migration needed for existing Synchronizations.",
             "title": "Sync Mode"
           },
           "cursorWatermark": {
             "type": "string",
-            "description": "Stored high-watermark cursor for `syncMode: incremental` (e.g. an ISO-8601 timestamp or a monotonically comparable id/token from `sourceConfig.cursorField`). Advances only after a complete, successful, non-test incremental run; left unchanged after an incomplete/rate-limited fetch so the next run retries from the same value. Clear via `POST /api/synchronizations/{id}/reset-cursor` to force the next run back to an unfiltered (empty-cursor) fetch — this does NOT change `syncMode` or re-enable deletion. See synchronization-engine spec REQ-017/REQ-019 (change cdc-incremental-sync).",
+            "description": "Stored high-watermark cursor for `syncMode: incremental` (e.g. an ISO-8601 timestamp or a monotonically comparable id/token from `sourceConfig.cursorField`). Advances only after a complete, successful, non-test incremental run; left unchanged after an incomplete/rate-limited fetch so the next run retries from the same value. Clear via `POST /api/synchronizations/{id}/reset-cursor` to force the next run back to an unfiltered (empty-cursor) fetch — this does NOT change `syncMode` or re-enable deletion.",
             "title": "Cursor Watermark"
           },
           "targetId": {
@@ -1753,12 +1753,12 @@
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)",
+            "description": "Machine-readable identifier",
             "title": "Slug"
           },
           "retryPolicyOverride": {
             "type": "object",
-            "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape — maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call(), so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape — maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call, so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected.",
             "title": "Retry Policy Override"
           }
         },
@@ -1786,7 +1786,7 @@
         "slug": "synchronization_contract",
         "title": "SynchronizationContract",
         "icon": "FileDocumentOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Per-object sync state between an origin and target",
         "description": "A SynchronizationContract is one row per (Synchronization × origin object), recording the per-object identity mapping and last-sync state. The third leg of the Source/Sync/Contract triad — see local ADR-005.",
         "required": [],
@@ -1805,7 +1805,7 @@
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy string FK to synchronization (kept during transition)",
             "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
@@ -1890,12 +1890,12 @@
           },
           "sourceId": {
             "type": "string",
-            "description": "Deprecated alias for `originId` — retained for backwards compatibility per chain-A REQ-A-008",
+            "description": "Deprecated alias for `originId` — retained for backwards compatibility",
             "title": "Source ID"
           },
           "sourceHash": {
             "type": "string",
-            "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008",
+            "description": "Deprecated alias for `originHash` — retained for backwards compatibility",
             "title": "Source Hash"
           }
         },
@@ -1956,7 +1956,7 @@
         },
         "title": "CallLog",
         "icon": "PhoneLog",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Append-only log of outbound HTTP calls",
         "description": "A CallLog is the primary observability surface for outbound HTTP calls. Every CallService outbound request produces exactly one CallLog row. Append-only and immutable per local ADR-003.",
         "required": [],
@@ -1998,7 +1998,7 @@
           },
           "sourceId": {
             "type": "integer",
-            "description": "Legacy integer FK to source (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)",
+            "description": "Legacy integer FK to source (kept during transition)",
             "title": "Source ID"
           },
           "source": {
@@ -2011,12 +2011,12 @@
           },
           "actionId": {
             "type": "integer",
-            "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved — see chain-B DEFERRED Q2.",
+            "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved.",
             "title": "Action ID (Legacy)"
           },
           "synchronizationId": {
             "type": "integer",
-            "description": "Legacy integer FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy integer FK to synchronization (kept during transition)",
             "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
@@ -2129,7 +2129,7 @@
         },
         "title": "JobLog",
         "icon": "ClockTimeFour",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Append-only log of job executions",
         "description": "A JobLog records one entry per job invocation (or per significant intra-job event). Append-only and immutable per local ADR-003. Retention split by `level` per chain-A REQ-A-004.",
         "required": [],
@@ -2152,7 +2152,7 @@
           },
           "jobId": {
             "type": "string",
-            "description": "Legacy string FK to job (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy string FK to job (kept during transition)",
             "title": "Job ID (Legacy)"
           },
           "job": {
@@ -2295,7 +2295,7 @@
         },
         "title": "SynchronizationLog",
         "icon": "SyncCircle",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Append-only log of synchronization passes",
         "description": "A SynchronizationLog records one entry per synchronization pass (or significant event within a pass). Append-only and immutable per local ADR-003.",
         "required": [],
@@ -2313,7 +2313,7 @@
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy string FK to synchronization (kept during transition)",
             "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
@@ -2414,7 +2414,7 @@
         "slug": "synchronization_contract_log",
         "title": "SynchronizationContractLog",
         "icon": "FileDocumentMultipleOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Append-only log of per-object sync results",
         "description": "A SynchronizationContractLog records one entry per (SynchronizationContract × sync pass) — i.e. per object processed. Append-only and immutable per local ADR-003.",
         "required": [],
@@ -2432,7 +2432,7 @@
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "description": "Legacy string FK to synchronization (kept during transition)",
             "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
@@ -3003,7 +3003,7 @@
         "slug": "payment_intent",
         "title": "Payment Intent",
         "icon": "CreditCardOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit + status-lifecycle record for one payment created through a live payment provider (e.g. Mollie)",
         "description": "A Payment Intent tracks one payment created via POST /api/payments, from its provider-native status through webhook-verified outcome changes. See openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001.",
         "required": [
@@ -3094,7 +3094,7 @@
               "failed",
               "voided"
             ],
-            "description": "Last outcome actually emitted as a nl.conduction.payment.status CloudEvent (shillinq's PaymentReconciliationService vocabulary) — the webhook idempotency guard (REQ-LPP-005)",
+            "description": "Last outcome actually emitted as a nl.conduction.payment.status CloudEvent (shillinq's PaymentReconciliationService vocabulary) — the webhook idempotency guard",
             "title": "Last Outcome"
           },
           "createdAt": {
@@ -3810,7 +3810,7 @@
         "slug": "notificaties_abonnement",
         "title": "Notificaties Abonnement",
         "icon": "BellRingOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A subscriber-side abonnement registered against a remote ZGW Notificaties API kanaal",
         "description": "A Notificaties Abonnement tracks one subscriber-side registration against a remote ZGW Notificaties API (Logius/VNG API Notificatiestandaard voor ZGW APIs): the kanalen subscribed to, the callback this app exposes for inbound delivery, and the companion consumer used to authenticate those deliveries. Lifecycle: pending (persisted before the remote registration call completes) -> active (remote API accepted the registration) -> error (registration/update/delete call failed; lastError retains the reason) -> deleted (soft-deleted after a successful remote DELETE, kept for audit). See openspec/specs/notificaties-api-connector/spec.md.",
         "required": [
@@ -3872,19 +3872,19 @@
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/consumer",
-            "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery (REQ-002). Cascade-deleted when the abonnement is deleted (REQ-004).",
+            "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery. Cascade-deleted when the abonnement is deleted.",
             "title": "Consumer ID"
           },
           "authHeaderName": {
             "type": "string",
             "default": "Authorization",
-            "description": "The HTTP header name the remote Notificaties Routeer Component (NRC) is expected to echo the abonnement.auth value back on for every delivered notification (design.md Decision 4 — an explicit assumption; configurable per abonnement rather than hardcoded since some NRC implementations may differ from the VNG-Realisatie default).",
+            "description": "The HTTP header name the remote Notificaties Routeer Component (NRC) is expected to echo the abonnement.auth value back on for every delivered notification (an explicit assumption; configurable per abonnement rather than hardcoded since some NRC implementations may differ from the VNG-Realisatie default).",
             "title": "Auth Header Name"
           },
           "authScheme": {
             "type": "string",
             "default": "",
-            "description": "Optional scheme prefix stripped from the presented authHeaderName value before apiKey comparison (e.g. 'Bearer '). Empty means the header value is compared as a bare token (the VNG-Realisatie default assumption, design.md Decision 4).",
+            "description": "Optional scheme prefix stripped from the presented authHeaderName value before apiKey comparison (e.g. 'Bearer '). Empty means the header value is compared as a bare token (the VNG-Realisatie default assumption).",
             "title": "Auth Scheme"
           },
           "status": {
@@ -3947,7 +3947,7 @@
         "slug": "openformulieren_form_mapping",
         "title": "Open Formulieren Form Mapping",
         "icon": "FormSelect",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Per-form mapping config: an Open Formulieren form slug's raw submitted values onto the ns#Case handoff contract fields",
         "description": "One record per Open Formulieren form, resolved by FormFieldMapper (open-formulieren-intake). fieldMapping keys are limited to title/summary/channel (mandatory) and priority (optional) -- source is engine-filled by OpenRegister's own handoff dialect and requester is unsupported in v1 (no OR-managed party register to resolve a BSN/KvK auth context against). See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002.",
         "required": [
@@ -3973,7 +3973,7 @@
           },
           "fieldMapping": {
             "type": "object",
-            "description": "Contract field name (title|summary|channel|priority) -> {type: from|const|template, value: string}. Every mandatory field (title/summary/channel) MUST be a key. A declared from/template entry whose referenced key is absent at submission time errors (MappingResolutionException) rather than leaking the literal expression -- see design.md.",
+            "description": "Contract field name (title|summary|channel|priority) -> {type: from|const|template, value: string}. Every mandatory field (title/summary/channel) MUST be a key. A declared from/template entry whose referenced key is absent at submission time errors (MappingResolutionException) rather than leaking the literal expression.",
             "additionalProperties": {
               "type": "object",
               "properties": {
@@ -4007,7 +4007,7 @@
         "slug": "openformulieren_submission",
         "title": "Open Formulieren Submission",
         "icon": "FileDocumentOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
         "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff -- OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
         "required": [
@@ -4044,7 +4044,7 @@
           },
           "authContext": {
             "type": "object",
-            "description": "Optional {plugin, bsn, kvk} DigiD/eHerkenning auth context. Never logged. requester is not mapped in v1 (see design.md).",
+            "description": "Optional {plugin, bsn, kvk} DigiD/eHerkenning auth context. Never logged. requester is not mapped in v1.",
             "title": "Auth Context"
           },
           "mappedTitle": {
@@ -4305,7 +4305,7 @@
         "slug": "iwmo_ijw_message",
         "title": "iWMO/iJW Message",
         "icon": "HospitalBoxOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit record for one outbound iWMO/iJW bericht send or one inbound retour, produced by the iwmo-ijw-adapter connector",
         "description": "An iWMO/iJW Message tracks either one outbound Wmo/Jw berichttype dispatch (a toewijzing or declaratie translated and sent) or one inbound retour (acceptance/rejection, start/stop-zorg, declaratie processing) received back — never merged into a single mutable row. See openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md.",
         "required": [
@@ -4352,7 +4352,7 @@
               "invoice_processed",
               "invoice_rejected"
             ],
-            "description": "Outbound: sent|failed. Inbound: derived from the retour berichttype — see design.md's inbound retour field table",
+            "description": "Outbound: sent|failed. Inbound: derived from the retour berichttype",
             "title": "Status"
           },
           "ref": {
@@ -4711,7 +4711,7 @@
         "slug": "lti_platform",
         "title": "LTI Platform",
         "icon": "SchoolOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An external LTI 1.3 Platform (LMS) that may launch into this instance — this instance acts as Tool",
         "description": "An lti_platform row describes an external Platform (e.g. a Moodle-based state platform) that launches a signed id_token INTO this instance via OIDC third-party-initiated login. This instance acts as Tool for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -4762,7 +4762,7 @@
           },
           "signingKeys": {
             "type": "array",
-            "description": "This instance's own rotating signing keypair(s) for this registration (RFC 7523 client-assertion signing). Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "description": "This instance's own rotating signing keypair(s) for this registration (RFC 7523 client-assertion signing). Scoped per-registration, never instance-wide. Custody: plaintext-pending-encryption (same as every other Source secret field).",
             "title": "Signing Keys",
             "items": {
               "type": "object",
@@ -4818,7 +4818,7 @@
               "suspended"
             ],
             "default": "pending",
-            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete login initiation, launch validation, Platform-role launch initiation, Deep Linking response signing, or service-token issuance — a `pending`/`suspended` registration is rejected identically to an unregistered issuer/client_id by LtiRegistrationResolverService. Transitioned only via the admin-gated approve()/suspend() actions.",
+            "description": "Registration trust gate. Only an `approved` registration may complete login initiation, launch validation, Platform-role launch initiation, Deep Linking response signing, or service-token issuance — a `pending`/`suspended` registration is rejected identically to an unregistered issuer/client_id by LtiRegistrationResolverService. Transitioned only via the admin-gated approve/suspend actions.",
             "title": "Status"
           },
           "identityPolicy": {
@@ -4828,7 +4828,7 @@
               "autoProvisionAsRole"
             ],
             "default": "manualLinkOnly",
-            "description": "Governs how LtiIdentityLinkService resolves a validated launch's sub claim to a Nextcloud user (REQ-LTI-012). manualLinkOnly (default, conservative) never creates a Nextcloud user or matches by email/name — an unlinked sub is reported as such. autoProvisionAsRole is an explicit per-platform opt-in that provisions a first-seen sub into defaultProvisionGroup. Never consulted as part of, or able to relax, validateLaunch()'s own cryptographic trust decision.",
+            "description": "Governs how LtiIdentityLinkService resolves a validated launch's sub claim to a Nextcloud user. manualLinkOnly (default, conservative) never creates a Nextcloud user or matches by email/name — an unlinked sub is reported as such. autoProvisionAsRole is an explicit per-platform opt-in that provisions a first-seen sub into defaultProvisionGroup. Never consulted as part of, or able to relax, validateLaunch's own cryptographic trust decision.",
             "title": "Identity Policy"
           },
           "defaultProvisionGroup": {
@@ -4872,7 +4872,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -4917,7 +4917,7 @@
           },
           "signingKeys": {
             "type": "array",
-            "description": "This instance's own rotating signing keypair(s) for this registration, used to sign id_token launches to this tool. Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "description": "This instance's own rotating signing keypair(s) for this registration, used to sign id_token launches to this tool. Scoped per-registration, never instance-wide. Custody: plaintext-pending-encryption (same as every other Source secret field).",
             "title": "Signing Keys",
             "items": {
               "type": "object",
@@ -4973,7 +4973,7 @@
               "suspended"
             ],
             "default": "pending",
-            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete OIDC login initiation, launch validation, or service-token issuance/verification — a `pending`/`suspended` registration is rejected identically to an unregistered client_id by LtiRegistrationResolverService::findToolByClientId(). Transitioned only via the admin-gated approve()/suspend() actions. Trust and identity are role-symmetric concerns (design.md D1) even though lti_tool registrations don't get identity-linked end-users the way lti_platform launches do.",
+            "description": "Registration trust gate. Only an `approved` registration may complete OIDC login initiation, launch validation, or service-token issuance/verification — a `pending`/`suspended` registration is rejected identically to an unregistered client_id by LtiRegistrationResolverService::findToolByClientId. Transitioned only via the admin-gated approve/suspend actions. Trust and identity are role-symmetric concerns even though lti_tool registrations don't get identity-linked end-users the way lti_platform launches do.",
             "title": "Status"
           },
           "created": {
@@ -4997,7 +4997,7 @@
         "slug": "lti_deployment",
         "title": "LTI Deployment",
         "icon": "LinkVariant",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Links exactly one lti_platform OR one lti_tool registration to a consuming-app placement",
         "description": "An lti_deployment is the complete, self-describing placement contract a consuming app registers to place an external tool or expose its own content: the LTI deployment_id claim value, where a validated launch redirects, and where AGS/NRPS data is read from/published to. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-010.",
         "required": [
@@ -5052,7 +5052,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/lti_platform",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the lti_platform this deployment belongs to (mutually exclusive with ltiToolId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "description": "FK to the lti_platform this deployment belongs to (mutually exclusive with ltiToolId; onDelete=CASCADE)",
             "title": "LTI Platform"
           },
           "ltiToolId": {
@@ -5060,7 +5060,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/lti_tool",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the lti_tool this deployment belongs to (mutually exclusive with ltiPlatformId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "description": "FK to the lti_tool this deployment belongs to (mutually exclusive with ltiPlatformId; onDelete=CASCADE)",
             "title": "LTI Tool"
           },
           "launchTargetUrl": {
@@ -5070,7 +5070,7 @@
           },
           "gradeSink": {
             "type": "object",
-            "description": "ADR-008 targetType/targetId pair naming the register/schema the consuming app expects AGS-derived scores to eventually land in via its OWN event_subscription to nl.conduction.lti.ags.score.received. The adapter never writes here directly (REQ-LTI-007).",
+            "description": "targetType/targetId pair naming the register/schema the consuming app expects AGS-derived scores to eventually land in via its OWN event_subscription to nl.conduction.lti.ags.score.received. The adapter never writes here directly.",
             "title": "Grade Sink",
             "properties": {
               "targetType": {
@@ -5087,7 +5087,7 @@
           },
           "rosterSource": {
             "type": "object",
-            "description": "ADR-008 targetType/targetId pair the adapter reads from directly to serve NRPS roster requests synchronously (REQ-LTI-009)",
+            "description": "targetType/targetId pair the adapter reads from directly to serve NRPS roster requests synchronously",
             "title": "Roster Source",
             "properties": {
               "targetType": {
@@ -5109,7 +5109,7 @@
           },
           "resourceLinkMappings": {
             "type": "array",
-            "description": "REQ-LTI-013 resource-link-to-consuming-app-object mapping seam. Each entry is an ADR-008 {resourceLinkId, targetType, targetId} tuple, mirroring gradeSink/rosterSource's shape. resourceLinkId MAY be empty to denote a deployment-default entry. Only meaningful when ltiPlatformId is set (an inbound resource_link claim only appears on a launch this instance receives as Tool); a deployment referencing ltiToolId never populates it. Resolved (never read/written) by LtiLaunchService::resolveResourceMapping() — the adapter only tells a consuming app which target a resource_link.id maps to, it never performs the register/schema read/write itself.",
+            "description": "resource-link-to-consuming-app-object mapping seam. Each entry is a {resourceLinkId, targetType, targetId} tuple, mirroring gradeSink/rosterSource's shape. resourceLinkId MAY be empty to denote a deployment-default entry. Only meaningful when ltiPlatformId is set (an inbound resource_link claim only appears on a launch this instance receives as Tool); a deployment referencing ltiToolId never populates it. Resolved (never read/written) by LtiLaunchService::resolveResourceMapping — the adapter only tells a consuming app which target a resource_link.id maps to, it never performs the register/schema read/write itself.",
             "title": "Resource Link Mappings",
             "items": {
               "type": "object",

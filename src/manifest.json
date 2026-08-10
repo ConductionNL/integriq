@@ -671,27 +671,18 @@
                 "schema": "source",
                 "columns": [
                     "name",
-                    "type",
-                    "status",
-                    "isEnabled",
-                    "lastSync",
-                    "dateModified"
+                    "version",
+                    "location",
+                    "documentation",
+                    "lastCall",
+                    "circuitBreakerState"
                 ],
                 "includeFields": [
                     "name",
                     "description",
                     "type",
-                    "isEnabled",
-                    "auth",
-                    "authorizationHeader",
-                    "authenticationConfig",
-                    "apikey",
-                    "secret",
-                    "username",
-                    "password",
-                    "jwt",
-                    "jwtId",
-                    "configuration"
+                    "location",
+                    "isEnabled"
                 ],
                 "sidebar": {
                     "enabled": true,
@@ -1062,9 +1053,26 @@
                     "name",
                     "description",
                     "endpoint",
+                    "endpointArray",
+                    "endpointRegex",
+                    "slug",
                     "method",
-                    "targetType"
+                    "targetType",
+                    "targetId",
+                    "configurations"
                 ],
+                "fieldOverrides": {
+                    "name": { "order": 1 },
+                    "description": { "order": 2 },
+                    "endpoint": { "order": 3 },
+                    "endpointArray": { "order": 4 },
+                    "endpointRegex": { "order": 5 },
+                    "slug": { "order": 6 },
+                    "method": { "order": 7 },
+                    "targetType": { "order": 8, "default": "register/schema" },
+                    "targetId": { "order": 9, "required": true },
+                    "configurations": { "order": 10 }
+                },
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
@@ -1101,6 +1109,9 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-fields": "EndpointFormFields"
             }
         },
         {
@@ -1562,11 +1573,49 @@
                     "jobClass",
                     "arguments",
                     "interval",
-                    "isEnabled"
+                    "timeSensitive",
+                    "allowParallelRuns",
+                    "isEnabled",
+                    "singleRun",
+                    "scheduleAfter",
+                    "userId",
+                    "logRetention",
+                    "errorRetention"
                 ],
+                "_fieldOverridesNote": "Field ORDER and the logRetention default live in the job schema (lib/Settings/register.d/job-form-fields.json), not here — the schema owns the properties, so every surface reading it agrees. What is left here is only what a schema cannot or must not express: `jobClass`'s dropdown list (an enum in the schema would be enforced on save, breaking the seeded Example*Job rows and forbidding third-party Action classes), the `group` key that lays the four scheduling flags out two-up (JobFormFields reads it — fieldsFromSchema ends with Object.assign(field, overrides[key]), so arbitrary keys reach the field descriptor), and the two form-only prefills. Those two are here rather than in the schema because a schema default reaches every API-, MCP- and seed-created job as well: errorRetention would cut those from 30-day to 1-day error-log retention, and interval would reschedule an intervalless job from 'next tick' (JobService reads `$jobData['interval'] ?? 0`) to hourly.",
                 "fieldOverrides": {
+                    "description": {
+                        "widget": "textarea"
+                    },
+                    "jobClass": {
+                        "widget": "select",
+                        "enum": [
+                            "OCA\\OpenConnector\\Action\\SynchronizationAction",
+                            "OCA\\OpenConnector\\Action\\FlowAction",
+                            "OCA\\OpenConnector\\Action\\EventAction",
+                            "OCA\\OpenConnector\\Action\\PingAction"
+                        ]
+                    },
                     "arguments": {
                         "widget": "json"
+                    },
+                    "interval": {
+                        "default": 3600
+                    },
+                    "timeSensitive": {
+                        "group": "flags"
+                    },
+                    "allowParallelRuns": {
+                        "group": "flags"
+                    },
+                    "isEnabled": {
+                        "group": "flags"
+                    },
+                    "singleRun": {
+                        "group": "flags"
+                    },
+                    "errorRetention": {
+                        "default": 86400
                     }
                 },
                 "sidebar": {
@@ -1591,9 +1640,10 @@
                     },
                     {
                         "id": "test",
-                        "label": "Test (dry run)",
+                        "label": "Force run (ignore schedule)",
                         "icon": "CheckCircleOutline",
-                        "handler": "testJobHandler"
+                        "handler": "testJobHandler",
+                        "_note": "NOT a dry run. JobsController::test() calls the same executeJob() run() does with forceRun hardcoded true (job-scheduling REQ-002); the job executes for real and there is no dry-run mode for jobs anywhere in the engine. The label read 'Test (dry run)' until the shared run/test modal (REQ-SHELLUI-004) made the claim visible enough to be worth correcting — it now matches runTargets.js's 'job/test' descriptor, which titles the modal 'Force run job'. The Synchronizations row action keeps the 'Test (dry run)' label because a synchronization dry run is real: it persists no contract and does not touch the target."
                     },
                     {
                         "id": "view-job-logs",
@@ -1632,16 +1682,12 @@
                     "passThrough",
                     "dateModified"
                 ],
-                "includeFields": [
-                    "name",
-                    "description"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
-                "showEditAction": false,
+                "showEditAction": true,
                 "exportFormats": [
                     {
                         "id": "json",
@@ -1665,13 +1711,6 @@
                         "route": "MappingDetail"
                     },
                     {
-                        "id": "edit",
-                        "label": "Edit",
-                        "icon": "Pencil",
-                        "handler": "navigate",
-                        "route": "MappingDetail"
-                    },
-                    {
                         "id": "test",
                         "label": "Test mapping",
                         "icon": "CheckCircleOutline",
@@ -1679,6 +1718,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column MappingEditorModal. View still navigates to the MappingDetail page for a deep-linkable URL.",
+            "slots": {
+                "form-dialog": "MappingEditorModal"
             }
         },
         {
@@ -1708,18 +1751,12 @@
                     "type",
                     "order"
                 ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "action",
-                    "timing",
-                    "type"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
+                "showEditAction": true,
                 "actions": [
                     {
                         "id": "view",
@@ -1730,6 +1767,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by RuleEditorModal. The `includeFields` list that used to sit here is gone with it: it produced free-text inputs for the enum-less `action`/`timing`/`type` strings and could reach neither `conditions` (a `type: object` property, dropped by fieldsFromSchema) nor `order` nor the nested `configuration.error.*` fields. Per-type parameters beyond `error` are authored on the RuleDetail page, which hosts all 18 views/Rule/actionForms/ components — that is what \"Open full editor\" navigates to.",
+            "slots": {
+                "form-dialog": "RuleEditorModal"
             }
         },
         {
@@ -1759,24 +1800,16 @@
                     "status",
                     "sourceLastSynced"
                 ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "sourceType",
-                    "targetType"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
+                "showEditAction": true,
                 "rowAction": {
                     "id": "edit",
                     "handler": "navigate",
-                    "route": "SynchronizationDetail",
-                    "params": {
-                        "id": "{id}"
-                    }
+                    "route": "SynchronizationDetail"
                 },
                 "headerActions": [
                     {
@@ -1800,10 +1833,7 @@
                         "label": "Open editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
-                        "route": "SynchronizationDetail",
-                        "params": {
-                            "id": "{id}"
-                        }
+                        "route": "SynchronizationDetail"
                     },
                     {
                         "id": "run",
@@ -1832,6 +1862,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column SynchronizationEditorModal. `open-editor` and the row click still navigate to the SynchronizationDetail page, which carries what the modal omits (cursor reset, live subscription).",
+            "slots": {
+                "form-dialog": "SynchronizationEditorModal"
             }
         },
         {
@@ -2092,10 +2126,7 @@
                 "rowAction": {
                     "id": "edit",
                     "handler": "navigate",
-                    "route": "FlowDetail",
-                    "params": {
-                        "id": "{id}"
-                    }
+                    "route": "FlowDetail"
                 },
                 "actions": [
                     {
@@ -2103,10 +2134,7 @@
                         "label": "Open editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
-                        "route": "FlowDetail",
-                        "params": {
-                            "id": "{id}"
-                        }
+                        "route": "FlowDetail"
                     },
                     {
                         "id": "run",

@@ -10,18 +10,19 @@
 //
 // The legacy chain-A pre-refactor modals (RunJob.vue, TestJob.vue,
 // RunSynchronization.vue, TestSynchronization.vue, TestMapping.vue,
-// TestSource.vue) showed a richer in-modal run/result panel. That UX is
-// preserved in git history under src/modals/ for the future bespoke
-// extraction PR series (see src/modals/README.md); this thin handler set
-// restores the basic ability to trigger those backend actions from the UI
-// while the richer modals are reborn.
+// TestSource.vue) showed a richer in-modal run/result panel. Those have now
+// all been reborn under src/modals/v2/, and the handlers that used to POST
+// on their behalf open the modal instead — see the modal-opening section
+// below. What remains fire-and-forget here is only what has no result worth
+// rendering.
 //
-// All endpoints are stable post chain-C and declared in appinfo/routes.php:
-//   POST /api/sources/test/{id}             — sources#test
-//   POST /api/jobs/run/{id}                 — jobs#run
-//   POST /api/jobs/test/{id}                — jobs#test
-//   POST /api/synchronizations/{id}/run     — synchronizations#run
-//   POST /api/synchronizations/{id}/test    — synchronizations#test
+// Endpoints still called directly from this file, declared in appinfo/routes.php:
+//   POST /api/flows/{id}/run                — flows#run
+//
+// Endpoints moved into modals (this file only opens them now):
+//   POST /api/sources/test/{id}             — TestSourceModal
+//   POST /api/jobs/{run,test}/{id}          — RunActionModal
+//   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -32,23 +33,15 @@ import {
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_PROMOTION,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
-
-/**
- * Extract a stable id from a row. OR returns rows with `id` set; legacy
- * call-sites sometimes only carry `uuid`. Prefer `id`, fall back to `uuid`.
- *
- * @param {object} item Row payload from the index page.
- * @return {string|number}
- */
-function rowId(item) {
-	return item.id || item.uuid
-}
+import { rowId } from './rowId.js'
+import { VIEW_LOGS_TARGETS } from './logTargets.js'
 
 /**
  * Build the toast detail suffix from an axios error. Surfaces the server's
@@ -80,48 +73,6 @@ export function testSourceHandler({ item }) {
 }
 
 /**
- * Trigger a job to run now via POST /api/jobs/run/{id}.
- *
- * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- */
-export async function runJobHandler({ item }) {
-	try {
-		await axios.post(generateUrl(`/apps/openconnector/api/jobs/run/${rowId(item)}`))
-		showSuccess(t('openconnector', 'Job run triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Job run failed') + errorDetail(err))
-	}
-}
-
-/**
- * Test a job (dry run) via POST /api/jobs/test/{id}.
- *
- * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- */
-export async function testJobHandler({ item }) {
-	try {
-		await axios.post(generateUrl(`/apps/openconnector/api/jobs/test/${rowId(item)}`))
-		showSuccess(t('openconnector', 'Job test (dry run) triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Job test failed') + errorDetail(err))
-	}
-}
-
-/**
- * Trigger a synchronization run via POST /api/synchronizations/{id}/run.
- *
- * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- */
-export async function runSynchronizationHandler({ item }) {
-	try {
-		await axios.post(generateUrl(`/apps/openconnector/api/synchronizations/${rowId(item)}/run`))
-		showSuccess(t('openconnector', 'Synchronization run triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Synchronization run failed') + errorDetail(err))
-	}
-}
-
-/**
  * Trigger a flow run via POST /api/flows/{id}/run (visual-flow-orchestration
  * REQ-007d — the manual trigger surface, wired to the Flows index page's
  * row action here; the Flow detail page's own "Run" header action calls the
@@ -143,24 +94,63 @@ export async function runFlowHandler({ item }) {
 	}
 }
 
-/**
- * Test a synchronization (dry run) via POST /api/synchronizations/{id}/test.
- *
- * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- */
-export async function testSynchronizationHandler({ item }) {
-	try {
-		await axios.post(generateUrl(`/apps/openconnector/api/synchronizations/${rowId(item)}/test`))
-		showSuccess(t('openconnector', 'Synchronization test (dry run) triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Synchronization test failed') + errorDetail(err))
-	}
-}
-
 // Modal-opening handlers — see src/modals/v2/ModalHost.vue. These do NOT
 // hit the backend directly; they emit on the shared modalBus so the host
 // component can mount the corresponding modal. The modal itself owns the
 // API call (POST /api/mappings/test for #835, OR PATCH for #836).
+
+/**
+ * Open the run/test modal for a synchronization "Run now" row action.
+ *
+ * Was a fire-and-forget POST that discarded the returned run log for a toast.
+ * The modal now owns the request, so it can gate it behind the `force` /
+ * `forceDeletion` switches the endpoint accepts but nothing could set, and
+ * render the object counters it returns. Name kept deliberately —
+ * `testSourceHandler` set the precedent of a handler keeping its name when it
+ * became a modal-opener, and the manifest/registry/spec references stay valid.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function runSynchronizationHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'synchronization', mode: 'run', item })
+}
+
+/**
+ * Open the run/test modal for a synchronization "Test (dry run)" row action.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function testSynchronizationHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'synchronization', mode: 'test', item })
+}
+
+/**
+ * Open the run/test modal for a job "Run now" row action.
+ *
+ * Besides exposing `forceRun`, the modal fixes an outright wrong report: when a
+ * job is not yet due and force is off, `executeJob()` returns null and the
+ * endpoint answers with literal JSON `null` (job-scheduling REQ-002) — and the
+ * old toast still said "Job run triggered". The modal says nothing ran.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function runJobHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'job', mode: 'run', item })
+}
+
+/**
+ * Open the run/test modal for a job "Force run" row action.
+ *
+ * Not a dry run, despite what this handler's name and its old row-action label
+ * implied: `JobsController::test()` calls the same `executeJob()` that `run()`
+ * does with `forceRun` hardcoded true. The modal says so plainly and the
+ * manifest label now reads "Force run (ignore schedule)".
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function testJobHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'job', mode: 'test', item })
+}
 
 /**
  * Open the Test mapping modal for the clicked mapping row.
@@ -242,14 +232,6 @@ export function openPromotionHandler() {
 // manifest requires nc-vue#330 to land first. Once that PR ships, this
 // handler can be deleted and the manifest entries can go back to
 // `handler: "navigate"` with a declarative `queryParam` field.
-const VIEW_LOGS_TARGETS = {
-	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
-	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
-	'view-job-logs': { route: 'JobLogs', queryParam: 'job' },
-	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronization' },
-	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: 'event' },
-}
-
 /**
  * Navigate from a parent index row to the corresponding logs page with
  * the parent id pre-filled as a URL query param.
@@ -285,40 +267,4 @@ export function viewLogsHandler({ actionId, item }) {
 			console.warn('[openconnector] viewLogsHandler navigation failed', err)
 		}
 	})
-}
-
-/**
- * Create a blank mapping and open it in the bespoke MappingDetail editor.
- *
- * Wired to the Mappings index Add button (`@add`) via the MappingsPageRenderer
- * wrapper in main.js. Per the "route to detail page" decision, the Add button
- * no longer opens the simple name/description form dialog: it POSTs a draft
- * mapping to the OpenRegister objects API, then routes to the rich 3-tab
- * editor so a new mapping is configured in the same place an existing one is.
- *
- * @return {Promise<void>}
- */
-export async function createMappingAndOpen() {
-	const router = getRouter()
-	if (!router) {
-		// eslint-disable-next-line no-console
-		console.warn('[openconnector] createMappingAndOpen: router not set; cannot navigate')
-		return
-	}
-	try {
-		const url = generateUrl('/apps/openregister/api/objects/openconnector/mapping')
-		const { data } = await axios.post(url, { name: t('openconnector', 'New mapping') })
-		const id = data?.id || data?.uuid || data?.['@self']?.id
-		if (!id) {
-			showError(t('openconnector', 'Could not open the new mapping'))
-			return
-		}
-		router.push({ name: 'MappingDetail', params: { id: String(id) } }).catch((err) => {
-			if (err && err.name !== 'NavigationDuplicated') {
-				showError(t('openconnector', 'Mapping created but could not be opened'))
-			}
-		})
-	} catch (err) {
-		showError(t('openconnector', 'Could not create mapping') + errorDetail(err))
-	}
 }

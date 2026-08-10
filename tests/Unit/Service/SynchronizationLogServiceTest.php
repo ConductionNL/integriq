@@ -160,4 +160,52 @@ final class SynchronizationLogServiceTest extends TestCase
 
     }//end testCreateFromArrayDoesNotWrite()
 
+
+    /**
+     * Reference compaction drops empty-string entries, not just nulls.
+     *
+     * `resolveContractId()` returned a bare string unchanged, so an entry of
+     * `''` — which references nothing, exactly like a null — survived into the
+     * persisted `contracts` list. `Flow\SynchronizationRunNode::objectsFrom()`
+     * then fans a degenerate object out of it. The `logs` branch already
+     * filtered `''`, so the two lists disagreed on the same input.
+     *
+     * The `_embed.contracts` pairing is asserted too: it is aligned by
+     * position, so dropping a contract without dropping its embedded partner
+     * would misalign every later entry.
+     *
+     * @return void
+     */
+    public function testCompactionDropsEmptyStringReferences(): void
+    {
+        $captured      = [];
+        $objectService = $this->createMock(OrObjectService::class);
+        $objectService->method('saveObject')
+            ->willReturnCallback(
+                function ($object, $register, $schema, $uuid=null) use (&$captured): ObjectEntity {
+                    $captured = $object;
+                    return $this->entity($object);
+                }
+            );
+
+        $service = $this->makeService($objectService);
+        $log     = $service->createFromArray(
+            [
+                'message' => 'done',
+                'result'  => [
+                    'contracts' => ['uuid-a', '', null, 'uuid-b'],
+                    'logs'      => ['log-a', '', null],
+                    '_embed'    => ['contracts' => ['embed-a', 'embed-empty', 'embed-null', 'embed-b']],
+                ],
+            ]
+        );
+
+        $service->update($log);
+
+        $this->assertSame(['uuid-a', 'uuid-b'], $captured['result']['contracts']);
+        $this->assertSame(['log-a'], $captured['result']['logs']);
+        $this->assertSame(['embed-a', 'embed-b'], $captured['result']['_embed']['contracts']);
+
+    }//end testCompactionDropsEmptyStringReferences()
+
 }//end class

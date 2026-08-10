@@ -392,88 +392,22 @@ import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
+// Shared with modals/v2/SynchronizationEditorModal.vue — see syncDraft.js.
+import {
+	CURSOR_COMPARATOR_OPTIONS,
+	emptyRootGroup,
+	NEXTCLOUD_FORM_OPTION,
+	NEXTCLOUD_TABLE_OPTION,
+	SYNC_MODE_OPTIONS,
+	TYPE_OPTIONS,
+	emptyDraft,
+	fetchBridgeStatus,
+	normaliseConditions,
+	serializeConditions,
+} from './syncDraft.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
-
-/**
- * Default empty root-group used when a synchronization has no conditions
- * (or when the persisted value isn't a recognisable JsonLogic group node).
- * Centralised so the visual builder and the raw-JSON textarea always agree
- * on the round-trip default shape — mirrors the EMPTY_ROOT_GROUP used in
- * RuleDetailPage so power-users can copy/paste between rules and syncs.
- */
-const EMPTY_ROOT_GROUP = { and: [] }
-
-/**
- * Polymorphic type discriminator options shared between source and
- * target. Keep in sync with `synchronization.sourceType` /
- * `targetType` description in `lib/Settings/openconnector_register.json`.
- */
-const TYPE_OPTIONS = [
-	{ id: 'api', label: 'API' },
-	{ id: 'register/schema', label: 'Register/Schema' },
-	{ id: 'file', label: 'File' },
-]
-
-/**
- * Option appended to TYPE_OPTIONS only when the backend reports the Tables
- * app is enabled (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006).
- */
-const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
-
-/**
- * Option appended to the SOURCE-only type list when the backend reports the
- * Forms app is enabled (nextcloud-forms-connector REQ-001 / sync-editor-ui
- * REQ-SYNCUI-008). Never offered as a target option — nextcloud-form is a
- * source-only type (nextcloud-forms-connector REQ-002).
- */
-const NEXTCLOUD_FORM_OPTION = { id: NEXTCLOUD_FORM_KIND, label: 'Nextcloud Form' }
-
-/**
- * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync
- * with the `syncMode` enum in `lib/Settings/openconnector_register.json`.
- */
-const SYNC_MODE_OPTIONS = [
-	{ id: 'full', label: 'Full' },
-	{ id: 'incremental', label: 'Incremental' },
-]
-
-/**
- * `sourceConfig.cursorComparator` options (REQ-016). Informational only —
- * the engine always takes the maximum observed `cursorField` value
- * (computeCursorWatermark()), regardless of which comparator is selected.
- */
-const CURSOR_COMPARATOR_OPTIONS = [
-	{ id: 'gt', label: 'Greater than (gt)' },
-	{ id: 'gte', label: 'Greater than or equal (gte)' },
-]
-
-/**
- * Build an empty draft for the create case. The legacy modal defaulted
- * sourceType:'api', targetType:'register/schema' — preserve that here so
- * a newly-routed-to record without a stored type still renders a sensible
- * config form.
- */
-function emptyDraft() {
-	return {
-		name: '',
-		description: '',
-		sourceType: 'api',
-		sourceId: '',
-		sourceConfig: {},
-		sourceTargetMapping: '',
-		sourceHashMapping: '',
-		syncMode: 'full',
-		targetType: 'register/schema',
-		targetId: '',
-		targetConfig: {},
-		targetSourceMapping: '',
-		actions: [],
-		followUps: [],
-		conditions: { ...EMPTY_ROOT_GROUP },
-	}
-}
 
 export default {
 	name: 'SynchronizationDetailPage',
@@ -678,7 +612,7 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		rootConditionGroup() {
-			return this.normaliseConditions(this.draft?.conditions)
+			return normaliseConditions(this.draft?.conditions)
 		},
 	},
 
@@ -735,14 +669,7 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		async fetchTablesStatus() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/tables-bridge/status'),
-				)
-				this.tablesEnabled = Boolean(response.data?.enabled)
-			} catch (_err) {
-				this.tablesEnabled = false
-			}
+			this.tablesEnabled = await fetchBridgeStatus('tables')
 		},
 		/**
 		 * Ask the backend whether the Forms app is enabled for the acting
@@ -754,14 +681,7 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
 		 */
 		async fetchFormsStatus() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/status'),
-				)
-				this.formsEnabled = Boolean(response.data?.enabled)
-			} catch (_err) {
-				this.formsEnabled = false
-			}
+			this.formsEnabled = await fetchBridgeStatus('forms')
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadObject() {
@@ -834,7 +754,7 @@ export default {
 						// array, object) thanks to legacy rows — funnel them
 						// all through the JsonLogic coercer so the visual
 						// builder sees a consistent group node.
-						out[key] = this.normaliseConditions(obj[key])
+						out[key] = normaliseConditions(obj[key])
 					} else if (typeof base[key] === 'object') {
 						out[key] = (typeof obj[key] === 'object' && !Array.isArray(obj[key]))
 							? { ...obj[key] }
@@ -845,68 +765,6 @@ export default {
 				}
 			}
 			return out
-		},
-		/**
-		 * Coerce a persisted `conditions` value into a top-level JsonLogic
-		 * group node. Accepts null/undefined/string/array/leaf/group and
-		 * always returns `{and:[...]}` or `{or:[...]}` so the visual builder
-		 * never receives a malformed shape.
-		 *
-		 * The register schema (`openconnector_register.json`) declares
-		 * `conditions` as `array<object>` — legacy data wraps the JsonLogic
-		 * group in a single-element array. We unwrap on load and re-wrap on
-		 * save (see `serializeConditions`) so the UI gets to work with the
-		 * intuitive object shape while the wire format stays array-typed.
-		 *
-		 * @param {*} raw Persisted conditions value.
-		 * @return {object} JsonLogic group node.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md
-		 */
-		normaliseConditions(raw) {
-			if (raw === null || raw === undefined || raw === '') {
-				return { ...EMPTY_ROOT_GROUP }
-			}
-			if (typeof raw === 'string') {
-				try { return this.normaliseConditions(JSON.parse(raw)) } catch (_e) { return { ...EMPTY_ROOT_GROUP } }
-			}
-			if (Array.isArray(raw)) {
-				if (raw.length === 0) return { ...EMPTY_ROOT_GROUP }
-				// Single-item array wrapping a group → unwrap and recurse.
-				if (raw.length === 1 && raw[0] && typeof raw[0] === 'object' && !Array.isArray(raw[0])) {
-					return this.normaliseConditions(raw[0])
-				}
-				// Multi-item array of leaves → wrap with AND.
-				return { and: raw }
-			}
-			if (typeof raw === 'object') {
-				const keys = Object.keys(raw)
-				if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
-					return raw
-				}
-				return { and: [raw] }
-			}
-			return { ...EMPTY_ROOT_GROUP }
-		},
-		/**
-		 * Inverse of `normaliseConditions`: serialise the visual builder's
-		 * group node into the array-of-objects shape the register schema
-		 * expects. An empty AND/OR group becomes the empty array so the
-		 * field stays "unset" on the wire and doesn't carry noise.
-		 *
-		 * @param {object} group JsonLogic group node from the builder.
-		 * @return {Array} Schema-conformant `array<object>` for persistence.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md
-		 */
-		serializeConditions(group) {
-			if (!group || typeof group !== 'object') return []
-			const keys = Object.keys(group)
-			if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or')) {
-				const children = Array.isArray(group[keys[0]]) ? group[keys[0]] : []
-				if (children.length === 0) return []
-			}
-			return [group]
 		},
 		/**
 		 * Write the condition tree back onto the draft. Shared entry point
@@ -941,7 +799,7 @@ export default {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
 				this.rawConditionsError = ''
-				this.onConditionsUpdate({ ...EMPTY_ROOT_GROUP })
+				this.onConditionsUpdate(emptyRootGroup())
 				return
 			}
 			try {
@@ -1088,7 +946,7 @@ export default {
 					// The register schema declares `conditions` as
 					// `array<object>` — serialise the builder's group node
 					// into a single-element array so OR validation passes.
-					conditions: this.serializeConditions(this.draft.conditions),
+					conditions: serializeConditions(this.draft.conditions),
 				}
 				const saved = await this.objectStore.saveObject(this.schemaSlug, payload)
 				if (!saved) {

@@ -16,6 +16,13 @@
   still fall through to the JSON-textarea path so unknown future
   types stay editable.
 
+  The canonical type list is `views/Rule/ruleDraft.js`, shared with
+  `modals/v2/RuleEditorModal.vue`. Picking a type emits BOTH `update`
+  (the `configuration` blob, carrying `configuration.type`) and
+  `update:type` (the bare id) — the parent has to write the rule's
+  top-level `type`, because that is the property the pipeline
+  dispatches on. See the `configuration` prop docblock.
+
   Closes #877 (action-form half).
 -->
 <template>
@@ -99,39 +106,12 @@ import ExtendInputForm from './actionForms/ExtendInputForm.vue'
 import ExtendExternalInputForm from './actionForms/ExtendExternalInputForm.vue'
 import WebhookSignatureForm from './actionForms/WebhookSignatureForm.vue'
 import ApprovalForm from './actionForms/ApprovalForm.vue'
+import { ACTION_TYPES } from './ruleDraft.js'
 
 /**
- * Canonical list of rule action types. Lifted from the legacy modal's
- * `typeOptions.options` — the rule engine in RuleService::processCustomRule
- * and EndpointService matches the `configuration.type` value against
- * these strings, so adding/removing here without a backend change
- * breaks evaluation.
- */
-const ACTION_TYPES = [
-	{ id: 'error', label: 'Error' },
-	{ id: 'mapping', label: 'Mapping' },
-	{ id: 'synchronization', label: 'Synchronization' },
-	{ id: 'javascript', label: 'JavaScript' },
-	{ id: 'authentication', label: 'Authentication' },
-	{ id: 'download', label: 'Download' },
-	{ id: 'upload', label: 'Upload' },
-	{ id: 'locking', label: 'Locking' },
-	{ id: 'fetch_file', label: 'Fetch File' },
-	{ id: 'write_file', label: 'Write File' },
-	{ id: 'fileparts_create', label: 'Fileparts Create' },
-	{ id: 'filepart_upload', label: 'Filepart Upload' },
-	{ id: 'save_object', label: 'Save object' },
-	{ id: 'extend_input', label: 'Extend input' },
-	{ id: 'extend_external_input', label: 'Extend external input' },
-	{ id: 'webhook_signature', label: 'Webhook signature' },
-	{ id: 'approval', label: 'Approval' },
-]
-
-/**
- * Map from action-type id (as used at `configuration.type`) to the
- * component name to render. Forms that need to read/write a different
- * slot than `configuration[type]` (currently only `mapping` and
- * `javascript`) are special-cased in the template above.
+ * Map from action-type id to the component name to render. Forms that need to
+ * read/write a different slot than `configuration[type]` (currently only
+ * `mapping` and `javascript`) are special-cased in the template above.
  */
 const ACTION_FORM_MAP = {
 	synchronization: 'SynchronizationForm',
@@ -181,14 +161,47 @@ export default {
 
 	props: {
 		/**
-		 * Current `configuration` blob from the rule object. The action
-		 * type lives at `configuration.type`; the action-specific
-		 * sub-config lives at `configuration[<type>]` (except for the
-		 * two outliers documented in ACTION_FORM_MAP).
+		 * Current `configuration` blob from the rule object. This component
+		 * tracks the action type at `configuration.type` because that is where
+		 * it can keep it alongside the per-type slots; the action-specific
+		 * sub-config lives at `configuration[<type>]` (except for the two
+		 * outliers documented in ACTION_FORM_MAP).
+		 *
+		 * `configuration.type` is NOT what the pipeline dispatches on —
+		 * `EndpointService::handleRuleProcessing()` reads the rule's top-level
+		 * `type`, and `configuration.type` is only consulted by
+		 * `RuleService::processCustomRule()` to sub-dispatch rules whose
+		 * top-level type is `custom`. So the parent has to write the top-level
+		 * field too: that is what the `update:type` event below is for. A rule
+		 * saved with only `configuration.type` set is never executed — the
+		 * dispatch `match` falls through to
+		 * `throw new Exception('Unsupported rule type: ')`.
+		 *
 		 * @type {object}
 		 */
 		configuration: { type: Object, default: () => ({}) },
+		/**
+		 * The rule's top-level `type`, used as the fallback when
+		 * `configuration.type` is absent. Rules written by the pre-manifest
+		 * modal set only the top-level field, so without this the action picker
+		 * renders empty for every rule created before this component existed —
+		 * and re-picking would look like a change when nothing changed.
+		 *
+		 * @type {string}
+		 */
+		type: { type: String, default: '' },
 	},
+
+	emits: [
+		/** Replacement `configuration` blob. */
+		'update',
+		/**
+		 * The picked action type, for the parent to write to the rule's
+		 * top-level `type` property. Emitted alongside `update`, never instead
+		 * of it — see the props docblock for why both keys have to move.
+		 */
+		'update:type',
+	],
 
 	data() {
 		return {
@@ -202,7 +215,7 @@ export default {
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		actionType() {
-			return this.configuration?.type || ''
+			return this.configuration?.type || this.type || ''
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		typeOptions() {
@@ -238,9 +251,13 @@ export default {
 
 	methods: {
 		/**
-		 * Switch the action type. Only `configuration.type` is rewritten — the
-		 * per-type parameter slots are left in place so toggling back to a type
-		 * restores what was already configured for it.
+		 * Switch the action type. Within `configuration` only `type` is
+		 * rewritten — the per-type parameter slots are left in place so toggling
+		 * back to a type restores what was already configured for it.
+		 *
+		 * `update:type` carries the same value out for the parent to store on
+		 * the rule's top-level `type`, which is the property the pipeline
+		 * actually dispatches on. Both are emitted; see the props docblock.
 		 *
 		 * @param {{id: string, label: string}} option The action-type option
 		 *   picked in the NcSelect; `id` is the raw action type (`mapping`,
@@ -252,6 +269,7 @@ export default {
 			if (!option) return
 			const next = { ...(this.configuration || {}), type: option.id }
 			this.$emit('update', next)
+			this.$emit('update:type', option.id)
 		},
 
 		/**
