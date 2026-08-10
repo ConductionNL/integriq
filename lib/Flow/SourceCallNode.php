@@ -111,21 +111,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
     private const DEFAULT_OUTPUT_KEY = 'response';
 
     /**
-     * HTTP methods a step may name.
-     *
-     * @var array<int, string>
-     */
-    private const SUPPORTED_METHODS = [
-        'GET',
-        'POST',
-        'PUT',
-        'PATCH',
-        'DELETE',
-        'HEAD',
-        'OPTIONS',
-    ];
-
-    /**
      * Constructor.
      *
      * @param CallService               $callService   The governed outbound call engine.
@@ -314,11 +299,17 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
 
         FlowConfigGuard::assertEndpointContained(endpoint: $endpoint, l10n: $this->l10n);
 
-        $this->assertMethod(config: $config);
-        $this->assertAcceptStatuses(config: $config);
-        $this->assertRequestParts(config: $config);
+        SourceCallConfigGuard::assertMethod(config: $config, l10n: $this->l10n);
+        SourceCallConfigGuard::assertAcceptStatuses(config: $config, l10n: $this->l10n);
+        SourceCallConfigGuard::assertRequestParts(config: $config, l10n: $this->l10n);
+        SourceCallConfigGuard::assertOnError(config: $config, l10n: $this->l10n);
+
+        // Output keys stay here rather than moving to SourceCallConfigGuard
+        // with their four siblings: this one is not the node's own vocabulary
+        // but a delegation to the SHARED FlowConfigGuard, so it belongs beside
+        // the two FlowConfigGuard calls above rather than in the class that
+        // holds what only a source-call step may say.
         $this->assertOutput(config: $config);
-        $this->assertOnError(config: $config);
 
     }//end validateConfig()
 
@@ -383,35 +374,10 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
         $outputList = [];
         $indexed    = array_values($items);
 
-        // PASS 1 — render and GUARD every endpoint, serially and before any
-        // request is dispatched.
-        //
-        // Deliberately not folded into the concurrent pass. A containment
-        // refusal is a refusal of the STEP, not of one item: it aborts here
-        // whatever `onError` says, exactly as it did when this method looped.
-        // Isolating it per item would quietly demote a security guard into a
-        // per-item `continue` — and doing it before dispatch means a document
-        // that names one out-of-bounds endpoint has made NO calls at all,
-        // rather than however many happened to be in flight when it was found.
-        $endpoints = [];
-        $records   = [];
-        foreach ($indexed as $index => $item) {
-            $json = (array) ($item['json'] ?? []);
-
-            $records[$index]   = $json;
-            $endpoints[$index] = FlowTemplate::renderString(
-                template: (string) $config['endpoint'],
-                json: $json
-            );
-
-            // The rendered endpoint is checked again here: a placeholder makes
-            // the literal check inconclusive by construction.
-            FlowConfigGuard::assertEndpointContained(
-                endpoint: $endpoints[$index],
-                l10n: $this->l10n,
-                rendered: true
-            );
-        }
+        // PASS 1 — render and GUARD every endpoint, before any request is
+        // dispatched. See renderAndGuardEndpoints() for why it is its own
+        // phase rather than part of the concurrent pass.
+        [$endpoints, $records] = $this->renderAndGuardEndpoints(indexed: $indexed, config: $config);
 
         // PASS 2 — dispatch the calls CONCURRENTLY, bounded and in input order.
         $settled = $this->concurrency->map(
@@ -488,6 +454,59 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
         return $outputList;
 
     }//end callForEachItem()
+
+    /**
+     * Render every item's endpoint and prove each one is in bounds.
+     *
+     * Its own phase, deliberately not folded into the concurrent pass. A
+     * containment refusal is a refusal of the STEP, not of one item: it
+     * aborts here whatever `onError` says, exactly as it did when the call
+     * loop was serial. Isolating it per item would quietly demote a security
+     * guard into a per-item `continue` — and doing it before dispatch means a
+     * document that names one out-of-bounds endpoint has made NO calls at
+     * all, rather than however many happened to be in flight when it was
+     * found.
+     *
+     * Returning the decoded `json` alongside the endpoints is what keeps that
+     * property: the later passes read the SAME record this one guarded,
+     * rather than decoding the item a second time and risking a different
+     * value reaching the request than the one that was checked.
+     *
+     * @param array $indexed The input items, re-indexed from zero.
+     * @param array $config  The step's authored configuration.
+     *
+     * @return array{0: array<int, string>, 1: array<int, array>} The rendered
+     *               endpoint per item, and the decoded `json` per item.
+     *
+     * @throws FlowNodeException When any rendered endpoint escapes its source.
+     *
+     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+     */
+    private function renderAndGuardEndpoints(array $indexed, array $config): array
+    {
+        $endpoints = [];
+        $records   = [];
+        foreach ($indexed as $index => $item) {
+            $json = (array) ($item['json'] ?? []);
+
+            $records[$index]   = $json;
+            $endpoints[$index] = FlowTemplate::renderString(
+                template: (string) $config['endpoint'],
+                json: $json
+            );
+
+            // The rendered endpoint is checked again here: a placeholder makes
+            // the literal check inconclusive by construction.
+            FlowConfigGuard::assertEndpointContained(
+                endpoint: $endpoints[$index],
+                l10n: $this->l10n,
+                rendered: true
+            );
+        }
+
+        return [$endpoints, $records];
+
+    }//end renderAndGuardEndpoints()
 
     /**
      * How many calls this step may have in flight at once.
@@ -896,116 +915,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
     }//end acceptedStatuses()
 
     /**
-     * Reject an unsupported HTTP method.
-     *
-     * @param array $config The step's authored configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When the method is unsupported.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function assertMethod(array $config): void
-    {
-        $method = strtoupper(trim((string) ($config['method'] ?? '')));
-        if ($method === '') {
-            throw new UnexpectedValueException(
-                $this->l10n->t(
-                    'The "method" field must name an HTTP method (%1$s).',
-                    [implode(', ', self::SUPPORTED_METHODS)]
-                )
-            );
-        }
-
-        if (in_array($method, self::SUPPORTED_METHODS, true) === false) {
-            throw new UnexpectedValueException(
-                $this->l10n->t(
-                    'The "method" field names an unsupported HTTP method "%1$s"; supported methods are %2$s.',
-                    [$method, implode(', ', self::SUPPORTED_METHODS)]
-                )
-            );
-        }
-
-    }//end assertMethod()
-
-    /**
-     * Reject a malformed `acceptStatuses`.
-     *
-     * @param array $config The step's authored configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When the value is not a list of statuses.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function assertAcceptStatuses(array $config): void
-    {
-        if (array_key_exists('acceptStatuses', $config) === false) {
-            return;
-        }
-
-        $accepted = $config['acceptStatuses'];
-        if (is_array($accepted) === false || array_is_list($accepted) === false) {
-            throw new UnexpectedValueException(
-                $this->l10n->t('The "acceptStatuses" field must be a list of HTTP status codes.')
-            );
-        }
-
-        foreach ($accepted as $status) {
-            if (is_int($status) === false || $status < 100 || $status > 599) {
-                throw new UnexpectedValueException(
-                    $this->l10n->t('The "acceptStatuses" field must contain only HTTP status codes between 100 and 599.')
-                );
-            }
-        }
-
-    }//end assertAcceptStatuses()
-
-    /**
-     * Reject a malformed `query`, `body` or `headers`.
-     *
-     * @param array $config The step's authored configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When a request part has the wrong shape.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function assertRequestParts(array $config): void
-    {
-        foreach (['query', 'headers'] as $field) {
-            if (array_key_exists($field, $config) === false) {
-                continue;
-            }
-
-            if (is_array($config[$field]) === false) {
-                throw new UnexpectedValueException(
-                    $this->l10n->t('The "%1$s" field must be an object of name/value pairs.', [$field])
-                );
-            }
-        }
-
-        if (array_key_exists('body', $config) === true
-            && is_array($config['body']) === false
-            && is_string($config['body']) === false
-        ) {
-            throw new UnexpectedValueException(
-                $this->l10n->t('The "body" field must be an object or a string.')
-            );
-        }
-
-        if (array_key_exists('responseMapping', $config) === true && is_array($config['responseMapping']) === false) {
-            throw new UnexpectedValueException(
-                $this->l10n->t('The "responseMapping" field must be an object of target key to selector.')
-            );
-        }
-
-    }//end assertRequestParts()
-
-    /**
      * Reject an output key or mapping target that claims a reserved item key.
      *
      * @param array $config The step's authored configuration.
@@ -1036,33 +945,4 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
         }
 
     }//end assertOutput()
-
-    /**
-     * Reject an unknown `onError` policy mirrored into node configuration.
-     *
-     * @param array $config The step's authored configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When the policy is unknown.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function assertOnError(array $config): void
-    {
-        if (array_key_exists('onError', $config) === false) {
-            return;
-        }
-
-        $policy = strtolower(trim((string) $config['onError']));
-        if (in_array($policy, FlowNodeSupport::ON_ERROR_POLICIES, true) === false) {
-            throw new UnexpectedValueException(
-                $this->l10n->t(
-                    'The "onError" field must be one of %1$s.',
-                    [implode(', ', FlowNodeSupport::ON_ERROR_POLICIES)]
-                )
-            );
-        }
-
-    }//end assertOnError()
 }//end class
