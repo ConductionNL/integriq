@@ -1582,7 +1582,7 @@
                     "logRetention",
                     "errorRetention"
                 ],
-                "_fieldOverridesNote": "Field ORDER and the interval/logRetention defaults live in the job schema (lib/Settings/register.d/job-form-fields.json), not here — the schema owns the properties, so every surface reading it agrees. What is left here is only what a schema cannot or must not express: `jobClass`'s dropdown list (an enum in the schema would be enforced on save, breaking the seeded Example*Job rows and forbidding third-party Action classes), the `group` key that lays the four scheduling flags out two-up (JobFormFields reads it — fieldsFromSchema ends with Object.assign(field, overrides[key]), so arbitrary keys reach the field descriptor), and errorRetention's form-only prefill (a schema default would cut API-created jobs from 30-day to 1-day error-log retention).",
+                "_fieldOverridesNote": "Field ORDER and the logRetention default live in the job schema (lib/Settings/register.d/job-form-fields.json), not here — the schema owns the properties, so every surface reading it agrees. What is left here is only what a schema cannot or must not express: `jobClass`'s dropdown list (an enum in the schema would be enforced on save, breaking the seeded Example*Job rows and forbidding third-party Action classes), the `group` key that lays the four scheduling flags out two-up (JobFormFields reads it — fieldsFromSchema ends with Object.assign(field, overrides[key]), so arbitrary keys reach the field descriptor), and the two form-only prefills. Those two are here rather than in the schema because a schema default reaches every API-, MCP- and seed-created job as well: errorRetention would cut those from 30-day to 1-day error-log retention, and interval would reschedule an intervalless job from 'next tick' (JobService reads `$jobData['interval'] ?? 0`) to hourly.",
                 "fieldOverrides": {
                     "description": {
                         "widget": "textarea"
@@ -1598,6 +1598,9 @@
                     },
                     "arguments": {
                         "widget": "json"
+                    },
+                    "interval": {
+                        "default": 3600
                     },
                     "timeSensitive": {
                         "group": "flags"
@@ -1637,10 +1640,10 @@
                     },
                     {
                         "id": "test",
-                        "label": "Test (dry run)",
+                        "label": "Force run (ignore schedule)",
                         "icon": "CheckCircleOutline",
                         "handler": "testJobHandler",
-                        "_note": "NOT a dry run. JobsController::test() calls the same executeJob() run() does with forceRun hardcoded true (job-scheduling REQ-002); the job executes for real and there is no dry-run mode for jobs anywhere in the engine. The label said 'Test (dry run)' until the shared run/test modal (REQ-SHELLUI-004) made the claim visible enough to be worth correcting."
+                        "_note": "NOT a dry run. JobsController::test() calls the same executeJob() run() does with forceRun hardcoded true (job-scheduling REQ-002); the job executes for real and there is no dry-run mode for jobs anywhere in the engine. The label read 'Test (dry run)' until the shared run/test modal (REQ-SHELLUI-004) made the claim visible enough to be worth correcting — it now matches runTargets.js's 'job/test' descriptor, which titles the modal 'Force run job'. The Synchronizations row action keeps the 'Test (dry run)' label because a synchronization dry run is real: it persists no contract and does not touch the target."
                     },
                     {
                         "id": "view-job-logs",
