@@ -36,6 +36,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for mapping execution tests and persistence helpers.
@@ -60,6 +61,7 @@ class MappingsController extends Controller
      * @param IL10N                $l              The localization service.
      * @param IUserSession         $userSession    The user session.
      * @param ActionAuthService    $actionAuth     The action authorization service.
+     * @param LoggerInterface      $logger         Logger for non-fatal diagnostics.
      */
     public function __construct(
         $appName,
@@ -69,6 +71,7 @@ class MappingsController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -334,6 +337,10 @@ class MappingsController extends Controller
                 $registerMapper = \OC::$server->get(RegisterMapper::class);
                 $data['availableRegisters'] = $registerMapper->findAll();
             } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[MappingsController] could not resolve RegisterMapper, returning empty register list: '.$e->getMessage(),
+                    ['exception' => $e]
+                );
                 $data['availableRegisters'] = [];
             }
         }
