@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-batch-level-approval-gate-before-target-writes-req-015
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the batch-level `requiresApproval` gate.
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-batch-level-approval-gate-before-target-writes-req-015
  */
 class SynchronizationServiceApprovalGateTest extends TestCase
 {

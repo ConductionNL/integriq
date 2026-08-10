@@ -240,7 +240,7 @@ class StufZknClientTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-each-adapter-routes-through-the-mtls-transport-only-when-configured-proving-no-orphaned-capability-req-004
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-each-adapter-routes-through-the-mtls-transport-only-when-configured-proving-no-orphaned-capability-req-004
      */
     public function testSendRoutesThroughMtlsTransportWhenConfigured(): void
     {

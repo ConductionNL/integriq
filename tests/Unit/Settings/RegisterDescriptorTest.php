@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-a-002
+ * @spec openspec/specs/openconnector-register-schema/spec.md#requirement-all-21-schemas-must-be-declared-req-a-002
  */
 
 declare(strict_types=1);
@@ -331,7 +331,7 @@ class RegisterDescriptorTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-a-005
+     * @spec openspec/specs/openconnector-register-schema/spec.md#requirement-integer-foreign-key-columns-must-be-relation-annotated-req-a-005
      */
     public function testFkRelationsCarryRefAndOnDelete(): void
     {
@@ -411,7 +411,7 @@ class RegisterDescriptorTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-a-006
+     * @spec openspec/specs/openconnector-register-schema/spec.md#requirement-synchronization-sourceid-targetid-must-remain-string-typed-with-overload-documented-req-a-006
      */
     public function testSynchronizationSourceIdAndTargetIdAreStringWithoutRef(): void
     {

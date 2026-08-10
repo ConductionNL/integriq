@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+ * @spec openspec/specs/approval-workflow/spec.md#requirement-timeout-sweeping-and-fallback-outcomes-req-005
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the approval expiry sweep background job.
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+ * @spec openspec/specs/approval-workflow/spec.md#requirement-timeout-sweeping-and-fallback-outcomes-req-005
  */
 class ApprovalTimeoutSweepJobTest extends TestCase
 {

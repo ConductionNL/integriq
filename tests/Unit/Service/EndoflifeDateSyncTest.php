@@ -20,7 +20,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-repeated-syncs-upsert-idempotently-and-garbage-collect-softdeleted-cycles
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-repeated-syncs-upsert-idempotently-and-garbage-collect-soft-deleted-cycles
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -47,8 +47,8 @@ use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
 
 /**
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-enginenative-synchronization
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-repeated-syncs-upsert-idempotently-and-garbage-collect-softdeleted-cycles
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-repeated-syncs-upsert-idempotently-and-garbage-collect-soft-deleted-cycles
  */
 class EndoflifeDateSyncTest extends TestCase
 {
