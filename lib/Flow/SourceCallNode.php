@@ -63,6 +63,7 @@ use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -76,7 +77,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
-class SourceCallNode implements IFlowNode
+class SourceCallNode implements IFlowNode, IFlowNodeLogActions
 {
 
     /**
@@ -199,6 +200,66 @@ class SourceCallNode implements IFlowNode
         return $this->urlGenerator->imagePath('openconnector', 'flow-source-call.svg');
 
     }//end getIcon()
+
+    /**
+     * The links a call this node made earns in the run log.
+     *
+     * An operator reading a failed call wants the Source it went to and the
+     * call log it wrote — both of which openconnector owns and OpenRegister
+     * could not know about.
+     *
+     * Read from the step's recorded OUTPUT, which is where `performCall()` puts
+     * `sourceId` and `callLog`, and resolved to a URL NOW rather than stored.
+     * An href written into a log months ago points wherever this app's routes
+     * used to be.
+     *
+     * Only the FIRST item is inspected. A step that called a source per item
+     * wrote one entry per call into its own item, and a log row is one step:
+     * offering fifty links on one row would bury the two that matter, and the
+     * per-item detail is in the payload right beside it.
+     *
+     * An entry with neither id yields NO links, deliberately — not a link to
+     * the Sources list. A link that goes somewhere unrelated is followed once,
+     * and after that none of them are trusted.
+     *
+     * @param array<string, mixed> $entry One entry from a run's log.
+     *
+     * @return array<int, array{label: string, href: string}> The links.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+     */
+    public function logActions(array $entry): array
+    {
+        $items = (array) ($entry['output']['items'] ?? []);
+        $json  = (array) (($items[0] ?? [])['json'] ?? []);
+
+        // The SPA is a HASH router (`createWebHashHistory`), so a deep link is
+        // a fragment on the app root — not a server route. `/sources/{id}` has
+        // no route entry at all, and `linkToRoute()` on a name that does not
+        // exist throws, which would take out the whole log rather than one
+        // link.
+        $root = $this->urlGenerator->linkToRoute('openconnector.ui.dashboard', ['path' => '']);
+
+        $actions  = [];
+        $sourceId = trim((string) ($json['sourceId'] ?? ''));
+        if ($sourceId !== '') {
+            $actions[] = [
+                'label' => $this->l10n->t('Open the source'),
+                'href'  => rtrim($root, '/').'#/sources/'.rawurlencode($sourceId),
+            ];
+        }
+
+        $callLog = trim((string) ($json['callLog'] ?? ''));
+        if ($callLog !== '') {
+            $actions[] = [
+                'label' => $this->l10n->t('Open the call log'),
+                'href'  => rtrim($root, '/').'#/sources/logs?call='.rawurlencode($callLog),
+            ];
+        }
+
+        return $actions;
+
+    }//end logActions()
 
     /**
      * Whether the node is offered in the given scope.
