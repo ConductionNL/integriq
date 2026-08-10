@@ -13,7 +13,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+ * @spec openspec/specs/lti-platform/spec.md#requirement-launch-id-token-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
  */
 
 declare(strict_types=1);

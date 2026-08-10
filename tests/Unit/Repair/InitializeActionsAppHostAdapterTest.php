@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
  */
 

@@ -9,7 +9,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-enginenative-synchronization
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use Twig\Loader\ArrayLoader;
  * acceptance criteria) and a REAL response captured live from
  * https://endoflife.date/api (tests/fixtures/endoflifedate/fixture-*.json).
  *
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-enginenative-synchronization
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
  */
 class EndoflifeDateMappingTest extends TestCase
 {

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+ * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the circuit_breaker_state provider gauge (REQ-PROM-011).
  *
- * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge
+ * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  */
 class OpenConnectorMetricsProviderTest extends TestCase
 {

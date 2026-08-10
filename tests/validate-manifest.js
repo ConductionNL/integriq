@@ -5,7 +5,7 @@
 // validate-manifest.js — schema-validates src/manifest.json against the
 // @conduction/nextcloud-vue app-manifest schema using Ajv.
 //
-// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-007
+// @spec openspec/specs/openconnector-app-manifest/spec.md#requirement-manifest-must-validate-against-the-canonical-schema-without-errors
 //   (Build gate validates the manifest — `npm run check:manifest` runs this CLI,
 //    is wired into CI via .github/workflows/spec-validation.yml → check:specs,
 //    Ajv-validates against the canonical schema, prints error paths, exits non-zero

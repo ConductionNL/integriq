@@ -14,10 +14,10 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-endoflifedate-source-preset-ships-enabled-credentialfree
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-endoflife-date-source-preset-ships-enabled-credential-free
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-eolproduct-and-eolcycle-schemas-are-declared-in-the-existing-openconnector-register
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-a-curated-starter-set-of-tracked-products-is-seeded-declaratively
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-enginenative-synchronization
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,7 +37,7 @@ use ReflectionMethod;
  * TC-1..TC-5) and the per-product mapping/synchronization/job triples
  * (endoflife-date-source-cycles.json, TC-6..TC-8).
  *
- * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-enginenative-synchronization
+ * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
  */
 class EndoflifeDateRegisterFragmentTest extends TestCase
 {
