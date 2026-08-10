@@ -61,7 +61,9 @@ namespace OCA\OpenConnector\Flow;
 
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Service\CallService;
+use GuzzleHttp\Promise\PromiseInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
@@ -127,6 +129,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
      * Constructor.
      *
      * @param CallService               $callService   The governed outbound call engine.
+     * @param FlowConcurrency           $concurrency   Bounded, ordered per-item dispatch.
      * @param OpenRegisterObjectService $objectService Resolves the Source object.
      * @param FlowOwner                 $flowOwner     Fail-closed run-owner resolution.
      * @param IL10N                     $l10n          Translations.
@@ -135,6 +138,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
      */
     public function __construct(
         private readonly CallService $callService,
+        private readonly FlowConcurrency $concurrency,
         private readonly OpenRegisterObjectService $objectService,
         private readonly FlowOwner $flowOwner,
         private readonly IL10N $l10n,
@@ -208,7 +212,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
      * call log it wrote — both of which openconnector owns and OpenRegister
      * could not know about.
      *
-     * Read from the step's recorded OUTPUT, which is where `performCall()` puts
+     * Read from the step's recorded OUTPUT, which is where `outcomeOf()` puts
      * `sourceId` and `callLog`, and resolved to a URL NOW rather than stored.
      * An href written into a log months ago points wherever this app's routes
      * used to be.
@@ -226,7 +230,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
      *
      * @return array<int, array{label: string, href: string}> The links.
      *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-contributes-its-own-run-log-links-req-016
      */
     public function logActions(array $entry): array
     {
@@ -377,24 +381,69 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
         $stepId     = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
         $accepted   = $this->acceptedStatuses(config: $config);
         $outputList = [];
+        $indexed    = array_values($items);
 
-        foreach ($items as $index => $item) {
-            $json     = (array) ($item['json'] ?? []);
-            $endpoint = FlowTemplate::renderString(template: (string) $config['endpoint'], json: $json);
+        // PASS 1 — render and GUARD every endpoint, serially and before any
+        // request is dispatched.
+        //
+        // Deliberately not folded into the concurrent pass. A containment
+        // refusal is a refusal of the STEP, not of one item: it aborts here
+        // whatever `onError` says, exactly as it did when this method looped.
+        // Isolating it per item would quietly demote a security guard into a
+        // per-item `continue` — and doing it before dispatch means a document
+        // that names one out-of-bounds endpoint has made NO calls at all,
+        // rather than however many happened to be in flight when it was found.
+        $endpoints = [];
+        $records   = [];
+        foreach ($indexed as $index => $item) {
+            $json = (array) ($item['json'] ?? []);
+
+            $records[$index]   = $json;
+            $endpoints[$index] = FlowTemplate::renderString(
+                template: (string) $config['endpoint'],
+                json: $json
+            );
 
             // The rendered endpoint is checked again here: a placeholder makes
             // the literal check inconclusive by construction.
-            FlowConfigGuard::assertEndpointContained(endpoint: $endpoint, l10n: $this->l10n, rendered: true);
+            FlowConfigGuard::assertEndpointContained(
+                endpoint: $endpoints[$index],
+                l10n: $this->l10n,
+                rendered: true
+            );
+        }
+
+        // PASS 2 — dispatch the calls CONCURRENTLY, bounded and in input order.
+        $settled = $this->concurrency->map(
+            $indexed,
+            function (array $item, int $index) use ($source, $endpoints, $records, $method, $config): PromiseInterface {
+                return $this->callService->callAsync(
+                    source: $source,
+                    endpoint: $endpoints[$index],
+                    method: $method,
+                    config: $this->buildRequestConfig(config: $config, json: $records[$index])
+                );
+            },
+            $this->concurrencyLimit(config: $config)
+        );
+
+        // PASS 3 — apply the step's policy in INPUT order.
+        //
+        // Every decision below is the one the serial loop made; only the moment
+        // the response arrived has changed. A run that fails on item 3 fails on
+        // item 3 whichever order the responses came back in.
+        foreach ($indexed as $index => $item) {
+            $json     = $records[$index];
+            $endpoint = $endpoints[$index];
 
             try {
-                $result = $this->performCall(
-                    source: $source,
+                $result = $this->outcomeOf(
+                    settled: $settled[$index],
                     endpoint: $endpoint,
                     method: $method,
-                    config: $config,
-                    json: $json,
                     accepted: $accepted,
-                    reference: $reference
+                    reference: $reference,
+                    source: $source
                 );
             } catch (FlowNodeException $exception) {
                 $this->logger->error(
@@ -441,45 +490,71 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
     }//end callForEachItem()
 
     /**
-     * Make one call and normalise its outcome, raising on any failure.
+     * How many calls this step may have in flight at once.
      *
-     * @param ObjectEntity $source    The resolved Source object.
+     * Unset means the shared default rather than "one": a flow-based read that
+     * silently ran serially would be the regression this concurrency exists to
+     * avoid. The value is clamped by `FlowConcurrency` itself, so a typo in an
+     * authored document cannot become a burst against an upstream.
+     *
+     * @param array $config The step's authored configuration.
+     *
+     * @return int|null The requested limit, or null for the shared default.
+     */
+    private function concurrencyLimit(array $config): ?int
+    {
+        if (isset($config['concurrency']) === false) {
+            return null;
+        }
+
+        return (int) $config['concurrency'];
+
+    }//end concurrencyLimit()
+
+    /**
+     * Normalise one settled call into the result written onto its item.
+     *
+     * This is the second half of what used to be `performCall()`. The dispatch
+     * half moved into the concurrent pass; everything here is unchanged
+     * decision-making, run once per item in INPUT order — so which response
+     * arrived first cannot change which item a run fails on.
+     *
+     * @param array        $settled   One `FlowConcurrency::map()` result.
      * @param string       $endpoint  The rendered endpoint.
      * @param string       $method    The HTTP method.
-     * @param array        $config    The step's authored configuration.
-     * @param array        $json      The current item's record.
      * @param array        $accepted  Statuses the author opted into.
      * @param string       $reference The authored source reference.
+     * @param ObjectEntity $source    The resolved Source object.
      *
      * @return array The response result written onto the item.
      *
-     * @throws FlowNodeException On a refused precondition, a non-accepted status or a transport failure.
+     * @throws FlowNodeException On a non-accepted status or a transport failure.
      *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
      */
-    private function performCall(
-        ObjectEntity $source,
+    private function outcomeOf(
+        array $settled,
         string $endpoint,
         string $method,
-        array $config,
-        array $json,
         array $accepted,
-        string $reference
+        string $reference,
+        ObjectEntity $source
     ): array {
-        try {
-            $callLog = $this->callService->call(
-                source: $source,
-                endpoint: $endpoint,
-                method: $method,
-                config: $this->buildRequestConfig(config: $config, json: $json)
-            );
-        } catch (Throwable $exception) {
+        if ($settled['ok'] === false) {
             // A transport-level failure (DNS, TLS, timeout, connection
             // refused) is a failed call, never an empty response body.
+            //
+            // `callAsync()` converts every reason it CAN into a CallLog — a
+            // 4xx, a 5xx, a refused connection all fulfil with a log row, and
+            // arrive at the status check below. Reaching here means the reason
+            // was not convertible at all, which is the same set of failures the
+            // synchronous `call()` let escape as a \Throwable.
+            $reason = $settled['error'];
+
             throw new FlowNodeException(
                 message: $this->l10n->t(
                     'The call to source "%1$s" endpoint "%2$s" failed at transport level: %3$s',
-                    [$reference, $endpoint, $exception->getMessage()]
+                    [$reference, $endpoint, $reason->getMessage()]
                 ),
                 details: [
                     'kind'     => 'transport',
@@ -488,9 +563,29 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
                     'endpoint' => $endpoint,
                     'method'   => $method,
                 ],
-                previous: $exception
+                previous: $reason
             );
-        }//end try
+        }//end if
+
+        $callLog = $settled['value'];
+        if (($callLog instanceof ObjectEntity) === false) {
+            // Defensive, and load-bearing: the two dispatch modes are kept in
+            // step by `finalizeCall()`, so anything else here means that
+            // contract moved. Say so rather than read `getObject()` off it.
+            throw new FlowNodeException(
+                message: $this->l10n->t(
+                    'The call to source "%1$s" endpoint "%2$s" did not produce a call log.',
+                    [$reference, $endpoint]
+                ),
+                details: [
+                    'kind'     => 'transport',
+                    'status'   => null,
+                    'source'   => $reference,
+                    'endpoint' => $endpoint,
+                    'method'   => $method,
+                ]
+            );
+        }
 
         $body       = (array) $callLog->getObject();
         $response   = (array) ($body['response'] ?? []);
@@ -534,7 +629,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions
             'callLog'       => $callLog->getUuid(),
         ];
 
-    }//end performCall()
+    }//end outcomeOf()
 
     /**
      * Resolve the Source named by the step, or refuse.

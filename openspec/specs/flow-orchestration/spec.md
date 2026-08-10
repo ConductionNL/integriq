@@ -415,3 +415,227 @@ OpenRegister engine relocation (ADR-065); this scenario becomes testable when
 the Flow pages gain a graph view, and the step-list scenarios above cover the
 current UI
 
+
+### Requirement: The Flow detail page is a draft editor, not a live one (REQ-010)
+
+The Flow detail page MUST edit a **draft** copy and never write on keystroke.
+It MUST track whether the draft differs from what was loaded, offer Save and
+Discard only while it does, and restore the loaded values on Discard.
+
+The difference MUST be computed against a NORMALISED copy of both sides, so a
+field the server materialises (a default filled in, a step re-serialised) does
+not read as an operator edit. A page that reports itself dirty on load teaches
+its user to ignore the indicator.
+
+Navigating the page to a different flow id MUST reload it. The previous flow's
+draft MUST NOT survive that navigation — an editor holding flow A's steps
+while the route says flow B will PUT A's steps over B on the next save.
+
+#### Scenario: an untouched flow offers nothing to save
+
+- **GIVEN** an admin opens a flow that has just been loaded
+- **WHEN** they have made no edit
+- **THEN** no Save or Discard control is offered
+- @e2e flow-orchestration::an-untouched-flow-offers-nothing-to-save
+
+#### Scenario: Discard restores the loaded flow
+
+- **GIVEN** an admin has renamed a flow and added a step without saving
+- **WHEN** they Discard
+- **THEN** the name and the step list return to what was loaded
+- **AND** Save and Discard are no longer offered
+- @e2e exclude requires a seeded flow with steps and a multi-field edit —
+  covered by the store's unit tests
+
+#### Scenario: switching flows does not carry the draft across
+
+- **GIVEN** an admin has an unsaved edit on flow A
+- **WHEN** the route changes to flow B
+- **THEN** flow B is loaded from the server and the editor shows B's steps
+- **AND** a subsequent save writes B, never A
+- @e2e exclude needs two seeded flows and a route change mid-edit — covered by
+  the store's unit tests
+
+### Requirement: A flow is validated before it can be saved (REQ-011)
+
+The detail page MUST validate the draft locally and refuse to enable Save
+while a validation error stands. At minimum it MUST require a non-empty name,
+and MUST report every error it found rather than the first.
+
+Validation MUST NOT be the only gate — the server remains authoritative — but
+an operator MUST NOT be able to submit a flow the engine will certainly
+reject.
+
+#### Scenario: a flow with no name cannot be saved
+
+- **GIVEN** an admin has cleared a flow's name
+- **WHEN** they look for the Save control
+- **THEN** Save is disabled, or not offered
+- @e2e flow-orchestration::a-flow-with-no-name-cannot-be-saved
+
+### Requirement: A flow can be run from its detail page, and its last run is visible (REQ-012)
+
+The detail page MUST offer a manual run (REQ-007's manual trigger) and MUST
+surface the outcome of the most recent run, distinguishing a successful run
+from a failed, stopped, dead-lettered or suspended one — a suspended run is
+waiting for an approval (REQ-005), not broken, and MUST NOT be presented as
+an error.
+
+#### Scenario: an operator runs a flow from its detail page
+
+- **GIVEN** an admin on the detail page of a runnable, enabled flow
+- **WHEN** they trigger a manual run
+- **THEN** a flow run is created for that flow
+- **AND** its status is reflected on the page without a reload
+- @e2e exclude needs a runnable seeded flow and a run to complete — covered by
+  `tests/e2e/ci/flow-controls.spec.ts` and by the engine's unit tests
+
+#### Scenario: a suspended run is not shown as a failure
+
+- **GIVEN** a flow whose most recent run is suspended at an approval step
+- **WHEN** the detail page renders its last-run state
+- **THEN** it is presented as awaiting action, not as an error
+- @e2e exclude requires an approval-suspended run — covered by the engine's
+  unit tests
+
+### Requirement: The step row authors the same conditions the engine evaluates (REQ-013)
+
+A step row MUST let an admin author the step's `condition` (REQ-003) and, for
+a `branch` step, its `branches[]` (REQ-004), through the shared JsonLogic
+condition builder rather than a free-text JSON box.
+
+A branch's target MUST be chosen from the flow's existing step orders, not
+typed: `branches[].nextStepOrder` references a step **by value**, so a typed
+number can name a step that does not exist and the flow fails only at run
+time.
+
+An empty or absent condition MUST round-trip as absent, not as an empty
+object — the engine treats absent as "always run", and `{}` is not the same
+document.
+
+#### Scenario: a branch target is picked from the flow's own steps
+
+- **GIVEN** an admin editing a `branch` step in a flow with three steps
+- **WHEN** they add a branch and open its target picker
+- **THEN** the options are the flow's existing step orders
+- @e2e exclude needs a seeded multi-step branch flow — covered by the step
+  row's unit tests
+
+#### Scenario: clearing a condition removes it rather than storing an empty one
+
+- **GIVEN** a step that has a condition
+- **WHEN** the admin clears every clause
+- **THEN** the saved step carries no `condition` key
+- @e2e exclude a serialisation invariant with no visible surface — covered by
+  the step row's unit tests
+
+### Requirement: A flow's run history is inspectable per step (REQ-014)
+
+The Flow detail page MUST offer the run history REQ-008 persists: the runs of
+that flow, most recent first, each expandable to its per-step log with each
+step's type, status and error.
+
+Step logs MUST be fetched when a run is expanded, not for every run on load —
+a flow with a long history would otherwise issue one request per run before
+the operator has asked for any of them.
+
+#### Scenario: an operator expands a run to see its steps
+
+- **GIVEN** a flow with at least one recorded run
+- **WHEN** the admin expands that run in the run log
+- **THEN** the run's per-step entries are fetched and listed with their type,
+  status and any error
+- @e2e exclude needs a flow with recorded runs — covered by
+  `tests/e2e/ci/flow-controls.spec.ts`, which creates a run, and by the
+  engine's unit tests
+
+#### Scenario: an empty history says so
+
+- **GIVEN** a flow that has never run
+- **WHEN** the admin opens its run log
+- **THEN** an empty state is shown rather than an empty list
+- @e2e exclude covered by `tests/e2e/ci/flow-controls.spec.ts`
+
+### Requirement: A node that calls a Source once per item dispatches those calls concurrently (REQ-015)
+
+`SourceCallNode` makes one outbound request per flow item. Done serially, a
+step over N items costs N sequential round-trips — which would make a
+flow-based read measurably SLOWER than the bespoke synchronisation reader it
+replaces, and that reader already settles its fetches behind a concurrency cap
+(`FETCH_CONCURRENCY_DEFAULT` = 5, `FETCH_CONCURRENCY_MAX` = 20).
+
+The node therefore dispatches through `CallService::callAsync()` — the sibling
+that shares every auth, guard, certificate and logging phase with `call()` and
+finalises through the same `finalizeCall()`, so an asynchronous call produces
+the same CallLog row (ADR-003) — and settles the promises through
+OpenRegister's `FlowConcurrency`, which owns the bound, the ordering and the
+per-item isolation.
+
+The step's authored `concurrency` key selects the cap; unset means the shared
+default rather than one, because a flow-based read that silently ran serially
+would be the regression this requirement exists to prevent.
+
+#### Scenario: the calls actually go out concurrently
+
+- **GIVEN** a flow step over six items whose responses have not yet settled
+- **WHEN** the node executes
+- **THEN** more than one call is in flight at once, up to the shared default
+- @e2e exclude an in-flight peak is not observable from a browser; asserted in
+  `tests/Unit/Flow/SourceCallNodeTest.php` against unsettled promises, with a
+  positive control that reports a peak of one when dispatch is made serial
+
+#### Scenario: the authored limit bounds the fan-out and the output keeps input order
+
+- **GIVEN** a step over nine items with `concurrency: 2`
+- **WHEN** the responses settle in an order other than the order dispatched
+- **THEN** at most two calls are ever in flight, and each item receives its OWN
+  response with `pairedItem` intact and the output in INPUT order
+- @e2e exclude same measurement; a run log ordered by whichever upstream
+  answered first is not comparable between two runs of the same flow
+
+#### Scenario: one item's failure leaves the others their results
+
+- **GIVEN** a step whose second of two calls fails
+- **WHEN** the step's `onError` policy is `continue`
+- **THEN** the failing item carries the error record and the succeeding item
+  keeps its response, exactly as it did when the node looped
+- @e2e exclude covered by `tests/Unit/Flow/SourceCallNodeTest.php`
+
+#### Scenario: an out-of-bounds endpoint on a later item prevents every call
+
+- **GIVEN** a step over three items whose THIRD item renders an endpoint that
+  escapes the Source location
+- **WHEN** the step executes
+- **THEN** containment is refused and NO request is dispatched for any item —
+  the render-and-guard pass completes before dispatch begins, so the refusal
+  cannot be demoted into a per-item `continue` nor arrive after calls are
+  already in flight
+- @e2e exclude a security guard's refusal is asserted at the unit boundary
+
+### Requirement: A node contributes its own run-log links (REQ-016)
+
+A run log entry written by `SourceCallNode` concerns openconnector records —
+the Source that was called and the CallLog that was written — which OpenRegister
+cannot know about. The node therefore implements OpenRegister's
+`IFlowNodeLogActions` and answers with its own links, resolved from the entry's
+recorded OUTPUT (`sourceId`, `callLog`).
+
+Links are resolved at READ time rather than stored: an href written into a log
+months ago points wherever this app's routes were then. They are hash fragments
+because the frontend is a hash-routed SPA, and they open in a NEW tab because
+the editor holds unsaved state.
+
+#### Scenario: a call's log entry offers its source and its call log
+
+- **GIVEN** a completed `openconnector.source-call` entry recording a `sourceId`
+  and a `callLog`
+- **WHEN** the engine asks the node for that entry's actions
+- **THEN** links to the Source and to the CallLog are returned
+- @e2e exclude covered by `tests/Unit/Flow/SourceCallNodeTest.php`
+
+#### Scenario: an entry from another node type earns nothing
+
+- **GIVEN** a log entry written by a node this app does not own
+- **WHEN** the engine asks this node for its actions
+- **THEN** no links are returned, rather than links built from absent ids
+- @e2e exclude covered by `tests/Unit/Flow/SourceCallNodeTest.php`

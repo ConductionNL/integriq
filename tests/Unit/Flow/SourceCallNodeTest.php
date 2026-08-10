@@ -20,12 +20,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Flow;
 
+use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Promise\Promise;
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Flow\FlowNodeSupport;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Flow\SourceCallNode;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -119,6 +122,7 @@ class SourceCallNodeTest extends TestCase
 
         $this->node = new SourceCallNode(
             callService: $this->callService,
+            concurrency: new FlowConcurrency(),
             objectService: $this->objectService,
             flowOwner: new FlowOwner(
                 userManager: $this->userManager,
@@ -369,7 +373,7 @@ class SourceCallNodeTest extends TestCase
      */
     public function testEmptyInputMakesNoCall(): void
     {
-        $this->callService->expects($this->never())->method('call');
+        $this->callService->expects($this->never())->method('callAsync');
 
         $this->assertSame([], $this->node->execute([], $this->config(), $this->context()));
 
@@ -387,8 +391,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenOwner();
 
         $this->callService->expects($this->exactly(3))
-            ->method('call')
-            ->willReturn($this->callLog(statusCode: 200, body: '{"status":"ok"}'));
+            ->method('callAsync')
+            ->willReturn($this->promisedLog(statusCode: 200, body: '{"status":"ok"}'));
 
         $items = [
             ['json' => ['issue' => ['number' => 1]]],
@@ -418,10 +422,10 @@ class SourceCallNodeTest extends TestCase
         $this->givenOwner();
 
         $captured = [];
-        $this->callService->method('call')->willReturnCallback(
+        $this->callService->method('callAsync')->willReturnCallback(
             function (...$arguments) use (&$captured) {
                 $captured = $arguments;
-                return $this->callLog(statusCode: 200, body: '{"status":"ok"}');
+                return $this->promisedLog(statusCode: 200, body: '{"status":"ok"}');
             }
         );
 
@@ -461,8 +465,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 200, body: '{"status":"ok","pairedItem":"spoofed"}')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 200, body: '{"status":"ok","pairedItem":"spoofed"}')
         );
 
         $out = $this->node->execute(
@@ -488,8 +492,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 200, body: '{"status":"ok","labels":[{"name":"bug"},{"name":"triage"}]}')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 200, body: '{"status":"ok","labels":[{"name":"bug"},{"name":"triage"}]}')
         );
 
         $out = $this->node->execute(
@@ -523,7 +527,7 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->expects($this->never())->method('call');
+        $this->callService->expects($this->never())->method('callAsync');
 
         $this->expectException(UnexpectedValueException::class);
 
@@ -546,8 +550,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error')
         );
 
         $this->expectException(FlowNodeException::class);
@@ -576,8 +580,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error')
         );
 
         $raised = false;
@@ -614,11 +618,11 @@ class SourceCallNodeTest extends TestCase
         $this->givenOwner();
 
         $responses = [
-            $this->callLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error'),
-            $this->callLog(statusCode: 200, body: '{"status":"ok"}'),
+            $this->promisedLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error'),
+            $this->promisedLog(statusCode: 200, body: '{"status":"ok"}'),
         ];
 
-        $this->callService->method('call')->willReturnCallback(
+        $this->callService->method('callAsync')->willReturnCallback(
             static function () use (&$responses) {
                 return array_shift($responses);
             }
@@ -654,8 +658,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 404, body: '{"detail":"absent"}', statusMessage: 'Not Found')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 404, body: '{"detail":"absent"}', statusMessage: 'Not Found')
         );
 
         $out = $this->node->execute(
@@ -680,7 +684,7 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willThrowException(new RuntimeException('cURL error 28: timed out'));
+        $this->callService->method('callAsync')->willThrowException(new RuntimeException('cURL error 28: timed out'));
 
         $this->expectException(FlowNodeException::class);
         $this->expectExceptionMessageMatches('/transport level/');
@@ -704,8 +708,8 @@ class SourceCallNodeTest extends TestCase
         $this->givenSource();
         $this->givenOwner();
 
-        $this->callService->method('call')->willReturn(
-            $this->callLog(statusCode: 409, body: '', statusMessage: 'This source is not enabled')
+        $this->callService->method('callAsync')->willReturn(
+            $this->promisedLog(statusCode: 409, body: '', statusMessage: 'This source is not enabled')
         );
 
         $this->expectException(FlowNodeException::class);
@@ -725,7 +729,7 @@ class SourceCallNodeTest extends TestCase
     {
         $this->givenOwner();
         $this->objectService->method('find')->willReturn(null);
-        $this->callService->expects($this->never())->method('call');
+        $this->callService->expects($this->never())->method('callAsync');
 
         $this->expectException(FlowNodeException::class);
         $this->expectExceptionMessageMatches('/no-such-source/');
@@ -746,7 +750,7 @@ class SourceCallNodeTest extends TestCase
      */
     public function testUnattributedRunRefusesToCall(): void
     {
-        $this->callService->expects($this->never())->method('call');
+        $this->callService->expects($this->never())->method('callAsync');
         $this->userManager->expects($this->never())->method('get');
 
         $this->expectException(FlowNodeException::class);
@@ -765,7 +769,7 @@ class SourceCallNodeTest extends TestCase
     public function testUnknownUserRefusesToCall(): void
     {
         $this->userManager->method('get')->willReturn(null);
-        $this->callService->expects($this->never())->method('call');
+        $this->callService->expects($this->never())->method('callAsync');
 
         $this->expectException(FlowNodeException::class);
         $this->expectExceptionMessageMatches('/ghost/');
@@ -795,7 +799,7 @@ class SourceCallNodeTest extends TestCase
             }
         );
 
-        $this->callService->method('call')->willReturn($this->callLog(statusCode: 200, body: '{}'));
+        $this->callService->method('callAsync')->willReturn($this->promisedLog(statusCode: 200, body: '{}'));
 
         $this->node->execute([['json' => []]], $this->config(), $this->context());
 
@@ -865,6 +869,199 @@ class SourceCallNodeTest extends TestCase
         return $owner;
 
     }//end givenOwner()
+
+
+    /**
+     * The calls actually go out CONCURRENTLY, not one at a time.
+     *
+     * Every other test in this file passes just as well against a serial loop —
+     * they hand back promises that are already fulfilled, so dispatch order and
+     * settle order are indistinguishable. This one cannot: each mocked call
+     * returns an UNSETTLED promise and counts itself in flight, so a node that
+     * awaited each response before making the next request would record a peak
+     * of one and fail here.
+     *
+     * @return void
+     */
+    public function testCallsGoOutConcurrentlyRatherThanOneAtATime(): void
+    {
+        $this->givenSource();
+        $this->givenOwner();
+
+        $inFlight = 0;
+        $peak     = 0;
+
+        $this->callService->method('callAsync')->willReturnCallback(
+            function () use (&$inFlight, &$peak): Promise {
+                $inFlight++;
+                $peak = max($peak, $inFlight);
+
+                $log     = $this->callLog(statusCode: 200, body: '{"status":"ok"}');
+                $promise = new Promise(
+                    static function () use (&$promise, $log, &$inFlight): void {
+                        $inFlight--;
+                        $promise->resolve($log);
+                    }
+                );
+
+                return $promise;
+            }
+        );
+
+        $items = [];
+        foreach (range(1, 6) as $number) {
+            $items[] = ['json' => ['n' => $number]];
+        }
+
+        $out = $this->node->execute($items, $this->config(), $this->context());
+
+        $this->assertSame(
+            FlowConcurrency::DEFAULT_LIMIT,
+            $peak,
+            'the calls did not fan out to the shared default concurrency'
+        );
+        $this->assertCount(6, $out);
+
+    }//end testCallsGoOutConcurrentlyRatherThanOneAtATime()
+
+
+    /**
+     * The authored limit bounds the fan-out, and the results keep INPUT order.
+     *
+     * Both halves matter. A flow whose author capped the concurrency is making
+     * a promise to an upstream, and a run log ordered by whichever response
+     * came back first is not comparable with the next run of the same flow —
+     * so the responses here settle in REVERSE, and the output is asserted to be
+     * in the order the items went in.
+     *
+     * @return void
+     */
+    public function testTheAuthoredLimitBoundsTheFanOutAndOutputKeepsInputOrder(): void
+    {
+        $this->givenSource();
+        $this->givenOwner();
+
+        $inFlight = 0;
+        $peak     = 0;
+        $pending  = [];
+
+        $this->callService->method('callAsync')->willReturnCallback(
+            function (...$arguments) use (&$inFlight, &$peak, &$pending): Promise {
+                $inFlight++;
+                $peak = max($peak, $inFlight);
+
+                // Echo the endpoint back in the body, so the assertion below is
+                // about WHICH item's response landed where — not merely that
+                // three responses arrived.
+                $endpoint = (string) ($arguments[1] ?? '');
+                $log      = $this->callLog(
+                    statusCode: 200,
+                    body: json_encode(['seen' => $endpoint])
+                );
+
+                $promise   = new Promise(
+                    static function () use (&$promise, $log, &$inFlight): void {
+                        $inFlight--;
+                        $promise->resolve($log);
+                    }
+                );
+                $pending[] = $promise;
+
+                return $promise;
+            }
+        );
+
+        $items = [];
+        foreach (range(1, 9) as $number) {
+            $items[] = ['json' => ['n' => $number]];
+        }
+
+        $out = $this->node->execute(
+            $items,
+            array_merge($this->config(), ['endpoint' => '/get/{{ n }}', 'concurrency' => 2]),
+            $this->context()
+        );
+
+        $this->assertSame(2, $peak, 'the authored concurrency limit was not honoured');
+        $this->assertCount(9, $out);
+
+        $seen = [];
+        foreach ($out as $index => $item) {
+            $seen[] = $item['json']['echo']['body']['seen'];
+            $this->assertSame(['item' => $index], $item['pairedItem']);
+        }
+
+        $this->assertSame(
+            ['/get/1', '/get/2', '/get/3', '/get/4', '/get/5', '/get/6', '/get/7', '/get/8', '/get/9'],
+            $seen,
+            'a response landed on the wrong item, or the output lost input order'
+        );
+
+    }//end testTheAuthoredLimitBoundsTheFanOutAndOutputKeepsInputOrder()
+
+
+    /**
+     * A containment refusal stops the STEP before any request is dispatched.
+     *
+     * Rendering happens per item, so a document whose ninth item renders an
+     * out-of-bounds endpoint is only found on the ninth. Under a serial loop
+     * that meant eight calls had already gone out; under a concurrent one it
+     * could mean any number. Neither is acceptable for a guard, so the render
+     * pass runs to completion BEFORE dispatch — asserted here by the fact that
+     * `callAsync` is never reached at all.
+     *
+     * @return void
+     */
+    public function testAnOutOfBoundsEndpointOnALaterItemPreventsEveryCall(): void
+    {
+        $this->givenSource();
+        $this->givenOwner();
+
+        $this->callService->expects($this->never())->method('callAsync');
+
+        $items = [
+            ['json' => ['path' => 'fine']],
+            ['json' => ['path' => 'also-fine']],
+            ['json' => ['path' => '../../etc/passwd']],
+        ];
+
+        // The guard's own refusal type, not a node error: containment is
+        // refused ahead of the step's `onError` policy, and an author cannot
+        // opt into continuing past it.
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessageMatches('/path traversal/');
+
+        $this->node->execute(
+            $items,
+            array_merge($this->config(), ['endpoint' => '/get/{{ path }}']),
+            $this->context()
+        );
+
+    }//end testAnOutOfBoundsEndpointOnALaterItemPreventsEveryCall()
+
+
+    /**
+     * The same CallLog, as `callAsync()` hands it back.
+     *
+     * `callAsync()` is declared `): PromiseInterface`, and PHPUnit enforces a
+     * mocked method's declared return type — so a double cannot return the bare
+     * ObjectEntity even though the node's concurrency helper would accept one.
+     * Wrapping here rather than at each call site keeps every existing
+     * expectation stating the RESPONSE it is about.
+     *
+     * @param int    $statusCode    The HTTP status.
+     * @param string $body          The response body.
+     * @param string $statusMessage The reason phrase.
+     *
+     * @return FulfilledPromise The CallLog double, already fulfilled.
+     */
+    private function promisedLog(int $statusCode, string $body, string $statusMessage='OK'): FulfilledPromise
+    {
+        return new FulfilledPromise(
+            $this->callLog(statusCode: $statusCode, body: $body, statusMessage: $statusMessage)
+        );
+
+    }//end promisedLog()
 
 
     /**

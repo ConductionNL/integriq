@@ -24,6 +24,7 @@ use OCA\OpenConnector\Flow\SourceCallNode;
 use OCA\OpenConnector\Flow\SynchronizationRunNode;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
@@ -87,6 +88,7 @@ class FlowNodeListenerTest extends TestCase
 
         $this->sourceCallNode = new SourceCallNode(
             callService: $this->createMock(CallService::class),
+            concurrency: new FlowConcurrency(),
             objectService: $this->createMock(OpenRegisterObjectService::class),
             flowOwner: $flowOwner,
             l10n: $l10n,
