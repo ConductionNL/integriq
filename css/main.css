@@ -1341,3 +1341,22 @@
 .logModalContent > *:not(:last-child) {
   margin-block-end: 1rem;
 }
+
+/*
+ * Honour the OS "reduce motion" setting (WCAG 2.3.3). The three transitions
+ * above — .card's transform, .nestedCardHeader's background-color and
+ * .toggleButton's `all` — plus .card:hover's scale are the only motion in this
+ * stylesheet, and each is decorative: removing it changes nothing a user needs
+ * to see, so they are turned off outright rather than shortened.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .nestedCardHeader,
+  .toggleButton {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}
