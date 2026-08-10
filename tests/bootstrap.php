@@ -251,17 +251,15 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
         }
 
-        // nextcloud-event-hub: OCP\Calendar\Events\* stubs. Real OCP API but
-        // `@since 32.0.0` — newer than the pinned `nextcloud/ocp: dev-stable29`
-        // dev dependency, so absent from vendor/nextcloud/ocp. Order matters:
-        // the Abstract* parent must load before its children.
-        if (class_exists('OCP\\Calendar\\Events\\AbstractCalendarObjectEvent') === false) {
-            require_once $stubsDir . '/OCP/Calendar/Events/AbstractCalendarObjectEvent.php';
-            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectCreatedEvent.php';
-            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectUpdatedEvent.php';
-            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectDeletedEvent.php';
-        }
-
+        // nextcloud-event-hub: the four OCP\Calendar\Events\* stubs that used to
+        // be required here are GONE, along with tests/stubs/OCP/Calendar/ (#1174).
+        // They existed because those classes are `@since 32.0.0` and this repo
+        // pinned `nextcloud/ocp: dev-stable29`, so vendor/nextcloud/ocp did not
+        // carry them. The pin is now `^32.0` and it does, so the calendar
+        // listeners are exercised against the REAL OCP classes — a hand-written
+        // stub of an API you also declare a hard dependency on can only ever
+        // agree with itself.
+        //
         // nextcloud-event-hub: OCA\DAV\Events\Cached* stubs — `dav` is an NC
         // core app not present in the standalone composer dev-environment.
         if (class_exists('OCA\\DAV\\Events\\CachedCalendarObjectCreatedEvent') === false) {

@@ -305,7 +305,7 @@ class SourceMappingService
      */
     public function getOpenRegisters(): ?\OCA\OpenRegister\Service\ObjectService
     {
-        if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
+        if (in_array(needle: 'openregister', haystack: $this->appManager->getEnabledApps()) === true) {
             try {
                 // Attempt to get the OpenRegister service from the container.
                 return $this->container->get('OCA\OpenRegister\Service\ObjectService');

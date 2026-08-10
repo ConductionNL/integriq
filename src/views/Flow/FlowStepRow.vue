@@ -242,39 +242,36 @@ export default {
 
 	computed: {
 		/**
-		 * The step's type as an NcSelect option (REQ-009's typed pickers).
-		 *
-		 * @return {object} The selected option.
+		 * The `NcSelect` model for the step's `type`.
+		 * @return {object} The selected type option.
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		selectedType() {
 			return this.typeOptions.find((opt) => opt.id === this.step.type) || this.typeOptions[1]
 		},
 		/**
-		 * The step's onError policy as an NcSelect option (REQ-006).
-		 *
-		 * @return {object} The selected option.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
+		 * The `NcSelect` model for the step's `onError` policy.
+		 * @return {object} The selected onError option.
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-per-step-onerror-policy-governs-failure-handling-req-006
 		 */
 		selectedOnError() {
 			return this.onErrorOptions.find((opt) => opt.id === this.step.onError) || this.onErrorOptions[0]
 		},
 		/**
-		 * Whether this step type references a configured entity at all — a
-		 * branch or approval step has nothing to point at, so offering an
-		 * empty picker would suggest it does.
-		 *
-		 * @return {boolean} Whether to show the config-ref picker.
+		 * Whether this step type references a configured entity at all —
+		 * `branch`, `approval` and `condition` steps have no `configRef`.
+		 * @return {boolean}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		showConfigRefPicker() {
 			return this.step.type === 'call' || this.step.type === 'mapping' || this.step.type === 'synchronization'
 		},
 		/**
-		 * What the config-ref picker is called for this step type — the label
-		 * names the ENTITY, so an operator is not asked for a "config ref".
-		 *
-		 * @return {string} The field label.
+		 * The picker's `inputLabel`, named for the entity the step actually
+		 * references — REQ-009 requires an explicit label per WCAG 1.3.1/4.1.2,
+		 * and a generic "Config" would not tell a screen reader which entity
+		 * kind is being chosen.
+		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		configRefLabel() {
@@ -283,11 +280,10 @@ export default {
 			return t('openconnector', 'Mapping')
 		},
 		/**
-		 * The options the picker offers, SCOPED to the entity kind this step
-		 * type consumes — REQ-009's scenario: a mapping step must not be
-		 * offered Sources, Synchronizations or Endpoints.
-		 *
-		 * @return {Array<{id: string, label: string}>} The options.
+		 * The config-ref options, scoped to the step's own entity type —
+		 * REQ-009's scenario requires a `mapping` step's picker to offer
+		 * Mappings only, not Sources or Synchronizations.
+		 * @return {Array<{id: string, label: string}>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		configRefOptions() {
@@ -296,24 +292,20 @@ export default {
 			return this.mappingOptions
 		},
 		/**
-		 * The currently referenced entity, or null when the stored ref matches
-		 * nothing on offer — shown as empty rather than invented.
-		 *
-		 * @return {object|null} The selected option.
+		 * The `NcSelect` model for `configRef`; null when the stored id is not
+		 * in the scoped option set, so a stale reference shows as unset rather
+		 * than silently displaying another entity.
+		 * @return {object|null}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		selectedConfigRef() {
 			return this.configRefOptions.find((opt) => opt.id === this.step.configRef) || null
 		},
 		/**
-		 * The branch targets on offer: every OTHER step's order. A branch
-		 * references `nextStepOrder` BY VALUE, so picking from the flow's own
-		 * orders is what stops a target naming a step that does not exist.
-		 * This step is excluded — a branch to itself is a loop the
-		 * order-as-identity model cannot express.
-		 *
-		 * @return {Array<{id: number, label: string}>} The target options.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * Branch-target options: every other step's `order`, excluding this
+		 * step's own so a branch cannot be pointed at itself.
+		 * @return {Array<{id: number, label: string}>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		orderOptions() {
 			return this.stepOrders
@@ -321,11 +313,9 @@ export default {
 				.map((order) => ({ id: order, label: '#' + order }))
 		},
 		/**
-		 * The step's `condition` as a JsonLogic group the shared builder can
-		 * render (REQ-003).
-		 *
-		 * @return {object} A JsonLogic group node.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * The step's `condition` as a JsonLogic group node for the editor.
+		 * @return {object}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-step-condition-skips-a-step-when-it-evaluates-false-req-003
 		 */
 		conditionGroup() {
 			return this.normaliseConditions(this.step.condition)
@@ -334,10 +324,9 @@ export default {
 
 	methods: {
 		/**
-		 * Change the step's type. Clears `configRef` and `config` with it: a
-		 * mapping id is meaningless on a synchronization step, and carrying it
-		 * over would save a reference that points at the wrong entity kind.
-		 *
+		 * Changes the step's type, clearing `configRef`/`config` because they
+		 * are type-specific — carrying a Mapping id onto a `call` step would
+		 * leave a reference the runner cannot resolve.
 		 * @param {object} option The chosen type option.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -351,9 +340,8 @@ export default {
 			this.$emit('update', next)
 		},
 		/**
-		 * Point the step at an entity, or clear the reference.
-		 *
-		 * @param {object|null} option The chosen entity.
+		 * Sets the referenced entity, or clears it when the picker is emptied.
+		 * @param {object|null} option The chosen entity option.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -361,19 +349,19 @@ export default {
 			this.$emit('update', { ...this.step, configRef: option?.id || '' })
 		},
 		/**
-		 * Change the step's failure policy (REQ-006).
-		 *
-		 * @param {object} option The chosen policy.
+		 * Sets the step's failure policy. A cleared select is ignored rather
+		 * than written as empty — every step must carry an `onError`, since it
+		 * governs what the run does when the step throws.
+		 * @param {object} option The chosen onError option.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-per-step-onerror-policy-governs-failure-handling-req-006
 		 */
 		onOnErrorPick(option) {
 			if (!option?.id) return
 			this.$emit('update', { ...this.step, onError: option.id })
 		},
 		/**
-		 * Write one key of the step's type-specific `config` blob.
-		 *
+		 * Merges one key into the step's type-specific `config` block.
 		 * @param {string} key   The config key.
 		 * @param {*}      value The new value.
 		 * @return {void}
@@ -383,89 +371,86 @@ export default {
 			this.$emit('update', { ...this.step, config: { ...(this.step.config || {}), [key]: value } })
 		},
 		/**
-		 * Resolve a stored enum value to its option, falling back to the first
-		 * so a select is never blank on an unknown value.
-		 *
-		 * @param {Array<object>} options The option set.
-		 * @param {string}        id      The stored value.
-		 * @return {object} The option to display.
+		 * Resolves a stored enum id to its option, falling back to the first so
+		 * an `NcSelect` never renders with a null model.
+		 * @param {Array}  options The option set.
+		 * @param {string} id      The stored id.
+		 * @return {object}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		resolveEnumOption(options, id) {
 			return options.find((opt) => opt.id === id) || options[0]
 		},
 		/**
-		 * Resolve a stored branch target to its option. A target that matches
-		 * no step is shown as "(missing)" rather than dropped — silently
-		 * blanking it would hide the very defect REQ-011 validates for.
-		 *
+		 * Resolves a branch target to its option. A target that no longer
+		 * matches any step is shown as "(missing)" rather than blank — the
+		 * dangling reference is exactly what the page's save-time validation
+		 * blocks, so the row must make it visible rather than hide it.
 		 * @param {number|null} order The stored target order.
-		 * @return {object|null} The option to display.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @return {object|null}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		resolveOrderOption(order) {
 			if (order === null || order === undefined) return null
 			return this.orderOptions.find((opt) => opt.id === order) || { id: order, label: '#' + order + ' (missing)' }
 		},
 		/**
-		 * Add a branch with an empty condition and no target yet (REQ-004).
-		 *
+		 * Appends a branch with an empty condition and no target yet.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		addBranch() {
 			const branches = [...(this.step.branches || []), { condition: { ...EMPTY_ROOT_GROUP }, nextStepOrder: null }]
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
-		 * Remove a branch.
-		 *
-		 * @param {number} index The branch's position.
+		 * Removes one branch from the step.
+		 * @param {number} index The branch's array index.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		removeBranch(index) {
 			const branches = (this.step.branches || []).filter((_, i) => i !== index)
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
-		 * Point a branch at a step, or clear its target.
-		 *
-		 * @param {number}      index The branch's position.
+		 * Points one branch at a step `order`. An undefined pick is stored as
+		 * explicit null, so "no target" round-trips as a value rather than as
+		 * an absent key.
+		 * @param {number}      index The branch's array index.
 		 * @param {number|null} order The target step's order.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		updateBranchTarget(index, order) {
 			const branches = (this.step.branches || []).map((b, i) => (i === index ? { ...b, nextStepOrder: order ?? null } : b))
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
-		 * Replace a branch's condition with what the builder produced.
-		 *
-		 * @param {number} index     The branch's position.
-		 * @param {object} condition The JsonLogic rule.
+		 * Replaces one branch's JsonLogic condition.
+		 * @param {number} index     The branch's array index.
+		 * @param {object} condition The new JsonLogic node.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		updateBranchCondition(index, condition) {
 			const branches = (this.step.branches || []).map((b, i) => (i === index ? { ...b, condition } : b))
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
-		 * A branch's condition as a group the shared builder can render.
-		 *
-		 * @param {object} branch The branch.
-		 * @return {object} A JsonLogic group node.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * One branch's condition as a group node for the condition editor.
+		 * @param {object} branch The branch entry.
+		 * @return {object}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		branchConditionGroup(branch) {
 			return this.normaliseConditions(branch.condition)
 		},
 		/**
-		 * @param {object} value The JsonLogic rule from the builder.
+		 * Stores the step's own condition.
+		 * @param {object} value The edited JsonLogic group.
 		 * @return {void}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-step-condition-skips-a-step-when-it-evaluates-false-req-003
 		 */
 		onConditionUpdate(value) {
 			// An empty group means "no condition" (always run) — store null
@@ -483,7 +468,7 @@ export default {
 		 *
 		 * @param {object|null} raw Persisted condition value.
 		 * @return {object} JsonLogic group node.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-the-step-row-authors-the-same-conditions-the-engine-evaluates-req-013
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-step-condition-skips-a-step-when-it-evaluates-false-req-003
 		 */
 		normaliseConditions(raw) {
 			if (raw === null || raw === undefined) return { ...EMPTY_ROOT_GROUP }

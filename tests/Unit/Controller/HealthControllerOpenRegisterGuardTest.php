@@ -46,7 +46,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase
     public function testHealthReports503WhenOpenRegisterAbsent(): void
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn(false);
+        $appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(false);
 
         $controller = new HealthController(
             appName: 'openconnector',
@@ -74,7 +74,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase
     public function testHealthDelegatesWhenOpenRegisterEnabled(): void
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn(true);
+        $appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(true);
 
         $delegate = $this->createMock(GenericHealthController::class);
         $delegate->expects($this->once())

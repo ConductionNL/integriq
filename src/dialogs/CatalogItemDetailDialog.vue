@@ -236,6 +236,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Clears the previous run's messages and re-reads the item's install
+		 * status each time the dialog opens, so a stale "enabled" result from
+		 * a previous item cannot be shown against this one.
+		 *
+		 * @param {boolean} isOpen Whether the dialog is being shown.
+		 * @return {void}
+		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.errorMessage = ''

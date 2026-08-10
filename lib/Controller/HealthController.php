@@ -94,7 +94,7 @@ class HealthController extends Controller
     #[NoCSRFRequired]
     public function index(): JSONResponse
     {
-        if ($this->appManager->isInstalled(self::REQUIRED_APP) === false || $this->delegate === null) {
+        if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
             return new JSONResponse(
                 [
                     'status' => 'unhealthy',

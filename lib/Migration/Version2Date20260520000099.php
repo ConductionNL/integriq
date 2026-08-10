@@ -161,26 +161,41 @@ class Version2Date20260520000099 extends SimpleMigrationStep
             }
 
             $rowCount = $this->countRows(db: $db, logger: $logger, tableShort: $tableShort);
-            if ($rowCount > 0) {
+            // Anything other than a definitive zero must NOT be dropped.
+            // countRows() returns -1 when the COUNT query itself failed, and its
+            // contract says that is "non-empty / unsafe to drop". A `> 0` test
+            // does not honour that: -1 is not greater than 0, so a FAILED count
+            // fell straight through to dropTable() and destroyed a table whose
+            // contents were unknown — the exact opposite of the documented
+            // safety behaviour, and of the warning the same method logs.
+            if ($rowCount !== 0) {
+                // -1 means the COUNT query failed, so the table's contents are
+                // UNKNOWN. Say that, rather than reporting "-1 row(s)", which
+                // reads like a count and hides that nothing was measured.
+                $detail = sprintf('has %d row(s)', $rowCount);
+                if ($rowCount < 0) {
+                    $detail = 'could not be counted (the COUNT query failed), so its contents are UNKNOWN';
+                }//end if
+
                 $output->warning(
                     sprintf(
-                        'chain-B/C cleanup: legacy table `oc_%s` has %d row(s) — SKIPPED.'
+                        'chain-B/C cleanup: legacy table `oc_%s` %s — SKIPPED.'
                         .' Verify the chain-C cutover migrated all rows into OR storage,'
                         .' then TRUNCATE the table manually and re-run `occ upgrade`.',
                         $tableShort,
-                        $rowCount
+                        $detail
                     )
                 );
                 $logger->warning(
                     sprintf(
-                        'chain-B/C cleanup: skipping non-empty legacy table %s (%d rows)',
+                        'chain-B/C cleanup: skipping legacy table %s — %s',
                         $tableShort,
-                        $rowCount
+                        $detail
                     )
                 );
                 $skippedNonEmpty++;
                 continue;
-            }
+            }//end if
 
             $schema->dropTable($tableShort);
             $output->info(sprintf('chain-B/C cleanup: dropped empty legacy table `oc_%s`', $tableShort));

@@ -72,10 +72,12 @@ export default {
 		flowId: {
 			immediate: true,
 			/**
-			 * Reload the history when the page moves to a different flow.
+			 * Reloads the run list when the routed flow changes, so navigating
+			 * between two flows cannot leave the previous flow's runs on
+			 * screen attributed to the new one.
 			 *
 			 * @return {void}
-			 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+			 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 			 */
 			handler() {
 				this.fetchRuns()
@@ -85,12 +87,10 @@ export default {
 
 	methods: {
 		/**
-		 * The runs of this flow, most recent first. Capped at 50: a long-lived
-		 * flow's full history is not what an operator opening this panel is
-		 * asking for.
+		 * Lists this flow's persisted `flow_run` records, newest first.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
 		async fetchRuns() {
 			if (!this.flowId) return
@@ -117,14 +117,14 @@ export default {
 			}
 		},
 		/**
-		 * Expand or collapse a run, fetching its step logs the first time it
-		 * is opened. Fetching lazily is the point: a flow with a long history
-		 * would otherwise issue one request per run before the operator has
-		 * asked for any of them.
+		 * Expands or collapses one run, fetching its per-step trace the first
+		 * time it is opened. Fetching lazily keeps the index cheap for a flow
+		 * with many runs; the `!this.stepLogs[runId]` guard means re-collapsing
+		 * and re-expanding does not re-request.
 		 *
-		 * @param {string} runId The run's id.
+		 * @param {string} runId The `flow_run` id.
 		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
 		async toggle(runId) {
 			this.expanded[runId] = !this.expanded[runId]
@@ -133,11 +133,12 @@ export default {
 			}
 		},
 		/**
-		 * One run's per-step entries, in step order (REQ-008's trace).
+		 * Lists one run's `flow_run_log` entries, ordered by `stepOrder` so the
+		 * trace reads in execution sequence rather than insertion order.
 		 *
-		 * @param {string} runId The run's id.
+		 * @param {string} runId The `flow_run` id.
 		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
 		async fetchStepLogs(runId) {
 			try {
@@ -161,13 +162,13 @@ export default {
 			}
 		},
 		/**
-		 * A run timestamp in the reader's locale, or the raw value when it is
-		 * not a date this browser can parse — showing "Invalid Date" tells an
-		 * operator less than the string the server sent.
+		 * Renders a run timestamp in the viewer's locale, returning the raw
+		 * value if it cannot be parsed — an unrecognised timestamp is still
+		 * more useful to an operator than a blank cell or "Invalid Date".
 		 *
-		 * @param {string} value The stored timestamp.
-		 * @return {string} The display value.
-		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 * @param {string} value The ISO timestamp.
+		 * @return {string}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
 		formatDate(value) {
 			if (!value) return ''

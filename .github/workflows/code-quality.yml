@@ -79,16 +79,69 @@ jobs:
       # migration fault rather than a missing app. Testing a version the app
       # cannot support produces red that says nothing. See issue #1172.
       nextcloud-test-refs: '["stable32", "stable33"]'
-      # Set explicitly, because the shared workflow's default flipped to `true`
-      # and this repo cannot honestly satisfy it yet. Every gate PASSES; what
-      # does not run is 4, 24 and 33, whose producers this repo does not switch
-      # on. Inheriting the new default would block the repo on that, and the
-      # usual response is to switch the control off everywhere — which costs
-      # more than it saves.
+      # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
+      # the comment it replaced instructed: "Remove this line in the change
+      # that wires those producers up, so the coverage requirement arrives with
+      # the coverage."
       #
-      # Remove this line in the change that wires those producers up, so the
-      # coverage requirement arrives with the coverage.
-      hydra-gates-require-full-coverage: false
+      # WHAT THE FLAG ACTUALLY DID. It is not a gate and it does not decide any
+      # finding. It answers one question: when a gate DID NOT RUN, is that a
+      # failure? The gate package sorts every non-run into three categories —
+      # `na` (subject matter absent: nothing is unverified), `structural`
+      # (subject matter EXISTS, nothing produced the gate's input) and `wiring`
+      # (the gate's own helper or tool is missing). Only `structural` and
+      # `wiring` count against coverage. With the flag set to false, a gate
+      # whose machinery had quietly stopped existing reported as green.
+      #
+      # That is not hypothetical in this fleet: a missing helper made gate-7
+      # report PASS over 11 real unguarded IDOR endpoints, and openregister
+      # reported `success` while its own log read "EXCEPT GATES 4 33, WHICH DID
+      # NOT RUN". A waiver here means openconnector's green does not include
+      # the coverage assertion at all.
+      #
+      # THE ORIGINAL DEFERRAL NO LONGER HOLDS, and not for the reason this PR
+      # first gave. Re-measured on `development` @5ab1c9df, FULL TREE, with the
+      # gate package cloned fresh from ConductionNL/.github@main (756fe89) —
+      # not the local submodule, which was 38 commits behind and is therefore a
+      # different program:
+      #
+      #   [hydra-gates] COVERAGE: 63 of 64 declared gates reported a result
+      #   (1 not applicable to this repo/diff; 63 of 63 applicable gates ran).
+      #
+      # ZERO structural skips, ZERO wiring skips. The single not-applicable is
+      # gate-33 axe-core, which declares itself so because this caller has not
+      # set `enable-axe` — a choice recorded a few lines below, not a gap. `na`
+      # does not count against coverage, so the requirement is satisfied.
+      #
+      # Gates 4 and 33 were never starved by a producer this repo declines to
+      # switch on; they declare themselves not applicable. And gate-24
+      # integration-parity — named by the first version of this comment as the
+      # real gap, which it then was — now PASSES: `scripts/check-integration-
+      # parity.sh` landed on `development` after this PR was opened, so the
+      # parity script arrived exactly as that comment said it should, ahead of
+      # the flag being dropped.
+      #
+      # PROOF THIS SETTING CAN STILL FAIL, rather than being inert. On the same
+      # tree, deleting `scripts/check-integration-parity.sh`:
+      #
+      #   [gate-24] integration-parity: SKIPPED (structural) — ... this repo
+      #   DOES register integration leaves ... server↔JS leaf parity is
+      #   UNVERIFIED
+      #   [hydra-gates] COVERAGE: 62 of 63 applicable gates ran
+      #
+      # which is precisely the shape the runner exits 98 on, and which
+      # quality.yml turns into `::error::hydra-gates passed every gate that
+      # ran, but a gate whose SUBJECT MATTER EXISTS did not report`. So this
+      # repo has live subject matter for the assertion; it is not being turned
+      # on over nothing.
+      #
+      # NOTE ON WHAT THIS DOES *NOT* CHANGE. Exit 98 is reached only when no
+      # gate FAILED — a run with failures is already red and exits with the
+      # failure count. Removing this line therefore adds a verdict where there
+      # was none; it cannot mask one. The same full-tree run still shows
+      # gate-38 and gate-57 failing on inherited debt in files no PR is
+      # touching; both are tracked separately and neither is in scope for a
+      # diff-scoped CI run.
       enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true

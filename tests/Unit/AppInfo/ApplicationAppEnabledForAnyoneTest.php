@@ -16,8 +16,8 @@
  * THE DEFECT THESE TESTS EXIST FOR (#1103). The Tables, Forms and
  * WorkflowEngine registrations were gated on
  * `IAppManager::isEnabledForAnyUser()`, which is not a method on
- * `OCP\App\IAppManager` — not in the vendored `nextcloud/ocp:dev-stable29`
- * interface, and not in Nextcloud 35's. Every call raised
+ * `OCP\App\IAppManager` — not in any vendored `nextcloud/ocp` snapshot, and not
+ * in Nextcloud 35's. Every call raised
  * `Error: Call to undefined method OC\App\AppManager::isEnabledForAnyUser()`,
  * and because each call site is wrapped in a `catch (\Throwable)` that only
  * logs a warning, the outcome was silent: those three integrations were never
@@ -73,86 +73,61 @@ class ApplicationAppEnabledForAnyoneTest extends TestCase
 
 
     /**
-     * GIVEN a server that predates `isEnabledForAnyone()` (`@since 32.0.0`)
-     * WHEN an optional app is feature-detected
-     * THEN `isInstalled()` answers the question.
+     * GUARD (#1174): `isEnabledForAnyone()` must be REAL interface API here.
      *
-     * This is the branch this test environment exercises: the pinned
-     * `nextcloud/ocp:dev-stable29` interface has no `isEnabledForAnyone()`, so a
-     * plain `createMock()` of it does not either, and `method_exists()` is false.
-     * That makes the pre-32 fallback genuinely covered rather than assumed.
+     * This assertion is the reason the two behavioural tests below can be plain
+     * `createMock()` calls. They used to branch on
+     * `method_exists(IAppManager::class, 'isEnabledForAnyone')` and fall back to
+     * PHPUnit's `addMethods()`, because `nextcloud/ocp` was pinned to
+     * `dev-stable29` and that interface snapshot — three majors below the
+     * `min-version="32"` this app declares — genuinely did not have the method.
+     * A mock built with `addMethods()` fabricates the API it is verifying, which
+     * is the exact failure this whole test class was written to close (#1103).
+     *
+     * With `nextcloud/ocp ^32.0` the method is declared, `onlyMethods` semantics
+     * apply, and any future removal fails HERE with a clear message instead of
+     * silently downgrading every mock below to a fabricated one.
      *
      * @return void
      */
-    public function testFallsBackToIsInstalledOnServersWithoutIsEnabledForAnyone(): void
+    public function testIsEnabledForAnyoneIsRealInterfaceApi(): void
     {
-        // Which IAppManager is loaded depends on where the suite runs. Bare, it
-        // is the pinned `nextcloud/ocp:dev-stable29` stub, which predates
-        // `isEnabledForAnyone()` — so this pre-32 branch is genuinely reachable
-        // and worth asserting. Inside a real NC >= 32 the server's own
-        // interface wins and the branch cannot be entered at all, so asserting
-        // it there would only be asserting the server's version.
-        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
-            $this->markTestSkipped(
-                'This server has isEnabledForAnyone(); the pre-32 fallback branch is unreachable here.'
-            );
-        }
+        $this->assertTrue(
+            method_exists(IAppManager::class, 'isEnabledForAnyone'),
+            'isEnabledForAnyone() is @since 32.0.0 and this app declares min-version="32"; '
+            .'if it is missing, nextcloud/ocp is pinned below the declared floor again (#1174)'
+        );
 
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->expects($this->once())
-            ->method('isInstalled')
-            ->with('tables')
-            ->willReturn(true);
-
-        $this->assertTrue($this->invokeAppEnabledForAnyone($appManager, 'tables'));
-
-    }//end testFallsBackToIsInstalledOnServersWithoutIsEnabledForAnyone()
+    }//end testIsEnabledForAnyoneIsRealInterfaceApi()
 
 
     /**
-     * GIVEN a disabled optional app on a pre-32 server WHEN it is
-     * feature-detected THEN the helper reports false.
+     * GIVEN a disabled optional app WHEN it is feature-detected
+     * THEN the helper reports false.
      *
      * @return void
      */
-    public function testReportsFalseWhenTheAppIsNotInstalled(): void
+    public function testReportsFalseWhenTheAppIsNotEnabled(): void
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('forms')->willReturn(false);
+        $appManager->method('isEnabledForAnyone')->with('forms')->willReturn(false);
 
         $this->assertFalse($this->invokeAppEnabledForAnyone($appManager, 'forms'));
 
-    }//end testReportsFalseWhenTheAppIsNotInstalled()
+    }//end testReportsFalseWhenTheAppIsNotEnabled()
 
 
     /**
-     * GIVEN a Nextcloud 32+ server, where `isEnabledForAnyone()` exists,
-     * WHEN an optional app is feature-detected
-     * THEN that method is preferred and `isInstalled()` (deprecated since 32.0.0)
+     * GIVEN an enabled optional app
+     * WHEN it is feature-detected
+     * THEN `isEnabledForAnyone()` answers and `isInstalled()` (deprecated 32.0.0)
      * is NOT called.
-     *
-     * `addMethods()` is legitimate here in the way it was not in the code this
-     * fixes: `isEnabledForAnyone()` genuinely exists on NC >= 32 and is absent
-     * only from the pinned stub, so adding it to the mock reproduces a real
-     * server rather than inventing an API.
      *
      * @return void
      */
     public function testPrefersIsEnabledForAnyoneWhenTheServerHasIt(): void
     {
-        // addMethods() refuses a method the interface already declares, and
-        // whether it declares one depends on which IAppManager is loaded: the
-        // pinned pre-32 stub when running bare, the server's own interface when
-        // running inside a real NC. Pick the builder call that matches, so the
-        // same test covers the >= 32 branch either way.
-        $builder = $this->getMockBuilder(IAppManager::class);
-        if (method_exists(IAppManager::class, 'isEnabledForAnyone') === true) {
-            $builder->onlyMethods(['isEnabledForAnyone', 'isInstalled']);
-        } else {
-            $builder->addMethods(['isEnabledForAnyone']);
-        }
-
-        $appManager = $builder->getMockForAbstractClass();
+        $appManager = $this->createMock(IAppManager::class);
         $appManager->expects($this->once())
             ->method('isEnabledForAnyone')
             ->with('workflowengine')

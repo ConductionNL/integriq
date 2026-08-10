@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\Adapter;
 
 use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
+use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -259,4 +260,197 @@ XML;
 
         $this->assertSame([], $this->adapter->list('register', 'schema', 'object-id', []));
     }//end testListRequiresBucketFilter()
+
+    // ---------------------------------------------------------------------
+    // The write seam (openconnector#1191).
+    //
+    // `object-write` has been advertised by getCapabilities() and implemented
+    // by writeObject() since this adapter was scaffolded, but create()/update()
+    // were never overridden — so every write arriving through the
+    // IntegrationProvider interface hit AbstractIntegrationProvider's default
+    // and threw NotImplementedException. These tests pin the seam that makes
+    // the advertised capability reachable, and the two failure shapes that must
+    // never be reported as a successful write.
+    // ---------------------------------------------------------------------
+
+    /**
+     * `create()` PUTs the content to `/{bucket}/{key}` and reports the upstream
+     * status. The METHOD is asserted because a GET here would silently read
+     * instead of write, and the path is asserted because writing to the wrong
+     * key is indistinguishable from success at the status level.
+     *
+     * @return void
+     */
+    public function testCreatePutsTheContentToTheBucketKeyPath(): void
+    {
+        $this->credentialBroker->expects($this->once())
+            ->method('request')
+            ->with(
+                credentialId: 'cred-uuid-s3',
+                appId: 'openconnector',
+                method: 'PUT',
+                path: '/my-bucket/folder/file.txt',
+                headers: [],
+                body: 'the-content'
+            )
+            ->willReturn(['status' => 200, 'headers' => [], 'body' => '']);
+
+        $result = $this->adapter->create(
+            'register',
+            'schema',
+            'object-id',
+            ['bucket' => 'my-bucket', 'key' => 'folder/file.txt', 'content' => 'the-content']
+        );
+
+        $this->assertSame('my-bucket', $result['bucket']);
+        $this->assertSame('folder/file.txt', $result['key']);
+        $this->assertSame(200, $result['status']);
+    }//end testCreatePutsTheContentToTheBucketKeyPath()
+
+    /**
+     * A payload without a bucket or key is refused before anything is sent —
+     * a PUT to a path assembled from empty segments would target the bucket
+     * root.
+     *
+     * @return void
+     */
+    public function testCreateWithoutBucketOrKeyNeverReachesTheBroker(): void
+    {
+        $this->credentialBroker->expects($this->never())->method('request');
+
+        $this->expectException(DoesNotExistException::class);
+
+        $this->adapter->create('register', 'schema', 'object-id', ['content' => 'orphan']);
+    }//end testCreateWithoutBucketOrKeyNeverReachesTheBroker()
+
+    /**
+     * `update()` takes the same `"bucket/key"` address `get()` accepts, so an
+     * object that was read can be written back without re-deriving it. S3 has
+     * no distinct update verb — a PUT to an existing key replaces it.
+     *
+     * @return void
+     */
+    public function testUpdateAddressesTheObjectTheSameWayGetDoes(): void
+    {
+        $this->credentialBroker->expects($this->once())
+            ->method('request')
+            ->with(
+                credentialId: 'cred-uuid-s3',
+                appId: 'openconnector',
+                method: 'PUT',
+                path: '/my-bucket/folder/file.txt',
+                headers: [],
+                body: 'replacement'
+            )
+            ->willReturn(['status' => 204, 'headers' => [], 'body' => '']);
+
+        $result = $this->adapter->update(
+            'register',
+            'schema',
+            'object-id',
+            'my-bucket/folder/file.txt',
+            ['content' => 'replacement']
+        );
+
+        $this->assertSame('my-bucket', $result['bucket']);
+        $this->assertSame('folder/file.txt', $result['key']);
+        $this->assertSame(204, $result['status']);
+    }//end testUpdateAddressesTheObjectTheSameWayGetDoes()
+
+    /**
+     * A malformed entityId is refused before anything is sent, matching
+     * `get()`'s contract rather than writing to a guessed address.
+     *
+     * @return void
+     */
+    public function testUpdateRejectsAMalformedEntityIdWithoutWriting(): void
+    {
+        $this->credentialBroker->expects($this->never())->method('request');
+
+        $this->expectException(DoesNotExistException::class);
+
+        $this->adapter->update('register', 'schema', 'object-id', 'no-slash-here', ['content' => 'x']);
+    }//end testUpdateRejectsAMalformedEntityIdWithoutWriting()
+
+    /**
+     * FAILURE SHAPE 1 — the brokered request never completed. The broker
+     * enforces four guards (owner, allowed-app, allow-rules, host-lock) and
+     * raises on denial; `brokeredRequest()` catches that and returns null, so
+     * `writeObject()` returns null and no status ever exists. Returning an
+     * array here would report a write that never left the process.
+     *
+     * @return void
+     */
+    public function testAnIncompleteBrokeredRequestIsNotReportedAsAWrite(): void
+    {
+        $this->credentialBroker->method('request')->willThrowException(
+            new CredentialAccessDeniedException('host-lock denied')
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('did not complete');
+
+        $this->adapter->create(
+            'register',
+            'schema',
+            'object-id',
+            ['bucket' => 'my-bucket', 'key' => 'k', 'content' => 'c']
+        );
+    }//end testAnIncompleteBrokeredRequestIsNotReportedAsAWrite()
+
+    /**
+     * FAILURE SHAPE 2 — the bucket answered, and refused. A 403 is a completed
+     * HTTP exchange, so the null check above does not catch it; without the
+     * status check a permission denial would be returned as `status: 403` in a
+     * success-shaped array and read as a stored object.
+     *
+     * @return void
+     */
+    public function testAnUpstreamRejectionIsNotReportedAsAWrite(): void
+    {
+        $this->credentialBroker->method('request')
+            ->willReturn(['status' => 403, 'headers' => [], 'body' => 'AccessDenied']);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('rejected upstream (status 403)');
+
+        $this->adapter->update(
+            'register',
+            'schema',
+            'object-id',
+            'my-bucket/k',
+            ['content' => 'c']
+        );
+    }//end testAnUpstreamRejectionIsNotReportedAsAWrite()
+
+    /**
+     * An absent `content` key writes an empty object rather than failing — an
+     * empty object is a legitimate S3 write (it is how a "directory marker" is
+     * created), and the caller asked for a write.
+     *
+     * @return void
+     */
+    public function testAbsentContentWritesAnEmptyObject(): void
+    {
+        $this->credentialBroker->expects($this->once())
+            ->method('request')
+            ->with(
+                credentialId: 'cred-uuid-s3',
+                appId: 'openconnector',
+                method: 'PUT',
+                path: '/my-bucket/marker/',
+                headers: [],
+                body: ''
+            )
+            ->willReturn(['status' => 200, 'headers' => [], 'body' => '']);
+
+        $result = $this->adapter->create(
+            'register',
+            'schema',
+            'object-id',
+            ['bucket' => 'my-bucket', 'key' => 'marker/']
+        );
+
+        $this->assertSame(200, $result['status']);
+    }//end testAbsentContentWritesAnEmptyObject()
 }//end class

@@ -86,7 +86,7 @@
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
-		"symfony/console": "^5.4",
+		"symfony/console": "^7.4",
 		"symfony/css-selector": "^7.2",
 		"symfony/dom-crawler": "^7.2",
 		"symfony/expression-language": "^6.4",
@@ -102,7 +102,7 @@
 	"require-dev": {
 		"edgedesign/phpqa": "^1.9",
 		"nextcloud/coding-standard": "^1.4",
-		"nextcloud/ocp": "dev-stable29",
+		"nextcloud/ocp": "^32.0",
 		"phpcsstandards/phpcsextra": "^1.5",
 		"phpmd/phpmd": "^2.15",
 		"phpmetrics/phpmetrics": "^2.8",

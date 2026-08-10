@@ -92,7 +92,7 @@ class SourceMappingServiceTest extends TestCase
     public function testGetOpenRegistersReturnsNullWhenNotInstalled(): void
     {
         $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')->willReturn([]);
+        $appManager->method('getEnabledApps')->willReturn([]);
         $container = $this->createMock(ContainerInterface::class);
 
         $service = new SourceMappingService(appManager: $appManager, container: $container);

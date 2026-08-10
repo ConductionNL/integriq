@@ -146,6 +146,23 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        // LOAD-ORDER HAZARD: OC_App::getEnabledApps() sort()s the app list and
+        // Coordinator::registerApps() calls registerAutoloading() then register()
+        // one app at a time, so this method runs BEFORE OCA\OpenRegister\ is
+        // autoloadable (this app sorts before `openregister`). Any AppHost
+        // reference here — including a class_exists() probe — therefore answers
+        // FALSE on a perfectly healthy instance. Put OpenRegister's prefix on the
+        // autoloader ourselves; registerAutoloading() touches only the autoloader
+        // and is idempotent ($alreadyRegistered key guard). Deliberately NOT
+        // IAppManager::loadApp(), which would mark OpenRegister loaded and boot it
+        // before its own register() had run.
+        try {
+            $openRegisterPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
+            \OC_App::registerAutoloading('openregister', $openRegisterPath);
+        } catch (\Throwable) {
+            // OpenRegister absent/disabled — fall through to the degraded path.
+        }
+
         $this->assertStorageMigrated();
 
         // Register services.
@@ -500,31 +517,24 @@ class Application extends App implements IBootstrap
     /**
      * Whether an app is enabled for anyone, across the Nextcloud versions we support.
      *
-     * `IAppManager::isEnabledForAnyUser()` was RENAMED to
-     * `isEnabledForAnyone()` and the old name is gone in Nextcloud 34, where
-     * calling it raises "Call to undefined method
-     * OC\App\AppManager::isEnabledForAnyUser()". The caller catches Throwable
-     * and degrades to "Tables/Forms triggers unavailable", so the failure was
-     * silent in behaviour and loud in the log — two warnings on every request
-     * that boots this app, and the Tables and Forms triggers never registered
-     * at all on NC 34.
+     * HISTORY, because the shape of this method is not obvious. `IAppManager::isEnabledForAnyUser()`
+     * was RENAMED to `isEnabledForAnyone()` and the old name is gone in Nextcloud 34, where
+     * calling it raises "Call to undefined method OC\App\AppManager::isEnabledForAnyUser()".
+     * The caller catches Throwable and degrades to "Tables/Forms triggers unavailable", so
+     * the failure was silent in behaviour and loud in the log — two warnings on every request
+     * that boots this app, and the Tables and Forms triggers never registered at all on NC 34.
+     * #1103 then replaced a `false` fallback with `isInstalled()`, because `false` is not a
+     * safe default: it reports an installed, enabled Tables or Forms app as unavailable and
+     * silently skips registering its triggers.
      *
-     * info.xml declares `min-version="28"`, so every supported version has to
-     * resolve to a real method. Prefer the current name and fall back.
-     *
-     * THE FALLBACK IS `isInstalled()`, NOT `false` (#1103). `isEnabledForAnyone()`
-     * is `@since 32.0.0`, so on NC 28-31 neither it nor `isEnabledForAnyUser()`
-     * is present — the latter appears in NEITHER the vendored
-     * `nextcloud/ocp:dev-stable29` interface NOR Nextcloud 35's, so that branch is
-     * dead on both ends of the supported range. Returning `false` there is not a
-     * safe default, it is a WRONG answer: it reports an installed, enabled Tables
-     * or Forms app as unavailable and silently skips registering its triggers —
-     * the same user-visible outcome as the bug this method was written to fix,
-     * just reached deliberately.
-     *
-     * `isInstalled()` is `@since 8.0.0` and answers the same question. Nextcloud's
-     * own `@deprecated 32.0.0` note on it names `isEnabledForAnyone()` as the
-     * replacement, so the semantics do not shift across the version boundary.
+     * BOTH of those compatibility layers are now gone, and this method is a single call.
+     * `isEnabledForAnyone()` is `@since 32.0.0` and info.xml declares `min-version="32"`
+     * (raised in #1173, because `<app>openregister</app>` requires 32), so every server this
+     * app can install on has the method. The `method_exists()` probe could only ever take the
+     * true branch, and the `isInstalled()` fallback behind it was unreachable code — which
+     * static analysis could not say while `nextcloud/ocp` was pinned to `dev-stable29`, three
+     * majors below the declared floor (#1174). `isInstalled()` is also itself
+     * `@deprecated 32.0.0`, naming this very method as its replacement.
      *
      * @param \OCP\App\IAppManager $appManager The app manager.
      * @param string               $appId      The app to test.
@@ -536,11 +546,7 @@ class Application extends App implements IBootstrap
      */
     private function appEnabledForAnyone(\OCP\App\IAppManager $appManager, string $appId): bool
     {
-        if (method_exists($appManager, 'isEnabledForAnyone') === true) {
-            return (bool) $appManager->isEnabledForAnyone($appId);
-        }
-
-        return (bool) $appManager->isInstalled($appId);
+        return $appManager->isEnabledForAnyone($appId);
 
     }//end appEnabledForAnyone()
 
@@ -689,6 +695,25 @@ class Application extends App implements IBootstrap
     /**
      * Adopt the OpenRegister AppHost consumables for this app.
      *
+     * WHY THE TWO `assert($appManager instanceof IAppManager)` LINES BELOW ARE NOT NOISE.
+     * `ContainerInterface::get()` returns `mixed`, so without a narrowing statement
+     * neither psalm nor phpstan knows what `$appManager` is, and the
+     * `isEnabledForAnyone()` calls in both factories are checked against NOTHING. That
+     * is precisely how the deprecated `isInstalled()` survived in these two closures
+     * while the two controller guards they mirror were migrated (#1174) — the analysers
+     * could not see a method call to complain about. Measured both ways: with the
+     * assert, a deliberately misspelt method name is reported as "Call to an undefined
+     * method OCP\App\IAppManager::…" and phpstan exits 1; without it, phpstan is silent
+     * and exits 0.
+     *
+     * An inline `@var` is NOT an alternative here. This repo's phpcs standard rejects
+     * inline doc-block comments ("Inline doc block comments are not allowed") and
+     * mandates the single-star block-comment form, while phpstan reads `@var` ONLY from
+     * a double-star doc block — verified on a probe file: the same annotation written
+     * single-star bound nothing and the misspelt call went unreported. So the
+     * phpcs-legal form of that annotation reads as a type declaration and performs no
+     * check whatsoever.
+     *
      * @param IRegistrationContext $context Registration context.
      *
      * @return void
@@ -705,6 +730,10 @@ class Application extends App implements IBootstrap
             HealthController::class,
             static function (ContainerInterface $c) {
                 $appManager = $c->get(\OCP\App\IAppManager::class);
+                // See registerAppHostObservability()'s docblock: this assert() is
+                // load-bearing, it is what makes the isEnabledForAnyone() call below
+                // statically checked at all.
+                assert($appManager instanceof \OCP\App\IAppManager);
 
                 // When OpenRegister is absent the engine delegate cannot be
                 // built; pass null so HealthController returns a clean 503
@@ -712,7 +741,7 @@ class Application extends App implements IBootstrap
                 // DI 500. Building the delegate references OpenRegister classes,
                 // so it is only done when OpenRegister is enabled.
                 $delegate = null;
-                if ($appManager->isInstalled('openregister') === true) {
+                if ($appManager->isEnabledForAnyone('openregister') === true) {
                     // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                     $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                     $delegate    = new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
@@ -741,6 +770,10 @@ class Application extends App implements IBootstrap
             MetricsController::class,
             static function (ContainerInterface $c) {
                 $appManager = $c->get(\OCP\App\IAppManager::class);
+                // See registerAppHostObservability()'s docblock: this assert() is
+                // load-bearing, it is what makes the isEnabledForAnyone() call below
+                // statically checked at all.
+                assert($appManager instanceof \OCP\App\IAppManager);
 
                 // Mirrors the HealthController guard above. When OpenRegister
                 // is absent the engine delegate cannot be built, so pass null
@@ -750,7 +783,7 @@ class Application extends App implements IBootstrap
                 // OpenRegister classes, so it is only done when OpenRegister
                 // is enabled.
                 $delegate = null;
-                if ($appManager->isInstalled('openregister') === true) {
+                if ($appManager->isEnabledForAnyone('openregister') === true) {
                     // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                     $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                     $delegate    = new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
