@@ -176,14 +176,45 @@ async function createViaUi(
 			`"${fieldLabel}" select for ${schemaTitle} must be present in CnFormDialog`,
 		).toBeVisible({ timeout: 10_000 })
 		await combo.click()
-		const option = page
-			.getByRole('option', { name: new RegExp(`^\\s*${value}\\s*$`, 'i') })
-			.first()
+
+		// Match on the option's text with ALL whitespace removed, rather than
+		// on its accessible name.
+		//
+		// An anchored `getByRole('option', { name: /^value$/ })` works for a
+		// short label like "GET" and CANNOT work for the Register list. The
+		// select renders a long label split across two elements so CSS can
+		// ellipsize the middle and still show the tail:
+		//
+		//   <span class="name-parts" title="OpenConnector">
+		//     <span class="name-parts__first">OpenCon</span>
+		//     <span class="name-parts__last">nector</span>
+		//   </span>
+		//
+		// Accessible-name computation joins those with a space, so the option
+		// is named "OpenCon nector" — and the CI run offered "Credentia l
+		// Broker", "Data-Subjec t Requests" and "Vocab ulary" alongside it.
+		// The split point depends on the rendered width, so no fixed regex
+		// survives it. Comparing the characters that carry the meaning is
+		// indifferent to where the break lands.
+		//
+		// (The split is a real accessibility defect in the shared select — a
+		// screen reader reads "OpenCon nector" — but it belongs to the
+		// component library, not to this app's journey test. The full name is
+		// intact in the wrapper's `title`.)
+		const want = value.replace(/\s+/g, '').toLowerCase()
+		const options = page.getByRole('option')
 		await expect(
-			option,
-			`"${value}" must be offered as an option for "${fieldLabel}"`,
+			options.first(),
+			`"${fieldLabel}" must offer at least one option`,
 		).toBeVisible({ timeout: 10_000 })
-		await option.click()
+
+		const offered = await options.allTextContents()
+		const index = offered.findIndex((t) => t.replace(/\s+/g, '').toLowerCase() === want)
+		expect(
+			index,
+			`"${value}" must be offered as an option for "${fieldLabel}" — offered: ${offered.map((t) => t.trim()).join(' | ')}`,
+		).toBeGreaterThanOrEqual(0)
+		await options.nth(index).click()
 	}
 
 	// Click the primary action — "Create" in create-mode (resolved by
