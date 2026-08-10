@@ -681,7 +681,8 @@
                     "name",
                     "description",
                     "type",
-                    "location"
+                    "location",
+                    "isEnabled"
                 ],
                 "sidebar": {
                     "enabled": true,
