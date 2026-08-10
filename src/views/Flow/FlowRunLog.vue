@@ -71,6 +71,12 @@ export default {
 	watch: {
 		flowId: {
 			immediate: true,
+			/**
+			 * Reload the history when the page moves to a different flow.
+			 *
+			 * @return {void}
+			 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+			 */
 			handler() {
 				this.fetchRuns()
 			},
@@ -78,6 +84,14 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The runs of this flow, most recent first. Capped at 50: a long-lived
+		 * flow's full history is not what an operator opening this panel is
+		 * asking for.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 */
 		async fetchRuns() {
 			if (!this.flowId) return
 			this.loading = true
@@ -102,12 +116,29 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Expand or collapse a run, fetching its step logs the first time it
+		 * is opened. Fetching lazily is the point: a flow with a long history
+		 * would otherwise issue one request per run before the operator has
+		 * asked for any of them.
+		 *
+		 * @param {string} runId The run's id.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 */
 		async toggle(runId) {
 			this.expanded[runId] = !this.expanded[runId]
 			if (this.expanded[runId] && !this.stepLogs[runId]) {
 				await this.fetchStepLogs(runId)
 			}
 		},
+		/**
+		 * One run's per-step entries, in step order (REQ-008's trace).
+		 *
+		 * @param {string} runId The run's id.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 */
 		async fetchStepLogs(runId) {
 			try {
 				const response = await axios.get(
@@ -129,6 +160,15 @@ export default {
 				this.stepLogs[runId] = []
 			}
 		},
+		/**
+		 * A run timestamp in the reader's locale, or the raw value when it is
+		 * not a date this browser can parse — showing "Invalid Date" tells an
+		 * operator less than the string the server sent.
+		 *
+		 * @param {string} value The stored timestamp.
+		 * @return {string} The display value.
+		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-s-run-history-is-inspectable-per-step-req-014
+		 */
 		formatDate(value) {
 			if (!value) return ''
 			try {

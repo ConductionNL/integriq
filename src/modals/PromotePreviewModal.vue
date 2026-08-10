@@ -194,6 +194,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Reset and reload on every open. A promotion dialog that reopens on
+		 * the previous run's target and preview is one mis-click away from
+		 * promoting to the wrong environment.
+		 *
+		 * @param {boolean} isOpen Whether the modal is opening.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.resetState()
@@ -208,6 +217,7 @@ export default {
 		 * Reset all step/selection/preview state on open.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		resetState() {
 			this.step = 'select'
@@ -223,6 +233,7 @@ export default {
 		 * (same source ExportConfigurationDialog uses).
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-target-s-existing-import-endpoints-req-002
 		 */
 		async fetchConfigurations() {
 			this.loadingConfigs = true
@@ -264,10 +275,24 @@ export default {
 			}
 		},
 
+		/**
+		 * Choose which configuration group is promoted.
+		 *
+		 * @param {object|null} option The chosen group.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-target-s-existing-import-endpoints-req-002
+		 */
 		onSelectConfig(option) {
 			this.selectedConfig = option || null
 		},
 
+		/**
+		 * Choose the target environment.
+		 *
+		 * @param {object|null} option The chosen environment.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
+		 */
 		onSelectEnvironment(option) {
 			this.selectedEnvironment = option || null
 		},
@@ -277,6 +302,7 @@ export default {
 		 *
 		 * @param {{slug: string, field: string}} entry One `credentialRefsNeedingRebind[]` entry.
 		 * @return {string} The binding key.
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-credentialref-placeholders-are-re-bound-per-target-environment-never-resolved-to-a-secret-req-004
 		 */
 		bindingKey(entry) {
 			return `${entry.slug}|${entry.field}`
@@ -308,6 +334,7 @@ export default {
 		 * Fetch the merged diff preview (REQ-003) and advance to step 2.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
 		 */
 		async runPreview() {
 			if (!this.canPreview) {
@@ -341,6 +368,7 @@ export default {
 		 * Confirm the promotion (REQ-005: `confirmed: true`).
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		async confirmPromotion() {
 			this.confirming = true
@@ -366,13 +394,25 @@ export default {
 		/**
 		 * Return to step 1 without losing the current selection.
 		 *
+		 * The preview IS dropped: it described the selection as it was, and
+		 * keeping it would let an operator confirm against a diff that no
+		 * longer matches what they picked. REQ-005 requires a preview before
+		 * a promotion can be confirmed, so it has to be the current one.
+		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		backToSelect() {
 			this.step = 'select'
 			this.preview = null
 		},
 
+		/**
+		 * Dismissal from the modal chrome.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
+		 */
 		onClose() {
 			this.close()
 		},
@@ -381,6 +421,7 @@ export default {
 		 * Ask ModalHost to close the modal.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
 		 */
 		close() {
 			this.$emit('close')

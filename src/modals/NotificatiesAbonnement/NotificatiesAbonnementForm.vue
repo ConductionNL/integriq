@@ -141,6 +141,15 @@ export default {
 		isEdit() {
 			return !!(this.abonnement && (this.abonnement.id || this.abonnement.uuid))
 		},
+		/**
+		 * The Source this abonnement posts to, as an NcSelect option. A stored
+		 * id the picker has not loaded is shown BY ID rather than as empty —
+		 * blanking it would look like the abonnement has no source, and a save
+		 * would then clear a working configuration.
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+		 */
 		selectedSource() {
 			const id = this.model.sourceId
 			if (!id) {
@@ -153,6 +162,14 @@ export default {
 	watch: {
 		open: {
 			immediate: true,
+			/**
+			 * Repopulate from the prop each time the modal opens, and load the
+			 * Source options once.
+			 *
+			 * @param {boolean} next Whether the modal is opening.
+			 * @return {void}
+			 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+			 */
 			handler(next) {
 				if (next) {
 					this.resetFromProp()
@@ -167,8 +184,12 @@ export default {
 	methods: {
 		t,
 		/**
-		 * A fresh, empty form model.
+		 * A fresh, empty form model. `authHeaderName` defaults to
+		 * `Authorization` — the callback's default per Decision 4, so a
+		 * created abonnement authenticates without further configuration.
+		 *
 		 * @return {object}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		emptyModel() {
 			return {
@@ -182,6 +203,9 @@ export default {
 		/**
 		 * (Re)populate the form from the `abonnement` prop, or reset to empty
 		 * when creating.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		resetFromProp() {
 			this.errors = {}
@@ -201,7 +225,12 @@ export default {
 		},
 
 		/**
-		 * Fetch the available Sources for the picker.
+		 * Fetch the available Sources for the picker. A failure leaves the list
+		 * empty rather than throwing: `selectedSource` still shows the stored
+		 * id, so an existing abonnement stays editable.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		async fetchSources() {
 			this.sourcesLoading = true
@@ -225,22 +254,36 @@ export default {
 
 		/**
 		 * Handle a Source pick.
+		 *
 		 * @param {object} option The picked NcSelect option.
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		onSourcePick(option) {
 			this.model.sourceId = option?.id || ''
 		},
 
 		/**
-		 * Handle a kanalen taggable-multi-select change.
+		 * Handle a kanalen taggable-multi-select change. The kanalen are what
+		 * the remote API subscribes this abonnement to (REQ-001).
+		 *
 		 * @param {Array<string>} value The updated list of kanaal names.
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		onKanalenChange(value) {
 			this.kanaalNames = Array.isArray(value) ? value : []
 		},
 
 		/**
-		 * Validate + submit the create/update request.
+		 * Validate + submit the create/update request. The write goes through
+		 * the app's own abonnement endpoints, not OR's generic object API:
+		 * registering with the remote Notificaties API and minting the
+		 * companion consumer are server-side steps a direct object write would
+		 * skip (REQ-001).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 		 */
 		async save() {
 			this.errors = {}

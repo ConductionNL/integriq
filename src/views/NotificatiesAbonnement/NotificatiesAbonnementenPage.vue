@@ -139,9 +139,12 @@ export default {
 		},
 
 		/**
-		 * Format a row's kanalen array as a comma-separated list of names.
+		 * Format a row's kanalen array as a comma-separated list of names, or
+		 * an em dash when there are none.
+		 *
 		 * @param {object} row An abonnement row.
 		 * @return {string}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		kanaalNames(row) {
 			const kanalen = Array.isArray(row.kanalen) ? row.kanalen : []
@@ -150,6 +153,9 @@ export default {
 
 		/**
 		 * Open the creation modal.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		openCreate() {
 			this.form.abonnement = null
@@ -158,7 +164,10 @@ export default {
 
 		/**
 		 * Open the edit modal for an existing abonnement.
+		 *
 		 * @param {object} row The abonnement to edit.
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		openEdit(row) {
 			this.form.abonnement = row
@@ -166,8 +175,15 @@ export default {
 		},
 
 		/**
-		 * Delete an abonnement (remote DELETE + cascade-delete companion consumer).
+		 * Delete an abonnement. Goes through the app's endpoint, not OR's
+		 * generic object delete: the remote unsubscribe and the companion
+		 * consumer's cascade both live server-side, and a direct object delete
+		 * would leave the remote API still posting to a callback whose
+		 * credential no longer exists.
+		 *
 		 * @param {object} row The abonnement to delete.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 		 */
 		async remove(row) {
 			const id = row.id || row.uuid
@@ -186,7 +202,11 @@ export default {
 		},
 
 		/**
-		 * Reload after the create/edit modal saves.
+		 * Reload after the create/edit modal saves, so the list shows what the
+		 * server stored rather than what the form sent.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		onSaved() {
 			this.form.open = false
