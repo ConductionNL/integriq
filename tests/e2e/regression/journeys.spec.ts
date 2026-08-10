@@ -618,23 +618,35 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 
 	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
 		await gotoRoute(page, '/endpoints')
-		// Endpoint schema's `required` list is ['name', 'endpoint',
-		// 'method'] — CnFormDialog keeps Create disabled until each
-		// required field is touched-and-valid. The other three journeys
-		// only require `name`, so they slip through with the default.
+		// CnFormDialog keeps Create disabled until every required field holds
+		// a value. For an Endpoint that set has TWO sources, and missing the
+		// second is what made this journey fail:
+		//
+		//   1. the schema's own `required` — ['name', 'endpoint', 'method'];
+		//   2. the Endpoints PAGE MANIFEST, which additionally marks
+		//      `targetId` required (src/manifest.json). An endpoint with no
+		//      target routes nowhere, so the requirement is deliberate.
+		//
 		// Keys are the labels CnFormDialog renders, which come from each
 		// property's schema `title` — `endpoint` is titled "Endpoint Path" and
 		// `method` "HTTP Method". Passing the property names found no input.
 		//
-		// `method` moved from the text bucket to the select bucket: the
-		// Endpoints page now declares the `form-fields` slot, and
-		// EndpointFormFields renders `method` as an NcSelect over a fixed
-		// vocabulary. Typing "GET" into a combobox and tabbing away selects
-		// nothing, which left `method` unset and Create disabled.
+		// `method` sits in the select bucket: the Endpoints page declares the
+		// `form-fields` slot, and EndpointFormFields renders `method` as an
+		// NcSelect over a fixed vocabulary. Typing "GET" into a combobox and
+		// tabbing away selects nothing, which left `method` unset.
+		//
+		// `targetId` has NO input of its own — EndpointFormFields composes it
+		// from the Register + Schema pair and only writes it once BOTH halves
+		// are chosen. Register must be picked first: the Schema select stays
+		// disabled, and its options are scoped to the register, until then.
+		// Object key order is the iteration order, so this ordering matters.
 		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
 			'Endpoint Path': '/pw-j4-endpoint',
 		}, {
 			'HTTP Method': 'GET',
+			Register: 'OpenConnector',
+			Schema: 'Endpoint',
 		})
 		await deleteViaApi(page, 'endpoint', name, id)
 	})
