@@ -4,13 +4,12 @@
  *
  * Chain E regression: manifest-driven page smoke test.
  *
- * Post chain-D2 cutover (`a9d43736`), 23 of 24 openconnector pages render
- * via nc-vue's built-in `CnIndexPage` / `CnDetailPage` / `CnLogsPage` /
- * `CnDashboardPage` / `CnSettingsPage`, with their CRUD wired against OR's
- * `/api/objects/openconnector/{schema}/*` routes. Only the `Import` page
- * remains `type: custom`.
+ * Most openconnector pages render via nc-vue's built-in `CnIndexPage` /
+ * `CnDetailPage` / `CnLogsPage` / `CnDashboardPage`, with their CRUD wired
+ * against OR's `/api/objects/openconnector/{schema}/*` routes. Ten pages are
+ * `type: custom` and render a bespoke component named by the manifest.
  *
- * This spec navigates to each manifest page route and asserts:
+ * This spec navigates to EVERY manifest page route and asserts:
  *   - the SPA shell mounts (`#app-content` is present)
  *   - no console errors fire during initial mount
  *   - the rendered page contains either a list/grid/header (data path)
@@ -20,8 +19,27 @@
  * pages LOAD against a running container. Per-page CRUD flows live in
  * separate specs (sources-crud.spec.ts, etc.).
  *
+ * WHY THE PAGE TABLE IS WRITTEN OUT AND THEN GUARDED
+ * --------------------------------------------------
+ * `MANIFEST_PAGES` used to be a hand-maintained list with a comment claiming
+ * it held "24 manifest pages". The manifest has since grown to 35 and nothing
+ * compared the two, so ten pages — every `type: custom` screen added after the
+ * list was written, plus `Flows` and `Traces` — were never navigated to by any
+ * test. The list had also gone stale in the other direction: it still drove
+ * `/import`, a route the manifest no longer declares, and passed, because the
+ * router silently lands an unknown hash on the dashboard and the dashboard
+ * mounts fine. A stale table does not fail; it quietly tests the wrong page.
+ *
+ * The table is still literal, because the component names have to be readable
+ * here (both for a human debugging a failure and for gate-26 visual-coverage,
+ * which asks whether any e2e test drives a given page component). What is new
+ * is `manifest page table is complete and current` below: it reads
+ * `src/manifest.json` and asserts the table matches it exactly — id, route,
+ * type and component. Add a page to the manifest without adding it here and
+ * that test fails naming the page.
+ *
  * Cross-ref:
- * - openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md
+ * - openspec/specs/openconnector-frontend-vue-rewrite/spec.md
  * - src/manifest.json
  */
 
@@ -48,41 +66,73 @@ async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
 	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
 }
 
+/** One manifest page, transcribed verbatim from src/manifest.json. */
+type ManifestPage = {
+	/** `id` in the manifest. */
+	id: string
+	/** `route` in the manifest, parameter placeholders included. */
+	route: string
+	/** `type` in the manifest. */
+	type: string
+	/** `component` for `type: custom` pages; absent for renderer-drawn types. */
+	component?: string
+}
+
 /**
- * 24 manifest pages from src/manifest.json (a9d43736), grouped by route
- * prefix to keep the test output readable. Each entry: [pageId, route, type].
+ * All 35 manifest pages. Kept in manifest order so a diff against
+ * `src/manifest.json` reads straight down.
+ *
+ * Guarded by `manifest page table is complete and current` — do not edit this
+ * without editing the manifest, or vice versa.
  */
-const MANIFEST_PAGES: Array<{ id: string; route: string; type: string }> = [
-	{ id: 'Dashboard',                route: '/',                            type: 'dashboard' },
-	{ id: 'Sources',                  route: '/sources',                     type: 'index' },
-	{ id: 'SourceDetail',             route: '/sources/__nonexistent__',     type: 'detail' },
-	{ id: 'SourceLogs',               route: '/sources/logs',                type: 'logs' },
-	{ id: 'Endpoints',                route: '/endpoints',                   type: 'index' },
-	{ id: 'EndpointDetail',           route: '/endpoints/__nonexistent__',   type: 'detail' },
-	{ id: 'EndpointLogs',             route: '/endpoints/logs',              type: 'logs' },
-	{ id: 'Consumers',                route: '/consumers',                   type: 'index' },
-	{ id: 'ConsumerDetail',           route: '/consumers/__nonexistent__',   type: 'detail' },
-	{ id: 'Webhooks',                 route: '/webhooks',                    type: 'index' },
-	{ id: 'Jobs',                     route: '/jobs',                        type: 'index' },
-	{ id: 'JobLogs',                  route: '/jobs/logs',                   type: 'logs' },
-	{ id: 'Mappings',                 route: '/mappings',                    type: 'index' },
-	{ id: 'MappingDetail',            route: '/mappings/__nonexistent__',    type: 'detail' },
-	{ id: 'Rules',                    route: '/rules',                       type: 'index' },
-	{ id: 'RuleDetail',               route: '/rules/__nonexistent__',       type: 'detail' },
-	{ id: 'Synchronizations',         route: '/synchronizations',            type: 'index' },
-	{ id: 'SynchronizationContracts', route: '/synchronizations/contracts',  type: 'index' },
-	{ id: 'SynchronizationLogs',      route: '/synchronizations/logs',       type: 'logs' },
-	{ id: 'CloudEvents',              route: '/cloud-events/events',         type: 'index' },
-	{ id: 'CloudEventDetail',         route: '/cloud-events/events/__nonexistent__', type: 'detail' },
-	{ id: 'CloudEventLogs',           route: '/cloud-events/logs',           type: 'logs' },
-	{ id: 'Import',                   route: '/import',                      type: 'custom' },
-	// ADR-079 removed the in-app AppSettings page: app configuration lives in
-	// Nextcloud's settings framework at /settings/admin/openconnector, which
-	// authorizes it server-side. /settings now navigates out of the SPA, so it
-	// is deliberately NOT a manifest page any more.
-	{ id: 'Store',                    route: '/store',                       type: 'index' },
-	{ id: 'DeadLetters',              route: '/dead-letters',                type: 'custom' },
+const MANIFEST_PAGES: ManifestPage[] = [
+	{ id: 'FeaturesRoadmap',          route: '/features-roadmap',          type: 'roadmap' },
+	{ id: 'Dashboard',                route: '/',                          type: 'dashboard' },
+	{ id: 'Sources',                  route: '/sources',                   type: 'index' },
+	{ id: 'SourceDetail',             route: '/sources/:id',               type: 'detail' },
+	{ id: 'SourceLogs',               route: '/sources/logs',              type: 'logs' },
+	{ id: 'Endpoints',                route: '/endpoints',                 type: 'index' },
+	{ id: 'EndpointDetail',           route: '/endpoints/:id',             type: 'detail' },
+	{ id: 'EndpointLogs',             route: '/endpoints/logs',            type: 'logs' },
+	{ id: 'Consumers',                route: '/consumers',                 type: 'index' },
+	{ id: 'ConsumerDetail',           route: '/consumers/:id',             type: 'detail' },
+	{ id: 'ApiProducts',              route: '/products',                  type: 'index' },
+	{ id: 'ApiProductDetail',         route: '/products/:id',              type: 'custom', component: 'ApiProductDetail' },
+	{ id: 'Webhooks',                 route: '/webhooks',                  type: 'index' },
+	{ id: 'NotificatiesAbonnementen', route: '/notificaties/abonnementen', type: 'custom', component: 'NotificatiesAbonnementenPage' },
+	{ id: 'Jobs',                     route: '/jobs',                      type: 'index' },
+	{ id: 'JobLogs',                  route: '/jobs/logs',                 type: 'logs' },
+	{ id: 'Mappings',                 route: '/mappings',                  type: 'index' },
+	{ id: 'MappingDetail',            route: '/mappings/:id',              type: 'custom', component: 'MappingDetailPage' },
+	{ id: 'Rules',                    route: '/rules',                     type: 'index' },
+	{ id: 'RuleDetail',               route: '/rules/:id',                 type: 'custom', component: 'RuleDetailPage' },
+	{ id: 'Synchronizations',         route: '/synchronizations',          type: 'index' },
+	{ id: 'SynchronizationContracts', route: '/synchronizations/contracts', type: 'index' },
+	{ id: 'SynchronizationLogs',      route: '/synchronizations/logs',     type: 'logs' },
+	{ id: 'SynchronizationDetail',    route: '/synchronizations/:id',      type: 'custom', component: 'SynchronizationDetailPage' },
+	{ id: 'CloudEvents',              route: '/cloud-events/events',       type: 'index' },
+	{ id: 'CloudEventDetail',         route: '/cloud-events/events/:id',   type: 'detail' },
+	{ id: 'CloudEventLogs',           route: '/cloud-events/logs',         type: 'logs' },
+	{ id: 'Approvals',                route: '/approvals',                 type: 'custom', component: 'ApprovalsIndex' },
+	{ id: 'Flows',                    route: '/flows',                     type: 'index' },
+	{ id: 'FlowDetail',               route: '/flows/:id',                 type: 'custom', component: 'FlowDetailPage' },
+	{ id: 'ApprovalDetail',           route: '/approvals/:id',             type: 'custom', component: 'ApprovalDetail' },
+	{ id: 'Traces',                   route: '/traces',                    type: 'logs' },
+	{ id: 'TraceDetail',              route: '/traces/:id',                type: 'custom', component: 'TraceDetailPage' },
+	{ id: 'Store',                    route: '/store',                     type: 'index' },
+	{ id: 'DeadLetters',              route: '/dead-letters',              type: 'custom', component: 'DeadLettersPage' },
 ]
+
+/**
+ * The hash a browser should be sent to for a page.
+ *
+ * Detail routes carry a `:id` placeholder. We drive them with a deliberately
+ * absent id so the page component mounts against a cold store — that is the
+ * shell-mount property this smoke test is about, and it needs no fixture.
+ */
+function navigableRoute(page: ManifestPage): string {
+	return page.route.replace(/:[A-Za-z_][\w]*/g, '__nonexistent__')
+}
 
 /**
  * Errors we ignore — these come from Nextcloud's own bootstrap, not
@@ -141,7 +191,8 @@ function attachConsoleSpy(page: Page): { errors: string[]; warnings: string[] } 
 test.describe('manifest pages — schema-driven render', () => {
 
 	for (const pg of MANIFEST_PAGES) {
-		test(`[${pg.type}] ${pg.id} mounts at ${pg.route}`, async ({ page }) => {
+		const label = pg.component ? `${pg.id} (${pg.component})` : pg.id
+		test(`[${pg.type}] ${label} mounts at ${pg.route}`, async ({ page }) => {
 			const { errors } = attachConsoleSpy(page)
 
 			const root = await rootUrl(page)
@@ -155,7 +206,7 @@ test.describe('manifest pages — schema-driven render', () => {
 			// `networkidle` always times out. The SPA mounts after DOM
 			// ready, and the `#app-content` + content-length assertions
 			// below verify the mount completed.
-			await page.goto(`${root}/#${pg.route}`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+			await page.goto(`${root}/#${navigableRoute(pg)}`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
 
 			// The Nextcloud SPA shell mounts inside #app-content.
 			await expect(page.locator('#app-content, [data-cy=app-content], .app-content').first()).toBeVisible({ timeout: 10_000 })
@@ -177,9 +228,13 @@ test.describe('manifest pages — schema-driven render', () => {
 
 test.describe('manifest schema validation', () => {
 
-	test('src/manifest.json validates against v2 schema', async () => {
+	function readManifest(): Record<string, any> {
 		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
-		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
+		return JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
+	}
+
+	test('src/manifest.json validates against v2 schema', async () => {
+		const m = readManifest()
 
 		expect(m.$schema, 'manifest declares a $schema URL').toMatch(/app-manifest(-v2)?\.schema\.json$/)
 		expect(m.version, 'manifest has a semver version').toMatch(/^\d+\.\d+\.\d+$/)
@@ -203,18 +258,55 @@ test.describe('manifest schema validation', () => {
 
 		expect(countNavEntries(m.menu), 'menu exposes at least 13 navigable entries (groups + children)')
 			.toBeGreaterThanOrEqual(13)
-		expect(m.pages.length, 'pages has at least 23 entries').toBeGreaterThanOrEqual(23)
 	})
 
-	test('all 24 pages use a standard type or have a _note justifying custom', async () => {
-		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
-		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
+	/**
+	 * THE ANTI-STALENESS GUARD.
+	 *
+	 * `MANIFEST_PAGES` is the list this file actually navigates. If it drifts
+	 * from the manifest, pages stop being tested WITHOUT anything going red —
+	 * which is exactly what happened: ten pages were never driven, and one
+	 * entry (`/import`) pointed at a route the manifest had dropped.
+	 *
+	 * Comparing id + route + type + component in both directions is what makes
+	 * "every page is smoke-tested" a checked claim rather than a comment.
+	 */
+	test('manifest page table is complete and current', async () => {
+		const m = readManifest()
+
+		const fromManifest = (m.pages as Array<Record<string, any>>).map((p) => ({
+			id: String(p.id),
+			route: String(p.route),
+			type: String(p.type),
+			component: p.type === 'custom' ? String(p.component) : undefined,
+		}))
+
+		// POSITIVE CONTROL: a comparison against an empty manifest would pass
+		// vacuously if the table were also empty.
+		expect(fromManifest.length, 'the manifest must declare pages for this guard to mean anything')
+			.toBeGreaterThan(20)
+
+		const key = (p: ManifestPage) => `${p.id}|${p.route}|${p.type}|${p.component ?? ''}`
+		const manifestKeys = fromManifest.map(key).sort()
+		const tableKeys = MANIFEST_PAGES.map(key).sort()
+
+		const missingFromTable = manifestKeys.filter((k) => !tableKeys.includes(k))
+		const staleInTable = tableKeys.filter((k) => !manifestKeys.includes(k))
+
+		expect(missingFromTable, 'manifest pages that NO test in this file navigates to — add them to MANIFEST_PAGES')
+			.toEqual([])
+		expect(staleInTable, 'MANIFEST_PAGES entries the manifest no longer declares — these navigate to a dead route and pass anyway')
+			.toEqual([])
+	})
+
+	test('every page uses a standard type or has a _note justifying custom', async () => {
+		const m = readManifest()
 		// Standard nc-vue page types (ADR-030). `roadmap` is a recognised
 		// extension type used by FeaturesRoadmap.
 		const STANDARD = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'wiki', 'map', 'roadmap'])
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
-				expect(p._note, `page ${p.id} has type:custom — must include _note justifying it (chain D2 spec REQ "All 24 manifest pages MUST use a standard page type")`).toBeTruthy()
+				expect(p._note, `page ${p.id} has type:custom — must include _note justifying it (chain D2 spec REQ "All manifest pages MUST use a standard page type")`).toBeTruthy()
 			} else {
 				expect(STANDARD.has(p.type), `page ${p.id} has unknown type ${p.type}`).toBe(true)
 			}
@@ -222,8 +314,7 @@ test.describe('manifest schema validation', () => {
 	})
 
 	test('every index/detail/logs page has config.register and config.schema', async () => {
-		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
-		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
+		const m = readManifest()
 		for (const p of m.pages) {
 			if (['index', 'detail', 'logs'].includes(p.type)) {
 				expect(p.config?.register, `${p.id} (type:${p.type}) is missing config.register`).toBe('openconnector')
