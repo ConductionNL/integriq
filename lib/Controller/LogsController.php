@@ -105,6 +105,58 @@ class LogsController extends Controller
     }//end __construct()
 
     /**
+     * Build the OpenRegister filter array from the optional query parameters.
+     *
+     * Both index() and export() had byte-identical copies of this block —
+     * export()'s own comment said "same as index method" — and five sequential
+     * optional assignments are 32 NPath paths each. Extracting it removes the
+     * duplication and keeps index() under the complexity threshold now that it
+     * carries an authorization branch as well.
+     *
+     * @param string|null $level             Filter by log level.
+     * @param string|null $message           Search in log messages.
+     * @param string|null $synchronizationId Filter by synchronization ID.
+     * @param string|null $dateFrom          Filter logs from this date.
+     * @param string|null $dateTo            Filter logs until this date.
+     *
+     * @return array<string, string> The filters, omitting every unset parameter.
+     *
+     * @spec openspec/specs/logs-and-statistics/spec.md
+     */
+    private function buildFilters(
+        ?string $level,
+        ?string $message,
+        ?string $synchronizationId,
+        ?string $dateFrom,
+        ?string $dateTo
+    ): array {
+        $filters = [];
+
+        if ($level !== null) {
+            $filters['level'] = $level;
+        }
+
+        if ($message !== null) {
+            $filters['message'] = $message;
+        }
+
+        if ($synchronizationId !== null) {
+            $filters['synchronization_id'] = $synchronizationId;
+        }
+
+        if ($dateFrom !== null) {
+            $filters['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo !== null) {
+            $filters['date_to'] = $dateTo;
+        }
+
+        return $filters;
+
+    }//end buildFilters()
+
+    /**
      * Get all synchronization logs.
      *
      * This method returns a list of all synchronization logs with optional filtering and pagination.
@@ -146,29 +198,13 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
-        // Build filters array.
-        $filters = [];
-
-        // Add individual filters if provided.
-        if ($level !== null) {
-            $filters['level'] = $level;
-        }
-
-        if ($message !== null) {
-            $filters['message'] = $message;
-        }
-
-        if ($synchronizationId !== null) {
-            $filters['synchronization_id'] = $synchronizationId;
-        }
-
-        if ($dateFrom !== null) {
-            $filters['date_from'] = $dateFrom;
-        }
-
-        if ($dateTo !== null) {
-            $filters['date_to'] = $dateTo;
-        }
+        $filters = $this->buildFilters(
+                level: $level,
+                message: $message,
+                synchronizationId: $synchronizationId,
+                dateFrom: $dateFrom,
+                dateTo: $dateTo
+            );
 
         // Get logs with pagination via OR ObjectService.
         $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
@@ -425,28 +461,13 @@ class LogsController extends Controller
         }
 
         try {
-            // Build filters array (same as index method).
-            $filters = [];
-
-            if ($level !== null) {
-                $filters['level'] = $level;
-            }
-
-            if ($message !== null) {
-                $filters['message'] = $message;
-            }
-
-            if ($synchronizationId !== null) {
-                $filters['synchronization_id'] = $synchronizationId;
-            }
-
-            if ($dateFrom !== null) {
-                $filters['date_from'] = $dateFrom;
-            }
-
-            if ($dateTo !== null) {
-                $filters['date_to'] = $dateTo;
-            }
+            $filters = $this->buildFilters(
+                level: $level,
+                message: $message,
+                synchronizationId: $synchronizationId,
+                dateFrom: $dateFrom,
+                dateTo: $dateTo
+            );
 
             // Get all logs matching filters (no pagination for export).
             $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
