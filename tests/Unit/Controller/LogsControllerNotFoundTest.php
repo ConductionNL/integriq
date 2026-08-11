@@ -21,10 +21,13 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Controller\LogsController;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -64,6 +67,13 @@ class LogsControllerNotFoundTest extends TestCase
     private $userSession;
 
     /**
+     * Whether the session user passes ActionAuthService's admin break-glass.
+     *
+     * @var boolean
+     */
+    private bool $isAdmin = true;
+
+    /**
      * Build the collaborators, with an authenticated user by default.
      *
      * @return void
@@ -74,25 +84,43 @@ class LogsControllerNotFoundTest extends TestCase
         $this->orObjectService = $this->createMock(OrObjectService::class);
         $this->l               = $this->createMock(IL10N::class);
         $this->userSession     = $this->createMock(IUserSession::class);
+        $this->isAdmin         = true;
 
         $this->l->method('t')->willReturnArgument(0);
-        $this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('tester');
+        $this->userSession->method('getUser')->willReturn($user);
 
     }//end setUp()
 
     /**
      * Construct the controller under test.
      *
+     * The action-authorization collaborator is the REAL ActionAuthService over
+     * a mocked IAppConfig and IGroupManager — not a double of the service
+     * itself. A double shaped to what the controller calls would be green
+     * whatever the service actually decides; this way the seeded default
+     * (`{}` → every action admin-only) is the thing under test.
+     *
      * @return LogsController
      */
     private function controller(): LogsController
     {
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueString')->willReturn('{}');
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn($this->isAdmin);
+        $groupManager->method('getUserGroupIds')->willReturn([]);
+
         return new LogsController(
             'openconnector',
             $this->request,
             $this->orObjectService,
             $this->l,
-            $this->userSession
+            $this->userSession,
+            new ActionAuthService($appConfig, $groupManager)
         );
 
     }//end controller()

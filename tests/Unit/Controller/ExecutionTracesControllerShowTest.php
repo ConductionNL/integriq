@@ -21,10 +21,13 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Controller\ExecutionTracesController;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ExecutionTraceService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -77,23 +80,39 @@ class ExecutionTracesControllerShowTest extends TestCase
         $this->userSession  = $this->createMock(IUserSession::class);
 
         $this->l->method('t')->willReturnArgument(0);
-        $this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('tester');
+        $this->userSession->method('getUser')->willReturn($user);
 
     }//end setUp()
 
     /**
-     * Construct the controller under test.
+     * Construct the controller under test, with an authorized caller.
+     *
+     * The action-authorization collaborator is the REAL ActionAuthService over
+     * a mocked IAppConfig and IGroupManager; these tests are about the
+     * miss-vs-outage distinction, so the caller passes the admin break-glass.
+     * The guard itself is exercised in ExecutionTracesControllerActionAuthTest.
      *
      * @return ExecutionTracesController
      */
     private function controller(): ExecutionTracesController
     {
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueString')->willReturn('{}');
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+        $groupManager->method('getUserGroupIds')->willReturn([]);
+
         return new ExecutionTracesController(
             'openconnector',
             $this->request,
             $this->traceService,
             $this->l,
-            $this->userSession
+            $this->userSession,
+            new ActionAuthService($appConfig, $groupManager)
         );
 
     }//end controller()
