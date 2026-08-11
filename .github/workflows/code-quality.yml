@@ -140,14 +140,20 @@ jobs:
       # gate-33 is now inside the applicable set in both scopes instead of
       # declaring itself `na`.
       #
-      # ⚠️ AND THE SAME CAVEAT NOW APPLIES TO A GATE THAT PRINTS `PASS`.
-      # gate-16 spec-coverage takes its base from `HYDRA_GATE_BASE_REF` and
-      # the runner never supplies one on `--full`, so a full-scope run ON
-      # `development` diffs the branch against itself, inspects nothing, and
-      # prints PASS — a PASS that COUNTS toward "N of N applicable gates ran"
-      # (ConductionNL/.github#361; fix open as #364). Measured here on
-      # `development` @7c1d9c6d with the canonical package @81c8c97, changing
-      # ONLY the base:
+      # ⚠️ AND THE SAME CAVEAT USED TO APPLY TO A GATE THAT PRINTS `PASS`.
+      # gate-16 spec-coverage takes its base from `HYDRA_GATE_BASE_REF`, and
+      # the runner supplied none on `--full`, so a full-scope run ON
+      # `development` diffed the branch against itself, inspected nothing, and
+      # printed PASS — a PASS that COUNTED toward "N of N applicable gates
+      # ran" (ConductionNL/.github#361). **#364 has since MERGED**: a
+      # full-repo run with no diff now reports
+      # `NOT APPLICABLE — full-repo run computed NO diff … This is NOT a
+      # pass.` So do not read a historical green gate-16 cell on this repo as
+      # a measurement — re-measure with an explicit base.
+      #
+      # Measured here on `development` @7c1d9c6d with the canonical package
+      # @81c8c97 (which still carried the old behaviour), changing ONLY the
+      # base:
       #
       #   base origin/development (= what CI's --full run uses) -> count=0
       #   base origin/beta                                      -> count=0
