@@ -258,28 +258,6 @@ replay). Every `NcSelect` filter control MUST carry an `inputLabel` prop
 (never a bare `<label>` + `@keydown.enter`, per the recurring
 `ncvue-schema-editor-related-object-and-enum-wiring` gotcha).
 
-The three `ExecutionTracesController` endpoints backing this page
-(`index`, `show`, `replay`) carry `#[NoAdminRequired]` + `#[NoCSRFRequired]` at
-the route layer and MUST delegate the authorization decision to
-`ActionAuthService::requireAction()` on `execution-trace.index`,
-`execution-trace.show` and `execution-trace.replay`, answering `403` when it
-throws. `replay` belongs with the writes, not the reads: `force: true`
-re-executes somebody else's traced run through the original entry point's real
-dispatch path (REQ-006).
-
-⚠️ Every scenario in this requirement says *"an admin"*, and until
-openconnector#1217 / PR #1218 that was an assumption the code did not enforce.
-`show` returned **HTTP 200** to any authenticated account with a substituted
-id — including the full ordered `steps` array, i.e. every request and response
-payload that crossed that connector — confirmed by live probe with two
-non-admin accounts. `ExecutionTraceService::find()` additionally passed
-`_rbac: false, _multitenancy: false`, so OpenRegister's own layer could never
-have narrowed it either. The reason recorded for that opt-out — *"a trace is
-infrastructure telemetry, not a tenant-owned object"* — justifies the WRITE in
-`persist()`, which runs from background jobs with no session, and `persist()`
-keeps it. 🔑 **A scenario that says "an admin" documents an assumption, not a
-control.**
-
 #### Scenario: operator inspects a trace's step timeline
 
 - **GIVEN** an admin on the Traces list with one `failed` trace
