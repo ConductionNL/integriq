@@ -51,7 +51,14 @@ describe('fetchOpenRegisterCollection', () => {
 		const opts = await fetchOpenRegisterCollection('synchronization')
 		expect(get).toHaveBeenCalledWith(
 			'/index.php/apps/openregister/api/objects/openconnector/synchronization',
-			{ params: { limit: 500 } },
+			// `_limit`, NOT `limit`. This assertion used to read `limit: 500`
+			// and was GREEN — it pinned the defect in #1215 rather than the
+			// requirement: OpenRegister treats an unprefixed parameter as a
+			// PROPERTY FILTER, so the request this test was locking in
+			// returned `total: 0` under HTTP 200 and every picker fed by this
+			// helper was empty. A unit test that asserts the call the code
+			// happens to make cannot tell you the call is wrong.
+			{ params: { _limit: 500 } },
 		)
 		expect(opts).toEqual([
 			{ id: '1', label: 'Sync A', raw: { id: 1, name: 'Sync A' } },
@@ -64,7 +71,9 @@ describe('fetchOpenRegisterCollection', () => {
 		const opts = await fetchOpenRegisterCollection('mapping', 'openconnector', 10)
 		expect(get).toHaveBeenCalledWith(
 			'/index.php/apps/openregister/api/objects/openconnector/mapping',
-			{ params: { limit: 10 } },
+			// Same as above — the caller-supplied limit must reach the wire as
+			// `_limit` or it is silently reinterpreted as a property filter.
+			{ params: { _limit: 10 } },
 		)
 		expect(opts).toHaveLength(1)
 		expect(opts[0]).toMatchObject({ id: '5', label: 'X' })

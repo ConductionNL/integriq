@@ -79,11 +79,6 @@ export default {
 			}
 		},
 		/**
-		 * Pretty-print a step's snapshot for display.
-		 * @param {object} value The already-redacted input/output snapshot.
-		 * @return {string}
-		 */
-		/**
 		 * Pretty-prints a step's input/output payload for the expanded detail.
 		 * Falls back to the stringified value on a circular structure rather
 		 * than throwing — a step whose payload cannot be serialised must still
