@@ -287,8 +287,10 @@ describe('job sections', () => {
 
 describe('logsLink', () => {
 	it('matches the route + query pair the "View logs" row action uses', () => {
+		// Synchronization logs persist no FK to their synchronization, so both
+		// surfaces navigate unfiltered rather than to an empty table.
 		expect(getRunDescriptor('synchronization', 'test').logsLink({ id: 9 }))
-			.toEqual({ name: 'SynchronizationLogs', query: { synchronization: 9 } })
+			.toEqual({ name: 'SynchronizationLogs' })
 		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 }))
 			.toEqual({ name: 'JobLogs', query: { jobId: 3 } })
 	})

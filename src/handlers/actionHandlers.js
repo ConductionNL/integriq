@@ -41,7 +41,7 @@ import {
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
-import { VIEW_LOGS_TARGETS } from './logTargets.js'
+import { VIEW_LOGS_TARGETS, logsLocation } from './logTargets.js'
 
 /**
  * Build the toast detail suffix from an axios error. Surfaces the server's
@@ -233,19 +233,19 @@ export function openPromotionHandler() {
 // handler can be deleted and the manifest entries can go back to
 // `handler: "navigate"` with a declarative `queryParam` field.
 /**
- * Navigate from a parent index row to the corresponding logs page with
- * the parent id pre-filled as a URL query param.
+ * Navigate from a parent index row to the corresponding logs page, scoped to
+ * that parent where the log rows carry a field to scope by.
  *
- * Resolves the destination route + query-param key from
- * `VIEW_LOGS_TARGETS` keyed by `actionId`. Falls back to the unfiltered
- * route when the action id is unknown (defensive — keeps the existing
- * "go to logs" UX rather than dead-clicking).
+ * The route + query pair comes from `logsLocation()`, the single builder the
+ * run/test modal's "View full log" link also uses, so the two surfaces cannot
+ * drift. A target whose `queryParam` is null resolves to the UNFILTERED page:
+ * CnLogsPage applies every query entry as a property filter, so scoping on a
+ * field no writer sets would land the user on an empty table.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function viewLogsHandler({ actionId, item }) {
-	const target = VIEW_LOGS_TARGETS[actionId]
-	if (!target) {
+	if (!VIEW_LOGS_TARGETS[actionId]) {
 		// eslint-disable-next-line no-console
 		console.warn(`[openconnector] viewLogsHandler: unknown actionId "${actionId}"`)
 		return
@@ -256,10 +256,14 @@ export function viewLogsHandler({ actionId, item }) {
 		console.warn('[openconnector] viewLogsHandler: router not set; cannot navigate')
 		return
 	}
-	router.push({
-		name: target.route,
-		query: { [target.queryParam]: rowId(item) },
-	}).catch((err) => {
+	const location = logsLocation(actionId, rowId(item))
+	if (!location) {
+		// Only reachable for a row with no id at all.
+		// eslint-disable-next-line no-console
+		console.warn(`[openconnector] viewLogsHandler: no id on row for "${actionId}"`)
+		return
+	}
+	router.push(location).catch((err) => {
 		// vue-router throws NavigationDuplicated when pushing the same
 		// route twice; swallow that specific case, surface anything else.
 		if (err && err.name !== 'NavigationDuplicated') {

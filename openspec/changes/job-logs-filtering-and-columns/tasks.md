@@ -161,7 +161,47 @@ Symptom: the logs page content ran flush into both edges of the app content area
       `--default-grid-baseline` multiples (same computed values: 16/8/12px).
 - [x] 9.4 `npx stylelint` + `npx eslint` clean; 34 CnLogsPage tests green.
 
-## 10. Manual verification (browser — user-driven)
+## 10. The remaining five log pages
+
+Verified every filter against a populated instance before authoring anything —
+`total` per query, not assumptions:
+
+| action | schema | param | result |
+|---|---|---|---|
+| view-source-logs | call_log | `source` | 11 of 15 ✓ |
+| view-endpoint-logs | call_log | `endpoint` | 0 of 0 ✓ (no inbound rows yet) |
+| view-job-logs | job_log | `jobId` | 3 of 5 ✓ |
+| view-synchronization-logs | synchronization_log | — | 0 of 10 ✗ |
+| view-cloud-event-logs | call_log | — | 0 of 15 ✗ |
+
+- [x] 10.1 Recognise the regression the filtering fix would otherwise cause:
+      now that query params are actually applied, a param matching nothing turns
+      a full page EMPTY. Before this change those two pages listed everything.
+- [x] 10.2 `logTargets.js` — `queryParam: null` for `view-synchronization-logs`
+      and `view-cloud-event-logs`, with `logsLocation()` returning a location
+      with no query for them. Both blockers are backend-side and recorded:
+      `SynchronizationLogService::normalize()` drops `synchronizationId` before
+      the insert so no row links to its synchronization; `call_log` declares no
+      event FK at all.
+- [x] 10.3 Route `viewLogsHandler` through `logsLocation()` instead of building
+      the query itself — it was the only caller not using the shared builder,
+      and a null param became the literal query key `"null"`.
+- [x] 10.4 Columns for all five, authored from observed rows rather than the
+      schema: `call_log` keeps url/method/duration inside the `request` /
+      `response` bags (dot paths), and `synchronization_log` rows carry no
+      `created` (resolved via CnDataTable's `@self` fallback) and nest their
+      counters under `result.objects`. HTTP status and the trace enums render as
+      coloured badges; widths are percentages summing to 100 with `fixedLayout`.
+- [x] 10.5 Traces: `detailRoute` was NOT dead config after all — `TraceDetail`
+      is a real `type: "custom"` page (`/traces/:id`, `TraceDetailPage.vue`) with
+      a step timeline and a Replay action. Added a `rowRoute` prop to
+      `CnLogsPage` (the library's established name, matching CnIndexPage's
+      `open-page` shape) and renamed the key, so the row click reaches the page
+      it always named. No `rowDetail` there — a dialog cannot host Replay.
+- [x] 10.6 Tests updated for the new navigation shape; three new `rowRoute`
+      cases in `CnLogsPageRowDetail.spec.js`. Both suites green.
+
+## 11. Manual verification (browser — user-driven)
 
 See `test-plan.md`. Requires `npm run dev` in **both** repos, the library first:
 OpenConnector imports `dist/esm` through the `node_modules` symlink, not `src`.

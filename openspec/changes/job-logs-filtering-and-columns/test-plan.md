@@ -72,11 +72,24 @@ Specs that carry this change:
    `frame_0…frame_n` rows. Closes via the button and via Esc.
 6. **`/jobs/logs` with no query.** All `job_log` rows, same columns, pagination
    active.
-7. **Regression check for the inherited library fix** — `/sources/logs`,
-   `/endpoints/logs`, `/synchronizations/logs`, `/cloud-events/logs`, `/traces`:
-   no more blank columns (schema-derived now), working sort and pagination, and
-   **no** row dialog (`rowDetail` defaults false). Note that `?endpoint=` and
-   `?event=` still filter to nothing — a known, documented out-of-scope gap.
+7. **The other five log pages**, each now with curated columns, sorting,
+   pagination, `fixedLayout` and (except Traces) a row-detail dialog:
+   - `/sources/logs` — reached from a Source row action as `?source=<uuid>`.
+     Expect Time / Status badge / Result / Method / URL / Duration, scoped to
+     that source (11 of 15 rows on the reference data).
+   - `/endpoints/logs` — expect the columns to render but **no rows**:
+     `EndpointsController::logs()` is not wired to `call_log` yet. An empty
+     table with correct headers is the pass condition.
+   - `/synchronizations/logs` — reached from a Synchronization row action, which
+     now navigates **unfiltered** by design. Expect all 10 rows, Time resolving
+     via the `@self` fallback, and the Found / Invalid counters read out of the
+     nested `result.objects` bag. A row click opens the dialog showing the full
+     timing/deletion-guard payload.
+   - `/cloud-events/logs` — likewise unfiltered; expect every call listed.
+   - `/traces` — expect Started / Entry point / Status / Triggered by / Duration
+     / Steps (`100 steps`, or `—` where the array is absent) / Dry run, and a row
+     click that **navigates to `/traces/:id`** rather than opening a dialog.
+     This is the `rowRoute` path replacing the old dead `detailRoute`.
 8. **Console clean on all six pages.** `tests/e2e/regression/manifest-pages.spec.ts`
    gates on `console.error`, so any new error fails CI.
 

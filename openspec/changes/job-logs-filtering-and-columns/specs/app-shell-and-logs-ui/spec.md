@@ -60,6 +60,27 @@ Concretely:
   `details` set MUST NOT be used for an OpenRegister-backed log schema that
   declares none of them
 
+#### Scenario: An unfilterable log page lists everything rather than nothing
+
+- **GIVEN** a log schema whose stored rows carry no field linking back to the
+  parent (synchronization logs persist no synchronization FK; `call_log`
+  declares no event FK)
+- **WHEN** the "View logs" affordance for that parent is used
+- **THEN** it navigates to the UNFILTERED page
+- **AND** it MUST NOT push a query param that matches nothing, which would
+  render an empty table — strictly worse than listing everything
+- **AND** the reason is recorded alongside the route table, so the param can be
+  restored when the writer starts persisting the field
+
+#### Scenario: A log whose detail surface is a real page navigates to it
+
+- **GIVEN** a log type with a purpose-built detail page (`execution_trace` →
+  `TraceDetail`, which renders a step timeline and owns a Replay action)
+- **WHEN** a row is clicked
+- **THEN** the page opens, rather than a generic read-only dialog
+- **AND** a declarative key naming that page MUST be one the component actually
+  reads — a config key no prop consumes is dead config, not configuration
+
 #### Scenario: A nested log payload is reachable, not truncated into a cell
 
 - **GIVEN** a `job_log` entry whose `stackTrace` holds several frames and whose
@@ -77,7 +98,13 @@ Requirement 3 is met for `JobLogs` by explicit `config.columns` and for the
 remaining log pages by `CnLogsPage` forwarding the loaded schema to
 `CnDataTable`, which derives columns from it.
 
-Two known mismatches remain out of scope and are recorded in `logTargets.js`:
-`view-endpoint-logs` and `view-cloud-event-logs` both target `call_log`, which
-declares neither an `endpoint` nor an `event` property, so both still filter to
-nothing. Fixing them requires identifying the field each writer actually sets.
+Every param was verified against a populated instance rather than inferred from
+the schema — `total` per filter: `source` 11 of 15, `endpoint` 0 of 0 (correct;
+no inbound rows exist yet), `jobId` 3 of 5, `synchronization` 0 of 10 (broken),
+`event` 0 of 15 (broken). The two broken ones now carry `queryParam: null`.
+
+Both are blocked backend-side, not in this layer:
+`SynchronizationLogService::normalize()` drops `synchronizationId` before the
+insert, so no `synchronization_log` row links to its synchronization; and
+`call_log` declares no event property at all. Requirement 1 is satisfied by
+navigating unfiltered until each writer persists a usable field.

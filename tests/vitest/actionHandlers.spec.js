@@ -175,21 +175,36 @@ describe('viewLogsHandler — actionId → route + query', () => {
 		expect(push).toHaveBeenCalledWith({ name: 'SourceLogs', query: { source: 42 } })
 	})
 
-	it('maps each known actionId to its destination route', () => {
+	it('maps each filterable actionId to its destination route and field', () => {
 		const cases = [
+			// Each param must name a field the log rows are actually WRITTEN
+			// with — `jobId` (JobService::saveJobLog), `endpoint`
+			// (EndpointService::recordInboundCallLog) — or the destination page
+			// applies a filter that matches nothing and renders empty.
 			['view-endpoint-logs', 'EndpointLogs', 'endpoint'],
-			// `jobId`, not `job`: the query param has to name the field
-			// JobService::saveJobLog() actually writes, or the destination page
-			// filters to nothing.
 			['view-job-logs', 'JobLogs', 'jobId'],
-			['view-synchronization-logs', 'SynchronizationLogs', 'synchronization'],
-			['view-cloud-event-logs', 'CloudEventLogs', 'event'],
 		]
 		for (const [actionId, route, param] of cases) {
 			const push = vi.fn().mockResolvedValue()
 			setRouter({ push })
 			viewLogsHandler({ actionId, item: { id: 5 } })
 			expect(push).toHaveBeenCalledWith({ name: route, query: { [param]: 5 } })
+		}
+	})
+
+	it('navigates UNFILTERED where the log rows carry no field to scope by', () => {
+		// synchronization_log rows persist no synchronization FK at all
+		// (SynchronizationLogService::normalize drops it), and call_log declares
+		// no event property. Filtering on either would land the user on a
+		// guaranteed-empty table, which is worse than showing everything.
+		for (const [actionId, route] of [
+			['view-synchronization-logs', 'SynchronizationLogs'],
+			['view-cloud-event-logs', 'CloudEventLogs'],
+		]) {
+			const push = vi.fn().mockResolvedValue()
+			setRouter({ push })
+			viewLogsHandler({ actionId, item: { id: 5 } })
+			expect(push).toHaveBeenCalledWith({ name: route })
 		}
 	})
 

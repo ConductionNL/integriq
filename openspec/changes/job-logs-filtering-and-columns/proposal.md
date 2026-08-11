@@ -96,28 +96,58 @@ component, so defects 1 and 2 had to be fixed upstream in the shared
 
 ### OpenConnector
 
-- `src/handlers/logTargets.js`: `view-job-logs` now sends `?jobId=`.
+- `src/handlers/logTargets.js`: `view-job-logs` now sends `?jobId=`. Every other
+  entry was then checked against a populated instance, since applying a filter
+  that matches nothing renders an EMPTY page — strictly worse than the
+  unfiltered listing those pages showed before. `source` (11 of 15 rows) and
+  `endpoint` (a declared property `recordInboundCallLog()` writes; 0 rows only
+  because no inbound logs exist yet) are correct. The other two now carry
+  `queryParam: null` and navigate unfiltered, both blocked backend-side:
+  `SynchronizationLogService::normalize()` drops `synchronizationId` before the
+  insert so no row links to its synchronization (0 of 10 for either candidate
+  key), and `call_log` declares no event FK at all (0 of 15).
+- `viewLogsHandler` now builds its location through `logsLocation()` rather than
+  assembling the query itself — it was the one caller bypassing the shared
+  builder, which the module's own docblock claims is the single source of truth.
+- All five remaining log pages get curated `columns`, sorting, pagination and
+  `fixedLayout`, authored from **observed rows** rather than from the schema:
+  `call_log` keeps url/method/duration nested inside its `request`/`response`
+  bags (dot paths), and `synchronization_log` rows carry no `created` at all
+  (resolved via CnDataTable's `@self` fallback) and nest their counters under
+  `result.objects`.
+- `Traces`' `detailRoute` turned out NOT to be dead config: `TraceDetail` is a
+  real `type: "custom"` page (`/traces/:id`, `TraceDetailPage.vue`) rendering a
+  step timeline and owning a Replay action. `CnLogsPage` gains a `rowRoute` prop
+  — the library's established name, matching CnIndexPage's `open-page` shape —
+  and the key is renamed to it, so the row click finally reaches the page it
+  always named. No row-detail dialog there: a dialog cannot host Replay.
 - `src/manifest.json`: the `JobLogs` page gains six curated `columns` (Time,
   Level as a coloured badge, Message, Duration, Job class, Stack-trace frame
   count) at percentage widths summing to 100 — 14 / 9 / 38 / 9 / 19 / 11 —
   plus `sortKey: created` / `sortOrder: desc`, `pagination.limit: 50`,
   `rowDetail: true` and `fixedLayout: true`.
 
-## Deliberately not in scope
+## Deliberately not in scope — needs a backend change
 
-- **Curated `columns` for the other four log pages** (`SourceLogs`,
-  `EndpointLogs`, `SynchronizationLogs`, `CloudEventLogs`) and `Traces`. They
-  inherit the schema-derived-columns fix, so they stop showing blank cells and
-  gain paging and sorting, but they get no hand-picked column set.
-- **The `?endpoint=` and `?event=` mismatches.** Both point at `call_log`, which
-  has neither an `endpoint` nor an `event` property (its FKs are
-  `sourceId`/`source`, `actionId`, `synchronizationId`/`synchronization`), so
-  both still filter to nothing. Documented in `logTargets.js` as a known
-  mismatch; picking the right field for each needs its own investigation into
-  what writes those rows.
-- **`Traces`' dead `config.detailRoute`.** `CnLogsPage` has no prop for it (the
-  library's established name is `rowRoute`). Adding navigate-instead-of-dialog
-  support to `CnLogsPage` is the natural companion change.
+Two log surfaces cannot be scoped to their parent from the UI at all, and both
+are recorded in `handlers/logTargets.js` with the evidence:
+
+- **Synchronization logs carry no FK.** `SynchronizationRunLog::toArray()`
+  includes `synchronizationId`, but it is null by the time
+  `SynchronizationLogService::normalize()` runs and is dropped before the
+  insert. Every one of the 10 stored rows on the reference instance is
+  unattributable. Restore `queryParam: 'synchronization'` once the writer
+  persists it.
+- **`call_log` has no event FK.** Nothing declares or writes one, so cloud-event
+  logging needs a field — or its own schema, `event_message` being the likely
+  candidate — before `CloudEventLogs` can be scoped.
+
+Also out of scope:
+
+- **Endpoint logs have no data.** `EndpointsController::logs()` still returns a
+  hard-coded empty result and is not wired to `call_log`; only
+  `EndpointService::recordInboundCallLog()` writes rows. That page's columns are
+  therefore authored from the writer rather than validated against real rows.
 - A filter bar (level / date / free-text search) on logs pages.
 
 ## Impact
