@@ -290,7 +290,7 @@ describe('logsLink', () => {
 		expect(getRunDescriptor('synchronization', 'test').logsLink({ id: 9 }))
 			.toEqual({ name: 'SynchronizationLogs', query: { synchronization: 9 } })
 		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 }))
-			.toEqual({ name: 'JobLogs', query: { job: 3 } })
+			.toEqual({ name: 'JobLogs', query: { jobId: 3 } })
 	})
 
 	it('returns null for a row with no id, so the modal hides the link', () => {

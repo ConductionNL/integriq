@@ -1665,7 +1665,78 @@
             "title": "Job logs",
             "config": {
                 "register": "openconnector",
-                "schema": "job_log"
+                "schema": "job_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "No `jobId` column: this page is not in the menu, so it is only ever reached from the Jobs row action or the run modal — both of which push `?jobId=` (see handlers/logTargets.js), making the column the same value on every row. `level` needs an explicit `widget: badge` because the job_log schema property carries no `enum`, so CnCellRenderer's auto-enum-badge path never fires; CnStatusBadge matches colorMap case-insensitively, which is what lets the lowercase keys resolve the uppercase INFO/WARNING/ERROR values JobService writes. `executionTime` is an integer of MILLISECONDS (JobService rounds `($end-$start)*1000`), hence the unit. `created` uses the absolute `datetime` formatter rather than the schema's relative-time default — a log wants a timestamp, not \"3 hours ago\".",
+                "_widthsNote": "Percentages summing to 100, paired with `fixedLayout` so they are honoured exactly. Under the default auto layout a table column's `width` is only a hint: `message` was the one unsized column so it absorbed every spare pixel, while `jobClass` — an unbreakable 45-char FQCN like OCA\\OpenConnector\\Action\\SynchronizationAction — was squeezed narrower than its own text and painted over the `stackTrace` cell next to it. Fixed layout makes the widths binding and lets long values wrap inside their cell. Keep the six summing to 100 when editing.",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "14%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "level",
+                        "label": "Level",
+                        "sortable": true,
+                        "width": "9%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "success": "success",
+                                "info": "info",
+                                "notice": "info",
+                                "debug": "default",
+                                "warning": "warning",
+                                "error": "error",
+                                "critical": "error"
+                            }
+                        }
+                    },
+                    {
+                        "key": "message",
+                        "label": "Message",
+                        "sortable": false,
+                        "width": "38%"
+                    },
+                    {
+                        "key": "executionTime",
+                        "label": "Duration",
+                        "sortable": true,
+                        "width": "9%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    },
+                    {
+                        "key": "jobClass",
+                        "label": "Job class",
+                        "sortable": true,
+                        "width": "19%"
+                    },
+                    {
+                        "key": "stackTrace",
+                        "label": "Stack trace",
+                        "sortable": false,
+                        "width": "11%",
+                        "formatter": "count",
+                        "formatterOptions": {
+                            "singular": "{n} frame",
+                            "plural": "{n} frames",
+                            "zero": "—"
+                        }
+                    }
+                ]
             }
         },
         {

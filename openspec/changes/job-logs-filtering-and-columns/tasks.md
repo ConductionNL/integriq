@@ -1,0 +1,167 @@
+## 1. Verify the three defects against HEAD
+
+- [x] 1.1 Confirm `JobLogs` in `src/manifest.json` declares no `config.columns`,
+      and that `CnLogsPage.resolvedColumns` falls back to
+      `timestamp / actor / action / target / details`.
+- [x] 1.2 Confirm none of those five properties exists on `job_log`
+      (`lib/Settings/openconnector_register.json`, `components.schemas.job_log`).
+- [x] 1.3 Confirm `CnLogsPage.fetch()` calls `fetchCollection(type)` with no
+      second argument and that the component never reads `$route.query`.
+- [x] 1.4 Confirm `JobService::saveJobLog()` writes `jobId`, while
+      `logTargets.js` pushes `?job=`.
+- [x] 1.5 Confirm OpenRegister passes non-`_`-prefixed query params through as
+      property filters (`ObjectsController::getConfig()` → `'filters' => $params`),
+      so `?jobId=` filters and `?job=` matches nothing.
+- [x] 1.6 Confirm OpenConnector is the only workspace app declaring
+      `type: "logs"` pages, bounding the library blast radius.
+
+## 2. Shared library — extract the filter resolvers (behaviour-neutral)
+
+- [x] 2.1 Create `nextcloud-vue/src/utils/routeFilters.js` exporting
+      `resolveQueryFilters` and `resolveFilterMap`, moved verbatim out of
+      `CnIndexPage/useSelfFetchList.js`.
+- [x] 2.2 Rewire `useSelfFetchList.js` to import them; delete the local copies.
+- [x] 2.3 Keep both module-private (not exported from `src/index.js`), per the
+      `resolveFilterTokens.js` / `multiColumnSort.js` precedent.
+- [x] 2.4 Prove neutrality: `CnIndexPageSelfFetch` + `CnIndexPageQuickFilters`
+      stay green (22 tests).
+
+## 3. Shared library — supporting primitives
+
+- [x] 3.1 Add a `count` formatter to `builtInFormatters.js` + register it in
+      `BUILT_IN_FORMATTERS`. Counts array entries / object keys, scalar as 1,
+      with `{ singular, plural, zero }` phrases and `{n}` substitution.
+- [x] 3.2 Add a `milliseconds` branch to `CnCellRenderer.formatDuration`,
+      rendering sub-second values as `245ms` instead of flooring to `0s`.
+- [x] 3.3 Add `"milliseconds"` to the `column.format.unit` enum in
+      `app-manifest.schema.json`, and add the missing `formatterOptions` key to
+      its `$defs.column` (which is `additionalProperties: false`, so the key was
+      unusable in v1 manifests despite the code supporting it).
+
+## 4. Shared library — rework `CnLogsPage`
+
+- [x] 4.1 Drive the store-backed list through `useListView` in `setup()`,
+      registering the object type synchronously first (its `onMounted` calls
+      `fetchSchema`, which throws on an unregistered type).
+- [x] 4.2 Duck-type the `store` prop: route a partial store that `useListView`
+      cannot drive to the legacy no-params fetch rather than throwing.
+- [x] 4.3 Add `filter`, `pagination`, `sortKey`, `sortOrder`, `sortKeys`,
+      `rowDetail` — all defaulting to the prior behaviour.
+- [x] 4.4 Merge `resolveQueryFilters($route.query)` under
+      `resolveFilterMap(props.filter, $route.params)` as the `fixedFilters`
+      getter, so it is re-read on every fetch.
+- [x] 4.5 Return `[]` from `resolvedColumns` when a schema is loaded and forward
+      it to `CnDataTable`; keep the legacy default for `source` mode and for a
+      failed schema load (turn it into a function so `t()` runs after
+      `registerTranslations()`).
+- [x] 4.6 Add `$route.query` / `$route.params` watchers with no `immediate`, and
+      gate `mounted()` behind `if (!this.list)` — one fetch on mount, not two.
+- [x] 4.7 Render `CnPagination` when `pages > 1`; wire `@sort` to the composable
+      (and to `multiKeySort` over `localRows` in `source` mode, since
+      `CnDataTable` never sorts its own rows).
+- [x] 4.8 Add the opt-in row-detail `NcDialog` inline (a sibling SFC would be
+      picked up by `docgen.config.js`'s `Cn*/Cn*.vue` glob and orphan a generated
+      partial). Body via `CnDetailGrid`; `<pre>` for non-flat bags rather than
+      `CnJsonViewer`, which would drag CodeMirror into this async chunk.
+- [x] 4.9 Read the store's recorded error in store mode — `fetchCollection`
+      never throws, so the `#error` slot was dead there.
+- [x] 4.10 Return every setup key even when the composable is unused; Vue warns
+      on a computed reading a key `setup()` omitted.
+- [x] 4.11 Fix the duplicated `$slots.actions || $slots.actions` condition.
+
+## 5. Shared library — tests
+
+- [x] 5.1 `tests/utils/routeFilters.spec.js` — the two extracted pure functions.
+- [x] 5.2 `tests/components/CnLogsPageSelfFetch.spec.js` (17) — `?jobId=` reaches
+      the fetch; `_`-prefixed keys are not forwarded; `filter` wins a collision;
+      `@route.<param>` resolves; `sortKey`/`sortOrder` → `_order`;
+      `pagination.limit` → `_limit`; sort and page change re-fetch keeping the
+      filter; exactly one fetch on mount; a query change adds exactly one more;
+      schema-derived vs. configured vs. legacy columns; the partial-store
+      fallback; the store-recorded error.
+- [x] 5.3 `tests/components/CnLogsPageRowDetail.spec.js` (8) — default-off; the
+      re-emitted `row-click`; scalar items with `@self` dropped; a flat bag as a
+      labelled grid titled from the schema; JSON fallback for a non-flat bag.
+- [x] 5.4 Extend `builtInFormatters.spec.js` for `count` and
+      `CnCellRendererFormat.spec.js` for `milliseconds`.
+- [x] 5.5 `npm test` — 6115 pass. The single failure
+      (`tests/packaging/subpath-exports.spec.js`, "not installed — licence
+      unverifiable") is pre-existing: it fails identically on a stashed tree,
+      caused by optional deps absent from this environment.
+
+## 6. Shared library — docs (CI-gated)
+
+- [x] 6.1 Rewrite `docs/components/cn-logs-page.md` — the six new props, the
+      `row-detail` slot, the `row-click` / `action` events, filtering, columns,
+      a worked manifest example. Fixed the pre-existing `showTitle` default
+      (documented `false`, actually `true`).
+- [x] 6.2 Add `@slot` / `@binding` / `@event` JSDoc for the previously
+      undocumented slots; `check:jsdoc` 63% → 96%, baseline bumped.
+- [x] 6.3 `count` and `milliseconds` in `docs/migrating-to-manifest.md` and
+      `docs/components/cn-cell-renderer.md`; document `widgetProps.colorMap` on
+      the `badge` row, which the table omitted despite the code supporting it.
+- [x] 6.4 Regenerate `docs/components/_generated/` and confirm `check:docs`
+      passes (433 exports, 233 component docs).
+
+## 7. OpenConnector
+
+- [x] 7.1 `src/handlers/logTargets.js` — `view-job-logs` → `queryParam: 'jobId'`,
+      with the `endpoint` / `event` mismatches recorded as a known gap.
+- [x] 7.2 Update the two assertions that pinned the old key:
+      `tests/vitest/runTargets.spec.js` (`logsLink`) and
+      `tests/vitest/actionHandlers.spec.js` (the actionId → route table).
+- [x] 7.3 `src/manifest.json` — the `JobLogs` `config`: six curated columns,
+      `sortKey: created` / `sortOrder: desc`, `pagination.limit: 50`,
+      `rowDetail: true`, plus a `_columnsNote` recording why `level` needs an
+      explicit badge widget, why `executionTime` is in milliseconds, and why
+      there is no `jobId` column.
+- [x] 7.4 `npm test` (231), `npm run check:specs`, `npm run lint`.
+
+## 8. Column-width follow-up (reported after the first pass)
+
+Symptom: `message` rendered several times wider than it needed, while `jobClass`
+and `stackTrace` were squeezed narrow enough that their text overlapped.
+
+- [x] 8.1 Diagnose: `.cn-data-table td` had **no** overflow handling, and the
+      inline `max-width` CnDataTable puts on sized cells is inert under
+      `table-layout: auto` — the browser sizes columns from content. So
+      `message`, the one unsized column, absorbed all slack, and the unbreakable
+      45-char FQCN `OCA\OpenConnector\Action\SynchronizationAction` painted past
+      its cell box into the next column.
+- [x] 8.2 Add an opt-in `fixedLayout` prop to `CnDataTable` (default false)
+      putting `cn-data-table--fixed` on the `<table>`.
+- [x] 8.3 `src/css/table.css`: `.cn-data-table--fixed { table-layout: fixed }`
+      plus `overflow-wrap: anywhere` on its cells, so a value that no longer
+      gets to widen its column wraps instead of overflowing. Cells opting into
+      `white-space: nowrap` (`cn-cell--end`) still win on specificity.
+- [x] 8.4 Forward it through `CnLogsPage` as a `fixedLayout` prop (default
+      false, so the other log pages are untouched).
+- [x] 8.5 Re-express the `JobLogs` widths as percentages summing to 100 —
+      14 / 9 / 38 / 9 / 19 / 11 — with `fixedLayout: true` so they bind exactly.
+      Recorded as a `_widthsNote` in the manifest.
+- [x] 8.6 `tests/components/CnDataTableFixedLayout.spec.js` (5) + a pass-through
+      case in `CnLogsPageSelfFetch.spec.js`; docs for both new props (the props
+      table, a "Column widths" section, and the colocated
+      `src/components/CnDataTable/CnDataTable.md` the styleguide reads);
+      `npx stylelint` clean.
+
+## 9. Page padding follow-up (reported after the second pass)
+
+Symptom: the logs page content ran flush into both edges of the app content area.
+
+- [x] 9.1 Diagnose: `.cn-logs-page` set only `display/flex-direction/gap` and no
+      padding, while `.cn-index-page` (`css/index-page.css`) and
+      `.cn-detail-page` (`css/detail-page.css`) both set
+      `padding: calc(5 * var(--default-grid-baseline))`. The logs page type had
+      simply never picked up the shared convention.
+- [x] 9.2 Apply the same root padding plus `box-sizing: border-box`, and the
+      matching `calc(3 * …)` step at `max-width: 768px` that CnDetailPage uses,
+      so all three page types agree on narrow viewports.
+- [x] 9.3 Re-express the component's remaining raw-pixel gaps/margins in
+      `--default-grid-baseline` multiples (same computed values: 16/8/12px).
+- [x] 9.4 `npx stylelint` + `npx eslint` clean; 34 CnLogsPage tests green.
+
+## 10. Manual verification (browser — user-driven)
+
+See `test-plan.md`. Requires `npm run dev` in **both** repos, the library first:
+OpenConnector imports `dist/esm` through the `node_modules` symlink, not `src`.

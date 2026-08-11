@@ -178,7 +178,10 @@ describe('viewLogsHandler — actionId → route + query', () => {
 	it('maps each known actionId to its destination route', () => {
 		const cases = [
 			['view-endpoint-logs', 'EndpointLogs', 'endpoint'],
-			['view-job-logs', 'JobLogs', 'job'],
+			// `jobId`, not `job`: the query param has to name the field
+			// JobService::saveJobLog() actually writes, or the destination page
+			// filters to nothing.
+			['view-job-logs', 'JobLogs', 'jobId'],
 			['view-synchronization-logs', 'SynchronizationLogs', 'synchronization'],
 			['view-cloud-event-logs', 'CloudEventLogs', 'event'],
 		]

@@ -11,12 +11,24 @@
 /**
  * Route name + query-param key per logs row action.
  *
+ * `queryParam` MUST name the property the log rows are actually WRITTEN with,
+ * not the relation the schema would prefer: CnLogsPage forwards every
+ * non-`_`-prefixed query entry to OpenRegister as a property filter, so a key
+ * the writer never sets simply matches nothing. Hence `jobId` — the field
+ * `JobService::saveJobLog()` persists — rather than the schema's `job`.
+ *
+ * KNOWN MISMATCH: `view-endpoint-logs` and `view-cloud-event-logs` both target
+ * `call_log`, which has neither an `endpoint` nor an `event` property (its FKs
+ * are `sourceId`/`source`, `actionId`, `synchronizationId`/`synchronization`).
+ * Those two therefore still filter to nothing. Left as-is: picking the right
+ * field for each needs its own look at what writes those rows.
+ *
  * @type {{[key: string]: {route: string, queryParam: string}}}
  */
 export const VIEW_LOGS_TARGETS = {
 	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
 	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
-	'view-job-logs': { route: 'JobLogs', queryParam: 'job' },
+	'view-job-logs': { route: 'JobLogs', queryParam: 'jobId' },
 	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronization' },
 	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: 'event' },
 }
