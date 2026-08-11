@@ -60,7 +60,14 @@ test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
 	// tests/e2e/regression/journeys.spec.ts, which drives the dialog to Create
 	// and reads the object back out of OpenRegister.
 	//
-	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-surface
+	// The slug here read `...-creation-surface` for as long as the tag has
+	// existed. No scenario has ever had that slug — the heading in
+	// mapping-and-search/spec.md:35 is "Add Mapping button opens the creation
+	// MODAL". So this anchor resolved to nothing and the scenario counted as
+	// uncovered while a running test sat directly beneath the tag. A tag that
+	// names no scenario is indistinguishable from no tag at all, and nothing
+	// warns about it: gate-19 reports the scenario missing, not the tag dangling.
+	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
 	test('Add Mapping opens the mapping editor modal', async ({ page }) => {
 		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
 		await openAndDismissCreateModal(page, /Add Mapping/i)

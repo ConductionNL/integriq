@@ -45,6 +45,65 @@
 
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
+/*
+ * SCENARIOS THIS FILE PROVES.
+ *
+ * Each tag below was checked by reading the scenario's GIVEN/WHEN/THEN in the
+ * spec and the assertion in this file side by side; a tag is here only when the
+ * assertions establish the scenario's THEN, not merely touch its subject. The
+ * page-mount tags cover the loop at `manifest pages — schema-driven render`,
+ * which drives every manifest route and asserts the shell mounted, that content
+ * rendered inside `#app-content`, and that no console errors fired.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * BEFORE YOU ADD AN @e2e TAG: VERIFY THE TEST BODY, NOT A GREP.
+ *
+ * There is a real technique here — a scenario whose coverage already exists but
+ * is recorded as an `@e2e exclude` instead of an anchor should be anchored, and
+ * that costs no new tests. There is also a way to get it exactly wrong, and the
+ * two look identical from the command line.
+ *
+ * `grep -rl <capability> tests/e2e/` HITTING IS NOT EVIDENCE. A sibling app
+ * applied this technique to a waiver that looked just like the ones below —
+ * reason naming a future action, change archived weeks ago, grep hit present —
+ * and the hit turned out to be an explanatory COMMENT inside a test about
+ * something else. The two waived scenarios had no relevant assertion anywhere.
+ * Anchoring there would have closed a coverage finding by annotating untested
+ * code: the precise defect this gate exists to catch, reproduced by hand.
+ *
+ * The rule: open the test, read its assertions, and satisfy yourself that they
+ * establish the scenario's THEN. If they only touch the subject, or assert
+ * something weaker, leave the finding visible and say why — see the
+ * "NOT tagged here, deliberately" list below, which exists for exactly that.
+ *
+ * The same rule applies in the other direction when auditing an existing
+ * `@e2e exclude`. Reasons that name a path or a `Class::method` are usually
+ * true; pathless ones ("verified by PHPUnit") usually are not, and correcting
+ * them makes the uncovered count RISE. That is the honest outcome, not a
+ * regression — a waiver whose promised test never arrived was hiding the gap,
+ * not filling it.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * @e2e openconnector-app-manifest::manifest-file-present-at-canonical-path
+ * @e2e openconnector-app-manifest::version-field-is-valid-semver
+ * @e2e openconnector-app-manifest::dashboard-page-type-is-dashboard
+ * @e2e openconnector-app-manifest::log-pages-use-type-logs
+ * @e2e openconnector-app-manifest::detail-pages-carry-id-parameter-in-route
+ * @e2e approval-workflow::approvals-list-page-mounts-and-shows-content
+ * @e2e openconnector-comprehensive-tests::endpointsspects-page-loads
+ *
+ * NOT tagged here, deliberately, though this file touches their subject:
+ *   openconnector-app-manifest::schema-field-is-present-and-correct — the
+ *     scenario demands the $schema value EQUAL the full published URL; the
+ *     assertion below only matches the filename suffix.
+ *   flow-orchestration::flows-index-page-mounts-and-lists-flows — the mount is
+ *     proven, but the scenario also requires each flow's name, enabled state
+ *     and last-run status to be shown, which nothing here asserts.
+ *   openconnector-direct-or-usage::dashboard-page-uses-declarative-manifest-widgets-not-the-deleted-controller
+ *     — the manifest type and the mount are proven; that widget counts resolve
+ *     via dataSource blocks against OR's aggregate endpoint is not.
+ */
+
 // In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
 // default for the apache-served dev container) `generateUrl` returns
 // `/apps/openconnector` and the Vue Router's `base` is set to that —
@@ -234,6 +293,17 @@ test.describe('manifest schema validation', () => {
 	}
 
 	test('src/manifest.json validates against v2 schema', async () => {
+		// The canonical path and the parse are asserted EXPLICITLY rather than
+		// left to `readManifest()` throwing. A throw does fail the test, but it
+		// fails it as an error with no statement of intent — and a reader
+		// checking whether "the manifest exists and parses" is covered cannot
+		// see an assertion that isn't written down.
+		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		expect(require('fs').existsSync(manifestPath), `manifest.json must exist at ${manifestPath}`).toBe(true)
+		expect(require('fs').statSync(manifestPath).isFile(), 'manifest.json must be a regular file').toBe(true)
+		expect(() => JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8')),
+			'manifest.json must parse as valid JSON with no syntax errors').not.toThrow()
+
 		const m = readManifest()
 
 		expect(m.$schema, 'manifest declares a $schema URL').toMatch(/app-manifest(-v2)?\.schema\.json$/)
