@@ -586,7 +586,6 @@ class UserService
             if (empty($website) === false) {
                 $additionalInfo['website'] = $website;
             }
-
         }//end try
 
         // Always get custom name fields from core namespace (accessible to other apps).
