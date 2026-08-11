@@ -180,8 +180,12 @@ class ExecutionTracesController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        // PLANT — negative control for the can-fail proof. Reverted in the
-        // next commit.
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'execution-trace.show');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        }
+
         // `find()` returns null for a miss and propagates everything else, so
         // a broken OpenRegister does not arrive here dressed as a 404.
         try {
