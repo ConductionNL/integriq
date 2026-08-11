@@ -1094,7 +1094,8 @@
                         "key": "request.url",
                         "label": "URL",
                         "sortable": false,
-                        "width": "40%"
+                        "width": "40%",
+                        "cellClass": "cn-cell--truncate"
                     },
                     {
                         "key": "response.responseTime",
@@ -2439,7 +2440,8 @@
                         "key": "request.url",
                         "label": "URL",
                         "sortable": false,
-                        "width": "37%"
+                        "width": "37%",
+                        "cellClass": "cn-cell--truncate"
                     },
                     {
                         "key": "response.responseTime",

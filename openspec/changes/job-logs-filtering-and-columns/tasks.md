@@ -201,7 +201,34 @@ Verified every filter against a populated instance before authoring anything —
 - [x] 10.6 Tests updated for the new navigation shape; three new `rowRoute`
       cases in `CnLogsPageRowDetail.spec.js`. Both suites green.
 
-## 11. Manual verification (browser — user-driven)
+## 11. Inline-span overflow follow-up (reported after the third pass)
+
+Symptom: the URL column on `/sources/logs` still ran over the Duration column,
+despite `fixedLayout`. Root cause supplied by the user from DOM inspection —
+the value's `span` measured wider than its `td`.
+
+- [x] 11.1 Diagnose: step 8's `overflow-wrap: anywhere` on the cell was
+      necessary but NOT sufficient. CnCellRenderer wraps every value in an
+      **inline** span, whose box is sized by its own content rather than by the
+      cell, so `overflow-wrap` had nothing to break against and the span simply
+      grew past its column. Step 8's claim that fixed layout alone ended the
+      overlap was therefore wrong — `jobClass` on the job logs page was affected
+      by the same mechanism.
+- [x] 11.2 `.cn-data-table--fixed td > .cn-cell-renderer` → `display: block`
+      + `min-width: 0`, giving the wrapper the column's width so the inherited
+      `overflow-wrap` can act. Fixes wrapping for every fixed-layout table.
+- [x] 11.3 Add a `cn-cell--truncate` cell utility (one line, ellipsis, clipping
+      on the promoted wrapper since `text-overflow` on a `display: table-cell`
+      box is unreliable). For a single unbreakable token, wrapping mid-token
+      over several lines makes every row that tall; the full value stays
+      reachable through the `title` CnCellRenderer already sets.
+- [x] 11.4 Apply `cellClass: "cn-cell--truncate"` to the URL column on
+      SourceLogs and CloudEventLogs.
+- [x] 11.5 Add `class` / `cellClass` to the v1 manifest schema's `$defs.column`
+      (`additionalProperties: false`, so both were unusable there despite
+      CnDataTable supporting them) and document the utility set.
+
+## 12. Manual verification (browser — user-driven)
 
 See `test-plan.md`. Requires `npm run dev` in **both** repos, the library first:
 OpenConnector imports `dist/esm` through the `node_modules` symlink, not `src`.
