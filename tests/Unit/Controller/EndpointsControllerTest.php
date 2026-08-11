@@ -30,152 +30,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * An IRequest whose `$server` map is a REAL property.
- *
- * `IRequest` exposes `$_SERVER` through the magic `@property-read string[]
- * $server`, so a PHPUnit mock has no such property: assigning
- * `$mock->server = […]` creates a dynamic property, which PHP 8.2 deprecates
- * and PHPUnit reports. `preflightedCors()` reads exactly that map, so the
- * cheapest honest double is one that declares it.
- *
- * Every other method is a stub — this controller path touches none of them.
- */
-final class ServerAwareRequestStub implements IRequest
-{
-
-    /**
-     * The $_SERVER-alike map.
-     *
-     * @var array<string, string>
-     */
-    public array $server = [];
-
-    /**
-     * Route parameters.
-     *
-     * @var array<string, string>
-     */
-    public array $urlParams = [];
-
-
-    /**
-     * @param array<string, string> $server The server map to expose.
-     */
-    public function __construct(array $server)
-    {
-        $this->server = $server;
-
-    }//end __construct()
-
-
-    public function getHeader(string $name): string
-    {
-        return '';
-    }
-
-    public function getParam(string $key, $default=null)
-    {
-        return $default;
-    }
-
-    public function getParams(): array
-    {
-        return [];
-    }
-
-    public function getMethod(): string
-    {
-        return 'OPTIONS';
-    }
-
-    public function getUploadedFile(string $key)
-    {
-        return null;
-    }
-
-    public function getEnv(string $key)
-    {
-        return null;
-    }
-
-    public function getCookie(string $key)
-    {
-        return null;
-    }
-
-    public function passesCSRFCheck(): bool
-    {
-        return true;
-    }
-
-    public function passesStrictCookieCheck(): bool
-    {
-        return true;
-    }
-
-    public function passesLaxCookieCheck(): bool
-    {
-        return true;
-    }
-
-    public function getId(): string
-    {
-        return 'test-request-id';
-    }
-
-    public function getRemoteAddress(): string
-    {
-        return '127.0.0.1';
-    }
-
-    public function getServerProtocol(): string
-    {
-        return 'https';
-    }
-
-    public function getHttpProtocol(): string
-    {
-        return 'HTTP/1.1';
-    }
-
-    public function getRequestUri(): string
-    {
-        return '/api/endpoint';
-    }
-
-    public function getRawPathInfo(): string
-    {
-        return '/api/endpoint';
-    }
-
-    public function getPathInfo()
-    {
-        return '/api/endpoint';
-    }
-
-    public function getScriptName(): string
-    {
-        return '/index.php';
-    }
-
-    public function isUserAgent(array $agent): bool
-    {
-        return false;
-    }
-
-    public function getInsecureServerHost(): string
-    {
-        return 'localhost';
-    }
-
-    public function getServerHost(): string
-    {
-        return 'localhost';
-    }
-
-}//end class
-
-/**
  * Wire-contract tests for OPTIONS on the generic endpoint surface.
  *
  * `preflightedCors()` is `#[PublicPage] #[NoCSRFRequired]` — it answers before
@@ -191,13 +45,36 @@ class EndpointsControllerTest extends TestCase
     /**
      * Build the controller with a request reporting the given server vars.
      *
+     * NEVER HAND-IMPLEMENT `IRequest` HERE. The first version of this file
+     * declared a `ServerAwareRequestStub implements IRequest` so that `$server`
+     * could be a real property rather than a dynamic one. It passed locally and
+     * killed every PHPUnit leg in CI with
+     *
+     *   PHP Fatal error: Class ServerAwareRequestStub contains 2 abstract
+     *   methods … (OCP\IRequest::throwDecodingExceptionIfAny,
+     *   OCP\IRequest::getFormat)
+     *
+     * because the two environments do not agree on what `IRequest` IS: locally
+     * the interface comes from the pinned `vendor/nextcloud/ocp` (21 methods),
+     * in CI it comes from the real Nextcloud server the tests run inside (23).
+     * Any hand-written implementation of a framework interface is pinned to one
+     * of those and fatals against the other. A PHPUnit mock reflects whichever
+     * interface is actually loaded, so it is correct in both.
+     *
+     * The cost is that `$server` is a MAGIC property
+     * (`@property-read string[] $server`), so assigning it to a mock creates a
+     * dynamic property and PHP 8.2+ emits a deprecation. That is a notice, not
+     * a failure — `phpunit-unit.xml` sets `failOnDeprecation="false"` — and it
+     * is the right trade against a fatal.
+     *
      * @param array<string, string> $server The $_SERVER-alike map the request exposes.
      *
      * @return EndpointsController
      */
     private function buildController(array $server): EndpointsController
     {
-        $request = new ServerAwareRequestStub($server);
+        $request = $this->createMock(IRequest::class);
+        $request->server = $server;
 
         return new EndpointsController(
             'openconnector',
@@ -218,7 +95,8 @@ class EndpointsControllerTest extends TestCase
      *
      * {@see \OCP\AppFramework\Http\Response::getHeaders()} merges in a live
      * `\OC::$server`-resolved IRequest, which does not exist in a standalone
-     * unit-test environment.
+     * unit-test environment. The same helper is used by
+     * EndpointServiceTierPolicyTest for the same reason.
      *
      * @param Response $response The response to inspect.
      *
