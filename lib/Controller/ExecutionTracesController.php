@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ExecutionTraceService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -30,6 +31,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -37,9 +39,18 @@ use OCP\IUserSession;
 /**
  * Controller for the execution_trace observability capability.
  *
- * Auth posture (`@NoAdminRequired` + `@NoCSRFRequired`) mirrors the
- * existing `LogsController`/`SourcesController` convention observed in this
- * codebase — documented, not re-litigated by this change (tasks.md Task 10).
+ * Auth posture: `#[NoAdminRequired]` + `#[NoCSRFRequired]` at the route layer,
+ * with the authorization decision delegated to `ActionAuthService` (ADR-023)
+ * per method.
+ *
+ * ⚠️ The comment this replaced said the posture "mirrors the existing
+ * `LogsController`/`SourcesController` convention … documented, not
+ * re-litigated". What it actually mirrored was `LogsController`'s *missing*
+ * guard: an authentication check and nothing else. A trace carries the full
+ * ordered `steps` array of somebody's integration run — every request and
+ * response payload that crossed that connector — and `replay(force: true)`
+ * re-executes it for real. Both were reachable by any authenticated account
+ * with a substituted id.
  *
  * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
  */
@@ -53,6 +64,7 @@ class ExecutionTracesController extends Controller
      * @param ExecutionTraceService $executionTraceService Trace assembly/persistence/replay service.
      * @param IL10N                 $l                     The localization service.
      * @param IUserSession          $userSession           The user session.
+     * @param ActionAuthService     $actionAuth            The ADR-023 action authorization service.
      */
     public function __construct(
         string $appName,
@@ -60,6 +72,7 @@ class ExecutionTracesController extends Controller
         private readonly ExecutionTraceService $executionTraceService,
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -92,8 +105,15 @@ class ExecutionTracesController extends Controller
         ?string $dateFrom=null,
         ?string $dateTo=null
     ): JSONResponse {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'execution-trace.index');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         $filters = [];
@@ -155,8 +175,15 @@ class ExecutionTracesController extends Controller
     #[NoCSRFRequired]
     public function show(string $id): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'execution-trace.show');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         // `find()` returns null for a miss and propagates everything else, so
@@ -197,6 +224,12 @@ class ExecutionTracesController extends Controller
         $user = $this->userSession->getUser();
         if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'execution-trace.replay');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         $force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);

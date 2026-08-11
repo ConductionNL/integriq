@@ -312,12 +312,18 @@ return [
 		['name' => 'syncDeadLetter#replay', 'url' => '/api/sync-dead-letter/{id}/replay', 'verb' => 'POST'],
 		['name' => 'syncDeadLetter#discard', 'url' => '/api/sync-dead-letter/{id}/discard', 'verb' => 'POST'],
 
-		// Logs endpoints (LogsController — synchronization_log schema)
+		// Logs endpoints (LogsController — synchronization_log schema).
+		// Static routes MUST precede the {id} wildcard, the same convention the
+		// execution-traces block below states explicitly. They did not: with
+		// `logs#show` registered first, `GET /api/logs/statistics` and
+		// `GET /api/logs/export` were matched as `show(id: 'statistics')` and
+		// `show(id: 'export')` and answered `404 {"error":"Log not found"}`.
+		// Both endpoints were unreachable in every deployment.
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
-		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
-		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
 		['name' => 'logs#statistics', 'url' => '/api/logs/statistics', 'verb' => 'GET'],
 		['name' => 'logs#export', 'url' => '/api/logs/export', 'verb' => 'GET'],
+		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
+		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
 
 		// Execution traces endpoints (ExecutionTracesController — execution_trace
 		// schema; execution-trace-observability). Static routes registered
