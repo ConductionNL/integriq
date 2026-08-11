@@ -282,12 +282,8 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        try {
-            $this->actionAuth->requireAction(user: $user, action: 'log.destroy');
-        } catch (OCSForbiddenException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        }
-
+        // PLANT — negative control for the can-fail proof. Reverted in the
+        // next commit.
         // Both calls throw DoesNotExistException rather than only returning
         // null — including deleteObject(), which can lose a race with a
         // concurrent delete between the read above and the write below. Either
