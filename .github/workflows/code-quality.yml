@@ -108,13 +108,19 @@ jobs:
       #   [hydra-gates] COVERAGE: 63 of 64 declared gates reported a result
       #   (1 not applicable to this repo/diff; 63 of 63 applicable gates ran).
       #
-      # ZERO structural skips, ZERO wiring skips. The single not-applicable is
-      # gate-33 axe-core, which declares itself so because this caller has not
-      # set `enable-axe` — a choice recorded a few lines below, not a gap. `na`
-      # does not count against coverage, so the requirement is satisfied.
+      # ZERO structural skips, ZERO wiring skips. The single not-applicable was
+      # gate-33 axe-core, which declared itself so because this caller had not
+      # set `enable-axe`.
       #
-      # Gates 4 and 33 were never starved by a producer this repo declines to
-      # switch on; they declare themselves not applicable. And gate-24
+      # THAT IS NO LONGER TRUE: `enable-axe: true` is set below, against a
+      # local measurement of 0 violations on the app's routes. gate-33 now
+      # reports a real verdict here instead of `na`, so expect the coverage
+      # line to read 64 of 64 rather than 63 of 64. If it does not — if
+      # gate-33 comes back `na` or the job fails at the report handoff — that
+      # is a wiring problem to read, not a number to re-normalise.
+      #
+      # Gate 4 was never starved by a producer this repo declines to switch
+      # on; it declares itself not applicable. And gate-24
       # integration-parity — named by the first version of this comment as the
       # real gap, which it then was — now PASSES: `scripts/check-integration-
       # parity.sh` landed on `development` after this PR was opened, so the
@@ -280,9 +286,51 @@ jobs:
       # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
       # refused with exit 99 (permanently red). The scope is now
       # `github.event.before...HEAD`, what the push actually changed.
-      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
-      # reports serious/critical violations on core's OWN routes that DOM
-      # scoping does not remove. Enabling axe is a separate decision.
+      # ── axe-core (gate-33) ───────────────────────────────────────────────
+      # `enable-axe` used to be deliberately unset here, on the grounds that a
+      # vanilla Nextcloud 34 reports serious/critical violations on core's OWN
+      # routes that DOM scoping does not remove. That reasoning is now out of
+      # date in the part that mattered: `axe-include-selector` defaults to
+      # `#content-vue, #content`, which scopes the analysis to the app's own
+      # rendered DOM, and the runner proves on every run that the scope is a
+      # SCOPE and not a MUTE (it injects a violation inside the container and
+      # asserts it is reported, and one outside and asserts it is not).
+      #
+      # So this is turned on against a MEASUREMENT, not a hope. Run locally
+      # with the canonical runner (ConductionNL/.github@main b8c7ead,
+      # @axe-core/playwright 4.12.1) against a dedicated Nextcloud 34 with
+      # openregister + openconnector installed and the register seeded:
+      #
+      #   /index.php/apps/openconnector/          HTTP 200  passes=19  violations=0
+      #   /index.php/apps/openconnector/#/sources HTTP 200  passes=17  violations=0
+      #
+      # with `axe self-test OK` and `axe scope control OK` on both. Zero
+      # violations at any impact, so zero serious/critical — gate-33 has
+      # nothing to fail on today.
+      enable-axe: true
+      # ONE ROUTE, AND THAT IS A RUNNER DEFECT, NOT A CHOICE — see
+      # ConductionNL/.github#351.
+      #
+      # `axe-run.cjs` treats a null `page.goto()` response as HTTP 0 and dies.
+      # A fragment-only navigation returns null because no document is fetched,
+      # so for a hash-routed SPA — which this app is (`createWebHashHistory()`)
+      # — every route after the first one shares a document with it and is
+      # reported as `returned HTTP 0. … Set the axe-routes input to routes this
+      # app actually serves.` The route is served fine; only its POSITION in
+      # the list decides. Proven both ways on the same instance: `#/sources`
+      # listed FIRST analysed cleanly at HTTP 200; the SAME route listed after
+      # the app root killed the run with exit 2 and wrote no report at all.
+      #
+      # That is the trap in this input: the error blames the caller, so the
+      # obvious response is to delete routes until it goes green, which
+      # silently narrows accessibility coverage to the landing page and reads
+      # as a config fix. Recording it here so the next person widens the list
+      # by fixing #351 rather than by guessing.
+      #
+      # Until #351 lands this is the app root only. It is a real verdict on a
+      # real page — gate-33 has reported SKIPPED in this repo since it was
+      # written — but it is one page, not the app.
+      axe-routes: "/index.php/apps/openconnector/"
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
