@@ -760,7 +760,10 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/source'),
-					{ params: { limit: 500 } },
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = response.data
 				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])

@@ -112,12 +112,52 @@ jobs:
       # gate-33 axe-core, which declared itself so because this caller had not
       # set `enable-axe`.
       #
-      # THAT IS NO LONGER TRUE: `enable-axe: true` is set below, against a
-      # local measurement of 0 violations on the app's routes. gate-33 now
-      # reports a real verdict here instead of `na`, so expect the coverage
-      # line to read 64 of 64 rather than 63 of 64. If it does not — if
-      # gate-33 comes back `na` or the job fails at the report handoff — that
-      # is a wiring problem to read, not a number to re-normalise.
+      # THAT IS NO LONGER TRUE: `enable-axe: true` is set below, and gate-33
+      # now reports a real verdict instead of `na`. CONFIRMED IN CI on the PR
+      # that turned it on (#1211, job 93785212530):
+      #
+      #   [gate-33] axe-core: PASS
+      #   [hydra-gates] gate-33 axe-core: report read — 0 violation(s)
+      #                 present, 0 serious/critical. A PASS here is a PASS
+      #                 over that number, not over silence.
+      #
+      # "report read" is the part that matters: the report survived the
+      # provenance check rather than being rejected and deleted, which is the
+      # failure mode where gate-33 goes back to skipping loudly.
+      #
+      # DO NOT READ THE COVERAGE LINE AS A CONSTANT. An earlier draft of this
+      # comment predicted it would move from `63 of 64` to `64 of 64`. That
+      # was wrong, and wrong in the way this fleet keeps getting caught by:
+      # the count is a function of the DIFF, not of the repo. The same run
+      # that produced the PASS above printed
+      #
+      #   [hydra-gates] COVERAGE: 28 of 64 declared gates reported a result
+      #   (36 not applicable to this repo/diff; 28 of 28 applicable gates ran).
+      #
+      # because a two-file PR gives 36 gates no subject matter. The `63 of 64`
+      # figure quoted higher up came from a FULL-SCOPE run. Compare like with
+      # like or the number means nothing. What is genuinely comparable is that
+      # gate-33 is now inside the applicable set in both scopes instead of
+      # declaring itself `na`.
+      #
+      # ⚠️ AND THE SAME CAVEAT NOW APPLIES TO A GATE THAT PRINTS `PASS`.
+      # gate-16 spec-coverage takes its base from `HYDRA_GATE_BASE_REF` and
+      # the runner never supplies one on `--full`, so a full-scope run ON
+      # `development` diffs the branch against itself, inspects nothing, and
+      # prints PASS — a PASS that COUNTS toward "N of N applicable gates ran"
+      # (ConductionNL/.github#361; fix open as #364). Measured here on
+      # `development` @7c1d9c6d with the canonical package @81c8c97, changing
+      # ONLY the base:
+      #
+      #   base origin/development (= what CI's --full run uses) -> count=0
+      #   base origin/beta                                      -> count=0
+      #   base origin/main                                      -> count=30
+      #   --mode report (whole tree, no diff at all)            -> 30
+      #
+      # A committed, untagged public method planted in lib/Service and a
+      # matching Vue method moved every one of those numbers by exactly +2 and
+      # named both plants, so the zeros above are real zeros and not a dead
+      # gate. openconnector's genuine gate-16 debt is 30 methods, all backend.
       #
       # Gate 4 was never starved by a producer this repo declines to switch
       # on; it declares itself not applicable. And gate-24

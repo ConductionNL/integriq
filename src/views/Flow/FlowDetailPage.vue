@@ -497,10 +497,22 @@ export default {
 		async fetchPickerOptions() {
 			this.optionsLoading = true
 			try {
+				// `_limit`, NOT `limit`. OpenRegister's object API treats every
+				// UNPREFIXED query parameter as a PROPERTY FILTER, so `limit=500`
+				// asks for objects whose `limit` property equals 500 — of which
+				// there are none. It answers HTTP 200 with `total: 0`, which is
+				// indistinguishable from an empty register, and every picker on
+				// this page rendered "No results" against 20 real mappings and
+				// 23 real sources. OpenRegister even returns the diagnosis in the
+				// response envelope and nothing was reading it:
+				//   "@self": { "ignoredFilters": ["limit"], "hint": "Query
+				//     returned 0 results because limit was treated as a property
+				//     filter. Did you mean _limit? Control params require
+				//     underscore prefix." }
 				const [sources, mappings, synchronizations] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/source'), { params: { limit: 500 } }),
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/mapping'), { params: { limit: 500 } }),
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/synchronization'), { params: { limit: 500 } }),
+					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/source'), { params: { _limit: 500 } }),
+					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/mapping'), { params: { _limit: 500 } }),
+					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/synchronization'), { params: { _limit: 500 } }),
 				])
 				this.sourceOptions = this.toOptions(sources.data)
 				this.mappingOptions = this.toOptions(mappings.data)

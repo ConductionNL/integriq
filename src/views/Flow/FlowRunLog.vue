@@ -98,7 +98,12 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/flow_run'),
-					{ params: { flowId: this.flowId, limit: 50, _sort: '-startedAt' } },
+					// `flowId` IS meant to be a property filter and `_sort` was
+					// already correctly prefixed; `limit` was not, so it became
+					// a SECOND property filter and this list returned `total: 0`
+					// for every flow — "No runs yet" on a flow that had run.
+					// See FlowDetailPage.fetchPickerOptions().
+					{ params: { flowId: this.flowId, _limit: 50, _sort: '-startedAt' } },
 				)
 				const data = response.data
 				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
@@ -144,7 +149,8 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/flow_run_log'),
-					{ params: { flowRunId: runId, limit: 200, _sort: 'stepOrder' } },
+					// Same as fetchRuns above: `_limit`, not `limit`.
+					{ params: { flowRunId: runId, _limit: 200, _sort: 'stepOrder' } },
 				)
 				const data = response.data
 				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])

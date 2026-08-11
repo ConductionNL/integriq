@@ -330,7 +330,10 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/endpoint'),
-					{ params: { limit: 500 } },
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = res.data
 				this.endpoints = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
@@ -359,7 +362,11 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/api_product_subscription'),
-					{ params: { product: this.productId, limit: 100 } },
+					// `product` IS meant to be a property filter; `_limit` is a
+					// CONTROL param and needs the underscore. Written as `limit`
+					// it became a second property filter and this list was
+					// always empty. See FlowDetailPage.fetchPickerOptions().
+					{ params: { product: this.productId, _limit: 100 } },
 				)
 				const data = res.data
 				this.subscriptions = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
