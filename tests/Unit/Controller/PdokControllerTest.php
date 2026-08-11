@@ -114,6 +114,102 @@ class PdokControllerTest extends TestCase
 
 
     /**
+     * Missing `q` on free-text search returns 400 with the documented envelope.
+     *
+     * @return void
+     */
+    public function testFreeMissingQueryReturns400(): void
+    {
+        $response = $this->makeController()->freeAction('');
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $body = $response->getData();
+        $this->assertSame('missing_query', $body['error']);
+        $this->assertSame('pdok.error.missing_query', $body['message_key']);
+
+    }//end testFreeMissingQueryReturns400()
+
+
+    /**
+     * A whitespace-only `q` is a missing query, not a search for spaces.
+     *
+     * `trim($q) === ''` is the actual guard; asserting only against `''` would
+     * pass against a `$q === ''` implementation that then forwards `'   '` to
+     * PDOK as a live query.
+     *
+     * @return void
+     */
+    public function testFreeWhitespaceOnlyQueryReturns400(): void
+    {
+        $connector = $this->createMock(PdokConnector::class);
+        $connector->expects($this->never())->method('free');
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testadmin');
+
+        $response = $this->buildController($connector, $user, true)->freeAction('   ');
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertSame('missing_query', $response->getData()['error']);
+
+    }//end testFreeWhitespaceOnlyQueryReturns400()
+
+
+    /**
+     * A valid free-text search returns 200 with the connector payload, and the
+     * paging arguments reach the connector unchanged.
+     *
+     * The paging assertion is the one worth having: `rows`/`start` arriving
+     * transposed or dropped produces a plausible-looking 200 on every call
+     * while every page after the first is wrong.
+     *
+     * @return void
+     */
+    public function testFreeForwardsQueryAndPagingToTheConnector(): void
+    {
+        $payload = ['docs' => [['pdokId' => 'free-1']], 'numFound' => 1];
+
+        $captured  = [];
+        $connector = $this->createMock(PdokConnector::class);
+        $connector->method('free')->willReturnCallback(
+            function (string $q, int $rows, int $start) use (&$captured, $payload) {
+                $captured = ['q' => $q, 'rows' => $rows, 'start' => $start];
+                return $payload;
+            }
+        );
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testadmin');
+
+        $response = $this->buildController($connector, $user, true)
+            ->freeAction('Lauriergracht 4', 25, 50);
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame($payload, $response->getData());
+        $this->assertSame(['q' => 'Lauriergracht 4', 'rows' => 25, 'start' => 50], $captured);
+
+    }//end testFreeForwardsQueryAndPagingToTheConnector()
+
+
+    /**
+     * The endpoint is `#[NoAdminRequired]`; an anonymous caller gets 401 and
+     * the connector is never reached.
+     *
+     * @return void
+     */
+    public function testFreeReturns401WhenNotAuthenticated(): void
+    {
+        $connector = $this->createMock(PdokConnector::class);
+        $connector->expects($this->never())->method('free');
+
+        $response = $this->buildController($connector, null, false)->freeAction('Lauriergracht');
+
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testFreeReturns401WhenNotAuthenticated()
+
+
+    /**
      * Build a controller with a permissive default connector mock and an
      * admin-flagged test user so all action-auth checks pass.
      *

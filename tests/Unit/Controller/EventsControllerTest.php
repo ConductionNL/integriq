@@ -403,4 +403,192 @@ class EventsControllerTest extends TestCase
         $this->assertTrue($ncRow['nextcloudEvent']);
         $this->assertFalse($orRow['nextcloudEvent']);
     }//end testDeadLetterIndexProvenanceUsesSourceNotType()
+
+
+    // -----------------------------------------------------------------------
+    // messages() — GET /api/events/{id}/messages
+    // -----------------------------------------------------------------------
+
+
+    /**
+     * The wire contract: the event and its messages come back together, and
+     * the message query is narrowed to THAT event.
+     *
+     * The filter assertion is the load-bearing one. `findAll()` with a filter
+     * that failed to pin `event` would return every message in the register
+     * while the response shape stayed identical — a cross-tenant leak that a
+     * "returns 200 with a messages key" assertion cannot see.
+     *
+     * @return void
+     */
+    public function testMessagesReturnsTheEventWithItsOwnMessagesOnly(): void
+    {
+        $event = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'order.created'], 'event-uuid-1');
+        $this->orObjectService->method('find')->willReturn($event);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $captured = null;
+        $this->orObjectService->method('findAll')->willReturnCallback(
+            function (array $config) use (&$captured) {
+                $captured = $config;
+                return ['results' => [['id' => 'msg-1']], 'total' => 1];
+            }
+        );
+
+        $response = $this->controller->messages(42);
+        $data     = $response->getData();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame('order.created', $data['event']['name']);
+        $this->assertSame([['id' => 'msg-1']], $data['messages']);
+
+        $this->assertSame('openconnector', $captured['filters']['register']);
+        $this->assertSame('event_message', $captured['filters']['schema']);
+        $this->assertSame(
+            'event-uuid-1',
+            $captured['filters']['event'],
+            'messages() must pin the message query to the requested event; an unpinned filter returns every message in the register'
+        );
+    }//end testMessagesReturnsTheEventWithItsOwnMessagesOnly()
+
+
+    /**
+     * An unknown event id is a 404, not a 200 with an empty list.
+     *
+     * @return void
+     */
+    public function testMessagesReturns404WhenTheEventDoesNotExist(): void
+    {
+        $this->orObjectService->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('missing'));
+
+        $response = $this->controller->messages(999);
+
+        $this->assertSame(404, $response->getStatus());
+        $this->assertArrayHasKey('error', $response->getData());
+    }//end testMessagesReturns404WhenTheEventDoesNotExist()
+
+
+    /**
+     * The endpoint is `#[NoAdminRequired]`, so ADR-023 action authorization is
+     * the ONLY thing standing between any authenticated user and another
+     * user's event messages. Assert the action is actually demanded, and by
+     * its exact name — a typo'd action name resolves to no rule and the check
+     * silently passes.
+     *
+     * @return void
+     */
+    public function testMessagesDemandsTheEventMessagesAction(): void
+    {
+        $event = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'order.created'], 'event-uuid-1');
+        $this->orObjectService->method('find')->willReturn($event);
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $this->actionAuth->expects($this->once())
+            ->method('requireAction')
+            ->with($this->anything(), 'event.messages');
+
+        $this->controller->messages(42);
+    }//end testMessagesDemandsTheEventMessagesAction()
+
+
+    // -----------------------------------------------------------------------
+    // subscriptionMessages() — GET /api/events/subscriptions/{id}/messages
+    // -----------------------------------------------------------------------
+
+
+    /**
+     * The wire contract, plus the redaction that makes it safe to serve.
+     *
+     * A subscription carries its webhook `signingSecret`. Returning it verbatim
+     * would hand any caller who can read a subscription the key needed to forge
+     * signed deliveries, so redaction is part of this endpoint's contract and
+     * not a cosmetic detail.
+     *
+     * @return void
+     */
+    public function testSubscriptionMessagesRedactsSigningSecretsAndPinsTheQuery(): void
+    {
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'name'             => 'webhook-1',
+                'protocolSettings' => [
+                    'signingSecret'         => 's3cr3t-current',
+                    'previousSigningSecret' => 's3cr3t-previous',
+                ],
+            ],
+            'sub-uuid-1'
+        );
+        $this->orObjectService->method('find')->willReturn($subscription);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $captured = null;
+        $this->orObjectService->method('findAll')->willReturnCallback(
+            function (array $config) use (&$captured) {
+                $captured = $config;
+                return ['results' => [['id' => 'msg-9']], 'total' => 1];
+            }
+        );
+
+        $response = $this->controller->subscriptionMessages('sub-uuid-1');
+        $data     = $response->getData();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame([['id' => 'msg-9']], $data['messages']);
+
+        $settings = $data['subscription']['protocolSettings'];
+        $this->assertSame('**********', $settings['signingSecret']);
+        $this->assertSame('**********', $settings['previousSigningSecret']);
+        $this->assertStringNotContainsString(
+            's3cr3t',
+            json_encode($data),
+            'no signing secret may appear anywhere in the serialised response'
+        );
+
+        $this->assertSame('event_message', $captured['filters']['schema']);
+        $this->assertSame(
+            'sub-uuid-1',
+            $captured['filters']['subscription'],
+            'subscriptionMessages() must pin the message query to the requested subscription'
+        );
+    }//end testSubscriptionMessagesRedactsSigningSecretsAndPinsTheQuery()
+
+
+    /**
+     * An unknown subscription id is a 404.
+     *
+     * @return void
+     */
+    public function testSubscriptionMessagesReturns404WhenTheSubscriptionDoesNotExist(): void
+    {
+        $this->orObjectService->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('missing'));
+
+        $response = $this->controller->subscriptionMessages('nope');
+
+        $this->assertSame(404, $response->getStatus());
+        $this->assertArrayHasKey('error', $response->getData());
+    }//end testSubscriptionMessagesReturns404WhenTheSubscriptionDoesNotExist()
+
+
+    /**
+     * ADR-023 action authorization is demanded, by its exact name.
+     *
+     * @return void
+     */
+    public function testSubscriptionMessagesDemandsTheSubscriptionMessagesAction(): void
+    {
+        $subscription = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'webhook-1'], 'sub-uuid-1');
+        $this->orObjectService->method('find')->willReturn($subscription);
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $this->actionAuth->expects($this->once())
+            ->method('requireAction')
+            ->with($this->anything(), 'event.subscription-messages');
+
+        $this->controller->subscriptionMessages('sub-uuid-1');
+    }//end testSubscriptionMessagesDemandsTheSubscriptionMessagesAction()
 }//end class
