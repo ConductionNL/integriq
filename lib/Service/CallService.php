@@ -839,6 +839,21 @@ class CallService
             $config = array_merge_recursive($config, $this->applyConfigDot(config: $sourceData['configuration']));
         }
 
+        // The source's own `headers` column, which until now was write-only in
+        // practice: the schema exposes it, the editor saves it, and nothing ever
+        // read it. A source configured with an Authorization header there looked
+        // correct on every screen while every call it made came back 401 —
+        // measured against the Nextcloud notifications endpoint, where the same
+        // header under `configuration.headers` worked immediately.
+        //
+        // Merged BENEATH what is already set, not over it: `configuration` and
+        // the per-call config are the more specific statements, and a source
+        // default must not overwrite the header a caller deliberately passed.
+        $sourceHeaders = ($sourceData['headers'] ?? null);
+        if (is_array($sourceHeaders) === true && $sourceHeaders !== []) {
+            $config['headers'] = array_merge($sourceHeaders, ($config['headers'] ?? []));
+        }
+
         return $config;
 
     }//end mergeSourceConfiguration()
