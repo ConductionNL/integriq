@@ -100,11 +100,18 @@ remaining log pages by `CnLogsPage` forwarding the loaded schema to
 
 Every param was verified against a populated instance rather than inferred from
 the schema — `total` per filter: `source` 11 of 15, `endpoint` 0 of 0 (correct;
-no inbound rows exist yet), `jobId` 3 of 5, `synchronization` 0 of 10 (broken),
-`event` 0 of 15 (broken). The two broken ones now carry `queryParam: null`.
+no inbound rows exist yet), `jobId` 3 of 5, `synchronization` 0 of 10, `event`
+0 of 15.
 
-Both are blocked backend-side, not in this layer:
-`SynchronizationLogService::normalize()` drops `synchronizationId` before the
-insert, so no `synchronization_log` row links to its synchronization; and
-`call_log` declares no event property at all. Requirement 1 is satisfied by
-navigating unfiltered until each writer persists a usable field.
+The synchronization case turned out to be a backend defect rather than a
+UI-layer one and was fixed at source: OpenRegister returns an object's
+identifier as `id` and exposes no top-level `uuid`, so
+`SynchronizationService`'s three `$synchronization['uuid']` reads all resolved
+to null — the run-log FK (stripped by `normalize()`, since it drops nulls), a
+sync trace's `entryPointId`, and the HITL approval gate's key. With the FK
+persisted, `view-synchronization-logs` uses `queryParam: 'synchronizationId'`.
+Rows written before the fix keep no link and stay unattributable.
+
+`event` remains `queryParam: null` — `call_log` declares no event property at
+all, so requirement 1 is satisfied there by navigating unfiltered until a
+usable field exists.

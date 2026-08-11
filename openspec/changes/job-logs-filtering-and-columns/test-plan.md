@@ -80,16 +80,28 @@ Specs that carry this change:
    - `/endpoints/logs` — expect the columns to render but **no rows**:
      `EndpointsController::logs()` is not wired to `call_log` yet. An empty
      table with correct headers is the pass condition.
-   - `/synchronizations/logs` — reached from a Synchronization row action, which
-     now navigates **unfiltered** by design. Expect all 10 rows, Time resolving
-     via the `@self` fallback, and the Found / Invalid counters read out of the
-     nested `result.objects` bag. A row click opens the dialog showing the full
-     timing/deletion-guard payload.
+   - `/synchronizations/logs` — reached from a Synchronization row action as
+     `?synchronizationId=<uuid>`. **Run a synchronization first**: rows written
+     before the backend fix carry no FK and will not appear under the filter.
+     A fresh run should. Expect Time resolving via the `@self` fallback and the
+     Found / Invalid counters read out of the nested `result.objects` bag; a row
+     click opens the dialog with the full timing/deletion-guard payload.
+     Drop the query param to see the older, unattributable rows.
    - `/cloud-events/logs` — likewise unfiltered; expect every call listed.
    - `/traces` — expect Started / Entry point / Status / Triggered by / Duration
      / Steps (`100 steps`, or `—` where the array is absent) / Dry run, and a row
      click that **navigates to `/traces/:id`** rather than opening a dialog.
      This is the `rowRoute` path replacing the old dead `detailRoute`.
+     After running a synchronization, a new `sync` trace should now carry an
+     `entryPointId` — previously only `job` traces did.
+
+### PHP
+
+`npm run test:unit` cannot run in a `--no-dev` checkout: the
+`OCA\OpenConnector\Tests\` namespace is missing from the autoloader and every
+test in `SynchronizationServiceTest.php` errors on the `ObjectServiceMockBuilder`
+helper — the pre-existing ones included. Run it where dev dependencies are
+installed; the two new run-log FK regression tests have not executed locally.
 8. **Console clean on all six pages.** `tests/e2e/regression/manifest-pages.spec.ts`
    gates on `console.error`, so any new error fails CI.
 

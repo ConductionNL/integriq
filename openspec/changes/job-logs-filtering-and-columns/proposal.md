@@ -127,22 +127,36 @@ component, so defects 1 and 2 had to be fixed upstream in the shared
   plus `sortKey: created` / `sortOrder: desc`, `pagination.limit: 50`,
   `rowDetail: true` and `fixedLayout: true`.
 
-## Deliberately not in scope — needs a backend change
+### Backend — the synchronization FK that was never persisted
 
-Two log surfaces cannot be scoped to their parent from the UI at all, and both
-are recorded in `handlers/logTargets.js` with the evidence:
+Tracing *why* the FK was null turned up a single root cause with three symptoms:
+**OpenRegister returns an object's identifier as `id`** (mirrored on `@self.id`)
+and exposes no top-level `uuid`. Three call sites in `SynchronizationService`
+read `$synchronization['uuid']` alone, so all three silently resolved to null:
 
-- **Synchronization logs carry no FK.** `SynchronizationRunLog::toArray()`
-  includes `synchronizationId`, but it is null by the time
-  `SynchronizationLogService::normalize()` runs and is dropped before the
-  insert. Every one of the 10 stored rows on the reference instance is
-  unattributable. Restore `queryParam: 'synchronization'` once the writer
-  persists it.
-- **`call_log` has no event FK.** Nothing declares or writes one, so cloud-event
-  logging needs a field — or its own schema, `event_message` being the likely
-  candidate — before `CloudEventLogs` can be scoped.
+- **`:2345`** — the run-log payload's `synchronizationId`. Null, and
+  `SynchronizationLogService::normalize()` strips nulls, so the key never
+  reached the row: every stored `synchronization_log` was unattributable and the
+  logs page had nothing to filter on.
+- **`:2325`** — a sync-entryPoint execution trace's `entryPointId`. Confirmed
+  against live data: all 5 `sync` traces stored without one, all 5 `job` traces
+  with one. This is the "some fields have data, others don't" on the Traces page.
+- **`:1735`** — the batch HITL approval gate, which looked up and suspended
+  against an empty synchronization id.
 
-Also out of scope:
+All three now read `['id'] ?? ['uuid'] ?? null`. (`:475` reads `['uuid']` too but
+already falls back to `$object['id']`, so it was left alone.) With the FK
+persisted, `view-synchronization-logs` regains `queryParam: 'synchronizationId'`.
+
+Existing rows are not recoverable — the fix applies to newly written logs and
+traces only.
+
+## Deliberately not in scope
+
+- **`call_log` has no event FK.** Nothing declares or writes one, so
+  `view-cloud-event-logs` keeps `queryParam: null` and lists everything.
+  Cloud-event logging needs a field — or its own schema, `event_message` being
+  the likely candidate — before it can be scoped.
 
 - **Endpoint logs have no data.** `EndpointsController::logs()` still returns a
   hard-coded empty result and is not wired to `call_log`; only

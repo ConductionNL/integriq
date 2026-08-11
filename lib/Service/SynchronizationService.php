@@ -1732,7 +1732,11 @@ class SynchronizationService
             // batch via a single approval_request, not per object
             // (design.md Decision 6).
             if ($isTest === false && (bool) ($sourceConfig['requiresApproval'] ?? false) === true) {
-                $synchronizationId = (string) ($synchronization['uuid'] ?? '');
+                // `id` first — see the entryPointId note above: OpenRegister
+                // exposes no top-level `uuid`, so this resolved to '' and the
+                // approval gate looked up (and suspended against) an empty
+                // synchronization id.
+                $synchronizationId = (string) ($synchronization['id'] ?? $synchronization['uuid'] ?? '');
 
                 $gatedApprovalRequest = $this->resolveApprovalForSynchronization(
                     synchronizationId: $synchronizationId,
@@ -2322,7 +2326,11 @@ class SynchronizationService
         if ($ownsTrace === true) {
             $trace = new ExecutionTraceContext(
                 entryPoint: 'sync',
-                entryPointId: ($synchronization['uuid'] ?? null),
+                // `id` first: OpenRegister returns an object's identifier as
+                // `id` (mirrored on `@self.id`) and does NOT expose a top-level
+                // `uuid`, so reading `uuid` alone always yielded null and every
+                // sync-entryPoint trace was stored without an entryPointId.
+                entryPointId: ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
                 triggeredBy: 'manual'
             );
         }
@@ -2342,7 +2350,14 @@ class SynchronizationService
 
         // Prepare initial log array.
         $log = [
-            'synchronizationId' => ($synchronization['uuid'] ?? null),
+            // `id` first: OpenRegister returns an object's identifier as `id`
+            // (mirrored on `@self.id`) and does NOT expose a top-level `uuid`,
+            // so reading `uuid` alone always yielded null — and
+            // SynchronizationLogService::normalize() strips nulls, so the FK
+            // never reached the row. Every stored synchronization_log was
+            // therefore unattributable, and the "View logs" row action had no
+            // field to scope by.
+            'synchronizationId' => ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
             'result'            => [
                 'objects'   => [
                     'found'   => 0,

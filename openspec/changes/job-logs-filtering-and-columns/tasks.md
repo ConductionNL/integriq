@@ -228,7 +228,50 @@ the value's `span` measured wider than its `td`.
       (`additionalProperties: false`, so both were unusable there despite
       CnDataTable supporting them) and document the utility set.
 
-## 12. Manual verification (browser — user-driven)
+## 12. Backend fix — the synchronization FK that was never persisted
+
+Root cause, traced after the UI workaround shipped: **OpenRegister returns an
+object's identifier as `id`** (mirrored on `@self.id`) and exposes **no**
+top-level `uuid`. Verified against a live synchronization object — its keys are
+`id, name, description, version, sourceId, …` with no `uuid`.
+
+- [x] 12.1 `SynchronizationService.php:2345` built the run-log payload from
+      `$synchronization['uuid'] ?? null` → always null →
+      `SynchronizationLogService::normalize()` strips nulls → the FK never
+      reached the row. Fixed to read `['id'] ?? ['uuid'] ?? null`.
+- [x] 12.2 Same defect at `:2325`, where a sync-entryPoint `ExecutionTraceContext`
+      took its `entryPointId` from the same expression. Confirmed against live
+      data: all 5 `sync` traces stored **without** an entryPointId, all 5 `job`
+      traces **with** one — which is the "some fields have data, others don't"
+      the Traces page showed. Fixed identically.
+- [x] 12.3 Same defect at `:1735`, feeding the batch HITL approval gate:
+      `$synchronizationId` resolved to `''`, so
+      `resolveApprovalForSynchronization()` / `suspendForSynchronization()` were
+      keyed on an empty id. Fixed identically.
+- [x] 12.4 `:475` inspected and deliberately NOT changed — it reads `['uuid']`
+      but already falls back to `$object['id']` two lines down.
+- [x] 12.5 Restore `queryParam: 'synchronizationId'` in `logTargets.js` (the key
+      the writer sets, mirroring the job fix) and update both vitest assertions.
+      `view-cloud-event-logs` stays null — `call_log` still has no event field.
+- [x] 12.6 Two PHP regression tests in `SynchronizationServiceTest.php`: the
+      run-log persists a supplied FK, and a null FK is DROPPED rather than
+      stored as null — pinning the exact mechanism that made the defect silent.
+      Note the existing fixtures set BOTH `id` and `uuid` on their synchronization
+      payloads, which is why no test caught this.
+
+**Not verifiable locally:** the PHP unit suite cannot run in this checkout —
+`vendor/` was installed `--no-dev`, so the `OCA\OpenConnector\Tests\` namespace
+is absent from the autoloader and every test in the file errors with
+`Class "…\Helpers\ObjectServiceMockBuilder" not found`, the untouched
+neighbouring test included. The new tests are written but unrun; CI (with dev
+dependencies) is their first real execution. `php -l` passes and `phpcs` adds no
+new violation class beyond the file's existing `createMock`/assert idiom.
+
+**Existing rows stay unattributable.** The fix applies to newly written logs and
+traces only; the 10 stored synchronization logs have no FK to recover, and
+matching them to synchronizations by timestamp would be guesswork.
+
+## 13. Manual verification (browser — user-driven)
 
 See `test-plan.md`. Requires `npm run dev` in **both** repos, the library first:
 OpenConnector imports `dist/esm` through the `node_modules` symlink, not `src`.

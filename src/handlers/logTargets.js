@@ -21,31 +21,28 @@
  *
  * Verified against a populated instance (2026-08-11), `total` per filter:
  *
- * | action                     | schema              | param     | result       |
- * |----------------------------|---------------------|-----------|--------------|
- * | view-source-logs           | call_log            | source    | 11 of 15 ✓   |
- * | view-endpoint-logs         | call_log            | endpoint  | 0 of 0 ✓     |
- * | view-job-logs              | job_log             | jobId     | 3 of 5 ✓     |
- * | view-synchronization-logs  | synchronization_log | —         | 0 of 10 ✗    |
- * | view-cloud-event-logs      | call_log            | —         | 0 of 15 ✗    |
+ * | action                     | schema              | param             |
+ * |----------------------------|---------------------|-------------------|
+ * | view-source-logs           | call_log            | source            |
+ * | view-endpoint-logs         | call_log            | endpoint          |
+ * | view-job-logs              | job_log             | jobId             |
+ * | view-synchronization-logs  | synchronization_log | synchronizationId |
+ * | view-cloud-event-logs      | call_log            | —                 |
  *
- * `endpoint` filters nothing today only because no inbound rows exist yet: it
- * is a declared `call_log` property and `EndpointService::recordInboundCallLog()`
- * writes it, so the param is right and starts working the moment data arrives.
+ * Two of these filter nothing *yet*, for reasons that are not this table's:
+ * no inbound `call_log` rows exist (`EndpointsController::logs()` is still
+ * unwired), and `synchronization_log` rows written before
+ * `SynchronizationService` was fixed to read `$synchronization['id']` carry no
+ * FK — OpenRegister exposes no top-level `uuid`, so the payload's
+ * `synchronizationId` was always null and `normalize()` stripped it. New rows
+ * carry it; the old ones stay unattributable.
  *
- * The two nulls are blocked on the backend, not on this table:
- *
- * - **synchronization** — `SynchronizationRunLog::toArray()` carries
- *   `synchronizationId`, but `SynchronizationLogService::normalize()` drops it
- *   before the insert (it is null at that point), so persisted rows hold NO
- *   link to their synchronization at all. Neither `synchronization` nor
- *   `synchronizationId` matches a single one of the 10 stored rows. Restore the
- *   param once the writer persists the FK.
- * - **event** — `call_log` declares no event property whatsoever (its FKs are
- *   `source`/`sourceId`, `actionId`, `synchronizationId`/`synchronization`,
- *   `product` and `endpoint`), and nothing writes one. Cloud-event logging needs
- *   a field — or its own schema, `event_message` being the likely candidate —
- *   before this can be scoped.
+ * `event` stays null — filtering on a field nothing writes renders an EMPTY
+ * page, which is strictly worse than the unfiltered listing. `call_log`
+ * declares no event property whatsoever (its FKs are `source`/`sourceId`,
+ * `actionId`, `synchronizationId`/`synchronization`, `product` and `endpoint`),
+ * and nothing writes one. Cloud-event logging needs a field — or its own
+ * schema, `event_message` being the likely candidate — before it can be scoped.
  *
  * @type {{[key: string]: {route: string, queryParam: (string|null)}}}
  */
@@ -53,7 +50,7 @@ export const VIEW_LOGS_TARGETS = {
 	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
 	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
 	'view-job-logs': { route: 'JobLogs', queryParam: 'jobId' },
-	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: null },
+	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronizationId' },
 	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: null },
 }
 

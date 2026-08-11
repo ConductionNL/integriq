@@ -290,6 +290,89 @@ class SynchronizationServiceTest extends TestCase
     }//end testSynchronizationLogWritesAreCreateOnly()
 
     /**
+     * Regression — the run-log must carry the FK that scopes it to its
+     * synchronization, and a null FK must be visibly absent rather than
+     * silently equivalent.
+     *
+     * `normalize()` strips every null from the payload, which is correct on its
+     * own but turned an upstream defect into silent data loss: the caller built
+     * the payload from `$synchronization['uuid']`, a key OpenRegister does not
+     * expose (it returns the identifier as `id`), so `synchronizationId` was
+     * always null, was stripped here, and every stored row became
+     * unattributable — leaving the "View logs" row action nothing to filter on.
+     *
+     * @return void
+     */
+    public function testRunLogPersistsItsSynchronizationForeignKey(): void
+    {
+        $observedBody    = null;
+        $defaultEntity   = ObjectServiceMockBuilder::objectEntity(test: $this, body: ['result' => []], uuid: 'log-uuid');
+        $orObjectService = $this->createMock(ORObjectService::class);
+        $orObjectService->method('saveObject')->willReturnCallback(
+            static function ($object, $register=null, $schema=null, ?string $uuid=null) use (&$observedBody, $defaultEntity) {
+                $observedBody = $object;
+                return $defaultEntity;
+            }
+        );
+
+        $logService = new SynchronizationLogService(
+            orObjectService: $orObjectService,
+            userSession: $this->createMock(\OCP\IUserSession::class),
+            session: $this->createMock(\OCP\ISession::class)
+        );
+
+        $log = $logService->createFromArray(object: ['synchronizationId' => 'sync-1', 'result' => []]);
+        $logService->update(log: $log);
+
+        $this->assertIsArray($observedBody);
+        $this->assertSame(
+            'sync-1',
+            ($observedBody['synchronizationId'] ?? null),
+            'The persisted run-log must carry synchronizationId, or the logs page cannot be scoped to its synchronization'
+        );
+    }//end testRunLogPersistsItsSynchronizationForeignKey()
+
+    /**
+     * Companion to the above: a null FK is DROPPED, not persisted as null.
+     *
+     * Documents the exact mechanism that hid the defect — there is no null
+     * `synchronizationId` column to notice in the stored data, the key is
+     * simply absent. Pinning it here means a future change that reintroduces a
+     * null FK fails loudly at the boundary instead of silently producing
+     * unattributable rows.
+     *
+     * @return void
+     */
+    public function testRunLogDropsANullSynchronizationForeignKey(): void
+    {
+        $observedBody    = null;
+        $defaultEntity   = ObjectServiceMockBuilder::objectEntity(test: $this, body: ['result' => []], uuid: 'log-uuid');
+        $orObjectService = $this->createMock(ORObjectService::class);
+        $orObjectService->method('saveObject')->willReturnCallback(
+            static function ($object, $register=null, $schema=null, ?string $uuid=null) use (&$observedBody, $defaultEntity) {
+                $observedBody = $object;
+                return $defaultEntity;
+            }
+        );
+
+        $logService = new SynchronizationLogService(
+            orObjectService: $orObjectService,
+            userSession: $this->createMock(\OCP\IUserSession::class),
+            session: $this->createMock(\OCP\ISession::class)
+        );
+
+        $log = $logService->createFromArray(object: ['synchronizationId' => null, 'result' => []]);
+        $logService->update(log: $log);
+
+        $this->assertIsArray($observedBody);
+        $this->assertArrayNotHasKey(
+            'synchronizationId',
+            $observedBody,
+            'A null FK is stripped by normalize(), which is why the upstream defect produced unattributable rows silently'
+        );
+    }//end testRunLogDropsANullSynchronizationForeignKey()
+
+    /**
      * #1007 regression — the append-only run-log is written exactly once.
      *
      * SynchronizationLogService::update() is idempotent: the first call INSERTs
