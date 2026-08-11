@@ -33,19 +33,32 @@ Most of it is adapter layer and stays. The work is mainly *classification*, not 
       on procest, which owns `Case`. docudesk holds the same FK and moves in the same
       window.
 
-## 4. Translations
+## 4. Data migration
 
-- [ ] 4.1 Add Dutch translations for the renamed properties to `l10n/nl.json`,
+- [ ] 4.1 Count live `ris_sync_record` objects **before** renaming — resolve numeric
+      register and schema ids through `oc_openregister_schemas`, read the
+      `oc_openregister_table_<reg>_<schema>` shards (name-matching the shard tables
+      matches nothing and reports zero), exclude `_deleted`, and sum across every
+      register the schema is in. Prove the query can return non-zero before recording
+      a zero.
+- [ ] 4.2 If non-zero, migrate stored `risVergaderingId` → `risMeetingId` and
+      `besluitStatus` → `decisionStatus`. ⚠️ Migrate the **key only** — the stored values
+      `aangenomen`/`verworpen`/`aangehouden`/`doorgeschoven` are what iBabs sent and must
+      survive byte-identical, or the decidesk mapping stops matching.
+
+## 5. Translations
+
+- [ ] 5.1 Add Dutch translations for the renamed properties to `l10n/nl.json`,
       re-pointing existing keys rather than re-extracting; run `check-l10n`.
 
-## 5. Verify
+## 6. Verify
 
-- [ ] 5.1 Re-run the token-aware scan; the residual Dutch SHALL be exactly the marked
+- [ ] 6.1 Re-run the token-aware scan; the residual Dutch SHALL be exactly the marked
       wire schemas plus the held `zaakId`, and nothing else.
-- [ ] 5.2 Exercise one iBabs sync end to end and confirm a `decisionStatus` value still
+- [ ] 6.2 Exercise one iBabs sync end to end and confirm a `decisionStatus` value still
       maps to the correct `Decision.outcome` — an adapter whose field stopped matching
       keeps running and produces empty output, so a green suite is not evidence here.
-- [ ] 5.3 Full test suite plus hydra gates 46 / 53 / 54 / 55 / 57 / 61.
+- [ ] 6.3 Full test suite plus hydra gates 46 / 53 / 54 / 55 / 57 / 61.
 
 ## Acceptance criteria
 
@@ -53,5 +66,7 @@ Most of it is adapter layer and stays. The work is mainly *classification*, not 
 - All 45 method names and 12 class names are individually classified, with the
   protocol-facing ones listed and justified rather than silently skipped.
 - `decisionStatus` retains its Dutch enum values and the iBabs mapping still matches.
+- Stored-object count measured and proven by a positive control; migrated if non-zero,
+  with the wire values left byte-identical.
 - `zaakId` is unchanged and its block on procest is recorded.
 - A live iBabs sync produces the same `Decision.outcome` as before the rename.
