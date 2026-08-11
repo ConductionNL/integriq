@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * The three bespoke editor modals are mounted ONLY as a `form-dialog` slot
+ * The bespoke editor modals are mounted ONLY as a `form-dialog` slot
  * replacement on `CnIndexPage`, declared in `src/manifest.json`:
  *
  *     "slots": { "form-dialog": "SynchronizationEditorModal" }
@@ -111,6 +111,12 @@ const MODALS = [
 		file: 'src/modals/v2/RuleEditorModal.vue',
 		validDraft: { name: 'a name', action: 'create', type: 'mapping' },
 		extraVm: { rawConditionsError: '' },
+	},
+	{
+		name: 'ConsumerEditorModal',
+		file: 'src/modals/v2/ConsumerEditorModal.vue',
+		validDraft: { name: 'a name' },
+		extraVm: { authConfigError: '' },
 	},
 ]
 

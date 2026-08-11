@@ -1,0 +1,39 @@
+{
+	"_comment": "ADR-037 register fragment — consumer-form-fields. Declares the DISPLAY ORDER of the consumer schema's authorable properties, plus `widget: json` on its three object-typed ones. This serves the SCHEMA-READING surfaces — the ConsumerDetail 'Access policy' data widget and the detail grid — not the create/edit dialog, which is the bespoke ConsumerEditorModal (see pages[Consumers].slots['form-dialog'] and that component's header for why it had to own its own payload). ORDER: `fieldsFromSchema` sorts by `overrides[key].order` → `prop.order` → alphabetical, and `consumer` declared no order at all, so every schema-driven surface rendered these fields alphabetically — a sequence nobody chose. It lives with the schema that owns the properties so every such surface agrees. WIDGET: fieldsFromSchema drops `type: object` properties outright unless they carry a widget, so without this authorizationConfiguration, rateLimit and quota render NOWHERE — and the widget cannot be supplied from the manifest instead, because the filter runs BEFORE per-field overrides merge and tests `prop.widget` (the schema's), not `overrides[key].widget`. That is not theoretical: the Jobs page's `fieldOverrides.arguments = { widget: 'json' }` is dead config for exactly this reason (see JobFormFields.vue and restore-job-form-fields' follow-ups). MERGE ORDER: this file sorts AFTER 99-consumer-secrets-writeonly.json (glob+sort puts digits before letters), and InitializeRegister::deepMergeConfig() recurses on object+object, so `widget` lands BESIDE the existing `writeOnly: true` on authorizationConfiguration rather than replacing the property — asserted in tests/vitest/consumerDraft.spec.js so a future rename cannot silently un-write-only the credential. NO `enum` on authorizationType, for the same class of reason jobClass has none: an enum is enforced on save, which would make the three seeded consumers (internal-dashboard, partner-portal, mobile-app) unsaveable and would reject any casing other than the listed one — AuthorizationService::resolveConsumerByApiKey() compares case-insensitively (strtolower(...) !== 'apikey'), so real data can legitimately hold 'apiKey' or 'apikey'. The option list lives in consumerDraft.js. NO defaults either: a schema default reaches every API-, MCP- and seed-created consumer, and the two allowlist fields are security config where 'absent' (unrestricted) and 'present but empty' (rejects everything) mean opposite things — ConsumerScopeService::isAllowed() gates on is_array(), so materialising `domains: []` on every consumer that omitted it would fail every inbound request closed. Version bumped 1.1.0 → 1.2.0 so OpenRegister's version-gated importFromApp takes the fast path rather than relying on its content-differs fallback.",
+	"components": {
+		"schemas": {
+			"consumer": {
+				"version": "1.2.0",
+				"properties": {
+					"name": {
+						"order": 10
+					},
+					"description": {
+						"order": 20
+					},
+					"domains": {
+						"order": 30
+					},
+					"ips": {
+						"order": 40
+					},
+					"authorizationType": {
+						"order": 50
+					},
+					"authorizationConfiguration": {
+						"order": 60,
+						"widget": "json"
+					},
+					"rateLimit": {
+						"order": 70,
+						"widget": "json"
+					},
+					"quota": {
+						"order": 80,
+						"widget": "json"
+					}
+				}
+			}
+		}
+	}
+}

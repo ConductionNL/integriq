@@ -1349,6 +1349,7 @@
             "route": "/consumers",
             "type": "index",
             "title": "Consumers",
+            "_note": "The create/edit dialog is ConsumerEditorModal via slots['form-dialog'], so there is deliberately NO `includeFields` / `fieldOverrides` here — CnFormDialog never mounts and either key would be dead config that reads as if it governed the form. It replaces the whole dialog rather than its content because it has to own the submit PAYLOAD, which a `form-fields` slot cannot reach: `domains`/`ips` are bare `type: array` → the `tags` widget, and CnFormDialog.initFormData() seeds every tags field to `[]` on create, which ConsumerScopeService::isAllowed() reads as an allowlist admitting nobody (it gates on is_array), so every consumer authored here would have rejected all inbound traffic with a 403. See src/modals/v2/consumerDraft.js for the three-state table. Field ORDER and the object-property widgets live in the consumer schema (lib/Settings/register.d/consumer-form-fields.json) for the DETAIL page's data widget, which does read the schema.",
             "config": {
                 "register": "openconnector",
                 "schema": "consumer",
@@ -1357,11 +1358,6 @@
                     "authorizationType",
                     "domains",
                     "updated"
-                ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "authorizationType"
                 ],
                 "sidebar": {
                     "enabled": true,
@@ -1378,6 +1374,9 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-dialog": "ConsumerEditorModal"
             }
         },
         {
@@ -1452,8 +1451,12 @@
                         "type": "data",
                         "icon": "ShieldCheckOutline",
                         "title": "Access policy",
+                        "_note": "`exclude` drops authorizationConfiguration only. The consumer-form-fields register fragment gives the three object-typed properties `widget: 'json'` so fieldsFromSchema stops filtering them, which is what puts rateLimit and quota on this panel — the right place for them, since the panel's job is confirming the access policy. authorizationConfiguration is `writeOnly: true`, so OpenRegister strips it from every response and it could only ever render as a permanently empty row.",
                         "content": {
-                            "columns": 2
+                            "columns": 2,
+                            "exclude": [
+                                "authorizationConfiguration"
+                            ]
                         }
                     },
                     {
