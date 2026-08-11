@@ -19,7 +19,12 @@ const ADMIN_SETTINGS_URL = '/index.php/settings/admin/openconnector'
 
 test.describe('action-authorization: the admin-facing matrix', () => {
 
+	// `lib/Settings/OpenConnectorAdmin.php` is a one-line
+	// `extends GenericAdminSettings` with no other implementation, so this URL
+	// rendering openconnector content IS the generic admin-settings stub
+	// rendering in the existing section.
 	// @e2e action-authorization::an-administrator-sees-the-action-matrix-in-settings
+	// @e2e apphost-adoption::admin-settings-panel-still-renders
 	test('an administrator sees the action matrix in settings', async ({ page }) => {
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
 

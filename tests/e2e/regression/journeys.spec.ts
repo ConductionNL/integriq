@@ -597,6 +597,10 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 test.describe('UI journey J1 — visually create a Source; assert row in list', () => {
 	const name = `pw-j1-source-${Date.now()}`
 
+	// `createViaUi` clicks the index page's Add action, then asserts the
+	// CnFormDialog became visible and carries the schema's "name" field —
+	// i.e. a schema-driven create form opened without leaving the page.
+	// @e2e openconnector-frontend-vue-rewrite::create-source-form-opens-from-cnindexpage
 	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
 		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
@@ -622,6 +626,11 @@ test.describe('UI journey J2 — visually create a Mapping; assert it persists',
 	// MappingEditorModal satisfies the same contract createViaUi drives: an
 	// NcDialog (role=dialog), a "Name *" NcTextField, and a primary button
 	// reading "Create" in create mode.
+	// Asserts BOTH halves of the scenario: the dialog opens, and it contains
+	// the creation form (a "Name *" field plus an enabled Create button).
+	// `mapping-and-search.spec.ts` also tags this scenario, but its
+	// `openAndDismissCreateModal` proves only that the dialog opened.
+	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
 	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
 		await gotoRoute(page, '/mappings')
 		const id = await createViaUi(page, 'mapping', 'Mapping', name)

@@ -95,6 +95,12 @@ test.describe('REQ-003: Import UI page', () => {
 })
 
 test.describe('REQ-001: Configuration objects — OR CRUD for tagged entities', () => {
+	// The POST below goes straight at OR's generic CRUD route
+	// (`/apps/openregister/api/objects/openconnector/source`) and asserts the
+	// created ObjectEntity JSON comes back with an id and the submitted field.
+	// No openconnector controller is in that path — which is the second half of
+	// the scenario's THEN.
+	// @e2e openconnector-direct-or-usage::or-crud-route-handles-a-source-create-without-an-openconnector-controller
 	test('Sources, mappings, rules entities can be tagged with a configuration id', async ({ request }) => {
 		// Create a source with a configurations tag and verify it stores correctly.
 		const cfgId = `e2e-cfg-${Date.now()}`

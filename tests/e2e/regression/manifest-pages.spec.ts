@@ -45,6 +45,36 @@
 
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
+/*
+ * SCENARIOS THIS FILE PROVES.
+ *
+ * Each tag below was checked by reading the scenario's GIVEN/WHEN/THEN in the
+ * spec and the assertion in this file side by side; a tag is here only when the
+ * assertions establish the scenario's THEN, not merely touch its subject. The
+ * page-mount tags cover the loop at `manifest pages — schema-driven render`,
+ * which drives every manifest route and asserts the shell mounted, that content
+ * rendered inside `#app-content`, and that no console errors fired.
+ *
+ * @e2e openconnector-app-manifest::manifest-file-present-at-canonical-path
+ * @e2e openconnector-app-manifest::version-field-is-valid-semver
+ * @e2e openconnector-app-manifest::dashboard-page-type-is-dashboard
+ * @e2e openconnector-app-manifest::log-pages-use-type-logs
+ * @e2e openconnector-app-manifest::detail-pages-carry-id-parameter-in-route
+ * @e2e approval-workflow::approvals-list-page-mounts-and-shows-content
+ * @e2e openconnector-comprehensive-tests::endpointsspects-page-loads
+ *
+ * NOT tagged here, deliberately, though this file touches their subject:
+ *   openconnector-app-manifest::schema-field-is-present-and-correct — the
+ *     scenario demands the $schema value EQUAL the full published URL; the
+ *     assertion below only matches the filename suffix.
+ *   flow-orchestration::flows-index-page-mounts-and-lists-flows — the mount is
+ *     proven, but the scenario also requires each flow's name, enabled state
+ *     and last-run status to be shown, which nothing here asserts.
+ *   openconnector-direct-or-usage::dashboard-page-uses-declarative-manifest-widgets-not-the-deleted-controller
+ *     — the manifest type and the mount are proven; that widget counts resolve
+ *     via dataSource blocks against OR's aggregate endpoint is not.
+ */
+
 // In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
 // default for the apache-served dev container) `generateUrl` returns
 // `/apps/openconnector` and the Vue Router's `base` is set to that —
@@ -234,6 +264,17 @@ test.describe('manifest schema validation', () => {
 	}
 
 	test('src/manifest.json validates against v2 schema', async () => {
+		// The canonical path and the parse are asserted EXPLICITLY rather than
+		// left to `readManifest()` throwing. A throw does fail the test, but it
+		// fails it as an error with no statement of intent — and a reader
+		// checking whether "the manifest exists and parses" is covered cannot
+		// see an assertion that isn't written down.
+		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		expect(require('fs').existsSync(manifestPath), `manifest.json must exist at ${manifestPath}`).toBe(true)
+		expect(require('fs').statSync(manifestPath).isFile(), 'manifest.json must be a regular file').toBe(true)
+		expect(() => JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8')),
+			'manifest.json must parse as valid JSON with no syntax errors').not.toThrow()
+
 		const m = readManifest()
 
 		expect(m.$schema, 'manifest declares a $schema URL').toMatch(/app-manifest(-v2)?\.schema\.json$/)
