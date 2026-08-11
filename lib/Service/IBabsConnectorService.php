@@ -473,7 +473,7 @@ class IBabsConnectorService
         $besluiten = [];
 
         foreach ($syncedItems as $syncRecord) {
-            $vergaderingId = $syncRecord['risVergaderingId'] ?? null;
+            $vergaderingId = $syncRecord['risMeetingId'] ?? null;
             $zaakId        = $syncRecord['zaakId'] ?? null;
 
             if ($vergaderingId === null || $zaakId === null) {

@@ -414,7 +414,7 @@ class IBabsConnectorServiceTest extends TestCase
             'ibabs-source-10'
         );
 
-        $result = $this->service->pollBesluiten($source, [['zaakId' => 'z-1', 'risVergaderingId' => 'v-1']]);
+        $result = $this->service->pollBesluiten($source, [['zaakId' => 'z-1', 'risMeetingId' => 'v-1']]);
         $this->assertSame([], $result);
 
     }//end testPollBesluitenNoOrganisatieId()
@@ -463,7 +463,7 @@ class IBabsConnectorServiceTest extends TestCase
             ->method('call')
             ->willReturn($callLogEntity);
 
-        $syncItems = [['zaakId' => 'zaak-001', 'risVergaderingId' => 'verg-001']];
+        $syncItems = [['zaakId' => 'zaak-001', 'risMeetingId' => 'verg-001']];
         $result    = $this->service->pollBesluiten($source, $syncItems);
 
         $this->assertNotEmpty($result);

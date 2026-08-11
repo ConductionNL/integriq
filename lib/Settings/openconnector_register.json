@@ -2713,9 +2713,9 @@
             "description": "Document or vergaderstuk ID in the RIS",
             "title": "RIS Document ID"
           },
-          "risVergaderingId": {
+          "risMeetingId": {
             "type": "string",
-            "description": "Vergadering ID in the RIS",
+            "description": "Meeting ID in the RIS",
             "title": "RIS Meeting ID"
           },
           "direction": {
@@ -2769,7 +2769,7 @@
             "description": "List of document references (Nextcloud file ID + RIS doc ID)",
             "title": "Documents"
           },
-          "besluitStatus": {
+          "decisionStatus": {
             "type": "string",
             "enum": [
               "aangenomen",
@@ -2777,7 +2777,7 @@
               "aangehouden",
               "doorgeschoven"
             ],
-            "description": "Besluit result from the RIS",
+            "description": "Decision result as reported by the RIS. The enum values are iBabs' own wire vocabulary and are stored verbatim so the record reproduces the source; only the property name is ours.",
             "title": "Decision Status"
           },
           "paraferingStatus": {
@@ -2816,11 +2816,11 @@
             "risType": "ibabs",
             "direction": "outbound",
             "status": "synced",
-            "risVergaderingId": "verg-2026-001",
+            "risMeetingId": "verg-2026-001",
             "risDocumentId": "doc-ibabs-2026-001",
             "syncedAt": "2026-06-01T10:00:00+00:00",
             "retryCount": 0,
-            "besluitStatus": "aangenomen"
+            "decisionStatus": "aangenomen"
           },
           {
             "@self": {
@@ -2832,11 +2832,11 @@
             "risType": "ibabs",
             "direction": "inbound",
             "status": "synced",
-            "risVergaderingId": "verg-2026-001",
+            "risMeetingId": "verg-2026-001",
             "risDocumentId": "besluitenlijst-2026-001",
             "syncedAt": "2026-06-01T11:30:00+00:00",
             "retryCount": 0,
-            "besluitStatus": "verworpen"
+            "decisionStatus": "verworpen"
           },
           {
             "@self": {
@@ -2873,11 +2873,11 @@
             "risType": "ibabs",
             "direction": "outbound",
             "status": "synced",
-            "risVergaderingId": "verg-2026-002",
+            "risMeetingId": "verg-2026-002",
             "risDocumentId": "doc-ibabs-2026-005",
             "syncedAt": "2026-05-15T09:00:00+00:00",
             "retryCount": 1,
-            "besluitStatus": "aangehouden"
+            "decisionStatus": "aangehouden"
           }
         ],
         "appendOnly": false,
@@ -3627,6 +3627,7 @@
         "immutable": false
       },
       "dso_verzoek": {
+        "x-wire-standard": "DSO STAM koppelvlak (Omgevingswet) — bronorganisatie and indieningsdatum are the koppelvlak's own field names. MUST NOT be internationalised.",
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
@@ -3807,6 +3808,7 @@
         "immutable": false
       },
       "notificaties_abonnement": {
+        "x-wire-standard": "ZGW Notificaties API (Logius/VNG) — kanalen[].naam is the API's own field. MUST NOT be internationalised.",
         "slug": "notificaties_abonnement",
         "title": "Notificaties Abonnement",
         "icon": "BellRingOutline",
@@ -4190,6 +4192,7 @@
         "immutable": false
       },
       "kiss_klantcontact": {
+        "x-wire-standard": "VNG Klantinteracties API (KISS) — this schema mirrors the remote payload. Its Dutch field names are the standard's own and MUST NOT be internationalised; renaming them makes the payload stop matching, silently.",
         "slug": "kiss_klantcontact",
         "title": "KISS Klantcontact",
         "icon": "AccountVoice",
@@ -4302,6 +4305,7 @@
         "immutable": false
       },
       "iwmo_ijw_message": {
+        "x-wire-standard": "iWMO / iJW (iStandaarden) — berichttype and kenmerk are the standard's own field names. MUST NOT be internationalised.",
         "slug": "iwmo_ijw_message",
         "title": "iWMO/iJW Message",
         "icon": "HospitalBoxOutline",
@@ -4402,6 +4406,7 @@
         "immutable": false
       },
       "stuf_message": {
+        "x-wire-standard": "StUF-ZKN 3.10 — berichttype and verwerkingssoort are literal StUF elements. MUST NOT be internationalised.",
         "slug": "stuf_message",
         "title": "StUF-ZKN Message",
         "icon": "FileXmlBox",

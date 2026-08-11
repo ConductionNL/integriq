@@ -126,7 +126,7 @@ class RISPollJobTest extends TestCase
                     'zaakId'         => 'zaak-001',
                     'risType'        => 'ibabs',
                     'status'         => 'synced',
-                    'risVergaderingId' => 'verg-001',
+                    'risMeetingId' => 'verg-001',
                     'sourceId'       => 'default',
                 ]
             );
