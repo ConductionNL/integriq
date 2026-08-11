@@ -55,6 +55,35 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
  * which drives every manifest route and asserts the shell mounted, that content
  * rendered inside `#app-content`, and that no console errors fired.
  *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * BEFORE YOU ADD AN @e2e TAG: VERIFY THE TEST BODY, NOT A GREP.
+ *
+ * There is a real technique here — a scenario whose coverage already exists but
+ * is recorded as an `@e2e exclude` instead of an anchor should be anchored, and
+ * that costs no new tests. There is also a way to get it exactly wrong, and the
+ * two look identical from the command line.
+ *
+ * `grep -rl <capability> tests/e2e/` HITTING IS NOT EVIDENCE. A sibling app
+ * applied this technique to a waiver that looked just like the ones below —
+ * reason naming a future action, change archived weeks ago, grep hit present —
+ * and the hit turned out to be an explanatory COMMENT inside a test about
+ * something else. The two waived scenarios had no relevant assertion anywhere.
+ * Anchoring there would have closed a coverage finding by annotating untested
+ * code: the precise defect this gate exists to catch, reproduced by hand.
+ *
+ * The rule: open the test, read its assertions, and satisfy yourself that they
+ * establish the scenario's THEN. If they only touch the subject, or assert
+ * something weaker, leave the finding visible and say why — see the
+ * "NOT tagged here, deliberately" list below, which exists for exactly that.
+ *
+ * The same rule applies in the other direction when auditing an existing
+ * `@e2e exclude`. Reasons that name a path or a `Class::method` are usually
+ * true; pathless ones ("verified by PHPUnit") usually are not, and correcting
+ * them makes the uncovered count RISE. That is the honest outcome, not a
+ * regression — a waiver whose promised test never arrived was hiding the gap,
+ * not filling it.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
  * @e2e openconnector-app-manifest::manifest-file-present-at-canonical-path
  * @e2e openconnector-app-manifest::version-field-is-valid-semver
  * @e2e openconnector-app-manifest::dashboard-page-type-is-dashboard
