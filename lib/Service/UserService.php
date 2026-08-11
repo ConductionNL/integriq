@@ -587,10 +587,6 @@ class UserService
                 $additionalInfo['website'] = $website;
             }
 
-            $twitter = $this->config->getUserValue($userId, 'settings', 'twitter', '');
-            if (empty($twitter) === false) {
-                $additionalInfo['twitter'] = $twitter;
-            }
         }//end try
 
         // Always get custom name fields from core namespace (accessible to other apps).
@@ -636,7 +632,6 @@ class UserService
             IAccountManager::PROPERTY_PHONE        => 'phone',
             IAccountManager::PROPERTY_ADDRESS      => 'address',
             IAccountManager::PROPERTY_WEBSITE      => 'website',
-            IAccountManager::PROPERTY_TWITTER      => 'twitter',
             IAccountManager::PROPERTY_FEDIVERSE    => 'fediverse',
             IAccountManager::PROPERTY_ORGANISATION => 'organisation',
             IAccountManager::PROPERTY_ROLE         => 'role',
@@ -758,7 +753,6 @@ class UserService
                 'phone'        => IAccountManager::PROPERTY_PHONE,
                 'address'      => IAccountManager::PROPERTY_ADDRESS,
                 'website'      => IAccountManager::PROPERTY_WEBSITE,
-                'twitter'      => IAccountManager::PROPERTY_TWITTER,
                 'fediverse'    => IAccountManager::PROPERTY_FEDIVERSE,
                 'organisation' => IAccountManager::PROPERTY_ORGANISATION,
                 'role'         => IAccountManager::PROPERTY_ROLE,
