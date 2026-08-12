@@ -178,14 +178,23 @@ class EndpointServiceTest extends TestCase
 
 
     /**
-     * Test that handleRequest returns a JSONResponse (not-found) for a missing endpoint object.
+     * Test that handleRequest returns a Response instead of throwing when the target object is missing.
      *
-     * When the OR service returns null from find(), EndpointService should
-     * return a 404 response rather than throwing.
+     * This is the regression guard for #1015: with the OR service returning
+     * null from find(), the request must still come back as a Response rather
+     * than escaping as an exception.
+     *
+     * It deliberately does NOT assert a status code. The previous name claimed
+     * a 404, and handleRequest() has no path that produces one here — the only
+     * 404s in EndpointService are raised inside getObjects() when find() throws
+     * DoesNotExistException, which a null return never reaches. A name that
+     * asserts a status the body never checks is the shape that makes a suite
+     * read greener than it is; the 404 branches of getObjects() are genuinely
+     * unit-uncovered and are not covered by this test under either name.
      *
      * @return void
      */
-    public function testHandleRequestReturns404WhenEndpointObjectMissing(): void
+    public function testHandleRequestReturnsAResponseWhenTheTargetObjectIsMissing(): void
     {
         // Arrange
         $this->orObjectService->method('find')->willReturn(null);
@@ -210,7 +219,7 @@ class EndpointServiceTest extends TestCase
 
         // Assert — should return a response, not throw
         $this->assertInstanceOf(\OCP\AppFramework\Http\Response::class, $response);
-    }//end testHandleRequestReturns404WhenEndpointObjectMissing()
+    }//end testHandleRequestReturnsAResponseWhenTheTargetObjectIsMissing()
 
 
     /**

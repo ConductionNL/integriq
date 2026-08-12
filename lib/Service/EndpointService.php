@@ -1434,7 +1434,7 @@ class EndpointService
         // throws even when the request path doesn't match the endpoint
         // pattern (#1015 follow-up — the existing single array_pop fallback
         // failed when the size delta was > 1, e.g. EndpointService::419 in
-        // EndpointServiceTest::testHandleRequestReturns404WhenEndpointObjectMissing).
+        // EndpointServiceTest::testHandleRequestReturnsAResponseWhenTheTargetObjectIsMissing).
         $keyCount   = count($endpointArrayNormalized);
         $valueCount = count($pathParts);
         if ($keyCount > $valueCount) {
