@@ -2304,6 +2304,49 @@ class CallService
      *
      * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
+
+    /**
+     * Whether this call will go through the credential broker.
+     *
+     * Answered BEFORE `prepareCall()`, because the answer decides whether the
+     * call may be dispatched asynchronously at all — and by the time
+     * preparation has run, an asynchronous brokered call has already been
+     * refused and logged as a synthetic 409.
+     *
+     * Checks the passed config AND the source's own `configuration`, rather
+     * than reproducing `prepareCall()`'s merge. A merge copied into a second
+     * place is a merge that drifts; and the two failure directions are not
+     * symmetric. A false positive dispatches synchronously a call that could
+     * have been concurrent — slower, still correct. A false negative restores
+     * the 409 and the call does not happen at all. So this errs wide on
+     * purpose.
+     *
+     * @param ObjectEntity $source The source being called.
+     * @param array        $config The per-call configuration.
+     *
+     * @return boolean True when a credentialRef governs this call.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     */
+    private function dispatchesThroughBroker(ObjectEntity $source, array $config): bool
+    {
+        if ($this->brokeredCallService->hasCredentialRef(config: $config) === true) {
+            return true;
+        }
+
+        $sourceConfiguration = [];
+        try {
+            $sourceConfiguration = (array) (($source->getObject()['configuration'] ?? []));
+        } catch (\Throwable $e) {
+            // An unreadable source is not a brokered source; the ordinary path
+            // reports whatever is wrong with it far better than a guess here.
+            return false;
+        }
+
+        return $this->brokeredCallService->hasCredentialRef(config: $sourceConfiguration);
+
+    }//end dispatchesThroughBroker()
+
     private function resolveBrokeredDispatch(
         ObjectEntity $source,
         array $config,
@@ -3033,6 +3076,47 @@ class CallService
                 .'Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under '
                 .'asynchronous dispatch happens outside the caller\'s control; see '
                 .'openspec/changes/parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
+            );
+        }
+
+        // A BROKERED source is dispatched SYNCHRONOUSLY and handed back as an
+        // already-settled promise.
+        //
+        // `BrokeredCallService::assertScopeGuards()` refuses asynchronous
+        // dispatch outright — "the brokered call is synchronous in-process" —
+        // and that refusal becomes a persisted synthetic 409 CallLog. So every
+        // caller that dispatched a credentialRef source through this method got
+        // a 409 instead of a response, whatever the source was pointed at.
+        //
+        // It is not a corner case: `openconnector.source-call` fans out through
+        // `callAsync()` unconditionally, so EVERY flow step against a brokered
+        // source failed. Measured on hydra, whose forge source is brokered —
+        // `find-work`, `describe-repo`, `advance` and the record read all sit on
+        // that node, which is the whole pipeline.
+        //
+        // The caller's contract here is a PromiseInterface, not concurrency.
+        // Returning a FulfilledPromise honours it exactly while doing the one
+        // thing the broker permits.
+        //
+        // The test is deliberately WIDE — the passed config OR the source's own
+        // configuration. Erring toward synchronous costs parallelism on a call
+        // that could not run at all before; erring the other way restores the
+        // 409. There is no symmetric risk, so the conservative side is the
+        // correct default.
+        if ($this->dispatchesThroughBroker(source: $source, config: $config) === true) {
+            return new FulfilledPromise(
+                $this->call(
+                    source: $source,
+                    endpoint: $endpoint,
+                    method: $method,
+                    config: $config,
+                    overruleAuth: $overruleAuth,
+                    read: $read,
+                    runningSupportRequest: $runningSupportRequest,
+                    sink: $sink,
+                    trace: $trace,
+                    persistLog: $persistLog,
+                )
             );
         }
 
