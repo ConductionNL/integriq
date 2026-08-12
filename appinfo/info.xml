@@ -87,9 +87,39 @@
 		<job>OCA\OpenConnector\Cron\StufZknRetryJob</job>
 	</background-jobs>
 
+	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
+	     these hooks run in. info.xsd declares repair-steps as an xs:sequence of
+	     pre-migration, post-migration, live-migration, install, uninstall — so
+	     `<install>` goes LAST of the two used here even though it is the hook a
+	     fresh instance reaches FIRST. Written the intuitive way round, xmllint
+	     rejects the manifest with
+	       Element 'post-migration': This element is not expected.
+	       Expected is ( uninstall ).
+	     and the App Store refuses the release AFTER it has been tagged. -->
 	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
+			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
+			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
+		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
-		     `post-migration` steps below: `Installer::installAppLastSteps()` passes
+		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
 		     `$schemaOnly = true` when there is no previous version, which routes
 		     `MigrationService::migrate()` to `migrateSchemaOnly()` (changeSchema
 		     only, then every version marked executed), and it guards the
@@ -112,27 +142,6 @@
 			     fields is a product decision, tracked separately, not one this
 			     fix should take by side effect. -->
 		</install>
-		<post-migration>
-			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
-			<step>OCA\OpenConnector\Repair\InitializeActions</step>
-			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
-			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
-			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
-			     verify, write credentialRef, null the inline value) now that
-			     organisation-scope resolution is unblocked (openregister#450/#440),
-			     then records whether any source still holds an inline secret into
-			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
-			     repair step's docblock. -->
-			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
-			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
-			     secret fields (apikey, secret, password, jwt) from the LIVE source
-			     schema ONLY once every source is verifiably clean of inline values in
-			     them. Runs AFTER the migration above so the gate can be clean.
-			     authenticationConfig is excluded (manual review). The register JSON
-			     keeps all five fields on purpose (see the step's docblock). -->
-			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
-			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
-		</post-migration>
 	</repair-steps>
 
 	<commands>
