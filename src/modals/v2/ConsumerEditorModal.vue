@@ -446,12 +446,20 @@ export default {
 	},
 
 	computed: {
-		/** @return {string} Untranslated chip-input example for domains. */
+		/**
+		 * @return {string} Untranslated chip-input example for domains.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		domainPlaceholder() {
 			return DOMAIN_PLACEHOLDER
 		},
 
-		/** @return {string} Untranslated chip-input example for IPs. */
+		/**
+		 * @return {string} Untranslated chip-input example for IPs.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		ipPlaceholder() {
 			return IP_PLACEHOLDER
 		},
@@ -461,19 +469,31 @@ export default {
 			return !this.item
 		},
 
-		/** @return {string} Dialog heading. */
+		/**
+		 * @return {string} Dialog heading.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		dialogTitle() {
 			return this.isCreate
 				? t('openconnector', 'Create consumer')
 				: t('openconnector', 'Edit consumer')
 		},
 
-		/** @return {string} Name label, marked required. */
+		/**
+		 * @return {string} Name label, marked required.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		nameLabel() {
 			return t('openconnector', 'Name') + ' *'
 		},
 
-		/** @return {string} Validation message for the name field, or ''. */
+		/**
+		 * @return {string} Validation message for the name field, or ''.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		nameError() {
 			if (!this.nameTouched) return ''
 			return NAME_PATTERN.test(this.draft.name || '')
@@ -481,18 +501,30 @@ export default {
 				: t('openconnector', 'A name is required.')
 		},
 
-		/** @return {boolean} True when either allowlist has an entry. */
+		/**
+		 * @return {boolean} True when either allowlist has an entry.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		hasAllowlist() {
 			return normaliseList(this.draft.domains).length > 0
 				|| normaliseList(this.draft.ips).length > 0
 		},
 
-		/** @return {boolean} True when the chosen type carries a credential. */
+		/**
+		 * @return {boolean} True when the chosen type carries a credential.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		carriesCredential() {
 			return CREDENTIAL_AUTHORIZATION_TYPES.includes(this.draft.authorizationType)
 		},
 
-		/** @return {Array<{id: string, label: string}>} Authorization type options. */
+		/**
+		 * @return {Array<{id: string, label: string}>} Authorization type options.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		authorizationTypeOptions() {
 			const labels = {
 				none: t('openconnector', 'None — no authentication'),
@@ -512,6 +544,8 @@ export default {
 		 * saving an unrelated field cannot silently rewrite it.
 		 *
 		 * @return {object|null} The selected option.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		selectedAuthorizationType() {
 			const current = this.draft.authorizationType
@@ -520,7 +554,11 @@ export default {
 				?? { id: current, label: current }
 		},
 
-		/** @return {string} Helper text under the type picker. */
+		/**
+		 * @return {string} Helper text under the type picker.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		authorizationTypeHelper() {
 			if (this.draft.authorizationType === 'apiKey') {
 				return t('openconnector', 'Inbound callers present a key, matched against the key below under a constant-time comparison.')
@@ -534,12 +572,20 @@ export default {
 			return t('openconnector', 'The credential this consumer presents is verified against the configuration below.')
 		},
 
-		/** @return {string} The example shape for the chosen type, or ''. */
+		/**
+		 * @return {string} The example shape for the chosen type, or ''.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		authConfigPlaceholder() {
 			return AUTH_CONFIG_TEMPLATES[this.draft.authorizationType] || ''
 		},
 
-		/** @return {string} Helper text under the credential editor. */
+		/**
+		 * @return {string} Helper text under the credential editor.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		authConfigHelper() {
 			if (this.isCreate) {
 				return t('openconnector', 'Stored write-only: it is accepted on save but never returned by any API read.')
@@ -547,7 +593,11 @@ export default {
 			return t('openconnector', 'Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.')
 		},
 
-		/** @return {Array<{id: string, label: string}>} Quota period options. */
+		/**
+		 * @return {Array<{id: string, label: string}>} Quota period options.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		quotaPeriodOptions() {
 			const labels = {
 				hour: t('openconnector', 'Per hour'),
@@ -557,7 +607,11 @@ export default {
 			return QUOTA_PERIODS.map((id) => ({ id, label: labels[id] || id }))
 		},
 
-		/** @return {object|null} The selected quota-period option. */
+		/**
+		 * @return {object|null} The selected quota-period option.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		selectedQuotaPeriod() {
 			const current = this.draft.quotaPeriod
 			if (!current) return null
@@ -570,6 +624,8 @@ export default {
 		 * object replaces it.
 		 *
 		 * @return {object|null|undefined} The credential intent.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		authConfigForPayload() {
 			if (this.authConfigCleared) return null
@@ -581,7 +637,11 @@ export default {
 			}
 		},
 
-		/** @return {boolean} Whether Save is enabled. */
+		/**
+		 * @return {boolean} Whether Save is enabled.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		canSave() {
 			return !this.saving
 				&& typeof this.confirm === 'function'
@@ -631,6 +691,8 @@ export default {
 		 *
 		 * @param {string} key   Draft key.
 		 * @param {*}      value New value.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		updateDraft(key, value) {
 			this.draft = { ...this.draft, [key]: value }
@@ -644,6 +706,8 @@ export default {
 		 *
 		 * @param {string} key   Draft key.
 		 * @param {string} value Raw input value.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		updateNumber(key, value) {
 			this.updateDraft(key, positiveIntOrNull(value))
@@ -656,6 +720,8 @@ export default {
 		 * @param {number|null} value The stored scalar.
 		 *
 		 * @return {string} Input value.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		numberText(value) {
 			return value === null || value === undefined ? '' : String(value)
@@ -668,6 +734,8 @@ export default {
 		 * `buildConsumerPayload()` nulls the property for such types anyway.
 		 *
 		 * @param {object|null} option The chosen option.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		onAuthorizationTypePick(option) {
 			this.updateDraft('authorizationType', option?.id || 'none')
@@ -684,6 +752,8 @@ export default {
 		 * `authConfigForPayload` parses it.
 		 *
 		 * @param {string} value Current editor contents.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		onAuthConfigInput(value) {
 			this.authConfigText = value
@@ -704,12 +774,20 @@ export default {
 			}
 		},
 
-		/** Drop the example shape for the current type into the editor. */
+		/**
+		 * Drop the example shape for the current type into the editor.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		insertAuthConfigTemplate() {
 			this.onAuthConfigInput(this.authConfigPlaceholder)
 		},
 
-		/** Mark the stored credential for removal on save. */
+		/**
+		 * Mark the stored credential for removal on save.
+		 *
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
 		clearAuthConfig() {
 			this.authConfigText = ''
 			this.authConfigError = ''
