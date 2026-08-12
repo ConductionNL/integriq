@@ -78,6 +78,24 @@ jobs:
       # dependency and fails ~70s later on missing tables — which reads like a
       # migration fault rather than a missing app. Testing a version the app
       # cannot support produces red that says nothing. See issue #1172.
+      #
+      # WHY THIS IS NOW stable34 AND NOT `["stable32", "stable33"]`. This PR
+      # moves the dev requirement to `nextcloud/ocp ^34`, so the stubs every
+      # static-analysis leg resolves against are NC34's. Running the suite
+      # against an older server would check the app under one set of API
+      # signatures and analyse it under another, and the two disagreeing is
+      # exactly the class of defect the analysers exist to find.
+      #
+      # ⚠️ THIS IS A NARROWING, AND IT IS NOT FREE. appinfo/info.xml still
+      # declares `min-version="32" max-version="34"`, so the app claims three
+      # server versions and this suite now exercises one. NC32 and NC33 are
+      # unverified by CI from here on — not known-broken, unmeasured. The
+      # fleet-wide coding-standard migration takes that trade deliberately
+      # (larpingapp#313 is the reference); closing it means either restoring
+      # the older refs alongside stable34 once ocp ^34 stubs are proven
+      # compatible with them, or raising info.xml's min-version to match what
+      # is actually tested. Whichever way it is closed, the two numbers should
+      # stop disagreeing.
       nextcloud-test-refs: '["stable34"]'
       # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
       # the comment it replaced instructed: "Remove this line in the change
