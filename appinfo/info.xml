@@ -25,9 +25,9 @@
     ]]></description>
 	<version>0.3.4</version>
 	<licence>EUPL-1.2</licence>
-	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>OpenConnector</namespace>
+	<category>integration</category>
     <website>https://codeberg.org/Conduction/openconnector</website>
 	<bugs>https://codeberg.org/Conduction/openconnector/issues</bugs>
     <repository>https://codeberg.org/Conduction/openconnector</repository>
@@ -35,10 +35,25 @@
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-sources.png</screenshot>
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
-        <app>openregister</app>
         <!--
-        min-version is 32, NOT 28, because <app>openregister</app> above is a HARD
-        dependency and openregister declares min-version="32". On NC 28-31 openregister
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time.
+        -->
+        <php min-version="8.3" min-int-size="64"/>
+        <database min-version="10">pgsql</database>
+        <database>sqlite</database>
+        <database min-version="8.0">mysql</database>
+
+        <lib>curl</lib>
+
+        <owncloud max-version="0" min-version="0"/>
+        <!--
+        min-version is 32, NOT 28, because the openregister app dependency noted
+        above is a HARD dependency and openregister declares min-version="32". On NC 28-31 openregister
         refuses to install ("cannot be installed because it is not compatible with this
         version of the server"), and every openconnector entity is an OpenRegister
         object — so the app cannot function there. Declaring 28 advertised a range
@@ -51,14 +66,6 @@
         repo claiming 35, so the claim was untested everywhere it mattered.
         -->
         <nextcloud min-version="32" max-version="34"/>
-        <php min-version="8.3" min-int-size="64"/>
-        <database min-version="10">pgsql</database>
-        <database>sqlite</database>
-        <database min-version="8.0">mysql</database>
-
-        <lib>curl</lib>
-
-        <owncloud max-version="0" min-version="0"/>
 	</dependencies>
 
 	<background-jobs>
@@ -79,6 +86,29 @@
 		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
 		<job>OCA\OpenConnector\Cron\StufZknRetryJob</job>
 	</background-jobs>
+
+	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
+			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
+		</post-migration>
+	</repair-steps>
 
 	<commands>
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
@@ -104,28 +134,10 @@
 		<command>OCA\OpenConnector\Command\AuthenticationConfig</command>
 	</commands>
 
-	<repair-steps>
-		<post-migration>
-			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
-			<step>OCA\OpenConnector\Repair\InitializeActions</step>
-			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
-			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
-			     verify, write credentialRef, null the inline value) now that
-			     organisation-scope resolution is unblocked (openregister#450/#440),
-			     then records whether any source still holds an inline secret into
-			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
-			     repair step's docblock. -->
-			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
-			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
-			     secret fields (apikey, secret, password, jwt) from the LIVE source
-			     schema ONLY once every source is verifiably clean of inline values in
-			     them. Runs AFTER the migration above so the gate can be clean.
-			     authenticationConfig is excluded (manual review). The register JSON
-			     keeps all five fields on purpose (see the step's docblock). -->
-			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
-			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
-		</post-migration>
-	</repair-steps>
+	<settings>
+		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
+		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
+	</settings>
 
 	<navigations>
 		<navigation>
@@ -135,9 +147,4 @@
 			<icon>app.svg</icon>
 		</navigation>
 	</navigations>
-
-	<settings>
-		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
-		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
-	</settings>
 </info>
