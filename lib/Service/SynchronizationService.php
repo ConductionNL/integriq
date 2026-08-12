@@ -563,6 +563,71 @@ class SynchronizationService {
 	 *
 	 * @return array|null The found contract payload array or null when not found.
 	 */
+
+	/**
+	 * Read a whole page's contracts in ONE query, keyed by origin id.
+	 *
+	 * The per-item lookup this replaces cost one query per source record.
+	 * Measured on a 100-record sync: 200 contract reads before, and the page is
+	 * bounded (200 per page is a common API ceiling) so the IN list stays small
+	 * and the query stays planable. Fetching every contract for the
+	 * synchronization up front would trade a per-item query for an unbounded
+	 * result set on a register that already holds thousands.
+	 *
+	 * The per-object loop is untouched — lookup and processing are separate
+	 * concerns, so each item still resolves its own contract, from memory.
+	 *
+	 * @param string $synchronizationId The synchronization the contracts belong to.
+	 * @param array  $originIds         The page's origin ids.
+	 * @param bool   $justByOriginId    Match on origin id alone.
+	 *
+	 * @return array<string, array<int, array>> Origin id => all matching contract payloads.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors findContractBySyncAndOrigin's
+	 * own flag, which is the source-config option `findContractByOriginIdOnly`.
+	 */
+	private function indexContractsByOrigin(
+		string $synchronizationId,
+		array $originIds,
+		bool $justByOriginId = false
+	): array {
+		$originIds = array_values(array_unique(array_filter($originIds, static fn ($id): bool => $id !== '')));
+		if ($originIds === []) {
+			return [];
+		}
+
+		$filters = ['originId' => $originIds];
+		if ($justByOriginId === false) {
+			$filters['synchronizationId'] = $synchronizationId;
+		}
+
+		$index = [];
+		foreach ($this->findAllContractObjects(filters: $filters) as $match) {
+			$payload = $match->jsonSerialize();
+			$key = (string)($payload['originId'] ?? '');
+			if ($key === '') {
+				continue;
+			}
+
+			// ALL matches per origin id, not just the first: detectDuplicateContracts
+			// needs the full list to spot a duplicated (synchronizationId, originId)
+			// pair, and collapsing to one here would silently disable that check.
+			$index[$key][] = $payload;
+		}
+
+		return $index;
+	}//end indexContractsByOrigin()
+
+	/**
+	 * Find a contract by synchronizationId + originId (and optionally just origin).
+	 *
+	 * @param string     $synchronizationId The synchronization id.
+	 * @param string     $originId          The origin id.
+	 * @param bool|null  $justByOriginId    When true, match on origin id only.
+	 * @param array|null $allMatches        By-reference output: ALL matching contract payloads.
+	 *
+	 * @return array|null The found contract payload array or null when not found.
+	 */
 	private function findContractBySyncAndOrigin(
 		string $synchronizationId,
 		string $originId,
@@ -1743,6 +1808,24 @@ class SynchronizationService {
 			$synchronizedTargetIds = [];
 			$objectProcessingTimes = [];
 
+			// ONE contract read for the whole page, before the loop. The loop
+			// below is unchanged; it resolves each item's contract from this
+			// index rather than issuing its own query.
+			$contractIndex = $this->indexContractsByOrigin(
+				synchronizationId: (string)($synchronization['id'] ?? ''),
+				originIds: array_map(
+					fn ($item): string => $this->getOriginId(
+						synchronization: $synchronization,
+						object: (is_array($item) === true ? $item : ['id' => $item])
+					),
+					$objectList
+				),
+				justByOriginId: (
+					isset($sourceConfig['findContractByOriginIdOnly']) === true
+					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
+				)
+			);
+
 			foreach ($objectList as $object) {
 				// Bare-scalar source item coercion (synchronization-engine
 				// spec REQ-002/REQ-008, change sync-engine-scalar-items):
@@ -1787,7 +1870,8 @@ class SynchronizationService {
 						isTest: $isTest,
 						force: $force,
 						log: $log,
-						trace: $trace
+						trace: $trace,
+						contractIndex: $contractIndex
 					);
 				} catch (\Throwable $itemException) {
 					$result['objects']['invalid']++;
@@ -7635,6 +7719,7 @@ class SynchronizationService {
 		FlowToken &$flowToken,
 		?string $mutationType = null,
 		?ExecutionTraceContext $trace = null,
+		?array $contractIndex = null,
 	): array {
 		// Execution-trace REQ-002: one ordered `synchronization` step per
 		// item processed, redacted per REQ-003 before it is buffered.
@@ -7728,13 +7813,23 @@ class SynchronizationService {
 			$findContractByOriginId = true;
 		}
 
+		// Resolve from the page's pre-read index when the caller built one. A
+		// missing key is a MISS, not a reason to fall back: the bulk read covered
+		// every origin id on the page, so no entry means no contract exists.
+		// Falling back would reintroduce the per-item query for exactly the
+		// create-path items that dominate a first run.
 		$contractMatches = null;
-		$synchronizationContract = $this->findContractBySyncAndOrigin(
-			synchronizationId: (string)($synchronization['id'] ?? ''),
-			originId: $originId,
-			justByOriginId: $findContractByOriginId,
-			allMatches: $contractMatches
-		);
+		if ($contractIndex !== null) {
+			$contractMatches = ($contractIndex[$originId] ?? []);
+			$synchronizationContract = ($contractMatches[0] ?? null);
+		} else {
+			$synchronizationContract = $this->findContractBySyncAndOrigin(
+				synchronizationId: (string)($synchronization['id'] ?? ''),
+				originId: $originId,
+				justByOriginId: $findContractByOriginId,
+				allMatches: $contractMatches
+			);
+		}
 
 		// Opportunistic duplicate-contract diagnostic (REQ-013): only when the
 		// lookup actually matched (the create path cannot have duplicates yet)
