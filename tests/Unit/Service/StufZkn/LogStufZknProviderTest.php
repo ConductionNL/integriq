@@ -28,43 +28,39 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
-class LogStufZknProviderTest extends TestCase
-{
+class LogStufZknProviderTest extends TestCase {
 
-    /**
-     * getProviderId() returns "log".
-     *
-     * @return void
-     */
-    public function testGetProviderId(): void
-    {
-        $this->assertSame('log', (new LogStufZknProvider())->getProviderId());
+	/**
+	 * getProviderId() returns "log".
+	 *
+	 * @return void
+	 */
+	public function testGetProviderId(): void {
+		$this->assertSame('log', (new LogStufZknProvider())->getProviderId());
 
-    }//end testGetProviderId()
+	}//end testGetProviderId()
 
-    /**
-     * send() returns a synthetic MOCK-STUFZKN-<n> reference and never touches its arguments.
-     *
-     * @return void
-     */
-    public function testSendReturnsSyntheticReference(): void
-    {
-        $provider = new LogStufZknProvider();
-        $ref      = $provider->send([], 'REF-1', '<Envelope/>');
+	/**
+	 * send() returns a synthetic MOCK-STUFZKN-<n> reference and never touches its arguments.
+	 *
+	 * @return void
+	 */
+	public function testSendReturnsSyntheticReference(): void {
+		$provider = new LogStufZknProvider();
+		$ref = $provider->send([], 'REF-1', '<Envelope/>');
 
-        $this->assertStringStartsWith('MOCK-STUFZKN-', $ref);
+		$this->assertStringStartsWith('MOCK-STUFZKN-', $ref);
 
-    }//end testSendReturnsSyntheticReference()
+	}//end testSendReturnsSyntheticReference()
 
-    /**
-     * getConfigSchema() declares no required configuration.
-     *
-     * @return void
-     */
-    public function testConfigSchemaIsEmpty(): void
-    {
-        $schema = (new LogStufZknProvider())->getConfigSchema();
-        $this->assertSame(['type' => 'object', 'properties' => []], $schema);
+	/**
+	 * getConfigSchema() declares no required configuration.
+	 *
+	 * @return void
+	 */
+	public function testConfigSchemaIsEmpty(): void {
+		$schema = (new LogStufZknProvider())->getConfigSchema();
+		$this->assertSame(['type' => 'object', 'properties' => []], $schema);
 
-    }//end testConfigSchemaIsEmpty()
+	}//end testConfigSchemaIsEmpty()
 }//end class

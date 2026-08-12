@@ -41,44 +41,43 @@ use OCA\OpenConnector\Exception\DsoProviderException;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-interface DsoConnectorProviderInterface
-{
-    /**
-     * Stable machine identifier for this binding (e.g. `log`, `rest`).
-     *
-     * Selected at runtime via the `dso` source's `configuration.provider`
-     * field — see {@see \OCA\OpenConnector\Service\DsoIngestService::resolveProvider()}.
-     *
-     * @return string The provider identifier.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string;
+interface DsoConnectorProviderInterface {
+	/**
+	 * Stable machine identifier for this binding (e.g. `log`, `rest`).
+	 *
+	 * Selected at runtime via the `dso` source's `configuration.provider`
+	 * field — see {@see \OCA\OpenConnector\Service\DsoIngestService::resolveProvider()}.
+	 *
+	 * @return string The provider identifier.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string;
 
-    /**
-     * The JSON Schema describing this provider's `configuration` object.
-     *
-     * @return array<string, mixed> A JSON Schema (object) fragment.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array;
+	/**
+	 * The JSON Schema describing this provider's `configuration` object.
+	 *
+	 * @return array<string, mixed> A JSON Schema (object) fragment.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array;
 
-    /**
-     * Dispatch one already-built outbound DSO message.
-     *
-     * @param array  $sourceConfiguration The `dso` source's `configuration` object.
-     * @param string $verzoekId           The DSO `verzoekId` this message concerns.
-     * @param string $type                The message kind: `status` or `besluit`.
-     * @param array  $payload             The already-built message payload (see
-     *                                    design.md's outbound field table).
-     *
-     * @return string The transport-assigned reference (or a locally-derived reference when
-     *                the transport assigns none of its own).
-     *
-     * @throws DsoProviderException When the endpoint is unreachable, errors, or is misconfigured.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string;
+	/**
+	 * Dispatch one already-built outbound DSO message.
+	 *
+	 * @param array $sourceConfiguration The `dso` source's `configuration` object.
+	 * @param string $verzoekId The DSO `verzoekId` this message concerns.
+	 * @param string $type The message kind: `status` or `besluit`.
+	 * @param array $payload The already-built message payload (see
+	 *                       design.md's outbound field table).
+	 *
+	 * @return string The transport-assigned reference (or a locally-derived reference when
+	 *                the transport assigns none of its own).
+	 *
+	 * @throws DsoProviderException When the endpoint is unreachable, errors, or is misconfigured.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string;
 }//end interface

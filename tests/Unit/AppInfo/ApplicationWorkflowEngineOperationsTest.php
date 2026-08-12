@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit test for the `workflowengine` feature-detected registration in
  * Application::register() (flow-workflowengine-integration).
@@ -49,189 +50,174 @@ use ReflectionClass;
  * @covers \OCA\OpenConnector\AppInfo\Application
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
-class ApplicationWorkflowEngineOperationsTest extends TestCase
-{
+class ApplicationWorkflowEngineOperationsTest extends TestCase {
 
+	/**
+	 * Build an Application instance whose getContainer() resolves IAppManager
+	 * (or throws) and LoggerInterface from the given mocks, without running
+	 * the real App constructor.
+	 *
+	 * @param IAppManager|null $appManager The IAppManager mock to expose, or null
+	 *                                     to make the container throw on get().
+	 * @param LoggerInterface|null $logger Optional logger mock.
+	 *
+	 * @return Application
+	 */
+	private function makeApp(?IAppManager $appManager, ?LoggerInterface $logger = null): Application {
+		$logger = ($logger ?? $this->createMock(LoggerInterface::class));
+		$container = $this->createMock(IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($appManager, $logger) {
+				if ($id === IAppManager::class) {
+					if ($appManager === null) {
+						throw new \RuntimeException('IAppManager unavailable');
+					}
 
-    /**
-     * Build an Application instance whose getContainer() resolves IAppManager
-     * (or throws) and LoggerInterface from the given mocks, without running
-     * the real App constructor.
-     *
-     * @param IAppManager|null     $appManager The IAppManager mock to expose, or null
-     *                                         to make the container throw on get().
-     * @param LoggerInterface|null $logger     Optional logger mock.
-     *
-     * @return Application
-     */
-    private function makeApp(?IAppManager $appManager, ?LoggerInterface $logger=null): Application
-    {
-        $logger    = ($logger ?? $this->createMock(LoggerInterface::class));
-        $container = $this->createMock(IAppContainer::class);
-        $container->method('get')->willReturnCallback(
-            function (string $id) use ($appManager, $logger) {
-                if ($id === IAppManager::class) {
-                    if ($appManager === null) {
-                        throw new \RuntimeException('IAppManager unavailable');
-                    }
+					return $appManager;
+				}
 
-                    return $appManager;
-                }
+				if ($id === LoggerInterface::class) {
+					return $logger;
+				}
 
-                if ($id === LoggerInterface::class) {
-                    return $logger;
-                }
+				throw new \RuntimeException('unexpected container id: ' . $id);
+			}
+		);
 
-                throw new \RuntimeException('unexpected container id: '.$id);
-            }
-        );
+		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
 
-        $app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
+		// Inject the mock container into App's protected $container property.
+		$appReflection = new ReflectionClass(\OCP\AppFramework\App::class);
+		if ($appReflection->hasProperty('container') === true) {
+			$prop = $appReflection->getProperty('container');
+			$prop->setAccessible(true);
+			$prop->setValue($app, $container);
+		}
 
-        // Inject the mock container into App's protected $container property.
-        $appReflection = new ReflectionClass(\OCP\AppFramework\App::class);
-        if ($appReflection->hasProperty('container') === true) {
-            $prop = $appReflection->getProperty('container');
-            $prop->setAccessible(true);
-            $prop->setValue($app, $container);
-        }
+		return $app;
+	}//end makeApp()
 
-        return $app;
+	/**
+	 * Build an `IAppManager` mock answering the "is `workflowengine` enabled"
+	 * question for {@see Application::appEnabledForAnyone()}.
+	 *
+	 * WHY THIS CHANGED (#1103). This helper previously did:
+	 *
+	 * ```php
+	 * $this->getMockBuilder(IAppManager::class)
+	 *     ->addMethods(['isEnabledForAnyUser'])
+	 *     ->getMockForAbstractClass();
+	 * ```
+	 *
+	 * with a docblock asserting that `isEnabledForAnyUser()` was "real, current
+	 * `OCP\App\IAppManager` API" merely missing from the older
+	 * `nextcloud/ocp` interface snapshot then pinned. Both halves were wrong:
+	 * the method is in NEITHER the vendored interface NOR NC 35's, and
+	 * `addMethods()` MANUFACTURED it on the generated mock. So the test asserted
+	 * against an API that does not exist, passed, and the production call it was
+	 * guarding raised `Call to undefined method` on every real server — silently,
+	 * because the call site's `catch (\Throwable)` only logs a warning. The bug
+	 * surfaced in an upgrade log, not in CI.
+	 *
+	 * The lesson encoded here: `addMethods()` on an interface mock is only ever
+	 * legitimate for an API that genuinely exists on some supported server and is
+	 * absent from the pinned stub — never as a way to make a call compile. Verify
+	 * against the real interface before reaching for it.
+	 *
+	 * This mock stubs `isEnabledForAnyone()`, the single method
+	 * `appEnabledForAnyone()` now calls. Until #1174 it had to stub `isInstalled()`
+	 * as well and pick between the two with a `method_exists()` probe, because
+	 * `nextcloud/ocp` was pinned to `dev-stable29` — an interface snapshot that
+	 * predates `isEnabledForAnyone()` (`@since 32.0.0`) — while info.xml declared
+	 * `min-version="32"`. With the pin at `^32.0` the method is real interface
+	 * API, `createMock()` stubs it for real, and the probe is gone.
+	 *
+	 * @param bool $enabled The value the app manager should report for `workflowengine`.
+	 *
+	 * @return IAppManager
+	 */
+	private function makeAppManagerMock(bool $enabled): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('workflowengine')->willReturn($enabled);
 
-    }//end makeApp()
+		return $appManager;
+	}//end makeAppManagerMock()
 
+	/**
+	 * Invoke the private registerWorkflowEngineOperations() method.
+	 *
+	 * @param Application $app The instance under test.
+	 * @param IEventDispatcher $dispatcher The dispatcher mock to pass through.
+	 *
+	 * @return void
+	 */
+	private function invokeRegister(Application $app, IEventDispatcher $dispatcher): void {
+		$method = (new ReflectionClass(Application::class))->getMethod('registerWorkflowEngineOperations');
+		$method->setAccessible(true);
+		$method->invoke($app, $this->createMock(IRegistrationContext::class), $dispatcher);
 
-    /**
-     * Build an `IAppManager` mock answering the "is `workflowengine` enabled"
-     * question for {@see Application::appEnabledForAnyone()}.
-     *
-     * WHY THIS CHANGED (#1103). This helper previously did:
-     *
-     * ```php
-     * $this->getMockBuilder(IAppManager::class)
-     *     ->addMethods(['isEnabledForAnyUser'])
-     *     ->getMockForAbstractClass();
-     * ```
-     *
-     * with a docblock asserting that `isEnabledForAnyUser()` was "real, current
-     * `OCP\App\IAppManager` API" merely missing from the older
-     * `nextcloud/ocp` interface snapshot then pinned. Both halves were wrong:
-     * the method is in NEITHER the vendored interface NOR NC 35's, and
-     * `addMethods()` MANUFACTURED it on the generated mock. So the test asserted
-     * against an API that does not exist, passed, and the production call it was
-     * guarding raised `Call to undefined method` on every real server — silently,
-     * because the call site's `catch (\Throwable)` only logs a warning. The bug
-     * surfaced in an upgrade log, not in CI.
-     *
-     * The lesson encoded here: `addMethods()` on an interface mock is only ever
-     * legitimate for an API that genuinely exists on some supported server and is
-     * absent from the pinned stub — never as a way to make a call compile. Verify
-     * against the real interface before reaching for it.
-     *
-     * This mock stubs `isEnabledForAnyone()`, the single method
-     * `appEnabledForAnyone()` now calls. Until #1174 it had to stub `isInstalled()`
-     * as well and pick between the two with a `method_exists()` probe, because
-     * `nextcloud/ocp` was pinned to `dev-stable29` — an interface snapshot that
-     * predates `isEnabledForAnyone()` (`@since 32.0.0`) — while info.xml declared
-     * `min-version="32"`. With the pin at `^32.0` the method is real interface
-     * API, `createMock()` stubs it for real, and the probe is gone.
-     *
-     * @param bool $enabled The value the app manager should report for `workflowengine`.
-     *
-     * @return IAppManager
-     */
-    private function makeAppManagerMock(bool $enabled): IAppManager
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForAnyone')->with('workflowengine')->willReturn($enabled);
+	}//end invokeRegister()
 
-        return $appManager;
+	/**
+	 * GIVEN `workflowengine` is enabled WHEN OpenConnector boots THEN
+	 * RegisterOperationsListener IS registered against RegisterOperationsEvent.
+	 *
+	 * @return void
+	 */
+	public function testRegistersListenerWhenWorkflowEngineEnabled(): void {
+		$appManager = $this->makeAppManagerMock(true);
 
-    }//end makeAppManagerMock()
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->once())
+			->method('addServiceListener')
+			->with(
+				eventName: RegisterOperationsEvent::class,
+				className: RegisterOperationsListener::class
+			);
 
+		$this->invokeRegister($this->makeApp($appManager), $dispatcher);
 
-    /**
-     * Invoke the private registerWorkflowEngineOperations() method.
-     *
-     * @param Application      $app        The instance under test.
-     * @param IEventDispatcher $dispatcher The dispatcher mock to pass through.
-     *
-     * @return void
-     */
-    private function invokeRegister(Application $app, IEventDispatcher $dispatcher): void
-    {
-        $method = (new ReflectionClass(Application::class))->getMethod('registerWorkflowEngineOperations');
-        $method->setAccessible(true);
-        $method->invoke($app, $this->createMock(IRegistrationContext::class), $dispatcher);
+	}//end testRegistersListenerWhenWorkflowEngineEnabled()
 
-    }//end invokeRegister()
+	/**
+	 * GIVEN `workflowengine` is disabled WHEN OpenConnector boots THEN no
+	 * registration occurs and nothing is logged (a disabled app is a normal
+	 * state, not a fault).
+	 *
+	 * @return void
+	 */
+	public function testNoRegistrationAndNoLogWhenWorkflowEngineDisabled(): void {
+		$appManager = $this->makeAppManagerMock(false);
 
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('addServiceListener');
 
-    /**
-     * GIVEN `workflowengine` is enabled WHEN OpenConnector boots THEN
-     * RegisterOperationsListener IS registered against RegisterOperationsEvent.
-     *
-     * @return void
-     */
-    public function testRegistersListenerWhenWorkflowEngineEnabled(): void
-    {
-        $appManager = $this->makeAppManagerMock(true);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$logger->expects($this->never())->method('error');
 
-        $dispatcher = $this->createMock(IEventDispatcher::class);
-        $dispatcher->expects($this->once())
-            ->method('addServiceListener')
-            ->with(
-                eventName: RegisterOperationsEvent::class,
-                className: RegisterOperationsListener::class
-            );
+		$this->invokeRegister($this->makeApp($appManager, $logger), $dispatcher);
 
-        $this->invokeRegister($this->makeApp($appManager), $dispatcher);
+	}//end testNoRegistrationAndNoLogWhenWorkflowEngineDisabled()
 
-    }//end testRegistersListenerWhenWorkflowEngineEnabled()
+	/**
+	 * GIVEN IAppManager resolution throws WHEN OpenConnector boots THEN no
+	 * registration occurs, a warning (not error) is logged, and no exception
+	 * propagates.
+	 *
+	 * @return void
+	 */
+	public function testDegradesSoftlyWhenAppManagerResolutionThrows(): void {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('addServiceListener');
 
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning');
+		$logger->expects($this->never())->method('error');
 
-    /**
-     * GIVEN `workflowengine` is disabled WHEN OpenConnector boots THEN no
-     * registration occurs and nothing is logged (a disabled app is a normal
-     * state, not a fault).
-     *
-     * @return void
-     */
-    public function testNoRegistrationAndNoLogWhenWorkflowEngineDisabled(): void
-    {
-        $appManager = $this->makeAppManagerMock(false);
+		// Must not throw.
+		$this->invokeRegister($this->makeApp(null, $logger), $dispatcher);
+		$this->addToAssertionCount(1);
 
-        $dispatcher = $this->createMock(IEventDispatcher::class);
-        $dispatcher->expects($this->never())->method('addServiceListener');
-
-        $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects($this->never())->method('warning');
-        $logger->expects($this->never())->method('error');
-
-        $this->invokeRegister($this->makeApp($appManager, $logger), $dispatcher);
-
-    }//end testNoRegistrationAndNoLogWhenWorkflowEngineDisabled()
-
-
-    /**
-     * GIVEN IAppManager resolution throws WHEN OpenConnector boots THEN no
-     * registration occurs, a warning (not error) is logged, and no exception
-     * propagates.
-     *
-     * @return void
-     */
-    public function testDegradesSoftlyWhenAppManagerResolutionThrows(): void
-    {
-        $dispatcher = $this->createMock(IEventDispatcher::class);
-        $dispatcher->expects($this->never())->method('addServiceListener');
-
-        $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects($this->once())->method('warning');
-        $logger->expects($this->never())->method('error');
-
-        // Must not throw.
-        $this->invokeRegister($this->makeApp(null, $logger), $dispatcher);
-        $this->addToAssertionCount(1);
-
-    }//end testDegradesSoftlyWhenAppManagerResolutionThrows()
+	}//end testDegradesSoftlyWhenAppManagerResolutionThrows()
 }//end class

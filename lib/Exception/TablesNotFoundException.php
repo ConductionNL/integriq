@@ -34,16 +34,14 @@ use Exception;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
-class TablesNotFoundException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message Human-readable, secret-free message.
-     */
-    public function __construct(string $message)
-    {
-        parent::__construct(message: $message, code: 404);
+class TablesNotFoundException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable, secret-free message.
+	 */
+	public function __construct(string $message) {
+		parent::__construct(message: $message, code: 404);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

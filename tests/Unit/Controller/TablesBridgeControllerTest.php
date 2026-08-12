@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Contract tests for TablesBridgeController's discovery endpoints.
  *
@@ -38,155 +39,148 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
-class TablesBridgeControllerTest extends TestCase
-{
+class TablesBridgeControllerTest extends TestCase {
 
-    /**
-     * @var \PHPUnit\Framework\MockObject\MockObject|TablesSyncAdapter
-     */
-    private $tablesSyncAdapter;
+	/**
+	 * @var \PHPUnit\Framework\MockObject\MockObject|TablesSyncAdapter
+	 */
+	private $tablesSyncAdapter;
 
-    /**
-     * @var \PHPUnit\Framework\MockObject\MockObject|IUserSession
-     */
-    private $userSession;
+	/**
+	 * @var \PHPUnit\Framework\MockObject\MockObject|IUserSession
+	 */
+	private $userSession;
 
-    /**
-     * @var \PHPUnit\Framework\MockObject\MockObject|ActionAuthService
-     */
-    private $actionAuth;
+	/**
+	 * @var \PHPUnit\Framework\MockObject\MockObject|ActionAuthService
+	 */
+	private $actionAuth;
 
-    /**
-     * @var TablesBridgeController
-     */
-    private TablesBridgeController $controller;
+	/**
+	 * @var TablesBridgeController
+	 */
+	private TablesBridgeController $controller;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
-        $this->userSession       = $this->createMock(IUserSession::class);
-        $this->actionAuth        = $this->createMock(ActionAuthService::class);
+		$this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->actionAuth = $this->createMock(ActionAuthService::class);
 
-        $l = $this->createMock(IL10N::class);
-        $l->method('t')->willReturnArgument(0);
+		$l = $this->createMock(IL10N::class);
+		$l->method('t')->willReturnArgument(0);
 
-        $this->controller = new TablesBridgeController(
-            'openconnector',
-            $this->createMock(IRequest::class),
-            $this->tablesSyncAdapter,
-            $this->createMock(OrObjectService::class),
-            $l,
-            $this->createMock(LoggerInterface::class),
-            $this->userSession,
-            $this->actionAuth
-        );
+		$this->controller = new TablesBridgeController(
+			'openconnector',
+			$this->createMock(IRequest::class),
+			$this->tablesSyncAdapter,
+			$this->createMock(OrObjectService::class),
+			$l,
+			$this->createMock(LoggerInterface::class),
+			$this->userSession,
+			$this->actionAuth
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * An unauthenticated caller is 401 and the Tables adapter is never asked
-     * anything.
-     *
-     * @return void
-     */
-    public function testTablesWithoutAUserIs401AndNeverTouchesTheAdapter(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->tablesSyncAdapter->expects($this->never())->method('assertEnabled');
-        $this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
+	/**
+	 * An unauthenticated caller is 401 and the Tables adapter is never asked
+	 * anything.
+	 *
+	 * @return void
+	 */
+	public function testTablesWithoutAUserIs401AndNeverTouchesTheAdapter(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->tablesSyncAdapter->expects($this->never())->method('assertEnabled');
+		$this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
 
-        $response = $this->controller->tables('source-1');
+		$response = $this->controller->tables('source-1');
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame('Not authenticated', $response->getData()['error']);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame('Not authenticated', $response->getData()['error']);
 
-    }//end testTablesWithoutAUserIs401AndNeverTouchesTheAdapter()
+	}//end testTablesWithoutAUserIs401AndNeverTouchesTheAdapter()
 
-    /**
-     * The action authorization runs BEFORE parameter validation, so a caller
-     * without the discover action is stopped even on a request that would have
-     * been rejected as malformed anyway.
-     *
-     * @return void
-     */
-    public function testTablesRequiresTheDiscoverActionBeforeValidatingParameters(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
+	/**
+	 * The action authorization runs BEFORE parameter validation, so a caller
+	 * without the discover action is stopped even on a request that would have
+	 * been rejected as malformed anyway.
+	 *
+	 * @return void
+	 */
+	public function testTablesRequiresTheDiscoverActionBeforeValidatingParameters(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->actionAuth->expects($this->once())
-            ->method('requireAction')
-            ->with($user, 'synchronization.tablesBridge.discover');
+		$this->actionAuth->expects($this->once())
+			->method('requireAction')
+			->with($user, 'synchronization.tablesBridge.discover');
 
-        $this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
+		$this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
 
-        $response = $this->controller->tables(null);
+		$response = $this->controller->tables(null);
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('sourceId is required', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('sourceId is required', $response->getData()['error']);
 
-    }//end testTablesRequiresTheDiscoverActionBeforeValidatingParameters()
+	}//end testTablesRequiresTheDiscoverActionBeforeValidatingParameters()
 
-    /**
-     * An empty-string sourceId is treated as absent, not as a Source named ''.
-     *
-     * @return void
-     */
-    public function testTablesRejectsAnEmptyStringSourceId(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
-        $this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
+	/**
+	 * An empty-string sourceId is treated as absent, not as a Source named ''.
+	 *
+	 * @return void
+	 */
+	public function testTablesRejectsAnEmptyStringSourceId(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->tablesSyncAdapter->expects($this->never())->method('listTablesForEditor');
 
-        $response = $this->controller->tables('');
+		$response = $this->controller->tables('');
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('sourceId is required', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('sourceId is required', $response->getData()['error']);
 
-    }//end testTablesRejectsAnEmptyStringSourceId()
+	}//end testTablesRejectsAnEmptyStringSourceId()
 
-    /**
-     * A non-positive tableId is rejected before any discovery happens. Tables
-     * ids are positive integers; `0` is what a non-numeric path segment casts
-     * to.
-     *
-     * @return void
-     */
-    public function testColumnsRejectsANonPositiveTableId(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
-        $this->tablesSyncAdapter->expects($this->never())->method('listColumnsForEditor');
+	/**
+	 * A non-positive tableId is rejected before any discovery happens. Tables
+	 * ids are positive integers; `0` is what a non-numeric path segment casts
+	 * to.
+	 *
+	 * @return void
+	 */
+	public function testColumnsRejectsANonPositiveTableId(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->tablesSyncAdapter->expects($this->never())->method('listColumnsForEditor');
 
-        $response = $this->controller->columns(0, 'source-1');
+		$response = $this->controller->columns(0, 'source-1');
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('tableId must be numeric', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('tableId must be numeric', $response->getData()['error']);
 
-    }//end testColumnsRejectsANonPositiveTableId()
+	}//end testColumnsRejectsANonPositiveTableId()
 
-    /**
-     * `columns` checks authentication before the tableId, so an unauthenticated
-     * caller gets 401 rather than a validation error that would disclose which
-     * ids the endpoint considers well-formed.
-     *
-     * @return void
-     */
-    public function testColumnsWithoutAUserIs401NotAValidationError(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->tablesSyncAdapter->expects($this->never())->method('listColumnsForEditor');
+	/**
+	 * `columns` checks authentication before the tableId, so an unauthenticated
+	 * caller gets 401 rather than a validation error that would disclose which
+	 * ids the endpoint considers well-formed.
+	 *
+	 * @return void
+	 */
+	public function testColumnsWithoutAUserIs401NotAValidationError(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->tablesSyncAdapter->expects($this->never())->method('listColumnsForEditor');
 
-        $response = $this->controller->columns(0, null);
+		$response = $this->controller->columns(0, null);
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame('Not authenticated', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame('Not authenticated', $response->getData()['error']);
 
-    }//end testColumnsWithoutAUserIs401NotAValidationError()
+	}//end testColumnsWithoutAUserIs401NotAValidationError()
 }//end class

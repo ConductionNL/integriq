@@ -47,312 +47,298 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-callback-authentication-reuses-consumer-management-apikey-verification-req-002
  */
-class NotificatiesSubscriberControllerCallbackTest extends TestCase
-{
+class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 
-    private const ABONNEMENT_ID = 'ab-1111-2222';
+	private const ABONNEMENT_ID = 'ab-1111-2222';
 
-    private const CONSUMER_ID = 'cons-3333-4444';
+	private const CONSUMER_ID = 'cons-3333-4444';
 
-    /**
-     * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $request;
 
-    /**
-     * @var NotificatiesSubscriberService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $subscriberService;
+	/**
+	 * @var NotificatiesSubscriberService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $subscriberService;
 
-    /**
-     * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $authorizationService;
+	/**
+	 * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $authorizationService;
 
-    /**
-     * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $orObjectService;
+	/**
+	 * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $orObjectService;
 
-    /**
-     * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $actionAuth;
+	/**
+	 * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $actionAuth;
 
-    /**
-     * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $userSession;
+	/**
+	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $l;
+	/**
+	 * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $l;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * Build the collaborators each test then configures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->request              = $this->createMock(IRequest::class);
-        $this->subscriberService    = $this->createMock(NotificatiesSubscriberService::class);
-        $this->authorizationService = $this->createMock(AuthorizationService::class);
-        $this->orObjectService      = $this->createMock(OrObjectService::class);
-        $this->actionAuth           = $this->createMock(ActionAuthService::class);
-        $this->userSession          = $this->createMock(IUserSession::class);
-        $this->l                    = $this->createMock(IL10N::class);
-        $this->logger               = $this->createMock(LoggerInterface::class);
+	/**
+	 * Build the collaborators each test then configures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->subscriberService = $this->createMock(NotificatiesSubscriberService::class);
+		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->orObjectService = $this->createMock(OrObjectService::class);
+		$this->actionAuth = $this->createMock(ActionAuthService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->l = $this->createMock(IL10N::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->l->method('t')->willReturnArgument(0);
+		$this->l->method('t')->willReturnArgument(0);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Construct the controller under test.
-     *
-     * @return NotificatiesSubscriberController
-     */
-    private function controller(): NotificatiesSubscriberController
-    {
-        return new NotificatiesSubscriberController(
-            'openconnector',
-            $this->request,
-            $this->subscriberService,
-            $this->authorizationService,
-            $this->orObjectService,
-            $this->actionAuth,
-            $this->userSession,
-            $this->l,
-            $this->logger
-        );
+	/**
+	 * Construct the controller under test.
+	 *
+	 * @return NotificatiesSubscriberController
+	 */
+	private function controller(): NotificatiesSubscriberController {
+		return new NotificatiesSubscriberController(
+			'openconnector',
+			$this->request,
+			$this->subscriberService,
+			$this->authorizationService,
+			$this->orObjectService,
+			$this->actionAuth,
+			$this->userSession,
+			$this->l,
+			$this->logger
+		);
 
-    }//end controller()
+	}//end controller()
 
-    /**
-     * A stored abonnement with the given configuration.
-     *
-     * @param array $config Abonnement object fields.
-     *
-     * @return ObjectEntity|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private function abonnement(array $config)
-    {
-        $abonnement = $this->createMock(ObjectEntity::class);
-        $abonnement->method('getObject')->willReturn($config);
+	/**
+	 * A stored abonnement with the given configuration.
+	 *
+	 * @param array $config Abonnement object fields.
+	 *
+	 * @return ObjectEntity|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function abonnement(array $config) {
+		$abonnement = $this->createMock(ObjectEntity::class);
+		$abonnement->method('getObject')->willReturn($config);
 
-        return $abonnement;
+		return $abonnement;
+	}//end abonnement()
 
-    }//end abonnement()
+	/**
+	 * A consumer whose UUID is $uuid.
+	 *
+	 * @param string $uuid The consumer UUID.
+	 *
+	 * @return ObjectEntity|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function consumer(string $uuid) {
+		$consumer = $this->createMock(ObjectEntity::class);
+		$consumer->method('getUuid')->willReturn($uuid);
 
-    /**
-     * A consumer whose UUID is $uuid.
-     *
-     * @param string $uuid The consumer UUID.
-     *
-     * @return ObjectEntity|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private function consumer(string $uuid)
-    {
-        $consumer = $this->createMock(ObjectEntity::class);
-        $consumer->method('getUuid')->willReturn($uuid);
+		return $consumer;
+	}//end consumer()
 
-        return $consumer;
+	/**
+	 * The happy path: the key authenticates, and it belongs to the consumer
+	 * this abonnement is bound to.
+	 *
+	 * @return void
+	 */
+	public function testAValidKeyForThisAbonnementsConsumerIsAccepted(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(
+			$this->abonnement(['consumerId' => self::CONSUMER_ID])
+		);
+		$this->request->method('getHeader')->with('Authorization')->willReturn('secret-key');
+		$this->request->method('getParams')->willReturn(['_route' => 'x', 'kanaal' => 'zaken']);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn(
+			$this->consumer(self::CONSUMER_ID)
+		);
 
-    }//end consumer()
+		$this->subscriberService->expects($this->once())
+			->method('handleInboundNotification')
+			->with(self::ABONNEMENT_ID, ['kanaal' => 'zaken']);
 
-    /**
-     * The happy path: the key authenticates, and it belongs to the consumer
-     * this abonnement is bound to.
-     *
-     * @return void
-     */
-    public function testAValidKeyForThisAbonnementsConsumerIsAccepted(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(
-            $this->abonnement(['consumerId' => self::CONSUMER_ID])
-        );
-        $this->request->method('getHeader')->with('Authorization')->willReturn('secret-key');
-        $this->request->method('getParams')->willReturn(['_route' => 'x', 'kanaal' => 'zaken']);
-        $this->authorizationService->method('getResolvedConsumer')->willReturn(
-            $this->consumer(self::CONSUMER_ID)
-        );
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->subscriberService->expects($this->once())
-            ->method('handleInboundNotification')
-            ->with(self::ABONNEMENT_ID, ['kanaal' => 'zaken']);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['received' => true], $response->getData());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testAValidKeyForThisAbonnementsConsumerIsAccepted()
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(['received' => true], $response->getData());
+	/**
+	 * The credential is read from the header the ABONNEMENT names, not from a
+	 * hardcoded `Authorization`. Decision 4 makes it configurable, and a
+	 * callback whose key arrives in `X-NLX-Api-Key` must authenticate.
+	 *
+	 * @return void
+	 */
+	public function testTheConfiguredHeaderNameIsTheOneRead(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(
+			$this->abonnement(
+				[
+					'consumerId' => self::CONSUMER_ID,
+					'authHeaderName' => 'X-NLX-Api-Key',
+				]
+			)
+		);
+		$this->request->method('getParams')->willReturn([]);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn(
+			$this->consumer(self::CONSUMER_ID)
+		);
 
-    }//end testAValidKeyForThisAbonnementsConsumerIsAccepted()
+		$this->request->expects($this->once())
+			->method('getHeader')
+			->with('X-NLX-Api-Key')
+			->willReturn('secret-key');
 
-    /**
-     * The credential is read from the header the ABONNEMENT names, not from a
-     * hardcoded `Authorization`. Decision 4 makes it configurable, and a
-     * callback whose key arrives in `X-NLX-Api-Key` must authenticate.
-     *
-     * @return void
-     */
-    public function testTheConfiguredHeaderNameIsTheOneRead(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(
-            $this->abonnement(
-                [
-                    'consumerId'     => self::CONSUMER_ID,
-                    'authHeaderName' => 'X-NLX-Api-Key',
-                ]
-            )
-        );
-        $this->request->method('getParams')->willReturn([]);
-        $this->authorizationService->method('getResolvedConsumer')->willReturn(
-            $this->consumer(self::CONSUMER_ID)
-        );
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->request->expects($this->once())
-            ->method('getHeader')
-            ->with('X-NLX-Api-Key')
-            ->willReturn('secret-key');
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testTheConfiguredHeaderNameIsTheOneRead()
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+	/**
+	 * The configured scheme prefix is removed before the key is checked —
+	 * `Bearer secret-key` must authenticate as `secret-key`, not as the whole
+	 * header value.
+	 *
+	 * @return void
+	 */
+	public function testTheConfiguredSchemePrefixIsStrippedBeforeTheKeyIsChecked(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(
+			$this->abonnement(
+				[
+					'consumerId' => self::CONSUMER_ID,
+					'authScheme' => 'Bearer ',
+				]
+			)
+		);
+		$this->request->method('getHeader')->willReturn('Bearer secret-key');
+		$this->request->method('getParams')->willReturn([]);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn(
+			$this->consumer(self::CONSUMER_ID)
+		);
 
-    }//end testTheConfiguredHeaderNameIsTheOneRead()
+		$this->authorizationService->expects($this->once())
+			->method('authorizeApiKey')
+			->with('secret-key', []);
 
-    /**
-     * The configured scheme prefix is removed before the key is checked —
-     * `Bearer secret-key` must authenticate as `secret-key`, not as the whole
-     * header value.
-     *
-     * @return void
-     */
-    public function testTheConfiguredSchemePrefixIsStrippedBeforeTheKeyIsChecked(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(
-            $this->abonnement(
-                [
-                    'consumerId' => self::CONSUMER_ID,
-                    'authScheme' => 'Bearer ',
-                ]
-            )
-        );
-        $this->request->method('getHeader')->willReturn('Bearer secret-key');
-        $this->request->method('getParams')->willReturn([]);
-        $this->authorizationService->method('getResolvedConsumer')->willReturn(
-            $this->consumer(self::CONSUMER_ID)
-        );
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->authorizationService->expects($this->once())
-            ->method('authorizeApiKey')
-            ->with('secret-key', []);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testTheConfiguredSchemePrefixIsStrippedBeforeTheKeyIsChecked()
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+	/**
+	 * A key that does not authenticate is refused, and nothing is processed.
+	 *
+	 * @return void
+	 */
+	public function testAnInvalidKeyIsRefusedBeforeAnyProcessing(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(
+			$this->abonnement(['consumerId' => self::CONSUMER_ID])
+		);
+		$this->request->method('getHeader')->willReturn('wrong-key');
+		$this->request->method('getParams')->willReturn(['kanaal' => 'zaken']);
+		$this->authorizationService->method('authorizeApiKey')
+			->willThrowException(new AuthenticationException('no such key', []));
 
-    }//end testTheConfiguredSchemePrefixIsStrippedBeforeTheKeyIsChecked()
+		$this->subscriberService->expects($this->never())->method('handleInboundNotification');
 
-    /**
-     * A key that does not authenticate is refused, and nothing is processed.
-     *
-     * @return void
-     */
-    public function testAnInvalidKeyIsRefusedBeforeAnyProcessing(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(
-            $this->abonnement(['consumerId' => self::CONSUMER_ID])
-        );
-        $this->request->method('getHeader')->willReturn('wrong-key');
-        $this->request->method('getParams')->willReturn(['kanaal' => 'zaken']);
-        $this->authorizationService->method('authorizeApiKey')
-            ->willThrowException(new AuthenticationException('no such key', []));
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->subscriberService->expects($this->never())->method('handleInboundNotification');
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testAnInvalidKeyIsRefusedBeforeAnyProcessing()
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	/**
+	 * REQ-002's literal text asks for *a* matching consumer. This endpoint
+	 * additionally requires it to be *this abonnement's own* consumer, so a
+	 * key that authenticates a DIFFERENT tenant's consumer is refused — which
+	 * is the difference between an authenticated caller and an authorised one.
+	 *
+	 * @return void
+	 */
+	public function testAKeyBelongingToAnotherConsumerIsRefused(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(
+			$this->abonnement(['consumerId' => self::CONSUMER_ID])
+		);
+		$this->request->method('getHeader')->willReturn('some-other-tenants-key');
+		$this->request->method('getParams')->willReturn([]);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn(
+			$this->consumer('cons-9999-0000')
+		);
 
-    }//end testAnInvalidKeyIsRefusedBeforeAnyProcessing()
+		$this->subscriberService->expects($this->never())->method('handleInboundNotification');
 
-    /**
-     * REQ-002's literal text asks for *a* matching consumer. This endpoint
-     * additionally requires it to be *this abonnement's own* consumer, so a
-     * key that authenticates a DIFFERENT tenant's consumer is refused — which
-     * is the difference between an authenticated caller and an authorised one.
-     *
-     * @return void
-     */
-    public function testAKeyBelongingToAnotherConsumerIsRefused(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(
-            $this->abonnement(['consumerId' => self::CONSUMER_ID])
-        );
-        $this->request->method('getHeader')->willReturn('some-other-tenants-key');
-        $this->request->method('getParams')->willReturn([]);
-        $this->authorizationService->method('getResolvedConsumer')->willReturn(
-            $this->consumer('cons-9999-0000')
-        );
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->subscriberService->expects($this->never())->method('handleInboundNotification');
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testAKeyBelongingToAnotherConsumerIsRefused()
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	/**
+	 * An abonnement with no companion consumer cannot authorise anyone. The
+	 * cross-check must fail closed rather than treat an empty configured id
+	 * as "no constraint".
+	 *
+	 * @return void
+	 */
+	public function testAnAbonnementWithNoConsumerBoundToItAuthorisesNobody(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn($this->abonnement([]));
+		$this->request->method('getHeader')->willReturn('secret-key');
+		$this->request->method('getParams')->willReturn([]);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn(
+			$this->consumer(self::CONSUMER_ID)
+		);
 
-    }//end testAKeyBelongingToAnotherConsumerIsRefused()
+		$this->subscriberService->expects($this->never())->method('handleInboundNotification');
 
-    /**
-     * An abonnement with no companion consumer cannot authorise anyone. The
-     * cross-check must fail closed rather than treat an empty configured id
-     * as "no constraint".
-     *
-     * @return void
-     */
-    public function testAnAbonnementWithNoConsumerBoundToItAuthorisesNobody(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn($this->abonnement([]));
-        $this->request->method('getHeader')->willReturn('secret-key');
-        $this->request->method('getParams')->willReturn([]);
-        $this->authorizationService->method('getResolvedConsumer')->willReturn(
-            $this->consumer(self::CONSUMER_ID)
-        );
+		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
-        $this->subscriberService->expects($this->never())->method('handleInboundNotification');
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        $response = $this->controller()->callback(self::ABONNEMENT_ID);
+	}//end testAnAbonnementWithNoConsumerBoundToItAuthorisesNobody()
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	/**
+	 * An unknown abonnement is refused with the same undifferentiated 401 as a
+	 * bad key, so the response cannot be used to enumerate which abonnement
+	 * ids exist.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownAbonnementIsRefusedWithoutRevealingThat(): void {
+		$this->subscriberService->method('findAbonnement')->willReturn(null);
 
-    }//end testAnAbonnementWithNoConsumerBoundToItAuthorisesNobody()
+		$this->request->expects($this->never())->method('getHeader');
+		$this->subscriberService->expects($this->never())->method('handleInboundNotification');
 
-    /**
-     * An unknown abonnement is refused with the same undifferentiated 401 as a
-     * bad key, so the response cannot be used to enumerate which abonnement
-     * ids exist.
-     *
-     * @return void
-     */
-    public function testAnUnknownAbonnementIsRefusedWithoutRevealingThat(): void
-    {
-        $this->subscriberService->method('findAbonnement')->willReturn(null);
+		$response = $this->controller()->callback('no-such-abonnement');
 
-        $this->request->expects($this->never())->method('getHeader');
-        $this->subscriberService->expects($this->never())->method('handleInboundNotification');
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['error' => 'unauthorized'], $response->getData());
 
-        $response = $this->controller()->callback('no-such-abonnement');
-
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame(['error' => 'unauthorized'], $response->getData());
-
-    }//end testAnUnknownAbonnementIsRefusedWithoutRevealingThat()
+	}//end testAnUnknownAbonnementIsRefusedWithoutRevealingThat()
 }//end class

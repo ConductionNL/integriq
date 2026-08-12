@@ -22,13 +22,12 @@ use Throwable;
 /**
  * Minimal stub for OCA\OpenRegister\Exception\NotAuthorizedException.
  */
-class NotAuthorizedException extends Exception
-{
-    public function __construct(
-        string $message = 'You are not authorized to perform this action',
-        int $code = 403,
-        ?Throwable $previous = null
-    ) {
-        parent::__construct($message, $code, $previous);
-    }
+class NotAuthorizedException extends Exception {
+	public function __construct(
+		string $message = 'You are not authorized to perform this action',
+		int $code = 403,
+		?Throwable $previous = null,
+	) {
+		parent::__construct($message, $code, $previous);
+	}
 }

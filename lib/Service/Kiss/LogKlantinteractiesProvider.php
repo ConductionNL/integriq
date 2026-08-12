@@ -34,100 +34,90 @@ namespace OCA\OpenConnector\Service\Kiss;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
-{
+class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 
-    /**
-     * Per-process counter for synthetic klantcontact/onderwerpobject ids (`MOCK-KISS-<n>`).
-     *
-     * A per-process, in-memory counter is sufficient for a sandbox binding —
-     * ids only need to be locally unique for the duration of one request/job
-     * run (mirrors LogPeppolAccessPointProvider::$counter).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic klantcontact/onderwerpobject ids (`MOCK-KISS-<n>`).
+	 *
+	 * A per-process, in-memory counter is sufficient for a sandbox binding —
+	 * ids only need to be locally unique for the duration of one request/job
+	 * run (mirrors LogPeppolAccessPointProvider::$counter).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function getConfigSchema(): array {
+		return ['type' => 'object', 'properties' => []];
+	}//end getConfigSchema()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> An empty schema — the log provider needs no configuration.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function getConfigSchema(): array
-    {
-        return ['type' => 'object', 'properties' => []];
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param string|null $since Unused.
+	 * @param integer $pageSize Unused.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null} Always an empty page.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-pulls-nothing-without-a-network-call-or-secret
+	 */
+	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array {
+		return ['items' => [], 'nextCursor' => null];
+	}//end listKlantcontacten()
 
-    }//end getConfigSchema()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param array $payload Unused.
+	 *
+	 * @return string The synthetic `MOCK-KISS-<n>` klantcontact id.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function createKlantcontact(array $sourceConfiguration, array $payload): string {
+		self::$counter++;
+		return 'MOCK-KISS-' . self::$counter;
+	}//end createKlantcontact()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array       $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param string|null $since               Unused.
-     * @param integer     $pageSize            Unused.
-     *
-     * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null} Always an empty page.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-pulls-nothing-without-a-network-call-or-secret
-     */
-    public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array
-    {
-        return ['items' => [], 'nextCursor' => null];
-
-    }//end listKlantcontacten()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param array $payload             Unused.
-     *
-     * @return string The synthetic `MOCK-KISS-<n>` klantcontact id.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function createKlantcontact(array $sourceConfiguration, array $payload): string
-    {
-        self::$counter++;
-        return 'MOCK-KISS-'.self::$counter;
-
-    }//end createKlantcontact()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param string $klantcontactId      Unused.
-     * @param string $caseReference       Unused.
-     * @param string $caseObjectType      Unused.
-     *
-     * @return string The synthetic `MOCK-KISS-<n>` onderwerpobject id.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function linkOnderwerpobject(
-        array $sourceConfiguration,
-        string $klantcontactId,
-        string $caseReference,
-        string $caseObjectType
-    ): string {
-        self::$counter++;
-        return 'MOCK-KISS-'.self::$counter;
-
-    }//end linkOnderwerpobject()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param string $klantcontactId Unused.
+	 * @param string $caseReference Unused.
+	 * @param string $caseObjectType Unused.
+	 *
+	 * @return string The synthetic `MOCK-KISS-<n>` onderwerpobject id.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function linkOnderwerpobject(
+		array $sourceConfiguration,
+		string $klantcontactId,
+		string $caseReference,
+		string $caseObjectType,
+	): string {
+		self::$counter++;
+		return 'MOCK-KISS-' . self::$counter;
+	}//end linkOnderwerpobject()
 }//end class

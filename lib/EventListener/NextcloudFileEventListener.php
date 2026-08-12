@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Nextcloud File EventListener.
  *
@@ -47,104 +48,102 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
  */
-class NextcloudFileEventListener implements IEventListener
-{
+class NextcloudFileEventListener implements IEventListener {
 
-    /**
-     * The CloudEvents `source` this producer stamps on every event, and the
-     * discriminator {@see \OCA\OpenConnector\Controller\EventsController}
-     * uses for Nextcloud-event provenance filtering (dead-letter-replay
-     * REQ-DLR-007).
-     *
-     * @var string
-     */
-    private const SOURCE = '/nextcloud/files';
+	/**
+	 * The CloudEvents `source` this producer stamps on every event, and the
+	 * discriminator {@see \OCA\OpenConnector\Controller\EventsController}
+	 * uses for Nextcloud-event provenance filtering (dead-letter-replay
+	 * REQ-DLR-007).
+	 *
+	 * @var string
+	 */
+	private const SOURCE = '/nextcloud/files';
 
-    /**
-     * Constructor.
-     *
-     * @param EventService    $eventService Service for managing CloudEvents.
-     * @param LoggerInterface $logger       Logger instance.
-     */
-    public function __construct(
-        private readonly EventService $eventService,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param LoggerInterface $logger Logger instance.
+	 */
+	public function __construct(
+		private readonly EventService $eventService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired file lifecycle event by normalizing and forwarding it.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
-     */
-    public function handle(Event $event): void
-    {
-        // Guard on the common AbstractNodeEvent parent first so the later
-        // getNode() call is statically known to be safe; the three concrete
-        // subclasses discriminate the CloudEvents `type`.
-        if ($event instanceof AbstractNodeEvent === false) {
-            return;
-        }
+	/**
+	 * Handle a fired file lifecycle event by normalizing and forwarding it.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+	 */
+	public function handle(Event $event): void {
+		// Guard on the common AbstractNodeEvent parent first so the later
+		// getNode() call is statically known to be safe; the three concrete
+		// subclasses discriminate the CloudEvents `type`.
+		if ($event instanceof AbstractNodeEvent === false) {
+			return;
+		}
 
-        $type = null;
-        if ($event instanceof NodeCreatedEvent) {
-            $type = 'com.nextcloud.files.node.created';
-        } else if ($event instanceof NodeWrittenEvent) {
-            $type = 'com.nextcloud.files.node.updated';
-        } else if ($event instanceof NodeDeletedEvent) {
-            $type = 'com.nextcloud.files.node.deleted';
-        }
+		$type = null;
+		if ($event instanceof NodeCreatedEvent) {
+			$type = 'com.nextcloud.files.node.created';
+		} elseif ($event instanceof NodeWrittenEvent) {
+			$type = 'com.nextcloud.files.node.updated';
+		} elseif ($event instanceof NodeDeletedEvent) {
+			$type = 'com.nextcloud.files.node.deleted';
+		}
 
-        if ($type === null) {
-            return;
-        }
+		if ($type === null) {
+			return;
+		}
 
-        try {
-            // Firehose gate: no configured subscriptions anywhere on this
-            // instance means the outbound-webhooks capability is unused — do
-            // not pay a persistence cost for every file mutation fleet-wide.
-            if ($this->eventService->hasActiveSubscriptions() === false) {
-                return;
-            }
+		try {
+			// Firehose gate: no configured subscriptions anywhere on this
+			// instance means the outbound-webhooks capability is unused — do
+			// not pay a persistence cost for every file mutation fleet-wide.
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return;
+			}
 
-            $node     = $event->getNode();
-            $owner    = $node->getOwner();
-            $ownerUid = null;
-            if ($owner !== null) {
-                $ownerUid = $owner->getUID();
-            }
+			$node = $event->getNode();
+			$owner = $node->getOwner();
+			$ownerUid = null;
+			if ($owner !== null) {
+				$ownerUid = $owner->getUID();
+			}
 
-            $this->eventService->handleNextcloudEvent(
-                type: $type,
-                payload: [
-                    'source'  => self::SOURCE,
-                    'subject' => (string) $node->getId(),
-                    'data'    => [
-                        'path'     => $node->getPath(),
-                        'fileid'   => $node->getId(),
-                        'mimetype' => $node->getMimetype(),
-                        'owner'    => $ownerUid,
-                    ],
-                    'userId'  => $ownerUid,
-                ]
-            );
-        } catch (\Throwable $e) {
-            // Broad catch is deliberate: this listener runs synchronously
-            // inside the file operation that triggered it. A failure here
-            // must never unwind into — and 500 — that unrelated operation.
-            $this->logger->error(
-                    'Failed to process Nextcloud file event: '.$e->getMessage(),
-                    [
-                        'exception' => $e,
-                        'event'     => get_class($event),
-                    ]
-                    );
-        }//end try
+			$this->eventService->handleNextcloudEvent(
+				type: $type,
+				payload: [
+					'source' => self::SOURCE,
+					'subject' => (string)$node->getId(),
+					'data' => [
+						'path' => $node->getPath(),
+						'fileid' => $node->getId(),
+						'mimetype' => $node->getMimetype(),
+						'owner' => $ownerUid,
+					],
+					'userId' => $ownerUid,
+				]
+			);
+		} catch (\Throwable $e) {
+			// Broad catch is deliberate: this listener runs synchronously
+			// inside the file operation that triggered it. A failure here
+			// must never unwind into — and 500 — that unrelated operation.
+			$this->logger->error(
+				'Failed to process Nextcloud file event: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'event' => get_class($event),
+				]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 }//end class

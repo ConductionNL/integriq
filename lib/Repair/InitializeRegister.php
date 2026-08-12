@@ -45,182 +45,176 @@ use Psr\Log\LoggerInterface;
  * and we additionally guard the matching legacy → OR row migration
  * via the `storage_migrated` app-config flag.
  */
-class InitializeRegister implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container Server DI container (used to
-     *                                      resolve OR's ConfigurationService
-     *                                      lazily so the class_exists guard
-     *                                      can short-circuit when OR isn't
-     *                                      enabled).
-     * @param IAppConfig         $appConfig Used to gate the legacy-table
-     *                                      migration on the
-     *                                      `storage_migrated` flag.
-     * @param LoggerInterface    $logger    For non-fatal errors that
-     *                                      shouldn't trip the IRepairStep
-     *                                      contract.
-     */
-    public function __construct(
-        private ContainerInterface $container,
-        private IAppConfig $appConfig,
-        private LoggerInterface $logger
-    ) {
+class InitializeRegister implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container Server DI container (used to
+	 *                                      resolve OR's ConfigurationService
+	 *                                      lazily so the class_exists guard
+	 *                                      can short-circuit when OR isn't
+	 *                                      enabled).
+	 * @param IAppConfig $appConfig Used to gate the legacy-table
+	 *                              migration on the
+	 *                              `storage_migrated` flag.
+	 * @param LoggerInterface $logger For non-fatal errors that
+	 *                                shouldn't trip the IRepairStep
+	 *                                contract.
+	 */
+	public function __construct(
+		private ContainerInterface $container,
+		private IAppConfig $appConfig,
+		private LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Human-readable name surfaced by `occ` during install / upgrade.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return 'Initialize OpenConnector register and 15 schemas via ConfigurationService';
+	/**
+	 * Human-readable name surfaced by `occ` during install / upgrade.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return 'Initialize OpenConnector register and 15 schemas via ConfigurationService';
+	}//end getName()
 
-    }//end getName()
+	/**
+	 * Import openconnector_register.json into OpenRegister.
+	 *
+	 * @param IOutput $output progress/info channel piped to occ stdout
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/repair-and-app-boot/spec.md
+	 */
+	public function run(IOutput $output): void {
+		$output->info('OpenConnector: initializing register + schemas via OR ConfigurationService…');
 
-    /**
-     * Import openconnector_register.json into OpenRegister.
-     *
-     * @param IOutput $output progress/info channel piped to occ stdout
-     *
-     * @return void
-     *
-     * @spec openspec/specs/repair-and-app-boot/spec.md
-     */
-    public function run(IOutput $output): void
-    {
-        $output->info('OpenConnector: initializing register + schemas via OR ConfigurationService…');
+		if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
+			$output->warning('OpenConnector: OpenRegister is not installed or enabled. Skipping register initialization.');
+			$this->logger->warning(
+				'OpenConnector: OpenRegister not available, skipping register initialization'
+			);
+			return;
+		}
 
-        if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
-            $output->warning('OpenConnector: OpenRegister is not installed or enabled. Skipping register initialization.');
-            $this->logger->warning(
-                'OpenConnector: OpenRegister not available, skipping register initialization'
-            );
-            return;
-        }
+		try {
+			$configurationService = $this->container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
+		} catch (\Throwable $e) {
+			$output->warning('OpenConnector: could not resolve OR ConfigurationService: ' . $e->getMessage());
+			$this->logger->error(
+				'OpenConnector: ConfigurationService resolution failed',
+				['exception' => $e->getMessage()]
+			);
+			return;
+		}
 
-        try {
-            $configurationService = $this->container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
-        } catch (\Throwable $e) {
-            $output->warning('OpenConnector: could not resolve OR ConfigurationService: '.$e->getMessage());
-            $this->logger->error(
-                'OpenConnector: ConfigurationService resolution failed',
-                ['exception' => $e->getMessage()]
-            );
-            return;
-        }
+		$descriptorPath = __DIR__ . '/../Settings/openconnector_register.json';
+		if (file_exists($descriptorPath) === false) {
+			$output->warning('OpenConnector: register descriptor missing at ' . $descriptorPath . ' — nothing to import');
+			return;
+		}
 
-        $descriptorPath = __DIR__.'/../Settings/openconnector_register.json';
-        if (file_exists($descriptorPath) === false) {
-            $output->warning('OpenConnector: register descriptor missing at '.$descriptorPath.' — nothing to import');
-            return;
-        }
+		try {
+			$descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
+		} catch (\Throwable $e) {
+			$output->warning('OpenConnector: register descriptor JSON parse failed: ' . $e->getMessage());
+			$this->logger->error(
+				'OpenConnector: descriptor JSON parse failed',
+				['exception' => $e->getMessage()]
+			);
+			return;
+		}
 
-        try {
-            $descriptor = json_decode((string) file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
-        } catch (\Throwable $e) {
-            $output->warning('OpenConnector: register descriptor JSON parse failed: '.$e->getMessage());
-            $this->logger->error(
-                'OpenConnector: descriptor JSON parse failed',
-                ['exception' => $e->getMessage()]
-            );
-            return;
-        }
+		$appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
 
-        $appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
+		// ADR-037: merge modular register fragments from Settings/register.d/*.json.
+		// Each OpenSpec change drops its own fragment file instead of editing this
+		// monolith, so concurrent builds touch disjoint files (no merge conflicts).
+		// OpenAPI `components.schemas` / `paths` are keyed objects, so disjoint
+		// fragments union cleanly by key.
+		$fragmentDir = __DIR__ . '/../Settings/register.d';
+		$fragmentSig = '';
+		if (is_dir($fragmentDir) === true) {
+			$fragmentFiles = glob($fragmentDir . '/*.json');
+			sort($fragmentFiles);
+			foreach ($fragmentFiles as $fragmentFile) {
+				$fragmentContent = file_get_contents($fragmentFile);
+				if ($fragmentContent === false) {
+					continue;
+				}
 
-        // ADR-037: merge modular register fragments from Settings/register.d/*.json.
-        // Each OpenSpec change drops its own fragment file instead of editing this
-        // monolith, so concurrent builds touch disjoint files (no merge conflicts).
-        // OpenAPI `components.schemas` / `paths` are keyed objects, so disjoint
-        // fragments union cleanly by key.
-        $fragmentDir = __DIR__.'/../Settings/register.d';
-        $fragmentSig = '';
-        if (is_dir($fragmentDir) === true) {
-            $fragmentFiles = glob($fragmentDir.'/*.json');
-            sort($fragmentFiles);
-            foreach ($fragmentFiles as $fragmentFile) {
-                $fragmentContent = file_get_contents($fragmentFile);
-                if ($fragmentContent === false) {
-                    continue;
-                }
+				$fragmentData = json_decode($fragmentContent, true);
+				if (json_last_error() !== JSON_ERROR_NONE) {
+					$output->warning(
+						'OpenConnector: skipping malformed register fragment ' . basename($fragmentFile)
+						. ': ' . json_last_error_msg()
+					);
+					$this->logger->warning(
+						'OpenConnector: skipping malformed register fragment ' . basename($fragmentFile)
+						. ': ' . json_last_error_msg()
+					);
+					continue;
+				}
 
-                $fragmentData = json_decode($fragmentContent, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $output->warning(
-                        'OpenConnector: skipping malformed register fragment '.basename($fragmentFile)
-                        .': '.json_last_error_msg()
-                    );
-                    $this->logger->warning(
-                        'OpenConnector: skipping malformed register fragment '.basename($fragmentFile)
-                        .': '.json_last_error_msg()
-                    );
-                    continue;
-                }
+				$descriptor = self::deepMergeConfig(base: $descriptor, overlay: $fragmentData);
+				$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
+			}//end foreach
+		}//end if
 
-                $descriptor   = self::deepMergeConfig(base: $descriptor, overlay: $fragmentData);
-                $fragmentSig .= basename($fragmentFile).':'.md5($fragmentContent).';';
-            }//end foreach
-        }//end if
+		// Fold the fragment signature into the version so OpenRegister's
+		// version-gated importFromApp re-imports whenever fragments change.
+		if ($fragmentSig !== '') {
+			$appVersion .= '+frag.' . substr(md5($fragmentSig), 0, 8);
+		}
 
-        // Fold the fragment signature into the version so OpenRegister's
-        // version-gated importFromApp re-imports whenever fragments change.
-        if ($fragmentSig !== '') {
-            $appVersion .= '+frag.'.substr(md5($fragmentSig), 0, 8);
-        }
+		try {
+			$configurationService->importFromApp(
+				appId: Application::APP_ID,
+				data: $descriptor,
+				version: $appVersion
+			);
+			$output->info('OpenConnector: register descriptor imported (existing schemas reused).');
+		} catch (\Throwable $e) {
+			$output->warning('OpenConnector: register import failed: ' . $e->getMessage());
+			$this->logger->error(
+				'OpenConnector: importFromApp failed',
+				['exception' => $e->getMessage()]
+			);
+		}
 
-        try {
-            $configurationService->importFromApp(
-                appId: Application::APP_ID,
-                data: $descriptor,
-                version: $appVersion
-            );
-            $output->info('OpenConnector: register descriptor imported (existing schemas reused).');
-        } catch (\Throwable $e) {
-            $output->warning('OpenConnector: register import failed: '.$e->getMessage());
-            $this->logger->error(
-                'OpenConnector: importFromApp failed',
-                ['exception' => $e->getMessage()]
-            );
-        }
+	}//end run()
 
-    }//end run()
+	/**
+	 * Deep-merge a register fragment onto the base config (ADR-037).
+	 *
+	 * Associative arrays (OpenAPI objects like `components.schemas`, `paths`) are
+	 * merged by key union (recursing on shared keys); list arrays are concatenated;
+	 * scalars in the fragment overwrite the base. Disjoint fragments never collide.
+	 *
+	 * @param array<mixed> $base The accumulated config.
+	 * @param array<mixed> $overlay The fragment to merge in.
+	 *
+	 * @return array<mixed> The merged config.
+	 */
+	private static function deepMergeConfig(array $base, array $overlay): array {
+		foreach ($overlay as $key => $value) {
+			if (is_array($value) === true
+				&& isset($base[$key]) === true
+				&& is_array($base[$key]) === true
+			) {
+				$baseIsList = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
+				$overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
+				if ($baseIsList === true && $overlayIsList === true) {
+					$base[$key] = array_merge($base[$key], $value);
+				} else {
+					$base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
+				}
+			} else {
+				$base[$key] = $value;
+			}
+		}
 
-    /**
-     * Deep-merge a register fragment onto the base config (ADR-037).
-     *
-     * Associative arrays (OpenAPI objects like `components.schemas`, `paths`) are
-     * merged by key union (recursing on shared keys); list arrays are concatenated;
-     * scalars in the fragment overwrite the base. Disjoint fragments never collide.
-     *
-     * @param array<mixed> $base    The accumulated config.
-     * @param array<mixed> $overlay The fragment to merge in.
-     *
-     * @return array<mixed> The merged config.
-     */
-    private static function deepMergeConfig(array $base, array $overlay): array
-    {
-        foreach ($overlay as $key => $value) {
-            if (is_array($value) === true
-                && isset($base[$key]) === true
-                && is_array($base[$key]) === true
-            ) {
-                $baseIsList    = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-                $overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-                if ($baseIsList === true && $overlayIsList === true) {
-                    $base[$key] = array_merge($base[$key], $value);
-                } else {
-                    $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-                }
-            } else {
-                $base[$key] = $value;
-            }
-        }
-
-        return $base;
-
-    }//end deepMergeConfig()
+		return $base;
+	}//end deepMergeConfig()
 }//end class

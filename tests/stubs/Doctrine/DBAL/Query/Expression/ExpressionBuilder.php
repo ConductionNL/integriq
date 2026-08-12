@@ -18,12 +18,11 @@ namespace Doctrine\DBAL\Query\Expression;
 /**
  * Minimal stub for Doctrine\DBAL\Query\Expression\ExpressionBuilder.
  */
-class ExpressionBuilder
-{
-    public const EQ  = '=';
-    public const NEQ = '<>';
-    public const LT  = '<';
-    public const LTE = '<=';
-    public const GT  = '>';
-    public const GTE = '>=';
+class ExpressionBuilder {
+	public const EQ = '=';
+	public const NEQ = '<>';
+	public const LT = '<';
+	public const LTE = '<=';
+	public const GT = '>';
+	public const GTE = '>=';
 }

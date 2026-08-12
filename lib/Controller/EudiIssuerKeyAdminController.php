@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector EudiIssuerKeyAdminController.
  *
@@ -43,131 +44,123 @@ use Throwable;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
-class EudiIssuerKeyAdminController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                     $appName      The app id.
-     * @param IRequest                   $request      The current request.
-     * @param EudiIssuerKeyService       $keyService   Issuer signing-key lifecycle.
-     * @param EudiCredentialOfferService $offerService Used only to resolve the active organisation id.
-     * @param LoggerInterface            $logger       Logger for key lifecycle failures.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly EudiIssuerKeyService $keyService,
-        private readonly EudiCredentialOfferService $offerService,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class EudiIssuerKeyAdminController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app id.
+	 * @param IRequest $request The current request.
+	 * @param EudiIssuerKeyService $keyService Issuer signing-key lifecycle.
+	 * @param EudiCredentialOfferService $offerService Used only to resolve the active organisation id.
+	 * @param LoggerInterface $logger Logger for key lifecycle failures.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly EudiIssuerKeyService $keyService,
+		private readonly EudiCredentialOfferService $offerService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Resolve the organisation this admin's key operations apply to
-     * (design.md D-KEY organisation scoping — falls back to the single
-     * default-organisation scope when OpenRegister/organisation-bridge is
-     * unavailable).
-     *
-     * @return string|null
-     */
-    private function resolveOrganisationId(): ?string
-    {
-        return $this->offerService->resolveOrganisationId();
+	/**
+	 * Resolve the organisation this admin's key operations apply to
+	 * (design.md D-KEY organisation scoping — falls back to the single
+	 * default-organisation scope when OpenRegister/organisation-bridge is
+	 * unavailable).
+	 *
+	 * @return string|null
+	 */
+	private function resolveOrganisationId(): ?string {
+		return $this->offerService->resolveOrganisationId();
+	}//end resolveOrganisationId()
 
-    }//end resolveOrganisationId()
+	/**
+	 * Current issuer key status for the active organisation (public
+	 * material only — kid, algorithm, and archived-key count).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function status(): JSONResponse {
+		$organisationId = $this->resolveOrganisationId();
 
-    /**
-     * Current issuer key status for the active organisation (public
-     * material only — kid, algorithm, and archived-key count).
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function status(): JSONResponse
-    {
-        $organisationId = $this->resolveOrganisationId();
+		try {
+			$active = $this->keyService->resolveActiveKey($organisationId);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'EudiIssuerKeyAdminController: failed to resolve active key',
+				['exception' => $exception->getMessage()]
+			);
 
-        try {
-            $active = $this->keyService->resolveActiveKey($organisationId);
-        } catch (Throwable $exception) {
-            $this->logger->error(
-                'EudiIssuerKeyAdminController: failed to resolve active key',
-                ['exception' => $exception->getMessage()]
-            );
+			return new JSONResponse(
+				data: ['error' => 'Unable to resolve the current issuer key'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
-            return new JSONResponse(
-                data: ['error' => 'Unable to resolve the current issuer key'],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
+		return new JSONResponse(
+			data: [
+				'kid' => $active['kid'],
+				'algorithm' => EudiIssuerKeyService::ALGORITHM,
+			]
+		);
 
-        return new JSONResponse(
-            data: [
-                'kid'       => $active['kid'],
-                'algorithm' => EudiIssuerKeyService::ALGORITHM,
-            ]
-        );
+	}//end status()
 
-    }//end status()
+	/**
+	 * Generate the issuer signing key for the active organisation. Admin-gated, CSRF-protected.
+	 *
+	 * @return JSONResponse The new (redacted) key entry.
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function generateKey(): JSONResponse {
+		try {
+			$entry = $this->keyService->generateKey($this->resolveOrganisationId());
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'EudiIssuerKeyAdminController: key generation failed',
+				['exception' => $exception->getMessage()]
+			);
 
-    /**
-     * Generate the issuer signing key for the active organisation. Admin-gated, CSRF-protected.
-     *
-     * @return JSONResponse The new (redacted) key entry.
-     *
-     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function generateKey(): JSONResponse
-    {
-        try {
-            $entry = $this->keyService->generateKey($this->resolveOrganisationId());
-        } catch (Throwable $exception) {
-            $this->logger->error(
-                'EudiIssuerKeyAdminController: key generation failed',
-                ['exception' => $exception->getMessage()]
-            );
+			return new JSONResponse(
+				data: ['error' => 'Key generation failed'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-            return new JSONResponse(
-                data: ['error' => 'Key generation failed'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		return new JSONResponse(data: $entry);
+	}//end generateKey()
 
-        return new JSONResponse(data: $entry);
+	/**
+	 * Rotate the issuer signing key for the active organisation. Admin-gated, CSRF-protected.
+	 *
+	 * @return JSONResponse The new (redacted) key entry.
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function rotateKey(): JSONResponse {
+		try {
+			$entry = $this->keyService->rotateKey($this->resolveOrganisationId());
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'EudiIssuerKeyAdminController: key rotation failed',
+				['exception' => $exception->getMessage()]
+			);
 
-    }//end generateKey()
+			return new JSONResponse(
+				data: ['error' => 'Key rotation failed'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-    /**
-     * Rotate the issuer signing key for the active organisation. Admin-gated, CSRF-protected.
-     *
-     * @return JSONResponse The new (redacted) key entry.
-     *
-     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function rotateKey(): JSONResponse
-    {
-        try {
-            $entry = $this->keyService->rotateKey($this->resolveOrganisationId());
-        } catch (Throwable $exception) {
-            $this->logger->error(
-                'EudiIssuerKeyAdminController: key rotation failed',
-                ['exception' => $exception->getMessage()]
-            );
-
-            return new JSONResponse(
-                data: ['error' => 'Key rotation failed'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
-
-        return new JSONResponse(data: $entry);
-
-    }//end rotateKey()
+		return new JSONResponse(data: $entry);
+	}//end rotateKey()
 }//end class

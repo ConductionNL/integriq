@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector ObjectService — deprecated alias.
  *
@@ -32,27 +33,26 @@ use Psr\Container\ContainerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
-class ObjectService extends SourceMappingService
-{
-    /**
-     * Constructor — fires E_USER_DEPRECATED on instantiation.
-     *
-     * @param IAppManager        $appManager App manager (forwarded to parent).
-     * @param ContainerInterface $container  DI container (forwarded to parent).
-     *
-     * @deprecated 1.x Use SourceMappingService::__construct() directly.
-     */
-    public function __construct(
-        IAppManager $appManager,
-        ContainerInterface $container,
-    ) {
-        trigger_error(
-            'OCA\OpenConnector\Service\ObjectService has been renamed to SourceMappingService. '
-            .'Update your code to use SourceMappingService before the next major release.',
-            E_USER_DEPRECATED
-        );
+class ObjectService extends SourceMappingService {
+	/**
+	 * Constructor — fires E_USER_DEPRECATED on instantiation.
+	 *
+	 * @param IAppManager $appManager App manager (forwarded to parent).
+	 * @param ContainerInterface $container DI container (forwarded to parent).
+	 *
+	 * @deprecated 1.x Use SourceMappingService::__construct() directly.
+	 */
+	public function __construct(
+		IAppManager $appManager,
+		ContainerInterface $container,
+	) {
+		trigger_error(
+			'OCA\OpenConnector\Service\ObjectService has been renamed to SourceMappingService. '
+			. 'Update your code to use SourceMappingService before the next major release.',
+			E_USER_DEPRECATED
+		);
 
-        parent::__construct(appManager: $appManager, container: $container);
+		parent::__construct(appManager: $appManager, container: $container);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Nextcloud File Tag EventListener.
  *
@@ -44,136 +45,132 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
  */
-class NextcloudFileTagEventListener implements IEventListener
-{
+class NextcloudFileTagEventListener implements IEventListener {
 
-    /**
-     * The CloudEvents `source` this producer stamps on every event.
-     *
-     * @var string
-     */
-    private const SOURCE = '/nextcloud/files';
+	/**
+	 * The CloudEvents `source` this producer stamps on every event.
+	 *
+	 * @var string
+	 */
+	private const SOURCE = '/nextcloud/files';
 
-    /**
-     * The `MapperEvent::getObjectType()` value for file tag assignments.
-     *
-     * @var string
-     */
-    private const OBJECT_TYPE_FILES = 'files';
+	/**
+	 * The `MapperEvent::getObjectType()` value for file tag assignments.
+	 *
+	 * @var string
+	 */
+	private const OBJECT_TYPE_FILES = 'files';
 
-    /**
-     * Constructor.
-     *
-     * @param EventService      $eventService     Service for managing CloudEvents.
-     * @param ISystemTagManager $systemTagManager Resolves tag ids to human-readable names.
-     * @param LoggerInterface   $logger           Logger instance.
-     */
-    public function __construct(
-        private readonly EventService $eventService,
-        private readonly ISystemTagManager $systemTagManager,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param ISystemTagManager $systemTagManager Resolves tag ids to human-readable names.
+	 * @param LoggerInterface $logger Logger instance.
+	 */
+	public function __construct(
+		private readonly EventService $eventService,
+		private readonly ISystemTagManager $systemTagManager,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired system-tag mapper event by normalizing and forwarding it
-     * when it targets a file object.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof MapperEvent === false) {
-            return;
-        }
+	/**
+	 * Handle a fired system-tag mapper event by normalizing and forwarding it
+	 * when it targets a file object.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof MapperEvent === false) {
+			return;
+		}
 
-        if ($event->getObjectType() !== self::OBJECT_TYPE_FILES) {
-            return;
-        }
+		if ($event->getObjectType() !== self::OBJECT_TYPE_FILES) {
+			return;
+		}
 
-        $mapperEventType = $event->getEvent();
-        if ($mapperEventType !== MapperEvent::EVENT_ASSIGN
-            && $mapperEventType !== MapperEvent::EVENT_UNASSIGN
-        ) {
-            return;
-        }
+		$mapperEventType = $event->getEvent();
+		if ($mapperEventType !== MapperEvent::EVENT_ASSIGN
+			&& $mapperEventType !== MapperEvent::EVENT_UNASSIGN
+		) {
+			return;
+		}
 
-        try {
-            // Firehose gate: no configured subscriptions anywhere on this
-            // instance means the outbound-webhooks capability is unused — do
-            // not pay a persistence cost for every tag mutation fleet-wide.
-            if ($this->eventService->hasActiveSubscriptions() === false) {
-                return;
-            }
+		try {
+			// Firehose gate: no configured subscriptions anywhere on this
+			// instance means the outbound-webhooks capability is unused — do
+			// not pay a persistence cost for every tag mutation fleet-wide.
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return;
+			}
 
-            $tagIds   = $event->getTags();
-            $tagNames = $this->resolveTagNames(tagIds: $tagIds);
-            $action   = 'unassigned';
-            if ($mapperEventType === MapperEvent::EVENT_ASSIGN) {
-                $action = 'assigned';
-            }
+			$tagIds = $event->getTags();
+			$tagNames = $this->resolveTagNames(tagIds: $tagIds);
+			$action = 'unassigned';
+			if ($mapperEventType === MapperEvent::EVENT_ASSIGN) {
+				$action = 'assigned';
+			}
 
-            $this->eventService->handleNextcloudEvent(
-                type: 'com.nextcloud.files.node.tagged',
-                payload: [
-                    'source'  => self::SOURCE,
-                    'subject' => $event->getObjectId(),
-                    'data'    => [
-                        'fileid'   => $event->getObjectId(),
-                        'action'   => $action,
-                        'tagIds'   => $tagIds,
-                        'tagNames' => $tagNames,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            // Broad catch is deliberate: this listener runs synchronously
-            // inside the tagging operation that triggered it.
-            $this->logger->error(
-                    'Failed to process Nextcloud file tag event: '.$e->getMessage(),
-                    [
-                        'exception' => $e,
-                        'event'     => get_class($event),
-                    ]
-                    );
-        }//end try
+			$this->eventService->handleNextcloudEvent(
+				type: 'com.nextcloud.files.node.tagged',
+				payload: [
+					'source' => self::SOURCE,
+					'subject' => $event->getObjectId(),
+					'data' => [
+						'fileid' => $event->getObjectId(),
+						'action' => $action,
+						'tagIds' => $tagIds,
+						'tagNames' => $tagNames,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// Broad catch is deliberate: this listener runs synchronously
+			// inside the tagging operation that triggered it.
+			$this->logger->error(
+				'Failed to process Nextcloud file tag event: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'event' => get_class($event),
+				]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Resolve tag ids to their human-readable names, defensively — a tag may
-     * already be deleted by the time this listener runs, in which case the
-     * id-only fallback is used rather than throwing.
-     *
-     * @param array $tagIds The system tag ids from the fired event.
-     *
-     * @return array<int, string> Tag names (or the raw id, stringified, when resolution fails).
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
-     */
-    private function resolveTagNames(array $tagIds): array
-    {
-        if (empty($tagIds) === true) {
-            return [];
-        }
+	/**
+	 * Resolve tag ids to their human-readable names, defensively — a tag may
+	 * already be deleted by the time this listener runs, in which case the
+	 * id-only fallback is used rather than throwing.
+	 *
+	 * @param array $tagIds The system tag ids from the fired event.
+	 *
+	 * @return array<int, string> Tag names (or the raw id, stringified, when resolution fails).
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+	 */
+	private function resolveTagNames(array $tagIds): array {
+		if (empty($tagIds) === true) {
+			return [];
+		}
 
-        try {
-            $tags = $this->systemTagManager->getTagsByIds($tagIds);
-        } catch (\Throwable $e) {
-            return array_map(static fn($id) => (string) $id, $tagIds);
-        }
+		try {
+			$tags = $this->systemTagManager->getTagsByIds($tagIds);
+		} catch (\Throwable $e) {
+			return array_map(static fn ($id) => (string)$id, $tagIds);
+		}
 
-        $names = [];
-        foreach ($tags as $tag) {
-            $names[] = $tag->getName();
-        }
+		$names = [];
+		foreach ($tags as $tag) {
+			$names[] = $tag->getName();
+		}
 
-        return $names;
-
-    }//end resolveTagNames()
+		return $names;
+	}//end resolveTagNames()
 }//end class

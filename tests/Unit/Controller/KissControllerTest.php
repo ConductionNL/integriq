@@ -37,188 +37,180 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
  */
-class KissControllerTest extends TestCase
-{
+class KissControllerTest extends TestCase {
 
-    /**
-     * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $request;
 
-    /**
-     * @var KissSyncService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $syncService;
+	/**
+	 * @var KissSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $syncService;
 
-    /**
-     * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $userSession;
+	/**
+	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $actionAuth;
+	/**
+	 * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $actionAuth;
 
-    /**
-     * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $l;
+	/**
+	 * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $l;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var KissController
-     */
-    private KissController $controller;
+	/**
+	 * @var KissController
+	 */
+	private KissController $controller;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request     = $this->createMock(IRequest::class);
-        $this->syncService = $this->createMock(KissSyncService::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->actionAuth   = $this->createMock(ActionAuthService::class);
-        $this->l            = $this->createMock(IL10N::class);
-        $this->l->method('t')->willReturnArgument(0);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->syncService = $this->createMock(KissSyncService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->actionAuth = $this->createMock(ActionAuthService::class);
+		$this->l = $this->createMock(IL10N::class);
+		$this->l->method('t')->willReturnArgument(0);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $user = $this->createMock(IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->controller = $this->buildController();
+		$this->controller = $this->buildController();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a controller instance wired to the current mocks.
-     *
-     * @return KissController
-     */
-    private function buildController(): KissController
-    {
-        return new KissController(
-            'openconnector',
-            $this->request,
-            $this->syncService,
-            $this->userSession,
-            $this->actionAuth,
-            $this->l,
-            $this->logger
-        );
+	/**
+	 * Build a controller instance wired to the current mocks.
+	 *
+	 * @return KissController
+	 */
+	private function buildController(): KissController {
+		return new KissController(
+			'openconnector',
+			$this->request,
+			$this->syncService,
+			$this->userSession,
+			$this->actionAuth,
+			$this->l,
+			$this->logger
+		);
 
-    }//end buildController()
+	}//end buildController()
 
-    /**
-     * An unauthenticated caller gets 401 without reaching the sync service.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactRequiresAuthentication(): void
-    {
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->controller  = $this->buildController();
+	/**
+	 * An unauthenticated caller gets 401 without reaching the sync service.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactRequiresAuthentication(): void {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->controller = $this->buildController();
 
-        $this->syncService->expects($this->never())->method('pushKlantcontact');
+		$this->syncService->expects($this->never())->method('pushKlantcontact');
 
-        $response = $this->controller->createKlantcontact();
+		$response = $this->controller->createKlantcontact();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    }//end testCreateKlantcontactRequiresAuthentication()
+	}//end testCreateKlantcontactRequiresAuthentication()
 
-    /**
-     * A missing required field (`onderwerp`/`kanaal`) is rejected with 400 before the sync service is called.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactRequiresOnderwerpAndKanaal(): void
-    {
-        $this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag']);
+	/**
+	 * A missing required field (`onderwerp`/`kanaal`) is rejected with 400 before the sync service is called.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactRequiresOnderwerpAndKanaal(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag']);
 
-        $this->syncService->expects($this->never())->method('pushKlantcontact');
+		$this->syncService->expects($this->never())->method('pushKlantcontact');
 
-        $response = $this->controller->createKlantcontact();
+		$response = $this->controller->createKlantcontact();
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('missing_fields', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('missing_fields', $response->getData()['error']);
 
-    }//end testCreateKlantcontactRequiresOnderwerpAndKanaal()
+	}//end testCreateKlantcontactRequiresOnderwerpAndKanaal()
 
-    /**
-     * A valid push request returns the sync service's result verbatim.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactReturnsResult(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            [
-                'onderwerp'     => 'Melding openbare ruimte',
-                'kanaal'        => 'telefoon',
-                'caseReference' => 'case-uuid-1',
-                'sourceApp'     => 'procest',
-            ]
-        );
+	/**
+	 * A valid push request returns the sync service's result verbatim.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactReturnsResult(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'onderwerp' => 'Melding openbare ruimte',
+				'kanaal' => 'telefoon',
+				'caseReference' => 'case-uuid-1',
+				'sourceApp' => 'procest',
+			]
+		);
 
-        $this->syncService->expects($this->once())
-            ->method('pushKlantcontact')
-            ->willReturn(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1']);
+		$this->syncService->expects($this->once())
+			->method('pushKlantcontact')
+			->willReturn(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1']);
 
-        $response = $this->controller->createKlantcontact();
+		$response = $this->controller->createKlantcontact();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1'], $response->getData());
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1'], $response->getData());
 
-    }//end testCreateKlantcontactReturnsResult()
+	}//end testCreateKlantcontactReturnsResult()
 
-    /**
-     * When no KISS source is configured, the endpoint reports a clean 503 `not_configured` — never a 500 crash.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactReportsNotConfiguredCleanly(): void
-    {
-        $this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+	/**
+	 * When no KISS source is configured, the endpoint reports a clean 503 `not_configured` — never a 500 crash.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactReportsNotConfiguredCleanly(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
 
-        $this->syncService->method('pushKlantcontact')->willThrowException(
-            new KissProviderException(message: 'No active KISS source is configured (register "openconnector", schema "source", type "kiss", isEnabled=true). Configure one before using the KISS bridge.')
-        );
+		$this->syncService->method('pushKlantcontact')->willThrowException(
+			new KissProviderException(message: 'No active KISS source is configured (register "openconnector", schema "source", type "kiss", isEnabled=true). Configure one before using the KISS bridge.')
+		);
 
-        $response = $this->controller->createKlantcontact();
+		$response = $this->controller->createKlantcontact();
 
-        $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
-        $this->assertSame('not_configured', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('not_configured', $response->getData()['error']);
 
-    }//end testCreateKlantcontactReportsNotConfiguredCleanly()
+	}//end testCreateKlantcontactReportsNotConfiguredCleanly()
 
-    /**
-     * A generic KISS provider failure (source configured, but KISS itself errors) maps to 502.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactMapsProviderFailureTo502(): void
-    {
-        $this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+	/**
+	 * A generic KISS provider failure (source configured, but KISS itself errors) maps to 502.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactMapsProviderFailureTo502(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
 
-        $this->syncService->method('pushKlantcontact')->willThrowException(
-            new KissProviderException(message: 'KISS responded with HTTP 503.')
-        );
+		$this->syncService->method('pushKlantcontact')->willThrowException(
+			new KissProviderException(message: 'KISS responded with HTTP 503.')
+		);
 
-        $response = $this->controller->createKlantcontact();
+		$response = $this->controller->createKlantcontact();
 
-        $this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
-        $this->assertSame('kiss_push_failed', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame('kiss_push_failed', $response->getData()['error']);
 
-    }//end testCreateKlantcontactMapsProviderFailureTo502()
+	}//end testCreateKlantcontactMapsProviderFailureTo502()
 }//end class

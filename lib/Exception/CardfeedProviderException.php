@@ -35,6 +35,5 @@ use Exception;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
  */
-class CardfeedProviderException extends Exception
-{
+class CardfeedProviderException extends Exception {
 }//end class

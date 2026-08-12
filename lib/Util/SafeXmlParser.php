@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector SafeXmlParser utility.
  *
@@ -56,79 +57,77 @@ use SimpleXMLElement;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
-class SafeXmlParser
-{
-    /**
-     * Parse an XML string safely, returning a SimpleXMLElement or false.
-     *
-     * Guarantees:
-     *   1. The libxml external-entity loader is set to null for the duration
-     *      of the parse — preventing file-read and SSRF via entity expansion.
-     *   2. LIBXML_NONET is passed so libxml cannot open network connections.
-     *   3. The previous entity loader is unconditionally restored afterwards
-     *      via a finally block, so a parse exception cannot leave the loader
-     *      in an unsafe state.
-     *
-     * @param string $data    The XML string to parse.
-     * @param string $class   The SimpleXMLElement sub-class to use (default SimpleXMLElement).
-     * @param int    $options Additional LIBXML_* flags (LIBXML_NONET is always added).
-     *
-     * @return SimpleXMLElement|false Returns a SimpleXMLElement on success, false on failure.
-     *
-     * @psalm-return SimpleXMLElement|false
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
-     */
-    public static function parse(
-        string $data,
-        string $class='SimpleXMLElement',
-        int $options=0,
-    ): SimpleXMLElement|false {
-        // Pin the external-entity loader to null before parsing.
-        $previousLoader = libxml_get_external_entity_loader();
-        libxml_set_external_entity_loader(static fn (): null => null);
+class SafeXmlParser {
+	/**
+	 * Parse an XML string safely, returning a SimpleXMLElement or false.
+	 *
+	 * Guarantees:
+	 *   1. The libxml external-entity loader is set to null for the duration
+	 *      of the parse — preventing file-read and SSRF via entity expansion.
+	 *   2. LIBXML_NONET is passed so libxml cannot open network connections.
+	 *   3. The previous entity loader is unconditionally restored afterwards
+	 *      via a finally block, so a parse exception cannot leave the loader
+	 *      in an unsafe state.
+	 *
+	 * @param string $data The XML string to parse.
+	 * @param string $class The SimpleXMLElement sub-class to use (default SimpleXMLElement).
+	 * @param int $options Additional LIBXML_* flags (LIBXML_NONET is always added).
+	 *
+	 * @return SimpleXMLElement|false Returns a SimpleXMLElement on success, false on failure.
+	 *
+	 * @psalm-return SimpleXMLElement|false
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+	 */
+	public static function parse(
+		string $data,
+		string $class = 'SimpleXMLElement',
+		int $options = 0,
+	): SimpleXMLElement|false {
+		// Pin the external-entity loader to null before parsing.
+		$previousLoader = libxml_get_external_entity_loader();
+		libxml_set_external_entity_loader(static fn (): null => null);
 
-        try {
-            return simplexml_load_string($data, $class, ($options | LIBXML_NONET));
-        } finally {
-            // Restore whatever loader was in place before, so this helper is
-            // transparent to callers that legitimately use a custom loader.
-            libxml_set_external_entity_loader($previousLoader);
-        }
-    }//end parse()
+		try {
+			return simplexml_load_string($data, $class, ($options | LIBXML_NONET));
+		} finally {
+			// Restore whatever loader was in place before, so this helper is
+			// transparent to callers that legitimately use a custom loader.
+			libxml_set_external_entity_loader($previousLoader);
+		}
+	}//end parse()
 
-    /**
-     * Load an XML string into a DOMDocument safely.
-     *
-     * Guarantees:
-     *   1. The libxml external-entity loader is set to null for the duration
-     *      of the load — preventing file-read and SSRF via entity expansion,
-     *      including during any permissive-loader window opened by the caller.
-     *   2. LIBXML_NONET is always added to the options so libxml cannot open
-     *      network connections while resolving entities.
-     *   3. The previous entity loader is unconditionally restored via finally.
-     *
-     * @param DOMDocument $dom     The DOMDocument instance to load the XML into.
-     * @param string      $data    The XML string to load.
-     * @param int         $options Additional LIBXML_* flags (LIBXML_NONET always added).
-     *
-     * @return bool Returns true on success, false on failure (mirrors DOMDocument::loadXML).
-     *
-     * @psalm-suppress MixedMethodCall
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
-     */
-    public static function loadDom(DOMDocument $dom, string $data, int $options=0): bool
-    {
-        // Pin the external-entity loader to null before loading.
-        $previousLoader = libxml_get_external_entity_loader();
-        libxml_set_external_entity_loader(static fn (): null => null);
+	/**
+	 * Load an XML string into a DOMDocument safely.
+	 *
+	 * Guarantees:
+	 *   1. The libxml external-entity loader is set to null for the duration
+	 *      of the load — preventing file-read and SSRF via entity expansion,
+	 *      including during any permissive-loader window opened by the caller.
+	 *   2. LIBXML_NONET is always added to the options so libxml cannot open
+	 *      network connections while resolving entities.
+	 *   3. The previous entity loader is unconditionally restored via finally.
+	 *
+	 * @param DOMDocument $dom The DOMDocument instance to load the XML into.
+	 * @param string $data The XML string to load.
+	 * @param int $options Additional LIBXML_* flags (LIBXML_NONET always added).
+	 *
+	 * @return bool Returns true on success, false on failure (mirrors DOMDocument::loadXML).
+	 *
+	 * @psalm-suppress MixedMethodCall
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+	 */
+	public static function loadDom(DOMDocument $dom, string $data, int $options = 0): bool {
+		// Pin the external-entity loader to null before loading.
+		$previousLoader = libxml_get_external_entity_loader();
+		libxml_set_external_entity_loader(static fn (): null => null);
 
-        try {
-            return $dom->loadXML($data, ($options | LIBXML_NONET));
-        } finally {
-            // Restore whatever loader was in place before.
-            libxml_set_external_entity_loader($previousLoader);
-        }
-    }//end loadDom()
+		try {
+			return $dom->loadXML($data, ($options | LIBXML_NONET));
+		} finally {
+			// Restore whatever loader was in place before.
+			libxml_set_external_entity_loader($previousLoader);
+		}
+	}//end loadDom()
 }//end class

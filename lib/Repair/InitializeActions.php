@@ -45,6 +45,5 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
  * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
  * @spec openspec/specs/apphost-adoption/spec.md
  */
-class InitializeActions extends GenericInitializeActions
-{
+class InitializeActions extends GenericInitializeActions {
 }//end class

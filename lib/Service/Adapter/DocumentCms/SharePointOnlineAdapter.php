@@ -52,220 +52,205 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
  */
-class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider
-{
+class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 
-    /**
-     * NC Files folder name documents are persisted under.
-     *
-     * @var string
-     */
-    private const TARGET_FOLDER = 'OpenConnector SharePoint Documents';
+	/**
+	 * NC Files folder name documents are persisted under.
+	 *
+	 * @var string
+	 */
+	private const TARGET_FOLDER = 'OpenConnector SharePoint Documents';
 
-    /**
-     * Constructor.
-     *
-     * @param \OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker OR's credential broker.
-     * @param \OCP\IAppConfig                                              $appConfig        App config.
-     * @param \Psr\Log\LoggerInterface                                     $logger           Logger.
-     * @param IL10N                                                        $l10n             Translator for labels.
-     * @param IRootFolder                                                  $rootFolder       NC root folder (Files persistence).
-     * @param IUserSession                                                 $userSession      Current user session.
-     */
-    public function __construct(
-        \OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker,
-        \OCP\IAppConfig $appConfig,
-        \Psr\Log\LoggerInterface $logger,
-        private readonly IL10N $l10n,
-        private readonly IRootFolder $rootFolder,
-        private readonly IUserSession $userSession,
-    ) {
-        parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
+	/**
+	 * Constructor.
+	 *
+	 * @param \OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker OR's credential broker.
+	 * @param \OCP\IAppConfig $appConfig App config.
+	 * @param \Psr\Log\LoggerInterface $logger Logger.
+	 * @param IL10N $l10n Translator for labels.
+	 * @param IRootFolder $rootFolder NC root folder (Files persistence).
+	 * @param IUserSession $userSession Current user session.
+	 */
+	public function __construct(
+		\OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker,
+		\OCP\IAppConfig $appConfig,
+		\Psr\Log\LoggerInterface $logger,
+		private readonly IL10N $l10n,
+		private readonly IRootFolder $rootFolder,
+		private readonly IUserSession $userSession,
+	) {
+		parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function getId(): string
-    {
-        return 'sharepoint-online';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function getId(): string {
+		return 'sharepoint-online';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function getLabel(): string {
+		return $this->l10n->t('SharePoint Online');
+	}//end getLabel()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function getLabel(): string
-    {
-        return $this->l10n->t('SharePoint Online');
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function getIcon(): string {
+		return 'FileDocumentMultiple';
+	}//end getIcon()
 
-    }//end getLabel()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function getRequiredApp(): ?string {
+		return null;
+	}//end getRequiredApp()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function getIcon(): string
-    {
-        return 'FileDocumentMultiple';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<int,string>
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function getCapabilities(): array {
+		return ['document-fetch', 'document-list'];
+	}//end getCapabilities()
 
-    }//end getIcon()
+	/**
+	 * List the children of a SharePoint site's default document library root.
+	 *
+	 * @param string $siteId The Graph `site` id (`{hostname},{site-collection-id},{site-id}`).
+	 *
+	 * @return array<int,array<string,mixed>> Normalised document summaries.
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function listDocuments(string $siteId): array {
+		$path = sprintf('/v1.0/sites/%s/drive/root/children', rawurlencode($siteId));
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string|null
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function getRequiredApp(): ?string
-    {
-        return null;
+		$response = $this->brokeredRequest(method: 'GET', path: $path);
+		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+			return [];
+		}
 
-    }//end getRequiredApp()
+		$decoded = json_decode($response['body'], true);
+		if (is_array($decoded) === false || isset($decoded['value']) === false || is_array($decoded['value']) === false) {
+			return [];
+		}
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<int,string>
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function getCapabilities(): array
-    {
-        return ['document-fetch', 'document-list'];
+		return array_map(
+			static function (array $item): array {
+				return [
+					'id' => ($item['id'] ?? null),
+					'name' => ($item['name'] ?? null),
+					'size' => ($item['size'] ?? null),
+					'lastModified' => ($item['lastModifiedDateTime'] ?? null),
+					'webUrl' => ($item['webUrl'] ?? null),
+					'isFolder' => isset($item['folder']),
+				];
+			},
+			$decoded['value']
+		);
 
-    }//end getCapabilities()
+	}//end listDocuments()
 
-    /**
-     * List the children of a SharePoint site's default document library root.
-     *
-     * @param string $siteId The Graph `site` id (`{hostname},{site-collection-id},{site-id}`).
-     *
-     * @return array<int,array<string,mixed>> Normalised document summaries.
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function listDocuments(string $siteId): array
-    {
-        $path = sprintf('/v1.0/sites/%s/drive/root/children', rawurlencode($siteId));
+	/**
+	 * Fetch a document's content from SharePoint and persist it into the
+	 * current user's Nextcloud Files storage.
+	 *
+	 * @param string $siteId The Graph `site` id.
+	 * @param string $itemId The Graph drive-item id.
+	 * @param string $name The filename to persist as (from {@see listDocuments()}).
+	 *
+	 * @return array{path: ?string, size: int}|null Persisted-file descriptor, or null on failure
+	 *                                              (unconfigured credential, upstream error, or no active user session).
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 */
+	public function fetchDocument(string $siteId, string $itemId, string $name): ?array {
+		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
+		$response = $this->brokeredRequest(method: 'GET', path: $path);
+		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+			return null;
+		}
 
-        $response = $this->brokeredRequest(method: 'GET', path: $path);
-        if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
-            return [];
-        }
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
 
-        $decoded = json_decode($response['body'], true);
-        if (is_array($decoded) === false || isset($decoded['value']) === false || is_array($decoded['value']) === false) {
-            return [];
-        }
+		try {
+			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+			if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
+				$userFolder->newFolder(self::TARGET_FOLDER);
+			}
 
-        return array_map(
-            static function (array $item): array {
-                return [
-                    'id'           => ($item['id'] ?? null),
-                    'name'         => ($item['name'] ?? null),
-                    'size'         => ($item['size'] ?? null),
-                    'lastModified' => ($item['lastModifiedDateTime'] ?? null),
-                    'webUrl'       => ($item['webUrl'] ?? null),
-                    'isFolder'     => isset($item['folder']),
-                ];
-            },
-            $decoded['value']
-        );
+			$target = self::TARGET_FOLDER . '/' . basename($name);
+			if ($userFolder->nodeExists($target) === true) {
+				$userFolder->get($target)->delete();
+			}
 
-    }//end listDocuments()
+			$file = $userFolder->newFile($target, $response['body']);
 
-    /**
-     * Fetch a document's content from SharePoint and persist it into the
-     * current user's Nextcloud Files storage.
-     *
-     * @param string $siteId The Graph `site` id.
-     * @param string $itemId The Graph drive-item id.
-     * @param string $name   The filename to persist as (from {@see listDocuments()}).
-     *
-     * @return array{path: ?string, size: int}|null Persisted-file descriptor, or null on failure
-     *         (unconfigured credential, upstream error, or no active user session).
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     */
-    public function fetchDocument(string $siteId, string $itemId, string $name): ?array
-    {
-        $path     = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
-        $response = $this->brokeredRequest(method: 'GET', path: $path);
-        if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
-            return null;
-        }
+			return [
+				'path' => $file->getPath(),
+				'size' => $file->getSize(),
+			];
+		} catch (NotPermittedException $e) {
+			$this->logger->warning(
+				sprintf('%s: could not persist fetched document — %s', $this->getId(), $e->getMessage())
+			);
+			return null;
+		}//end try
 
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return null;
-        }
+	}//end fetchDocument()
 
-        try {
-            $userFolder = $this->rootFolder->getUserFolder($user->getUID());
-            if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
-                $userFolder->newFolder(self::TARGET_FOLDER);
-            }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * `register`/`schema`/`objectId` are ignored — this adapter is
+	 * instance-scoped; `$filters['siteId']` selects which SharePoint site
+	 * to list.
+	 *
+	 * @param string $register Ignored (instance-scoped adapter).
+	 * @param string $schema Ignored (instance-scoped adapter).
+	 * @param string $objectId Ignored (instance-scoped adapter).
+	 * @param array<string,mixed> $filters `siteId` (required).
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
+	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		if (isset($filters['siteId']) === false) {
+			return [];
+		}
 
-            $target = self::TARGET_FOLDER.'/'.basename($name);
-            if ($userFolder->nodeExists($target) === true) {
-                $userFolder->get($target)->delete();
-            }
-
-            $file = $userFolder->newFile($target, $response['body']);
-
-            return [
-                'path' => $file->getPath(),
-                'size' => $file->getSize(),
-            ];
-        } catch (NotPermittedException $e) {
-            $this->logger->warning(
-                sprintf('%s: could not persist fetched document — %s', $this->getId(), $e->getMessage())
-            );
-            return null;
-        }//end try
-
-    }//end fetchDocument()
-
-    /**
-     * {@inheritDoc}
-     *
-     * `register`/`schema`/`objectId` are ignored — this adapter is
-     * instance-scoped; `$filters['siteId']` selects which SharePoint site
-     * to list.
-     *
-     * @param string              $register Ignored (instance-scoped adapter).
-     * @param string              $schema   Ignored (instance-scoped adapter).
-     * @param string              $objectId Ignored (instance-scoped adapter).
-     * @param array<string,mixed> $filters  `siteId` (required).
-     *
-     * @return array<int,array<string,mixed>>
-     *
-     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
-     *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
-     */
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
-    {
-        if (isset($filters['siteId']) === false) {
-            return [];
-        }
-
-        return $this->listDocuments(siteId: (string) $filters['siteId']);
-
-    }//end list()
+		return $this->listDocuments(siteId: (string)$filters['siteId']);
+	}//end list()
 }//end class

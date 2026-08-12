@@ -28,88 +28,82 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
-class StufXmlParserTest extends TestCase
-{
+class StufXmlParserTest extends TestCase {
 
-    /**
-     * @var StufXmlParser
-     */
-    private StufXmlParser $parser;
+	/**
+	 * @var StufXmlParser
+	 */
+	private StufXmlParser $parser;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->parser = new StufXmlParser();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->parser = new StufXmlParser();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Well-formed XML parses to a usable SimpleXMLElement.
-     *
-     * @return void
-     */
-    public function testParsesWellFormedXml(): void
-    {
-        $root = $this->parser->parse(xml: '<root><child>value</child></root>');
+	/**
+	 * Well-formed XML parses to a usable SimpleXMLElement.
+	 *
+	 * @return void
+	 */
+	public function testParsesWellFormedXml(): void {
+		$root = $this->parser->parse(xml: '<root><child>value</child></root>');
 
-        $this->assertNotNull($root);
-        $this->assertSame('value', (string) $root->child);
+		$this->assertNotNull($root);
+		$this->assertSame('value', (string)$root->child);
 
-    }//end testParsesWellFormedXml()
+	}//end testParsesWellFormedXml()
 
-    /**
-     * Empty input returns null, never throws.
-     *
-     * @return void
-     */
-    public function testEmptyInputReturnsNull(): void
-    {
-        $this->assertNull($this->parser->parse(xml: ''));
-        $this->assertNull($this->parser->parse(xml: '   '));
+	/**
+	 * Empty input returns null, never throws.
+	 *
+	 * @return void
+	 */
+	public function testEmptyInputReturnsNull(): void {
+		$this->assertNull($this->parser->parse(xml: ''));
+		$this->assertNull($this->parser->parse(xml: '   '));
 
-    }//end testEmptyInputReturnsNull()
+	}//end testEmptyInputReturnsNull()
 
-    /**
-     * Malformed XML returns null, never throws.
-     *
-     * @return void
-     */
-    public function testMalformedXmlReturnsNull(): void
-    {
-        $this->assertNull($this->parser->parse(xml: '<root><unclosed></root>'));
-        $this->assertNull($this->parser->parse(xml: 'not xml at all'));
+	/**
+	 * Malformed XML returns null, never throws.
+	 *
+	 * @return void
+	 */
+	public function testMalformedXmlReturnsNull(): void {
+		$this->assertNull($this->parser->parse(xml: '<root><unclosed></root>'));
+		$this->assertNull($this->parser->parse(xml: 'not xml at all'));
 
-    }//end testMalformedXmlReturnsNull()
+	}//end testMalformedXmlReturnsNull()
 
-    /**
-     * An XXE payload attempting external entity expansion never resolves the
-     * entity — the parsed value must NOT contain the target file's content,
-     * and libxml's default (LIBXML_NONET, no LIBXML_NOENT/DTDLOAD) means the
-     * malicious entity is either rejected outright (parse fails, null) or
-     * left inert (entity reference not expanded).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-an-xxe-payload-is-rejected-or-left-unexpanded-never-resolved
-     */
-    public function testXxePayloadIsNeverResolved(): void
-    {
-        $xxe = '<?xml version="1.0"?>'
-            .'<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
-            .'<root>&xxe;</root>';
+	/**
+	 * An XXE payload attempting external entity expansion never resolves the
+	 * entity — the parsed value must NOT contain the target file's content,
+	 * and libxml's default (LIBXML_NONET, no LIBXML_NOENT/DTDLOAD) means the
+	 * malicious entity is either rejected outright (parse fails, null) or
+	 * left inert (entity reference not expanded).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-an-xxe-payload-is-rejected-or-left-unexpanded-never-resolved
+	 */
+	public function testXxePayloadIsNeverResolved(): void {
+		$xxe = '<?xml version="1.0"?>'
+			. '<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
+			. '<root>&xxe;</root>';
 
-        $root = $this->parser->parse(xml: $xxe);
+		$root = $this->parser->parse(xml: $xxe);
 
-        if ($root !== null) {
-            $this->assertStringNotContainsString('root:', (string) $root);
-        } else {
-            $this->assertNull($root);
-        }
+		if ($root !== null) {
+			$this->assertStringNotContainsString('root:', (string)$root);
+		} else {
+			$this->assertNull($root);
+		}
 
-    }//end testXxePayloadIsNeverResolved()
+	}//end testXxePayloadIsNeverResolved()
 }//end class

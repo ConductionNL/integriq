@@ -28,76 +28,70 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
  */
-class LogSmsProviderTest extends TestCase
-{
+class LogSmsProviderTest extends TestCase {
 
-    /**
-     * @var LogSmsProvider
-     */
-    private LogSmsProvider $provider;
+	/**
+	 * @var LogSmsProvider
+	 */
+	private LogSmsProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->provider = new LogSmsProvider();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->provider = new LogSmsProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * getProviderId returns the stable `log` identifier.
-     *
-     * @return void
-     */
-    public function testGetProviderId(): void
-    {
-        $this->assertSame('log', $this->provider->getProviderId());
+	/**
+	 * getProviderId returns the stable `log` identifier.
+	 *
+	 * @return void
+	 */
+	public function testGetProviderId(): void {
+		$this->assertSame('log', $this->provider->getProviderId());
 
-    }//end testGetProviderId()
+	}//end testGetProviderId()
 
-    /**
-     * send() never needs configuration/secret and returns a synthetic queued result.
-     *
-     * @return void
-     */
-    public function testSendReturnsSyntheticQueuedResult(): void
-    {
-        $result = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'hello');
+	/**
+	 * send() never needs configuration/secret and returns a synthetic queued result.
+	 *
+	 * @return void
+	 */
+	public function testSendReturnsSyntheticQueuedResult(): void {
+		$result = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'hello');
 
-        $this->assertSame('queued', $result->status);
-        $this->assertStringStartsWith('MOCK-SMS-', $result->providerMessageId);
+		$this->assertSame('queued', $result->status);
+		$this->assertStringStartsWith('MOCK-SMS-', $result->providerMessageId);
 
-    }//end testSendReturnsSyntheticQueuedResult()
+	}//end testSendReturnsSyntheticQueuedResult()
 
-    /**
-     * Successive sends yield distinct synthetic ids.
-     *
-     * @return void
-     */
-    public function testSendYieldsDistinctIds(): void
-    {
-        $first  = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'a');
-        $second = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'b');
+	/**
+	 * Successive sends yield distinct synthetic ids.
+	 *
+	 * @return void
+	 */
+	public function testSendYieldsDistinctIds(): void {
+		$first = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'a');
+		$second = $this->provider->send(sourceConfiguration: [], to: '+31612345678', body: 'b');
 
-        $this->assertNotSame($first->providerMessageId, $second->providerMessageId);
+		$this->assertNotSame($first->providerMessageId, $second->providerMessageId);
 
-    }//end testSendYieldsDistinctIds()
+	}//end testSendYieldsDistinctIds()
 
-    /**
-     * fetchStatus() always reports a deterministic delivered result.
-     *
-     * @return void
-     */
-    public function testFetchStatusReportsDelivered(): void
-    {
-        $result = $this->provider->fetchStatus(sourceConfiguration: [], providerMessageId: 'MOCK-SMS-1');
+	/**
+	 * fetchStatus() always reports a deterministic delivered result.
+	 *
+	 * @return void
+	 */
+	public function testFetchStatusReportsDelivered(): void {
+		$result = $this->provider->fetchStatus(sourceConfiguration: [], providerMessageId: 'MOCK-SMS-1');
 
-        $this->assertSame('delivered', $result->status);
-        $this->assertSame('MOCK-SMS-1', $result->providerMessageId);
+		$this->assertSame('delivered', $result->status);
+		$this->assertSame('MOCK-SMS-1', $result->providerMessageId);
 
-    }//end testFetchStatusReportsDelivered()
+	}//end testFetchStatusReportsDelivered()
 }//end class

@@ -28,73 +28,69 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
  */
-class LogCardfeedProviderTest extends TestCase
-{
+class LogCardfeedProviderTest extends TestCase {
 
-    /**
-     * @var LogCardfeedProvider
-     */
-    private LogCardfeedProvider $provider;
+	/**
+	 * @var LogCardfeedProvider
+	 */
+	private LogCardfeedProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->provider = new LogCardfeedProvider();
+		$this->provider = new LogCardfeedProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * listCards returns the canned card set with no configuration (no secret) required.
-     *
-     * @return void
-     */
-    public function testListCardsReturnsCannedCardsWithoutConfiguration(): void
-    {
-        $cards = $this->provider->listCards(sourceConfiguration: []);
+	/**
+	 * listCards returns the canned card set with no configuration (no secret) required.
+	 *
+	 * @return void
+	 */
+	public function testListCardsReturnsCannedCardsWithoutConfiguration(): void {
+		$cards = $this->provider->listCards(sourceConfiguration: []);
 
-        $this->assertCount(1, $cards);
-        $this->assertSame('SANDBOX-CARD-1', $cards[0]['cardId']);
-        $this->assertSame('4242', $cards[0]['last4']);
-        $this->assertSame('EUR', $cards[0]['currency']);
+		$this->assertCount(1, $cards);
+		$this->assertSame('SANDBOX-CARD-1', $cards[0]['cardId']);
+		$this->assertSame('4242', $cards[0]['last4']);
+		$this->assertSame('EUR', $cards[0]['currency']);
 
-    }//end testListCardsReturnsCannedCardsWithoutConfiguration()
+	}//end testListCardsReturnsCannedCardsWithoutConfiguration()
 
-    /**
-     * listTransactions returns canned rows with STABLE ids per card so a replayed
-     * pull returns the same ids (the connector's dedup is what prevents re-emit).
-     *
-     * @return void
-     */
-    public function testListTransactionsReturnsStableIdRows(): void
-    {
-        $first = $this->provider->listTransactions(
-            sourceConfiguration: [],
-            cardId: 'SANDBOX-CARD-1',
-            since: '2026-06-30T00:00:00+00:00',
-            until: '2026-07-01T00:00:00+00:00'
-        );
-        $second = $this->provider->listTransactions(
-            sourceConfiguration: [],
-            cardId: 'SANDBOX-CARD-1',
-            since: '2026-07-01T00:00:00+00:00',
-            until: '2026-07-02T00:00:00+00:00'
-        );
+	/**
+	 * listTransactions returns canned rows with STABLE ids per card so a replayed
+	 * pull returns the same ids (the connector's dedup is what prevents re-emit).
+	 *
+	 * @return void
+	 */
+	public function testListTransactionsReturnsStableIdRows(): void {
+		$first = $this->provider->listTransactions(
+			sourceConfiguration: [],
+			cardId: 'SANDBOX-CARD-1',
+			since: '2026-06-30T00:00:00+00:00',
+			until: '2026-07-01T00:00:00+00:00'
+		);
+		$second = $this->provider->listTransactions(
+			sourceConfiguration: [],
+			cardId: 'SANDBOX-CARD-1',
+			since: '2026-07-01T00:00:00+00:00',
+			until: '2026-07-02T00:00:00+00:00'
+		);
 
-        $this->assertCount(2, $first);
-        $this->assertStringContainsString('SANDBOX-CARD-1', $first[0]['transactionId']);
-        $this->assertArrayHasKey('transactionAmount', $first[0]);
+		$this->assertCount(2, $first);
+		$this->assertStringContainsString('SANDBOX-CARD-1', $first[0]['transactionId']);
+		$this->assertArrayHasKey('transactionAmount', $first[0]);
 
-        // Stable ids across windows — the idempotency guarantee relies on this.
-        $this->assertSame(
-            array_column($first, 'transactionId'),
-            array_column($second, 'transactionId')
-        );
+		// Stable ids across windows — the idempotency guarantee relies on this.
+		$this->assertSame(
+			array_column($first, 'transactionId'),
+			array_column($second, 'transactionId')
+		);
 
-    }//end testListTransactionsReturnsStableIdRows()
+	}//end testListTransactionsReturnsStableIdRows()
 }//end class

@@ -29,173 +29,163 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
-class DsoVerzoekTranslatorTest extends TestCase
-{
+class DsoVerzoekTranslatorTest extends TestCase {
 
-    /**
-     * @var DsoVerzoekTranslator
-     */
-    private DsoVerzoekTranslator $translator;
+	/**
+	 * @var DsoVerzoekTranslator
+	 */
+	private DsoVerzoekTranslator $translator;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->translator = new DsoVerzoekTranslator();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->translator = new DsoVerzoekTranslator();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A full aanvraag Verzoek (activiteit omschrijving, projectbeschrijving,
-     * aanvrager bsn) translates to a complete, populated mapping.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-full-aanvraag-verzoek-translates-to-mapped
-     */
-    public function testFullAanvraagVerzoekTranslatesCompletely(): void
-    {
-        $verzoek = [
-            'verzoekId'           => 'dso-12345',
-            'type'                => 'aanvraag',
-            'activiteiten'        => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
-            'projectbeschrijving' => 'Nieuwbouw eengezinswoning',
-            'aanvrager'           => ['bsn' => '999993653', 'kvkNummer' => null],
-        ];
+	/**
+	 * A full aanvraag Verzoek (activiteit omschrijving, projectbeschrijving,
+	 * aanvrager bsn) translates to a complete, populated mapping.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-full-aanvraag-verzoek-translates-to-mapped
+	 */
+	public function testFullAanvraagVerzoekTranslatesCompletely(): void {
+		$verzoek = [
+			'verzoekId' => 'dso-12345',
+			'type' => 'aanvraag',
+			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
+			'projectbeschrijving' => 'Nieuwbouw eengezinswoning',
+			'aanvrager' => ['bsn' => '999993653', 'kvkNummer' => null],
+		];
 
-        $result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(verzoek: $verzoek);
 
-        $this->assertSame('dso-12345', $result['verzoekId']);
-        $this->assertSame('aanvraag', $result['type']);
-        $this->assertSame('Bouwen van een woning', $result['mappedTitle']);
-        $this->assertStringContainsString('Bouwen van een woning', $result['mappedSummary']);
-        $this->assertStringContainsString('Nieuwbouw eengezinswoning', $result['mappedSummary']);
-        $this->assertSame('omgevingsloket', $result['mappedChannel']);
-        $this->assertSame('hoog', $result['mappedPriority']);
-        $this->assertSame('999993653', $result['requester']['bsn']);
+		$this->assertSame('dso-12345', $result['verzoekId']);
+		$this->assertSame('aanvraag', $result['type']);
+		$this->assertSame('Bouwen van een woning', $result['mappedTitle']);
+		$this->assertStringContainsString('Bouwen van een woning', $result['mappedSummary']);
+		$this->assertStringContainsString('Nieuwbouw eengezinswoning', $result['mappedSummary']);
+		$this->assertSame('omgevingsloket', $result['mappedChannel']);
+		$this->assertSame('hoog', $result['mappedPriority']);
+		$this->assertSame('999993653', $result['requester']['bsn']);
 
-    }//end testFullAanvraagVerzoekTranslatesCompletely()
+	}//end testFullAanvraagVerzoekTranslatesCompletely()
 
-    /**
-     * A partial Verzoek — no activiteit omschrijving, no
-     * projectbeschrijving, no aanvrager — still translates successfully
-     * with safe fallbacks (never a hard failure for merely-thin data).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-partial-melding-verzoek-still-translates-with-fallbacks
-     */
-    public function testPartialMeldingVerzoekTranslatesWithFallbacks(): void
-    {
-        $verzoek = [
-            'verzoekId'    => 'dso-partial-1',
-            'type'         => 'melding',
-            'activiteiten' => [['code' => 'kappen-01']],
-        ];
+	/**
+	 * A partial Verzoek — no activiteit omschrijving, no
+	 * projectbeschrijving, no aanvrager — still translates successfully
+	 * with safe fallbacks (never a hard failure for merely-thin data).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-partial-melding-verzoek-still-translates-with-fallbacks
+	 */
+	public function testPartialMeldingVerzoekTranslatesWithFallbacks(): void {
+		$verzoek = [
+			'verzoekId' => 'dso-partial-1',
+			'type' => 'melding',
+			'activiteiten' => [['code' => 'kappen-01']],
+		];
 
-        $result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(verzoek: $verzoek);
 
-        $this->assertSame('kappen-01', $result['mappedTitle']);
-        $this->assertSame('kappen-01', $result['mappedSummary']);
-        $this->assertSame('normaal', $result['mappedPriority']);
-        $this->assertNull($result['requester']['bsn']);
+		$this->assertSame('kappen-01', $result['mappedTitle']);
+		$this->assertSame('kappen-01', $result['mappedSummary']);
+		$this->assertSame('normaal', $result['mappedPriority']);
+		$this->assertNull($result['requester']['bsn']);
 
-    }//end testPartialMeldingVerzoekTranslatesWithFallbacks()
+	}//end testPartialMeldingVerzoekTranslatesWithFallbacks()
 
-    /**
-     * A Verzoek with no activiteiten at all still translates — the title
-     * falls back to a type-based generic, the summary to a documented
-     * placeholder (never a fabricated activiteit label).
-     *
-     * @return void
-     */
-    public function testVerzoekWithNoActiviteitenUsesGenericFallback(): void
-    {
-        $verzoek = ['verzoekId' => 'dso-empty-1', 'type' => 'informatieverzoek', 'activiteiten' => []];
+	/**
+	 * A Verzoek with no activiteiten at all still translates — the title
+	 * falls back to a type-based generic, the summary to a documented
+	 * placeholder (never a fabricated activiteit label).
+	 *
+	 * @return void
+	 */
+	public function testVerzoekWithNoActiviteitenUsesGenericFallback(): void {
+		$verzoek = ['verzoekId' => 'dso-empty-1', 'type' => 'informatieverzoek', 'activiteiten' => []];
 
-        $result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(verzoek: $verzoek);
 
-        $this->assertSame('DSO informatieverzoek', $result['mappedTitle']);
-        $this->assertSame('Verzoek zonder activiteitomschrijving.', $result['mappedSummary']);
+		$this->assertSame('DSO informatieverzoek', $result['mappedTitle']);
+		$this->assertSame('Verzoek zonder activiteitomschrijving.', $result['mappedSummary']);
 
-    }//end testVerzoekWithNoActiviteitenUsesGenericFallback()
+	}//end testVerzoekWithNoActiviteitenUsesGenericFallback()
 
-    /**
-     * Literal-leak guard: a Verzoek missing verzoekId MUST throw, never
-     * fabricate a correlation reference.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-verzoek-with-no-verzoekid-is-refused-not-fabricated
-     */
-    public function testMissingVerzoekIdThrows(): void
-    {
-        $this->expectException(DsoTranslationException::class);
-        $this->expectExceptionMessageMatches('/verzoekId/');
+	/**
+	 * Literal-leak guard: a Verzoek missing verzoekId MUST throw, never
+	 * fabricate a correlation reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-verzoek-with-no-verzoekid-is-refused-not-fabricated
+	 */
+	public function testMissingVerzoekIdThrows(): void {
+		$this->expectException(DsoTranslationException::class);
+		$this->expectExceptionMessageMatches('/verzoekId/');
 
-        $this->translator->translate(verzoek: ['type' => 'aanvraag']);
+		$this->translator->translate(verzoek: ['type' => 'aanvraag']);
 
-    }//end testMissingVerzoekIdThrows()
+	}//end testMissingVerzoekIdThrows()
 
-    /**
-     * Literal-leak guard: an empty-string verzoekId MUST also throw (not
-     * merely a missing key).
-     *
-     * @return void
-     */
-    public function testEmptyVerzoekIdThrows(): void
-    {
-        $this->expectException(DsoTranslationException::class);
+	/**
+	 * Literal-leak guard: an empty-string verzoekId MUST also throw (not
+	 * merely a missing key).
+	 *
+	 * @return void
+	 */
+	public function testEmptyVerzoekIdThrows(): void {
+		$this->expectException(DsoTranslationException::class);
 
-        $this->translator->translate(verzoek: ['verzoekId' => '', 'type' => 'aanvraag']);
+		$this->translator->translate(verzoek: ['verzoekId' => '', 'type' => 'aanvraag']);
 
-    }//end testEmptyVerzoekIdThrows()
+	}//end testEmptyVerzoekIdThrows()
 
-    /**
-     * An unrecognised Verzoek type MUST throw.
-     *
-     * @return void
-     */
-    public function testUnrecognisedTypeThrows(): void
-    {
-        $this->expectException(DsoTranslationException::class);
+	/**
+	 * An unrecognised Verzoek type MUST throw.
+	 *
+	 * @return void
+	 */
+	public function testUnrecognisedTypeThrows(): void {
+		$this->expectException(DsoTranslationException::class);
 
-        $this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => 'onbekend-type']);
+		$this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => 'onbekend-type']);
 
-    }//end testUnrecognisedTypeThrows()
+	}//end testUnrecognisedTypeThrows()
 
-    /**
-     * Every non-aanvraag type resolves to "normaal" priority.
-     *
-     * @param string $type The Verzoek type.
-     *
-     * @return void
-     *
-     * @dataProvider normalPriorityTypeProvider
-     */
-    public function testNonAanvraagTypesResolveToNormalPriority(string $type): void
-    {
-        $result = $this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => $type]);
-        $this->assertSame('normaal', $result['mappedPriority']);
+	/**
+	 * Every non-aanvraag type resolves to "normaal" priority.
+	 *
+	 * @param string $type The Verzoek type.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider normalPriorityTypeProvider
+	 */
+	public function testNonAanvraagTypesResolveToNormalPriority(string $type): void {
+		$result = $this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => $type]);
+		$this->assertSame('normaal', $result['mappedPriority']);
 
-    }//end testNonAanvraagTypesResolveToNormalPriority()
+	}//end testNonAanvraagTypesResolveToNormalPriority()
 
-    /**
-     * Provides every non-aanvraag Verzoek type.
-     *
-     * @return array<string, array<string>>
-     */
-    public static function normalPriorityTypeProvider(): array
-    {
-        return [
-            'melding'            => ['melding'],
-            'informatieverzoek'  => ['informatieverzoek'],
-            'vooroverleg'        => ['vooroverleg'],
-        ];
+	/**
+	 * Provides every non-aanvraag Verzoek type.
+	 *
+	 * @return array<string, array<string>>
+	 */
+	public static function normalPriorityTypeProvider(): array {
+		return [
+			'melding' => ['melding'],
+			'informatieverzoek' => ['informatieverzoek'],
+			'vooroverleg' => ['vooroverleg'],
+		];
 
-    }//end normalPriorityTypeProvider()
+	}//end normalPriorityTypeProvider()
 }//end class

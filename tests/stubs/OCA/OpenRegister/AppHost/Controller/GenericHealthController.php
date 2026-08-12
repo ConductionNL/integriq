@@ -28,32 +28,29 @@ use OCP\IRequest;
 /**
  * Minimal stand-in mirroring the engine controller's public surface.
  */
-class GenericHealthController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string   $appName Calling app id.
-     * @param IRequest $request HTTP request.
-     */
-    public function __construct(string $appName, IRequest $request)
-    {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class GenericHealthController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName Calling app id.
+	 * @param IRequest $request HTTP request.
+	 */
+	public function __construct(string $appName, IRequest $request) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * GET /api/health — declarative health check.
-     *
-     * @return JSONResponse
-     */
-    public function index(): JSONResponse
-    {
-        return new JSONResponse(
-            [
-                'status' => 'healthy',
-                'app'    => $this->appName,
-                'checks' => [],
-            ]
-        );
-    }//end index()
+	/**
+	 * GET /api/health — declarative health check.
+	 *
+	 * @return JSONResponse
+	 */
+	public function index(): JSONResponse {
+		return new JSONResponse(
+			[
+				'status' => 'healthy',
+				'app' => $this->appName,
+				'checks' => [],
+			]
+		);
+	}//end index()
 }//end class

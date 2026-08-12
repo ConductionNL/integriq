@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for RISPollJob.
  *
@@ -28,139 +29,127 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-8
  */
-class RISPollJobTest extends TestCase
-{
+class RISPollJobTest extends TestCase {
 
-    /**
-     * @var RISPollJob
-     */
-    private RISPollJob $job;
+	/**
+	 * @var RISPollJob
+	 */
+	private RISPollJob $job;
 
-    /**
-     * @var IBabsConnectorService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $ibabsService;
+	/**
+	 * @var IBabsConnectorService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $ibabsService;
 
-    /**
-     * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $orObjectService;
+	/**
+	 * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $orObjectService;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->ibabsService = $this->createMock(IBabsConnectorService::class);
+		$this->orObjectService = $this->createMock(OrObjectService::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $timeFactory           = $this->createMock(ITimeFactory::class);
-        $this->ibabsService    = $this->createMock(IBabsConnectorService::class);
-        $this->orObjectService = $this->createMock(OrObjectService::class);
-        $logger                = $this->createMock(LoggerInterface::class);
+		$this->job = new RISPollJob(
+			$timeFactory,
+			$this->ibabsService,
+			$this->orObjectService,
+			$logger
+		);
 
-        $this->job = new RISPollJob(
-            $timeFactory,
-            $this->ibabsService,
-            $this->orObjectService,
-            $logger
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Test that run() completes without error when no sync records exist.
+	 *
+	 * @return void
+	 */
+	public function testRunWithNoSyncRecords(): void {
+		$this->orObjectService
+			->method('findAll')
+			->willReturn(['results' => [], 'total' => 0]);
 
+		// No call to ibabsService or notuBizService expected when no records.
+		$this->ibabsService
+			->expects($this->never())
+			->method('pollBesluiten');
 
-    /**
-     * Test that run() completes without error when no sync records exist.
-     *
-     * @return void
-     */
-    public function testRunWithNoSyncRecords(): void
-    {
-        $this->orObjectService
-            ->method('findAll')
-            ->willReturn(['results' => [], 'total' => 0]);
+		$this->job->run([]);
 
-        // No call to ibabsService or notuBizService expected when no records.
-        $this->ibabsService
-            ->expects($this->never())
-            ->method('pollBesluiten');
+	}//end testRunWithNoSyncRecords()
 
-        $this->job->run([]);
+	/**
+	 * Test that run() handles orObjectService exception gracefully.
+	 *
+	 * @return void
+	 */
+	public function testRunHandlesObjectServiceException(): void {
+		$this->orObjectService
+			->method('findAll')
+			->willThrowException(new \Exception('DB unavailable'));
 
-    }//end testRunWithNoSyncRecords()
+		// Should not throw — graceful handling.
+		$this->job->run([]);
+		$this->assertTrue(true);
 
+	}//end testRunHandlesObjectServiceException()
 
-    /**
-     * Test that run() handles orObjectService exception gracefully.
-     *
-     * @return void
-     */
-    public function testRunHandlesObjectServiceException(): void
-    {
-        $this->orObjectService
-            ->method('findAll')
-            ->willThrowException(new \Exception('DB unavailable'));
+	/**
+	 * Test that run() calls pollBesluiten for iBabs sync records.
+	 *
+	 * @return void
+	 */
+	public function testRunCallsPollBesluitenForIBabsRecords(): void {
+		// Build a fake sync record entity.
+		$syncEntity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+		$syncEntity
+			->method('getObject')
+			->willReturn(
+				[
+					'zaakId' => 'zaak-001',
+					'risType' => 'ibabs',
+					'status' => 'synced',
+					'risMeetingId' => 'verg-001',
+					'sourceId' => 'default',
+				]
+			);
 
-        // Should not throw — graceful handling.
-        $this->job->run([]);
-        $this->assertTrue(true);
+		$this->orObjectService
+			->method('findAll')
+			->willReturn(['results' => [$syncEntity], 'total' => 1]);
 
-    }//end testRunHandlesObjectServiceException()
+		// loadSource() will call orObjectService->find() which returns null — handled gracefully.
+		$this->orObjectService
+			->method('find')
+			->willReturn(null);
 
+		// If source is null, pollBesluiten is NOT called (source loading fails).
+		$this->ibabsService
+			->expects($this->never())
+			->method('pollBesluiten');
 
-    /**
-     * Test that run() calls pollBesluiten for iBabs sync records.
-     *
-     * @return void
-     */
-    public function testRunCallsPollBesluitenForIBabsRecords(): void
-    {
-        // Build a fake sync record entity.
-        $syncEntity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
-        $syncEntity
-            ->method('getObject')
-            ->willReturn(
-                [
-                    'zaakId'         => 'zaak-001',
-                    'risType'        => 'ibabs',
-                    'status'         => 'synced',
-                    'risMeetingId' => 'verg-001',
-                    'sourceId'       => 'default',
-                ]
-            );
+		$this->job->run([]);
 
-        $this->orObjectService
-            ->method('findAll')
-            ->willReturn(['results' => [$syncEntity], 'total' => 1]);
+	}//end testRunCallsPollBesluitenForIBabsRecords()
 
-        // loadSource() will call orObjectService->find() which returns null — handled gracefully.
-        $this->orObjectService
-            ->method('find')
-            ->willReturn(null);
+	/**
+	 * Test that the job sets a non-zero interval.
+	 *
+	 * @return void
+	 */
+	public function testJobHasInterval(): void {
+		// Verify the job is instantiable — interval is set in constructor.
+		$this->assertInstanceOf(RISPollJob::class, $this->job);
 
-        // If source is null, pollBesluiten is NOT called (source loading fails).
-        $this->ibabsService
-            ->expects($this->never())
-            ->method('pollBesluiten');
-
-        $this->job->run([]);
-
-    }//end testRunCallsPollBesluitenForIBabsRecords()
-
-
-    /**
-     * Test that the job sets a non-zero interval.
-     *
-     * @return void
-     */
-    public function testJobHasInterval(): void
-    {
-        // Verify the job is instantiable — interval is set in constructor.
-        $this->assertInstanceOf(RISPollJob::class, $this->job);
-
-    }//end testJobHasInterval()
-
+	}//end testJobHasInterval()
 
 }//end class

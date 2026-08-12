@@ -54,173 +54,162 @@ use Throwable;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
-class RestCardfeedProvider implements CardfeedProviderInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param BrokeredCallService $brokeredCallService Dispatches the call through the OpenRegister credential broker.
-     * @param IL10N               $l                   The localization service.
-     * @param LoggerInterface     $logger              Logger for secret-free failure diagnostics.
-     */
-    public function __construct(
-        private readonly BrokeredCallService $brokeredCallService,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-    ) {
+class RestCardfeedProvider implements CardfeedProviderInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param BrokeredCallService $brokeredCallService Dispatches the call through the OpenRegister credential broker.
+	 * @param IL10N $l The localization service.
+	 * @param LoggerInterface $logger Logger for secret-free failure diagnostics.
+	 */
+	public function __construct(
+		private readonly BrokeredCallService $brokeredCallService,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array $sourceConfiguration The cardfeed source's `configuration` object (`baseUrl`, `authentication.credentialRef`).
-     *
-     * @return array<int, array{cardId: string, last4: string, cardholderName: string, currency: string}> The program's cards.
-     *
-     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
-     */
-    public function listCards(array $sourceConfiguration): array
-    {
-        $url = $this->baseUrl(sourceConfiguration: $sourceConfiguration).'/cards';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The cardfeed source's `configuration` object (`baseUrl`, `authentication.credentialRef`).
+	 *
+	 * @return array<int, array{cardId: string, last4: string, cardholderName: string, currency: string}> The program's cards.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
+	 */
+	public function listCards(array $sourceConfiguration): array {
+		$url = $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/cards';
 
-        $decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
+		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
 
-        $cards = [];
-        foreach (array_values((array) ($decoded['cards'] ?? $decoded['data'] ?? [])) as $card) {
-            $card    = (array) $card;
-            $cards[] = [
-                'cardId'         => (string) ($card['id'] ?? $card['cardId'] ?? ''),
-                'last4'          => (string) ($card['last4'] ?? ''),
-                'cardholderName' => (string) ($card['cardholderName'] ?? $card['cardholder'] ?? ''),
-                'currency'       => (string) ($card['currency'] ?? ''),
-            ];
-        }
+		$cards = [];
+		foreach (array_values((array)($decoded['cards'] ?? $decoded['data'] ?? [])) as $card) {
+			$card = (array)$card;
+			$cards[] = [
+				'cardId' => (string)($card['id'] ?? $card['cardId'] ?? ''),
+				'last4' => (string)($card['last4'] ?? ''),
+				'cardholderName' => (string)($card['cardholderName'] ?? $card['cardholder'] ?? ''),
+				'currency' => (string)($card['currency'] ?? ''),
+			];
+		}
 
-        return $cards;
+		return $cards;
+	}//end listCards()
 
-    }//end listCards()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The cardfeed source's `configuration` object.
+	 * @param string $cardId The card id.
+	 * @param string $since ISO 8601 start of the pull window.
+	 * @param string $until ISO 8601 end of the pull window.
+	 *
+	 * @return array<int, array<string, mixed>> The transaction rows for the window.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+	 */
+	public function listTransactions(array $sourceConfiguration, string $cardId, string $since, string $until): array {
+		$url = $this->baseUrl(sourceConfiguration: $sourceConfiguration)
+			. '/cards/' . rawurlencode($cardId) . '/transactions'
+			. '?since=' . rawurlencode(substr($since, 0, 10)) . '&until=' . rawurlencode(substr($until, 0, 10));
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration The cardfeed source's `configuration` object.
-     * @param string $cardId              The card id.
-     * @param string $since               ISO 8601 start of the pull window.
-     * @param string $until               ISO 8601 end of the pull window.
-     *
-     * @return array<int, array<string, mixed>> The transaction rows for the window.
-     *
-     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
-     */
-    public function listTransactions(array $sourceConfiguration, string $cardId, string $since, string $until): array
-    {
-        $url = $this->baseUrl(sourceConfiguration: $sourceConfiguration)
-            .'/cards/'.rawurlencode($cardId).'/transactions'
-            .'?since='.rawurlencode(substr($since, 0, 10)).'&until='.rawurlencode(substr($until, 0, 10));
+		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
 
-        $decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
+		return array_values((array)($decoded['transactions'] ?? $decoded['data'] ?? []));
+	}//end listTransactions()
 
-        return array_values((array) ($decoded['transactions'] ?? $decoded['data'] ?? []));
+	/**
+	 * Compose the trimmed base URL from the source configuration.
+	 *
+	 * @param array $sourceConfiguration The cardfeed source's `configuration` object.
+	 *
+	 * @return string The base URL without a trailing slash.
+	 */
+	private function baseUrl(array $sourceConfiguration): string {
+		return rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+	}//end baseUrl()
 
-    }//end listTransactions()
+	/**
+	 * Dispatch one brokered call and return its decoded JSON body, mapping every
+	 * failure mode to a secret-free {@see CardfeedProviderException} — never a
+	 * 500 crash, per REQ-001/REQ-005. A missing `credentialRef` fails closed with
+	 * no plaintext fallback.
+	 *
+	 * @param array $sourceConfiguration The cardfeed source's `configuration` object.
+	 * @param string $method The HTTP method.
+	 * @param string $url The composed URL.
+	 *
+	 * @return array<string, mixed> The decoded response body.
+	 *
+	 * @throws CardfeedProviderException On any configuration, brokering, transport, or upstream error.
+	 */
+	private function dispatchJson(array $sourceConfiguration, string $method, string $url): array {
+		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
 
-    /**
-     * Compose the trimmed base URL from the source configuration.
-     *
-     * @param array $sourceConfiguration The cardfeed source's `configuration` object.
-     *
-     * @return string The base URL without a trailing slash.
-     */
-    private function baseUrl(array $sourceConfiguration): string
-    {
-        return rtrim((string) ($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
+			throw new CardfeedProviderException(
+				message: $this->l->t('Card provider credential missing') . ': the `rest` cardfeed provider requires '
+					. '`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
+					. 'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
+			);
+		}
 
-    }//end baseUrl()
+		try {
+			$dispatch = $this->brokeredCallService->prepare(
+				config: $config,
+				sourceData: ['type' => 'cardfeed'],
+				asynchronous: false
+			);
 
-    /**
-     * Dispatch one brokered call and return its decoded JSON body, mapping every
-     * failure mode to a secret-free {@see CardfeedProviderException} — never a
-     * 500 crash, per REQ-001/REQ-005. A missing `credentialRef` fails closed with
-     * no plaintext fallback.
-     *
-     * @param array  $sourceConfiguration The cardfeed source's `configuration` object.
-     * @param string $method              The HTTP method.
-     * @param string $url                 The composed URL.
-     *
-     * @return array<string, mixed> The decoded response body.
-     *
-     * @throws CardfeedProviderException On any configuration, brokering, transport, or upstream error.
-     */
-    private function dispatchJson(array $sourceConfiguration, string $method, string $url): array
-    {
-        $config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
+			$response = $this->brokeredCallService->dispatch(
+				credentialId: $dispatch['credentialId'],
+				actingUserId: $dispatch['actingUserId'],
+				method: $method,
+				url: $url,
+				config: $config
+			);
+		} catch (BrokeredCallConfigurationException $exception) {
+			throw new CardfeedProviderException(message: $exception->getMessage(), previous: $exception);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[RestCardfeedProvider] unexpected transport failure',
+				['exception' => $exception->getMessage()]
+			);
+			throw new CardfeedProviderException(
+				message: 'The card provider request failed unexpectedly: ' . $exception->getMessage(),
+				previous: $exception
+			);
+		}//end try
 
-        if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
-            throw new CardfeedProviderException(
-                message: $this->l->t('Card provider credential missing').': the `rest` cardfeed provider requires '
-                    .'`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
-                    .'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
-            );
-        }
+		return $this->decodeResponse(status: $response->getStatusCode(), body: (string)$response->getBody());
+	}//end dispatchJson()
 
-        try {
-            $dispatch = $this->brokeredCallService->prepare(
-                config: $config,
-                sourceData: ['type' => 'cardfeed'],
-                asynchronous: false
-            );
+	/**
+	 * Map one provider response to decoded JSON or a domain exception.
+	 *
+	 * @param integer $status The HTTP status code.
+	 * @param string $body The raw response body.
+	 *
+	 * @return array<string, mixed> The decoded response body.
+	 *
+	 * @throws CardfeedProviderException On any non-2xx or non-JSON response.
+	 */
+	private function decodeResponse(int $status, string $body): array {
+		if ($status < 200 || $status >= 300) {
+			throw new CardfeedProviderException(
+				message: 'The card provider responded with HTTP ' . $status . '.'
+			);
+		}
 
-            $response = $this->brokeredCallService->dispatch(
-                credentialId: $dispatch['credentialId'],
-                actingUserId: $dispatch['actingUserId'],
-                method: $method,
-                url: $url,
-                config: $config
-            );
-        } catch (BrokeredCallConfigurationException $exception) {
-            throw new CardfeedProviderException(message: $exception->getMessage(), previous: $exception);
-        } catch (Throwable $exception) {
-            $this->logger->warning(
-                '[RestCardfeedProvider] unexpected transport failure',
-                ['exception' => $exception->getMessage()]
-            );
-            throw new CardfeedProviderException(
-                message: 'The card provider request failed unexpectedly: '.$exception->getMessage(),
-                previous: $exception
-            );
-        }//end try
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === false) {
+			throw new CardfeedProviderException(
+				message: 'The card provider returned a non-JSON response.'
+			);
+		}
 
-        return $this->decodeResponse(status: $response->getStatusCode(), body: (string) $response->getBody());
-
-    }//end dispatchJson()
-
-    /**
-     * Map one provider response to decoded JSON or a domain exception.
-     *
-     * @param integer $status The HTTP status code.
-     * @param string  $body   The raw response body.
-     *
-     * @return array<string, mixed> The decoded response body.
-     *
-     * @throws CardfeedProviderException On any non-2xx or non-JSON response.
-     */
-    private function decodeResponse(int $status, string $body): array
-    {
-        if ($status < 200 || $status >= 300) {
-            throw new CardfeedProviderException(
-                message: 'The card provider responded with HTTP '.$status.'.'
-            );
-        }
-
-        $decoded = json_decode($body, true);
-        if (is_array($decoded) === false) {
-            throw new CardfeedProviderException(
-                message: 'The card provider returned a non-JSON response.'
-            );
-        }
-
-        return $decoded;
-
-    }//end decodeResponse()
+		return $decoded;
+	}//end decodeResponse()
 }//end class

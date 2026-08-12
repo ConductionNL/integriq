@@ -20,50 +20,47 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Minimal stub for the flow node registry.
  */
-class FlowNodeRegistry
-{
-    /**
-     * Registered nodes, keyed by type id.
-     *
-     * @var array<string, IFlowNode>
-     */
-    private array $nodes = [];
+class FlowNodeRegistry {
+	/**
+	 * Registered nodes, keyed by type id.
+	 *
+	 * @var array<string, IFlowNode>
+	 */
+	private array $nodes = [];
 
-    /**
-     * Node registrations that were refused as duplicates.
-     *
-     * @var array<int, string>
-     */
-    public array $refused = [];
+	/**
+	 * Node registrations that were refused as duplicates.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $refused = [];
 
-    /**
-     * Register a node type, refusing a duplicate id.
-     *
-     * @param  IFlowNode $node
-     * @return void
-     */
-    public function register(IFlowNode $node): void
-    {
-        $id = $node->getId();
-        if ($id === '') {
-            return;
-        }
+	/**
+	 * Register a node type, refusing a duplicate id.
+	 *
+	 * @param IFlowNode $node
+	 * @return void
+	 */
+	public function register(IFlowNode $node): void {
+		$id = $node->getId();
+		if ($id === '') {
+			return;
+		}
 
-        if (isset($this->nodes[$id]) === true) {
-            $this->refused[] = $id;
-            return;
-        }
+		if (isset($this->nodes[$id]) === true) {
+			$this->refused[] = $id;
+			return;
+		}
 
-        $this->nodes[$id] = $node;
-    }
+		$this->nodes[$id] = $node;
+	}
 
-    /**
-     * Every registered node type.
-     *
-     * @return array<string, IFlowNode>
-     */
-    public function all(): array
-    {
-        return $this->nodes;
-    }
+	/**
+	 * Every registered node type.
+	 *
+	 * @return array<string, IFlowNode>
+	 */
+	public function all(): array {
+		return $this->nodes;
+	}
 }

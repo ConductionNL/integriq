@@ -35,6 +35,5 @@ use Exception;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
-class SmsProviderException extends Exception
-{
+class SmsProviderException extends Exception {
 }//end class

@@ -20,37 +20,36 @@ namespace OCA\OpenRegister\Service\Integration;
 /**
  * Minimal stub mirroring OCA\OpenRegister\Service\Integration\IntegrationProvider.
  */
-interface IntegrationProvider
-{
-    public function getId(): string;
+interface IntegrationProvider {
+	public function getId(): string;
 
-    public function getLabel(): string;
+	public function getLabel(): string;
 
-    public function getIcon(): string;
+	public function getIcon(): string;
 
-    public function getGroup(): ?string;
+	public function getGroup(): ?string;
 
-    public function getRequiredApp(): ?string;
+	public function getRequiredApp(): ?string;
 
-    public function getStorageStrategy(): string;
+	public function getStorageStrategy(): string;
 
-    public function getOpenConnectorSource(): ?string;
+	public function getOpenConnectorSource(): ?string;
 
-    public function isEnabled(): bool;
+	public function isEnabled(): bool;
 
-    public function requiresPermission(): ?string;
+	public function requiresPermission(): ?string;
 
-    public function authRequirements(): array;
+	public function authRequirements(): array;
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array;
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array;
 
-    public function get(string $register, string $schema, string $objectId, string $entityId): array;
+	public function get(string $register, string $schema, string $objectId, string $entityId): array;
 
-    public function create(string $register, string $schema, string $objectId, array $payload): array;
+	public function create(string $register, string $schema, string $objectId, array $payload): array;
 
-    public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
+	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
 
-    public function delete(string $register, string $schema, string $objectId, string $entityId): void;
+	public function delete(string $register, string $schema, string $objectId, string $entityId): void;
 
-    public function health(): array;
+	public function health(): array;
 }

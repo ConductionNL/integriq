@@ -36,94 +36,87 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ResultaatTranslator extends AbstractZgwResourceTranslator
-{
+class ResultaatTranslator extends AbstractZgwResourceTranslator {
 
-    /**
-     * Fields procest's own `LoadDefaultZgwMappings::getResultaatMapping()`
-     * always emits and this translator treats as mandatory on both sides.
-     *
-     * @var string[]
-     */
-    private const REQUIRED_FIELDS = [
-        'url',
-        'uuid',
-        'zaak',
-        'resultaattype',
-    ];
+	/**
+	 * Fields procest's own `LoadDefaultZgwMappings::getResultaatMapping()`
+	 * always emits and this translator treats as mandatory on both sides.
+	 *
+	 * @var string[]
+	 */
+	private const REQUIRED_FIELDS = [
+		'url',
+		'uuid',
+		'zaak',
+		'resultaattype',
+	];
 
-    /**
-     * The legacy, pre-1.5.1 duplicate field name — VERIFIED removed by VNG
-     * `zaken-api` `CHANGELOG.rst` 1.5.1 (issue #2157).
-     *
-     * @var string
-     */
-    private const LEGACY_DUPLICATE_FIELD = 'resultaattoelichting';
+	/**
+	 * The legacy, pre-1.5.1 duplicate field name — VERIFIED removed by VNG
+	 * `zaken-api` `CHANGELOG.rst` 1.5.1 (issue #2157).
+	 *
+	 * @var string
+	 */
+	private const LEGACY_DUPLICATE_FIELD = 'resultaattoelichting';
 
-    /**
-     * The canonical field the legacy duplicate mirrored.
-     *
-     * @var string
-     */
-    private const CANONICAL_FIELD = 'toelichting';
+	/**
+	 * The canonical field the legacy duplicate mirrored.
+	 *
+	 * @var string
+	 */
+	private const CANONICAL_FIELD = 'toelichting';
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The resource slug.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function getResource(): string
-    {
-        return 'resultaat';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The resource slug.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function getResource(): string {
+		return 'resultaat';
+	}//end getResource()
 
-    }//end getResource()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Drops the legacy `resultaattoelichting` duplicate — a no-op for
+	 * procest's own payloads (which never emit it), but defensive against
+	 * a caller that still supplies the legacy shape.
+	 *
+	 * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.6`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV16(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    /**
-     * {@inheritDoc}
-     *
-     * Drops the legacy `resultaattoelichting` duplicate — a no-op for
-     * procest's own payloads (which never emit it), but defensive against
-     * a caller that still supplies the legacy shape.
-     *
-     * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.6`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV16(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
+		unset($payload[self::LEGACY_DUPLICATE_FIELD]);
 
-        unset($payload[self::LEGACY_DUPLICATE_FIELD]);
+		return $payload;
+	}//end translateToV16()
 
-        return $payload;
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Re-adds `resultaattoelichting` mirroring `toelichting`, for a legacy
+	 * consumer that still expects the pre-1.5.1 duplicate field.
+	 *
+	 * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.0`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV1x(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    }//end translateToV16()
+		if (array_key_exists(self::CANONICAL_FIELD, $payload) === true) {
+			$payload[self::LEGACY_DUPLICATE_FIELD] = $payload[self::CANONICAL_FIELD];
+		}
 
-    /**
-     * {@inheritDoc}
-     *
-     * Re-adds `resultaattoelichting` mirroring `toelichting`, for a legacy
-     * consumer that still expects the pre-1.5.1 duplicate field.
-     *
-     * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.0`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV1x(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-
-        if (array_key_exists(self::CANONICAL_FIELD, $payload) === true) {
-            $payload[self::LEGACY_DUPLICATE_FIELD] = $payload[self::CANONICAL_FIELD];
-        }
-
-        return $payload;
-
-    }//end translateToV1x()
+		return $payload;
+	}//end translateToV1x()
 }//end class

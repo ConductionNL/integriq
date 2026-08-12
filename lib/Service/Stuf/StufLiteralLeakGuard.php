@@ -37,21 +37,18 @@ namespace OCA\OpenConnector\Service\Stuf;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
  */
-class StufLiteralLeakGuard
-{
-    /**
-     * Whether the given rendered XML still carries an unresolved template marker
-     * (`{{...}}` or the literal `%%UNRESOLVED%%`).
-     *
-     * @param string $xml The fully rendered envelope XML.
-     *
-     * @return boolean True when a marker survives — the caller MUST refuse to send.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
-     */
-    public function hasUnresolvedPlaceholder(string $xml): bool
-    {
-        return (preg_match('/\{\{.*?\}\}|%%UNRESOLVED%%/', $xml) === 1);
-
-    }//end hasUnresolvedPlaceholder()
+class StufLiteralLeakGuard {
+	/**
+	 * Whether the given rendered XML still carries an unresolved template marker
+	 * (`{{...}}` or the literal `%%UNRESOLVED%%`).
+	 *
+	 * @param string $xml The fully rendered envelope XML.
+	 *
+	 * @return boolean True when a marker survives — the caller MUST refuse to send.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
+	 */
+	public function hasUnresolvedPlaceholder(string $xml): bool {
+		return (preg_match('/\{\{.*?\}\}|%%UNRESOLVED%%/', $xml) === 1);
+	}//end hasUnresolvedPlaceholder()
 }//end class

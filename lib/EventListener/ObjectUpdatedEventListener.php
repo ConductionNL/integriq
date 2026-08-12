@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector ObjectUpdated EventListener.
  *
@@ -29,45 +30,43 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ObjectUpdatedEventListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SynchronizationService $synchronizationService Service that performs the synchronization.
-     */
-    public function __construct(
-        private readonly SynchronizationService $synchronizationService,
-    ) {
+class ObjectUpdatedEventListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SynchronizationService $synchronizationService Service that performs the synchronization.
+	 */
+	public function __construct(
+		private readonly SynchronizationService $synchronizationService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired event.
-     *
-     * @param Event $event Event payload to handle.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectUpdatedEvent === false) {
-            return;
-        }
+	/**
+	 * Handle a fired event.
+	 *
+	 * @param Event $event Event payload to handle.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectUpdatedEvent === false) {
+			return;
+		}
 
-        if (method_exists($event, 'getNewObject') === false) {
-            return;
-        }
+		if (method_exists($event, 'getNewObject') === false) {
+			return;
+		}
 
-        $object = $event->getNewObject();
-        if ($object === null) {
-            return;
-        }
+		$object = $event->getNewObject();
+		if ($object === null) {
+			return;
+		}
 
-        $this->synchronizationService->handleObjectEventSynchronization(
-            object: $object,
-            eventMutationType: 'update'
-        );
+		$this->synchronizationService->handleObjectEventSynchronization(
+			object: $object,
+			eventMutationType: 'update'
+		);
 
-    }//end handle()
+	}//end handle()
 }//end class

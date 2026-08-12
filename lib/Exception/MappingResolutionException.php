@@ -37,6 +37,5 @@ use Exception;
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
-class MappingResolutionException extends Exception
-{
+class MappingResolutionException extends Exception {
 }//end class

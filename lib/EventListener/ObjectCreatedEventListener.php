@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector ObjectCreated EventListener.
  *
@@ -29,45 +30,43 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ObjectCreatedEventListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SynchronizationService $synchronizationService Service that performs the synchronization.
-     */
-    public function __construct(
-        private readonly SynchronizationService $synchronizationService,
-    ) {
+class ObjectCreatedEventListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SynchronizationService $synchronizationService Service that performs the synchronization.
+	 */
+	public function __construct(
+		private readonly SynchronizationService $synchronizationService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired event.
-     *
-     * @param Event $event Event payload to handle.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectCreatedEvent === false) {
-            return;
-        }
+	/**
+	 * Handle a fired event.
+	 *
+	 * @param Event $event Event payload to handle.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatedEvent === false) {
+			return;
+		}
 
-        if (method_exists($event, 'getObject') === false) {
-            return;
-        }
+		if (method_exists($event, 'getObject') === false) {
+			return;
+		}
 
-        $object = $event->getObject();
-        if ($object === null) {
-            return;
-        }
+		$object = $event->getObject();
+		if ($object === null) {
+			return;
+		}
 
-        $this->synchronizationService->handleObjectEventSynchronization(
-            object: $object,
-            eventMutationType: 'create'
-        );
+		$this->synchronizationService->handleObjectEventSynchronization(
+			object: $object,
+			eventMutationType: 'create'
+		);
 
-    }//end handle()
+	}//end handle()
 }//end class

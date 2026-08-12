@@ -35,6 +35,5 @@ use Exception;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
-class PeppolProviderException extends Exception
-{
+class PeppolProviderException extends Exception {
 }//end class

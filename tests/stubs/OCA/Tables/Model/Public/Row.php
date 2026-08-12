@@ -23,26 +23,24 @@ namespace OCA\Tables\Model\Public;
 /**
  * Minimal stub for OCA\Tables\Model\Public\Row.
  */
-final class Row
-{
+final class Row {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param integer $tableId The table id.
+	 * @param integer $rowId The row id.
+	 * @param array|null $previousValues Column values before the change (update events only).
+	 * @param array|null $values Current column values.
+	 * @param array|null $dataByAlias Column values keyed by technical name.
+	 */
+	public function __construct(
+		public int $tableId,
+		public int $rowId,
+		public ?array $previousValues = null,
+		public ?array $values = null,
+		public ?array $dataByAlias = null,
+	) {
 
-    /**
-     * Constructor.
-     *
-     * @param integer    $tableId        The table id.
-     * @param integer    $rowId          The row id.
-     * @param array|null $previousValues Column values before the change (update events only).
-     * @param array|null $values         Current column values.
-     * @param array|null $dataByAlias    Column values keyed by technical name.
-     */
-    public function __construct(
-        public int $tableId,
-        public int $rowId,
-        public ?array $previousValues=null,
-        public ?array $values=null,
-        public ?array $dataByAlias=null
-    ) {
-
-    }//end __construct()
+	}//end __construct()
 }//end class

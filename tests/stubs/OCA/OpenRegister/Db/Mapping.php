@@ -25,106 +25,87 @@ use OCP\AppFramework\Db\Entity;
  * Exposes the getters MappingService consumes (getName, getMapping,
  * getPassThrough, getUnset, getCast) and the hydrate(array): self helper.
  */
-class Mapping extends Entity
-{
+class Mapping extends Entity {
 
-    /** @var string|null */
-    protected $name = null;
+	/** @var string|null */
+	protected $name = null;
 
-    /** @var array */
-    protected $mapping = [];
+	/** @var array */
+	protected $mapping = [];
 
-    /** @var bool */
-    protected $passThrough = false;
+	/** @var bool */
+	protected $passThrough = false;
 
-    /** @var array */
-    protected $unset = [];
+	/** @var array */
+	protected $unset = [];
 
-    /** @var array */
-    protected $cast = [];
+	/** @var array */
+	protected $cast = [];
 
+	/**
+	 * @return string|null
+	 */
+	public function getName(): ?string {
+		return $this->name;
+	}//end getName()
 
-    /**
-     * @return string|null
-     */
-    public function getName(): ?string
-    {
-        return $this->name;
+	/**
+	 * @return array
+	 */
+	public function getMapping(): array {
+		return ($this->mapping ?? []);
+	}//end getMapping()
 
-    }//end getName()
+	/**
+	 * @return bool
+	 */
+	public function getPassThrough(): bool {
+		return (bool)$this->passThrough;
+	}//end getPassThrough()
 
+	/**
+	 * @return array
+	 */
+	public function getUnset(): array {
+		return ($this->unset ?? []);
+	}//end getUnset()
 
-    /**
-     * @return array
-     */
-    public function getMapping(): array
-    {
-        return ($this->mapping ?? []);
+	/**
+	 * @return array
+	 */
+	public function getCast(): array {
+		return ($this->cast ?? []);
+	}//end getCast()
 
-    }//end getMapping()
+	/**
+	 * Hydrate the value object from an associative array.
+	 *
+	 * @param array $object The data to hydrate from.
+	 *
+	 * @return static
+	 */
+	public function hydrate(array $object): static {
+		if (isset($object['name']) === true) {
+			$this->name = (string)$object['name'];
+		}
 
+		if (array_key_exists('mapping', $object) === true) {
+			$this->mapping = (array)($object['mapping'] ?? []);
+		}
 
-    /**
-     * @return bool
-     */
-    public function getPassThrough(): bool
-    {
-        return (bool) $this->passThrough;
+		if (array_key_exists('passThrough', $object) === true) {
+			$this->passThrough = (bool)$object['passThrough'];
+		}
 
-    }//end getPassThrough()
+		if (array_key_exists('unset', $object) === true) {
+			$this->unset = (array)($object['unset'] ?? []);
+		}
 
+		if (array_key_exists('cast', $object) === true) {
+			$this->cast = (array)($object['cast'] ?? []);
+		}
 
-    /**
-     * @return array
-     */
-    public function getUnset(): array
-    {
-        return ($this->unset ?? []);
-
-    }//end getUnset()
-
-
-    /**
-     * @return array
-     */
-    public function getCast(): array
-    {
-        return ($this->cast ?? []);
-
-    }//end getCast()
-
-
-    /**
-     * Hydrate the value object from an associative array.
-     *
-     * @param array $object The data to hydrate from.
-     *
-     * @return static
-     */
-    public function hydrate(array $object): static
-    {
-        if (isset($object['name']) === true) {
-            $this->name = (string) $object['name'];
-        }
-
-        if (array_key_exists('mapping', $object) === true) {
-            $this->mapping = (array) ($object['mapping'] ?? []);
-        }
-
-        if (array_key_exists('passThrough', $object) === true) {
-            $this->passThrough = (bool) $object['passThrough'];
-        }
-
-        if (array_key_exists('unset', $object) === true) {
-            $this->unset = (array) ($object['unset'] ?? []);
-        }
-
-        if (array_key_exists('cast', $object) === true) {
-            $this->cast = (array) ($object['cast'] ?? []);
-        }
-
-        return $this;
-
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
 }//end class

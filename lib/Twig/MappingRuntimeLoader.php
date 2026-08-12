@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Mapping Twig Runtime Loader.
  *
@@ -44,47 +45,44 @@ use Twig\RuntimeLoader\RuntimeLoaderInterface;
 /**
  * Runtime loader that wires the mapping services into the Twig runtime.
  */
-class MappingRuntimeLoader implements RuntimeLoaderInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param MappingService                 $mappingService                 Service that executes mappings.
-     * @param CallService                    $callService                    Service that performs outbound calls.
-     * @param FileService                    $fileService                    Service that resolves file metadata.
-     * @param SourceMappingService           $objectService                  Service that resolves OR objects.
-     * @param SynchronizationContractService $synchronizationContractService Service for contract lookups.
-     */
-    public function __construct(
-        private readonly MappingService $mappingService,
-        private readonly CallService $callService,
-        private readonly FileService $fileService,
-        private readonly SourceMappingService $objectService,
-        private readonly SynchronizationContractService $synchronizationContractService,
-    ) {
+class MappingRuntimeLoader implements RuntimeLoaderInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param MappingService $mappingService Service that executes mappings.
+	 * @param CallService $callService Service that performs outbound calls.
+	 * @param FileService $fileService Service that resolves file metadata.
+	 * @param SourceMappingService $objectService Service that resolves OR objects.
+	 * @param SynchronizationContractService $synchronizationContractService Service for contract lookups.
+	 */
+	public function __construct(
+		private readonly MappingService $mappingService,
+		private readonly CallService $callService,
+		private readonly FileService $fileService,
+		private readonly SourceMappingService $objectService,
+		private readonly SynchronizationContractService $synchronizationContractService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Instantiate the requested runtime extension class.
-     *
-     * @param string $class Fully qualified class name to load.
-     *
-     * @return MappingRuntime|null
-     */
-    public function load(string $class): ?MappingRuntime
-    {
-        if ($class === MappingRuntime::class) {
-            return new MappingRuntime(
-                mappingService:                 $this->mappingService,
-                callService:                    $this->callService,
-                fileService:                    $this->fileService,
-                objectService:                  $this->objectService,
-                synchronizationContractService: $this->synchronizationContractService,
-            );
-        }
+	/**
+	 * Instantiate the requested runtime extension class.
+	 *
+	 * @param string $class Fully qualified class name to load.
+	 *
+	 * @return MappingRuntime|null
+	 */
+	public function load(string $class): ?MappingRuntime {
+		if ($class === MappingRuntime::class) {
+			return new MappingRuntime(
+				mappingService:                 $this->mappingService,
+				callService:                    $this->callService,
+				fileService:                    $this->fileService,
+				objectService:                  $this->objectService,
+				synchronizationContractService: $this->synchronizationContractService,
+			);
+		}
 
-        return null;
-
-    }//end load()
+		return null;
+	}//end load()
 }//end class

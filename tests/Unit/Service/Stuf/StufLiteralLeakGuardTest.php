@@ -28,56 +28,51 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
  */
-class StufLiteralLeakGuardTest extends TestCase
-{
+class StufLiteralLeakGuardTest extends TestCase {
 
-    /**
-     * @var StufLiteralLeakGuard
-     */
-    private StufLiteralLeakGuard $guard;
+	/**
+	 * @var StufLiteralLeakGuard
+	 */
+	private StufLiteralLeakGuard $guard;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->guard = new StufLiteralLeakGuard();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->guard = new StufLiteralLeakGuard();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A clean envelope has no unresolved placeholder.
-     *
-     * @return void
-     */
-    public function testCleanEnvelopeHasNoPlaceholder(): void
-    {
-        $this->assertFalse($this->guard->hasUnresolvedPlaceholder(xml: '<root><identificatie>ZAAK-1</identificatie></root>'));
+	/**
+	 * A clean envelope has no unresolved placeholder.
+	 *
+	 * @return void
+	 */
+	public function testCleanEnvelopeHasNoPlaceholder(): void {
+		$this->assertFalse($this->guard->hasUnresolvedPlaceholder(xml: '<root><identificatie>ZAAK-1</identificatie></root>'));
 
-    }//end testCleanEnvelopeHasNoPlaceholder()
+	}//end testCleanEnvelopeHasNoPlaceholder()
 
-    /**
-     * A `{{marker}}`-style leftover template is detected.
-     *
-     * @return void
-     */
-    public function testDetectsCurlyBraceMarker(): void
-    {
-        $this->assertTrue($this->guard->hasUnresolvedPlaceholder(xml: '<root>{{identificatie}}</root>'));
+	/**
+	 * A `{{marker}}`-style leftover template is detected.
+	 *
+	 * @return void
+	 */
+	public function testDetectsCurlyBraceMarker(): void {
+		$this->assertTrue($this->guard->hasUnresolvedPlaceholder(xml: '<root>{{identificatie}}</root>'));
 
-    }//end testDetectsCurlyBraceMarker()
+	}//end testDetectsCurlyBraceMarker()
 
-    /**
-     * A literal `%%UNRESOLVED%%` marker is detected.
-     *
-     * @return void
-     */
-    public function testDetectsUnresolvedLiteral(): void
-    {
-        $this->assertTrue($this->guard->hasUnresolvedPlaceholder(xml: '<root>%%UNRESOLVED%%</root>'));
+	/**
+	 * A literal `%%UNRESOLVED%%` marker is detected.
+	 *
+	 * @return void
+	 */
+	public function testDetectsUnresolvedLiteral(): void {
+		$this->assertTrue($this->guard->hasUnresolvedPlaceholder(xml: '<root>%%UNRESOLVED%%</root>'));
 
-    }//end testDetectsUnresolvedLiteral()
+	}//end testDetectsUnresolvedLiteral()
 }//end class

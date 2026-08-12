@@ -24,30 +24,26 @@ use OCP\EventDispatcher\Event;
 /**
  * Minimal stub for OCA\OpenRegister\Event\ObjectDeletedEvent.
  */
-class ObjectDeletedEvent extends Event
-{
+class ObjectDeletedEvent extends Event {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectEntity $object The object entity that was deleted.
+	 */
+	public function __construct(
+		private readonly ObjectEntity $object,
+	) {
+		parent::__construct();
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectEntity $object The object entity that was deleted.
-     */
-    public function __construct(private readonly ObjectEntity $object)
-    {
-        parent::__construct();
+	}//end __construct()
 
-    }//end __construct()
-
-
-    /**
-     * Get the deleted object entity.
-     *
-     * @return ObjectEntity
-     */
-    public function getObject(): ObjectEntity
-    {
-        return $this->object;
-
-    }//end getObject()
+	/**
+	 * Get the deleted object entity.
+	 *
+	 * @return ObjectEntity
+	 */
+	public function getObject(): ObjectEntity {
+		return $this->object;
+	}//end getObject()
 }//end class

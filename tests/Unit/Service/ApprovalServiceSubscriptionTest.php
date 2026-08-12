@@ -37,99 +37,94 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
  */
-class ApprovalServiceSubscriptionTest extends TestCase
-{
+class ApprovalServiceSubscriptionTest extends TestCase {
 
-    /**
-     * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $objectService;
+	/**
+	 * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $objectService;
 
-    /**
-     * @var IGroupManager|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $groupManager;
+	/**
+	 * @var IGroupManager|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $groupManager;
 
-    /**
-     * @var INotificationManager|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $notificationManager;
+	/**
+	 * @var INotificationManager|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $notificationManager;
 
-    /**
-     * @var ApprovalService
-     */
-    private ApprovalService $service;
+	/**
+	 * @var ApprovalService
+	 */
+	private ApprovalService $service;
 
+	/**
+	 * Set up fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->objectService = ObjectServiceMockBuilder::make($this);
+		$userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->notificationManager = $this->createMock(INotificationManager::class);
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/');
 
-        $this->objectService       = ObjectServiceMockBuilder::make($this);
-        $userSession                = $this->createMock(IUserSession::class);
-        $this->groupManager         = $this->createMock(IGroupManager::class);
-        $this->notificationManager  = $this->createMock(INotificationManager::class);
-        $urlGenerator               = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/');
+		$this->service = new ApprovalService(
+			$this->objectService,
+			$userSession,
+			$this->groupManager,
+			$this->notificationManager,
+			$urlGenerator,
+			$this->createMock(LoggerInterface::class),
+		);
 
-        $this->service = new ApprovalService(
-            $this->objectService,
-            $userSession,
-            $this->groupManager,
-            $this->notificationManager,
-            $urlGenerator,
-            $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * REQ-APG-004 — suspendForSubscription() creates a `pending`
+	 * approval_request carrying the subscriptionId, no FlowToken snapshot
+	 * (an empty array, mirroring suspendForSynchronization()), and notifies
+	 * the configured approverGroup.
+	 *
+	 * @return void
+	 */
+	public function testSuspendForSubscriptionPersistsPendingWithSubscriptionIdAndNotifiesApprovers(): void {
+		// No group members -> notifyApprovers()'s foreach body never runs,
+		// but get() must still resolve the group for the warning-free path.
+		$group = $this->createMock(\OCP\IGroup::class);
+		$group->method('getUsers')->willReturn([]);
+		$this->groupManager->method('get')->willReturn($group);
 
+		$captured = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'approval-created');
+			}
+		);
 
-    /**
-     * REQ-APG-004 — suspendForSubscription() creates a `pending`
-     * approval_request carrying the subscriptionId, no FlowToken snapshot
-     * (an empty array, mirroring suspendForSynchronization()), and notifies
-     * the configured approverGroup.
-     *
-     * @return void
-     */
-    public function testSuspendForSubscriptionPersistsPendingWithSubscriptionIdAndNotifiesApprovers(): void
-    {
-        // No group members -> notifyApprovers()'s foreach body never runs,
-        // but get() must still resolve the group for the warning-free path.
-        $group = $this->createMock(\OCP\IGroup::class);
-        $group->method('getUsers')->willReturn([]);
-        $this->groupManager->method('get')->willReturn($group);
+		$result = $this->service->suspendForSubscription(
+			subscriptionId: 'sub-1',
+			approverGroup: 'gateway-approvers',
+			onReject: 'error',
+			ttlSeconds: 3600
+		);
 
-        $captured = null;
-        $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object) use (&$captured) {
-                $captured = $object;
-                return ObjectServiceMockBuilder::objectEntity($this, $object, 'approval-created');
-            }
-        );
-
-        $result = $this->service->suspendForSubscription(
-            subscriptionId: 'sub-1',
-            approverGroup: 'gateway-approvers',
-            onReject: 'error',
-            ttlSeconds: 3600
-        );
-
-        $this->assertSame('approval-created', $result->getUuid());
-        $this->assertSame('pending', $captured['status']);
-        $this->assertSame('sub-1', $captured['subscriptionId']);
-        $this->assertSame('gateway-approvers', $captured['approverGroup']);
-        $this->assertSame('before', $captured['timing']);
-        $this->assertSame([], $captured['snapshot']);
-        $this->assertSame('error', $captured['onReject']);
-        $this->assertNotEmpty($captured['expiresAt']);
-        $this->assertArrayNotHasKey('endpointId', $captured);
-        $this->assertArrayNotHasKey('synchronizationId', $captured);
-    }//end testSuspendForSubscriptionPersistsPendingWithSubscriptionIdAndNotifiesApprovers()
+		$this->assertSame('approval-created', $result->getUuid());
+		$this->assertSame('pending', $captured['status']);
+		$this->assertSame('sub-1', $captured['subscriptionId']);
+		$this->assertSame('gateway-approvers', $captured['approverGroup']);
+		$this->assertSame('before', $captured['timing']);
+		$this->assertSame([], $captured['snapshot']);
+		$this->assertSame('error', $captured['onReject']);
+		$this->assertNotEmpty($captured['expiresAt']);
+		$this->assertArrayNotHasKey('endpointId', $captured);
+		$this->assertArrayNotHasKey('synchronizationId', $captured);
+	}//end testSuspendForSubscriptionPersistsPendingWithSubscriptionIdAndNotifiesApprovers()
 
 }//end class

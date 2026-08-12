@@ -50,327 +50,313 @@ use RuntimeException;
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
  */
-class DSOSignatureVerifierService
-{
+class DSOSignatureVerifierService {
 
-    /**
-     * App-config key selecting the signing mode (`hmac` or `rsa`).
-     *
-     * @var string
-     */
-    public const CONFIG_MODE = 'dso_pki_mode';
+	/**
+	 * App-config key selecting the signing mode (`hmac` or `rsa`).
+	 *
+	 * @var string
+	 */
+	public const CONFIG_MODE = 'dso_pki_mode';
 
-    /**
-     * App-config key for the HMAC shared secret (pre-production mode).
-     *
-     * @var string
-     */
-    public const CONFIG_HMAC_SECRET = 'dso_pki_hmac_secret';
+	/**
+	 * App-config key for the HMAC shared secret (pre-production mode).
+	 *
+	 * @var string
+	 */
+	public const CONFIG_HMAC_SECRET = 'dso_pki_hmac_secret';
 
-    /**
-     * App-config key for the PEM-encoded signing (leaf) certificate.
-     *
-     * @var string
-     */
-    public const CONFIG_SIGNING_CERTIFICATE = 'dso_pki_signing_certificate';
+	/**
+	 * App-config key for the PEM-encoded signing (leaf) certificate.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_SIGNING_CERTIFICATE = 'dso_pki_signing_certificate';
 
-    /**
-     * App-config key for the PEM-encoded intermediate certificate chain.
-     *
-     * @var string
-     */
-    public const CONFIG_INTERMEDIATE_CHAIN = 'dso_pki_intermediate_chain';
+	/**
+	 * App-config key for the PEM-encoded intermediate certificate chain.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_INTERMEDIATE_CHAIN = 'dso_pki_intermediate_chain';
 
-    /**
-     * App-config key for the PEM-encoded trusted PKIoverheid root CA.
-     *
-     * @var string
-     */
-    public const CONFIG_ROOT_CA = 'dso_pki_root_ca';
+	/**
+	 * App-config key for the PEM-encoded trusted PKIoverheid root CA.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_ROOT_CA = 'dso_pki_root_ca';
 
-    /**
-     * Pre-production HMAC shared-secret signing mode.
-     *
-     * @var string
-     */
-    public const MODE_HMAC = 'hmac';
+	/**
+	 * Pre-production HMAC shared-secret signing mode.
+	 *
+	 * @var string
+	 */
+	public const MODE_HMAC = 'hmac';
 
-    /**
-     * Production PKIoverheid certificate-chain signing mode.
-     *
-     * @var string
-     */
-    public const MODE_RSA = 'rsa';
+	/**
+	 * Production PKIoverheid certificate-chain signing mode.
+	 *
+	 * @var string
+	 */
+	public const MODE_RSA = 'rsa';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig              $appConfig               App config for the PKI/HMAC configuration.
-     * @param WebhookSignatureService $webhookSignatureService Shared HMAC verifier (pre-production mode).
-     * @param LoggerInterface         $logger                  Logger for fail-closed diagnostics.
-     */
-    public function __construct(
-        private readonly IAppConfig $appConfig,
-        private readonly WebhookSignatureService $webhookSignatureService,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig App config for the PKI/HMAC configuration.
+	 * @param WebhookSignatureService $webhookSignatureService Shared HMAC verifier (pre-production mode).
+	 * @param LoggerInterface $logger Logger for fail-closed diagnostics.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+		private readonly WebhookSignatureService $webhookSignatureService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Verify the `X-DSO-Signature` header against the raw request body.
-     *
-     * @param string|null $signatureHeader The raw `X-DSO-Signature` header value.
-     * @param string      $rawBody         The exact raw request body bytes.
-     *
-     * @return boolean True only when the signature cryptographically verifies.
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
-     */
-    public function verify(?string $signatureHeader, string $rawBody): bool
-    {
-        if ($signatureHeader === null || $signatureHeader === '') {
-            return false;
-        }
+	/**
+	 * Verify the `X-DSO-Signature` header against the raw request body.
+	 *
+	 * @param string|null $signatureHeader The raw `X-DSO-Signature` header value.
+	 * @param string $rawBody The exact raw request body bytes.
+	 *
+	 * @return boolean True only when the signature cryptographically verifies.
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
+	 */
+	public function verify(?string $signatureHeader, string $rawBody): bool {
+		if ($signatureHeader === null || $signatureHeader === '') {
+			return false;
+		}
 
-        try {
-            if ($this->getMode() === self::MODE_RSA) {
-                return $this->verifyRsaChain(signatureHeader: $signatureHeader, rawBody: $rawBody);
-            }
+		try {
+			if ($this->getMode() === self::MODE_RSA) {
+				return $this->verifyRsaChain(signatureHeader: $signatureHeader, rawBody: $rawBody);
+			}
 
-            return $this->verifyHmac(signatureHeader: $signatureHeader, rawBody: $rawBody);
-        } catch (\Throwable $e) {
-            // Fail closed: any unexpected error (malformed PEM, filesystem
-            // failure while staging a temp CA bundle, etc.) rejects the
-            // request rather than silently accepting it.
-            $this->logger->warning(
-                'DSO STAM: signature verification raised an exception, failing closed',
-                ['exception' => $e->getMessage()]
-            );
-            return false;
-        }
+			return $this->verifyHmac(signatureHeader: $signatureHeader, rawBody: $rawBody);
+		} catch (\Throwable $e) {
+			// Fail closed: any unexpected error (malformed PEM, filesystem
+			// failure while staging a temp CA bundle, etc.) rejects the
+			// request rather than silently accepting it.
+			$this->logger->warning(
+				'DSO STAM: signature verification raised an exception, failing closed',
+				['exception' => $e->getMessage()]
+			);
+			return false;
+		}
 
-    }//end verify()
+	}//end verify()
 
-    /**
-     * The configured signing mode.
-     *
-     * @return string {@see self::MODE_HMAC} or {@see self::MODE_RSA}. Defaults to HMAC
-     *                (pre-production) until an admin explicitly switches to RSA.
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
-     */
-    public function getMode(): string
-    {
-        $mode = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_MODE, self::MODE_HMAC);
-        if ($mode === self::MODE_RSA) {
-            return self::MODE_RSA;
-        }
+	/**
+	 * The configured signing mode.
+	 *
+	 * @return string {@see self::MODE_HMAC} or {@see self::MODE_RSA}. Defaults to HMAC
+	 *                (pre-production) until an admin explicitly switches to RSA.
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 */
+	public function getMode(): string {
+		$mode = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_MODE, self::MODE_HMAC);
+		if ($mode === self::MODE_RSA) {
+			return self::MODE_RSA;
+		}
 
-        return self::MODE_HMAC;
+		return self::MODE_HMAC;
+	}//end getMode()
 
-    }//end getMode()
+	/**
+	 * Verify an HMAC-SHA256 body signature (pre-production mode).
+	 *
+	 * @param string $signatureHeader The `sha256=<hex>` (or bare hex) signature header.
+	 * @param string $rawBody The raw request body.
+	 *
+	 * @return boolean
+	 */
+	private function verifyHmac(string $signatureHeader, string $rawBody): bool {
+		$secret = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_HMAC_SECRET, '');
+		if ($secret === '') {
+			return false;
+		}
 
-    /**
-     * Verify an HMAC-SHA256 body signature (pre-production mode).
-     *
-     * @param string $signatureHeader The `sha256=<hex>` (or bare hex) signature header.
-     * @param string $rawBody         The raw request body.
-     *
-     * @return boolean
-     */
-    private function verifyHmac(string $signatureHeader, string $rawBody): bool
-    {
-        $secret = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_HMAC_SECRET, '');
-        if ($secret === '') {
-            return false;
-        }
+		return $this->webhookSignatureService->verify(
+			rawBody: $rawBody,
+			headerValue: $signatureHeader,
+			config: [
+				'scheme' => 'github',
+				'secret' => $secret,
+			]
+		);
 
-        return $this->webhookSignatureService->verify(
-            rawBody: $rawBody,
-            headerValue: $signatureHeader,
-            config: [
-                'scheme' => 'github',
-                'secret' => $secret,
-            ]
-        );
+	}//end verifyHmac()
 
-    }//end verifyHmac()
+	/**
+	 * Verify an RSA-SHA256 body signature against the configured PKIoverheid
+	 * certificate chain (production mode).
+	 *
+	 * @param string $signatureHeader Base64-encoded RSA signature over the raw body.
+	 * @param string $rawBody The raw request body.
+	 *
+	 * @return boolean
+	 */
+	private function verifyRsaChain(string $signatureHeader, string $rawBody): bool {
+		$certPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_SIGNING_CERTIFICATE, '');
+		$rootPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_ROOT_CA, '');
+		if ($certPem === '' || $rootPem === '') {
+			return false;
+		}
 
-    /**
-     * Verify an RSA-SHA256 body signature against the configured PKIoverheid
-     * certificate chain (production mode).
-     *
-     * @param string $signatureHeader Base64-encoded RSA signature over the raw body.
-     * @param string $rawBody         The raw request body.
-     *
-     * @return boolean
-     */
-    private function verifyRsaChain(string $signatureHeader, string $rawBody): bool
-    {
-        $certPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_SIGNING_CERTIFICATE, '');
-        $rootPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_ROOT_CA, '');
-        if ($certPem === '' || $rootPem === '') {
-            return false;
-        }
+		$intermediatePem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_INTERMEDIATE_CHAIN, '');
 
-        $intermediatePem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_INTERMEDIATE_CHAIN, '');
+		$decodedSignature = base64_decode($signatureHeader, true);
+		if ($decodedSignature === false || $decodedSignature === '') {
+			return false;
+		}
 
-        $decodedSignature = base64_decode($signatureHeader, true);
-        if ($decodedSignature === false || $decodedSignature === '') {
-            return false;
-        }
+		$certResource = openssl_x509_read($certPem);
+		if ($certResource === false) {
+			return false;
+		}
 
-        $certResource = openssl_x509_read($certPem);
-        if ($certResource === false) {
-            return false;
-        }
+		if ($this->isCertificateCurrentlyValid(certPem: $certPem) === false) {
+			return false;
+		}
 
-        if ($this->isCertificateCurrentlyValid(certPem: $certPem) === false) {
-            return false;
-        }
+		if ($this->chainIsTrusted(certPem: $certPem, rootPem: $rootPem, intermediatePem: $intermediatePem) === false) {
+			return false;
+		}
 
-        if ($this->chainIsTrusted(certPem: $certPem, rootPem: $rootPem, intermediatePem: $intermediatePem) === false) {
-            return false;
-        }
+		$publicKey = openssl_pkey_get_public($certResource);
+		if ($publicKey === false) {
+			return false;
+		}
 
-        $publicKey = openssl_pkey_get_public($certResource);
-        if ($publicKey === false) {
-            return false;
-        }
+		return openssl_verify($rawBody, $decodedSignature, $publicKey, OPENSSL_ALGO_SHA256) === 1;
+	}//end verifyRsaChain()
 
-        return openssl_verify($rawBody, $decodedSignature, $publicKey, OPENSSL_ALGO_SHA256) === 1;
+	/**
+	 * Whether a PEM certificate is currently within its validity window.
+	 *
+	 * @param string $certPem PEM-encoded X.509 certificate.
+	 *
+	 * @return boolean False for unparseable, not-yet-valid, or expired certificates.
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
+	 */
+	public function isCertificateCurrentlyValid(string $certPem): bool {
+		$parsed = openssl_x509_parse($certPem);
+		if ($parsed === false) {
+			return false;
+		}
 
-    }//end verifyRsaChain()
+		$validFrom = ($parsed['validFrom_time_t'] ?? null);
+		$validTo = ($parsed['validTo_time_t'] ?? null);
+		if (is_int($validFrom) === false || is_int($validTo) === false) {
+			return false;
+		}
 
-    /**
-     * Whether a PEM certificate is currently within its validity window.
-     *
-     * @param string $certPem PEM-encoded X.509 certificate.
-     *
-     * @return boolean False for unparseable, not-yet-valid, or expired certificates.
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
-     */
-    public function isCertificateCurrentlyValid(string $certPem): bool
-    {
-        $parsed = openssl_x509_parse($certPem);
-        if ($parsed === false) {
-            return false;
-        }
+		$now = time();
 
-        $validFrom = ($parsed['validFrom_time_t'] ?? null);
-        $validTo   = ($parsed['validTo_time_t'] ?? null);
-        if (is_int($validFrom) === false || is_int($validTo) === false) {
-            return false;
-        }
+		return ($now >= $validFrom && $now <= $validTo);
+	}//end isCertificateCurrentlyValid()
 
-        $now = time();
+	/**
+	 * Whether a signing certificate chains to the trusted root CA.
+	 *
+	 * Stages the certificate material into temp files so PHP's
+	 * `openssl_x509_checkpurpose()` can walk the chain-of-trust (the
+	 * function requires filesystem paths, not PEM strings, for its CA
+	 * bundle and untrusted-intermediate arguments). Temp files are removed
+	 * unconditionally, including on error.
+	 *
+	 * @param string $certPem PEM-encoded signing (leaf) certificate.
+	 * @param string $rootPem PEM-encoded trusted root CA.
+	 * @param string $intermediatePem PEM-encoded intermediate chain (may be empty).
+	 *
+	 * @return boolean True when the certificate chains to the trusted root.
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
+	 */
+	public function chainIsTrusted(string $certPem, string $rootPem, string $intermediatePem = ''): bool {
+		$caFile = null;
+		$untrustedFile = null;
 
-        return ($now >= $validFrom && $now <= $validTo);
+		try {
+			$caFile = $this->writeTempPem(pem: $rootPem);
 
-    }//end isCertificateCurrentlyValid()
+			$untrustedBundle = trim($certPem . "\n" . $intermediatePem);
+			$untrustedFile = $this->writeTempPem(pem: $untrustedBundle);
 
-    /**
-     * Whether a signing certificate chains to the trusted root CA.
-     *
-     * Stages the certificate material into temp files so PHP's
-     * `openssl_x509_checkpurpose()` can walk the chain-of-trust (the
-     * function requires filesystem paths, not PEM strings, for its CA
-     * bundle and untrusted-intermediate arguments). Temp files are removed
-     * unconditionally, including on error.
-     *
-     * @param string $certPem         PEM-encoded signing (leaf) certificate.
-     * @param string $rootPem         PEM-encoded trusted root CA.
-     * @param string $intermediatePem PEM-encoded intermediate chain (may be empty).
-     *
-     * @return boolean True when the certificate chains to the trusted root.
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
-     */
-    public function chainIsTrusted(string $certPem, string $rootPem, string $intermediatePem=''): bool
-    {
-        $caFile        = null;
-        $untrustedFile = null;
+			$certResource = openssl_x509_read($certPem);
+			if ($certResource === false) {
+				return false;
+			}
 
-        try {
-            $caFile = $this->writeTempPem(pem: $rootPem);
+			return openssl_x509_checkpurpose($certResource, X509_PURPOSE_ANY, [$caFile], $untrustedFile) === true;
+		} finally {
+			foreach ([$caFile, $untrustedFile] as $file) {
+				if ($file !== null && file_exists($file) === true) {
+					unlink($file);
+				}
+			}
+		}
 
-            $untrustedBundle = trim($certPem."\n".$intermediatePem);
-            $untrustedFile   = $this->writeTempPem(pem: $untrustedBundle);
+	}//end chainIsTrusted()
 
-            $certResource = openssl_x509_read($certPem);
-            if ($certResource === false) {
-                return false;
-            }
+	/**
+	 * Validate a candidate PKIoverheid chain configuration at admin save-time.
+	 *
+	 * @param string $certPem PEM-encoded signing (leaf) certificate.
+	 * @param string $rootPem PEM-encoded trusted root CA.
+	 * @param string $intermediatePem PEM-encoded intermediate chain (may be empty).
+	 *
+	 * @return array<int, string> Human-readable errors; empty when the chain is valid.
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 */
+	public function validateChainConfig(string $certPem, string $rootPem, string $intermediatePem = ''): array {
+		$errors = [];
 
-            return openssl_x509_checkpurpose($certResource, X509_PURPOSE_ANY, [$caFile], $untrustedFile) === true;
-        } finally {
-            foreach ([$caFile, $untrustedFile] as $file) {
-                if ($file !== null && file_exists($file) === true) {
-                    unlink($file);
-                }
-            }
-        }
+		if (openssl_x509_read($certPem) === false) {
+			$errors[] = 'Signing certificate is not a valid X.509 PEM certificate.';
+		} elseif ($this->isCertificateCurrentlyValid(certPem: $certPem) === false) {
+			$errors[] = 'Signing certificate is expired or not yet valid.';
+		}
 
-    }//end chainIsTrusted()
+		if ($rootPem === '') {
+			$errors[] = 'A trusted root CA certificate is required.';
+		} elseif (openssl_x509_read($rootPem) === false) {
+			$errors[] = 'Root CA is not a valid X.509 PEM certificate.';
+		}
 
-    /**
-     * Validate a candidate PKIoverheid chain configuration at admin save-time.
-     *
-     * @param string $certPem         PEM-encoded signing (leaf) certificate.
-     * @param string $rootPem         PEM-encoded trusted root CA.
-     * @param string $intermediatePem PEM-encoded intermediate chain (may be empty).
-     *
-     * @return array<int, string> Human-readable errors; empty when the chain is valid.
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
-     */
-    public function validateChainConfig(string $certPem, string $rootPem, string $intermediatePem=''): array
-    {
-        $errors = [];
+		if (empty($errors) === true
+			&& $this->chainIsTrusted(certPem: $certPem, rootPem: $rootPem, intermediatePem: $intermediatePem) === false
+		) {
+			$errors[] = 'Signing certificate does not chain to the configured root CA.';
+		}
 
-        if (openssl_x509_read($certPem) === false) {
-            $errors[] = 'Signing certificate is not a valid X.509 PEM certificate.';
-        } else if ($this->isCertificateCurrentlyValid(certPem: $certPem) === false) {
-            $errors[] = 'Signing certificate is expired or not yet valid.';
-        }
+		return $errors;
+	}//end validateChainConfig()
 
-        if ($rootPem === '') {
-            $errors[] = 'A trusted root CA certificate is required.';
-        } else if (openssl_x509_read($rootPem) === false) {
-            $errors[] = 'Root CA is not a valid X.509 PEM certificate.';
-        }
+	/**
+	 * Stage a PEM blob into a temp file for OpenSSL's file-based chain APIs.
+	 *
+	 * @param string $pem PEM-encoded certificate material.
+	 *
+	 * @return string Absolute path to the temp file.
+	 *
+	 * @throws \RuntimeException When a temp file could not be allocated.
+	 */
+	private function writeTempPem(string $pem): string {
+		$path = tempnam(sys_get_temp_dir(), 'dso_pki_');
+		if ($path === false) {
+			throw new RuntimeException('Unable to allocate a temporary file for PKIoverheid chain validation.');
+		}
 
-        if (empty($errors) === true
-            && $this->chainIsTrusted(certPem: $certPem, rootPem: $rootPem, intermediatePem: $intermediatePem) === false
-        ) {
-            $errors[] = 'Signing certificate does not chain to the configured root CA.';
-        }
+		file_put_contents($path, $pem);
 
-        return $errors;
-
-    }//end validateChainConfig()
-
-    /**
-     * Stage a PEM blob into a temp file for OpenSSL's file-based chain APIs.
-     *
-     * @param string $pem PEM-encoded certificate material.
-     *
-     * @return string Absolute path to the temp file.
-     *
-     * @throws \RuntimeException When a temp file could not be allocated.
-     */
-    private function writeTempPem(string $pem): string
-    {
-        $path = tempnam(sys_get_temp_dir(), 'dso_pki_');
-        if ($path === false) {
-            throw new RuntimeException('Unable to allocate a temporary file for PKIoverheid chain validation.');
-        }
-
-        file_put_contents($path, $pem);
-
-        return $path;
-
-    }//end writeTempPem()
+		return $path;
+	}//end writeTempPem()
 }//end class

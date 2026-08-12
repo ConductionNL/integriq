@@ -28,100 +28,94 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
-class LogPaymentProviderTest extends TestCase
-{
+class LogPaymentProviderTest extends TestCase {
 
-    /**
-     * @var LogPaymentProvider
-     */
-    private LogPaymentProvider $provider;
+	/**
+	 * @var LogPaymentProvider
+	 */
+	private LogPaymentProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->provider = new LogPaymentProvider();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->provider = new LogPaymentProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * createPayment returns a synthetic MOCK-PAY-<n> id and a checkout URL with no network call.
-     *
-     * @return void
-     */
-    public function testCreatePaymentReturnsIncrementingMockIdAndCheckoutUrl(): void
-    {
-        $payload = [
-            'amount'      => ['value' => '10.00', 'currency' => 'EUR'],
-            'description' => 'Invoice INV-1',
-            'redirectUrl' => 'https://example.com/return',
-            'webhookUrl'  => 'https://example.com/webhook',
-            'method'      => 'ideal',
-        ];
+	/**
+	 * createPayment returns a synthetic MOCK-PAY-<n> id and a checkout URL with no network call.
+	 *
+	 * @return void
+	 */
+	public function testCreatePaymentReturnsIncrementingMockIdAndCheckoutUrl(): void {
+		$payload = [
+			'amount' => ['value' => '10.00', 'currency' => 'EUR'],
+			'description' => 'Invoice INV-1',
+			'redirectUrl' => 'https://example.com/return',
+			'webhookUrl' => 'https://example.com/webhook',
+			'method' => 'ideal',
+		];
 
-        $first  = $this->provider->createPayment(sourceConfiguration: [], payload: $payload);
-        $second = $this->provider->createPayment(sourceConfiguration: [], payload: $payload);
+		$first = $this->provider->createPayment(sourceConfiguration: [], payload: $payload);
+		$second = $this->provider->createPayment(sourceConfiguration: [], payload: $payload);
 
-        $this->assertMatchesRegularExpression('/^MOCK-PAY-\d+$/', $first['providerPaymentId']);
-        $this->assertNotSame($first['providerPaymentId'], $second['providerPaymentId']);
-        $this->assertSame('open', $first['paymentStatus']);
-        $this->assertStringContainsString($first['providerPaymentId'], $first['checkoutUrl']);
-        $this->assertSame('ideal', $first['extras']['method']);
+		$this->assertMatchesRegularExpression('/^MOCK-PAY-\d+$/', $first['providerPaymentId']);
+		$this->assertNotSame($first['providerPaymentId'], $second['providerPaymentId']);
+		$this->assertSame('open', $first['paymentStatus']);
+		$this->assertStringContainsString($first['providerPaymentId'], $first['checkoutUrl']);
+		$this->assertSame('ideal', $first['extras']['method']);
 
-    }//end testCreatePaymentReturnsIncrementingMockIdAndCheckoutUrl()
+	}//end testCreatePaymentReturnsIncrementingMockIdAndCheckoutUrl()
 
-    /**
-     * createPayment defaults method to "ideal" when the payload omits it.
-     *
-     * @return void
-     */
-    public function testCreatePaymentDefaultsMethodToIdeal(): void
-    {
-        $result = $this->provider->createPayment(
-            sourceConfiguration: [],
-            payload: [
-                'amount'      => ['value' => '5.00', 'currency' => 'EUR'],
-                'description' => 'Invoice INV-2',
-                'redirectUrl' => 'https://example.com/return',
-                'webhookUrl'  => 'https://example.com/webhook',
-            ]
-        );
+	/**
+	 * createPayment defaults method to "ideal" when the payload omits it.
+	 *
+	 * @return void
+	 */
+	public function testCreatePaymentDefaultsMethodToIdeal(): void {
+		$result = $this->provider->createPayment(
+			sourceConfiguration: [],
+			payload: [
+				'amount' => ['value' => '5.00', 'currency' => 'EUR'],
+				'description' => 'Invoice INV-2',
+				'redirectUrl' => 'https://example.com/return',
+				'webhookUrl' => 'https://example.com/webhook',
+			]
+		);
 
-        $this->assertSame('ideal', $result['extras']['method']);
+		$this->assertSame('ideal', $result['extras']['method']);
 
-    }//end testCreatePaymentDefaultsMethodToIdeal()
+	}//end testCreatePaymentDefaultsMethodToIdeal()
 
-    /**
-     * fetchPaymentStatus returns the seeded status from configuration.mockStatuses with no upstream call.
-     *
-     * @return void
-     */
-    public function testFetchPaymentStatusReturnsSeededStatus(): void
-    {
-        $result = $this->provider->fetchPaymentStatus(
-            sourceConfiguration: ['mockStatuses' => ['MOCK-PAY-1' => 'paid']],
-            providerPaymentId: 'MOCK-PAY-1'
-        );
+	/**
+	 * fetchPaymentStatus returns the seeded status from configuration.mockStatuses with no upstream call.
+	 *
+	 * @return void
+	 */
+	public function testFetchPaymentStatusReturnsSeededStatus(): void {
+		$result = $this->provider->fetchPaymentStatus(
+			sourceConfiguration: ['mockStatuses' => ['MOCK-PAY-1' => 'paid']],
+			providerPaymentId: 'MOCK-PAY-1'
+		);
 
-        $this->assertSame('MOCK-PAY-1', $result['providerPaymentId']);
-        $this->assertSame('paid', $result['paymentStatus']);
+		$this->assertSame('MOCK-PAY-1', $result['providerPaymentId']);
+		$this->assertSame('paid', $result['paymentStatus']);
 
-    }//end testFetchPaymentStatusReturnsSeededStatus()
+	}//end testFetchPaymentStatusReturnsSeededStatus()
 
-    /**
-     * fetchPaymentStatus defaults to "open" when no mock status is seeded for the id.
-     *
-     * @return void
-     */
-    public function testFetchPaymentStatusDefaultsToOpenWhenUnseeded(): void
-    {
-        $result = $this->provider->fetchPaymentStatus(sourceConfiguration: [], providerPaymentId: 'MOCK-PAY-99');
+	/**
+	 * fetchPaymentStatus defaults to "open" when no mock status is seeded for the id.
+	 *
+	 * @return void
+	 */
+	public function testFetchPaymentStatusDefaultsToOpenWhenUnseeded(): void {
+		$result = $this->provider->fetchPaymentStatus(sourceConfiguration: [], providerPaymentId: 'MOCK-PAY-99');
 
-        $this->assertSame('open', $result['paymentStatus']);
+		$this->assertSame('open', $result['paymentStatus']);
 
-    }//end testFetchPaymentStatusDefaultsToOpenWhenUnseeded()
+	}//end testFetchPaymentStatusDefaultsToOpenWhenUnseeded()
 }//end class

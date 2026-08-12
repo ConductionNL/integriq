@@ -28,67 +28,63 @@ use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Verifies the leaf `InitializeActions` repair step is a real IRepairStep
  * that constructs cleanly through the engine's `GenericActionAuthService`,
  * scoped to the `openconnector` app id (ADR-023).
  */
-class InitializeActionsAppHostAdapterTest extends TestCase
-{
-    /**
-     * The adapter must implement IRepairStep so `appinfo/info.xml`
-     * `<repair-steps>` can still reference it.
-     *
-     * @return void
-     */
-    public function testImplementsRepairStep(): void
-    {
-        $step = new InitializeActions(
-            appId: 'openconnector',
-            actionAuth: $this->createMock(GenericActionAuthService::class),
-            appManager: $this->createMock(IAppManager::class),
-            logger: $this->createMock(LoggerInterface::class)
-        );
+class InitializeActionsAppHostAdapterTest extends TestCase {
+	/**
+	 * The adapter must implement IRepairStep so `appinfo/info.xml`
+	 * `<repair-steps>` can still reference it.
+	 *
+	 * @return void
+	 */
+	public function testImplementsRepairStep(): void {
+		$step = new InitializeActions(
+			appId: 'openconnector',
+			actionAuth: $this->createMock(GenericActionAuthService::class),
+			appManager: $this->createMock(IAppManager::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
 
-        $this->assertInstanceOf(IRepairStep::class, $step);
-    }//end testImplementsRepairStep()
+		$this->assertInstanceOf(IRepairStep::class, $step);
+	}//end testImplementsRepairStep()
 
-    /**
-     * `getName()` names the app so `occ` output stays identifiable.
-     *
-     * @return void
-     */
-    public function testGetNameNamesTheApp(): void
-    {
-        $step = new InitializeActions(
-            appId: 'openconnector',
-            actionAuth: $this->createMock(GenericActionAuthService::class),
-            appManager: $this->createMock(IAppManager::class),
-            logger: $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * `getName()` names the app so `occ` output stays identifiable.
+	 *
+	 * @return void
+	 */
+	public function testGetNameNamesTheApp(): void {
+		$step = new InitializeActions(
+			appId: 'openconnector',
+			actionAuth: $this->createMock(GenericActionAuthService::class),
+			appManager: $this->createMock(IAppManager::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
 
-        $this->assertStringContainsString('openconnector', $step->getName());
-    }//end testGetNameNamesTheApp()
+		$this->assertStringContainsString('openconnector', $step->getName());
+	}//end testGetNameNamesTheApp()
 
-    /**
-     * `run()` degrades cleanly (never throws) when invoked, matching the
-     * pre-adoption bespoke step's contract.
-     *
-     * @return void
-     */
-    public function testRunDoesNotThrow(): void
-    {
-        $step = new InitializeActions(
-            appId: 'openconnector',
-            actionAuth: $this->createMock(GenericActionAuthService::class),
-            appManager: $this->createMock(IAppManager::class),
-            logger: $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * `run()` degrades cleanly (never throws) when invoked, matching the
+	 * pre-adoption bespoke step's contract.
+	 *
+	 * @return void
+	 */
+	public function testRunDoesNotThrow(): void {
+		$step = new InitializeActions(
+			appId: 'openconnector',
+			actionAuth: $this->createMock(GenericActionAuthService::class),
+			appManager: $this->createMock(IAppManager::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
 
-        $step->run($this->createMock(IOutput::class));
-        $this->addToAssertionCount(1);
-    }//end testRunDoesNotThrow()
+		$step->run($this->createMock(IOutput::class));
+		$this->addToAssertionCount(1);
+	}//end testRunDoesNotThrow()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for FlowTemplate.
  *
@@ -26,126 +27,110 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the flow item templater.
  */
-class FlowTemplateTest extends TestCase
-{
+class FlowTemplateTest extends TestCase {
 
+	/**
+	 * A dotted placeholder resolves from the item's record.
+	 *
+	 * @return void
+	 */
+	public function testRendersDottedPathFromItem(): void {
+		$json = ['issue' => ['number' => 42]];
 
-    /**
-     * A dotted placeholder resolves from the item's record.
-     *
-     * @return void
-     */
-    public function testRendersDottedPathFromItem(): void
-    {
-        $json = ['issue' => ['number' => 42]];
+		$this->assertSame(
+			'/issues/42/labels',
+			FlowTemplate::renderString(template: '/issues/{{issue.number}}/labels', json: $json)
+		);
 
-        $this->assertSame(
-            '/issues/42/labels',
-            FlowTemplate::renderString(template: '/issues/{{issue.number}}/labels', json: $json)
-        );
+	}//end testRendersDottedPathFromItem()
 
-    }//end testRendersDottedPathFromItem()
+	/**
+	 * A missing path renders empty and never leaves the literal placeholder.
+	 *
+	 * @return void
+	 */
+	public function testMissingPathRendersEmptyNeverLiteral(): void {
+		$rendered = FlowTemplate::renderString(template: '/issues/{{issue.missing}}/labels', json: []);
 
+		$this->assertSame('/issues//labels', $rendered);
+		$this->assertStringNotContainsString('{{', $rendered);
 
-    /**
-     * A missing path renders empty and never leaves the literal placeholder.
-     *
-     * @return void
-     */
-    public function testMissingPathRendersEmptyNeverLiteral(): void
-    {
-        $rendered = FlowTemplate::renderString(template: '/issues/{{issue.missing}}/labels', json: []);
+	}//end testMissingPathRendersEmptyNeverLiteral()
 
-        $this->assertSame('/issues//labels', $rendered);
-        $this->assertStringNotContainsString('{{', $rendered);
+	/**
+	 * A whole-placeholder value keeps the resolved type.
+	 *
+	 * @return void
+	 */
+	public function testWholePlaceholderPreservesType(): void {
+		$json = ['issue' => ['number' => 42, 'labels' => ['a', 'b']]];
 
-    }//end testMissingPathRendersEmptyNeverLiteral()
+		$this->assertSame(42, FlowTemplate::renderValue(value: '{{issue.number}}', json: $json));
+		$this->assertSame(['a', 'b'], FlowTemplate::renderValue(value: '{{issue.labels}}', json: $json));
 
+	}//end testWholePlaceholderPreservesType()
 
-    /**
-     * A whole-placeholder value keeps the resolved type.
-     *
-     * @return void
-     */
-    public function testWholePlaceholderPreservesType(): void
-    {
-        $json = ['issue' => ['number' => 42, 'labels' => ['a', 'b']]];
+	/**
+	 * A nested body renders every string leaf, leaving non-strings alone.
+	 *
+	 * @return void
+	 */
+	public function testRendersNestedBody(): void {
+		$json = ['triage' => ['proposedLabel' => 'needs-triage']];
 
-        $this->assertSame(42, FlowTemplate::renderValue(value: '{{issue.number}}', json: $json));
-        $this->assertSame(['a', 'b'], FlowTemplate::renderValue(value: '{{issue.labels}}', json: $json));
+		$this->assertSame(
+			['labels' => ['needs-triage'], 'notify' => true],
+			FlowTemplate::renderValue(
+				value: ['labels' => ['{{triage.proposedLabel}}'], 'notify' => true],
+				json: $json
+			)
+		);
 
-    }//end testWholePlaceholderPreservesType()
+	}//end testRendersNestedBody()
 
+	/**
+	 * A dotted write creates missing levels.
+	 *
+	 * @return void
+	 */
+	public function testWriteCreatesMissingLevels(): void {
+		$json = FlowTemplate::write(json: ['a' => 1], path: 'labelResult.applied', value: ['bug']);
 
-    /**
-     * A nested body renders every string leaf, leaving non-strings alone.
-     *
-     * @return void
-     */
-    public function testRendersNestedBody(): void
-    {
-        $json = ['triage' => ['proposedLabel' => 'needs-triage']];
+		$this->assertSame(['a' => 1, 'labelResult' => ['applied' => ['bug']]], $json);
 
-        $this->assertSame(
-            ['labels' => ['needs-triage'], 'notify' => true],
-            FlowTemplate::renderValue(
-                value: ['labels' => ['{{triage.proposedLabel}}'], 'notify' => true],
-                json: $json
-            )
-        );
+	}//end testWriteCreatesMissingLevels()
 
-    }//end testRendersNestedBody()
+	/**
+	 * The selector grammar reads dotted paths, `$.` prefixes and `[*]` maps.
+	 *
+	 * @return void
+	 */
+	public function testSelectorGrammar(): void {
+		$payload = [
+			'status' => 'ok',
+			'labels' => [
+				['name' => 'bug'],
+				['name' => 'triage'],
+			],
+		];
 
+		$this->assertSame('ok', FlowTemplate::select(payload: $payload, selector: '$.status'));
+		$this->assertSame('ok', FlowTemplate::select(payload: $payload, selector: 'status'));
+		$this->assertSame(['bug', 'triage'], FlowTemplate::select(payload: $payload, selector: '$.labels[*].name'));
+		$this->assertSame('bug', FlowTemplate::select(payload: $payload, selector: '$.labels[0].name'));
+		$this->assertNull(FlowTemplate::select(payload: $payload, selector: '$.nope.deeper'));
 
-    /**
-     * A dotted write creates missing levels.
-     *
-     * @return void
-     */
-    public function testWriteCreatesMissingLevels(): void
-    {
-        $json = FlowTemplate::write(json: ['a' => 1], path: 'labelResult.applied', value: ['bug']);
+	}//end testSelectorGrammar()
 
-        $this->assertSame(['a' => 1, 'labelResult' => ['applied' => ['bug']]], $json);
+	/**
+	 * Placeholder detection drives the "check the rendered value too" rule.
+	 *
+	 * @return void
+	 */
+	public function testHasPlaceholder(): void {
+		$this->assertTrue(FlowTemplate::hasPlaceholder(value: '/issues/{{issue.ref}}'));
+		$this->assertFalse(FlowTemplate::hasPlaceholder(value: '/issues/42'));
 
-    }//end testWriteCreatesMissingLevels()
-
-
-    /**
-     * The selector grammar reads dotted paths, `$.` prefixes and `[*]` maps.
-     *
-     * @return void
-     */
-    public function testSelectorGrammar(): void
-    {
-        $payload = [
-            'status' => 'ok',
-            'labels' => [
-                ['name' => 'bug'],
-                ['name' => 'triage'],
-            ],
-        ];
-
-        $this->assertSame('ok', FlowTemplate::select(payload: $payload, selector: '$.status'));
-        $this->assertSame('ok', FlowTemplate::select(payload: $payload, selector: 'status'));
-        $this->assertSame(['bug', 'triage'], FlowTemplate::select(payload: $payload, selector: '$.labels[*].name'));
-        $this->assertSame('bug', FlowTemplate::select(payload: $payload, selector: '$.labels[0].name'));
-        $this->assertNull(FlowTemplate::select(payload: $payload, selector: '$.nope.deeper'));
-
-    }//end testSelectorGrammar()
-
-
-    /**
-     * Placeholder detection drives the "check the rendered value too" rule.
-     *
-     * @return void
-     */
-    public function testHasPlaceholder(): void
-    {
-        $this->assertTrue(FlowTemplate::hasPlaceholder(value: '/issues/{{issue.ref}}'));
-        $this->assertFalse(FlowTemplate::hasPlaceholder(value: '/issues/42'));
-
-    }//end testHasPlaceholder()
-
+	}//end testHasPlaceholder()
 
 }//end class

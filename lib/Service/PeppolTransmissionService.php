@@ -48,479 +48,461 @@ use Throwable;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
-class PeppolTransmissionService
-{
+class PeppolTransmissionService {
 
-    /**
-     * OpenRegister register slug holding Peppol sources and transmissions.
-     *
-     * @var string
-     */
-    public const REGISTER = 'openconnector';
+	/**
+	 * OpenRegister register slug holding Peppol sources and transmissions.
+	 *
+	 * @var string
+	 */
+	public const REGISTER = 'openconnector';
 
-    /**
-     * OR schema slug for a Peppol source.
-     *
-     * @var string
-     */
-    public const SCHEMA_SOURCE = 'source';
+	/**
+	 * OR schema slug for a Peppol source.
+	 *
+	 * @var string
+	 */
+	public const SCHEMA_SOURCE = 'source';
 
-    /**
-     * OR schema slug for a peppol_transmission record.
-     *
-     * @var string
-     */
-    public const SCHEMA_TRANSMISSION = 'peppol_transmission';
+	/**
+	 * OR schema slug for a peppol_transmission record.
+	 *
+	 * @var string
+	 */
+	public const SCHEMA_TRANSMISSION = 'peppol_transmission';
 
-    /**
-     * `source.type` value identifying a Peppol Access Point source.
-     *
-     * @var string
-     */
-    public const SOURCE_TYPE = 'peppol';
+	/**
+	 * `source.type` value identifying a Peppol Access Point source.
+	 *
+	 * @var string
+	 */
+	public const SOURCE_TYPE = 'peppol';
 
-    /**
-     * CloudEvent type consumed to trigger an outbound transmission.
-     *
-     * @var string
-     */
-    public const EVENT_TYPE_OUTBOUND_REQUESTED = 'nl.conduction.peppol.outbound.requested';
+	/**
+	 * CloudEvent type consumed to trigger an outbound transmission.
+	 *
+	 * @var string
+	 */
+	public const EVENT_TYPE_OUTBOUND_REQUESTED = 'nl.conduction.peppol.outbound.requested';
 
-    /**
-     * CloudEvent type emitted on every transmission status change.
-     *
-     * @var string
-     */
-    public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.peppol.delivery.status';
+	/**
+	 * CloudEvent type emitted on every transmission status change.
+	 *
+	 * @var string
+	 */
+	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.peppol.delivery.status';
 
-    /**
-     * CloudEvent type emitted when an inbound AP document notification is republished.
-     *
-     * @var string
-     */
-    public const EVENT_TYPE_INBOUND_RECEIVED = 'nl.conduction.peppol.inbound.received';
+	/**
+	 * CloudEvent type emitted when an inbound AP document notification is republished.
+	 *
+	 * @var string
+	 */
+	public const EVENT_TYPE_INBOUND_RECEIVED = 'nl.conduction.peppol.inbound.received';
 
-    /**
-     * Maximum submission attempts before a transmission is dead-lettered (status=failed, terminal).
-     *
-     * @var integer
-     */
-    public const MAX_ATTEMPTS = 3;
+	/**
+	 * Maximum submission attempts before a transmission is dead-lettered (status=failed, terminal).
+	 *
+	 * @var integer
+	 */
+	public const MAX_ATTEMPTS = 3;
 
-    /**
-     * Terminal/in-flight statuses for which a redelivered outbound.requested is a no-op (idempotency).
-     *
-     * @var string[]
-     */
-    private const NO_RETRANSMIT_STATUSES = ['sent', 'delivered'];
+	/**
+	 * Terminal/in-flight statuses for which a redelivered outbound.requested is a no-op (idempotency).
+	 *
+	 * @var string[]
+	 */
+	private const NO_RETRANSMIT_STATUSES = ['sent', 'delivered'];
 
-    /**
-     * Constructor.
-     *
-     * @param ORObjectService               $objectService OR object service for source/transmission persistence.
-     * @param LogPeppolAccessPointProvider  $logProvider   The sandbox provider binding.
-     * @param RestPeppolAccessPointProvider $restProvider  The generic REST provider binding.
-     * @param EventService                  $eventService  Emits delivery-status / inbound-received CloudEvents.
-     * @param IL10N                         $l             The localization service (default status detail text).
-     * @param LoggerInterface               $logger        Logger for non-fatal diagnostics.
-     */
-    public function __construct(
-        private readonly ORObjectService $objectService,
-        private readonly LogPeppolAccessPointProvider $logProvider,
-        private readonly RestPeppolAccessPointProvider $restProvider,
-        private readonly EventService $eventService,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ORObjectService $objectService OR object service for source/transmission persistence.
+	 * @param LogPeppolAccessPointProvider $logProvider The sandbox provider binding.
+	 * @param RestPeppolAccessPointProvider $restProvider The generic REST provider binding.
+	 * @param EventService $eventService Emits delivery-status / inbound-received CloudEvents.
+	 * @param IL10N $l The localization service (default status detail text).
+	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 */
+	public function __construct(
+		private readonly ORObjectService $objectService,
+		private readonly LogPeppolAccessPointProvider $logProvider,
+		private readonly RestPeppolAccessPointProvider $restProvider,
+		private readonly EventService $eventService,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Validate a Peppol participant identifier's `scheme:identifier` shape.
-     *
-     * @param string $peppolId The candidate identifier.
-     *
-     * @return boolean True when the shape is valid (a numeric ISO/IEC 6523 scheme, a colon, a non-empty identifier).
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-a-malformed-participant-id-is-rejected-with-400
-     */
-    public function isValidPeppolId(string $peppolId): bool
-    {
-        return (preg_match('/^[0-9]{4}:\S+$/', $peppolId) === 1);
+	/**
+	 * Validate a Peppol participant identifier's `scheme:identifier` shape.
+	 *
+	 * @param string $peppolId The candidate identifier.
+	 *
+	 * @return boolean True when the shape is valid (a numeric ISO/IEC 6523 scheme, a colon, a non-empty identifier).
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-a-malformed-participant-id-is-rejected-with-400
+	 */
+	public function isValidPeppolId(string $peppolId): bool {
+		return (preg_match('/^[0-9]{4}:\S+$/', $peppolId) === 1);
+	}//end isValidPeppolId()
 
-    }//end isValidPeppolId()
+	/**
+	 * Resolve a Peppol participant's SMP/directory entry via the configured provider.
+	 *
+	 * @param string $peppolId The participant identifier (assumed already shape-validated).
+	 *
+	 * @return array{exists: bool, supportedDocTypes: string[]} The lookup result.
+	 *
+	 * @throws PeppolProviderException When no Peppol source is configured, or the Access Point errors.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
+	 */
+	public function lookupParticipant(string $peppolId): array {
+		$source = $this->resolveActiveSource();
+		$configuration = ($source->getObject()['configuration'] ?? []);
+		$provider = $this->resolveProvider(configuration: $configuration);
 
-    /**
-     * Resolve a Peppol participant's SMP/directory entry via the configured provider.
-     *
-     * @param string $peppolId The participant identifier (assumed already shape-validated).
-     *
-     * @return array{exists: bool, supportedDocTypes: string[]} The lookup result.
-     *
-     * @throws PeppolProviderException When no Peppol source is configured, or the Access Point errors.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
-     */
-    public function lookupParticipant(string $peppolId): array
-    {
-        $source        = $this->resolveActiveSource();
-        $configuration = ($source->getObject()['configuration'] ?? []);
-        $provider      = $this->resolveProvider(configuration: $configuration);
+		return $provider->lookupParticipant(sourceConfiguration: $configuration, peppolId: $peppolId);
+	}//end lookupParticipant()
 
-        return $provider->lookupParticipant(sourceConfiguration: $configuration, peppolId: $peppolId);
+	/**
+	 * Handle a consumed `nl.conduction.peppol.outbound.requested` event: create/reuse the
+	 * `peppol_transmission` record and drive it through the submit -> status lifecycle.
+	 *
+	 * Idempotent per `objectUri`+`documentType`: a redelivered event for an
+	 * already `sent`/`delivered` transmission is a no-op, and a redelivered
+	 * event for a `failed` transmission that has exhausted its retry budget
+	 * stays dead-lettered without a further AP call.
+	 *
+	 * @param array $eventData The CloudEvent `data` payload: `{sourceApp, objectType, objectUri,
+	 *                         recipientPeppolId, documentType, payloadFileUri}`.
+	 *
+	 * @return ObjectEntity|null The resulting transmission, or null when the payload is unusable.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
+	 */
+	public function handleOutboundRequested(array $eventData): ?ObjectEntity {
+		$objectUri = (string)($eventData['objectUri'] ?? '');
+		$recipientPeppolId = (string)($eventData['recipientPeppolId'] ?? '');
+		$documentType = (string)($eventData['documentType'] ?? '');
 
-    }//end lookupParticipant()
+		if ($objectUri === '' || $recipientPeppolId === '' || $documentType === '') {
+			$this->logger->warning(
+				'[PeppolTransmissionService] outbound.requested event is missing required fields; ignored',
+				['eventData' => $eventData]
+			);
+			return null;
+		}
 
-    /**
-     * Handle a consumed `nl.conduction.peppol.outbound.requested` event: create/reuse the
-     * `peppol_transmission` record and drive it through the submit -> status lifecycle.
-     *
-     * Idempotent per `objectUri`+`documentType`: a redelivered event for an
-     * already `sent`/`delivered` transmission is a no-op, and a redelivered
-     * event for a `failed` transmission that has exhausted its retry budget
-     * stays dead-lettered without a further AP call.
-     *
-     * @param array $eventData The CloudEvent `data` payload: `{sourceApp, objectType, objectUri,
-     *                         recipientPeppolId, documentType, payloadFileUri}`.
-     *
-     * @return ObjectEntity|null The resulting transmission, or null when the payload is unusable.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
-     */
-    public function handleOutboundRequested(array $eventData): ?ObjectEntity
-    {
-        $objectUri         = (string) ($eventData['objectUri'] ?? '');
-        $recipientPeppolId = (string) ($eventData['recipientPeppolId'] ?? '');
-        $documentType      = (string) ($eventData['documentType'] ?? '');
+		$sourceApp = (string)($eventData['sourceApp'] ?? '');
+		$payloadFileUri = (string)($eventData['payloadFileUri'] ?? '');
 
-        if ($objectUri === '' || $recipientPeppolId === '' || $documentType === '') {
-            $this->logger->warning(
-                '[PeppolTransmissionService] outbound.requested event is missing required fields; ignored',
-                ['eventData' => $eventData]
-            );
-            return null;
-        }
+		$existing = $this->findTransmission(objectUri: $objectUri, documentType: $documentType);
+		if ($existing !== null) {
+			$existingData = $existing->getObject();
+			$status = (string)($existingData['status'] ?? '');
 
-        $sourceApp      = (string) ($eventData['sourceApp'] ?? '');
-        $payloadFileUri = (string) ($eventData['payloadFileUri'] ?? '');
+			if (in_array($status, self::NO_RETRANSMIT_STATUSES, true) === true) {
+				// Already transmitted (or in a terminal successful state): idempotent no-op.
+				return $existing;
+			}
 
-        $existing = $this->findTransmission(objectUri: $objectUri, documentType: $documentType);
-        if ($existing !== null) {
-            $existingData = $existing->getObject();
-            $status       = (string) ($existingData['status'] ?? '');
+			$attempts = (array)($existingData['attempts'] ?? []);
+			if ($status === 'failed' && count($attempts) >= self::MAX_ATTEMPTS) {
+				// Retry budget exhausted: stays dead-lettered, no further AP call.
+				return $existing;
+			}
 
-            if (in_array($status, self::NO_RETRANSMIT_STATUSES, true) === true) {
-                // Already transmitted (or in a terminal successful state): idempotent no-op.
-                return $existing;
-            }
+			$transmission = $existing;
+		} else {
+			$transmission = $this->objectService->saveObject(
+				object: [
+					'objectUri' => $objectUri,
+					'sourceApp' => $sourceApp,
+					'recipientPeppolId' => $recipientPeppolId,
+					'documentType' => $documentType,
+					'payloadFileUri' => $payloadFileUri,
+					'transmissionId' => null,
+					'status' => 'queued',
+					'detail' => $this->l->t('Transmission queued'),
+					'attempts' => [],
+				],
+				register: self::REGISTER,
+				schema: self::SCHEMA_TRANSMISSION
+			);
+		}//end if
 
-            $attempts = (array) ($existingData['attempts'] ?? []);
-            if ($status === 'failed' && count($attempts) >= self::MAX_ATTEMPTS) {
-                // Retry budget exhausted: stays dead-lettered, no further AP call.
-                return $existing;
-            }
+		return $this->attemptSubmission(transmission: $transmission, payloadFileUri: $payloadFileUri);
+	}//end handleOutboundRequested()
 
-            $transmission = $existing;
-        } else {
-            $transmission = $this->objectService->saveObject(
-                object: [
-                    'objectUri'         => $objectUri,
-                    'sourceApp'         => $sourceApp,
-                    'recipientPeppolId' => $recipientPeppolId,
-                    'documentType'      => $documentType,
-                    'payloadFileUri'    => $payloadFileUri,
-                    'transmissionId'    => null,
-                    'status'            => 'queued',
-                    'detail'            => $this->l->t('Transmission queued'),
-                    'attempts'          => [],
-                ],
-                register: self::REGISTER,
-                schema: self::SCHEMA_TRANSMISSION
-            );
-        }//end if
+	/**
+	 * Attempt one AP submission for a `queued`/retryable `failed` transmission.
+	 *
+	 * @param ObjectEntity $transmission The transmission to submit.
+	 * @param string $payloadFileUri Reference to the UBL payload (transported as-is — see design.md scope note).
+	 *
+	 * @return ObjectEntity The updated transmission.
+	 */
+	private function attemptSubmission(ObjectEntity $transmission, string $payloadFileUri): ObjectEntity {
+		$data = $transmission->getObject();
+		$attempts = (array)($data['attempts'] ?? []);
+		$objectUri = ($data['objectUri'] ?? null);
 
-        return $this->attemptSubmission(transmission: $transmission, payloadFileUri: $payloadFileUri);
+		try {
+			$source = $this->resolveActiveSource();
+			$configuration = ($source->getObject()['configuration'] ?? []);
+			$provider = $this->resolveProvider(configuration: $configuration);
 
-    }//end handleOutboundRequested()
+			$transmissionId = $provider->submitDocument(
+				sourceConfiguration: $configuration,
+				recipientPeppolId: (string)$data['recipientPeppolId'],
+				documentType: (string)$data['documentType'],
+				payload: $payloadFileUri
+			);
 
-    /**
-     * Attempt one AP submission for a `queued`/retryable `failed` transmission.
-     *
-     * @param ObjectEntity $transmission   The transmission to submit.
-     * @param string       $payloadFileUri Reference to the UBL payload (transported as-is — see design.md scope note).
-     *
-     * @return ObjectEntity The updated transmission.
-     */
-    private function attemptSubmission(ObjectEntity $transmission, string $payloadFileUri): ObjectEntity
-    {
-        $data      = $transmission->getObject();
-        $attempts  = (array) ($data['attempts'] ?? []);
-        $objectUri = ($data['objectUri'] ?? null);
+			$attempts[] = ['at' => (new DateTime())->format('c'), 'error' => null];
+			$data['attempts'] = $attempts;
+			$data['transmissionId'] = $transmissionId;
+			$data['status'] = 'sent';
+			$data['detail'] = null;
 
-        try {
-            $source        = $this->resolveActiveSource();
-            $configuration = ($source->getObject()['configuration'] ?? []);
-            $provider      = $this->resolveProvider(configuration: $configuration);
+			$saved = $this->objectService->saveObject(
+				object: $data,
+				register: self::REGISTER,
+				schema: self::SCHEMA_TRANSMISSION,
+				uuid: $transmission->getUuid()
+			);
 
-            $transmissionId = $provider->submitDocument(
-                sourceConfiguration: $configuration,
-                recipientPeppolId: (string) $data['recipientPeppolId'],
-                documentType: (string) $data['documentType'],
-                payload: $payloadFileUri
-            );
+			$this->emitDeliveryStatus(transmission: $saved);
+			return $saved;
+		} catch (Throwable $exception) {
+			$attempts[] = ['at' => (new DateTime())->format('c'), 'error' => $exception->getMessage()];
+			$data['attempts'] = $attempts;
+			$data['status'] = 'failed';
+			$data['detail'] = $exception->getMessage();
 
-            $attempts[]       = ['at' => (new DateTime())->format('c'), 'error' => null];
-            $data['attempts'] = $attempts;
-            $data['transmissionId'] = $transmissionId;
-            $data['status']         = 'sent';
-            $data['detail']         = null;
+			$saved = $this->objectService->saveObject(
+				object: $data,
+				register: self::REGISTER,
+				schema: self::SCHEMA_TRANSMISSION,
+				uuid: $transmission->getUuid()
+			);
 
-            $saved = $this->objectService->saveObject(
-                object: $data,
-                register: self::REGISTER,
-                schema: self::SCHEMA_TRANSMISSION,
-                uuid: $transmission->getUuid()
-            );
+			$this->logger->warning(
+				'[PeppolTransmissionService] transmission submission failed',
+				[
+					'objectUri' => $objectUri,
+					'attempts' => count($attempts),
+					'exception' => $exception->getMessage(),
+				]
+			);
 
-            $this->emitDeliveryStatus(transmission: $saved);
-            return $saved;
-        } catch (Throwable $exception) {
-            $attempts[]       = ['at' => (new DateTime())->format('c'), 'error' => $exception->getMessage()];
-            $data['attempts'] = $attempts;
-            $data['status']   = 'failed';
-            $data['detail']   = $exception->getMessage();
+			$this->emitDeliveryStatus(transmission: $saved);
+			return $saved;
+		}//end try
 
-            $saved = $this->objectService->saveObject(
-                object: $data,
-                register: self::REGISTER,
-                schema: self::SCHEMA_TRANSMISSION,
-                uuid: $transmission->getUuid()
-            );
+	}//end attemptSubmission()
 
-            $this->logger->warning(
-                '[PeppolTransmissionService] transmission submission failed',
-                [
-                    'objectUri' => $objectUri,
-                    'attempts'  => count($attempts),
-                    'exception' => $exception->getMessage(),
-                ]
-            );
+	/**
+	 * Apply a verified AP delivery callback (`delivered`/`rejected`) to its transmission.
+	 *
+	 * A callback for an unknown `transmissionId` is recorded (logged) and MUST NOT 500 —
+	 * it returns null rather than throwing.
+	 *
+	 * @param string $transmissionId The AP-assigned transmission id from the callback.
+	 * @param string $status The reported status (`delivered`|`rejected`).
+	 * @param string|null $detail An optional reason/detail message.
+	 *
+	 * @return ObjectEntity|null The updated transmission, or null when the transmissionId is unknown.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
+	 */
+	public function handleDeliveryCallback(string $transmissionId, string $status, ?string $detail): ?ObjectEntity {
+		if (in_array($status, ['delivered', 'rejected'], true) === false) {
+			$this->logger->warning(
+				'[PeppolTransmissionService] inbound delivery callback carried an unsupported status; ignored',
+				['transmissionId' => $transmissionId, 'status' => $status]
+			);
+			return null;
+		}
 
-            $this->emitDeliveryStatus(transmission: $saved);
-            return $saved;
-        }//end try
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_TRANSMISSION,
+					'transmissionId' => $transmissionId,
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
 
-    }//end attemptSubmission()
+		if (empty($results) === true) {
+			$this->logger->warning(
+				'[PeppolTransmissionService] inbound delivery callback for unknown transmissionId; recorded, no state change',
+				['transmissionId' => $transmissionId, 'status' => $status]
+			);
+			return null;
+		}
 
-    /**
-     * Apply a verified AP delivery callback (`delivered`/`rejected`) to its transmission.
-     *
-     * A callback for an unknown `transmissionId` is recorded (logged) and MUST NOT 500 —
-     * it returns null rather than throwing.
-     *
-     * @param string      $transmissionId The AP-assigned transmission id from the callback.
-     * @param string      $status         The reported status (`delivered`|`rejected`).
-     * @param string|null $detail         An optional reason/detail message.
-     *
-     * @return ObjectEntity|null The updated transmission, or null when the transmissionId is unknown.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
-     */
-    public function handleDeliveryCallback(string $transmissionId, string $status, ?string $detail): ?ObjectEntity
-    {
-        if (in_array($status, ['delivered', 'rejected'], true) === false) {
-            $this->logger->warning(
-                '[PeppolTransmissionService] inbound delivery callback carried an unsupported status; ignored',
-                ['transmissionId' => $transmissionId, 'status' => $status]
-            );
-            return null;
-        }
+		if ($detail === null || $detail === '') {
+			// REQ-004: a rejection MUST carry a non-empty detail even when the
+			// AP callback did not supply a reason; "delivered" gets the same
+			// default-text treatment for consistency.
+			if ($status === 'rejected') {
+				$detail = $this->l->t('Transmission rejected');
+			} else {
+				$detail = $this->l->t('Transmission delivered');
+			}
+		}
 
-        $matches = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register'       => self::REGISTER,
-                    'schema'         => self::SCHEMA_TRANSMISSION,
-                    'transmissionId' => $transmissionId,
-                ],
-                'limit'   => 1,
-            ]
-        );
-        $results = ($matches['results'] ?? $matches);
+		$transmission = $results[0];
+		$data = $transmission->getObject();
+		$data['status'] = $status;
+		$data['detail'] = $detail;
 
-        if (empty($results) === true) {
-            $this->logger->warning(
-                '[PeppolTransmissionService] inbound delivery callback for unknown transmissionId; recorded, no state change',
-                ['transmissionId' => $transmissionId, 'status' => $status]
-            );
-            return null;
-        }
+		$saved = $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA_TRANSMISSION,
+			uuid: $transmission->getUuid()
+		);
 
-        if ($detail === null || $detail === '') {
-            // REQ-004: a rejection MUST carry a non-empty detail even when the
-            // AP callback did not supply a reason; "delivered" gets the same
-            // default-text treatment for consistency.
-            if ($status === 'rejected') {
-                $detail = $this->l->t('Transmission rejected');
-            } else {
-                $detail = $this->l->t('Transmission delivered');
-            }
-        }
+		$this->emitDeliveryStatus(transmission: $saved);
+		return $saved;
+	}//end handleDeliveryCallback()
 
-        $transmission   = $results[0];
-        $data           = $transmission->getObject();
-        $data['status'] = $status;
-        $data['detail'] = $detail;
+	/**
+	 * Republish a verified inbound-document AP notification as a CloudEvent.
+	 *
+	 * @param string $senderPeppolId The sender participant identifier.
+	 * @param string $documentType The UBL document type slug.
+	 * @param string $payloadReference A reference (URI) to the inbound payload.
+	 *
+	 * @return array<ObjectEntity> The created CloudEvent messages.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
+	 */
+	public function handleInboundDocument(string $senderPeppolId, string $documentType, string $payloadReference): array {
+		return $this->eventService->emitCloudEvent(
+			type: self::EVENT_TYPE_INBOUND_RECEIVED,
+			source: '/peppol/inbound',
+			subject: $senderPeppolId,
+			data: [
+				'senderPeppolId' => $senderPeppolId,
+				'documentType' => $documentType,
+				'payloadReference' => $payloadReference,
+			]
+		);
 
-        $saved = $this->objectService->saveObject(
-            object: $data,
-            register: self::REGISTER,
-            schema: self::SCHEMA_TRANSMISSION,
-            uuid: $transmission->getUuid()
-        );
+	}//end handleInboundDocument()
 
-        $this->emitDeliveryStatus(transmission: $saved);
-        return $saved;
+	/**
+	 * Resolve the single active Peppol source (`type=peppol`, `isEnabled=true`).
+	 *
+	 * @return ObjectEntity The resolved source.
+	 *
+	 * @throws PeppolProviderException When no active Peppol source is configured.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+	 */
+	public function resolveActiveSource(): ObjectEntity {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_SOURCE,
+					'type' => self::SOURCE_TYPE,
+					'isEnabled' => true,
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
 
-    }//end handleDeliveryCallback()
+		if (empty($results) === true) {
+			throw new PeppolProviderException(
+				message: 'No active Peppol source is configured (register "openconnector", schema "source", '
+					. 'type "peppol", isEnabled=true). Configure one before using the Peppol connector.'
+			);
+		}
 
-    /**
-     * Republish a verified inbound-document AP notification as a CloudEvent.
-     *
-     * @param string $senderPeppolId   The sender participant identifier.
-     * @param string $documentType     The UBL document type slug.
-     * @param string $payloadReference A reference (URI) to the inbound payload.
-     *
-     * @return array<ObjectEntity> The created CloudEvent messages.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
-     */
-    public function handleInboundDocument(string $senderPeppolId, string $documentType, string $payloadReference): array
-    {
-        return $this->eventService->emitCloudEvent(
-            type: self::EVENT_TYPE_INBOUND_RECEIVED,
-            source: '/peppol/inbound',
-            subject: $senderPeppolId,
-            data: [
-                'senderPeppolId'   => $senderPeppolId,
-                'documentType'     => $documentType,
-                'payloadReference' => $payloadReference,
-            ]
-        );
+		return $results[0];
+	}//end resolveActiveSource()
 
-    }//end handleInboundDocument()
+	/**
+	 * Select the provider binding named by `configuration.provider` (default `log`).
+	 *
+	 * @param array $configuration The Peppol source's `configuration` object.
+	 *
+	 * @return PeppolAccessPointProviderInterface The resolved provider binding.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+	 */
+	public function resolveProvider(array $configuration): PeppolAccessPointProviderInterface {
+		$provider = ($configuration['provider'] ?? 'log');
+		if ($provider === 'rest') {
+			return $this->restProvider;
+		}
 
-    /**
-     * Resolve the single active Peppol source (`type=peppol`, `isEnabled=true`).
-     *
-     * @return ObjectEntity The resolved source.
-     *
-     * @throws PeppolProviderException When no active Peppol source is configured.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
-     */
-    public function resolveActiveSource(): ObjectEntity
-    {
-        $matches = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register'  => self::REGISTER,
-                    'schema'    => self::SCHEMA_SOURCE,
-                    'type'      => self::SOURCE_TYPE,
-                    'isEnabled' => true,
-                ],
-                'limit'   => 1,
-            ]
-        );
-        $results = ($matches['results'] ?? $matches);
+		return $this->logProvider;
+	}//end resolveProvider()
 
-        if (empty($results) === true) {
-            throw new PeppolProviderException(
-                message: 'No active Peppol source is configured (register "openconnector", schema "source", '
-                    .'type "peppol", isEnabled=true). Configure one before using the Peppol connector.'
-            );
-        }
+	/**
+	 * Find an existing transmission for the given `objectUri`+`documentType` (idempotency key).
+	 *
+	 * @param string $objectUri The source object URI.
+	 * @param string $documentType The UBL document type slug.
+	 *
+	 * @return ObjectEntity|null The existing transmission, or null when none exists yet.
+	 */
+	private function findTransmission(string $objectUri, string $documentType): ?ObjectEntity {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_TRANSMISSION,
+					'objectUri' => $objectUri,
+					'documentType' => $documentType,
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
 
-        return $results[0];
+		if (empty($results) === true) {
+			return null;
+		}
 
-    }//end resolveActiveSource()
+		return $results[0];
+	}//end findTransmission()
 
-    /**
-     * Select the provider binding named by `configuration.provider` (default `log`).
-     *
-     * @param array $configuration The Peppol source's `configuration` object.
-     *
-     * @return PeppolAccessPointProviderInterface The resolved provider binding.
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
-     */
-    public function resolveProvider(array $configuration): PeppolAccessPointProviderInterface
-    {
-        $provider = ($configuration['provider'] ?? 'log');
-        if ($provider === 'rest') {
-            return $this->restProvider;
-        }
+	/**
+	 * Emit `nl.conduction.peppol.delivery.status` for a transmission's current state.
+	 *
+	 * @param ObjectEntity $transmission The transmission whose state just changed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
+	 */
+	private function emitDeliveryStatus(ObjectEntity $transmission): void {
+		$data = $transmission->getObject();
 
-        return $this->logProvider;
+		$this->eventService->emitCloudEvent(
+			type: self::EVENT_TYPE_DELIVERY_STATUS,
+			source: '/peppol/transmissions/' . $transmission->getUuid(),
+			subject: $transmission->getUuid(),
+			data: [
+				'objectUri' => ($data['objectUri'] ?? null),
+				'transmissionId' => ($data['transmissionId'] ?? null),
+				'status' => ($data['status'] ?? null),
+				'timestamp' => (new DateTime())->format('c'),
+				'detail' => ($data['detail'] ?? null),
+			]
+		);
 
-    }//end resolveProvider()
-
-    /**
-     * Find an existing transmission for the given `objectUri`+`documentType` (idempotency key).
-     *
-     * @param string $objectUri    The source object URI.
-     * @param string $documentType The UBL document type slug.
-     *
-     * @return ObjectEntity|null The existing transmission, or null when none exists yet.
-     */
-    private function findTransmission(string $objectUri, string $documentType): ?ObjectEntity
-    {
-        $matches = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register'     => self::REGISTER,
-                    'schema'       => self::SCHEMA_TRANSMISSION,
-                    'objectUri'    => $objectUri,
-                    'documentType' => $documentType,
-                ],
-                'limit'   => 1,
-            ]
-        );
-        $results = ($matches['results'] ?? $matches);
-
-        if (empty($results) === true) {
-            return null;
-        }
-
-        return $results[0];
-
-    }//end findTransmission()
-
-    /**
-     * Emit `nl.conduction.peppol.delivery.status` for a transmission's current state.
-     *
-     * @param ObjectEntity $transmission The transmission whose state just changed.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
-     */
-    private function emitDeliveryStatus(ObjectEntity $transmission): void
-    {
-        $data = $transmission->getObject();
-
-        $this->eventService->emitCloudEvent(
-            type: self::EVENT_TYPE_DELIVERY_STATUS,
-            source: '/peppol/transmissions/'.$transmission->getUuid(),
-            subject: $transmission->getUuid(),
-            data: [
-                'objectUri'      => ($data['objectUri'] ?? null),
-                'transmissionId' => ($data['transmissionId'] ?? null),
-                'status'         => ($data['status'] ?? null),
-                'timestamp'      => (new DateTime())->format('c'),
-                'detail'         => ($data['detail'] ?? null),
-            ]
-        );
-
-    }//end emitDeliveryStatus()
+	}//end emitDeliveryStatus()
 }//end class

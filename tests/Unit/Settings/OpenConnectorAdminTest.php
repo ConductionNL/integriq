@@ -36,57 +36,52 @@ use PHPUnit\Framework\TestCase;
  * exact fail-closed (full-admin-only) posture of the pre-adoption bespoke
  * implementation it replaces.
  */
-class OpenConnectorAdminTest extends TestCase
-{
-    /**
-     * Build a settings instance with mocked collaborators.
-     *
-     * @return OpenConnectorAdmin
-     */
-    private function makeSettings(): OpenConnectorAdmin
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getAppVersion')->willReturn('0.2.21');
+class OpenConnectorAdminTest extends TestCase {
+	/**
+	 * Build a settings instance with mocked collaborators.
+	 *
+	 * @return OpenConnectorAdmin
+	 */
+	private function makeSettings(): OpenConnectorAdmin {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getAppVersion')->willReturn('0.2.21');
 
-        return new OpenConnectorAdmin(
-            appId: 'openconnector',
-            sectionId: 'openconnector',
-            priority: 10,
-            appManager: $appManager,
-            initialState: $this->createMock(IInitialState::class),
-            appConfig: $this->createMock(IAppConfig::class)
-        );
-    }//end makeSettings()
+		return new OpenConnectorAdmin(
+			appId: 'openconnector',
+			sectionId: 'openconnector',
+			priority: 10,
+			appManager: $appManager,
+			initialState: $this->createMock(IInitialState::class),
+			appConfig: $this->createMock(IAppConfig::class)
+		);
+	}//end makeSettings()
 
-    /**
-     * `getAuthorizedAppConfig()` must stay empty — byte-identical to the
-     * pre-adoption bespoke implementation — so every `#[AuthorizedAdminSetting]`
-     * gate keeps scoping to full admins only (no delegated sub-keys).
-     *
-     * @return void
-     */
-    public function testAuthorizedAppConfigStaysEmpty(): void
-    {
-        $this->assertSame([], $this->makeSettings()->getAuthorizedAppConfig());
-    }//end testAuthorizedAppConfigStaysEmpty()
+	/**
+	 * `getAuthorizedAppConfig()` must stay empty — byte-identical to the
+	 * pre-adoption bespoke implementation — so every `#[AuthorizedAdminSetting]`
+	 * gate keeps scoping to full admins only (no delegated sub-keys).
+	 *
+	 * @return void
+	 */
+	public function testAuthorizedAppConfigStaysEmpty(): void {
+		$this->assertSame([], $this->makeSettings()->getAuthorizedAppConfig());
+	}//end testAuthorizedAppConfigStaysEmpty()
 
-    /**
-     * The section id must stay `openconnector`, matching the pre-adoption value.
-     *
-     * @return void
-     */
-    public function testSectionIdUnchanged(): void
-    {
-        $this->assertSame('openconnector', $this->makeSettings()->getSection());
-    }//end testSectionIdUnchanged()
+	/**
+	 * The section id must stay `openconnector`, matching the pre-adoption value.
+	 *
+	 * @return void
+	 */
+	public function testSectionIdUnchanged(): void {
+		$this->assertSame('openconnector', $this->makeSettings()->getSection());
+	}//end testSectionIdUnchanged()
 
-    /**
-     * The priority must stay `10`, matching the pre-adoption value.
-     *
-     * @return void
-     */
-    public function testPriorityUnchanged(): void
-    {
-        $this->assertSame(10, $this->makeSettings()->getPriority());
-    }//end testPriorityUnchanged()
+	/**
+	 * The priority must stay `10`, matching the pre-adoption value.
+	 *
+	 * @return void
+	 */
+	public function testPriorityUnchanged(): void {
+		$this->assertSame(10, $this->makeSettings()->getPriority());
+	}//end testPriorityUnchanged()
 }//end class

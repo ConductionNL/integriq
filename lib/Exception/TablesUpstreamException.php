@@ -36,16 +36,14 @@ use Exception;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
-class TablesUpstreamException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message Human-readable, secret-free message.
-     */
-    public function __construct(string $message)
-    {
-        parent::__construct(message: $message, code: 502);
+class TablesUpstreamException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable, secret-free message.
+	 */
+	public function __construct(string $message) {
+		parent::__construct(message: $message, code: 502);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

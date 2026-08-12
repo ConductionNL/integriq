@@ -31,45 +31,43 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-zaklk01-edclk01-translation-with-a-literal-leak-guard-req-002
  */
-class InboundBerichtTranslatorTest extends TestCase
-{
+class InboundBerichtTranslatorTest extends TestCase {
 
-    /**
-     * @var InboundBerichtTranslator
-     */
-    private InboundBerichtTranslator $translator;
+	/**
+	 * @var InboundBerichtTranslator
+	 */
+	private InboundBerichtTranslator $translator;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->translator = new InboundBerichtTranslator();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->translator = new InboundBerichtTranslator();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a minimal `zakLk01` SOAP envelope.
-     *
-     * @param string $verwerkingssoort  The `object`'s verwerkingssoort attribute.
-     * @param string $referentienummer  The stuurgegevens.referentienummer.
-     * @param string $identificatie     The object's identificatie ('' to omit the element).
-     * @param string $toelichtingXml    Raw `<zkn:toelichting>` XML fragment (default: nil).
-     *
-     * @return string
-     */
-    private function zakLk01(
-        string $verwerkingssoort='T',
-        string $referentienummer='REF-1',
-        string $identificatie='ZAAK-1',
-        string $toelichtingXml='<zkn:toelichting StUF:noValue="geenWaarde" xsi:nil="true"/>'
-    ): string {
-        $identificatieXml = ($identificatie === '') ? '' : '<zkn:identificatie>'.$identificatie.'</zkn:identificatie>';
+	/**
+	 * Build a minimal `zakLk01` SOAP envelope.
+	 *
+	 * @param string $verwerkingssoort The `object`'s verwerkingssoort attribute.
+	 * @param string $referentienummer The stuurgegevens.referentienummer.
+	 * @param string $identificatie The object's identificatie ('' to omit the element).
+	 * @param string $toelichtingXml Raw `<zkn:toelichting>` XML fragment (default: nil).
+	 *
+	 * @return string
+	 */
+	private function zakLk01(
+		string $verwerkingssoort = 'T',
+		string $referentienummer = 'REF-1',
+		string $identificatie = 'ZAAK-1',
+		string $toelichtingXml = '<zkn:toelichting StUF:noValue="geenWaarde" xsi:nil="true"/>',
+	): string {
+		$identificatieXml = ($identificatie === '') ? '' : '<zkn:identificatie>' . $identificatie . '</zkn:identificatie>';
 
-        return <<<XML
+		return <<<XML
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
                 xmlns:StUF="http://www.egem.nl/StUF/StUF0301"
                 xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310"
@@ -104,16 +102,15 @@ class InboundBerichtTranslatorTest extends TestCase
 </soap:Envelope>
 XML;
 
-    }//end zakLk01()
+	}//end zakLk01()
 
-    /**
-     * Build a minimal `edcLk01` SOAP envelope.
-     *
-     * @return string
-     */
-    private function edcLk01(): string
-    {
-        return <<<XML
+	/**
+	 * Build a minimal `edcLk01` SOAP envelope.
+	 *
+	 * @return string
+	 */
+	private function edcLk01(): string {
+		return <<<XML
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
                 xmlns:StUF="http://www.egem.nl/StUF/StUF0301"
                 xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310"
@@ -147,215 +144,202 @@ XML;
 </soap:Envelope>
 XML;
 
-    }//end edcLk01()
+	}//end edcLk01()
 
-    /**
-     * A complete `zakLk01` toevoeging translates to a normalised zaak representation.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaklk01-toevoeging-translates-to-a-normalised-zaak-representation
-     */
-    public function testCompleteZakLk01ToevoegingTranslatesToNormalisedZaak(): void
-    {
-        $result = $this->translator->translate($this->zakLk01(verwerkingssoort: 'T'));
+	/**
+	 * A complete `zakLk01` toevoeging translates to a normalised zaak representation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaklk01-toevoeging-translates-to-a-normalised-zaak-representation
+	 */
+	public function testCompleteZakLk01ToevoegingTranslatesToNormalisedZaak(): void {
+		$result = $this->translator->translate($this->zakLk01(verwerkingssoort: 'T'));
 
-        $this->assertSame('zaak', $result['kind']);
-        $this->assertSame('zakLk01', $result['berichttype']);
-        $this->assertSame('REF-1', $result['referentienummer']);
-        $this->assertSame('Gemeente X', $result['senderOrganisatie']);
-        $this->assertSame('T', $result['verwerkingssoort']);
-        $this->assertSame('ZAK', $result['entiteittype']);
-        $this->assertSame('ZAAK-1', $result['fields']['identificatie']);
-        $this->assertSame('Vergunningaanvraag kap boom', $result['fields']['omschrijving']);
-        $this->assertSame('B0337', $result['fields']['zaaktypeCode']);
-        $this->assertSame('Kapvergunning', $result['fields']['zaaktypeOmschrijving']);
-        $this->assertSame('20260716', $result['fields']['registratiedatum']);
-        $this->assertSame('20260716', $result['fields']['startdatum']);
-        $this->assertNull($result['fields']['toelichting']);
+		$this->assertSame('zaak', $result['kind']);
+		$this->assertSame('zakLk01', $result['berichttype']);
+		$this->assertSame('REF-1', $result['referentienummer']);
+		$this->assertSame('Gemeente X', $result['senderOrganisatie']);
+		$this->assertSame('T', $result['verwerkingssoort']);
+		$this->assertSame('ZAK', $result['entiteittype']);
+		$this->assertSame('ZAAK-1', $result['fields']['identificatie']);
+		$this->assertSame('Vergunningaanvraag kap boom', $result['fields']['omschrijving']);
+		$this->assertSame('B0337', $result['fields']['zaaktypeCode']);
+		$this->assertSame('Kapvergunning', $result['fields']['zaaktypeOmschrijving']);
+		$this->assertSame('20260716', $result['fields']['registratiedatum']);
+		$this->assertSame('20260716', $result['fields']['startdatum']);
+		$this->assertNull($result['fields']['toelichting']);
 
-    }//end testCompleteZakLk01ToevoegingTranslatesToNormalisedZaak()
+	}//end testCompleteZakLk01ToevoegingTranslatesToNormalisedZaak()
 
-    /**
-     * A complete `edcLk01` translates to a normalised document representation, including the
-     * related zaak identificatie.
-     *
-     * @return void
-     */
-    public function testCompleteEdcLk01TranslatesToNormalisedDocument(): void
-    {
-        $result = $this->translator->translate($this->edcLk01());
+	/**
+	 * A complete `edcLk01` translates to a normalised document representation, including the
+	 * related zaak identificatie.
+	 *
+	 * @return void
+	 */
+	public function testCompleteEdcLk01TranslatesToNormalisedDocument(): void {
+		$result = $this->translator->translate($this->edcLk01());
 
-        $this->assertSame('document', $result['kind']);
-        $this->assertSame('edcLk01', $result['berichttype']);
-        $this->assertSame('EDC', $result['entiteittype']);
-        $this->assertSame('DOC-1', $result['fields']['identificatie']);
-        $this->assertSame('Kapvergunning besluit', $result['fields']['titel']);
-        $this->assertSame('application/pdf', $result['fields']['formaat']);
-        $this->assertSame('ZAAK-1', $result['fields']['zaakIdentificatie']);
+		$this->assertSame('document', $result['kind']);
+		$this->assertSame('edcLk01', $result['berichttype']);
+		$this->assertSame('EDC', $result['entiteittype']);
+		$this->assertSame('DOC-1', $result['fields']['identificatie']);
+		$this->assertSame('Kapvergunning besluit', $result['fields']['titel']);
+		$this->assertSame('application/pdf', $result['fields']['formaat']);
+		$this->assertSame('ZAAK-1', $result['fields']['zaakIdentificatie']);
 
-    }//end testCompleteEdcLk01TranslatesToNormalisedDocument()
+	}//end testCompleteEdcLk01TranslatesToNormalisedDocument()
 
-    /**
-     * Each recognised verwerkingssoort (T/W/I/V) is accepted and echoed back.
-     *
-     * @param string $verwerkingssoort The verwerkingssoort code under test.
-     *
-     * @return void
-     *
-     * @dataProvider verwerkingssoortProvider
-     */
-    public function testEachVerwerkingssoortIsAccepted(string $verwerkingssoort): void
-    {
-        $result = $this->translator->translate($this->zakLk01(verwerkingssoort: $verwerkingssoort));
-        $this->assertSame($verwerkingssoort, $result['verwerkingssoort']);
+	/**
+	 * Each recognised verwerkingssoort (T/W/I/V) is accepted and echoed back.
+	 *
+	 * @param string $verwerkingssoort The verwerkingssoort code under test.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider verwerkingssoortProvider
+	 */
+	public function testEachVerwerkingssoortIsAccepted(string $verwerkingssoort): void {
+		$result = $this->translator->translate($this->zakLk01(verwerkingssoort: $verwerkingssoort));
+		$this->assertSame($verwerkingssoort, $result['verwerkingssoort']);
 
-    }//end testEachVerwerkingssoortIsAccepted()
+	}//end testEachVerwerkingssoortIsAccepted()
 
-    /**
-     * Data provider for the four recognised verwerkingssoort codes.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public static function verwerkingssoortProvider(): array
-    {
-        return [
-            'T (toevoeging)'                       => ['T'],
-            'W (wijziging)'                         => ['W'],
-            'I (wijziging identificerend gegeven)'  => ['I'],
-            'V (vervallen)'                         => ['V'],
-        ];
+	/**
+	 * Data provider for the four recognised verwerkingssoort codes.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public static function verwerkingssoortProvider(): array {
+		return [
+			'T (toevoeging)' => ['T'],
+			'W (wijziging)' => ['W'],
+			'I (wijziging identificerend gegeven)' => ['I'],
+			'V (vervallen)' => ['V'],
+		];
 
-    }//end verwerkingssoortProvider()
+	}//end verwerkingssoortProvider()
 
-    /**
-     * An unrecognised verwerkingssoort is rejected.
-     *
-     * @return void
-     */
-    public function testUnrecognisedVerwerkingssoortThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($this->zakLk01(verwerkingssoort: 'X'));
+	/**
+	 * An unrecognised verwerkingssoort is rejected.
+	 *
+	 * @return void
+	 */
+	public function testUnrecognisedVerwerkingssoortThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($this->zakLk01(verwerkingssoort: 'X'));
 
-    }//end testUnrecognisedVerwerkingssoortThrows()
+	}//end testUnrecognisedVerwerkingssoortThrows()
 
-    /**
-     * A field explicitly marked StUF:noValue/xsi:nil is read as null, never an empty-string literal.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-novalue-nil-field-is-read-as-null-never-an-empty-string-literal
-     */
-    public function testNoValueNilFieldReadsAsNull(): void
-    {
-        $result = $this->translator->translate($this->zakLk01());
-        $this->assertNull($result['fields']['toelichting']);
+	/**
+	 * A field explicitly marked StUF:noValue/xsi:nil is read as null, never an empty-string literal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-novalue-nil-field-is-read-as-null-never-an-empty-string-literal
+	 */
+	public function testNoValueNilFieldReadsAsNull(): void {
+		$result = $this->translator->translate($this->zakLk01());
+		$this->assertNull($result['fields']['toelichting']);
 
-    }//end testNoValueNilFieldReadsAsNull()
+	}//end testNoValueNilFieldReadsAsNull()
 
-    /**
-     * A present, non-nil field is read as its trimmed text value, distinct from the nil case.
-     *
-     * @return void
-     */
-    public function testPresentFieldIsReadAsText(): void
-    {
-        $result = $this->translator->translate(
-            $this->zakLk01(toelichtingXml: '<zkn:toelichting>Spoedaanvraag</zkn:toelichting>')
-        );
-        $this->assertSame('Spoedaanvraag', $result['fields']['toelichting']);
+	/**
+	 * A present, non-nil field is read as its trimmed text value, distinct from the nil case.
+	 *
+	 * @return void
+	 */
+	public function testPresentFieldIsReadAsText(): void {
+		$result = $this->translator->translate(
+			$this->zakLk01(toelichtingXml: '<zkn:toelichting>Spoedaanvraag</zkn:toelichting>')
+		);
+		$this->assertSame('Spoedaanvraag', $result['fields']['toelichting']);
 
-    }//end testPresentFieldIsReadAsText()
+	}//end testPresentFieldIsReadAsText()
 
-    /**
-     * A missing/empty referentienummer never reaches an OR mapping — literal-leak guard.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-referentienummer-or-identificatie-never-reaches-an-or-mapping--literal-leak-guard
-     */
-    public function testMissingReferentienummerThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($this->zakLk01(referentienummer: ''));
+	/**
+	 * A missing/empty referentienummer never reaches an OR mapping — literal-leak guard.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-referentienummer-or-identificatie-never-reaches-an-or-mapping--literal-leak-guard
+	 */
+	public function testMissingReferentienummerThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($this->zakLk01(referentienummer: ''));
 
-    }//end testMissingReferentienummerThrows()
+	}//end testMissingReferentienummerThrows()
 
-    /**
-     * A missing/empty identificatie never reaches an OR mapping — literal-leak guard.
-     *
-     * @return void
-     */
-    public function testMissingIdentificatieThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($this->zakLk01(identificatie: ''));
+	/**
+	 * A missing/empty identificatie never reaches an OR mapping — literal-leak guard.
+	 *
+	 * @return void
+	 */
+	public function testMissingIdentificatieThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($this->zakLk01(identificatie: ''));
 
-    }//end testMissingIdentificatieThrows()
+	}//end testMissingIdentificatieThrows()
 
-    /**
-     * An envelope with neither zakLk01 nor edcLk01 is rejected.
-     *
-     * @return void
-     */
-    public function testUnrecognisedBerichttypeThrows(): void
-    {
-        $xml = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
-            .'<soap:Body><zkn:somethingElse xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310"/></soap:Body>'
-            .'</soap:Envelope>';
+	/**
+	 * An envelope with neither zakLk01 nor edcLk01 is rejected.
+	 *
+	 * @return void
+	 */
+	public function testUnrecognisedBerichttypeThrows(): void {
+		$xml = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+			. '<soap:Body><zkn:somethingElse xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310"/></soap:Body>'
+			. '</soap:Envelope>';
 
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($xml);
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($xml);
 
-    }//end testUnrecognisedBerichttypeThrows()
+	}//end testUnrecognisedBerichttypeThrows()
 
-    /**
-     * Empty input is rejected.
-     *
-     * @return void
-     */
-    public function testEmptyInputThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate('');
+	/**
+	 * Empty input is rejected.
+	 *
+	 * @return void
+	 */
+	public function testEmptyInputThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate('');
 
-    }//end testEmptyInputThrows()
+	}//end testEmptyInputThrows()
 
-    /**
-     * Malformed XML is rejected.
-     *
-     * @return void
-     */
-    public function testMalformedXmlThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate('<soap:Envelope><unclosed></soap:Envelope>');
+	/**
+	 * Malformed XML is rejected.
+	 *
+	 * @return void
+	 */
+	public function testMalformedXmlThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate('<soap:Envelope><unclosed></soap:Envelope>');
 
-    }//end testMalformedXmlThrows()
+	}//end testMalformedXmlThrows()
 
-    /**
-     * An XXE payload is rejected (or left inert), never resolved into the response — proven by
-     * the translator either throwing (malformed after the DOCTYPE-carrying parse) or, if parsed,
-     * never surfacing `/etc/passwd` content anywhere in the returned array.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-an-xxe-payload-in-an-inbound-envelope-is-rejected-or-left-unexpanded
-     */
-    public function testXxePayloadIsRejectedOrNeverResolved(): void
-    {
-        $xxe = '<?xml version="1.0"?>'
-            .'<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
-            .'<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
-            .'<soap:Body>&xxe;</soap:Body></soap:Envelope>';
+	/**
+	 * An XXE payload is rejected (or left inert), never resolved into the response — proven by
+	 * the translator either throwing (malformed after the DOCTYPE-carrying parse) or, if parsed,
+	 * never surfacing `/etc/passwd` content anywhere in the returned array.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-an-xxe-payload-in-an-inbound-envelope-is-rejected-or-left-unexpanded
+	 */
+	public function testXxePayloadIsRejectedOrNeverResolved(): void {
+		$xxe = '<?xml version="1.0"?>'
+			. '<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
+			. '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+			. '<soap:Body>&xxe;</soap:Body></soap:Envelope>';
 
-        try {
-            $result = $this->translator->translate($xxe);
-            $this->assertStringNotContainsString('root:', json_encode($result));
-        } catch (StufZknTranslationException $exception) {
-            $this->assertTrue(true);
-        }
+		try {
+			$result = $this->translator->translate($xxe);
+			$this->assertStringNotContainsString('root:', json_encode($result));
+		} catch (StufZknTranslationException $exception) {
+			$this->assertTrue(true);
+		}
 
-    }//end testXxePayloadIsRejectedOrNeverResolved()
+	}//end testXxePayloadIsRejectedOrNeverResolved()
 }//end class

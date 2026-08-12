@@ -32,156 +32,143 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
-class ZgwVersionNegotiationServiceTest extends TestCase
-{
+class ZgwVersionNegotiationServiceTest extends TestCase {
 
-    /**
-     * @var ZgwVersionNegotiationService
-     */
-    private ZgwVersionNegotiationService $service;
+	/**
+	 * @var ZgwVersionNegotiationService
+	 */
+	private ZgwVersionNegotiationService $service;
 
-    /**
-     * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $request;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->service = new ZgwVersionNegotiationService();
-        $this->request = $this->createMock(IRequest::class);
-    }//end setUp()
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->service = new ZgwVersionNegotiationService();
+		$this->request = $this->createMock(IRequest::class);
+	}//end setUp()
 
-    /**
-     * @return void
-     */
-    public function testNoVersionSignalDefaultsToCanonical(): void
-    {
-        $this->request->method('getHeader')->willReturn('');
+	/**
+	 * @return void
+	 */
+	public function testNoVersionSignalDefaultsToCanonical(): void {
+		$this->request->method('getHeader')->willReturn('');
 
-        $resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
+		$resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
 
-        $this->assertSame(expected: ZgwVersionNegotiationService::VERSION_CANONICAL, actual: $resolved);
-    }//end testNoVersionSignalDefaultsToCanonical()
+		$this->assertSame(expected: ZgwVersionNegotiationService::VERSION_CANONICAL, actual: $resolved);
+	}//end testNoVersionSignalDefaultsToCanonical()
 
-    /**
-     * @return void
-     */
-    public function testExplicitValueTakesPrecedenceOverHeaders(): void
-    {
-        $this->request->method('getHeader')->willReturn('1.0');
+	/**
+	 * @return void
+	 */
+	public function testExplicitValueTakesPrecedenceOverHeaders(): void {
+		$this->request->method('getHeader')->willReturn('1.0');
 
-        $resolved = $this->service->resolveVersion(request: $this->request, explicit: '1.6');
+		$resolved = $this->service->resolveVersion(request: $this->request, explicit: '1.6');
 
-        $this->assertSame(expected: '1.6', actual: $resolved);
-    }//end testExplicitValueTakesPrecedenceOverHeaders()
+		$this->assertSame(expected: '1.6', actual: $resolved);
+	}//end testExplicitValueTakesPrecedenceOverHeaders()
 
-    /**
-     * @return void
-     */
-    public function testXZgwVersionHeaderIsUsedWhenNoExplicitValue(): void
-    {
-        $this->request->method('getHeader')->willReturnMap(
-            [
-                ['X-ZGW-Version', '1.6'],
-                ['Accept', ''],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testXZgwVersionHeaderIsUsedWhenNoExplicitValue(): void {
+		$this->request->method('getHeader')->willReturnMap(
+			[
+				['X-ZGW-Version', '1.6'],
+				['Accept', ''],
+			]
+		);
 
-        $resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
+		$resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
 
-        $this->assertSame(expected: '1.6', actual: $resolved);
-    }//end testXZgwVersionHeaderIsUsedWhenNoExplicitValue()
+		$this->assertSame(expected: '1.6', actual: $resolved);
+	}//end testXZgwVersionHeaderIsUsedWhenNoExplicitValue()
 
-    /**
-     * @return void
-     */
-    public function testAcceptVersionParameterIsUsedAsFallback(): void
-    {
-        $this->request->method('getHeader')->willReturnMap(
-            [
-                ['X-ZGW-Version', ''],
-                ['Accept', 'application/json;version=1.6'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testAcceptVersionParameterIsUsedAsFallback(): void {
+		$this->request->method('getHeader')->willReturnMap(
+			[
+				['X-ZGW-Version', ''],
+				['Accept', 'application/json;version=1.6'],
+			]
+		);
 
-        $resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
+		$resolved = $this->service->resolveVersion(request: $this->request, explicit: null);
 
-        $this->assertSame(expected: '1.6', actual: $resolved);
-    }//end testAcceptVersionParameterIsUsedAsFallback()
+		$this->assertSame(expected: '1.6', actual: $resolved);
+	}//end testAcceptVersionParameterIsUsedAsFallback()
 
-    /**
-     * @return void
-     */
-    public function testAssertKnownVersionAcceptsImplementedVersions(): void
-    {
-        $this->service->assertKnownVersion(version: '1.0');
-        $this->service->assertKnownVersion(version: '1.6');
-        $this->addToAssertionCount(count: 2);
-    }//end testAssertKnownVersionAcceptsImplementedVersions()
+	/**
+	 * @return void
+	 */
+	public function testAssertKnownVersionAcceptsImplementedVersions(): void {
+		$this->service->assertKnownVersion(version: '1.0');
+		$this->service->assertKnownVersion(version: '1.6');
+		$this->addToAssertionCount(count: 2);
+	}//end testAssertKnownVersionAcceptsImplementedVersions()
 
-    /**
-     * @return void
-     */
-    public function testAssertKnownVersionAcceptsNextGenPlaceholder(): void
-    {
-        $this->service->assertKnownVersion(version: '2.0');
-        $this->addToAssertionCount(count: 1);
-    }//end testAssertKnownVersionAcceptsNextGenPlaceholder()
+	/**
+	 * @return void
+	 */
+	public function testAssertKnownVersionAcceptsNextGenPlaceholder(): void {
+		$this->service->assertKnownVersion(version: '2.0');
+		$this->addToAssertionCount(count: 1);
+	}//end testAssertKnownVersionAcceptsNextGenPlaceholder()
 
-    /**
-     * @return void
-     */
-    public function testAssertKnownVersionRejectsUnknownVersion(): void
-    {
-        $this->expectException(ZgwUnknownVersionException::class);
-        $this->service->assertKnownVersion(version: '0.9');
-    }//end testAssertKnownVersionRejectsUnknownVersion()
+	/**
+	 * @return void
+	 */
+	public function testAssertKnownVersionRejectsUnknownVersion(): void {
+		$this->expectException(ZgwUnknownVersionException::class);
+		$this->service->assertKnownVersion(version: '0.9');
+	}//end testAssertKnownVersionRejectsUnknownVersion()
 
-    /**
-     * @return void
-     */
-    public function testAssertImplementedVersionRejectsNextGenPlaceholder(): void
-    {
-        $this->expectException(ZgwVersionNotImplementedException::class);
-        $this->service->assertImplementedVersion(version: '2.0');
-    }//end testAssertImplementedVersionRejectsNextGenPlaceholder()
+	/**
+	 * @return void
+	 */
+	public function testAssertImplementedVersionRejectsNextGenPlaceholder(): void {
+		$this->expectException(ZgwVersionNotImplementedException::class);
+		$this->service->assertImplementedVersion(version: '2.0');
+	}//end testAssertImplementedVersionRejectsNextGenPlaceholder()
 
-    /**
-     * @return void
-     */
-    public function testAssertImplementedVersionAcceptsCanonicalAndStability(): void
-    {
-        $this->service->assertImplementedVersion(version: '1.0');
-        $this->service->assertImplementedVersion(version: '1.6');
-        $this->addToAssertionCount(count: 2);
-    }//end testAssertImplementedVersionAcceptsCanonicalAndStability()
+	/**
+	 * @return void
+	 */
+	public function testAssertImplementedVersionAcceptsCanonicalAndStability(): void {
+		$this->service->assertImplementedVersion(version: '1.0');
+		$this->service->assertImplementedVersion(version: '1.6');
+		$this->addToAssertionCount(count: 2);
+	}//end testAssertImplementedVersionAcceptsCanonicalAndStability()
 
-    /**
-     * @return void
-     */
-    public function testStripUnsupportedExpandHintRemovesExpandKey(): void
-    {
-        $stripped = $this->service->stripUnsupportedExpandHint(
-            queryParams: ['expand' => 'hoofdzaak', 'zaaktype' => 'https://host/zt/1']
-        );
+	/**
+	 * @return void
+	 */
+	public function testStripUnsupportedExpandHintRemovesExpandKey(): void {
+		$stripped = $this->service->stripUnsupportedExpandHint(
+			queryParams: ['expand' => 'hoofdzaak', 'zaaktype' => 'https://host/zt/1']
+		);
 
-        $this->assertArrayNotHasKey(key: 'expand', array: $stripped);
-        $this->assertArrayHasKey(key: 'zaaktype', array: $stripped);
-    }//end testStripUnsupportedExpandHintRemovesExpandKey()
+		$this->assertArrayNotHasKey(key: 'expand', array: $stripped);
+		$this->assertArrayHasKey(key: 'zaaktype', array: $stripped);
+	}//end testStripUnsupportedExpandHintRemovesExpandKey()
 
-    /**
-     * @return void
-     */
-    public function testStripUnsupportedExpandHintIsANoOpWhenAbsent(): void
-    {
-        $stripped = $this->service->stripUnsupportedExpandHint(queryParams: ['zaaktype' => 'https://host/zt/1']);
+	/**
+	 * @return void
+	 */
+	public function testStripUnsupportedExpandHintIsANoOpWhenAbsent(): void {
+		$stripped = $this->service->stripUnsupportedExpandHint(queryParams: ['zaaktype' => 'https://host/zt/1']);
 
-        $this->assertSame(expected: ['zaaktype' => 'https://host/zt/1'], actual: $stripped);
-    }//end testStripUnsupportedExpandHintIsANoOpWhenAbsent()
+		$this->assertSame(expected: ['zaaktype' => 'https://host/zt/1'], actual: $stripped);
+	}//end testStripUnsupportedExpandHintIsANoOpWhenAbsent()
 }//end class

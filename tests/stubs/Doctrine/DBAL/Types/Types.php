@@ -23,15 +23,14 @@ namespace Doctrine\DBAL\Types;
  * Minimal stub for Doctrine\DBAL\Types\Types. Constant string values mirror the
  * real Doctrine type names so any code that compares against them stays correct.
  */
-class Types
-{
-    public const BOOLEAN                = 'boolean';
-    public const DATE_MUTABLE           = 'date';
-    public const DATE_IMMUTABLE         = 'date_immutable';
-    public const DATETIME_MUTABLE       = 'datetime';
-    public const DATETIME_IMMUTABLE     = 'datetime_immutable';
-    public const DATETIMETZ_MUTABLE     = 'datetimetz';
-    public const DATETIMETZ_IMMUTABLE   = 'datetimetz_immutable';
-    public const TIME_MUTABLE           = 'time';
-    public const TIME_IMMUTABLE         = 'time_immutable';
+class Types {
+	public const BOOLEAN = 'boolean';
+	public const DATE_MUTABLE = 'date';
+	public const DATE_IMMUTABLE = 'date_immutable';
+	public const DATETIME_MUTABLE = 'datetime';
+	public const DATETIME_IMMUTABLE = 'datetime_immutable';
+	public const DATETIMETZ_MUTABLE = 'datetimetz';
+	public const DATETIMETZ_IMMUTABLE = 'datetimetz_immutable';
+	public const TIME_MUTABLE = 'time';
+	public const TIME_IMMUTABLE = 'time_immutable';
 }

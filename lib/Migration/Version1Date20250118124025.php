@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Add synchronization_logs table and related columns.
  *
@@ -30,92 +31,87 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the synchronization logs table and supporting columns on related tables.
  */
-class Version1Date20250118124025 extends SimpleMigrationStep
-{
-    /**
-     * Pre-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20250118124025 extends SimpleMigrationStep {
+	/**
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Creates the synchronization_logs table and related columns.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Creates the synchronization_logs table and related columns.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openconnector_synchronization_logs') === false) {
-            $table = $schema->createTable('openconnector_synchronization_logs');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
-            $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-            $table->addColumn('message', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('synchronization_id', Types::STRING, ['notnull' => true, 'length' => 36]);
-            $table->addColumn('result', Types::JSON, ['notnull' => false]);
-            $table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-            $table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-            $table->addColumn('execution_time', Types::INTEGER, ['notnull' => true, 'default' => 3600]);
-            $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
-            $table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
+		if ($schema->hasTable('openconnector_synchronization_logs') === false) {
+			$table = $schema->createTable('openconnector_synchronization_logs');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+			$table->addColumn('message', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('synchronization_id', Types::STRING, ['notnull' => true, 'length' => 36]);
+			$table->addColumn('result', Types::JSON, ['notnull' => false]);
+			$table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+			$table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+			$table->addColumn('execution_time', Types::INTEGER, ['notnull' => true, 'default' => 3600]);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+			$table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
 
-            $table->setPrimaryKey(['id']);
-            $table->addIndex(['uuid'], 'openconnector_sync_logs_uuid_index');
-            $table->addIndex(['synchronization_id'], 'openconnector_sync_logs_sync_id_index');
-            $table->addIndex(['user_id'], 'openconnector_sync_logs_user_id_index');
-            $table->addIndex(['created'], 'openconnector_sync_logs_created_index');
-        }//end if
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['uuid'], 'openconnector_sync_logs_uuid_index');
+			$table->addIndex(['synchronization_id'], 'openconnector_sync_logs_sync_id_index');
+			$table->addIndex(['user_id'], 'openconnector_sync_logs_user_id_index');
+			$table->addIndex(['created'], 'openconnector_sync_logs_created_index');
+		}//end if
 
-        if ($schema->hasTable(tableName: 'openconnector_synchronization_contracts') === true) {
-            $table = $schema->getTable(tableName: 'openconnector_synchronization_contracts');
-            $table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]);
-            // 6 chars is enough for 'create', 'update', 'delete'.
-        }
+		if ($schema->hasTable(tableName: 'openconnector_synchronization_contracts') === true) {
+			$table = $schema->getTable(tableName: 'openconnector_synchronization_contracts');
+			$table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]);
+			// 6 chars is enough for 'create', 'update', 'delete'.
+		}
 
-        if ($schema->hasTable(tableName: 'openconnector_synchronization_contract_logs') === true) {
-            $table = $schema->getTable(tableName: 'openconnector_synchronization_contract_logs');
-            $table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]);
-            // The synchronization_log_id column.
-            $table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]);
-            // The target_result column.
-            $table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-            $table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+		if ($schema->hasTable(tableName: 'openconnector_synchronization_contract_logs') === true) {
+			$table = $schema->getTable(tableName: 'openconnector_synchronization_contract_logs');
+			$table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+			// The synchronization_log_id column.
+			$table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]);
+			// The target_result column.
+			$table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+			$table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
 
-            $table->addIndex(['synchronization_log_id'], 'openconnector_sync_logs_sync_index');
-        }
+			$table->addIndex(['synchronization_log_id'], 'openconnector_sync_logs_sync_index');
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
-
-    /**
-     * Post-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

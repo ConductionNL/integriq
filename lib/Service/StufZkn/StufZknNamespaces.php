@@ -37,49 +37,47 @@ namespace OCA\OpenConnector\Service\StufZkn;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
-final class StufZknNamespaces
-{
+final class StufZknNamespaces {
 
-    /**
-     * SOAP 1.1 envelope namespace.
-     *
-     * @var string
-     */
-    public const SOAP = 'http://schemas.xmlsoap.org/soap/envelope/';
+	/**
+	 * SOAP 1.1 envelope namespace.
+	 *
+	 * @var string
+	 */
+	public const SOAP = 'http://schemas.xmlsoap.org/soap/envelope/';
 
-    /**
-     * StUF 3.01 core namespace — carries the reusable `stuurgegevens`
-     * building blocks (`berichtcode`, `zender`, `ontvanger`,
-     * `referentienummer`, `tijdstipBericht`, `crossRefnummer`,
-     * `entiteittype`, `mutatiesoort`, `indicatorOvername`) and the
-     * `noValue`/`verwerkingssoort` attributes.
-     *
-     * @var string
-     */
-    public const STUF = 'http://www.egem.nl/StUF/StUF0301';
+	/**
+	 * StUF 3.01 core namespace — carries the reusable `stuurgegevens`
+	 * building blocks (`berichtcode`, `zender`, `ontvanger`,
+	 * `referentienummer`, `tijdstipBericht`, `crossRefnummer`,
+	 * `entiteittype`, `mutatiesoort`, `indicatorOvername`) and the
+	 * `noValue`/`verwerkingssoort` attributes.
+	 *
+	 * @var string
+	 */
+	public const STUF = 'http://www.egem.nl/StUF/StUF0301';
 
-    /**
-     * StUF-ZKN 3.10 sector namespace — carries the `zakLk01`/`edcLk01`
-     * message wrappers, `stuurgegevens`/`parameters`/`object` elements, and
-     * every zaak/document domain field (`identificatie`, `omschrijving`,
-     * `zaaktype`, `titel`, ...).
-     *
-     * @var string
-     */
-    public const ZKN = 'http://www.egem.nl/StUF/sector/zkn/0310';
+	/**
+	 * StUF-ZKN 3.10 sector namespace — carries the `zakLk01`/`edcLk01`
+	 * message wrappers, `stuurgegevens`/`parameters`/`object` elements, and
+	 * every zaak/document domain field (`identificatie`, `omschrijving`,
+	 * `zaaktype`, `titel`, ...).
+	 *
+	 * @var string
+	 */
+	public const ZKN = 'http://www.egem.nl/StUF/sector/zkn/0310';
 
-    /**
-     * XML Schema instance namespace — carries `xsi:nil`.
-     *
-     * @var string
-     */
-    public const XSI = 'http://www.w3.org/2001/XMLSchema-instance';
+	/**
+	 * XML Schema instance namespace — carries `xsi:nil`.
+	 *
+	 * @var string
+	 */
+	public const XSI = 'http://www.w3.org/2001/XMLSchema-instance';
 
-    /**
-     * Private constructor — constants-only class.
-     */
-    private function __construct()
-    {
+	/**
+	 * Private constructor — constants-only class.
+	 */
+	private function __construct() {
 
-    }//end __construct()
+	}//end __construct()
 }//end class

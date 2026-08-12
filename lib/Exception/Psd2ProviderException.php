@@ -35,6 +35,5 @@ use Exception;
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
-class Psd2ProviderException extends Exception
-{
+class Psd2ProviderException extends Exception {
 }//end class

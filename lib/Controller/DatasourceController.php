@@ -41,95 +41,92 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  */
-class DatasourceController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string          $appName The app id.
-     * @param IRequest        $request The request object.
-     * @param IL10N           $l       The localization service.
-     * @param LoggerInterface $logger  Logger for unexpected resolve failures.
-     *
-     * @return void
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class DatasourceController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app id.
+	 * @param IRequest $request The request object.
+	 * @param IL10N $l The localization service.
+	 * @param LoggerInterface $logger Logger for unexpected resolve failures.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Resolve a single value from a named source.
-     *
-     * Authenticated NC user only (enforced by `#[NoAdminRequired]`'s implicit
-     * "logged-in user required" — no `#[PublicPage]`). Honours the source's
-     * own read-authorization: a source the current user may not read yields
-     * 403, never a fetch. Any `url`/`host` in `params` is ignored — egress is
-     * always derived from the stored source, never the caller.
-     *
-     * @param DashboardDatasourceService $service  The resolve façade service.
-     * @param string                     $sourceId UUID of the source to resolve against.
-     *
-     * @return JSONResponse `{value, fetchedAt, stale}` on success; 400/403/404/500 with an `error` key otherwise.
-     *
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-egress-is-constrained-to-the-source-never-the-caller
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-sources-read-access
-     */
-    #[NoAdminRequired]
-    public function resolve(DashboardDatasourceService $service, string $sourceId): JSONResponse
-    {
-        $body      = $this->request->getParams();
-        $valueExpr = (string) ($body['valueExpr'] ?? '');
+	/**
+	 * Resolve a single value from a named source.
+	 *
+	 * Authenticated NC user only (enforced by `#[NoAdminRequired]`'s implicit
+	 * "logged-in user required" — no `#[PublicPage]`). Honours the source's
+	 * own read-authorization: a source the current user may not read yields
+	 * 403, never a fetch. Any `url`/`host` in `params` is ignored — egress is
+	 * always derived from the stored source, never the caller.
+	 *
+	 * @param DashboardDatasourceService $service The resolve façade service.
+	 * @param string $sourceId UUID of the source to resolve against.
+	 *
+	 * @return JSONResponse `{value, fetchedAt, stale}` on success; 400/403/404/500 with an `error` key otherwise.
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-egress-is-constrained-to-the-source-never-the-caller
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-sources-read-access
+	 */
+	#[NoAdminRequired]
+	public function resolve(DashboardDatasourceService $service, string $sourceId): JSONResponse {
+		$body = $this->request->getParams();
+		$valueExpr = (string)($body['valueExpr'] ?? '');
 
-        if ($valueExpr === '') {
-            return new JSONResponse(
-                ['error' => $this->l->t('valueExpr is required')],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+		if ($valueExpr === '') {
+			return new JSONResponse(
+				['error' => $this->l->t('valueExpr is required')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        $params = ($body['params'] ?? []);
-        if (is_array($params) === false) {
-            $params = [];
-        }
+		$params = ($body['params'] ?? []);
+		if (is_array($params) === false) {
+			$params = [];
+		}
 
-        // Egress guard, defence-in-depth: also strip url/host here, ahead of
-        // the service's own guard, so no caller-supplied override ever
-        // leaves this method.
-        unset($params['url'], $params['host']);
+		// Egress guard, defence-in-depth: also strip url/host here, ahead of
+		// the service's own guard, so no caller-supplied override ever
+		// leaves this method.
+		unset($params['url'], $params['host']);
 
-        $ttl = null;
-        if (isset($body['ttl']) === true && is_numeric($body['ttl']) === true) {
-            $ttl = (int) $body['ttl'];
-        }
+		$ttl = null;
+		if (isset($body['ttl']) === true && is_numeric($body['ttl']) === true) {
+			$ttl = (int)$body['ttl'];
+		}
 
-        try {
-            $result = $service->resolve(sourceId: $sourceId, valueExpr: $valueExpr, params: $params, ttl: $ttl);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(
-                ['error' => $this->l->t('Not authorized to read this source')],
-                Http::STATUS_FORBIDDEN
-            );
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => $this->l->t('Source not found')],
-                Http::STATUS_NOT_FOUND
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('dashboard-http-datasource: resolve failed unexpectedly: '.$e->getMessage(), ['exception' => $e]);
-            return new JSONResponse(
-                ['error' => $this->l->t('Failed to resolve value')],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
+		try {
+			$result = $service->resolve(sourceId: $sourceId, valueExpr: $valueExpr, params: $params, ttl: $ttl);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(
+				['error' => $this->l->t('Not authorized to read this source')],
+				Http::STATUS_FORBIDDEN
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(
+				['error' => $this->l->t('Source not found')],
+				Http::STATUS_NOT_FOUND
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error('dashboard-http-datasource: resolve failed unexpectedly: ' . $e->getMessage(), ['exception' => $e]);
+			return new JSONResponse(
+				['error' => $this->l->t('Failed to resolve value')],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
 
-        return new JSONResponse($result);
-
-    }//end resolve()
+		return new JSONResponse($result);
+	}//end resolve()
 }//end class

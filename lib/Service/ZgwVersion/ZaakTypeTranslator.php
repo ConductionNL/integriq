@@ -37,96 +37,87 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTypeTranslator extends AbstractZgwResourceTranslator
-{
+class ZaakTypeTranslator extends AbstractZgwResourceTranslator {
 
-    /**
-     * Fields procest's own `LoadDefaultZgwMappings::getZaakTypeMapping()`
-     * always emits and this translator treats as mandatory on both sides.
-     *
-     * @var string[]
-     */
-    private const REQUIRED_FIELDS = [
-        'url',
-        'uuid',
-        'identificatie',
-        'omschrijving',
-        'catalogus',
-    ];
+	/**
+	 * Fields procest's own `LoadDefaultZgwMappings::getZaakTypeMapping()`
+	 * always emits and this translator treats as mandatory on both sides.
+	 *
+	 * @var string[]
+	 */
+	private const REQUIRED_FIELDS = [
+		'url',
+		'uuid',
+		'identificatie',
+		'omschrijving',
+		'catalogus',
+	];
 
-    /**
-     * Fields that MUST be arrays-of-URLs, never a leaked bare scalar.
-     *
-     * @var string[]
-     */
-    private const ARRAY_FIELDS = [
-        'besluittypen',
-        'informatieobjecttypen',
-        'gerelateerdeZaaktypen',
-    ];
+	/**
+	 * Fields that MUST be arrays-of-URLs, never a leaked bare scalar.
+	 *
+	 * @var string[]
+	 */
+	private const ARRAY_FIELDS = [
+		'besluittypen',
+		'informatieobjecttypen',
+		'gerelateerdeZaaktypen',
+	];
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The resource slug.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function getResource(): string
-    {
-        return 'zaaktype';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The resource slug.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function getResource(): string {
+		return 'zaaktype';
+	}//end getResource()
 
-    }//end getResource()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.6`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV16(array $payload): array {
+		return $this->guardedPassthrough(payload: $payload);
+	}//end translateToV16()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.6`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV16(array $payload): array
-    {
-        return $this->guardedPassthrough(payload: $payload);
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.0`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV1x(array $payload): array {
+		return $this->guardedPassthrough(payload: $payload);
+	}//end translateToV1x()
 
-    }//end translateToV16()
+	/**
+	 * Shared guard-then-passthrough body for both directions — `zaaktype`
+	 * is structurally identical between `1.0` and `1.6` (VNG: no breaking
+	 * resource-model change).
+	 *
+	 * @param array<string, mixed> $payload The payload under translation.
+	 *
+	 * @return array<string, mixed> The guarded payload, unchanged.
+	 */
+	private function guardedPassthrough(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
+		$this->guardEnum(payload: $payload, field: 'vertrouwelijkheidaanduiding', allowed: self::VERTROUWELIJKHEID_VALUES);
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.0`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV1x(array $payload): array
-    {
-        return $this->guardedPassthrough(payload: $payload);
+		foreach (self::ARRAY_FIELDS as $field) {
+			$this->guardArrayField(payload: $payload, field: $field);
+		}
 
-    }//end translateToV1x()
-
-    /**
-     * Shared guard-then-passthrough body for both directions — `zaaktype`
-     * is structurally identical between `1.0` and `1.6` (VNG: no breaking
-     * resource-model change).
-     *
-     * @param array<string, mixed> $payload The payload under translation.
-     *
-     * @return array<string, mixed> The guarded payload, unchanged.
-     */
-    private function guardedPassthrough(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-        $this->guardEnum(payload: $payload, field: 'vertrouwelijkheidaanduiding', allowed: self::VERTROUWELIJKHEID_VALUES);
-
-        foreach (self::ARRAY_FIELDS as $field) {
-            $this->guardArrayField(payload: $payload, field: $field);
-        }
-
-        return $payload;
-
-    }//end guardedPassthrough()
+		return $payload;
+	}//end guardedPassthrough()
 }//end class
