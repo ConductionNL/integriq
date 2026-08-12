@@ -38,17 +38,15 @@ use Exception;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
  */
-class TablesPermissionDeniedException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message    Human-readable message naming the table and identity.
-     * @param int    $statusCode The upstream status code (401 or 403).
-     */
-    public function __construct(string $message, int $statusCode=403)
-    {
-        parent::__construct(message: $message, code: $statusCode);
+class TablesPermissionDeniedException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message naming the table and identity.
+	 * @param int $statusCode The upstream status code (401 or 403).
+	 */
+	public function __construct(string $message, int $statusCode = 403) {
+		parent::__construct(message: $message, code: $statusCode);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

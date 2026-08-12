@@ -33,22 +33,21 @@ namespace OCA\OpenConnector\Service\Mtls;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
  */
-final class MtlsCertificateBundle
-{
-    /**
-     * Constructor.
-     *
-     * @param string      $certificatePem The client certificate, PEM-encoded.
-     * @param string      $privateKeyPem  The client private key, PEM-encoded.
-     * @param string|null $passphrase     The private key passphrase, or null when unprotected.
-     * @param string|null $caBundlePem    An optional custom CA bundle, PEM-encoded, to verify the peer against.
-     */
-    public function __construct(
-        public readonly string $certificatePem,
-        public readonly string $privateKeyPem,
-        public readonly ?string $passphrase=null,
-        public readonly ?string $caBundlePem=null,
-    ) {
+final class MtlsCertificateBundle {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $certificatePem The client certificate, PEM-encoded.
+	 * @param string $privateKeyPem The client private key, PEM-encoded.
+	 * @param string|null $passphrase The private key passphrase, or null when unprotected.
+	 * @param string|null $caBundlePem An optional custom CA bundle, PEM-encoded, to verify the peer against.
+	 */
+	public function __construct(
+		public readonly string $certificatePem,
+		public readonly string $privateKeyPem,
+		public readonly ?string $passphrase = null,
+		public readonly ?string $caBundlePem = null,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 }//end class

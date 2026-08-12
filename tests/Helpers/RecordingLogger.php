@@ -1,4 +1,5 @@
 <?php
+
 /**
  * A PSR-3 logger that records every line, so tests can assert no secret ever reaches it.
  *
@@ -34,39 +35,36 @@ use Psr\Log\AbstractLogger;
 /**
  * Records every log call for secret-leak assertions.
  */
-class RecordingLogger extends AbstractLogger
-{
+class RecordingLogger extends AbstractLogger {
 
-    /**
-     * Every line and context this logger was handed, flattened to a string.
-     *
-     * @var array<int, string>
-     */
-    public array $lines = [];
+	/**
+	 * Every line and context this logger was handed, flattened to a string.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $lines = [];
 
-    /**
-     * Record a log call.
-     *
-     * Untyped $message/$level to stay compatible with the PSR-3 version pinned here.
-     *
-     * @param mixed $level   The log level.
-     * @param mixed $message The message.
-     * @param array $context The context.
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context=[]): void
-    {
-        $this->lines[] = (string) $message.' '.json_encode($context);
-    }//end log()
+	/**
+	 * Record a log call.
+	 *
+	 * Untyped $message/$level to stay compatible with the PSR-3 version pinned here.
+	 *
+	 * @param mixed $level The log level.
+	 * @param mixed $message The message.
+	 * @param array $context The context.
+	 *
+	 * @return void
+	 */
+	public function log($level, $message, array $context = []): void {
+		$this->lines[] = (string)$message . ' ' . json_encode($context);
+	}//end log()
 
-    /**
-     * Every recorded line, joined — convenient for a single leak assertion.
-     *
-     * @return string The flattened log.
-     */
-    public function flatten(): string
-    {
-        return implode("\n", $this->lines);
-    }//end flatten()
+	/**
+	 * Every recorded line, joined — convenient for a single leak assertion.
+	 *
+	 * @return string The flattened log.
+	 */
+	public function flatten(): string {
+		return implode("\n", $this->lines);
+	}//end flatten()
 }//end class

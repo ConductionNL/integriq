@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -24,56 +25,56 @@
 
 $cloverPath = $argv[1] ?? (__DIR__ . '/../../coverage/clover.xml');
 
-$minLine   = (float) (getenv('COVERAGE_MIN_LINE') !== false ? getenv('COVERAGE_MIN_LINE') : 80);
-$minBranch = (float) (getenv('COVERAGE_MIN_BRANCH') !== false ? getenv('COVERAGE_MIN_BRANCH') : 70);
+$minLine = (float)(getenv('COVERAGE_MIN_LINE') !== false ? getenv('COVERAGE_MIN_LINE') : 80);
+$minBranch = (float)(getenv('COVERAGE_MIN_BRANCH') !== false ? getenv('COVERAGE_MIN_BRANCH') : 70);
 
 if (is_file($cloverPath) === false) {
-    fwrite(STDERR, "check:coverage: clover report not found at {$cloverPath}\n");
-    fwrite(STDERR, "check:coverage: run `composer test:coverage` first.\n");
-    exit(2);
+	fwrite(STDERR, "check:coverage: clover report not found at {$cloverPath}\n");
+	fwrite(STDERR, "check:coverage: run `composer test:coverage` first.\n");
+	exit(2);
 }
 
 $xml = @simplexml_load_file($cloverPath);
 if ($xml === false || isset($xml->project->metrics) === false) {
-    fwrite(STDERR, "check:coverage: could not parse clover metrics from {$cloverPath}\n");
-    exit(2);
+	fwrite(STDERR, "check:coverage: could not parse clover metrics from {$cloverPath}\n");
+	exit(2);
 }
 
 $metrics = $xml->project->metrics;
 
-$statements        = (int) $metrics['statements'];
-$coveredStatements = (int) $metrics['coveredstatements'];
-$conditionals        = (int) $metrics['conditionals'];
-$coveredConditionals = (int) $metrics['coveredconditionals'];
+$statements = (int)$metrics['statements'];
+$coveredStatements = (int)$metrics['coveredstatements'];
+$conditionals = (int)$metrics['conditionals'];
+$coveredConditionals = (int)$metrics['coveredconditionals'];
 
 $linePct = $statements > 0
-    ? round(($coveredStatements / $statements) * 100, 2)
-    : 100.0;
+	? round(($coveredStatements / $statements) * 100, 2)
+	: 100.0;
 
 // Branch coverage maps to clover's conditionals. When a codebase has no
 // conditionals at all, branch coverage is vacuously 100%.
 $branchPct = $conditionals > 0
-    ? round(($coveredConditionals / $conditionals) * 100, 2)
-    : 100.0;
+	? round(($coveredConditionals / $conditionals) * 100, 2)
+	: 100.0;
 
 printf("Line coverage:   %5.2f%% (min %.0f%%)\n", $linePct, $minLine);
 printf("Branch coverage: %5.2f%% (min %.0f%%)\n", $branchPct, $minBranch);
 
 $failures = [];
 if ($linePct < $minLine) {
-    $failures[] = sprintf('line coverage %.2f%% is below the %.0f%% threshold', $linePct, $minLine);
+	$failures[] = sprintf('line coverage %.2f%% is below the %.0f%% threshold', $linePct, $minLine);
 }
 
 if ($branchPct < $minBranch) {
-    $failures[] = sprintf('branch coverage %.2f%% is below the %.0f%% threshold', $branchPct, $minBranch);
+	$failures[] = sprintf('branch coverage %.2f%% is below the %.0f%% threshold', $branchPct, $minBranch);
 }
 
 if ($failures !== []) {
-    foreach ($failures as $failure) {
-        fwrite(STDERR, "check:coverage: FAIL — {$failure}\n");
-    }
+	foreach ($failures as $failure) {
+		fwrite(STDERR, "check:coverage: FAIL — {$failure}\n");
+	}
 
-    exit(1);
+	exit(1);
 }
 
 echo "check:coverage: PASS — both thresholds met\n";

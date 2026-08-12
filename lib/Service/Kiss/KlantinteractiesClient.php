@@ -93,417 +93,400 @@ use Throwable;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KlantinteractiesClient implements KlantinteractiesProviderInterface
-{
+class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 
-    /**
-     * Default `Authorization` header scheme (VNG/Common Ground convention).
-     *
-     * @var string
-     */
-    private const DEFAULT_AUTH_SCHEME = 'Token';
+	/**
+	 * Default `Authorization` header scheme (VNG/Common Ground convention).
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_AUTH_SCHEME = 'Token';
 
-    /**
-     * Default expand parameter — inline betrokkenen + onderwerpobjecten on every klantcontact pull.
-     *
-     * @var string
-     */
-    private const DEFAULT_EXPAND = 'betrokkenen,onderwerpobjecten';
+	/**
+	 * Default expand parameter — inline betrokkenen + onderwerpobjecten on every klantcontact pull.
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_EXPAND = 'betrokkenen,onderwerpobjecten';
 
-    /**
-     * Default `onderwerpobjectidentificator.codeRegister` (Zaakregistratiecomponent, i.e. OpenZaak).
-     *
-     * @var string
-     */
-    private const DEFAULT_CODE_REGISTER = 'ZRC';
+	/**
+	 * Default `onderwerpobjectidentificator.codeRegister` (Zaakregistratiecomponent, i.e. OpenZaak).
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_CODE_REGISTER = 'ZRC';
 
-    /**
-     * Default `onderwerpobjectidentificator.codeObjecttype` when the caller does not specify one.
-     *
-     * @var string
-     */
-    public const DEFAULT_CASE_OBJECT_TYPE = 'zaak';
+	/**
+	 * Default `onderwerpobjectidentificator.codeObjecttype` when the caller does not specify one.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_CASE_OBJECT_TYPE = 'zaak';
 
-    /**
-     * Constructor.
-     *
-     * @param Client          $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
-     * @param ICrypto         $crypto     Encrypts/decrypts the stored API token at rest.
-     * @param IL10N           $l          The localization service.
-     * @param LoggerInterface $logger     Logger for secret-free failure diagnostics.
-     */
-    public function __construct(
-        private readonly Client $httpClient,
-        private readonly ICrypto $crypto,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param Client $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
+	 * @param ICrypto $crypto Encrypts/decrypts the stored API token at rest.
+	 * @param IL10N $l The localization service.
+	 * @param LoggerInterface $logger Logger for secret-free failure diagnostics.
+	 */
+	public function __construct(
+		private readonly Client $httpClient,
+		private readonly ICrypto $crypto,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `rest` provider identifier.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function getProviderId(): string
-    {
-        return 'rest';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `rest` provider identifier.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function getProviderId(): string {
+		return 'rest';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> The KISS source configuration JSON Schema.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function getConfigSchema(): array {
+		return [
+			'type' => 'object',
+			'required' => ['authentication'],
+			'properties' => [
+				'baseUrl' => [
+					'type' => 'string',
+					'description' => 'KISS / VNG Klantinteracties API base URL (no trailing slash)',
+				],
+				'authentication' => [
+					'type' => 'object',
+					'required' => ['encryptedToken'],
+					'properties' => [
+						'encryptedToken' => [
+							'type' => 'string',
+							'description' => 'The KISS API token, encrypted at rest via OCP\\Security\\ICrypto — '
+								. 'never store the raw token.',
+						],
+						'scheme' => [
+							'type' => 'string',
+							'description' => 'Authorization header scheme.',
+							'default' => self::DEFAULT_AUTH_SCHEME,
+						],
+					],
+				],
+				'onderwerpobject' => [
+					'type' => 'object',
+					'description' => 'Overrides for the onderwerpobjectidentificator used when linking a case.',
+					'properties' => [
+						'codeRegister' => [
+							'type' => 'string',
+							'default' => self::DEFAULT_CODE_REGISTER,
+						],
+					],
+				],
+				'pageSize' => [
+					'type' => 'integer',
+					'description' => 'Klantcontacten pulled per sync sweep.',
+					'default' => 100,
+				],
+			],
+		];
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> The KISS source configuration JSON Schema.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function getConfigSchema(): array
-    {
-        return [
-            'type'       => 'object',
-            'required'   => ['authentication'],
-            'properties' => [
-                'baseUrl'         => [
-                    'type'        => 'string',
-                    'description' => 'KISS / VNG Klantinteracties API base URL (no trailing slash)',
-                ],
-                'authentication'  => [
-                    'type'       => 'object',
-                    'required'   => ['encryptedToken'],
-                    'properties' => [
-                        'encryptedToken' => [
-                            'type'        => 'string',
-                            'description' => 'The KISS API token, encrypted at rest via OCP\\Security\\ICrypto — '
-                                .'never store the raw token.',
-                        ],
-                        'scheme'         => [
-                            'type'        => 'string',
-                            'description' => 'Authorization header scheme.',
-                            'default'     => self::DEFAULT_AUTH_SCHEME,
-                        ],
-                    ],
-                ],
-                'onderwerpobject' => [
-                    'type'        => 'object',
-                    'description' => 'Overrides for the onderwerpobjectidentificator used when linking a case.',
-                    'properties'  => [
-                        'codeRegister' => [
-                            'type'    => 'string',
-                            'default' => self::DEFAULT_CODE_REGISTER,
-                        ],
-                    ],
-                ],
-                'pageSize'        => [
-                    'type'        => 'integer',
-                    'description' => 'Klantcontacten pulled per sync sweep.',
-                    'default'     => 100,
-                ],
-            ],
-        ];
+	}//end getConfigSchema()
 
-    }//end getConfigSchema()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 * @param string|null $since ISO 8601 lower bound (exclusive-by-convention via `__gte`
+	 *                           on a strictly-advancing cursor — see design.md "Cursor semantics").
+	 * @param integer $pageSize Maximum klantcontacten to return in this call.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null}
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array {
+		$query = [
+			'expand' => self::DEFAULT_EXPAND,
+			'sorteer' => 'registratiedatum',
+			'pageSize' => $pageSize,
+		];
+		if ($since !== null && $since !== '') {
+			$query['registratiedatum__gte'] = $since;
+		}
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array       $sourceConfiguration The KISS source's `configuration` object.
-     * @param string|null $since               ISO 8601 lower bound (exclusive-by-convention via `__gte`
-     *                                         on a strictly-advancing cursor — see design.md "Cursor semantics").
-     * @param integer     $pageSize            Maximum klantcontacten to return in this call.
-     *
-     * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null}
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array
-    {
-        $query = [
-            'expand'   => self::DEFAULT_EXPAND,
-            'sorteer'  => 'registratiedatum',
-            'pageSize' => $pageSize,
-        ];
-        if ($since !== null && $since !== '') {
-            $query['registratiedatum__gte'] = $since;
-        }
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			method: 'GET',
+			path: '/klantcontacten',
+			query: $query,
+			jsonBody: null
+		);
 
-        $response = $this->dispatch(
-            sourceConfiguration: $sourceConfiguration,
-            method: 'GET',
-            path: '/klantcontacten',
-            query: $query,
-            jsonBody: null
-        );
+		$decoded = json_decode($response, true);
+		$results = [];
+		if (is_array($decoded) === true) {
+			$results = ($decoded['results'] ?? $decoded);
+		}
 
-        $decoded = json_decode($response, true);
-        $results = [];
-        if (is_array($decoded) === true) {
-            $results = ($decoded['results'] ?? $decoded);
-        }
+		if (is_array($results) === false) {
+			throw new KissProviderException(
+				message: 'KISS returned a non-JSON-array response for the klantcontacten list.'
+			);
+		}
 
-        if (is_array($results) === false) {
-            throw new KissProviderException(
-                message: 'KISS returned a non-JSON-array response for the klantcontacten list.'
-            );
-        }
+		$results = array_values($results);
+		$nextCursor = null;
+		foreach ($results as $item) {
+			$registratiedatum = (string)($item['registratiedatum'] ?? '');
+			if ($registratiedatum !== '' && ($nextCursor === null || $registratiedatum > $nextCursor)) {
+				$nextCursor = $registratiedatum;
+			}
+		}
 
-        $results    = array_values($results);
-        $nextCursor = null;
-        foreach ($results as $item) {
-            $registratiedatum = (string) ($item['registratiedatum'] ?? '');
-            if ($registratiedatum !== '' && ($nextCursor === null || $registratiedatum > $nextCursor)) {
-                $nextCursor = $registratiedatum;
-            }
-        }
+		return ['items' => $results, 'nextCursor' => $nextCursor];
+	}//end listKlantcontacten()
 
-        return ['items' => $results, 'nextCursor' => $nextCursor];
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 * @param array $payload The klantcontact fields, plus an optional `betrokkene` sub-array.
+	 *
+	 * @return string The KISS-assigned klantcontact id (`uuid`).
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function createKlantcontact(array $sourceConfiguration, array $payload): string {
+		$betrokkene = ($payload['betrokkene'] ?? null);
+		unset($payload['betrokkene']);
 
-    }//end listKlantcontacten()
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			method: 'POST',
+			path: '/klantcontacten',
+			query: [],
+			jsonBody: $payload
+		);
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array $sourceConfiguration The KISS source's `configuration` object.
-     * @param array $payload             The klantcontact fields, plus an optional `betrokkene` sub-array.
-     *
-     * @return string The KISS-assigned klantcontact id (`uuid`).
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function createKlantcontact(array $sourceConfiguration, array $payload): string
-    {
-        $betrokkene = ($payload['betrokkene'] ?? null);
-        unset($payload['betrokkene']);
+		$klantcontactId = $this->extractId(response: $response, context: 'klantcontact');
 
-        $response = $this->dispatch(
-            sourceConfiguration: $sourceConfiguration,
-            method: 'POST',
-            path: '/klantcontacten',
-            query: [],
-            jsonBody: $payload
-        );
+		if (is_array($betrokkene) === true && $betrokkene !== []) {
+			// Best-effort: a klantcontact with no betrokkene is still a valid
+			// partial success, so a betrokkene-creation failure is logged, not
+			// propagated (the caller already has a usable klantcontact id).
+			try {
+				$betrokkene['klantcontact'] = ['uuid' => $klantcontactId];
+				$this->dispatch(
+					sourceConfiguration: $sourceConfiguration,
+					method: 'POST',
+					path: '/betrokkenen',
+					query: [],
+					jsonBody: $betrokkene
+				);
+			} catch (Throwable $exception) {
+				$this->logger->warning(
+					'[KlantinteractiesClient] betrokkene creation failed; klantcontact was still created',
+					['klantcontactId' => $klantcontactId, 'exception' => $exception->getMessage()]
+				);
+			}
+		}
 
-        $klantcontactId = $this->extractId(response: $response, context: 'klantcontact');
+		return $klantcontactId;
+	}//end createKlantcontact()
 
-        if (is_array($betrokkene) === true && $betrokkene !== []) {
-            // Best-effort: a klantcontact with no betrokkene is still a valid
-            // partial success, so a betrokkene-creation failure is logged, not
-            // propagated (the caller already has a usable klantcontact id).
-            try {
-                $betrokkene['klantcontact'] = ['uuid' => $klantcontactId];
-                $this->dispatch(
-                    sourceConfiguration: $sourceConfiguration,
-                    method: 'POST',
-                    path: '/betrokkenen',
-                    query: [],
-                    jsonBody: $betrokkene
-                );
-            } catch (Throwable $exception) {
-                $this->logger->warning(
-                    '[KlantinteractiesClient] betrokkene creation failed; klantcontact was still created',
-                    ['klantcontactId' => $klantcontactId, 'exception' => $exception->getMessage()]
-                );
-            }
-        }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 * @param string $klantcontactId The KISS klantcontact id to attach the link to.
+	 * @param string $caseReference The case identifier (bare UUID or zaak identificatie).
+	 * @param string $caseObjectType The onderwerpobjectidentificator `codeObjecttype`.
+	 *
+	 * @return string The KISS-assigned onderwerpobject id (`uuid`).
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function linkOnderwerpobject(
+		array $sourceConfiguration,
+		string $klantcontactId,
+		string $caseReference,
+		string $caseObjectType,
+	): string {
+		$codeRegister = (string)($sourceConfiguration['onderwerpobject']['codeRegister'] ?? self::DEFAULT_CODE_REGISTER);
 
-        return $klantcontactId;
+		$payload = [
+			'klantcontact' => ['uuid' => $klantcontactId],
+			'onderwerpobjectidentificator' => [
+				'objectId' => $caseReference,
+				'codeObjecttype' => $caseObjectType,
+				'codeRegister' => $codeRegister,
+				'codeSoortObjectId' => $this->resolveSoortObjectId(caseReference: $caseReference),
+			],
+		];
 
-    }//end createKlantcontact()
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			method: 'POST',
+			path: '/onderwerpobjecten',
+			query: [],
+			jsonBody: $payload
+		);
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration The KISS source's `configuration` object.
-     * @param string $klantcontactId      The KISS klantcontact id to attach the link to.
-     * @param string $caseReference       The case identifier (bare UUID or zaak identificatie).
-     * @param string $caseObjectType      The onderwerpobjectidentificator `codeObjecttype`.
-     *
-     * @return string The KISS-assigned onderwerpobject id (`uuid`).
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function linkOnderwerpobject(
-        array $sourceConfiguration,
-        string $klantcontactId,
-        string $caseReference,
-        string $caseObjectType
-    ): string {
-        $codeRegister = (string) ($sourceConfiguration['onderwerpobject']['codeRegister'] ?? self::DEFAULT_CODE_REGISTER);
+		return $this->extractId(response: $response, context: 'onderwerpobject');
+	}//end linkOnderwerpobject()
 
-        $payload = [
-            'klantcontact'                 => ['uuid' => $klantcontactId],
-            'onderwerpobjectidentificator' => [
-                'objectId'          => $caseReference,
-                'codeObjecttype'    => $caseObjectType,
-                'codeRegister'      => $codeRegister,
-                'codeSoortObjectId' => $this->resolveSoortObjectId(caseReference: $caseReference),
-            ],
-        ];
+	/**
+	 * Classify a case reference as a UUID or a free-form identificatie, for
+	 * `onderwerpobjectidentificator.codeSoortObjectId`.
+	 *
+	 * @param string $caseReference The case identifier.
+	 *
+	 * @return string `UUID` when the reference is RFC-4122-shaped, `IDENTIFICATIE` otherwise.
+	 */
+	private function resolveSoortObjectId(string $caseReference): string {
+		$isUuid = (preg_match(
+			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+			$caseReference
+		) === 1);
 
-        $response = $this->dispatch(
-            sourceConfiguration: $sourceConfiguration,
-            method: 'POST',
-            path: '/onderwerpobjecten',
-            query: [],
-            jsonBody: $payload
-        );
+		if ($isUuid === true) {
+			return 'UUID';
+		}
 
-        return $this->extractId(response: $response, context: 'onderwerpobject');
+		return 'IDENTIFICATIE';
+	}//end resolveSoortObjectId()
 
-    }//end linkOnderwerpobject()
+	/**
+	 * Extract the `uuid` (falling back to `id`) from a created-resource response body.
+	 *
+	 * @param string $response The raw response body.
+	 * @param string $context Human-readable resource name for the error message.
+	 *
+	 * @return string The extracted id.
+	 *
+	 * @throws KissProviderException When no usable id is present.
+	 */
+	private function extractId(string $response, string $context): string {
+		$decoded = json_decode($response, true);
+		$id = null;
+		if (is_array($decoded) === true) {
+			$id = ($decoded['uuid'] ?? ($decoded['id'] ?? null));
+		}
 
-    /**
-     * Classify a case reference as a UUID or a free-form identificatie, for
-     * `onderwerpobjectidentificator.codeSoortObjectId`.
-     *
-     * @param string $caseReference The case identifier.
-     *
-     * @return string `UUID` when the reference is RFC-4122-shaped, `IDENTIFICATIE` otherwise.
-     */
-    private function resolveSoortObjectId(string $caseReference): string
-    {
-        $isUuid = (preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $caseReference
-        ) === 1);
+		if (is_string($id) === false || $id === '') {
+			throw new KissProviderException(
+				message: 'KISS accepted the ' . $context . ' request but returned no usable id.'
+			);
+		}
 
-        if ($isUuid === true) {
-            return 'UUID';
-        }
+		return $id;
+	}//end extractId()
 
-        return 'IDENTIFICATIE';
+	/**
+	 * Dispatch one token-authenticated request and return its raw body,
+	 * mapping every failure mode to a secret-free {@see KissProviderException}
+	 * — never a 500 crash.
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 * @param string $method The HTTP method.
+	 * @param string $path The API path (relative to `configuration.baseUrl`).
+	 * @param array $query Query string parameters.
+	 * @param array|null $jsonBody Optional JSON request body.
+	 *
+	 * @return string The response body.
+	 *
+	 * @throws KissProviderException On any configuration, transport, or upstream error.
+	 */
+	private function dispatch(array $sourceConfiguration, string $method, string $path, array $query, ?array $jsonBody): string {
+		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if ($baseUrl === '') {
+			throw new KissProviderException(
+				message: $this->l->t('KISS base URL missing') . ': `configuration.baseUrl` is required.'
+			);
+		}
 
-    }//end resolveSoortObjectId()
+		$url = $baseUrl . $path;
 
-    /**
-     * Extract the `uuid` (falling back to `id`) from a created-resource response body.
-     *
-     * @param string $response The raw response body.
-     * @param string $context  Human-readable resource name for the error message.
-     *
-     * @return string The extracted id.
-     *
-     * @throws KissProviderException When no usable id is present.
-     */
-    private function extractId(string $response, string $context): string
-    {
-        $decoded = json_decode($response, true);
-        $id      = null;
-        if (is_array($decoded) === true) {
-            $id = ($decoded['uuid'] ?? ($decoded['id'] ?? null));
-        }
+		$requestOptions = [
+			'headers' => [
+				'Authorization' => $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration),
+				'Content-Type' => 'application/json',
+				'Accept' => 'application/json',
+			],
+			'http_errors' => false,
+		];
+		if ($query !== []) {
+			$requestOptions['query'] = $query;
+		}
 
-        if (is_string($id) === false || $id === '') {
-            throw new KissProviderException(
-                message: 'KISS accepted the '.$context.' request but returned no usable id.'
-            );
-        }
+		if ($jsonBody !== null) {
+			$requestOptions['json'] = $jsonBody;
+		}
 
-        return $id;
+		try {
+			$response = $this->httpClient->request($method, $url, $requestOptions);
+		} catch (GuzzleException $exception) {
+			$this->logger->warning(
+				'[KlantinteractiesClient] unexpected transport failure',
+				['exception' => $exception->getMessage()]
+			);
+			throw new KissProviderException(
+				message: 'The KISS request failed unexpectedly: ' . $exception->getMessage(),
+				previous: $exception
+			);
+		}
 
-    }//end extractId()
+		$status = $response->getStatusCode();
+		$body = (string)$response->getBody();
+		if ($status < 200 || $status >= 300) {
+			throw new KissProviderException(message: 'KISS responded with HTTP ' . $status . '.');
+		}
 
-    /**
-     * Dispatch one token-authenticated request and return its raw body,
-     * mapping every failure mode to a secret-free {@see KissProviderException}
-     * — never a 500 crash.
-     *
-     * @param array      $sourceConfiguration The KISS source's `configuration` object.
-     * @param string     $method              The HTTP method.
-     * @param string     $path                The API path (relative to `configuration.baseUrl`).
-     * @param array      $query               Query string parameters.
-     * @param array|null $jsonBody            Optional JSON request body.
-     *
-     * @return string The response body.
-     *
-     * @throws KissProviderException On any configuration, transport, or upstream error.
-     */
-    private function dispatch(array $sourceConfiguration, string $method, string $path, array $query, ?array $jsonBody): string
-    {
-        $baseUrl = rtrim((string) ($sourceConfiguration['baseUrl'] ?? ''), '/');
-        if ($baseUrl === '') {
-            throw new KissProviderException(
-                message: $this->l->t('KISS base URL missing').': `configuration.baseUrl` is required.'
-            );
-        }
+		return $body;
+	}//end dispatch()
 
-        $url = $baseUrl.$path;
+	/**
+	 * Build the per-request `Authorization: <scheme> <token>` header value.
+	 *
+	 * Decrypts `configuration.authentication.encryptedToken` (never logged,
+	 * never persisted decrypted).
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 *
+	 * @return string The Authorization header value.
+	 *
+	 * @throws KissProviderException When the credential is missing or undecryptable.
+	 */
+	private function buildAuthorizationHeader(array $sourceConfiguration): string {
+		$encrypted = (string)($sourceConfiguration['authentication']['encryptedToken'] ?? '');
+		if ($encrypted === '') {
+			throw new KissProviderException(
+				message: $this->l->t('KISS credential missing') . ': `configuration.authentication.encryptedToken` '
+					. 'is required. No plaintext-token fallback is permitted.'
+			);
+		}
 
-        $requestOptions = [
-            'headers'     => [
-                'Authorization' => $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration),
-                'Content-Type'  => 'application/json',
-                'Accept'        => 'application/json',
-            ],
-            'http_errors' => false,
-        ];
-        if ($query !== []) {
-            $requestOptions['query'] = $query;
-        }
+		try {
+			$token = $this->crypto->decrypt($encrypted);
+		} catch (Throwable $exception) {
+			throw new KissProviderException(
+				message: 'The stored KISS API token could not be decrypted: ' . $exception->getMessage()
+			);
+		}
 
-        if ($jsonBody !== null) {
-            $requestOptions['json'] = $jsonBody;
-        }
+		$scheme = (string)($sourceConfiguration['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
 
-        try {
-            $response = $this->httpClient->request($method, $url, $requestOptions);
-        } catch (GuzzleException $exception) {
-            $this->logger->warning(
-                '[KlantinteractiesClient] unexpected transport failure',
-                ['exception' => $exception->getMessage()]
-            );
-            throw new KissProviderException(
-                message: 'The KISS request failed unexpectedly: '.$exception->getMessage(),
-                previous: $exception
-            );
-        }
-
-        $status = $response->getStatusCode();
-        $body   = (string) $response->getBody();
-        if ($status < 200 || $status >= 300) {
-            throw new KissProviderException(message: 'KISS responded with HTTP '.$status.'.');
-        }
-
-        return $body;
-
-    }//end dispatch()
-
-    /**
-     * Build the per-request `Authorization: <scheme> <token>` header value.
-     *
-     * Decrypts `configuration.authentication.encryptedToken` (never logged,
-     * never persisted decrypted).
-     *
-     * @param array $sourceConfiguration The KISS source's `configuration` object.
-     *
-     * @return string The Authorization header value.
-     *
-     * @throws KissProviderException When the credential is missing or undecryptable.
-     */
-    private function buildAuthorizationHeader(array $sourceConfiguration): string
-    {
-        $encrypted = (string) ($sourceConfiguration['authentication']['encryptedToken'] ?? '');
-        if ($encrypted === '') {
-            throw new KissProviderException(
-                message: $this->l->t('KISS credential missing').': `configuration.authentication.encryptedToken` '
-                    .'is required. No plaintext-token fallback is permitted.'
-            );
-        }
-
-        try {
-            $token = $this->crypto->decrypt($encrypted);
-        } catch (Throwable $exception) {
-            throw new KissProviderException(
-                message: 'The stored KISS API token could not be decrypted: '.$exception->getMessage()
-            );
-        }
-
-        $scheme = (string) ($sourceConfiguration['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
-
-        return $scheme.' '.$token;
-
-    }//end buildAuthorizationHeader()
+		return $scheme . ' ' . $token;
+	}//end buildAuthorizationHeader()
 }//end class

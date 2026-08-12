@@ -21,32 +21,29 @@ namespace OCA\OpenRegister\Service\Integration;
 /**
  * Minimal stub for OCA\OpenRegister\Service\Integration\IntegrationRegistry.
  */
-class IntegrationRegistry
-{
-    /**
-     * @var array<int, IntegrationProvider>
-     */
-    private array $providers = [];
+class IntegrationRegistry {
+	/**
+	 * @var array<int, IntegrationProvider>
+	 */
+	private array $providers = [];
 
-    /**
-     * Replace the entire provider set (test seam, mirrors the real class).
-     *
-     * @param array<int, IntegrationProvider> $providers Provider instances.
-     *
-     * @return void
-     */
-    public function withProviders(array $providers): void
-    {
-        $this->providers = $providers;
-    }
+	/**
+	 * Replace the entire provider set (test seam, mirrors the real class).
+	 *
+	 * @param array<int, IntegrationProvider> $providers Provider instances.
+	 *
+	 * @return void
+	 */
+	public function withProviders(array $providers): void {
+		$this->providers = $providers;
+	}
 
-    /**
-     * List every registered provider.
-     *
-     * @return array<int, IntegrationProvider>
-     */
-    public function list(): array
-    {
-        return $this->providers;
-    }
+	/**
+	 * List every registered provider.
+	 *
+	 * @return array<int, IntegrationProvider>
+	 */
+	public function list(): array {
+		return $this->providers;
+	}
 }

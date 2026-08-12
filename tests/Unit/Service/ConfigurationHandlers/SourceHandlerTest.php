@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for SourceHandler export redaction (secret-hygiene).
  *
@@ -23,132 +24,123 @@ use PHPUnit\Framework\TestCase;
  * TC-3 — SourceHandler::export() redacts nested configuration secrets via the
  * shared registry while keeping its unchanged top-level unset() behaviour.
  */
-class SourceHandlerTest extends TestCase
-{
+class SourceHandlerTest extends TestCase {
 
-    /**
-     * @var SourceHandler
-     */
-    private SourceHandler $handler;
+	/**
+	 * @var SourceHandler
+	 */
+	private SourceHandler $handler;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->handler = new SourceHandler(
+			ObjectServiceMockBuilder::make($this),
+			new SensitiveFieldRegistry(),
+		);
+	}//end setUp()
 
-        $this->handler = new SourceHandler(
-            ObjectServiceMockBuilder::make($this),
-            new SensitiveFieldRegistry(),
-        );
-    }//end setUp()
+	/**
+	 * TC-3 — top-level `apikey`/`secret` stay absent (unchanged unset()
+	 * behaviour) while the nested `configuration.headers.Authorization` is
+	 * MASKED to ***REDACTED*** by the shared registry (replacing the old ad
+	 * hoc str_contains substring check that unset the key entirely).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function testExportUnsetsTopLevelSecretsAndMasksNestedConfiguration(): void {
+		$source = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'my-source',
+				'name' => 'My Source',
+				'apikey' => 'live_xyz',
+				'secret' => 's3cr3t',
+				'configuration' => [
+					'headers.Authorization' => 'Bearer abc',
+					'headers.Accept' => 'application/json',
+				],
+			],
+			'source-uuid-1'
+		);
 
+		$export = $this->handler->export($source, []);
 
-    /**
-     * TC-3 — top-level `apikey`/`secret` stay absent (unchanged unset()
-     * behaviour) while the nested `configuration.headers.Authorization` is
-     * MASKED to ***REDACTED*** by the shared registry (replacing the old ad
-     * hoc str_contains substring check that unset the key entirely).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
-     */
-    public function testExportUnsetsTopLevelSecretsAndMasksNestedConfiguration(): void
-    {
-        $source = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'slug'          => 'my-source',
-                'name'          => 'My Source',
-                'apikey'        => 'live_xyz',
-                'secret'        => 's3cr3t',
-                'configuration' => [
-                    'headers.Authorization' => 'Bearer abc',
-                    'headers.Accept'        => 'application/json',
-                ],
-            ],
-            'source-uuid-1'
-        );
+		// Top-level exact-match fields removed entirely (unchanged behaviour).
+		$this->assertArrayNotHasKey('apikey', $export);
+		$this->assertArrayNotHasKey('secret', $export);
 
-        $export = $this->handler->export($source, []);
+		// Nested configuration secret masked, not omitted (new registry behaviour).
+		$this->assertSame('***REDACTED***', $export['configuration']['headers.Authorization']);
 
-        // Top-level exact-match fields removed entirely (unchanged behaviour).
-        $this->assertArrayNotHasKey('apikey', $export);
-        $this->assertArrayNotHasKey('secret', $export);
+		// No plaintext secret survives anywhere in the export.
+		$this->assertStringNotContainsString('live_xyz', json_encode($export));
+		$this->assertStringNotContainsString('s3cr3t', json_encode($export));
+		$this->assertStringNotContainsString('Bearer abc', json_encode($export));
+	}//end testExportUnsetsTopLevelSecretsAndMasksNestedConfiguration()
 
-        // Nested configuration secret masked, not omitted (new registry behaviour).
-        $this->assertSame('***REDACTED***', $export['configuration']['headers.Authorization']);
+	/**
+	 * TC-3 — a non-sensitive configuration header (`headers.Accept`) is
+	 * retained unmodified.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function testExportRetainsNonSensitiveHeaders(): void {
+		$source = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'my-source',
+				'configuration' => ['headers.Accept' => 'application/json'],
+			],
+			'source-uuid-2'
+		);
 
-        // No plaintext secret survives anywhere in the export.
-        $this->assertStringNotContainsString('live_xyz', json_encode($export));
-        $this->assertStringNotContainsString('s3cr3t', json_encode($export));
-        $this->assertStringNotContainsString('Bearer abc', json_encode($export));
-    }//end testExportUnsetsTopLevelSecretsAndMasksNestedConfiguration()
+		$export = $this->handler->export($source, []);
 
+		$this->assertSame('application/json', $export['configuration']['headers.Accept']);
+	}//end testExportRetainsNonSensitiveHeaders()
 
-    /**
-     * TC-3 — a non-sensitive configuration header (`headers.Accept`) is
-     * retained unmodified.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
-     */
-    public function testExportRetainsNonSensitiveHeaders(): void
-    {
-        $source = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'slug'          => 'my-source',
-                'configuration' => ['headers.Accept' => 'application/json'],
-            ],
-            'source-uuid-2'
-        );
+	/**
+	 * environments-and-promotion REQ-010 regression — a Source's
+	 * `configuration.authentication.credentialRef` placeholder passes
+	 * through export byte-for-byte unchanged: neither `credentialId` nor
+	 * `credentialName` matches `SensitiveFieldRegistry::SECRET_NAME_PATTERN`/
+	 * `EXACT_MATCH_NAMES`, so `redactArray()` never touches it. Pins this
+	 * previously-undocumented behaviour, which `environments-and-promotion`'s
+	 * promotion-specific `credentialRefsNeedingRebind` classification relies on.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-credentialref-authentication-placeholders-pass-through-export-and-import-unresolved-and-untranslated-req-010
+	 */
+	public function testExportLeavesCredentialRefPlaceholderUnredacted(): void {
+		$source = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'my-api-source',
+				'configuration' => [
+					'authentication' => [
+						'credentialRef' => ['credentialId' => '550e8400-e29b-41d4-a716-446655440000'],
+					],
+				],
+			],
+			'source-uuid-3'
+		);
 
-        $export = $this->handler->export($source, []);
+		$export = $this->handler->export($source, []);
 
-        $this->assertSame('application/json', $export['configuration']['headers.Accept']);
-    }//end testExportRetainsNonSensitiveHeaders()
-
-
-    /**
-     * environments-and-promotion REQ-010 regression — a Source's
-     * `configuration.authentication.credentialRef` placeholder passes
-     * through export byte-for-byte unchanged: neither `credentialId` nor
-     * `credentialName` matches `SensitiveFieldRegistry::SECRET_NAME_PATTERN`/
-     * `EXACT_MATCH_NAMES`, so `redactArray()` never touches it. Pins this
-     * previously-undocumented behaviour, which `environments-and-promotion`'s
-     * promotion-specific `credentialRefsNeedingRebind` classification relies on.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/configuration-export-import/spec.md#requirement-credentialref-authentication-placeholders-pass-through-export-and-import-unresolved-and-untranslated-req-010
-     */
-    public function testExportLeavesCredentialRefPlaceholderUnredacted(): void
-    {
-        $source = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'slug'          => 'my-api-source',
-                'configuration' => [
-                    'authentication' => [
-                        'credentialRef' => ['credentialId' => '550e8400-e29b-41d4-a716-446655440000'],
-                    ],
-                ],
-            ],
-            'source-uuid-3'
-        );
-
-        $export = $this->handler->export($source, []);
-
-        $this->assertSame(
-            '550e8400-e29b-41d4-a716-446655440000',
-            $export['configuration']['authentication']['credentialRef']['credentialId']
-        );
-    }//end testExportLeavesCredentialRefPlaceholderUnredacted()
+		$this->assertSame(
+			'550e8400-e29b-41d4-a716-446655440000',
+			$export['configuration']['authentication']['credentialRef']['credentialId']
+		);
+	}//end testExportLeavesCredentialRefPlaceholderUnredacted()
 }//end class

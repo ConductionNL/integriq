@@ -39,6 +39,5 @@ use Exception;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
-class DsoTranslationException extends Exception
-{
+class DsoTranslationException extends Exception {
 }//end class

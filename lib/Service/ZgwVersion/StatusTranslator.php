@@ -32,67 +32,60 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class StatusTranslator extends AbstractZgwResourceTranslator
-{
+class StatusTranslator extends AbstractZgwResourceTranslator {
 
-    /**
-     * Fields procest's own `LoadDefaultZgwMappings::getStatusMapping()`
-     * always emits and this translator treats as mandatory on both sides.
-     *
-     * @var string[]
-     */
-    private const REQUIRED_FIELDS = [
-        'url',
-        'uuid',
-        'zaak',
-        'statustype',
-        'datumStatusGezet',
-    ];
+	/**
+	 * Fields procest's own `LoadDefaultZgwMappings::getStatusMapping()`
+	 * always emits and this translator treats as mandatory on both sides.
+	 *
+	 * @var string[]
+	 */
+	private const REQUIRED_FIELDS = [
+		'url',
+		'uuid',
+		'zaak',
+		'statustype',
+		'datumStatusGezet',
+	];
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The resource slug.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function getResource(): string
-    {
-        return 'status';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The resource slug.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function getResource(): string {
+		return 'status';
+	}//end getResource()
 
-    }//end getResource()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.6`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV16(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.6`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV16(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
+		return $payload;
+	}//end translateToV16()
 
-        return $payload;
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.0`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV1x(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    }//end translateToV16()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.0`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV1x(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-
-        return $payload;
-
-    }//end translateToV1x()
+		return $payload;
+	}//end translateToV1x()
 }//end class

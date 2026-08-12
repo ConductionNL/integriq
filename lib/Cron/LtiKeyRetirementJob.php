@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector LTI Key Retirement Job.
  *
@@ -41,62 +42,60 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
  */
-class LtiKeyRetirementJob extends TimedJob
-{
+class LtiKeyRetirementJob extends TimedJob {
 
-    /**
-     * Sweep interval in seconds (1 hour — the grace window is 7 days, so
-     * hourly resolution is more than sufficient).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 3600;
+	/**
+	 * Sweep interval in seconds (1 hour — the grace window is 7 days, so
+	 * hourly resolution is more than sufficient).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 3600;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory    $time       Time factory for job scheduling.
-     * @param LtiKeyService   $keyService The LTI key lifecycle service.
-     * @param LoggerInterface $logger     Logger for sweep outcomes and containment.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly LtiKeyService $keyService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param LtiKeyService $keyService The LTI key lifecycle service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly LtiKeyService $keyService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
-        $this->setAllowParallelRuns(allow: false);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the retirement sweep.
-     *
-     * A single poisoned registration must never wedge the cron pipeline, so
-     * any exception from the sweep is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $retired = $this->keyService->retireExpiredKeys();
-            $this->logger->info('LtiKeyRetirementJob: retirement sweep complete', ['retired' => $retired]);
-        } catch (Throwable $e) {
-            $this->logger->error('LtiKeyRetirementJob: retirement sweep failed: '.$e->getMessage(), ['exception' => $e]);
-        }
+	/**
+	 * Execute the retirement sweep.
+	 *
+	 * A single poisoned registration must never wedge the cron pipeline, so
+	 * any exception from the sweep is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$retired = $this->keyService->retireExpiredKeys();
+			$this->logger->info('LtiKeyRetirementJob: retirement sweep complete', ['retired' => $retired]);
+		} catch (Throwable $e) {
+			$this->logger->error('LtiKeyRetirementJob: retirement sweep failed: ' . $e->getMessage(), ['exception' => $e]);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

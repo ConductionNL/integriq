@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector LTI Validation Exception.
  *
@@ -33,40 +34,36 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiValidationException extends AuthenticationException
-{
+class LtiValidationException extends AuthenticationException {
 
-    /**
-     * The HTTP status code the controller layer MUST return for this failure.
-     *
-     * @var integer
-     */
-    private int $httpStatus;
+	/**
+	 * The HTTP status code the controller layer MUST return for this failure.
+	 *
+	 * @var integer
+	 */
+	private int $httpStatus;
 
-    /**
-     * Constructor.
-     *
-     * @param string  $message    The exception message (never includes raw key material).
-     * @param array   $details    Details describing why validation failed.
-     * @param integer $httpStatus The HTTP status code to surface (400, 401, or 403).
-     */
-    public function __construct(string $message, array $details=[], int $httpStatus=401)
-    {
-        parent::__construct(message: $message, details: $details);
-        $this->httpStatus = $httpStatus;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message The exception message (never includes raw key material).
+	 * @param array $details Details describing why validation failed.
+	 * @param integer $httpStatus The HTTP status code to surface (400, 401, or 403).
+	 */
+	public function __construct(string $message, array $details = [], int $httpStatus = 401) {
+		parent::__construct(message: $message, details: $details);
+		$this->httpStatus = $httpStatus;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the HTTP status this failure MUST be surfaced as.
-     *
-     * @return integer
-     *
-     * @spec openspec/specs/lti-platform/spec.md
-     */
-    public function getHttpStatus(): int
-    {
-        return $this->httpStatus;
-
-    }//end getHttpStatus()
+	/**
+	 * Get the HTTP status this failure MUST be surfaced as.
+	 *
+	 * @return integer
+	 *
+	 * @spec openspec/specs/lti-platform/spec.md
+	 */
+	public function getHttpStatus(): int {
+		return $this->httpStatus;
+	}//end getHttpStatus()
 }//end class

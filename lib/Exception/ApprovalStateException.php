@@ -35,31 +35,31 @@ use Throwable;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class ApprovalStateException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $message    Human-readable reason.
-     * @param integer        $httpStatus The HTTP status the controller should return (404 or 409).
-     * @param Throwable|null $previous   Previous exception, if any.
-     */
-    public function __construct(string $message, private readonly int $httpStatus=409, ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
+class ApprovalStateException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable reason.
+	 * @param integer $httpStatus The HTTP status the controller should return (404 or 409).
+	 * @param Throwable|null $previous Previous exception, if any.
+	 */
+	public function __construct(
+		string $message,
+		private readonly int $httpStatus = 409,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The HTTP status the controller should map this failure to.
-     *
-     * @return integer
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function getHttpStatus(): int
-    {
-        return $this->httpStatus;
-
-    }//end getHttpStatus()
+	/**
+	 * The HTTP status the controller should map this failure to.
+	 *
+	 * @return integer
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function getHttpStatus(): int {
+		return $this->httpStatus;
+	}//end getHttpStatus()
 }//end class

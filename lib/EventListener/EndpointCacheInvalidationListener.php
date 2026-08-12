@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector EndpointCacheInvalidation EventListener.
  *
@@ -44,101 +45,96 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class EndpointCacheInvalidationListener implements IEventListener
-{
+class EndpointCacheInvalidationListener implements IEventListener {
 
-    /**
-     * Register slug that holds OpenConnector endpoint objects.
-     */
-    private const ENDPOINT_REGISTER_SLUG = 'openconnector';
+	/**
+	 * Register slug that holds OpenConnector endpoint objects.
+	 */
+	private const ENDPOINT_REGISTER_SLUG = 'openconnector';
 
-    /**
-     * Schema slug of endpoint objects.
-     */
-    private const ENDPOINT_SCHEMA_SLUG = 'endpoint';
+	/**
+	 * Schema slug of endpoint objects.
+	 */
+	private const ENDPOINT_SCHEMA_SLUG = 'endpoint';
 
-    /**
-     * Constructor.
-     *
-     * @param EndpointCacheService $endpointCacheService Cache to invalidate.
-     * @param RegisterMapper       $registerMapper       Resolves an object's register slug.
-     * @param SchemaMapper         $schemaMapper         Resolves an object's schema slug.
-     * @param LoggerInterface      $logger               Logger for resolution failures.
-     */
-    public function __construct(
-        private readonly EndpointCacheService $endpointCacheService,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EndpointCacheService $endpointCacheService Cache to invalidate.
+	 * @param RegisterMapper $registerMapper Resolves an object's register slug.
+	 * @param SchemaMapper $schemaMapper Resolves an object's schema slug.
+	 * @param LoggerInterface $logger Logger for resolution failures.
+	 */
+	public function __construct(
+		private readonly EndpointCacheService $endpointCacheService,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired OR object event.
-     *
-     * @param Event $event Event payload to handle.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        $object = $this->resolveObject(event: $event);
-        if ($object === null) {
-            return;
-        }
+	/**
+	 * Handle a fired OR object event.
+	 *
+	 * @param Event $event Event payload to handle.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		$object = $this->resolveObject(event: $event);
+		if ($object === null) {
+			return;
+		}
 
-        if ($this->isEndpointObject(object: $object) === false) {
-            return;
-        }
+		if ($this->isEndpointObject(object: $object) === false) {
+			return;
+		}
 
-        $this->endpointCacheService->clearCache();
+		$this->endpointCacheService->clearCache();
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Extract the affected ObjectEntity from a create/update/delete event.
-     *
-     * @param Event $event The fired event.
-     *
-     * @return ObjectEntity|null The affected object, or null when not relevant.
-     */
-    private function resolveObject(Event $event): ?ObjectEntity
-    {
-        if ($event instanceof ObjectUpdatedEvent === true) {
-            return $event->getNewObject();
-        }
+	/**
+	 * Extract the affected ObjectEntity from a create/update/delete event.
+	 *
+	 * @param Event $event The fired event.
+	 *
+	 * @return ObjectEntity|null The affected object, or null when not relevant.
+	 */
+	private function resolveObject(Event $event): ?ObjectEntity {
+		if ($event instanceof ObjectUpdatedEvent === true) {
+			return $event->getNewObject();
+		}
 
-        if ($event instanceof ObjectCreatedEvent === true
-            || $event instanceof ObjectDeletedEvent === true
-        ) {
-            return $event->getObject();
-        }
+		if ($event instanceof ObjectCreatedEvent === true
+			|| $event instanceof ObjectDeletedEvent === true
+		) {
+			return $event->getObject();
+		}
 
-        return null;
+		return null;
+	}//end resolveObject()
 
-    }//end resolveObject()
+	/**
+	 * Determine whether the object is an OpenConnector endpoint object.
+	 *
+	 * @param ObjectEntity $object The object to classify.
+	 *
+	 * @return bool True when the object is an endpoint definition.
+	 */
+	private function isEndpointObject(ObjectEntity $object): bool {
+		try {
+			$registerSlug = $this->registerMapper->find($object->getRegister())->getSlug();
+			$schemaSlug = $this->schemaMapper->find($object->getSchema())->getSlug();
+		} catch (\Throwable $e) {
+			// Unresolvable register/schema — not an endpoint we can act on.
+			$this->logger->debug('EndpointCacheInvalidation: could not resolve register/schema slug: ' . $e->getMessage());
+			return false;
+		}
 
-    /**
-     * Determine whether the object is an OpenConnector endpoint object.
-     *
-     * @param ObjectEntity $object The object to classify.
-     *
-     * @return bool True when the object is an endpoint definition.
-     */
-    private function isEndpointObject(ObjectEntity $object): bool
-    {
-        try {
-            $registerSlug = $this->registerMapper->find($object->getRegister())->getSlug();
-            $schemaSlug   = $this->schemaMapper->find($object->getSchema())->getSlug();
-        } catch (\Throwable $e) {
-            // Unresolvable register/schema — not an endpoint we can act on.
-            $this->logger->debug('EndpointCacheInvalidation: could not resolve register/schema slug: '.$e->getMessage());
-            return false;
-        }
+		return $registerSlug === self::ENDPOINT_REGISTER_SLUG
+			&& $schemaSlug === self::ENDPOINT_SCHEMA_SLUG;
 
-        return $registerSlug === self::ENDPOINT_REGISTER_SLUG
-            && $schemaSlug === self::ENDPOINT_SCHEMA_SLUG;
-
-    }//end isEndpointObject()
+	}//end isEndpointObject()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector iWMO/iJW Retry Job.
  *
@@ -43,74 +44,72 @@ use Throwable;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
  */
-class IwmoIjwRetryJob extends TimedJob
-{
+class IwmoIjwRetryJob extends TimedJob {
 
-    /**
-     * Default sweep interval in seconds (1 hour).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 3600;
+	/**
+	 * Default sweep interval in seconds (1 hour).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 3600;
 
-    /**
-     * IwmoIjwRetryJob constructor.
-     *
-     * @param ITimeFactory       $time        Time factory for job scheduling.
-     * @param IwmoIjwSyncService $syncService The iWMO/iJW sync service.
-     * @param LoggerInterface    $logger      Logger for sweep outcomes and containment.
-     *
-     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly IwmoIjwSyncService $syncService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * IwmoIjwRetryJob constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param IwmoIjwSyncService $syncService The iWMO/iJW sync service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 *
+	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly IwmoIjwSyncService $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-        // Retries are not strictly time-sensitive.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Retries are not strictly time-sensitive.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only one sweep at a time to avoid double-retrying the same row.
-        $this->setAllowParallelRuns(allow: false);
+		// Only one sweep at a time to avoid double-retrying the same row.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the iWMO/iJW retry sweep.
-     *
-     * A single failing message must never wedge the cron pipeline — the
-     * service already contains per-message failures, and any sweep-level
-     * exception is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $retried = $this->syncService->retryFailed();
-            $this->logger->info(
-                'IwmoIjwRetryJob: retry sweep complete',
-                ['retried' => $retried]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'IwmoIjwRetryJob: retry sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the iWMO/iJW retry sweep.
+	 *
+	 * A single failing message must never wedge the cron pipeline — the
+	 * service already contains per-message failures, and any sweep-level
+	 * exception is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$retried = $this->syncService->retryFailed();
+			$this->logger->info(
+				'IwmoIjwRetryJob: retry sweep complete',
+				['retried' => $retried]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'IwmoIjwRetryJob: retry sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

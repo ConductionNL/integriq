@@ -36,16 +36,14 @@ use Exception;
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-form-and-question-discovery-for-the-synchronizationrule-editor-req-005
  */
-class FormsUpstreamException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message Human-readable, secret-free message.
-     */
-    public function __construct(string $message)
-    {
-        parent::__construct(message: $message, code: 502);
+class FormsUpstreamException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable, secret-free message.
+	 */
+	public function __construct(string $message) {
+		parent::__construct(message: $message, code: 502);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

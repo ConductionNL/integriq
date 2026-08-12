@@ -38,106 +38,94 @@ use ReflectionMethod;
 /**
  * Provider → JSON dialect mapping in LegacyToRegisterMigrator.
  */
-class LegacyMigratorPlatformTest extends TestCase
-{
+class LegacyMigratorPlatformTest extends TestCase {
 
-    /**
-     * Warnings the migrator logged during the last call.
-     *
-     * @var string[]
-     */
-    private array $warnings = [];
+	/**
+	 * Warnings the migrator logged during the last call.
+	 *
+	 * @var string[]
+	 */
+	private array $warnings = [];
 
+	/**
+	 * Resolve a provider through the migrator's platform mapping.
+	 *
+	 * @param string $provider One of IDBConnection::PLATFORM_*.
+	 *
+	 * @return string The chosen dialect.
+	 */
+	private function platformFor(string $provider): string {
+		$this->warnings = [];
 
-    /**
-     * Resolve a provider through the migrator's platform mapping.
-     *
-     * @param string $provider One of IDBConnection::PLATFORM_*.
-     *
-     * @return string The chosen dialect.
-     */
-    private function platformFor(string $provider): string
-    {
-        $this->warnings = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message): void {
+				$this->warnings[] = $message;
+			}
+		);
 
-        $logger = $this->createMock(LoggerInterface::class);
-        $logger->method('warning')->willReturnCallback(
-            function (string $message): void {
-                $this->warnings[] = $message;
-            }
-        );
+		$migrator = new LegacyToRegisterMigrator(
+			$this->createMock(IDBConnection::class),
+			$this->createMock(IAppConfig::class),
+			$logger
+		);
 
-        $migrator = new LegacyToRegisterMigrator(
-            $this->createMock(IDBConnection::class),
-            $this->createMock(IAppConfig::class),
-            $logger
-        );
+		$method = new ReflectionMethod(LegacyToRegisterMigrator::class, 'platformFor');
+		$method->setAccessible(true);
 
-        $method = new ReflectionMethod(LegacyToRegisterMigrator::class, 'platformFor');
-        $method->setAccessible(true);
+		return $method->invoke($migrator, $provider);
+	}//end platformFor()
 
-        return $method->invoke($migrator, $provider);
+	/**
+	 * PostgreSQL gets the Postgres dialect.
+	 *
+	 * @return void
+	 */
+	public function testPostgresGetsPgsql(): void {
+		$this->assertSame('pgsql', $this->platformFor(IDBConnection::PLATFORM_POSTGRES));
+		$this->assertSame([], $this->warnings);
 
-    }//end platformFor()
+	}//end testPostgresGetsPgsql()
 
+	/**
+	 * MySQL gets the MySQL dialect, without a warning.
+	 *
+	 * @return void
+	 */
+	public function testMysqlGetsMysql(): void {
+		$this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_MYSQL));
+		$this->assertSame([], $this->warnings);
 
-    /**
-     * PostgreSQL gets the Postgres dialect.
-     *
-     * @return void
-     */
-    public function testPostgresGetsPgsql(): void
-    {
-        $this->assertSame('pgsql', $this->platformFor(IDBConnection::PLATFORM_POSTGRES));
-        $this->assertSame([], $this->warnings);
+	}//end testMysqlGetsMysql()
 
-    }//end testPostgresGetsPgsql()
+	/**
+	 * MariaDB is RECOGNISED, not merely defaulted onto the same answer.
+	 *
+	 * The dialect assertion alone cannot tell "matched the MariaDB branch"
+	 * from "fell through the fallback, which happens to return the same
+	 * string" — so the absence of the warning is what actually distinguishes
+	 * them, and is the whole point of the test.
+	 *
+	 * @return void
+	 */
+	public function testMariadbIsRecognisedRatherThanDefaulted(): void {
+		$this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_MARIADB));
+		$this->assertSame([], $this->warnings, 'MariaDB should not be reported as an unknown platform');
 
+	}//end testMariadbIsRecognisedRatherThanDefaulted()
 
-    /**
-     * MySQL gets the MySQL dialect, without a warning.
-     *
-     * @return void
-     */
-    public function testMysqlGetsMysql(): void
-    {
-        $this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_MYSQL));
-        $this->assertSame([], $this->warnings);
+	/**
+	 * A genuinely unrecognised provider warns and defaults to MySQL.
+	 *
+	 * The counterpart to the MariaDB test: without this, "no warning" would be
+	 * satisfiable by a mapping that never warns at all.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownProviderWarnsAndDefaults(): void {
+		$this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_SQLITE));
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('unknown DB platform', $this->warnings[0]);
 
-    }//end testMysqlGetsMysql()
-
-
-    /**
-     * MariaDB is RECOGNISED, not merely defaulted onto the same answer.
-     *
-     * The dialect assertion alone cannot tell "matched the MariaDB branch"
-     * from "fell through the fallback, which happens to return the same
-     * string" — so the absence of the warning is what actually distinguishes
-     * them, and is the whole point of the test.
-     *
-     * @return void
-     */
-    public function testMariadbIsRecognisedRatherThanDefaulted(): void
-    {
-        $this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_MARIADB));
-        $this->assertSame([], $this->warnings, 'MariaDB should not be reported as an unknown platform');
-
-    }//end testMariadbIsRecognisedRatherThanDefaulted()
-
-
-    /**
-     * A genuinely unrecognised provider warns and defaults to MySQL.
-     *
-     * The counterpart to the MariaDB test: without this, "no warning" would be
-     * satisfiable by a mapping that never warns at all.
-     *
-     * @return void
-     */
-    public function testAnUnknownProviderWarnsAndDefaults(): void
-    {
-        $this->assertSame('mysql', $this->platformFor(IDBConnection::PLATFORM_SQLITE));
-        $this->assertCount(1, $this->warnings);
-        $this->assertStringContainsString('unknown DB platform', $this->warnings[0]);
-
-    }//end testAnUnknownProviderWarnsAndDefaults()
+	}//end testAnUnknownProviderWarnsAndDefaults()
 }//end class

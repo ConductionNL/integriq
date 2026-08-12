@@ -38,6 +38,5 @@ use Exception;
  *
  * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
  */
-class FlowRunException extends Exception
-{
+class FlowRunException extends Exception {
 }//end class

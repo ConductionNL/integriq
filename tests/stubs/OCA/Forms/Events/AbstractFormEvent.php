@@ -26,42 +26,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Minimal stub for OCA\Forms\Events\AbstractFormEvent.
  */
-abstract class AbstractFormEvent extends Event
-{
+abstract class AbstractFormEvent extends Event {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param Form $form The affected form.
+	 */
+	public function __construct(
+		protected Form $form,
+	) {
+		parent::__construct();
 
-    /**
-     * Constructor.
-     *
-     * @param Form $form The affected form.
-     */
-    public function __construct(protected Form $form)
-    {
-        parent::__construct();
+	}//end __construct()
 
-    }//end __construct()
+	/**
+	 * Get the affected form.
+	 *
+	 * @return Form
+	 */
+	public function getForm(): Form {
+		return $this->form;
+	}//end getForm()
 
-
-    /**
-     * Get the affected form.
-     *
-     * @return Form
-     */
-    public function getForm(): Form
-    {
-        return $this->form;
-
-    }//end getForm()
-
-
-    /**
-     * Webhook-serializable representation of this event.
-     *
-     * @return array
-     */
-    public function getWebhookSerializable(): array
-    {
-        return ['form' => $this->form->read()];
-
-    }//end getWebhookSerializable()
+	/**
+	 * Webhook-serializable representation of this event.
+	 *
+	 * @return array
+	 */
+	public function getWebhookSerializable(): array {
+		return ['form' => $this->form->read()];
+	}//end getWebhookSerializable()
 }//end class

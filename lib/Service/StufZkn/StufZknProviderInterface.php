@@ -38,39 +38,38 @@ use OCA\OpenConnector\Exception\StufZknProviderException;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-interface StufZknProviderInterface
-{
-    /**
-     * Stable machine identifier for this binding (e.g. `log`, `rest`).
-     *
-     * @return string The provider identifier.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string;
+interface StufZknProviderInterface {
+	/**
+	 * Stable machine identifier for this binding (e.g. `log`, `rest`).
+	 *
+	 * @return string The provider identifier.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string;
 
-    /**
-     * The JSON Schema describing this provider's `configuration` object.
-     *
-     * @return array<string, mixed> A JSON Schema (object) fragment.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array;
+	/**
+	 * The JSON Schema describing this provider's `configuration` object.
+	 *
+	 * @return array<string, mixed> A JSON Schema (object) fragment.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array;
 
-    /**
-     * Dispatch one already-translated `zakLk01` kennisgeving envelope.
-     *
-     * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-     * @param string $referentienummer    The kennisgeving's `stuurgegevens.referentienummer`.
-     * @param string $envelopeXml         The fully rendered envelope XML — the transport MUST send
-     *                                    this verbatim as the request body, never re-serialize it.
-     *
-     * @return string The transport-assigned (or locally-derived) reference.
-     *
-     * @throws StufZknProviderException When the endpoint is unreachable, errors, or is misconfigured.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string;
+	/**
+	 * Dispatch one already-translated `zakLk01` kennisgeving envelope.
+	 *
+	 * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $referentienummer The kennisgeving's `stuurgegevens.referentienummer`.
+	 * @param string $envelopeXml The fully rendered envelope XML — the transport MUST send
+	 *                            this verbatim as the request body, never re-serialize it.
+	 *
+	 * @return string The transport-assigned (or locally-derived) reference.
+	 *
+	 * @throws StufZknProviderException When the endpoint is unreachable, errors, or is misconfigured.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string;
 }//end interface

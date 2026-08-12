@@ -31,172 +31,161 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
-class OutboundKennisgevingTranslatorTest extends TestCase
-{
+class OutboundKennisgevingTranslatorTest extends TestCase {
 
-    /**
-     * @var OutboundKennisgevingTranslator
-     */
-    private OutboundKennisgevingTranslator $translator;
+	/**
+	 * @var OutboundKennisgevingTranslator
+	 */
+	private OutboundKennisgevingTranslator $translator;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->translator = new OutboundKennisgevingTranslator();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->translator = new OutboundKennisgevingTranslator();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A complete zaak set.
-     *
-     * @param array $overrides Extra fields merged over the default.
-     *
-     * @return array
-     */
-    private function zaak(array $overrides=[]): array
-    {
-        return array_merge(
-            [
-                'identificatie'        => 'ZAAK-2026-001',
-                'omschrijving'         => 'Kapvergunning',
-                'zaaktypeCode'         => 'B0337',
-                'zaaktypeOmschrijving' => 'Kapvergunning',
-                'registratiedatum'     => '20260716',
-                'startdatum'           => '20260716',
-            ],
-            $overrides
-        );
+	/**
+	 * A complete zaak set.
+	 *
+	 * @param array $overrides Extra fields merged over the default.
+	 *
+	 * @return array
+	 */
+	private function zaak(array $overrides = []): array {
+		return array_merge(
+			[
+				'identificatie' => 'ZAAK-2026-001',
+				'omschrijving' => 'Kapvergunning',
+				'zaaktypeCode' => 'B0337',
+				'zaaktypeOmschrijving' => 'Kapvergunning',
+				'registratiedatum' => '20260716',
+				'startdatum' => '20260716',
+			],
+			$overrides
+		);
 
-    }//end zaak()
+	}//end zaak()
 
-    /**
-     * A complete zaak create translates to a valid `zakLk01` toevoeging.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
-     */
-    public function testCompleteZaakCreateTranslatesToValidZakLk01(): void
-    {
-        $result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
+	/**
+	 * A complete zaak create translates to a valid `zakLk01` toevoeging.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
+	 */
+	public function testCompleteZaakCreateTranslatesToValidZakLk01(): void {
+		$result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
 
-        $this->assertNotEmpty($result['referentienummer']);
-        $this->assertStringStartsWith('ZKN-', $result['referentienummer']);
-        $this->assertStringContainsString('<zkn:zakLk01>', $result['xml']);
-        $this->assertStringContainsString('StUF:verwerkingssoort="T"', $result['xml']);
-        $this->assertStringContainsString('<zkn:identificatie>ZAAK-2026-001</zkn:identificatie>', $result['xml']);
+		$this->assertNotEmpty($result['referentienummer']);
+		$this->assertStringStartsWith('ZKN-', $result['referentienummer']);
+		$this->assertStringContainsString('<zkn:zakLk01>', $result['xml']);
+		$this->assertStringContainsString('StUF:verwerkingssoort="T"', $result['xml']);
+		$this->assertStringContainsString('<zkn:identificatie>ZAAK-2026-001</zkn:identificatie>', $result['xml']);
 
-    }//end testCompleteZaakCreateTranslatesToValidZakLk01()
+	}//end testCompleteZaakCreateTranslatesToValidZakLk01()
 
-    /**
-     * The rendered envelope round-trips structurally through the inbound translator (zaak/document
-     * shape consistency between both directions).
-     *
-     * @return void
-     */
-    public function testRenderedEnvelopeRoundTripsThroughInboundTranslator(): void
-    {
-        $result = $this->translator->translate($this->zaak(), 'W', 'Procest', 'Gemeente X');
+	/**
+	 * The rendered envelope round-trips structurally through the inbound translator (zaak/document
+	 * shape consistency between both directions).
+	 *
+	 * @return void
+	 */
+	public function testRenderedEnvelopeRoundTripsThroughInboundTranslator(): void {
+		$result = $this->translator->translate($this->zaak(), 'W', 'Procest', 'Gemeente X');
 
-        $inbound = (new InboundBerichtTranslator())->translate($result['xml']);
+		$inbound = (new InboundBerichtTranslator())->translate($result['xml']);
 
-        $this->assertSame('zaak', $inbound['kind']);
-        $this->assertSame('W', $inbound['verwerkingssoort']);
-        $this->assertSame('ZAAK-2026-001', $inbound['fields']['identificatie']);
-        $this->assertSame($result['referentienummer'], $inbound['referentienummer']);
+		$this->assertSame('zaak', $inbound['kind']);
+		$this->assertSame('W', $inbound['verwerkingssoort']);
+		$this->assertSame('ZAAK-2026-001', $inbound['fields']['identificatie']);
+		$this->assertSame($result['referentienummer'], $inbound['referentienummer']);
 
-    }//end testRenderedEnvelopeRoundTripsThroughInboundTranslator()
+	}//end testRenderedEnvelopeRoundTripsThroughInboundTranslator()
 
-    /**
-     * Each supported verwerkingssoort (T/W/V) is accepted.
-     *
-     * @param string $verwerkingssoort The verwerkingssoort code under test.
-     *
-     * @return void
-     *
-     * @dataProvider verwerkingssoortProvider
-     */
-    public function testEachSupportedVerwerkingssoortIsAccepted(string $verwerkingssoort): void
-    {
-        $result = $this->translator->translate($this->zaak(), $verwerkingssoort, 'Procest', 'Gemeente X');
-        $this->assertStringContainsString('StUF:verwerkingssoort="'.$verwerkingssoort.'"', $result['xml']);
+	/**
+	 * Each supported verwerkingssoort (T/W/V) is accepted.
+	 *
+	 * @param string $verwerkingssoort The verwerkingssoort code under test.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider verwerkingssoortProvider
+	 */
+	public function testEachSupportedVerwerkingssoortIsAccepted(string $verwerkingssoort): void {
+		$result = $this->translator->translate($this->zaak(), $verwerkingssoort, 'Procest', 'Gemeente X');
+		$this->assertStringContainsString('StUF:verwerkingssoort="' . $verwerkingssoort . '"', $result['xml']);
 
-    }//end testEachSupportedVerwerkingssoortIsAccepted()
+	}//end testEachSupportedVerwerkingssoortIsAccepted()
 
-    /**
-     * Data provider for the three outbound-supported verwerkingssoort codes.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public static function verwerkingssoortProvider(): array
-    {
-        return [
-            'T (toevoeging)' => ['T'],
-            'W (wijziging)'  => ['W'],
-            'V (vervallen)'  => ['V'],
-        ];
+	/**
+	 * Data provider for the three outbound-supported verwerkingssoort codes.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public static function verwerkingssoortProvider(): array {
+		return [
+			'T (toevoeging)' => ['T'],
+			'W (wijziging)' => ['W'],
+			'V (vervallen)' => ['V'],
+		];
 
-    }//end verwerkingssoortProvider()
+	}//end verwerkingssoortProvider()
 
-    /**
-     * An unsupported verwerkingssoort is rejected.
-     *
-     * @return void
-     */
-    public function testUnsupportedVerwerkingssoortThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($this->zaak(), 'I', 'Procest', 'Gemeente X');
+	/**
+	 * An unsupported verwerkingssoort is rejected.
+	 *
+	 * @return void
+	 */
+	public function testUnsupportedVerwerkingssoortThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($this->zaak(), 'I', 'Procest', 'Gemeente X');
 
-    }//end testUnsupportedVerwerkingssoortThrows()
+	}//end testUnsupportedVerwerkingssoortThrows()
 
-    /**
-     * A missing required field never reaches the XML — literal-leak guard.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
-     */
-    public function testMissingRequiredFieldThrows(): void
-    {
-        $zaak = $this->zaak();
-        unset($zaak['zaaktypeCode']);
+	/**
+	 * A missing required field never reaches the XML — literal-leak guard.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
+	 */
+	public function testMissingRequiredFieldThrows(): void {
+		$zaak = $this->zaak();
+		unset($zaak['zaaktypeCode']);
 
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($zaak, 'T', 'Procest', 'Gemeente X');
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($zaak, 'T', 'Procest', 'Gemeente X');
 
-    }//end testMissingRequiredFieldThrows()
+	}//end testMissingRequiredFieldThrows()
 
-    /**
-     * An empty-string required field is treated identically to a missing one.
-     *
-     * @return void
-     */
-    public function testEmptyStringRequiredFieldThrows(): void
-    {
-        $this->expectException(StufZknTranslationException::class);
-        $this->translator->translate($this->zaak(['omschrijving' => '   ']), 'T', 'Procest', 'Gemeente X');
+	/**
+	 * An empty-string required field is treated identically to a missing one.
+	 *
+	 * @return void
+	 */
+	public function testEmptyStringRequiredFieldThrows(): void {
+		$this->expectException(StufZknTranslationException::class);
+		$this->translator->translate($this->zaak(['omschrijving' => '   ']), 'T', 'Procest', 'Gemeente X');
 
-    }//end testEmptyStringRequiredFieldThrows()
+	}//end testEmptyStringRequiredFieldThrows()
 
-    /**
-     * An optional missing toelichting renders as an explicit StUF:noValue/xsi:nil field, never an
-     * empty tag.
-     *
-     * @return void
-     */
-    public function testMissingOptionalFieldRendersAsNilNotEmptyTag(): void
-    {
-        $result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
+	/**
+	 * An optional missing toelichting renders as an explicit StUF:noValue/xsi:nil field, never an
+	 * empty tag.
+	 *
+	 * @return void
+	 */
+	public function testMissingOptionalFieldRendersAsNilNotEmptyTag(): void {
+		$result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
 
-        $this->assertStringContainsString('StUF:noValue="geenWaarde"', $result['xml']);
-        $this->assertStringContainsString('xsi:nil="true"', $result['xml']);
-        $this->assertStringNotContainsString('<zkn:toelichting></zkn:toelichting>', $result['xml']);
+		$this->assertStringContainsString('StUF:noValue="geenWaarde"', $result['xml']);
+		$this->assertStringContainsString('xsi:nil="true"', $result['xml']);
+		$this->assertStringNotContainsString('<zkn:toelichting></zkn:toelichting>', $result['xml']);
 
-    }//end testMissingOptionalFieldRendersAsNilNotEmptyTag()
+	}//end testMissingOptionalFieldRendersAsNilNotEmptyTag()
 }//end class

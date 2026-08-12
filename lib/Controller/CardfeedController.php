@@ -47,80 +47,78 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
  */
-class CardfeedController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string              $appName     App identifier ("openconnector").
-     * @param IRequest            $request     Current request.
-     * @param CardfeedSyncService $syncService Enroll + discovery + sync logic.
-     * @param IUserSession        $userSession The user session.
-     * @param ActionAuthService   $actionAuth  The action authorization service (ADR-023).
-     * @param IL10N               $l           The localization service.
-     * @param LoggerInterface     $logger      Logger for non-fatal diagnostics.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly CardfeedSyncService $syncService,
-        private readonly IUserSession $userSession,
-        private readonly ActionAuthService $actionAuth,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class CardfeedController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App identifier ("openconnector").
+	 * @param IRequest $request Current request.
+	 * @param CardfeedSyncService $syncService Enroll + discovery + sync logic.
+	 * @param IUserSession $userSession The user session.
+	 * @param ActionAuthService $actionAuth The action authorization service (ADR-023).
+	 * @param IL10N $l The localization service.
+	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly CardfeedSyncService $syncService,
+		private readonly IUserSession $userSession,
+		private readonly ActionAuthService $actionAuth,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Enroll a card program source: discover its cards and record a cardfeed_account.
-     *
-     * Idempotent: re-enrolling updates the card set in place on the existing
-     * account (REQ-002).
-     *
-     * @param string $sourceSlug The cardfeed source slug.
-     *
-     * @return JSONResponse `{accountId, cardfeedSourceSlug, cards, lifecycleState}` or a 400/502 error envelope.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
-     */
-    #[NoAdminRequired]
-    public function enroll(string $sourceSlug=''): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+	/**
+	 * Enroll a card program source: discover its cards and record a cardfeed_account.
+	 *
+	 * Idempotent: re-enrolling updates the card set in place on the existing
+	 * account (REQ-002).
+	 *
+	 * @param string $sourceSlug The cardfeed source slug.
+	 *
+	 * @return JSONResponse `{accountId, cardfeedSourceSlug, cards, lifecycleState}` or a 400/502 error envelope.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
+	 */
+	#[NoAdminRequired]
+	public function enroll(string $sourceSlug = ''): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        $this->actionAuth->requireAction(user: $user, action: 'cardfeed.enroll');
+		$this->actionAuth->requireAction(user: $user, action: 'cardfeed.enroll');
 
-        if ($sourceSlug === '') {
-            return new JSONResponse(
-                [
-                    'error'   => 'missing_parameters',
-                    'message' => $this->l->t('Enroll a card program').': sourceSlug is required.',
-                ],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+		if ($sourceSlug === '') {
+			return new JSONResponse(
+				[
+					'error' => 'missing_parameters',
+					'message' => $this->l->t('Enroll a card program') . ': sourceSlug is required.',
+				],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            $result = $this->syncService->enrollSource(sourceSlug: $sourceSlug);
+		try {
+			$result = $this->syncService->enrollSource(sourceSlug: $sourceSlug);
 
-            return new JSONResponse($result);
-        } catch (CardfeedProviderException $exception) {
-            $this->logger->warning(
-                '[CardfeedController] enroll failed: '.$exception->getMessage(),
-                ['sourceSlug' => $sourceSlug]
-            );
-            return new JSONResponse(
-                ['error' => 'cardfeed_enroll_failed', 'message' => $this->l->t('Card enrollment failed').': '.$exception->getMessage()],
-                Http::STATUS_BAD_GATEWAY
-            );
-        }//end try
+			return new JSONResponse($result);
+		} catch (CardfeedProviderException $exception) {
+			$this->logger->warning(
+				'[CardfeedController] enroll failed: ' . $exception->getMessage(),
+				['sourceSlug' => $sourceSlug]
+			);
+			return new JSONResponse(
+				['error' => 'cardfeed_enroll_failed', 'message' => $this->l->t('Card enrollment failed') . ': ' . $exception->getMessage()],
+				Http::STATUS_BAD_GATEWAY
+			);
+		}//end try
 
-    }//end enroll()
+	}//end enroll()
 }//end class

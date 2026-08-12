@@ -36,6 +36,5 @@ use Exception;
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
-class PaymentProviderException extends Exception
-{
+class PaymentProviderException extends Exception {
 }//end class

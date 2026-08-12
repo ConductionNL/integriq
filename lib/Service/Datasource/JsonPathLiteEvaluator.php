@@ -33,88 +33,83 @@ namespace OCA\OpenConnector\Service\Datasource;
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
  */
-class JsonPathLiteEvaluator
-{
-    /**
-     * Evaluate a JSONPath-lite expression against decoded JSON data.
-     *
-     * Supports a leading `$` (whole document), dotted-key traversal
-     * (`$.a.b.c`), and zero-based integer array indices (`$.a[0].b`,
-     * `$.a[0][1]`). Any segment that does not resolve (missing key,
-     * out-of-range index, or traversal into a scalar) returns `null` rather
-     * than throwing — per the "Value expression finds nothing" scenario, a
-     * missing path is a normal, non-error outcome.
-     *
-     * @param mixed  $data The decoded JSON document (array/scalar/null) to traverse.
-     * @param string $expr The JSONPath-lite expression, e.g. `$.data.open_count` or `$.items[0].id`.
-     *
-     * @return mixed The resolved value, or null when the path does not resolve.
-     *
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
-     */
-    public function evaluate(mixed $data, string $expr): mixed
-    {
-        $expr = trim($expr);
-        if ($expr === '' || $expr === '$') {
-            return $data;
-        }
+class JsonPathLiteEvaluator {
+	/**
+	 * Evaluate a JSONPath-lite expression against decoded JSON data.
+	 *
+	 * Supports a leading `$` (whole document), dotted-key traversal
+	 * (`$.a.b.c`), and zero-based integer array indices (`$.a[0].b`,
+	 * `$.a[0][1]`). Any segment that does not resolve (missing key,
+	 * out-of-range index, or traversal into a scalar) returns `null` rather
+	 * than throwing — per the "Value expression finds nothing" scenario, a
+	 * missing path is a normal, non-error outcome.
+	 *
+	 * @param mixed $data The decoded JSON document (array/scalar/null) to traverse.
+	 * @param string $expr The JSONPath-lite expression, e.g. `$.data.open_count` or `$.items[0].id`.
+	 *
+	 * @return mixed The resolved value, or null when the path does not resolve.
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
+	 */
+	public function evaluate(mixed $data, string $expr): mixed {
+		$expr = trim($expr);
+		if ($expr === '' || $expr === '$') {
+			return $data;
+		}
 
-        if (str_starts_with($expr, '$') === true) {
-            $expr = substr($expr, 1);
-        }
+		if (str_starts_with($expr, '$') === true) {
+			$expr = substr($expr, 1);
+		}
 
-        // Strip a single leading '.' left after removing the '$' (the
-        // canonical `$.a.b` form); a bracket-first expression like `$[0]`
-        // has no leading dot to strip.
-        if (str_starts_with($expr, '.') === true) {
-            $expr = substr($expr, 1);
-        }
+		// Strip a single leading '.' left after removing the '$' (the
+		// canonical `$.a.b` form); a bracket-first expression like `$[0]`
+		// has no leading dot to strip.
+		if (str_starts_with($expr, '.') === true) {
+			$expr = substr($expr, 1);
+		}
 
-        $tokens = $this->tokenize(path: $expr);
+		$tokens = $this->tokenize(path: $expr);
 
-        $current = $data;
-        foreach ($tokens as $token) {
-            if (is_array($current) === false) {
-                return null;
-            }
+		$current = $data;
+		foreach ($tokens as $token) {
+			if (is_array($current) === false) {
+				return null;
+			}
 
-            if (array_key_exists($token, $current) === false) {
-                return null;
-            }
+			if (array_key_exists($token, $current) === false) {
+				return null;
+			}
 
-            $current = $current[$token];
-        }
+			$current = $current[$token];
+		}
 
-        return $current;
+		return $current;
+	}//end evaluate()
 
-    }//end evaluate()
+	/**
+	 * Tokenize a dotted-key / bracket-index path into an ordered list of
+	 * string keys and integer indices.
+	 *
+	 * @param string $path The path with the leading `$`/`.` already stripped.
+	 *
+	 * @return array<int, string|int> Ordered traversal tokens.
+	 */
+	private function tokenize(string $path): array {
+		if ($path === '') {
+			return [];
+		}
 
-    /**
-     * Tokenize a dotted-key / bracket-index path into an ordered list of
-     * string keys and integer indices.
-     *
-     * @param string $path The path with the leading `$`/`.` already stripped.
-     *
-     * @return array<int, string|int> Ordered traversal tokens.
-     */
-    private function tokenize(string $path): array
-    {
-        if ($path === '') {
-            return [];
-        }
+		preg_match_all('/[^.\[\]]+|\[\d+\]/', $path, $matches);
 
-        preg_match_all('/[^.\[\]]+|\[\d+\]/', $path, $matches);
+		$tokens = [];
+		foreach ($matches[0] as $rawToken) {
+			if (str_starts_with($rawToken, '[') === true) {
+				$tokens[] = (int)trim($rawToken, '[]');
+			} else {
+				$tokens[] = $rawToken;
+			}
+		}
 
-        $tokens = [];
-        foreach ($matches[0] as $rawToken) {
-            if (str_starts_with($rawToken, '[') === true) {
-                $tokens[] = (int) trim($rawToken, '[]');
-            } else {
-                $tokens[] = $rawToken;
-            }
-        }
-
-        return $tokens;
-
-    }//end tokenize()
+		return $tokens;
+	}//end tokenize()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Bankfeed Sync Job.
  *
@@ -45,74 +46,72 @@ use Throwable;
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
  */
-class BankfeedSyncJob extends TimedJob
-{
+class BankfeedSyncJob extends TimedJob {
 
-    /**
-     * Default sweep interval in seconds (6 hours — 4x daily per REQ-004).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 21600;
+	/**
+	 * Default sweep interval in seconds (6 hours — 4x daily per REQ-004).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 21600;
 
-    /**
-     * BankfeedSyncJob constructor.
-     *
-     * @param ITimeFactory        $time        Time factory for job scheduling.
-     * @param BankfeedSyncService $syncService The bankfeed sync service.
-     * @param LoggerInterface     $logger      Logger for sweep outcomes and containment.
-     *
-     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly BankfeedSyncService $syncService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * BankfeedSyncJob constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param BankfeedSyncService $syncService The bankfeed sync service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 *
+	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly BankfeedSyncService $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-        // Bank transaction pulls are not strictly time-sensitive.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Bank transaction pulls are not strictly time-sensitive.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only one sweep at a time to avoid double-pulling a window.
-        $this->setAllowParallelRuns(allow: false);
+		// Only one sweep at a time to avoid double-pulling a window.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the bankfeed sync sweep.
-     *
-     * A single failing connection must never wedge the cron pipeline — the
-     * service already contains per-connection failures, and any sweep-level
-     * exception is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $batches = $this->syncService->syncAll();
-            $this->logger->info(
-                'BankfeedSyncJob: sync sweep complete',
-                ['batches' => $batches]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'BankfeedSyncJob: sync sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the bankfeed sync sweep.
+	 *
+	 * A single failing connection must never wedge the cron pipeline — the
+	 * service already contains per-connection failures, and any sweep-level
+	 * exception is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$batches = $this->syncService->syncAll();
+			$this->logger->info(
+				'BankfeedSyncJob: sync sweep complete',
+				['batches' => $batches]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'BankfeedSyncJob: sync sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

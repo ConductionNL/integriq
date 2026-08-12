@@ -42,59 +42,58 @@ namespace OCA\OpenConnector\Adapters\Berichtenbox;
  * a `flavour()` self-identifier so the structured logger can record
  * which binding actually handled the call.
  */
-abstract class BerichtenboxClient
-{
-    /**
-     * Mock or live flavour identifier — used in structured logs so
-     * operators can verify which binding handled a call.
-     *
-     * @return string `mock` or `https`.
-     */
-    abstract public function flavour(): string;
+abstract class BerichtenboxClient {
+	/**
+	 * Mock or live flavour identifier — used in structured logs so
+	 * operators can verify which binding handled a call.
+	 *
+	 * @return string `mock` or `https`.
+	 */
+	abstract public function flavour(): string;
 
-    /**
-     * Dispatch a BBK 1.7 message envelope to Logius.
-     *
-     * @param array<string,mixed> $message BBK 1.7-shaped envelope.
-     * @param string              $pkiCert PEM-encoded
-     *                                     PKIoverheid
-     *                                     Services-server
-     *                                     cert —
-     *                                     required by
-     *                                     live
-     *                                     binding,
-     *                                     ignored by
-     *                                     mock.
-     * @param string              $pkiKey  PEM-encoded private key.
-     *
-     * @return array<string,mixed> Logius response envelope —
-     *                             logiusKenmerk, deliveryStatus,
-     *                             receivedAt.
-     */
-    abstract public function dispatch(array $message, string $pkiCert, string $pkiKey): array;
+	/**
+	 * Dispatch a BBK 1.7 message envelope to Logius.
+	 *
+	 * @param array<string,mixed> $message BBK 1.7-shaped envelope.
+	 * @param string $pkiCert PEM-encoded
+	 *                        PKIoverheid
+	 *                        Services-server
+	 *                        cert —
+	 *                        required by
+	 *                        live
+	 *                        binding,
+	 *                        ignored by
+	 *                        mock.
+	 * @param string $pkiKey PEM-encoded private key.
+	 *
+	 * @return array<string,mixed> Logius response envelope —
+	 *                             logiusKenmerk, deliveryStatus,
+	 *                             receivedAt.
+	 */
+	abstract public function dispatch(array $message, string $pkiCert, string $pkiKey): array;
 
-    /**
-     * Verify the HMAC signature on an inbound Logius delivery-receipt
-     * webhook body + load the matching delivery record.
-     *
-     * @param string               $rawBody Raw inbound body bytes.
-     * @param array<string,string> $headers Inbound headers (Logius
-     *                                      signature in
-     *                                      `X-Logius-Signature`).
-     *
-     * @return array<string,mixed> Verified envelope —
-     *                             signatureValid, logiusKenmerk,
-     *                             deliveryStatus, deliveredAt.
-     */
-    abstract public function verifyWebhook(string $rawBody, array $headers): array;
+	/**
+	 * Verify the HMAC signature on an inbound Logius delivery-receipt
+	 * webhook body + load the matching delivery record.
+	 *
+	 * @param string $rawBody Raw inbound body bytes.
+	 * @param array<string,string> $headers Inbound headers (Logius
+	 *                                      signature in
+	 *                                      `X-Logius-Signature`).
+	 *
+	 * @return array<string,mixed> Verified envelope —
+	 *                             signatureValid, logiusKenmerk,
+	 *                             deliveryStatus, deliveredAt.
+	 */
+	abstract public function verifyWebhook(string $rawBody, array $headers): array;
 
-    /**
-     * Check whether a BSN has an active Berichtenbox mailbox.
-     *
-     * @param string $bsn 9-digit Burgerservicenummer.
-     *
-     * @return array<string,mixed> Mailbox-status envelope —
-     *                             active, lastUsedAt.
-     */
-    abstract public function checkMailbox(string $bsn): array;
+	/**
+	 * Check whether a BSN has an active Berichtenbox mailbox.
+	 *
+	 * @param string $bsn 9-digit Burgerservicenummer.
+	 *
+	 * @return array<string,mixed> Mailbox-status envelope —
+	 *                             active, lastUsedAt.
+	 */
+	abstract public function checkMailbox(string $bsn): array;
 }//end class

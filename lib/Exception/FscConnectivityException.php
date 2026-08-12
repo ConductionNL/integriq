@@ -37,6 +37,5 @@ use Exception;
  *
  * @spec openspec/specs/fsc-connectivity/spec.md
  */
-class FscConnectivityException extends Exception
-{
+class FscConnectivityException extends Exception {
 }//end class

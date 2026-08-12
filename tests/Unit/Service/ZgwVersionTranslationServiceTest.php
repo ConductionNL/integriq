@@ -41,172 +41,163 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw_version_translation_log-req-004
  */
-class ZgwVersionTranslationServiceTest extends TestCase
-{
+class ZgwVersionTranslationServiceTest extends TestCase {
 
-    /**
-     * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $objectService;
+	/**
+	 * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $objectService;
 
-    /**
-     * @var ZgwVersionTranslationService
-     */
-    private ZgwVersionTranslationService $service;
+	/**
+	 * @var ZgwVersionTranslationService
+	 */
+	private ZgwVersionTranslationService $service;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->objectService = $this->createMock(ORObjectService::class);
+		$this->objectService = $this->createMock(ORObjectService::class);
 
-        $this->service = new ZgwVersionTranslationService(
-            negotiationService: new ZgwVersionNegotiationService(),
-            objectService: $this->objectService,
-            zaakTranslator: new ZaakTranslator(),
-            zaakTypeTranslator: new ZaakTypeTranslator(),
-            informatieObjectTranslator: new InformatieObjectTranslator(),
-            besluitTranslator: new BesluitTranslator(),
-            rolTranslator: new RolTranslator(),
-            statusTranslator: new StatusTranslator(),
-            resultaatTranslator: new ResultaatTranslator()
-        );
-    }//end setUp()
+		$this->service = new ZgwVersionTranslationService(
+			negotiationService: new ZgwVersionNegotiationService(),
+			objectService: $this->objectService,
+			zaakTranslator: new ZaakTranslator(),
+			zaakTypeTranslator: new ZaakTypeTranslator(),
+			informatieObjectTranslator: new InformatieObjectTranslator(),
+			besluitTranslator: new BesluitTranslator(),
+			rolTranslator: new RolTranslator(),
+			statusTranslator: new StatusTranslator(),
+			resultaatTranslator: new ResultaatTranslator()
+		);
+	}//end setUp()
 
-    /**
-     * A conformant `1.0` status fixture (the simplest resource — no special-case logic).
-     *
-     * @return array<string, mixed>
-     */
-    private function conformantStatusPayload(): array
-    {
-        return [
-            'url'              => 'https://host/api/zgw/zaken/v1/statussen/st',
-            'uuid'             => 'st',
-            'zaak'             => 'https://host/api/zgw/zaken/v1/zaken/abc',
-            'statustype'       => 'https://host/api/zgw/catalogi/v1/statustypen/stt',
-            'datumStatusGezet' => '2026-01-01T00:00:00+00:00',
-        ];
-    }//end conformantStatusPayload()
+	/**
+	 * A conformant `1.0` status fixture (the simplest resource — no special-case logic).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function conformantStatusPayload(): array {
+		return [
+			'url' => 'https://host/api/zgw/zaken/v1/statussen/st',
+			'uuid' => 'st',
+			'zaak' => 'https://host/api/zgw/zaken/v1/zaken/abc',
+			'statustype' => 'https://host/api/zgw/catalogi/v1/statustypen/stt',
+			'datumStatusGezet' => '2026-01-01T00:00:00+00:00',
+		];
+	}//end conformantStatusPayload()
 
-    /**
-     * @return void
-     */
-    public function testGetSupportedResourcesListsAllSeven(): void
-    {
-        $resources = $this->service->getSupportedResources();
-        sort($resources);
+	/**
+	 * @return void
+	 */
+	public function testGetSupportedResourcesListsAllSeven(): void {
+		$resources = $this->service->getSupportedResources();
+		sort($resources);
 
-        $this->assertSame(
-            expected: [
-                'besluit',
-                'enkelvoudiginformatieobject',
-                'resultaat',
-                'rol',
-                'status',
-                'zaak',
-                'zaaktype',
-            ],
-            actual: $resources
-        );
-    }//end testGetSupportedResourcesListsAllSeven()
+		$this->assertSame(
+			expected: [
+				'besluit',
+				'enkelvoudiginformatieobject',
+				'resultaat',
+				'rol',
+				'status',
+				'zaak',
+				'zaaktype',
+			],
+			actual: $resources
+		);
+	}//end testGetSupportedResourcesListsAllSeven()
 
-    /**
-     * @return void
-     */
-    public function testSameVersionIsPassthroughAndSkipsTranslator(): void
-    {
-        $this->objectService->expects($this->once())
-            ->method('saveObject')
-            ->with(
-                $this->anything(),
-                $this->anything(),
-                $this->callback(
-                    static fn (string $schema): bool => $schema === ZgwVersionTranslationService::SCHEMA_LOG
-                )
-            );
+	/**
+	 * @return void
+	 */
+	public function testSameVersionIsPassthroughAndSkipsTranslator(): void {
+		$this->objectService->expects($this->once())
+			->method('saveObject')
+			->with(
+				$this->anything(),
+				$this->anything(),
+				$this->callback(
+					static fn (string $schema): bool => $schema === ZgwVersionTranslationService::SCHEMA_LOG
+				)
+			);
 
-        $payload    = $this->conformantStatusPayload();
-        $translated = $this->service->translate(
-            resource: 'status',
-            fromVersion: '1.0',
-            toVersion: '1.0',
-            payload: $payload
-        );
+		$payload = $this->conformantStatusPayload();
+		$translated = $this->service->translate(
+			resource: 'status',
+			fromVersion: '1.0',
+			toVersion: '1.0',
+			payload: $payload
+		);
 
-        $this->assertSame(expected: $payload, actual: $translated);
-    }//end testSameVersionIsPassthroughAndSkipsTranslator()
+		$this->assertSame(expected: $payload, actual: $translated);
+	}//end testSameVersionIsPassthroughAndSkipsTranslator()
 
-    /**
-     * @return void
-     */
-    public function testSuccessfulTranslationPersistsSuccessLog(): void
-    {
-        $this->objectService->expects($this->once())->method('saveObject');
+	/**
+	 * @return void
+	 */
+	public function testSuccessfulTranslationPersistsSuccessLog(): void {
+		$this->objectService->expects($this->once())->method('saveObject');
 
-        $translated = $this->service->translate(
-            resource: 'status',
-            fromVersion: '1.0',
-            toVersion: '1.6',
-            payload: $this->conformantStatusPayload()
-        );
+		$translated = $this->service->translate(
+			resource: 'status',
+			fromVersion: '1.0',
+			toVersion: '1.6',
+			payload: $this->conformantStatusPayload()
+		);
 
-        $this->assertSame(expected: $this->conformantStatusPayload(), actual: $translated);
-    }//end testSuccessfulTranslationPersistsSuccessLog()
+		$this->assertSame(expected: $this->conformantStatusPayload(), actual: $translated);
+	}//end testSuccessfulTranslationPersistsSuccessLog()
 
-    /**
-     * @return void
-     */
-    public function testUnknownResourceThrowsBeforeAnyPersistence(): void
-    {
-        $this->objectService->expects($this->never())->method('saveObject');
+	/**
+	 * @return void
+	 */
+	public function testUnknownResourceThrowsBeforeAnyPersistence(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
 
-        $this->expectException(ZgwUnknownResourceException::class);
-        $this->service->translate(
-            resource: 'besluittype',
-            fromVersion: '1.0',
-            toVersion: '1.6',
-            payload: []
-        );
-    }//end testUnknownResourceThrowsBeforeAnyPersistence()
+		$this->expectException(ZgwUnknownResourceException::class);
+		$this->service->translate(
+			resource: 'besluittype',
+			fromVersion: '1.0',
+			toVersion: '1.6',
+			payload: []
+		);
+	}//end testUnknownResourceThrowsBeforeAnyPersistence()
 
-    /**
-     * @return void
-     */
-    public function testUnknownVersionThrowsBeforeAnyPersistence(): void
-    {
-        $this->objectService->expects($this->never())->method('saveObject');
+	/**
+	 * @return void
+	 */
+	public function testUnknownVersionThrowsBeforeAnyPersistence(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
 
-        $this->expectException(ZgwUnknownVersionException::class);
-        $this->service->translate(
-            resource: 'status',
-            fromVersion: '1.0',
-            toVersion: '0.9',
-            payload: []
-        );
-    }//end testUnknownVersionThrowsBeforeAnyPersistence()
+		$this->expectException(ZgwUnknownVersionException::class);
+		$this->service->translate(
+			resource: 'status',
+			fromVersion: '1.0',
+			toVersion: '0.9',
+			payload: []
+		);
+	}//end testUnknownVersionThrowsBeforeAnyPersistence()
 
-    /**
-     * @return void
-     */
-    public function testLiteralLeakFailurePersistsFailedLogAndRethrows(): void
-    {
-        $this->objectService->expects($this->once())->method('saveObject');
+	/**
+	 * @return void
+	 */
+	public function testLiteralLeakFailurePersistsFailedLogAndRethrows(): void {
+		$this->objectService->expects($this->once())->method('saveObject');
 
-        $payload = $this->conformantStatusPayload();
-        unset($payload['statustype']);
+		$payload = $this->conformantStatusPayload();
+		unset($payload['statustype']);
 
-        $this->expectException(ZgwLiteralLeakException::class);
-        $this->service->translate(
-            resource: 'status',
-            fromVersion: '1.0',
-            toVersion: '1.6',
-            payload: $payload
-        );
-    }//end testLiteralLeakFailurePersistsFailedLogAndRethrows()
+		$this->expectException(ZgwLiteralLeakException::class);
+		$this->service->translate(
+			resource: 'status',
+			fromVersion: '1.0',
+			toVersion: '1.6',
+			payload: $payload
+		);
+	}//end testLiteralLeakFailurePersistsFailedLogAndRethrows()
 }//end class

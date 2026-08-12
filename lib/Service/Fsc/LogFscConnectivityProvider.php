@@ -40,127 +40,121 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogFscConnectivityProvider implements FscConnectivityProviderInterface
-{
+class LogFscConnectivityProvider implements FscConnectivityProviderInterface {
 
-    /**
-     * Per-process counter for synthetic references (`FSC-MOCK-<n>`).
-     *
-     * A per-process, in-memory counter is sufficient for a sandbox binding —
-     * refs only need to be locally unique for the duration of one
-     * request/job run (mirrors LogIwmoIjwProvider::$counter).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic references (`FSC-MOCK-<n>`).
+	 *
+	 * A per-process, in-memory counter is sufficient for a sandbox binding —
+	 * refs only need to be locally unique for the duration of one
+	 * request/job run (mirrors LogIwmoIjwProvider::$counter).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> A schema describing the `knownServices` stand-in directory.
+	 *
+	 * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array {
+		return [
+			'type' => 'object',
+			'properties' => [
+				'knownServices' => [
+					'type' => 'object',
+					'description' => 'Sandbox-only stand-in for a live FSC Directory: '
+						. '{organisation: {service: {endpoint?, grantRequired?}}}. Only used by the log provider.',
+				],
+			],
+		];
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> A schema describing the `knownServices` stand-in directory.
-     *
-     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array
-    {
-        return [
-            'type'       => 'object',
-            'properties' => [
-                'knownServices' => [
-                    'type'        => 'object',
-                    'description' => 'Sandbox-only stand-in for a live FSC Directory: '
-                        .'{organisation: {service: {endpoint?, grantRequired?}}}. Only used by the log provider.',
-                ],
-            ],
-        ];
+	}//end getConfigSchema()
 
-    }//end getConfigSchema()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Resolves against `directoryConfig['knownServices']` — a
+	 * `{organisation: {service: {endpoint?, grantRequired?}}}` stand-in for
+	 * a live directory. No network call is made.
+	 *
+	 * @param array $directoryConfig The FSC source's `configuration.directory` object.
+	 * @param string $organisation The target organisation identifier.
+	 * @param string $service The target service identifier.
+	 *
+	 * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
+	 *
+	 * @throws FscDirectoryException When the organisation or service is not in `knownServices`.
+	 *
+	 * @spec openspec/specs/fsc-connectivity/spec.md#scenario-an-unknown-organisation-is-rejected-before-any-call-is-attempted
+	 */
+	public function resolveService(array $directoryConfig, string $organisation, string $service): array {
+		$knownServices = ($directoryConfig['knownServices'] ?? []);
 
-    /**
-     * {@inheritDoc}
-     *
-     * Resolves against `directoryConfig['knownServices']` — a
-     * `{organisation: {service: {endpoint?, grantRequired?}}}` stand-in for
-     * a live directory. No network call is made.
-     *
-     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
-     * @param string $organisation    The target organisation identifier.
-     * @param string $service         The target service identifier.
-     *
-     * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
-     *
-     * @throws FscDirectoryException When the organisation or service is not in `knownServices`.
-     *
-     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-an-unknown-organisation-is-rejected-before-any-call-is-attempted
-     */
-    public function resolveService(array $directoryConfig, string $organisation, string $service): array
-    {
-        $knownServices = ($directoryConfig['knownServices'] ?? []);
+		if (isset($knownServices[$organisation]) === false || is_array($knownServices[$organisation]) === false) {
+			throw new FscDirectoryException(
+				message: 'Unknown organisation "' . $organisation . '" — not present in the configured '
+					. 'directory.knownServices (sandbox log provider).'
+			);
+		}
 
-        if (isset($knownServices[$organisation]) === false || is_array($knownServices[$organisation]) === false) {
-            throw new FscDirectoryException(
-                message: 'Unknown organisation "'.$organisation.'" — not present in the configured '
-                    .'directory.knownServices (sandbox log provider).'
-            );
-        }
+		$services = $knownServices[$organisation];
+		if (isset($services[$service]) === false) {
+			throw new FscDirectoryException(
+				message: 'Unknown service "' . $service . '" for organisation "' . $organisation . '" — not present '
+					. 'in the configured directory.knownServices (sandbox log provider).'
+			);
+		}
 
-        $services = $knownServices[$organisation];
-        if (isset($services[$service]) === false) {
-            throw new FscDirectoryException(
-                message: 'Unknown service "'.$service.'" for organisation "'.$organisation.'" — not present '
-                    .'in the configured directory.knownServices (sandbox log provider).'
-            );
-        }
+		$entry = [];
+		if (is_array($services[$service]) === true) {
+			$entry = $services[$service];
+		}
 
-        $entry = [];
-        if (is_array($services[$service]) === true) {
-            $entry = $services[$service];
-        }
+		return [
+			'organisation' => $organisation,
+			'service' => $service,
+			'endpoint' => (string)($entry['endpoint'] ?? ('log://' . $organisation . '/' . $service)),
+			'grantRequired' => (bool)($entry['grantRequired'] ?? false),
+			'authContext' => [],
+		];
 
-        return [
-            'organisation'  => $organisation,
-            'service'       => $service,
-            'endpoint'      => (string) ($entry['endpoint'] ?? ('log://'.$organisation.'/'.$service)),
-            'grantRequired' => (bool) ($entry['grantRequired'] ?? false),
-            'authContext'   => [],
-        ];
+	}//end resolveService()
 
-    }//end resolveService()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $directoryConfig Unused — the log provider needs no configuration.
+	 * @param array $resolution The resolution returned by {@see resolveService()}.
+	 * @param string $method Unused.
+	 * @param array $payload Echoed back verbatim as the synthetic response body.
+	 *
+	 * @return array{ref: string, statusCode: int, body: mixed} The synthetic `FSC-MOCK-<n>` outcome.
+	 *
+	 * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-log-provider-performs-no-network-call
+	 */
+	public function call(array $directoryConfig, array $resolution, string $method, array $payload): array {
+		self::$counter++;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $directoryConfig Unused — the log provider needs no configuration.
-     * @param array  $resolution      The resolution returned by {@see resolveService()}.
-     * @param string $method          Unused.
-     * @param array  $payload         Echoed back verbatim as the synthetic response body.
-     *
-     * @return array{ref: string, statusCode: int, body: mixed} The synthetic `FSC-MOCK-<n>` outcome.
-     *
-     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-log-provider-performs-no-network-call
-     */
-    public function call(array $directoryConfig, array $resolution, string $method, array $payload): array
-    {
-        self::$counter++;
+		return [
+			'ref' => 'FSC-MOCK-' . self::$counter,
+			'statusCode' => 200,
+			'body' => $payload,
+		];
 
-        return [
-            'ref'        => 'FSC-MOCK-'.self::$counter,
-            'statusCode' => 200,
-            'body'       => $payload,
-        ];
-
-    }//end call()
+	}//end call()
 }//end class

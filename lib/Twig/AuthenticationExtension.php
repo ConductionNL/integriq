@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Authentication Twig Extension.
  *
@@ -25,20 +26,18 @@ use Twig\TwigFunction;
 /**
  * Twig extension exposing the authentication helper functions.
  */
-class AuthenticationExtension extends AbstractExtension
-{
-    /**
-     * Return the Twig functions registered by this extension.
-     *
-     * @return array<int, TwigFunction>
-     */
-    public function getFunctions(): array
-    {
-        return [
-            new TwigFunction(name: 'oauthToken', callable: [AuthenticationRuntime::class, 'oauthToken']),
-            new TwigFunction(name: 'decosToken', callable: [AuthenticationRuntime::class, 'decosToken']),
-            new TwigFunction(name: 'jwtToken', callable: [AuthenticationRuntime::class, 'jwtToken']),
-        ];
+class AuthenticationExtension extends AbstractExtension {
+	/**
+	 * Return the Twig functions registered by this extension.
+	 *
+	 * @return array<int, TwigFunction>
+	 */
+	public function getFunctions(): array {
+		return [
+			new TwigFunction(name: 'oauthToken', callable: [AuthenticationRuntime::class, 'oauthToken']),
+			new TwigFunction(name: 'decosToken', callable: [AuthenticationRuntime::class, 'decosToken']),
+			new TwigFunction(name: 'jwtToken', callable: [AuthenticationRuntime::class, 'jwtToken']),
+		];
 
-    }//end getFunctions()
+	}//end getFunctions()
 }//end class

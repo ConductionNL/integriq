@@ -38,6 +38,5 @@ use Exception;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
-class IwmoIjwTranslationException extends Exception
-{
+class IwmoIjwTranslationException extends Exception {
 }//end class

@@ -55,91 +55,88 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/tables-bridge/proposal.md#risk-3-ci-image-may-not-have-the-tables-app-installed
  */
-class TablesBridgeIntegrationTest extends TestCase
-{
+class TablesBridgeIntegrationTest extends TestCase {
 
-    /**
-     * Skip the whole class unless a live fixture is configured — proposal.md
-     * Risk 3's "skip (not fail) when the Tables app is absent" requirement.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Skip the whole class unless a live fixture is configured — proposal.md
+	 * Risk 3's "skip (not fail) when the Tables app is absent" requirement.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        if (class_exists('OCA\\Tables\\AppInfo\\Application') === false) {
-            $this->markTestSkipped(
-                'Nextcloud Tables app is not installed in this environment — '.
-                'tables-bridge integration coverage is stubbed-client-only here '.
-                '(see TablesSyncAdapterTest/TablesOcsClientTest); this class is '.
-                'the live-instance fixture for a dev container that HAS Tables.'
-            );
-        }
+		if (class_exists('OCA\\Tables\\AppInfo\\Application') === false) {
+			$this->markTestSkipped(
+				'Nextcloud Tables app is not installed in this environment — '
+				. 'tables-bridge integration coverage is stubbed-client-only here '
+				. '(see TablesSyncAdapterTest/TablesOcsClientTest); this class is '
+				. 'the live-instance fixture for a dev container that HAS Tables.'
+			);
+		}
 
-        $baseUrl = getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
-        if ($baseUrl === false || $baseUrl === '') {
-            $this->markTestSkipped(
-                'OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL is not set — no live '.
-                'Nextcloud+Tables fixture configured for this run.'
-            );
-        }
+		$baseUrl = getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
+		if ($baseUrl === false || $baseUrl === '') {
+			$this->markTestSkipped(
+				'OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL is not set — no live '
+				. 'Nextcloud+Tables fixture configured for this run.'
+			);
+		}
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Create → update → delete round-trip against a real table, using the
-     * real `TablesOcsClient` over a real `CallService`/Guzzle dispatch.
-     *
-     * @return void
-     */
-    public function testCreateUpdateDeleteRoundTripAgainstRealTable(): void
-    {
-        $baseUrl  = (string) getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
-        $user     = (string) (getenv('OPENCONNECTOR_TABLES_INTEGRATION_USER') ?: 'admin');
-        $password = (string) (getenv('OPENCONNECTOR_TABLES_INTEGRATION_PASSWORD') ?: 'admin');
-        $tableId  = (int) (getenv('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID') ?: 0);
+	/**
+	 * Create → update → delete round-trip against a real table, using the
+	 * real `TablesOcsClient` over a real `CallService`/Guzzle dispatch.
+	 *
+	 * @return void
+	 */
+	public function testCreateUpdateDeleteRoundTripAgainstRealTable(): void {
+		$baseUrl = (string)getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
+		$user = (string)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_USER') ?: 'admin');
+		$password = (string)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_PASSWORD') ?: 'admin');
+		$tableId = (int)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID') ?: 0);
 
-        if ($tableId <= 0) {
-            $this->markTestSkipped('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID is not set to a valid table id.');
-        }
+		if ($tableId <= 0) {
+			$this->markTestSkipped('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID is not set to a valid table id.');
+		}
 
-        // A real CallService instance is constructed by the app container in
-        // production (IClientService, ICertificateManager, etc.); building
-        // one standalone here would require the full Nextcloud runtime that
-        // this standalone PHPUnit process does not have. A live-instance CI
-        // job runs this suite from WITHIN the app container instead, where
-        // autowiring provides a real CallService and this final guard does
-        // not trigger — the create/update/delete round trip below then runs
-        // for real (proposal.md Risk 3 follow-up).
-        if (class_exists(CallService::class) === false || function_exists('OC_App::isEnabled') === false) {
-            $this->markTestSkipped(
-                'This process is not running inside the Nextcloud app container — '.
-                'a real CallService/Guzzle dispatch is not constructible standalone.'
-            );
-        }
+		// A real CallService instance is constructed by the app container in
+		// production (IClientService, ICertificateManager, etc.); building
+		// one standalone here would require the full Nextcloud runtime that
+		// this standalone PHPUnit process does not have. A live-instance CI
+		// job runs this suite from WITHIN the app container instead, where
+		// autowiring provides a real CallService and this final guard does
+		// not trigger — the create/update/delete round trip below then runs
+		// for real (proposal.md Risk 3 follow-up).
+		if (class_exists(CallService::class) === false || function_exists('OC_App::isEnabled') === false) {
+			$this->markTestSkipped(
+				'This process is not running inside the Nextcloud app container — '
+				. 'a real CallService/Guzzle dispatch is not constructible standalone.'
+			);
+		}
 
-        $source = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'location'       => $baseUrl,
-                'authentication' => ['authenticationMethod' => 'basic', 'username' => $user, 'password' => $password],
-            ],
-            'integration-source-uuid'
-        );
+		$source = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'location' => $baseUrl,
+				'authentication' => ['authenticationMethod' => 'basic', 'username' => $user, 'password' => $password],
+			],
+			'integration-source-uuid'
+		);
 
-        /** @var CallService $callService */
-        $callService = \OC::$server->get(CallService::class);
-        $client      = new TablesOcsClient($callService, \OC::$server->get(LoggerInterface::class));
+		/** @var CallService $callService */
+		$callService = \OC::$server->get(CallService::class);
+		$client = new TablesOcsClient($callService, \OC::$server->get(LoggerInterface::class));
 
-        $created = $client->createRow(source: $source, tableId: $tableId, data: []);
-        $this->assertArrayHasKey('id', $created);
+		$created = $client->createRow(source: $source, tableId: $tableId, data: []);
+		$this->assertArrayHasKey('id', $created);
 
-        $updated = $client->updateRow(source: $source, rowId: (int) $created['id'], data: []);
-        $this->assertSame($created['id'], $updated['id']);
+		$updated = $client->updateRow(source: $source, rowId: (int)$created['id'], data: []);
+		$this->assertSame($created['id'], $updated['id']);
 
-        $client->deleteRow(source: $source, rowId: (int) $created['id']);
-        $this->addToAssertionCount(1);
+		$client->deleteRow(source: $source, rowId: (int)$created['id']);
+		$this->addToAssertionCount(1);
 
-    }//end testCreateUpdateDeleteRoundTripAgainstRealTable()
+	}//end testCreateUpdateDeleteRoundTripAgainstRealTable()
 }//end class

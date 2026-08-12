@@ -40,16 +40,14 @@ use Exception;
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-feature-detection--forms-app-absence-hides-the-type-entirely-req-001
  */
-class FormsFeatureDisabledException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message Human-readable message naming the missing dependency.
-     */
-    public function __construct(string $message='The Forms app is not enabled')
-    {
-        parent::__construct(message: $message, code: 409);
+class FormsFeatureDisabledException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message naming the missing dependency.
+	 */
+	public function __construct(string $message = 'The Forms app is not enabled') {
+		parent::__construct(message: $message, code: 409);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

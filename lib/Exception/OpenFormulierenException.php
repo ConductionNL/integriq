@@ -35,6 +35,5 @@ use Exception;
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
-class OpenFormulierenException extends Exception
-{
+class OpenFormulierenException extends Exception {
 }//end class

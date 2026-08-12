@@ -38,98 +38,91 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class RolTranslator extends AbstractZgwResourceTranslator
-{
+class RolTranslator extends AbstractZgwResourceTranslator {
 
-    /**
-     * Fields procest's own `LoadDefaultZgwMappings::getRolMapping()`
-     * always emits and this translator treats as mandatory on both sides.
-     *
-     * @var string[]
-     */
-    private const REQUIRED_FIELDS = [
-        'url',
-        'uuid',
-        'zaak',
-        'roltype',
-        'betrokkeneIdentificatie',
-    ];
+	/**
+	 * Fields procest's own `LoadDefaultZgwMappings::getRolMapping()`
+	 * always emits and this translator treats as mandatory on both sides.
+	 *
+	 * @var string[]
+	 */
+	private const REQUIRED_FIELDS = [
+		'url',
+		'uuid',
+		'zaak',
+		'roltype',
+		'betrokkeneIdentificatie',
+	];
 
-    /**
-     * The real ZGW `betrokkeneType` discriminator field, absent from the fleet's shape.
-     *
-     * @var string
-     */
-    private const BETROKKENE_TYPE_FIELD = 'betrokkeneType';
+	/**
+	 * The real ZGW `betrokkeneType` discriminator field, absent from the fleet's shape.
+	 *
+	 * @var string
+	 */
+	private const BETROKKENE_TYPE_FIELD = 'betrokkeneType';
 
-    /**
-     * The documented, best-effort default this translator applies when
-     * translating UP to `1.6` — NOT a verified fact about any specific
-     * `rol` payload's real participant type, see class docblock.
-     *
-     * @var string
-     */
-    private const BETROKKENE_TYPE_DEFAULT = 'natuurlijk_persoon';
+	/**
+	 * The documented, best-effort default this translator applies when
+	 * translating UP to `1.6` — NOT a verified fact about any specific
+	 * `rol` payload's real participant type, see class docblock.
+	 *
+	 * @var string
+	 */
+	private const BETROKKENE_TYPE_DEFAULT = 'natuurlijk_persoon';
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The resource slug.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function getResource(): string
-    {
-        return 'rol';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The resource slug.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function getResource(): string {
+		return 'rol';
+	}//end getResource()
 
-    }//end getResource()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Adds `betrokkeneType` with a documented best-effort default when
+	 * absent — LOSSY: the fleet's own source data does not carry the real
+	 * discriminator, see class docblock.
+	 *
+	 * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.6`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV16(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    /**
-     * {@inheritDoc}
-     *
-     * Adds `betrokkeneType` with a documented best-effort default when
-     * absent — LOSSY: the fleet's own source data does not carry the real
-     * discriminator, see class docblock.
-     *
-     * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.6`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV16(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
+		if (array_key_exists(self::BETROKKENE_TYPE_FIELD, $payload) === false
+			|| $payload[self::BETROKKENE_TYPE_FIELD] === null
+		) {
+			$payload[self::BETROKKENE_TYPE_FIELD] = self::BETROKKENE_TYPE_DEFAULT;
+		}
 
-        if (array_key_exists(self::BETROKKENE_TYPE_FIELD, $payload) === false
-            || $payload[self::BETROKKENE_TYPE_FIELD] === null
-        ) {
-            $payload[self::BETROKKENE_TYPE_FIELD] = self::BETROKKENE_TYPE_DEFAULT;
-        }
+		return $payload;
+	}//end translateToV16()
 
-        return $payload;
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Strips `betrokkeneType` — the fleet's own shape never carries it, so
+	 * this direction is lossless with respect to what procest itself reads.
+	 *
+	 * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.0`-shaped payload.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV1x(array $payload): array {
+		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
 
-    }//end translateToV16()
+		unset($payload[self::BETROKKENE_TYPE_FIELD]);
 
-    /**
-     * {@inheritDoc}
-     *
-     * Strips `betrokkeneType` — the fleet's own shape never carries it, so
-     * this direction is lossless with respect to what procest itself reads.
-     *
-     * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.0`-shaped payload.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV1x(array $payload): array
-    {
-        $this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-
-        unset($payload[self::BETROKKENE_TYPE_FIELD]);
-
-        return $payload;
-
-    }//end translateToV1x()
+		return $payload;
+	}//end translateToV1x()
 }//end class

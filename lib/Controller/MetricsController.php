@@ -60,68 +60,65 @@ use OCP\IRequest;
  *
  * @spec openspec/specs/apphost-adoption/spec.md
  */
-class MetricsController extends Controller
-{
+class MetricsController extends Controller {
 
-    /**
-     * The required dependency app id.
-     *
-     * @var string
-     */
-    private const REQUIRED_APP = 'openregister';
+	/**
+	 * The required dependency app id.
+	 *
+	 * @var string
+	 */
+	private const REQUIRED_APP = 'openregister';
 
-    /**
-     * Prometheus text exposition content type (mirrors the engine's renderer).
-     *
-     * @var string
-     */
-    private const CONTENT_TYPE = 'text/plain; version=0.0.4; charset=utf-8';
+	/**
+	 * Prometheus text exposition content type (mirrors the engine's renderer).
+	 *
+	 * @var string
+	 */
+	private const CONTENT_TYPE = 'text/plain; version=0.0.4; charset=utf-8';
 
-    /**
-     * Constructor.
-     *
-     * @param string                        $appName    Calling app id (openconnector).
-     * @param IRequest                      $request    HTTP request.
-     * @param IAppManager                   $appManager App-enablement query service (never touches OpenRegister classes).
-     * @param GenericMetricsController|null $delegate   Engine metrics controller, or null when OpenRegister is absent.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly IAppManager $appManager,
-        private readonly ?GenericMetricsController $delegate=null
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName Calling app id (openconnector).
+	 * @param IRequest $request HTTP request.
+	 * @param IAppManager $appManager App-enablement query service (never touches OpenRegister classes).
+	 * @param GenericMetricsController|null $delegate Engine metrics controller, or null when OpenRegister is absent.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly IAppManager $appManager,
+		private readonly ?GenericMetricsController $delegate = null,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * GET /api/metrics — declarative Prometheus metrics (admin-only, ADR-006).
-     *
-     * Admin-only by the deliberate absence of `#[NoAdminRequired]`.
-     *
-     * Returns HTTP 503 with a Prometheus comment line when the AppHost engine
-     * is unavailable (OpenRegister absent or disabled) — never a 500, and
-     * without referencing any OpenRegister class on that path.
-     *
-     * @return TextPlainResponse Prometheus text exposition 0.0.4.
-     *
-     * @spec openspec/specs/apphost-adoption/spec.md — Requirement: Declarative Metrics Parity
-     */
-    #[NoCSRFRequired]
-    public function index(): TextPlainResponse
-    {
-        if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
-            $response = new TextPlainResponse(
-                '# metrics unavailable: OpenConnector requires the OpenRegister app — install and enable it.'."\n",
-                Http::STATUS_SERVICE_UNAVAILABLE
-            );
-            $response->addHeader('Content-Type', self::CONTENT_TYPE);
+	/**
+	 * GET /api/metrics — declarative Prometheus metrics (admin-only, ADR-006).
+	 *
+	 * Admin-only by the deliberate absence of `#[NoAdminRequired]`.
+	 *
+	 * Returns HTTP 503 with a Prometheus comment line when the AppHost engine
+	 * is unavailable (OpenRegister absent or disabled) — never a 500, and
+	 * without referencing any OpenRegister class on that path.
+	 *
+	 * @return TextPlainResponse Prometheus text exposition 0.0.4.
+	 *
+	 * @spec openspec/specs/apphost-adoption/spec.md — Requirement: Declarative Metrics Parity
+	 */
+	#[NoCSRFRequired]
+	public function index(): TextPlainResponse {
+		if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
+			$response = new TextPlainResponse(
+				'# metrics unavailable: OpenConnector requires the OpenRegister app — install and enable it.' . "\n",
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+			$response->addHeader('Content-Type', self::CONTENT_TYPE);
 
-            return $response;
-        }
+			return $response;
+		}
 
-        return $this->delegate->index();
-
-    }//end index()
+		return $this->delegate->index();
+	}//end index()
 }//end class

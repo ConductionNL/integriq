@@ -38,234 +38,211 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class PdokConnectorTest extends TestCase
-{
-    /**
-     * @var IClientService|MockObject
-     */
-    private $clientService;
+class PdokConnectorTest extends TestCase {
+	/**
+	 * @var IClientService|MockObject
+	 */
+	private $clientService;
 
-    /**
-     * @var ICacheFactory|MockObject
-     */
-    private $cacheFactory;
+	/**
+	 * @var ICacheFactory|MockObject
+	 */
+	private $cacheFactory;
 
-    /**
-     * @var ICache|MockObject
-     */
-    private $cache;
+	/**
+	 * @var ICache|MockObject
+	 */
+	private $cache;
 
-    /**
-     * @var LoggerInterface|MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var ContainerInterface|MockObject
-     */
-    private $container;
+	/**
+	 * @var ContainerInterface|MockObject
+	 */
+	private $container;
 
+	/**
+	 * Set up mocks shared across tests.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->clientService = $this->createMock(IClientService::class);
+		$this->cache = $this->createMock(ICache::class);
+		$this->cacheFactory = $this->createMock(ICacheFactory::class);
+		$this->cacheFactory->method('createDistributed')->willReturn($this->cache);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->container->method('get')->willThrowException(new \RuntimeException('no OR'));
 
-    /**
-     * Set up mocks shared across tests.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->clientService = $this->createMock(IClientService::class);
-        $this->cache         = $this->createMock(ICache::class);
-        $this->cacheFactory  = $this->createMock(ICacheFactory::class);
-        $this->cacheFactory->method('createDistributed')->willReturn($this->cache);
-        $this->logger    = $this->createMock(LoggerInterface::class);
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->container->method('get')->willThrowException(new \RuntimeException('no OR'));
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * `normalize` maps every documented PDOK field to the canonical shape on a full address.
+	 *
+	 * @return void
+	 */
+	public function testNormalizeFullAddress(): void {
+		$fixture = $this->loadFixture('lauriergracht');
+		$connector = $this->makeConnector();
 
+		$result = $connector->normalize($fixture['response']['docs'][0]);
 
-    /**
-     * `normalize` maps every documented PDOK field to the canonical shape on a full address.
-     *
-     * @return void
-     */
-    public function testNormalizeFullAddress(): void
-    {
-        $fixture   = $this->loadFixture('lauriergracht');
-        $connector = $this->makeConnector();
+		$this->assertSame('adr-0363200000218908', $result['pdokId']);
+		$this->assertSame('Lauriergracht', $result['streetAddress']);
+		$this->assertSame('14h', $result['houseNumber']);
+		$this->assertSame('1016RD', $result['postalCode']);
+		$this->assertSame('Amsterdam', $result['addressLocality']);
+		$this->assertSame('Noord-Holland', $result['addressRegion']);
+		$this->assertSame('NL', $result['addressCountry']);
+		$this->assertSame('0363200000218908', $result['bagAddressId']);
+		$this->assertSame('pdok', $result['source']);
+		$this->assertIsArray($result['location']);
+		$this->assertSame('Point', $result['location']['type']);
+		$this->assertSame([4.8825, 52.371], $result['location']['coordinates']);
 
-        $result = $connector->normalize($fixture['response']['docs'][0]);
+	}//end testNormalizeFullAddress()
 
-        $this->assertSame('adr-0363200000218908', $result['pdokId']);
-        $this->assertSame('Lauriergracht', $result['streetAddress']);
-        $this->assertSame('14h', $result['houseNumber']);
-        $this->assertSame('1016RD', $result['postalCode']);
-        $this->assertSame('Amsterdam', $result['addressLocality']);
-        $this->assertSame('Noord-Holland', $result['addressRegion']);
-        $this->assertSame('NL', $result['addressCountry']);
-        $this->assertSame('0363200000218908', $result['bagAddressId']);
-        $this->assertSame('pdok', $result['source']);
-        $this->assertIsArray($result['location']);
-        $this->assertSame('Point', $result['location']['type']);
-        $this->assertSame([4.8825, 52.371], $result['location']['coordinates']);
+	/**
+	 * Woonplaats-only fixture maps optional fields to null (never absent).
+	 *
+	 * @return void
+	 */
+	public function testNormalizeWoonplaatsHasNullFieldsPresent(): void {
+		$fixture = $this->loadFixture('woonplaats-tilburg');
+		$connector = $this->makeConnector();
 
-    }//end testNormalizeFullAddress()
+		$result = $connector->normalize($fixture['response']['docs'][0]);
 
+		$this->assertArrayHasKey('postalCode', $result);
+		$this->assertNull($result['postalCode']);
+		$this->assertArrayHasKey('houseNumber', $result);
+		$this->assertNull($result['houseNumber']);
+		$this->assertArrayHasKey('streetAddress', $result);
+		$this->assertNull($result['streetAddress']);
+		$this->assertSame('Tilburg', $result['addressLocality']);
+		$this->assertSame('pdok', $result['source']);
 
-    /**
-     * Woonplaats-only fixture maps optional fields to null (never absent).
-     *
-     * @return void
-     */
-    public function testNormalizeWoonplaatsHasNullFieldsPresent(): void
-    {
-        $fixture   = $this->loadFixture('woonplaats-tilburg');
-        $connector = $this->makeConnector();
+	}//end testNormalizeWoonplaatsHasNullFieldsPresent()
 
-        $result = $connector->normalize($fixture['response']['docs'][0]);
+	/**
+	 * Stadhuisplein fixture: number without huisletter formatting.
+	 *
+	 * @return void
+	 */
+	public function testNormalizeWithoutHuisletter(): void {
+		$fixture = $this->loadFixture('stadhuisplein-tilburg');
+		$connector = $this->makeConnector();
 
-        $this->assertArrayHasKey('postalCode', $result);
-        $this->assertNull($result['postalCode']);
-        $this->assertArrayHasKey('houseNumber', $result);
-        $this->assertNull($result['houseNumber']);
-        $this->assertArrayHasKey('streetAddress', $result);
-        $this->assertNull($result['streetAddress']);
-        $this->assertSame('Tilburg', $result['addressLocality']);
-        $this->assertSame('pdok', $result['source']);
+		$result = $connector->normalize($fixture['response']['docs'][0]);
 
-    }//end testNormalizeWoonplaatsHasNullFieldsPresent()
+		$this->assertSame('1', $result['houseNumber']);
+		$this->assertSame('5038TC', $result['postalCode']);
+		$this->assertSame('Tilburg', $result['addressLocality']);
 
+	}//end testNormalizeWithoutHuisletter()
 
-    /**
-     * Stadhuisplein fixture: number without huisletter formatting.
-     *
-     * @return void
-     */
-    public function testNormalizeWithoutHuisletter(): void
-    {
-        $fixture   = $this->loadFixture('stadhuisplein-tilburg');
-        $connector = $this->makeConnector();
+	/**
+	 * Cache hit on `suggest` skips the HTTP call entirely.
+	 *
+	 * @return void
+	 */
+	public function testSuggestCacheHitSkipsUpstream(): void {
+		$cached = ['docs' => [['pdokId' => 'cached']], 'numFound' => 1];
+		$this->cache->method('get')->willReturn($cached);
+		$this->clientService->expects($this->never())->method('newClient');
 
-        $result = $connector->normalize($fixture['response']['docs'][0]);
+		$result = $this->makeConnector()->suggest('lauriergracht');
+		$this->assertSame($cached, $result);
 
-        $this->assertSame('1', $result['houseNumber']);
-        $this->assertSame('5038TC', $result['postalCode']);
-        $this->assertSame('Tilburg', $result['addressLocality']);
+	}//end testSuggestCacheHitSkipsUpstream()
 
-    }//end testNormalizeWithoutHuisletter()
+	/**
+	 * Open circuit returns the stale-flagged envelope without calling upstream.
+	 *
+	 * @return void
+	 */
+	public function testOpenCircuitShortCircuitsUpstream(): void {
+		$this->cache->method('get')->willReturnCallback(function ($key) {
+			if (str_contains($key, '::circuit')) {
+				return ['state' => 'open', 'failures' => 5, 'opened_at' => time()];
+			}
+			return null;
+		});
+		$this->clientService->expects($this->never())->method('newClient');
 
+		$result = $this->makeConnector()->lookup('adr-0363200000218908');
 
-    /**
-     * Cache hit on `suggest` skips the HTTP call entirely.
-     *
-     * @return void
-     */
-    public function testSuggestCacheHitSkipsUpstream(): void
-    {
-        $cached = ['docs' => [['pdokId' => 'cached']], 'numFound' => 1];
-        $this->cache->method('get')->willReturn($cached);
-        $this->clientService->expects($this->never())->method('newClient');
+		$this->assertTrue($result['stale']);
+		$this->assertSame(0, $result['numFound']);
 
-        $result = $this->makeConnector()->suggest('lauriergracht');
-        $this->assertSame($cached, $result);
+	}//end testOpenCircuitShortCircuitsUpstream()
 
-    }//end testSuggestCacheHitSkipsUpstream()
+	/**
+	 * Empty query parameter short-circuits the upstream call.
+	 *
+	 * @return void
+	 */
+	public function testEmptyQueryReturnsEmpty(): void {
+		$this->clientService->expects($this->never())->method('newClient');
+		$result = $this->makeConnector()->suggest('   ');
+		$this->assertSame(0, $result['numFound']);
+		$this->assertSame([], $result['docs']);
 
+	}//end testEmptyQueryReturnsEmpty()
 
-    /**
-     * Open circuit returns the stale-flagged envelope without calling upstream.
-     *
-     * @return void
-     */
-    public function testOpenCircuitShortCircuitsUpstream(): void
-    {
-        $this->cache->method('get')->willReturnCallback(function ($key) {
-            if (str_contains($key, '::circuit')) {
-                return ['state' => 'open', 'failures' => 5, 'opened_at' => time()];
-            }
-            return null;
-        });
-        $this->clientService->expects($this->never())->method('newClient');
+	/**
+	 * A successful 200 response is decoded, normalised and cached.
+	 *
+	 * @return void
+	 */
+	public function testSuccessfulFreeTextSearch(): void {
+		$fixture = $this->loadFixture('lauriergracht');
 
-        $result = $this->makeConnector()->lookup('adr-0363200000218908');
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
+		$response->method('getBody')->willReturn(json_encode($fixture));
 
-        $this->assertTrue($result['stale']);
-        $this->assertSame(0, $result['numFound']);
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturn($response);
+		$this->clientService->method('newClient')->willReturn($client);
+		$this->cache->method('get')->willReturn(null);
 
-    }//end testOpenCircuitShortCircuitsUpstream()
+		$result = $this->makeConnector()->free('Lauriergracht');
 
+		$this->assertSame(1, $result['numFound']);
+		$this->assertSame('Lauriergracht', $result['docs'][0]['streetAddress']);
 
-    /**
-     * Empty query parameter short-circuits the upstream call.
-     *
-     * @return void
-     */
-    public function testEmptyQueryReturnsEmpty(): void
-    {
-        $this->clientService->expects($this->never())->method('newClient');
-        $result = $this->makeConnector()->suggest('   ');
-        $this->assertSame(0, $result['numFound']);
-        $this->assertSame([], $result['docs']);
+	}//end testSuccessfulFreeTextSearch()
 
-    }//end testEmptyQueryReturnsEmpty()
+	/**
+	 * Build a fresh connector with the shared mocks.
+	 *
+	 * @return PdokConnector
+	 */
+	private function makeConnector(): PdokConnector {
+		return new PdokConnector(
+			$this->clientService,
+			$this->cacheFactory,
+			$this->logger,
+			$this->container
+		);
 
+	}//end makeConnector()
 
-    /**
-     * A successful 200 response is decoded, normalised and cached.
-     *
-     * @return void
-     */
-    public function testSuccessfulFreeTextSearch(): void
-    {
-        $fixture = $this->loadFixture('lauriergracht');
-
-        $response = $this->createMock(IResponse::class);
-        $response->method('getStatusCode')->willReturn(200);
-        $response->method('getBody')->willReturn(json_encode($fixture));
-
-        $client = $this->createMock(IClient::class);
-        $client->method('get')->willReturn($response);
-        $this->clientService->method('newClient')->willReturn($client);
-        $this->cache->method('get')->willReturn(null);
-
-        $result = $this->makeConnector()->free('Lauriergracht');
-
-        $this->assertSame(1, $result['numFound']);
-        $this->assertSame('Lauriergracht', $result['docs'][0]['streetAddress']);
-
-    }//end testSuccessfulFreeTextSearch()
-
-
-    /**
-     * Build a fresh connector with the shared mocks.
-     *
-     * @return PdokConnector
-     */
-    private function makeConnector(): PdokConnector
-    {
-        return new PdokConnector(
-            $this->clientService,
-            $this->cacheFactory,
-            $this->logger,
-            $this->container
-        );
-
-    }//end makeConnector()
-
-
-    /**
-     * Load a raw PDOK fixture by name.
-     *
-     * @param string $name The fixture file stem.
-     *
-     * @return array Decoded fixture payload.
-     */
-    private function loadFixture(string $name): array
-    {
-        $path = (__DIR__.'/../../fixtures/pdok/fixture-'.$name.'.json');
-        return json_decode((string) file_get_contents($path), true);
-
-    }//end loadFixture()
-
+	/**
+	 * Load a raw PDOK fixture by name.
+	 *
+	 * @param string $name The fixture file stem.
+	 *
+	 * @return array Decoded fixture payload.
+	 */
+	private function loadFixture(string $name): array {
+		$path = (__DIR__ . '/../../fixtures/pdok/fixture-' . $name . '.json');
+		return json_decode((string)file_get_contents($path), true);
+	}//end loadFixture()
 
 }//end class

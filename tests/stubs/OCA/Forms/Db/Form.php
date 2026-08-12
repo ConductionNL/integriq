@@ -26,57 +26,49 @@ namespace OCA\Forms\Db;
 /**
  * Minimal stub for OCA\Forms\Db\Form.
  */
-class Form
-{
+class Form {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param integer $id The form id.
+	 * @param string $title The form title.
+	 */
+	public function __construct(
+		private int $id,
+		private string $title = '',
+	) {
 
-    /**
-     * Constructor.
-     *
-     * @param integer $id    The form id.
-     * @param string  $title The form title.
-     */
-    public function __construct(private int $id, private string $title='')
-    {
+	}//end __construct()
 
-    }//end __construct()
+	/**
+	 * Get the form id.
+	 *
+	 * @return integer
+	 */
+	public function getId(): int {
+		return $this->id;
+	}//end getId()
 
+	/**
+	 * Get the form title.
+	 *
+	 * @return string
+	 */
+	public function getTitle(): string {
+		return $this->title;
+	}//end getTitle()
 
-    /**
-     * Get the form id.
-     *
-     * @return integer
-     */
-    public function getId(): int
-    {
-        return $this->id;
+	/**
+	 * Read the form as a plain array (mirrors the real class's `read()`).
+	 *
+	 * @return array
+	 */
+	public function read(): array {
+		return [
+			'id' => $this->id,
+			'title' => $this->title,
+		];
 
-    }//end getId()
-
-
-    /**
-     * Get the form title.
-     *
-     * @return string
-     */
-    public function getTitle(): string
-    {
-        return $this->title;
-
-    }//end getTitle()
-
-
-    /**
-     * Read the form as a plain array (mirrors the real class's `read()`).
-     *
-     * @return array
-     */
-    public function read(): array
-    {
-        return [
-            'id'    => $this->id,
-            'title' => $this->title,
-        ];
-
-    }//end read()
+	}//end read()
 }//end class

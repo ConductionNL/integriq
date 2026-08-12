@@ -30,84 +30,78 @@ namespace OCA\OpenConnector\Adapters\Pdok;
 /**
  * Mock PDOK geocoding client — dormant default.
  */
-final class PdokGeocodingClientMock extends PdokGeocodingClient
-{
-    /**
-     * Canonical canned PostalAddress (Conduction HQ, Lauriergracht 37,
-     * 1016 RG Amsterdam) — matches the seed fixture in
-     * `tests/fixtures/pdok/fixture-lauriergracht.json` so downstream
-     * tests can rely on it.
-     *
-     * @return array<string,mixed>
-     */
-    private function cannedLauriergracht(): array
-    {
-        return [
-            'displayName'     => 'Lauriergracht 37, 1016 RG Amsterdam',
-            'streetAddress'   => 'Lauriergracht',
-            'houseNumber'     => '37',
-            'postalCode'      => '1016 RG',
-            'addressLocality' => 'Amsterdam',
-            'addressRegion'   => 'Noord-Holland',
-            'location'        => [
-                'type'        => 'Point',
-                'coordinates' => [4.88525, 52.37025],
-            ],
-            'bagAddressId'    => '0363200000406543',
-            'bagBuildingId'   => '0363100012180043',
-            'pdokId'          => 'adr-mock-lauriergracht-37',
-            'source'          => 'pdok',
-        ];
-    }//end cannedLauriergracht()
+final class PdokGeocodingClientMock extends PdokGeocodingClient {
+	/**
+	 * Canonical canned PostalAddress (Conduction HQ, Lauriergracht 37,
+	 * 1016 RG Amsterdam) — matches the seed fixture in
+	 * `tests/fixtures/pdok/fixture-lauriergracht.json` so downstream
+	 * tests can rely on it.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function cannedLauriergracht(): array {
+		return [
+			'displayName' => 'Lauriergracht 37, 1016 RG Amsterdam',
+			'streetAddress' => 'Lauriergracht',
+			'houseNumber' => '37',
+			'postalCode' => '1016 RG',
+			'addressLocality' => 'Amsterdam',
+			'addressRegion' => 'Noord-Holland',
+			'location' => [
+				'type' => 'Point',
+				'coordinates' => [4.88525, 52.37025],
+			],
+			'bagAddressId' => '0363200000406543',
+			'bagBuildingId' => '0363100012180043',
+			'pdokId' => 'adr-mock-lauriergracht-37',
+			'source' => 'pdok',
+		];
+	}//end cannedLauriergracht()
 
-    /**
-     * Dormant suggest — returns one canned entry regardless of query.
-     *
-     * @param string $query Free-text query.
-     * @param int    $rows  Maximum rows.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    public function suggest(string $query, int $rows=10): array
-    {
-        unset($query, $rows);
-        return [$this->cannedLauriergracht()];
-    }//end suggest()
+	/**
+	 * Dormant suggest — returns one canned entry regardless of query.
+	 *
+	 * @param string $query Free-text query.
+	 * @param int $rows Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function suggest(string $query, int $rows = 10): array {
+		unset($query, $rows);
+		return [$this->cannedLauriergracht()];
+	}//end suggest()
 
-    /**
-     * Dormant lookup — returns the canned entry for any id.
-     *
-     * @param string $pdokId PDOK id.
-     *
-     * @return array<string,mixed>|null
-     */
-    public function lookup(string $pdokId): ?array
-    {
-        unset($pdokId);
-        return $this->cannedLauriergracht();
-    }//end lookup()
+	/**
+	 * Dormant lookup — returns the canned entry for any id.
+	 *
+	 * @param string $pdokId PDOK id.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	public function lookup(string $pdokId): ?array {
+		unset($pdokId);
+		return $this->cannedLauriergracht();
+	}//end lookup()
 
-    /**
-     * Dormant reverse — returns one candidate regardless of input.
-     *
-     * @param float $latitude  Latitude.
-     * @param float $longitude Longitude.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    public function reverse(float $latitude, float $longitude): array
-    {
-        unset($latitude, $longitude);
-        return [$this->cannedLauriergracht()];
-    }//end reverse()
+	/**
+	 * Dormant reverse — returns one candidate regardless of input.
+	 *
+	 * @param float $latitude Latitude.
+	 * @param float $longitude Longitude.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function reverse(float $latitude, float $longitude): array {
+		unset($latitude, $longitude);
+		return [$this->cannedLauriergracht()];
+	}//end reverse()
 
-    /**
-     * Flavour identifier.
-     *
-     * @return string
-     */
-    public function flavour(): string
-    {
-        return 'mock';
-    }//end flavour()
+	/**
+	 * Flavour identifier.
+	 *
+	 * @return string
+	 */
+	public function flavour(): string {
+		return 'mock';
+	}//end flavour()
 }//end class

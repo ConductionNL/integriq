@@ -41,17 +41,15 @@ use Exception;
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
  */
-class FormsConfigException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message    Human-readable, secret-free message.
-     * @param int    $statusCode The status code discovery-endpoint callers should map this to (default 400).
-     */
-    public function __construct(string $message, int $statusCode=400)
-    {
-        parent::__construct(message: $message, code: $statusCode);
+class FormsConfigException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable, secret-free message.
+	 * @param int $statusCode The status code discovery-endpoint callers should map this to (default 400).
+	 */
+	public function __construct(string $message, int $statusCode = 400) {
+		parent::__construct(message: $message, code: $statusCode);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test stub for Nextcloud's concrete `\OC\AppFramework\Http\Request`.
  *
@@ -44,276 +45,206 @@ use OCP\IRequestId;
  * method returns an inert default — sufficient for exercising
  * `EndpointService::buildSyntheticRequest()` without a live NC install.
  */
-class Request implements IRequest
-{
-
-    /**
-     * The merged GET/POST/urlParams/params array (mirrors the real class's `parameters`).
-     *
-     * @var array
-     */
-    private array $parameters;
-
-    /**
-     * The request method (`GET`, `POST`, ...).
-     *
-     * @var string
-     */
-    private string $method;
-
-
-    /**
-     * Constructor — mirrors the real class's public signature.
-     *
-     * @param array        $vars         Request vars (`method`, `get`, `post`, `params`, `urlParams`, ...).
-     * @param IRequestId   $requestId    Nextcloud request-id service.
-     * @param IConfig      $config       Nextcloud system configuration (unused by this stub).
-     * @param mixed        $csrfTokenManager Unused by this stub (real signature accepts `?CsrfTokenManager`).
-     * @param string       $stream       Unused by this stub.
-     */
-    public function __construct(
-        array $vars,
-        private readonly IRequestId $requestId,
-        private readonly IConfig $config,
-        $csrfTokenManager=null,
-        string $stream='php://input'
-    ) {
-        $this->method = ($vars['method'] ?? 'GET');
-        $this->parameters = array_merge(
-            ($vars['get'] ?? []),
-            ($vars['post'] ?? []),
-            ($vars['urlParams'] ?? []),
-            ($vars['params'] ?? [])
-        );
-
-    }//end __construct()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getHeader(string $name): string
-    {
-        return '';
-
-    }//end getHeader()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getParam(string $key, $default=null)
-    {
-        return ($this->parameters[$key] ?? $default);
-
-    }//end getParam()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getParams(): array
-    {
-        return $this->parameters;
-
-    }//end getParams()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getMethod(): string
-    {
-        return $this->method;
-
-    }//end getMethod()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getUploadedFile(string $key)
-    {
-        return [];
-
-    }//end getUploadedFile()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getEnv(string $key)
-    {
-        return null;
-
-    }//end getEnv()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getCookie(string $key)
-    {
-        return null;
-
-    }//end getCookie()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function passesCSRFCheck(): bool
-    {
-        return true;
-
-    }//end passesCSRFCheck()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function passesStrictCookieCheck(): bool
-    {
-        return true;
-
-    }//end passesStrictCookieCheck()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function passesLaxCookieCheck(): bool
-    {
-        return true;
-
-    }//end passesLaxCookieCheck()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getId(): string
-    {
-        return $this->requestId->getId();
-
-    }//end getId()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getRemoteAddress(): string
-    {
-        return '127.0.0.1';
-
-    }//end getRemoteAddress()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getServerProtocol(): string
-    {
-        return 'https';
-
-    }//end getServerProtocol()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getHttpProtocol(): string
-    {
-        return 'HTTP/1.1';
-
-    }//end getHttpProtocol()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getRequestUri(): string
-    {
-        return '';
-
-    }//end getRequestUri()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getRawPathInfo(): string
-    {
-        return '';
-
-    }//end getRawPathInfo()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getPathInfo()
-    {
-        return '';
-
-    }//end getPathInfo()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getScriptName(): string
-    {
-        return '';
-
-    }//end getScriptName()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function isUserAgent(array $agent): bool
-    {
-        return false;
-
-    }//end isUserAgent()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getInsecureServerHost(): string
-    {
-        return '';
-
-    }//end getInsecureServerHost()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getServerHost(): string
-    {
-        return '';
-
-    }//end getServerHost()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function throwDecodingExceptionIfAny(): void
-    {
-        // No-op stub.
-    }//end throwDecodingExceptionIfAny()
-
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getFormat(): ?string
-    {
-        return null;
-
-    }//end getFormat()
+class Request implements IRequest {
+
+	/**
+	 * The merged GET/POST/urlParams/params array (mirrors the real class's `parameters`).
+	 *
+	 * @var array
+	 */
+	private array $parameters;
+
+	/**
+	 * The request method (`GET`, `POST`, ...).
+	 *
+	 * @var string
+	 */
+	private string $method;
+
+	/**
+	 * Constructor — mirrors the real class's public signature.
+	 *
+	 * @param array $vars Request vars (`method`, `get`, `post`, `params`, `urlParams`, ...).
+	 * @param IRequestId $requestId Nextcloud request-id service.
+	 * @param IConfig $config Nextcloud system configuration (unused by this stub).
+	 * @param mixed $csrfTokenManager Unused by this stub (real signature accepts `?CsrfTokenManager`).
+	 * @param string $stream Unused by this stub.
+	 */
+	public function __construct(
+		array $vars,
+		private readonly IRequestId $requestId,
+		private readonly IConfig $config,
+		$csrfTokenManager = null,
+		string $stream = 'php://input',
+	) {
+		$this->method = ($vars['method'] ?? 'GET');
+		$this->parameters = array_merge(
+			($vars['get'] ?? []),
+			($vars['post'] ?? []),
+			($vars['urlParams'] ?? []),
+			($vars['params'] ?? [])
+		);
+
+	}//end __construct()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getHeader(string $name): string {
+		return '';
+	}//end getHeader()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getParam(string $key, $default = null) {
+		return ($this->parameters[$key] ?? $default);
+	}//end getParam()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getParams(): array {
+		return $this->parameters;
+	}//end getParams()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getMethod(): string {
+		return $this->method;
+	}//end getMethod()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getUploadedFile(string $key) {
+		return [];
+	}//end getUploadedFile()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getEnv(string $key) {
+		return null;
+	}//end getEnv()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getCookie(string $key) {
+		return null;
+	}//end getCookie()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function passesCSRFCheck(): bool {
+		return true;
+	}//end passesCSRFCheck()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function passesStrictCookieCheck(): bool {
+		return true;
+	}//end passesStrictCookieCheck()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function passesLaxCookieCheck(): bool {
+		return true;
+	}//end passesLaxCookieCheck()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getId(): string {
+		return $this->requestId->getId();
+	}//end getId()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getRemoteAddress(): string {
+		return '127.0.0.1';
+	}//end getRemoteAddress()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getServerProtocol(): string {
+		return 'https';
+	}//end getServerProtocol()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getHttpProtocol(): string {
+		return 'HTTP/1.1';
+	}//end getHttpProtocol()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getRequestUri(): string {
+		return '';
+	}//end getRequestUri()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getRawPathInfo(): string {
+		return '';
+	}//end getRawPathInfo()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getPathInfo() {
+		return '';
+	}//end getPathInfo()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getScriptName(): string {
+		return '';
+	}//end getScriptName()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function isUserAgent(array $agent): bool {
+		return false;
+	}//end isUserAgent()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getInsecureServerHost(): string {
+		return '';
+	}//end getInsecureServerHost()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getServerHost(): string {
+		return '';
+	}//end getServerHost()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function throwDecodingExceptionIfAny(): void {
+		// No-op stub.
+	}//end throwDecodingExceptionIfAny()
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getFormat(): ?string {
+		return null;
+	}//end getFormat()
 }//end class

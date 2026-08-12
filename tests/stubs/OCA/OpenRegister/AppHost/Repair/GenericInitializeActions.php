@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test stub for OCA\OpenRegister\AppHost\Repair\GenericInitializeActions.
  *
@@ -33,43 +34,40 @@ use Psr\Log\LoggerInterface;
 /**
  * Minimal stand-in mirroring the engine's generic action-matrix repair step.
  */
-class GenericInitializeActions implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param string                   $appId      The leaf app id.
-     * @param GenericActionAuthService $actionAuth App-scoped action-auth service.
-     * @param IAppManager              $appManager App path resolution for the seed file.
-     * @param LoggerInterface          $logger     PSR logger.
-     */
-    public function __construct(
-        protected readonly string $appId,
-        protected readonly GenericActionAuthService $actionAuth,
-        protected readonly IAppManager $appManager,
-        protected readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class GenericInitializeActions implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appId The leaf app id.
+	 * @param GenericActionAuthService $actionAuth App-scoped action-auth service.
+	 * @param IAppManager $appManager App path resolution for the seed file.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		protected readonly string $appId,
+		protected readonly GenericActionAuthService $actionAuth,
+		protected readonly IAppManager $appManager,
+		protected readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Repair-step name.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return sprintf('Initialize %s action-authorization matrix (ADR-023)', $this->appId);
-    }//end getName()
+	/**
+	 * Repair-step name.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return sprintf('Initialize %s action-authorization matrix (ADR-023)', $this->appId);
+	}//end getName()
 
-    /**
-     * Seed the matrix if empty; preserve any existing admin-customised matrix.
-     *
-     * @param IOutput $output Repair output channel.
-     *
-     * @return void
-     */
-    public function run(IOutput $output): void
-    {
-        // Stub: no-op. Real behaviour lives in the peer OpenRegister app.
-    }//end run()
+	/**
+	 * Seed the matrix if empty; preserve any existing admin-customised matrix.
+	 *
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return void
+	 */
+	public function run(IOutput $output): void {
+		// Stub: no-op. Real behaviour lives in the peer OpenRegister app.
+	}//end run()
 }//end class

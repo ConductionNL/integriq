@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Rename source retention columns to snake_case.
  *
@@ -30,66 +31,61 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Renames the source retention columns from camelCase to snake_case.
  */
-class Version1Date20241206095007 extends SimpleMigrationStep
-{
-    /**
-     * Pre-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241206095007 extends SimpleMigrationStep {
+	/**
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Drops the camelCase columns and recreates them in snake_case.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Drops the camelCase columns and recreates them in snake_case.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openconnector_sources') === true) {
-            $table = $schema->getTable('openconnector_sources');
+		if ($schema->hasTable('openconnector_sources') === true) {
+			$table = $schema->getTable('openconnector_sources');
 
-            if ($table->hasColumn('logRetention') === true) {
-                $table->dropColumn('logRetention');
-                $table->addColumn('log_retention', Types::INTEGER)->setNotnull(false)->setDefault(3600);
-            }
+			if ($table->hasColumn('logRetention') === true) {
+				$table->dropColumn('logRetention');
+				$table->addColumn('log_retention', Types::INTEGER)->setNotnull(false)->setDefault(3600);
+			}
 
-            if ($table->hasColumn('errorRetention') === true) {
-                $table->dropColumn('errorRetention');
-                $table->addColumn('error_retention', Types::INTEGER)->setNotnull(false)->setDefault(86400);
-            }
-        }
+			if ($table->hasColumn('errorRetention') === true) {
+				$table->dropColumn('errorRetention');
+				$table->addColumn('error_retention', Types::INTEGER)->setNotnull(false)->setDefault(86400);
+			}
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
-
-    /**
-     * Post-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

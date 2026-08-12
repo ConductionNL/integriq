@@ -42,228 +42,218 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-rest-surface-for-sibling-apps-and-external-consumers-req-003
  */
-class ZgwVersionTranslateControllerTest extends TestCase
-{
+class ZgwVersionTranslateControllerTest extends TestCase {
 
-    /**
-     * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $request;
 
-    /**
-     * @var ZgwVersionTranslationService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $translationService;
+	/**
+	 * @var ZgwVersionTranslationService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $translationService;
 
-    /**
-     * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $userSession;
+	/**
+	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $actionAuth;
+	/**
+	 * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $actionAuth;
 
-    /**
-     * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $l;
+	/**
+	 * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $l;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var ZgwVersionTranslateController
-     */
-    private ZgwVersionTranslateController $controller;
+	/**
+	 * @var ZgwVersionTranslateController
+	 */
+	private ZgwVersionTranslateController $controller;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request            = $this->createMock(IRequest::class);
-        $this->request->method('getHeader')->willReturn('');
-        $this->translationService = $this->createMock(ZgwVersionTranslationService::class);
-        $this->userSession        = $this->createMock(IUserSession::class);
-        $this->actionAuth         = $this->createMock(ActionAuthService::class);
-        $this->l                  = $this->createMock(IL10N::class);
-        $this->l->method('t')->willReturnArgument(0);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getHeader')->willReturn('');
+		$this->translationService = $this->createMock(ZgwVersionTranslationService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->actionAuth = $this->createMock(ActionAuthService::class);
+		$this->l = $this->createMock(IL10N::class);
+		$this->l->method('t')->willReturnArgument(0);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $user = $this->createMock(IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->controller = $this->buildController();
+		$this->controller = $this->buildController();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a controller instance wired to the current mocks.
-     *
-     * @return ZgwVersionTranslateController
-     */
-    private function buildController(): ZgwVersionTranslateController
-    {
-        return new ZgwVersionTranslateController(
-            'openconnector',
-            $this->request,
-            $this->translationService,
-            new ZgwVersionNegotiationService(),
-            $this->userSession,
-            $this->actionAuth,
-            $this->l,
-            $this->logger
-        );
+	/**
+	 * Build a controller instance wired to the current mocks.
+	 *
+	 * @return ZgwVersionTranslateController
+	 */
+	private function buildController(): ZgwVersionTranslateController {
+		return new ZgwVersionTranslateController(
+			'openconnector',
+			$this->request,
+			$this->translationService,
+			new ZgwVersionNegotiationService(),
+			$this->userSession,
+			$this->actionAuth,
+			$this->l,
+			$this->logger
+		);
 
-    }//end buildController()
+	}//end buildController()
 
-    /**
-     * @return void
-     */
-    public function testTranslateRequiresAuthentication(): void
-    {
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->controller  = $this->buildController();
+	/**
+	 * @return void
+	 */
+	public function testTranslateRequiresAuthentication(): void {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->controller = $this->buildController();
 
-        $this->translationService->expects($this->never())->method('translate');
+		$this->translationService->expects($this->never())->method('translate');
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $response->getStatus());
-    }//end testTranslateRequiresAuthentication()
+		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $response->getStatus());
+	}//end testTranslateRequiresAuthentication()
 
-    /**
-     * @return void
-     */
-    public function testTranslateRequiresResourceAndPayload(): void
-    {
-        $this->request->method('getParams')->willReturn(['resource' => 'zaak']);
+	/**
+	 * @return void
+	 */
+	public function testTranslateRequiresResourceAndPayload(): void {
+		$this->request->method('getParams')->willReturn(['resource' => 'zaak']);
 
-        $this->translationService->expects($this->never())->method('translate');
+		$this->translationService->expects($this->never())->method('translate');
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
-        $this->assertSame(expected: 'missing_fields', actual: $response->getData()['error']);
-    }//end testTranslateRequiresResourceAndPayload()
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
+		$this->assertSame(expected: 'missing_fields', actual: $response->getData()['error']);
+	}//end testTranslateRequiresResourceAndPayload()
 
-    /**
-     * A valid request returns the translation service's result verbatim,
-     * proving the route actually invokes it (orphaned-capability rule).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-a-valid-translate-request-returns-the-translated-payload
-     */
-    public function testTranslateReturnsTranslatedPayload(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            [
-                'resource'    => 'status',
-                'fromVersion' => '1.0',
-                'toVersion'   => '1.6',
-                'payload'     => ['zaak' => 'https://host/zaken/abc'],
-            ]
-        );
+	/**
+	 * A valid request returns the translation service's result verbatim,
+	 * proving the route actually invokes it (orphaned-capability rule).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-a-valid-translate-request-returns-the-translated-payload
+	 */
+	public function testTranslateReturnsTranslatedPayload(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'resource' => 'status',
+				'fromVersion' => '1.0',
+				'toVersion' => '1.6',
+				'payload' => ['zaak' => 'https://host/zaken/abc'],
+			]
+		);
 
-        $this->translationService->expects($this->once())
-            ->method('translate')
-            ->with('status', '1.0', '1.6', ['zaak' => 'https://host/zaken/abc'])
-            ->willReturn(['zaak' => 'https://host/zaken/abc', 'betrokkeneType' => 'natuurlijk_persoon']);
+		$this->translationService->expects($this->once())
+			->method('translate')
+			->with('status', '1.0', '1.6', ['zaak' => 'https://host/zaken/abc'])
+			->willReturn(['zaak' => 'https://host/zaken/abc', 'betrokkeneType' => 'natuurlijk_persoon']);
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame(expected: 'status', actual: $data['resource']);
-        $this->assertSame(expected: '1.0', actual: $data['fromVersion']);
-        $this->assertSame(expected: '1.6', actual: $data['toVersion']);
-        $this->assertSame(
-            expected: ['zaak' => 'https://host/zaken/abc', 'betrokkeneType' => 'natuurlijk_persoon'],
-            actual: $data['payload']
-        );
-    }//end testTranslateReturnsTranslatedPayload()
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame(expected: 'status', actual: $data['resource']);
+		$this->assertSame(expected: '1.0', actual: $data['fromVersion']);
+		$this->assertSame(expected: '1.6', actual: $data['toVersion']);
+		$this->assertSame(
+			expected: ['zaak' => 'https://host/zaken/abc', 'betrokkeneType' => 'natuurlijk_persoon'],
+			actual: $data['payload']
+		);
+	}//end testTranslateReturnsTranslatedPayload()
 
-    /**
-     * @return void
-     */
-    public function testTranslateReturnsUnknownResourceAs400(): void
-    {
-        $this->request->method('getParams')->willReturn(['resource' => 'besluittype', 'payload' => []]);
+	/**
+	 * @return void
+	 */
+	public function testTranslateReturnsUnknownResourceAs400(): void {
+		$this->request->method('getParams')->willReturn(['resource' => 'besluittype', 'payload' => []]);
 
-        $this->translationService->method('translate')->willThrowException(
-            new ZgwUnknownResourceException(message: 'unknown')
-        );
+		$this->translationService->method('translate')->willThrowException(
+			new ZgwUnknownResourceException(message: 'unknown')
+		);
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
-        $this->assertSame(expected: 'unknown_resource', actual: $response->getData()['error']);
-    }//end testTranslateReturnsUnknownResourceAs400()
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
+		$this->assertSame(expected: 'unknown_resource', actual: $response->getData()['error']);
+	}//end testTranslateReturnsUnknownResourceAs400()
 
-    /**
-     * @return void
-     */
-    public function testTranslateReturnsUnknownVersionAs400(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['resource' => 'status', 'toVersion' => '0.9', 'payload' => []]
-        );
+	/**
+	 * @return void
+	 */
+	public function testTranslateReturnsUnknownVersionAs400(): void {
+		$this->request->method('getParams')->willReturn(
+			['resource' => 'status', 'toVersion' => '0.9', 'payload' => []]
+		);
 
-        $this->translationService->method('translate')->willThrowException(
-            new ZgwUnknownVersionException(message: 'unknown')
-        );
+		$this->translationService->method('translate')->willThrowException(
+			new ZgwUnknownVersionException(message: 'unknown')
+		);
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
-        $this->assertSame(expected: 'unknown_version', actual: $response->getData()['error']);
-    }//end testTranslateReturnsUnknownVersionAs400()
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
+		$this->assertSame(expected: 'unknown_version', actual: $response->getData()['error']);
+	}//end testTranslateReturnsUnknownVersionAs400()
 
-    /**
-     * @return void
-     */
-    public function testTranslateReturnsNotImplementedAs501(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['resource' => 'status', 'toVersion' => '2.0', 'payload' => []]
-        );
+	/**
+	 * @return void
+	 */
+	public function testTranslateReturnsNotImplementedAs501(): void {
+		$this->request->method('getParams')->willReturn(
+			['resource' => 'status', 'toVersion' => '2.0', 'payload' => []]
+		);
 
-        $this->translationService->method('translate')->willThrowException(
-            new ZgwVersionNotImplementedException(message: 'not implemented')
-        );
+		$this->translationService->method('translate')->willThrowException(
+			new ZgwVersionNotImplementedException(message: 'not implemented')
+		);
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_NOT_IMPLEMENTED, actual: $response->getStatus());
-        $this->assertSame(expected: 'not_implemented', actual: $response->getData()['error']);
-    }//end testTranslateReturnsNotImplementedAs501()
+		$this->assertSame(expected: Http::STATUS_NOT_IMPLEMENTED, actual: $response->getStatus());
+		$this->assertSame(expected: 'not_implemented', actual: $response->getData()['error']);
+	}//end testTranslateReturnsNotImplementedAs501()
 
-    /**
-     * @return void
-     */
-    public function testTranslateReturnsLiteralLeakAs422(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['resource' => 'zaak', 'toVersion' => '1.6', 'payload' => ['vertrouwelijkheidaanduiding' => 'top-secret']]
-        );
+	/**
+	 * @return void
+	 */
+	public function testTranslateReturnsLiteralLeakAs422(): void {
+		$this->request->method('getParams')->willReturn(
+			['resource' => 'zaak', 'toVersion' => '1.6', 'payload' => ['vertrouwelijkheidaanduiding' => 'top-secret']]
+		);
 
-        $this->translationService->method('translate')->willThrowException(
-            new ZgwLiteralLeakException(message: 'leaked')
-        );
+		$this->translationService->method('translate')->willThrowException(
+			new ZgwLiteralLeakException(message: 'leaked')
+		);
 
-        $response = $this->controller->translate();
+		$response = $this->controller->translate();
 
-        $this->assertSame(expected: Http::STATUS_UNPROCESSABLE_ENTITY, actual: $response->getStatus());
-        $this->assertSame(expected: 'literal_leak', actual: $response->getData()['error']);
-    }//end testTranslateReturnsLiteralLeakAs422()
+		$this->assertSame(expected: Http::STATUS_UNPROCESSABLE_ENTITY, actual: $response->getStatus());
+		$this->assertSame(expected: 'literal_leak', actual: $response->getData()['error']);
+	}//end testTranslateReturnsLiteralLeakAs422()
 }//end class

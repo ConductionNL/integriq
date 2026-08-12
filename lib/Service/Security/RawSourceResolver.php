@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Raw Source Resolver.
  *
@@ -62,86 +63,83 @@ use Throwable;
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
  */
-class RawSourceResolver
-{
+class RawSourceResolver {
 
-    /**
-     * The register the `source` schema lives in.
-     *
-     * @var string
-     */
-    public const REGISTER = 'openconnector';
+	/**
+	 * The register the `source` schema lives in.
+	 *
+	 * @var string
+	 */
+	public const REGISTER = 'openconnector';
 
-    /**
-     * The schema slug re-read raw.
-     *
-     * @var string
-     */
-    public const SCHEMA = 'source';
+	/**
+	 * The schema slug re-read raw.
+	 *
+	 * @var string
+	 */
+	public const SCHEMA = 'source';
 
-    /**
-     * Constructor.
-     *
-     * @param OrObjectService $objectService The OpenRegister object service.
-     * @param LoggerInterface $logger        The logger (never receives a secret VALUE).
-     */
-    public function __construct(
-        private readonly OrObjectService $objectService,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param OrObjectService $objectService The OpenRegister object service.
+	 * @param LoggerInterface $logger The logger (never receives a secret VALUE).
+	 */
+	public function __construct(
+		private readonly OrObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Re-read a located source RAW so its write-only credentials survive.
-     *
-     * Fallbacks NEVER throw — a client that dispatched before this hardening must
-     * still dispatch after it. On any miss the passed (rendered) entity is
-     * returned, which is exactly the pre-ocon#242 status quo for that source; the
-     * client's own fail-closed credential check then reports the real problem.
-     *
-     * @param ObjectEntity $source The source as located by a rendered `findAll()`.
-     *
-     * @return ObjectEntity The raw source (secrets intact), or the passed entity on any fallback.
-     *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
-     */
-    public function resolveRaw(ObjectEntity $source): ObjectEntity
-    {
-        $uuid = $source->getUuid();
+	/**
+	 * Re-read a located source RAW so its write-only credentials survive.
+	 *
+	 * Fallbacks NEVER throw — a client that dispatched before this hardening must
+	 * still dispatch after it. On any miss the passed (rendered) entity is
+	 * returned, which is exactly the pre-ocon#242 status quo for that source; the
+	 * client's own fail-closed credential check then reports the real problem.
+	 *
+	 * @param ObjectEntity $source The source as located by a rendered `findAll()`.
+	 *
+	 * @return ObjectEntity The raw source (secrets intact), or the passed entity on any fallback.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	public function resolveRaw(ObjectEntity $source): ObjectEntity {
+		$uuid = $source->getUuid();
 
-        // Unpersisted / in-memory source (a test fixture, a probe): nothing to re-read.
-        if (empty($uuid) === true) {
-            return $source;
-        }
+		// Unpersisted / in-memory source (a test fixture, a probe): nothing to re-read.
+		if (empty($uuid) === true) {
+			return $source;
+		}
 
-        try {
-            $raw = $this->objectService->find(
-                id: $uuid,
-                register: self::REGISTER,
-                schema: self::SCHEMA,
-                _rbac: true,
-                _multitenancy: true,
-                _render: false
-            );
-        } catch (Throwable $exception) {
-            // Secret-free log: the uuid is not a secret; the message is not
-            // interpolated in case an upstream ever quotes object data.
-            $this->logger->warning(
-                '[openconnector] raw source re-resolve failed; using the rendered entity',
-                [
-                    'sourceUuid' => $uuid,
-                    'errorClass' => get_class($exception),
-                ]
-            );
-            return $source;
-        }//end try
+		try {
+			$raw = $this->objectService->find(
+				id: $uuid,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: true,
+				_multitenancy: true,
+				_render: false
+			);
+		} catch (Throwable $exception) {
+			// Secret-free log: the uuid is not a secret; the message is not
+			// interpolated in case an upstream ever quotes object data.
+			$this->logger->warning(
+				'[openconnector] raw source re-resolve failed; using the rendered entity',
+				[
+					'sourceUuid' => $uuid,
+					'errorClass' => get_class($exception),
+				]
+			);
+			return $source;
+		}//end try
 
-        if ($raw instanceof ObjectEntity === false) {
-            return $source;
-        }
+		if ($raw instanceof ObjectEntity === false) {
+			return $source;
+		}
 
-        return $raw;
-
-    }//end resolveRaw()
+		return $raw;
+	}//end resolveRaw()
 }//end class

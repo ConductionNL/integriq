@@ -79,271 +79,259 @@ use Throwable;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class StufZknClient implements StufZknProviderInterface
-{
+class StufZknClient implements StufZknProviderInterface {
 
-    /**
-     * Default `Authorization` header scheme.
-     *
-     * @var string
-     */
-    private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	/**
+	 * Default `Authorization` header scheme.
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_AUTH_SCHEME = 'Bearer';
 
-    /**
-     * Constructor.
-     *
-     * @param Client               $httpClient         Guzzle client (test seam: inject one with a MockHandler stack).
-     * @param ICrypto              $crypto             Encrypts/decrypts the stored API token at rest.
-     * @param IL10N                $l                  The localization service.
-     * @param LoggerInterface      $logger             Logger for secret-free failure diagnostics.
-     * @param MtlsConfigResolver   $mtlsConfigResolver Resolves `authentication.mtls` into a certificate bundle.
-     * @param MtlsTransportService $mtlsTransport      Dispatches the request with a client certificate attached.
-     * @param StufXmlParser        $xmlParser          Shared XXE-hardened XML parser (reply ref extraction).
-     */
-    public function __construct(
-        private readonly Client $httpClient,
-        private readonly ICrypto $crypto,
-        private readonly IL10N $l,
-        private readonly LoggerInterface $logger,
-        private readonly MtlsConfigResolver $mtlsConfigResolver,
-        private readonly MtlsTransportService $mtlsTransport,
-        private readonly StufXmlParser $xmlParser=new StufXmlParser(),
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param Client $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
+	 * @param ICrypto $crypto Encrypts/decrypts the stored API token at rest.
+	 * @param IL10N $l The localization service.
+	 * @param LoggerInterface $logger Logger for secret-free failure diagnostics.
+	 * @param MtlsConfigResolver $mtlsConfigResolver Resolves `authentication.mtls` into a certificate bundle.
+	 * @param MtlsTransportService $mtlsTransport Dispatches the request with a client certificate attached.
+	 * @param StufXmlParser $xmlParser Shared XXE-hardened XML parser (reply ref extraction).
+	 */
+	public function __construct(
+		private readonly Client $httpClient,
+		private readonly ICrypto $crypto,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
+		private readonly MtlsConfigResolver $mtlsConfigResolver,
+		private readonly MtlsTransportService $mtlsTransport,
+		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `rest` provider identifier.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string
-    {
-        return 'rest';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `rest` provider identifier.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string {
+		return 'rest';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> The StUF-ZKN source configuration JSON Schema.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array {
+		return [
+			'type' => 'object',
+			'required' => ['authentication'],
+			'properties' => [
+				'baseUrl' => [
+					'type' => 'string',
+					'description' => 'The subscribed StUF consumer\'s inbound endpoint URL',
+				],
+				'authentication' => [
+					'type' => 'object',
+					'properties' => [
+						'mode' => [
+							'type' => 'string',
+							'enum' => ['token', 'mtls'],
+							'default' => 'token',
+							'description' => '`token` (default, pre-production fallback) sends a Bearer '
+								. 'Authorization header from `encryptedToken`. `mtls` (the expected production '
+								. 'mode for a real StUF/PKIoverheid-secured consumer) dispatches over a real '
+								. 'mutual-TLS connection using `mtls.*`.',
+						],
+						'encryptedToken' => [
+							'type' => 'string',
+							'description' => 'Required when `mode=token`. The StUF consumer API token, encrypted '
+								. 'at rest via OCP\\Security\\ICrypto — never store the raw token.',
+						],
+						'scheme' => [
+							'type' => 'string',
+							'description' => 'Authorization header scheme, used only when `mode=token`.',
+							'default' => self::DEFAULT_AUTH_SCHEME,
+						],
+						'mtls' => [
+							'type' => 'object',
+							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
+								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
+							'properties' => [
+								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
+								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
+								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
+								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
+							],
+						],
+					],
+				],
+				'organisatie' => [
+					'type' => 'string',
+					'description' => 'This bridge\'s own organisatie code (stuurgegevens.zender default).',
+				],
+			],
+		];
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> The StUF-ZKN source configuration JSON Schema.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array
-    {
-        return [
-            'type'       => 'object',
-            'required'   => ['authentication'],
-            'properties' => [
-                'baseUrl'        => [
-                    'type'        => 'string',
-                    'description' => 'The subscribed StUF consumer\'s inbound endpoint URL',
-                ],
-                'authentication' => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'mode'           => [
-                            'type'        => 'string',
-                            'enum'        => ['token', 'mtls'],
-                            'default'     => 'token',
-                            'description' => '`token` (default, pre-production fallback) sends a Bearer '
-                                .'Authorization header from `encryptedToken`. `mtls` (the expected production '
-                                .'mode for a real StUF/PKIoverheid-secured consumer) dispatches over a real '
-                                .'mutual-TLS connection using `mtls.*`.',
-                        ],
-                        'encryptedToken' => [
-                            'type'        => 'string',
-                            'description' => 'Required when `mode=token`. The StUF consumer API token, encrypted '
-                                .'at rest via OCP\\Security\\ICrypto — never store the raw token.',
-                        ],
-                        'scheme'         => [
-                            'type'        => 'string',
-                            'description' => 'Authorization header scheme, used only when `mode=token`.',
-                            'default'     => self::DEFAULT_AUTH_SCHEME,
-                        ],
-                        'mtls'           => [
-                            'type'        => 'object',
-                            'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-                                .'individually encrypted at rest via OCP\\Security\\ICrypto.',
-                            'properties'  => [
-                                'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-                                'encryptedPrivateKey'  => ['type' => 'string', 'description' => 'PEM private key.'],
-                                'encryptedPassphrase'  => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-                                'encryptedCaBundle'    => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-                            ],
-                        ],
-                    ],
-                ],
-                'organisatie'    => [
-                    'type'        => 'string',
-                    'description' => 'This bridge\'s own organisatie code (stuurgegevens.zender default).',
-                ],
-            ],
-        ];
+	}//end getConfigSchema()
 
-    }//end getConfigSchema()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $referentienummer The kennisgeving's `stuurgegevens.referentienummer`.
+	 * @param string $envelopeXml The fully rendered `zakLk01` envelope XML.
+	 *
+	 * @return string The extracted (or locally-derived) reference.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
+	 */
+	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string {
+		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
+		if ($baseUrl === '') {
+			throw new StufZknProviderException(
+				message: $this->l->t('StUF-ZKN consumer base URL missing') . ': `configuration.baseUrl` is required.'
+			);
+		}
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-     * @param string $referentienummer    The kennisgeving's `stuurgegevens.referentienummer`.
-     * @param string $envelopeXml         The fully rendered `zakLk01` envelope XML.
-     *
-     * @return string The extracted (or locally-derived) reference.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
-     */
-    public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string
-    {
-        $baseUrl = trim((string) ($sourceConfiguration['baseUrl'] ?? ''));
-        if ($baseUrl === '') {
-            throw new StufZknProviderException(
-                message: $this->l->t('StUF-ZKN consumer base URL missing').': `configuration.baseUrl` is required.'
-            );
-        }
+		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
+		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
 
-        $authConfig = (array) ($sourceConfiguration['authentication'] ?? []);
-        $useMtls    = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		$headers = [
+			'Content-Type' => 'text/xml; charset=utf-8',
+			'SOAPAction' => '""',
+			'Accept' => 'text/xml, application/soap+xml',
+		];
+		if ($useMtls === false) {
+			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+		}
 
-        $headers = [
-            'Content-Type' => 'text/xml; charset=utf-8',
-            'SOAPAction'   => '""',
-            'Accept'       => 'text/xml, application/soap+xml',
-        ];
-        if ($useMtls === false) {
-            $headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
-        }
+		$requestOptions = [
+			'headers' => $headers,
+			'body' => $envelopeXml,
+			'http_errors' => false,
+		];
 
-        $requestOptions = [
-            'headers'     => $headers,
-            'body'        => $envelopeXml,
-            'http_errors' => false,
-        ];
+		try {
+			$response = $this->dispatch(
+				useMtls: $useMtls,
+				authConfig: $authConfig,
+				url: $baseUrl,
+				requestOptions: $requestOptions
+			);
+		} catch (MtlsTransportException $exception) {
+			$this->logger->warning(
+				'[StufZknClient] mTLS request failed',
+				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+			);
+			throw new StufZknProviderException(
+				message: 'The StUF-ZKN mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+				previous: $exception
+			);
+		} catch (GuzzleException $exception) {
+			$this->logger->warning(
+				'[StufZknClient] unexpected transport failure',
+				['exception' => $exception->getMessage()]
+			);
+			throw new StufZknProviderException(
+				message: 'The StUF-ZKN request failed unexpectedly: ' . $exception->getMessage(),
+				previous: $exception
+			);
+		}//end try
 
-        try {
-            $response = $this->dispatch(
-                useMtls: $useMtls,
-                authConfig: $authConfig,
-                url: $baseUrl,
-                requestOptions: $requestOptions
-            );
-        } catch (MtlsTransportException $exception) {
-            $this->logger->warning(
-                '[StufZknClient] mTLS request failed',
-                ['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
-            );
-            throw new StufZknProviderException(
-                message: 'The StUF-ZKN mTLS request failed ('.$exception->getErrorCode().'): '.$exception->getMessage(),
-                previous: $exception
-            );
-        } catch (GuzzleException $exception) {
-            $this->logger->warning(
-                '[StufZknClient] unexpected transport failure',
-                ['exception' => $exception->getMessage()]
-            );
-            throw new StufZknProviderException(
-                message: 'The StUF-ZKN request failed unexpectedly: '.$exception->getMessage(),
-                previous: $exception
-            );
-        }//end try
+		$status = $response->getStatusCode();
+		$body = (string)$response->getBody();
+		if ($status < 200 || $status >= 300) {
+			throw new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP ' . $status . '.');
+		}
 
-        $status = $response->getStatusCode();
-        $body   = (string) $response->getBody();
-        if ($status < 200 || $status >= 300) {
-            throw new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP '.$status.'.');
-        }
+		return $this->extractRef(body: $body, referentienummer: $referentienummer);
+	}//end send()
 
-        return $this->extractRef(body: $body, referentienummer: $referentienummer);
+	/**
+	 * Dispatch the request over mTLS when configured, else over the existing token-mode path.
+	 *
+	 * @param boolean $useMtls Whether `authentication.mode=mtls` is configured.
+	 * @param array $authConfig The source's `configuration.authentication` object.
+	 * @param string $url The absolute request URL.
+	 * @param array $requestOptions The Guzzle request options.
+	 *
+	 * @return ResponseInterface The Guzzle response.
+	 *
+	 * @throws MtlsTransportException When mTLS is configured but the material is unusable or the handshake fails.
+	 * @throws GuzzleException When the token-mode dispatch fails.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-each-adapter-routes-through-the-mtls-transport-only-when-configured-proving-no-orphaned-capability-req-004
+	 */
+	private function dispatch(bool $useMtls, array $authConfig, string $url, array $requestOptions): ResponseInterface {
+		if ($useMtls === true) {
+			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
+			return $this->mtlsTransport->request($this->httpClient, 'POST', $url, $requestOptions, $bundle);
+		}
 
-    }//end send()
+		return $this->httpClient->request('POST', $url, $requestOptions);
+	}//end dispatch()
 
-    /**
-     * Dispatch the request over mTLS when configured, else over the existing token-mode path.
-     *
-     * @param boolean $useMtls        Whether `authentication.mode=mtls` is configured.
-     * @param array   $authConfig     The source's `configuration.authentication` object.
-     * @param string  $url            The absolute request URL.
-     * @param array   $requestOptions The Guzzle request options.
-     *
-     * @return ResponseInterface The Guzzle response.
-     *
-     * @throws MtlsTransportException When mTLS is configured but the material is unusable or the handshake fails.
-     * @throws GuzzleException        When the token-mode dispatch fails.
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-each-adapter-routes-through-the-mtls-transport-only-when-configured-proving-no-orphaned-capability-req-004
-     */
-    private function dispatch(bool $useMtls, array $authConfig, string $url, array $requestOptions): ResponseInterface
-    {
-        if ($useMtls === true) {
-            $bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-            return $this->mtlsTransport->request($this->httpClient, 'POST', $url, $requestOptions, $bundle);
-        }
+	/**
+	 * Extract a usable reference from the consumer's reply body — the reply's own
+	 * `referentienummer` when the body parses as XML and carries one, else a locally-derived
+	 * reference so the caller still has something to persist/correlate on.
+	 *
+	 * @param string $body The raw response body.
+	 * @param string $referentienummer The outbound kennisgeving's own referentienummer.
+	 *
+	 * @return string The extracted (or locally-derived) reference.
+	 */
+	private function extractRef(string $body, string $referentienummer): string {
+		$parsed = $this->xmlParser->parse(xml: $body);
+		if ($parsed !== null) {
+			$found = $parsed->xpath('//*[local-name()="referentienummer"]');
+			if (empty($found) === false) {
+				$value = trim((string)$found[0]);
+				if ($value !== '') {
+					return $value;
+				}
+			}
+		}
 
-        return $this->httpClient->request('POST', $url, $requestOptions);
+		return $referentienummer . '-ack-' . (string)time();
+	}//end extractRef()
 
-    }//end dispatch()
+	/**
+	 * Build the per-request `Authorization: <scheme> <token>` header value.
+	 *
+	 * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 *
+	 * @return string The Authorization header value.
+	 *
+	 * @throws StufZknProviderException When the credential is missing or undecryptable.
+	 */
+	private function buildAuthorizationHeader(array $sourceConfiguration): string {
+		$encrypted = (string)($sourceConfiguration['authentication']['encryptedToken'] ?? '');
+		if ($encrypted === '') {
+			throw new StufZknProviderException(
+				message: $this->l->t('StUF-ZKN credential missing')
+					. ': `configuration.authentication.encryptedToken` is required. No plaintext-token fallback is permitted.'
+			);
+		}
 
-    /**
-     * Extract a usable reference from the consumer's reply body — the reply's own
-     * `referentienummer` when the body parses as XML and carries one, else a locally-derived
-     * reference so the caller still has something to persist/correlate on.
-     *
-     * @param string $body             The raw response body.
-     * @param string $referentienummer The outbound kennisgeving's own referentienummer.
-     *
-     * @return string The extracted (or locally-derived) reference.
-     */
-    private function extractRef(string $body, string $referentienummer): string
-    {
-        $parsed = $this->xmlParser->parse(xml: $body);
-        if ($parsed !== null) {
-            $found = $parsed->xpath('//*[local-name()="referentienummer"]');
-            if (empty($found) === false) {
-                $value = trim((string) $found[0]);
-                if ($value !== '') {
-                    return $value;
-                }
-            }
-        }
+		try {
+			$token = $this->crypto->decrypt($encrypted);
+		} catch (Throwable $exception) {
+			throw new StufZknProviderException(
+				message: 'The stored StUF-ZKN API token could not be decrypted: ' . $exception->getMessage()
+			);
+		}
 
-        return $referentienummer.'-ack-'.(string) time();
+		$scheme = (string)($sourceConfiguration['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
 
-    }//end extractRef()
-
-    /**
-     * Build the per-request `Authorization: <scheme> <token>` header value.
-     *
-     * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-     *
-     * @return string The Authorization header value.
-     *
-     * @throws StufZknProviderException When the credential is missing or undecryptable.
-     */
-    private function buildAuthorizationHeader(array $sourceConfiguration): string
-    {
-        $encrypted = (string) ($sourceConfiguration['authentication']['encryptedToken'] ?? '');
-        if ($encrypted === '') {
-            throw new StufZknProviderException(
-                message: $this->l->t('StUF-ZKN credential missing').
-                    ': `configuration.authentication.encryptedToken` is required. No plaintext-token fallback is permitted.'
-            );
-        }
-
-        try {
-            $token = $this->crypto->decrypt($encrypted);
-        } catch (Throwable $exception) {
-            throw new StufZknProviderException(
-                message: 'The stored StUF-ZKN API token could not be decrypted: '.$exception->getMessage()
-            );
-        }
-
-        $scheme = (string) ($sourceConfiguration['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
-
-        return $scheme.' '.$token;
-
-    }//end buildAuthorizationHeader()
+		return $scheme . ' ' . $token;
+	}//end buildAuthorizationHeader()
 }//end class

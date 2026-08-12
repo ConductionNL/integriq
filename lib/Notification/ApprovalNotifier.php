@@ -42,129 +42,120 @@ use OCP\Notification\INotifier;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class ApprovalNotifier implements INotifier
-{
-    /**
-     * Constructor.
-     *
-     * @param IFactory      $l10nFactory  The l10n factory.
-     * @param IURLGenerator $urlGenerator The URL generator (app icon).
-     */
-    public function __construct(
-        private IFactory $l10nFactory,
-        private IURLGenerator $urlGenerator,
-    ) {
-    }//end __construct()
+class ApprovalNotifier implements INotifier {
+	/**
+	 * Constructor.
+	 *
+	 * @param IFactory $l10nFactory The l10n factory.
+	 * @param IURLGenerator $urlGenerator The URL generator (app icon).
+	 */
+	public function __construct(
+		private IFactory $l10nFactory,
+		private IURLGenerator $urlGenerator,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the notifier ID.
-     *
-     * @return string
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function getID(): string
-    {
-        return Application::APP_ID;
+	/**
+	 * Get the notifier ID.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function getID(): string {
+		return Application::APP_ID;
+	}//end getID()
 
-    }//end getID()
+	/**
+	 * Get the notifier name.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function getName(): string {
+		return $this->l10nFactory->get(Application::APP_ID)->t('OpenConnector');
+	}//end getName()
 
-    /**
-     * Get the notifier name.
-     *
-     * @return string
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function getName(): string
-    {
-        return $this->l10nFactory->get(Application::APP_ID)->t('OpenConnector');
+	/**
+	 * The exception that declines a notification this notifier does not own.
+	 *
+	 * Every registered notifier is offered EVERY notification, so declining one
+	 * that is not ours is the normal case, not an error. Nextcloud deprecated
+	 * InvalidArgumentException for exactly this and logs a warning on each
+	 * throw, which turned routine declines into a flood — dozens of identical
+	 * warnings within one second on a single dashboard load, drowning the log
+	 * that real problems surface in.
+	 *
+	 * The replacement is chosen at RUNTIME rather than named directly, because
+	 * this app declares `min-version="28"` and UnknownNotificationException is
+	 * `@since 30.0.0`. Referencing it unconditionally would turn a log-noise fix
+	 * into a fatal error on NC 28 and 29 — which is what psalm caught here,
+	 * analysing against the pinned `nextcloud/ocp: dev-stable29` stubs. It
+	 * extends InvalidArgumentException, so callers behave identically either
+	 * way and the fallback is a true equivalent rather than a degradation.
+	 *
+	 * @return InvalidArgumentException UnknownNotificationException where the platform has it.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function unknownNotification(): InvalidArgumentException {
+		$class = 'OCP\\Notification\\UnknownNotificationException';
+		if (class_exists($class) === true) {
+			return new $class();
+		}
 
-    }//end getName()
+		return new InvalidArgumentException();
+	}//end unknownNotification()
 
-    /**
-     * The exception that declines a notification this notifier does not own.
-     *
-     * Every registered notifier is offered EVERY notification, so declining one
-     * that is not ours is the normal case, not an error. Nextcloud deprecated
-     * InvalidArgumentException for exactly this and logs a warning on each
-     * throw, which turned routine declines into a flood — dozens of identical
-     * warnings within one second on a single dashboard load, drowning the log
-     * that real problems surface in.
-     *
-     * The replacement is chosen at RUNTIME rather than named directly, because
-     * this app declares `min-version="28"` and UnknownNotificationException is
-     * `@since 30.0.0`. Referencing it unconditionally would turn a log-noise fix
-     * into a fatal error on NC 28 and 29 — which is what psalm caught here,
-     * analysing against the pinned `nextcloud/ocp: dev-stable29` stubs. It
-     * extends InvalidArgumentException, so callers behave identically either
-     * way and the fallback is a true equivalent rather than a degradation.
-     *
-     * @return InvalidArgumentException UnknownNotificationException where the platform has it.
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    private function unknownNotification(): InvalidArgumentException
-    {
-        $class = 'OCP\\Notification\\UnknownNotificationException';
-        if (class_exists($class) === true) {
-            return new $class();
-        }
+	/**
+	 * Prepare an `approval_pending` notification for display: parsed
+	 * subject text, app icon, and parsed labels for the Approve/Reject
+	 * deep-link actions created by `ApprovalService::notifyApprovers()`.
+	 *
+	 * @param INotification $notification The notification to prepare.
+	 * @param string $languageCode The language code.
+	 *
+	 * @return INotification The prepared notification.
+	 *
+	 * @throws InvalidArgumentException When this notifier does not own the notification's app/subject.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function prepare(INotification $notification, string $languageCode): INotification {
+		if ($notification->getApp() !== Application::APP_ID) {
+			throw $this->unknownNotification();
+		}
 
-        return new InvalidArgumentException();
+		if ($notification->getSubject() !== 'approval_pending') {
+			throw $this->unknownNotification();
+		}
 
-    }//end unknownNotification()
+		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
+		$params = $notification->getSubjectParameters();
+		$group = (string)($params['approverGroup'] ?? '');
 
-    /**
-     * Prepare an `approval_pending` notification for display: parsed
-     * subject text, app icon, and parsed labels for the Approve/Reject
-     * deep-link actions created by `ApprovalService::notifyApprovers()`.
-     *
-     * @param INotification $notification The notification to prepare.
-     * @param string        $languageCode The language code.
-     *
-     * @return INotification The prepared notification.
-     *
-     * @throws InvalidArgumentException When this notifier does not own the notification's app/subject.
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function prepare(INotification $notification, string $languageCode): INotification
-    {
-        if ($notification->getApp() !== Application::APP_ID) {
-            throw $this->unknownNotification();
-        }
+		$notification->setParsedSubject($l->t('Approval requested (%1$s)', [$group]));
+		$notification->setRichSubject(
+			$l->t('Approval requested ({group})'),
+			['group' => ['type' => 'highlight', 'id' => $group, 'name' => $group]]
+		);
 
-        if ($notification->getSubject() !== 'approval_pending') {
-            throw $this->unknownNotification();
-        }
+		$notification->setIcon(
+			$this->urlGenerator->getAbsoluteURL(
+				$this->urlGenerator->imagePath(appName: Application::APP_ID, file: 'app-dark.svg')
+			)
+		);
 
-        $l      = $this->l10nFactory->get(Application::APP_ID, $languageCode);
-        $params = $notification->getSubjectParameters();
-        $group  = (string) ($params['approverGroup'] ?? '');
+		foreach ($notification->getActions() as $action) {
+			$label = $l->t('Reject');
+			if ($action->getLabel() === 'approve') {
+				$label = $l->t('Approve');
+			}
 
-        $notification->setParsedSubject($l->t('Approval requested (%1$s)', [$group]));
-        $notification->setRichSubject(
-            $l->t('Approval requested ({group})'),
-            ['group' => ['type' => 'highlight', 'id' => $group, 'name' => $group]]
-        );
+			$notification->addParsedAction($action->setParsedLabel($label));
+		}
 
-        $notification->setIcon(
-            $this->urlGenerator->getAbsoluteURL(
-                $this->urlGenerator->imagePath(appName: Application::APP_ID, file: 'app-dark.svg')
-            )
-        );
-
-        foreach ($notification->getActions() as $action) {
-            $label = $l->t('Reject');
-            if ($action->getLabel() === 'approve') {
-                $label = $l->t('Approve');
-            }
-
-            $notification->addParsedAction($action->setParsedLabel($label));
-        }
-
-        return $notification;
-
-    }//end prepare()
+		return $notification;
+	}//end prepare()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test stub for Nextcloud's legacy `\OC\AppFramework\Http`.
  *
@@ -37,7 +38,6 @@ namespace OC\AppFramework;
  * Stand-in for NC's `OC\AppFramework\Http`, mirroring the real relationship
  * (a bare subclass contributing no members of its own).
  */
-class Http extends \OCP\AppFramework\Http
-{
+class Http extends \OCP\AppFramework\Http {
 
 }//end class

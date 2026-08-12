@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test stub for OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException.
  *
@@ -27,6 +28,5 @@ use RuntimeException;
 /**
  * Stub: signals a fail-closed broker guard rejection (maps to a static 403).
  */
-class CredentialAccessDeniedException extends RuntimeException
-{
+class CredentialAccessDeniedException extends RuntimeException {
 }//end class

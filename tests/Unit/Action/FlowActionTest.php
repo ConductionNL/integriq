@@ -31,120 +31,113 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003
  */
-class FlowActionTest extends TestCase
-{
+class FlowActionTest extends TestCase {
 
-    /**
-     * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $flowRunnerService;
+	/**
+	 * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $flowRunnerService;
 
-    /**
-     * @var FlowAction
-     */
-    private FlowAction $action;
+	/**
+	 * @var FlowAction
+	 */
+	private FlowAction $action;
 
-    /**
-     * Set up fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->flowRunnerService = $this->createMock(FlowRunnerService::class);
-        $this->action            = new FlowAction($this->flowRunnerService);
+		$this->flowRunnerService = $this->createMock(FlowRunnerService::class);
+		$this->action = new FlowAction($this->flowRunnerService);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * No `flowId` argument is an immediate ERROR, no FlowRunnerService call.
-     *
-     * @return void
-     */
-    public function testRunWithoutFlowIdReturnsError(): void
-    {
-        $this->flowRunnerService->expects($this->never())->method('run');
+	/**
+	 * No `flowId` argument is an immediate ERROR, no FlowRunnerService call.
+	 *
+	 * @return void
+	 */
+	public function testRunWithoutFlowIdReturnsError(): void {
+		$this->flowRunnerService->expects($this->never())->method('run');
 
-        $result = $this->action->run([]);
+		$result = $this->action->run([]);
 
-        $this->assertSame('ERROR', $result['level']);
-    }//end testRunWithoutFlowIdReturnsError()
+		$this->assertSame('ERROR', $result['level']);
+	}//end testRunWithoutFlowIdReturnsError()
 
-    /**
-     * An unresolvable flowId is a WARNING (matches SynchronizationAction's
-     * "not found" precedent), not a fatal error.
-     *
-     * @return void
-     */
-    public function testRunWithUnknownFlowIdReturnsWarning(): void
-    {
-        $this->flowRunnerService->method('findFlow')->willThrowException(new DoesNotExistException('not found'));
+	/**
+	 * An unresolvable flowId is a WARNING (matches SynchronizationAction's
+	 * "not found" precedent), not a fatal error.
+	 *
+	 * @return void
+	 */
+	public function testRunWithUnknownFlowIdReturnsWarning(): void {
+		$this->flowRunnerService->method('findFlow')->willThrowException(new DoesNotExistException('not found'));
 
-        $result = $this->action->run(['flowId' => 'missing-flow']);
+		$result = $this->action->run(['flowId' => 'missing-flow']);
 
-        $this->assertSame('WARNING', $result['level']);
-    }//end testRunWithUnknownFlowIdReturnsWarning()
+		$this->assertSame('WARNING', $result['level']);
+	}//end testRunWithUnknownFlowIdReturnsWarning()
 
-    /**
-     * A `completed` flow run maps to job_log level SUCCESS and passes
-     * `triggerSource: 'cron'` through to FlowRunnerService::run() —
-     * job-management REQ-JOB-003 / TC-15.
-     *
-     * @return void
-     */
-    public function testRunCompletedFlowMapsToSuccess(): void
-    {
-        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
-        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'completed'], 'flow-run-1');
+	/**
+	 * A `completed` flow run maps to job_log level SUCCESS and passes
+	 * `triggerSource: 'cron'` through to FlowRunnerService::run() —
+	 * job-management REQ-JOB-003 / TC-15.
+	 *
+	 * @return void
+	 */
+	public function testRunCompletedFlowMapsToSuccess(): void {
+		$flow = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
+		$flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'completed'], 'flow-run-1');
 
-        $this->flowRunnerService->method('findFlow')->with('flow-1')->willReturn($flow);
-        $this->flowRunnerService->expects($this->once())
-            ->method('run')
-            ->with($this->identicalTo($flow), [], 'cron')
-            ->willReturn($flowRun);
+		$this->flowRunnerService->method('findFlow')->with('flow-1')->willReturn($flow);
+		$this->flowRunnerService->expects($this->once())
+			->method('run')
+			->with($this->identicalTo($flow), [], 'cron')
+			->willReturn($flowRun);
 
-        $result = $this->action->run(['flowId' => 'flow-1']);
+		$result = $this->action->run(['flowId' => 'flow-1']);
 
-        $this->assertSame('SUCCESS', $result['level']);
-    }//end testRunCompletedFlowMapsToSuccess()
+		$this->assertSame('SUCCESS', $result['level']);
+	}//end testRunCompletedFlowMapsToSuccess()
 
-    /**
-     * A `dead_letter` flow run maps to job_log level WARNING —
-     * job-management REQ-JOB-003 / TC-25.
-     *
-     * @return void
-     */
-    public function testRunDeadLetterFlowMapsToWarning(): void
-    {
-        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
-        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'dead_letter'], 'flow-run-1');
+	/**
+	 * A `dead_letter` flow run maps to job_log level WARNING —
+	 * job-management REQ-JOB-003 / TC-25.
+	 *
+	 * @return void
+	 */
+	public function testRunDeadLetterFlowMapsToWarning(): void {
+		$flow = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
+		$flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'dead_letter'], 'flow-run-1');
 
-        $this->flowRunnerService->method('findFlow')->willReturn($flow);
-        $this->flowRunnerService->method('run')->willReturn($flowRun);
+		$this->flowRunnerService->method('findFlow')->willReturn($flow);
+		$this->flowRunnerService->method('run')->willReturn($flowRun);
 
-        $result = $this->action->run(['flowId' => 'flow-1']);
+		$result = $this->action->run(['flowId' => 'flow-1']);
 
-        $this->assertSame('WARNING', $result['level']);
-    }//end testRunDeadLetterFlowMapsToWarning()
+		$this->assertSame('WARNING', $result['level']);
+	}//end testRunDeadLetterFlowMapsToWarning()
 
-    /**
-     * A `stopped`/`failed` flow run maps to job_log level ERROR —
-     * job-management REQ-JOB-003 / TC-25.
-     *
-     * @return void
-     */
-    public function testRunStoppedFlowMapsToError(): void
-    {
-        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
-        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'stopped'], 'flow-run-1');
+	/**
+	 * A `stopped`/`failed` flow run maps to job_log level ERROR —
+	 * job-management REQ-JOB-003 / TC-25.
+	 *
+	 * @return void
+	 */
+	public function testRunStoppedFlowMapsToError(): void {
+		$flow = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
+		$flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'stopped'], 'flow-run-1');
 
-        $this->flowRunnerService->method('findFlow')->willReturn($flow);
-        $this->flowRunnerService->method('run')->willReturn($flowRun);
+		$this->flowRunnerService->method('findFlow')->willReturn($flow);
+		$this->flowRunnerService->method('run')->willReturn($flowRun);
 
-        $result = $this->action->run(['flowId' => 'flow-1']);
+		$result = $this->action->run(['flowId' => 'flow-1']);
 
-        $this->assertSame('ERROR', $result['level']);
-    }//end testRunStoppedFlowMapsToError()
+		$this->assertSame('ERROR', $result['level']);
+	}//end testRunStoppedFlowMapsToError()
 }//end class

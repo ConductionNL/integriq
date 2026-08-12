@@ -40,44 +40,43 @@ namespace OCA\OpenConnector\Adapters\Pdok;
  * GetMap request. The dataset key matches the PDOK service slug (e.g.
  * `bgt`, `bag`, `top10nl`).
  */
-abstract class PdokWmsClient
-{
-    /**
-     * Return the GetCapabilities XML for the requested dataset.
-     *
-     * @param string $dataset PDOK WMS dataset key (e.g. `bgt`, `bag`).
-     *
-     * @return string The raw XML capabilities document.
-     */
-    abstract public function getCapabilities(string $dataset): string;
+abstract class PdokWmsClient {
+	/**
+	 * Return the GetCapabilities XML for the requested dataset.
+	 *
+	 * @param string $dataset PDOK WMS dataset key (e.g. `bgt`, `bag`).
+	 *
+	 * @return string The raw XML capabilities document.
+	 */
+	abstract public function getCapabilities(string $dataset): string;
 
-    /**
-     * Render a GetMap PNG for the requested dataset, bbox and crs.
-     *
-     * @param string                                 $dataset PDOK WMS dataset key.
-     * @param string                                 $layer   Layer name (per the dataset capabilities).
-     * @param array{0:float,1:float,2:float,3:float} $bbox    Bounding box (minx,miny,maxx,maxy).
-     * @param string                                 $crs     CRS identifier (e.g. `EPSG:28992`).
-     * @param int                                    $width   Pixel width.
-     * @param int                                    $height  Pixel height.
-     * @param string                                 $format  Image MIME type (default `image/png`).
-     *
-     * @return string Raw image bytes.
-     */
-    abstract public function getMap(
-        string $dataset,
-        string $layer,
-        array $bbox,
-        string $crs='EPSG:28992',
-        int $width=512,
-        int $height=512,
-        string $format='image/png'
-    ): string;
+	/**
+	 * Render a GetMap PNG for the requested dataset, bbox and crs.
+	 *
+	 * @param string $dataset PDOK WMS dataset key.
+	 * @param string $layer Layer name (per the dataset capabilities).
+	 * @param array{0:float,1:float,2:float,3:float} $bbox Bounding box (minx,miny,maxx,maxy).
+	 * @param string $crs CRS identifier (e.g. `EPSG:28992`).
+	 * @param int $width Pixel width.
+	 * @param int $height Pixel height.
+	 * @param string $format Image MIME type (default `image/png`).
+	 *
+	 * @return string Raw image bytes.
+	 */
+	abstract public function getMap(
+		string $dataset,
+		string $layer,
+		array $bbox,
+		string $crs = 'EPSG:28992',
+		int $width = 512,
+		int $height = 512,
+		string $format = 'image/png',
+	): string;
 
-    /**
-     * Flavour identifier (mock | http).
-     *
-     * @return string
-     */
-    abstract public function flavour(): string;
+	/**
+	 * Flavour identifier (mock | http).
+	 *
+	 * @return string
+	 */
+	abstract public function flavour(): string;
 }//end class

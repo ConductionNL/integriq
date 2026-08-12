@@ -34,17 +34,15 @@ use Exception;
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
  */
-class FormsPermissionDeniedException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message    Human-readable message naming the form/submission and identity.
-     * @param int    $statusCode The upstream status code (401 or 403).
-     */
-    public function __construct(string $message, int $statusCode=403)
-    {
-        parent::__construct(message: $message, code: $statusCode);
+class FormsPermissionDeniedException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message naming the form/submission and identity.
+	 * @param int $statusCode The upstream status code (401 or 403).
+	 */
+	public function __construct(string $message, int $statusCode = 403) {
+		parent::__construct(message: $message, code: $statusCode);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

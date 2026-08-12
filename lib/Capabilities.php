@@ -44,36 +44,34 @@ use OCP\Capabilities\ICapability;
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-dashboard-http-datasource-capability-is-advertised-for-leaf-probing
  */
-class Capabilities implements ICapability
-{
+class Capabilities implements ICapability {
 
-    /**
-     * Semantic version of the `dashboard-http-datasource` façade contract
-     * (resolve endpoint request/response shape). Bump on a breaking change
-     * to the `{ valueExpr, params?, ttl? }` request or the
-     * `{ value, fetchedAt, stale }` response so a leaf app's probe can
-     * feature-detect a contract it doesn't yet understand.
-     *
-     * @var string
-     */
-    private const CAPABILITY_VERSION = '1.0.0';
+	/**
+	 * Semantic version of the `dashboard-http-datasource` façade contract
+	 * (resolve endpoint request/response shape). Bump on a breaking change
+	 * to the `{ valueExpr, params?, ttl? }` request or the
+	 * `{ value, fetchedAt, stale }` response so a leaf app's probe can
+	 * feature-detect a contract it doesn't yet understand.
+	 *
+	 * @var string
+	 */
+	private const CAPABILITY_VERSION = '1.0.0';
 
-    /**
-     * Return OpenConnector's capabilities block.
-     *
-     * @return array<string, array<string, mixed>> The capabilities document fragment.
-     *
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-dashboard-http-datasource-capability-is-advertised-for-leaf-probing
-     */
-    public function getCapabilities(): array
-    {
-        return [
-            'dashboard_http_datasource' => [
-                'name'    => 'dashboard-http-datasource',
-                'version' => self::CAPABILITY_VERSION,
-                'enabled' => true,
-            ],
-        ];
+	/**
+	 * Return OpenConnector's capabilities block.
+	 *
+	 * @return array<string, array<string, mixed>> The capabilities document fragment.
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-dashboard-http-datasource-capability-is-advertised-for-leaf-probing
+	 */
+	public function getCapabilities(): array {
+		return [
+			'dashboard_http_datasource' => [
+				'name' => 'dashboard-http-datasource',
+				'version' => self::CAPABILITY_VERSION,
+				'enabled' => true,
+			],
+		];
 
-    }//end getCapabilities()
+	}//end getCapabilities()
 }//end class

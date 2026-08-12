@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Flow Node Listener.
  *
@@ -51,42 +52,40 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
-class FlowNodeListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SourceCallNode         $sourceCallNode         The governed outbound-call node.
-     * @param SynchronizationRunNode $synchronizationRunNode The synchronisation-run node.
-     */
-    public function __construct(
-        private readonly SourceCallNode $sourceCallNode,
-        private readonly SynchronizationRunNode $synchronizationRunNode
-    ) {
+class FlowNodeListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SourceCallNode $sourceCallNode The governed outbound-call node.
+	 * @param SynchronizationRunNode $synchronizationRunNode The synchronisation-run node.
+	 */
+	public function __construct(
+		private readonly SourceCallNode $sourceCallNode,
+		private readonly SynchronizationRunNode $synchronizationRunNode,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Contribute both node types.
-     *
-     * Node ids are app-namespaced, so `FlowNodeRegistry` refuses a collision at
-     * registration rather than resolving it by load order — a clash is a
-     * boot-time diagnosis, never a silently displaced node.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof RegisterFlowNodesEvent) === false) {
-            return;
-        }
+	/**
+	 * Contribute both node types.
+	 *
+	 * Node ids are app-namespaced, so `FlowNodeRegistry` refuses a collision at
+	 * registration rather than resolving it by load order — a clash is a
+	 * boot-time diagnosis, never a silently displaced node.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof RegisterFlowNodesEvent) === false) {
+			return;
+		}
 
-        $event->registerNode(node: $this->sourceCallNode);
-        $event->registerNode(node: $this->synchronizationRunNode);
+		$event->registerNode(node: $this->sourceCallNode);
+		$event->registerNode(node: $this->synchronizationRunNode);
 
-    }//end handle()
+	}//end handle()
 }//end class

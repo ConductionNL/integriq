@@ -48,141 +48,137 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-final class PdokWfsSourceAdapter
-{
-    /**
-     * App id used for IAppConfig look-ups.
-     */
-    public const APP_ID = 'openconnector';
+final class PdokWfsSourceAdapter {
+	/**
+	 * App id used for IAppConfig look-ups.
+	 */
+	public const APP_ID = 'openconnector';
 
-    /**
-     * App-config key for the dormant-flag toggle (shared with WMS + geocoding).
-     */
-    public const FLAG_KEY = 'pdok.feature_flag';
+	/**
+	 * App-config key for the dormant-flag toggle (shared with WMS + geocoding).
+	 */
+	public const FLAG_KEY = 'pdok.feature_flag';
 
-    /**
-     * Canonical Source row id this adapter is registered under.
-     */
-    public const SOURCE_ID = 'pdok-wfs';
+	/**
+	 * Canonical Source row id this adapter is registered under.
+	 */
+	public const SOURCE_ID = 'pdok-wfs';
 
-    /**
-     * Source category — `geo` per the connector-categories taxonomy.
-     */
-    public const SOURCE_CATEGORY = 'geo';
+	/**
+	 * Source category — `geo` per the connector-categories taxonomy.
+	 */
+	public const SOURCE_CATEGORY = 'geo';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig      $config    App-config service (feature-flag check).
-     * @param LoggerInterface $logger    Structured logger.
-     * @param PdokWfsClient   $wfsClient Resolved WFS client (mock or http).
-     */
-    public function __construct(
-        private readonly IAppConfig $config,
-        private readonly LoggerInterface $logger,
-        private readonly PdokWfsClient $wfsClient
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $config App-config service (feature-flag check).
+	 * @param LoggerInterface $logger Structured logger.
+	 * @param PdokWfsClient $wfsClient Resolved WFS client (mock or http).
+	 */
+	public function __construct(
+		private readonly IAppConfig $config,
+		private readonly LoggerInterface $logger,
+		private readonly PdokWfsClient $wfsClient,
+	) {
+	}//end __construct()
 
-    /**
-     * Whether the live upstream WFS is enabled by the operator.
-     *
-     * @return bool True when `pdok.feature_flag` is `1`/`true`.
-     */
-    public function isActive(): bool
-    {
-        $raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
-        return ($raw === '1' || strtolower($raw) === 'true');
-    }//end isActive()
+	/**
+	 * Whether the live upstream WFS is enabled by the operator.
+	 *
+	 * @return bool True when `pdok.feature_flag` is `1`/`true`.
+	 */
+	public function isActive(): bool {
+		$raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
+		return ($raw === '1' || strtolower($raw) === 'true');
+	}//end isActive()
 
-    /**
-     * Fetch vector features for a WFS type name.
-     *
-     * In dormant mode returns an empty GeoJSON FeatureCollection (via the
-     * resolved mock client) and logs the requested parameters at debug level.
-     * In active mode delegates to the resolved `PdokWfsClient` (HTTP variant).
-     *
-     * @param string                $typeName WFS type name (e.g. `bag:pand`, `kadastralekaart:perceel`).
-     * @param array<int,float>|null $bbox     Optional `[minx, miny, maxx, maxy]` in EPSG:28992.
-     * @param int                   $count    Maximum number of features.
-     * @param array<string,string>  $extras   Optional WFS overrides (`filter`, `srsName`, …).
-     *
-     * @return array<string,mixed> GeoJSON FeatureCollection.
-     */
-    public function getFeatures(
-        string $typeName,
-        ?array $bbox=null,
-        int $count=100,
-        array $extras=[]
-    ): array {
-        $this->logger->debug(
-            'pdok-wfs.getFeatures',
-            [
-                'source'   => self::SOURCE_ID,
-                'category' => self::SOURCE_CATEGORY,
-                'typeName' => $typeName,
-                'bbox'     => $bbox,
-                'count'    => $count,
-                'extras'   => $extras,
-                'active'   => $this->isActive(),
-                'flavour'  => $this->wfsClient->flavour(),
-            ]
-        );
+	/**
+	 * Fetch vector features for a WFS type name.
+	 *
+	 * In dormant mode returns an empty GeoJSON FeatureCollection (via the
+	 * resolved mock client) and logs the requested parameters at debug level.
+	 * In active mode delegates to the resolved `PdokWfsClient` (HTTP variant).
+	 *
+	 * @param string $typeName WFS type name (e.g. `bag:pand`, `kadastralekaart:perceel`).
+	 * @param array<int,float>|null $bbox Optional `[minx, miny, maxx, maxy]` in EPSG:28992.
+	 * @param int $count Maximum number of features.
+	 * @param array<string,string> $extras Optional WFS overrides (`filter`, `srsName`, …).
+	 *
+	 * @return array<string,mixed> GeoJSON FeatureCollection.
+	 */
+	public function getFeatures(
+		string $typeName,
+		?array $bbox = null,
+		int $count = 100,
+		array $extras = [],
+	): array {
+		$this->logger->debug(
+			'pdok-wfs.getFeatures',
+			[
+				'source' => self::SOURCE_ID,
+				'category' => self::SOURCE_CATEGORY,
+				'typeName' => $typeName,
+				'bbox' => $bbox,
+				'count' => $count,
+				'extras' => $extras,
+				'active' => $this->isActive(),
+				'flavour' => $this->wfsClient->flavour(),
+			]
+		);
 
-        // PdokWfsClient::getFeature() takes (dataset, featureType, bbox, count, srsName, filterFields).
-        // The source adapter wraps the dataset+featureType as a single $typeName string ("dataset:featureType").
-        [$dataset, $featureType] = array_pad(explode(':', $typeName, 2), 2, '');
-        return $this->wfsClient->getFeature(
-            dataset: $dataset,
-            featureType: $featureType,
-            bbox: $bbox,
-            count: $count,
-            filterFields: $extras
-        );
-    }//end getFeatures()
+		// PdokWfsClient::getFeature() takes (dataset, featureType, bbox, count, srsName, filterFields).
+		// The source adapter wraps the dataset+featureType as a single $typeName string ("dataset:featureType").
+		[$dataset, $featureType] = array_pad(explode(':', $typeName, 2), 2, '');
+		return $this->wfsClient->getFeature(
+			dataset: $dataset,
+			featureType: $featureType,
+			bbox: $bbox,
+			count: $count,
+			filterFields: $extras
+		);
+	}//end getFeatures()
 
-    /**
-     * Return the raw XML GetCapabilities document for a dataset.
-     *
-     * @param string $dataset PDOK WFS dataset key (e.g. `bag`, `kadastralekaart`).
-     *
-     * @return string Raw capabilities XML.
-     */
-    public function describeService(string $dataset=''): string
-    {
-        $this->logger->debug(
-            'pdok-wfs.describeService',
-            [
-                'source'   => self::SOURCE_ID,
-                'category' => self::SOURCE_CATEGORY,
-                'active'   => $this->isActive(),
-                'flavour'  => $this->wfsClient->flavour(),
-            ]
-        );
+	/**
+	 * Return the raw XML GetCapabilities document for a dataset.
+	 *
+	 * @param string $dataset PDOK WFS dataset key (e.g. `bag`, `kadastralekaart`).
+	 *
+	 * @return string Raw capabilities XML.
+	 */
+	public function describeService(string $dataset = ''): string {
+		$this->logger->debug(
+			'pdok-wfs.describeService',
+			[
+				'source' => self::SOURCE_ID,
+				'category' => self::SOURCE_CATEGORY,
+				'active' => $this->isActive(),
+				'flavour' => $this->wfsClient->flavour(),
+			]
+		);
 
-        return $this->wfsClient->getCapabilities(dataset: $dataset);
-    }//end describeService()
+		return $this->wfsClient->getCapabilities(dataset: $dataset);
+	}//end describeService()
 
-    /**
-     * Source-registry descriptor for the openconnector Source row.
-     *
-     * @return array<string,mixed>
-     */
-    public static function sourceDescriptor(): array
-    {
-        return [
-            'id'            => self::SOURCE_ID,
-            'name'          => 'PDOK WFS',
-            'description'   => 'Publieke Dienstverlening Op de Kaart — Web Feature Service (vector feature endpoints).',
-            'category'      => self::SOURCE_CATEGORY,
-            'subCategory'   => 'gis-vector',
-            'adapterClass'  => self::class,
-            'location'      => 'https://service.pdok.nl/{collection}/{dataset}/wfs/v1_0',
-            'type'          => 'wfs',
-            'auth'          => 'none',
-            'isEnabled'     => false,
-            'documentation' => 'https://www.pdok.nl/over-pdok/services/web-feature-service-wfs',
-            'reference'     => 'pdok.feature_flag',
-        ];
-    }//end sourceDescriptor()
+	/**
+	 * Source-registry descriptor for the openconnector Source row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public static function sourceDescriptor(): array {
+		return [
+			'id' => self::SOURCE_ID,
+			'name' => 'PDOK WFS',
+			'description' => 'Publieke Dienstverlening Op de Kaart — Web Feature Service (vector feature endpoints).',
+			'category' => self::SOURCE_CATEGORY,
+			'subCategory' => 'gis-vector',
+			'adapterClass' => self::class,
+			'location' => 'https://service.pdok.nl/{collection}/{dataset}/wfs/v1_0',
+			'type' => 'wfs',
+			'auth' => 'none',
+			'isEnabled' => false,
+			'documentation' => 'https://www.pdok.nl/over-pdok/services/web-feature-service-wfs',
+			'reference' => 'pdok.feature_flag',
+		];
+	}//end sourceDescriptor()
 }//end class

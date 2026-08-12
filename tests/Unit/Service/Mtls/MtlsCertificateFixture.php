@@ -27,78 +27,74 @@ namespace OCA\OpenConnector\Tests\Unit\Service\Mtls;
 /**
  * Trait providing self-signed certificate/key fixtures for mTLS tests.
  */
-trait MtlsCertificateFixture
-{
-    /**
-     * Generate a valid, unprotected self-signed certificate + private key pair.
-     *
-     * @param integer $validDays Days the certificate remains valid for (negative = already expired).
-     *
-     * @return array{certificatePem: string, privateKeyPem: string}
-     */
-    private function generateCertificateAndKey(int $validDays=365): array
-    {
-        $privateKey = openssl_pkey_new(
-            [
-                'private_key_bits' => 2048,
-                'private_key_type' => OPENSSL_KEYTYPE_RSA,
-            ]
-        );
+trait MtlsCertificateFixture {
+	/**
+	 * Generate a valid, unprotected self-signed certificate + private key pair.
+	 *
+	 * @param integer $validDays Days the certificate remains valid for (negative = already expired).
+	 *
+	 * @return array{certificatePem: string, privateKeyPem: string}
+	 */
+	private function generateCertificateAndKey(int $validDays = 365): array {
+		$privateKey = openssl_pkey_new(
+			[
+				'private_key_bits' => 2048,
+				'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			]
+		);
 
-        $csr  = openssl_csr_new(['commonName' => 'mtls-test.example.nl'], $privateKey);
-        $cert = openssl_csr_sign($csr, null, $privateKey, $validDays, [], random_int(1000, 999999));
+		$csr = openssl_csr_new(['commonName' => 'mtls-test.example.nl'], $privateKey);
+		$cert = openssl_csr_sign($csr, null, $privateKey, $validDays, [], random_int(1000, 999999));
 
-        openssl_x509_export($cert, $certificatePem);
-        openssl_pkey_export($privateKey, $privateKeyPem);
+		openssl_x509_export($cert, $certificatePem);
+		openssl_pkey_export($privateKey, $privateKeyPem);
 
-        return [
-            'certificatePem' => $certificatePem,
-            'privateKeyPem'  => $privateKeyPem,
-        ];
+		return [
+			'certificatePem' => $certificatePem,
+			'privateKeyPem' => $privateKeyPem,
+		];
 
-    }//end generateCertificateAndKey()
+	}//end generateCertificateAndKey()
 
-    /**
-     * Generate a valid self-signed certificate + a passphrase-protected private key.
-     *
-     * @param string $passphrase The passphrase to encrypt the private key with.
-     *
-     * @return array{certificatePem: string, privateKeyPem: string}
-     */
-    private function generateCertificateAndEncryptedKey(string $passphrase): array
-    {
-        $privateKey = openssl_pkey_new(
-            [
-                'private_key_bits' => 2048,
-                'private_key_type' => OPENSSL_KEYTYPE_RSA,
-            ]
-        );
+	/**
+	 * Generate a valid self-signed certificate + a passphrase-protected private key.
+	 *
+	 * @param string $passphrase The passphrase to encrypt the private key with.
+	 *
+	 * @return array{certificatePem: string, privateKeyPem: string}
+	 */
+	private function generateCertificateAndEncryptedKey(string $passphrase): array {
+		$privateKey = openssl_pkey_new(
+			[
+				'private_key_bits' => 2048,
+				'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			]
+		);
 
-        $csr  = openssl_csr_new(['commonName' => 'mtls-test.example.nl'], $privateKey);
-        $cert = openssl_csr_sign($csr, null, $privateKey, 365, [], random_int(1000, 999999));
+		$csr = openssl_csr_new(['commonName' => 'mtls-test.example.nl'], $privateKey);
+		$cert = openssl_csr_sign($csr, null, $privateKey, 365, [], random_int(1000, 999999));
 
-        openssl_x509_export($cert, $certificatePem);
-        openssl_pkey_export($privateKey, $privateKeyPem, $passphrase);
+		openssl_x509_export($cert, $certificatePem);
+		openssl_pkey_export($privateKey, $privateKeyPem, $passphrase);
 
-        return [
-            'certificatePem' => $certificatePem,
-            'privateKeyPem'  => $privateKeyPem,
-        ];
+		return [
+			'certificatePem' => $certificatePem,
+			'privateKeyPem' => $privateKeyPem,
+		];
 
-    }//end generateCertificateAndEncryptedKey()
+	}//end generateCertificateAndEncryptedKey()
 
-    /**
-     * A deterministic, already-expired (validity 2020-01-01 → 2020-01-02)
-     * self-signed certificate + unprotected key. `openssl_csr_sign()` does
-     * not accept a negative `$days` to synthesize an expired cert at
-     * runtime, so this pair is pre-generated once (throwaway test-only key,
-     * never used for anything but this fixture) and hardcoded here.
-     *
-     * @return array{certificatePem: string, privateKeyPem: string}
-     */
-    private function expiredCertificateAndKey(): array
-    {
-        $certificatePem = <<<PEM
+	/**
+	 * A deterministic, already-expired (validity 2020-01-01 → 2020-01-02)
+	 * self-signed certificate + unprotected key. `openssl_csr_sign()` does
+	 * not accept a negative `$days` to synthesize an expired cert at
+	 * runtime, so this pair is pre-generated once (throwaway test-only key,
+	 * never used for anything but this fixture) and hardcoded here.
+	 *
+	 * @return array{certificatePem: string, privateKeyPem: string}
+	 */
+	private function expiredCertificateAndKey(): array {
+		$certificatePem = <<<PEM
         -----BEGIN CERTIFICATE-----
         MIICxjCCAa6gAwIBAgIUHqdfZKgTuWScVBlGlRQC3yrZtDMwDQYJKoZIhvcNAQEL
         BQAwHTEbMBkGA1UEAwwSZXhwaXJlZC5leGFtcGxlLm5sMB4XDTIwMDEwMTAwMDAw
@@ -118,7 +114,7 @@ trait MtlsCertificateFixture
         -----END CERTIFICATE-----
         PEM;
 
-        $privateKeyPem = <<<PEM
+		$privateKeyPem = <<<PEM
         -----BEGIN RSA PRIVATE KEY-----
         MIIEogIBAAKCAQEAlK+B2YG+xOu3RQtCpUtIcRj1NNlRtZJx/P9Wmkp1vfAhCY6U
         BWa6z7076KU1rVSZBtQIV3MEP56pfwgjvANl4YLvLmtscC8cTtt8+KACQuY3Atsd
@@ -148,10 +144,10 @@ trait MtlsCertificateFixture
         -----END RSA PRIVATE KEY-----
         PEM;
 
-        return [
-            'certificatePem' => $certificatePem,
-            'privateKeyPem'  => $privateKeyPem,
-        ];
+		return [
+			'certificatePem' => $certificatePem,
+			'privateKeyPem' => $privateKeyPem,
+		];
 
-    }//end expiredCertificateAndKey()
+	}//end expiredCertificateAndKey()
 }//end trait

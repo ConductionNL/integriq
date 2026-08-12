@@ -32,33 +32,30 @@ namespace OCA\OpenConnector\Service\Mtls;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
  */
-final class MtlsMaterializedFiles
-{
-    /**
-     * Constructor.
-     *
-     * @param string      $certificatePath Path to the materialized certificate PEM.
-     * @param string      $privateKeyPath  Path to the materialized private key PEM.
-     * @param string|null $caBundlePath    Path to the materialized CA bundle PEM, or null when none was configured.
-     */
-    public function __construct(
-        public readonly string $certificatePath,
-        public readonly string $privateKeyPath,
-        public readonly ?string $caBundlePath=null,
-    ) {
+final class MtlsMaterializedFiles {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $certificatePath Path to the materialized certificate PEM.
+	 * @param string $privateKeyPath Path to the materialized private key PEM.
+	 * @param string|null $caBundlePath Path to the materialized CA bundle PEM, or null when none was configured.
+	 */
+	public function __construct(
+		public readonly string $certificatePath,
+		public readonly string $privateKeyPath,
+		public readonly ?string $caBundlePath = null,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Every materialized path, for cleanup iteration.
-     *
-     * @return array<int, string|null>
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
-     */
-    public function allPaths(): array
-    {
-        return [$this->certificatePath, $this->privateKeyPath, $this->caBundlePath];
-
-    }//end allPaths()
+	/**
+	 * Every materialized path, for cleanup iteration.
+	 *
+	 * @return array<int, string|null>
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
+	 */
+	public function allPaths(): array {
+		return [$this->certificatePath, $this->privateKeyPath, $this->caBundlePath];
+	}//end allPaths()
 }//end class

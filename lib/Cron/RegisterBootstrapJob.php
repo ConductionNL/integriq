@@ -57,187 +57,178 @@ use Throwable;
 /**
  * Runs the register bootstrap repair step when it has not run for this version.
  */
-class RegisterBootstrapJob extends TimedJob
-{
-    /**
-     * The app whose config keys gate this job.
-     *
-     * @var string
-     */
-    private const APP_ID = 'openconnector';
+class RegisterBootstrapJob extends TimedJob {
+	/**
+	 * The app whose config keys gate this job.
+	 *
+	 * @var string
+	 */
+	private const APP_ID = 'openconnector';
 
-    /**
-     * Hourly. See the class docblock for why an hour is the right number.
-     *
-     * @var integer
-     */
-    private const INTERVAL_SECONDS = 3600;
+	/**
+	 * Hourly. See the class docblock for why an hour is the right number.
+	 *
+	 * @var integer
+	 */
+	private const INTERVAL_SECONDS = 3600;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory       $time      Clock for the job base class.
-     * @param IAppConfig         $appConfig Reads and persists the bootstrap marker.
-     * @param InitializeRegister $repair    The repair step this job stands in for.
-     * @param LoggerInterface    $logger    The logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly IAppConfig $appConfig,
-        private readonly InitializeRegister $repair,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: self::INTERVAL_SECONDS);
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Clock for the job base class.
+	 * @param IAppConfig $appConfig Reads and persists the bootstrap marker.
+	 * @param InitializeRegister $repair The repair step this job stands in for.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly IAppConfig $appConfig,
+		private readonly InitializeRegister $repair,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
-        // Installing a register is not latency-critical; let the scheduler pick
-        // the window.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Installing a register is not latency-critical; let the scheduler pick
+		// the window.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // The repair step is idempotent, but two concurrent installs of the same
-        // register is a pointless race — one instance only.
-        $this->setAllowParallelRuns(allow: false);
+		// The repair step is idempotent, but two concurrent installs of the same
+		// register is a pointless race — one instance only.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Run the bootstrap when this version has not been bootstrapped yet.
-     *
-     * @param mixed $argument Unused.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-     */
-    protected function run($argument): void
-    {
-        $installedVersion    = $this->appConfig->getValueString(self::APP_ID, 'installed_version', '');
-        $bootstrappedVersion = $this->appConfig->getValueString(self::APP_ID, 'register_bootstrapped_version', '');
+	/**
+	 * Run the bootstrap when this version has not been bootstrapped yet.
+	 *
+	 * @param mixed $argument Unused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+	 */
+	protected function run($argument): void {
+		$installedVersion = $this->appConfig->getValueString(self::APP_ID, 'installed_version', '');
+		$bootstrappedVersion = $this->appConfig->getValueString(self::APP_ID, 'register_bootstrapped_version', '');
 
-        if ($installedVersion === '' || $bootstrappedVersion === $installedVersion) {
-            return;
-        }
+		if ($installedVersion === '' || $bootstrappedVersion === $installedVersion) {
+			return;
+		}
 
-        try {
-            $this->repair->run($this->silentOutput());
+		try {
+			$this->repair->run($this->silentOutput());
 
-            // Persist the marker in the same path that did the work, so the two
-            // cannot be separated by a later edit. A gate whose key is only ever
-            // read is not a gate — that is exactly how docudesk ended up
-            // importing its configuration on every request.
-            $this->appConfig->setValueString(
-                self::APP_ID,
-                'register_bootstrapped_version',
-                $installedVersion
-            );
+			// Persist the marker in the same path that did the work, so the two
+			// cannot be separated by a later edit. A gate whose key is only ever
+			// read is not a gate — that is exactly how docudesk ended up
+			// importing its configuration on every request.
+			$this->appConfig->setValueString(
+				self::APP_ID,
+				'register_bootstrapped_version',
+				$installedVersion
+			);
 
-            $this->logger->info(
-                '[RegisterBootstrapJob] Bootstrapped the openconnector register for version '.$installedVersion
-            );
-        } catch (Throwable $e) {
-            // Leave the marker unset so the next pass retries. Warn rather than
-            // info: a register that never installed means the app's own surfaces
-            // do not work, and that must be visible at the default log level.
-            $this->logger->warning(
-                '[RegisterBootstrapJob] Could not bootstrap the register: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }//end try
+			$this->logger->info(
+				'[RegisterBootstrapJob] Bootstrapped the openconnector register for version ' . $installedVersion
+			);
+		} catch (Throwable $e) {
+			// Leave the marker unset so the next pass retries. Warn rather than
+			// info: a register that never installed means the app's own surfaces
+			// do not work, and that must be visible at the default log level.
+			$this->logger->warning(
+				'[RegisterBootstrapJob] Could not bootstrap the register: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
 
-    }//end run()
+	}//end run()
 
-    /**
-     * An IOutput that discards everything.
-     *
-     * The repair step's contract requires one; a cron run has nowhere to write
-     * migration chatter, and the outcome is already logged above.
-     *
-     * @return IOutput A no-op output sink.
-     */
-    private function silentOutput(): IOutput
-    {
-        return new class implements IOutput {
-            /**
-             * Discard a debug message.
-             *
-             * @param string $message Ignored.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function debug(string $message): void
-            {
-            }//end debug()
+	/**
+	 * An IOutput that discards everything.
+	 *
+	 * The repair step's contract requires one; a cron run has nowhere to write
+	 * migration chatter, and the outcome is already logged above.
+	 *
+	 * @return IOutput A no-op output sink.
+	 */
+	private function silentOutput(): IOutput {
+		return new class implements IOutput {
+			/**
+			 * Discard a debug message.
+			 *
+			 * @param string $message Ignored.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function debug(string $message): void {
+			}//end debug()
 
-            /**
-             * Discard an info message.
-             *
-             * @param string $message Ignored.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function info($message): void
-            {
-            }//end info()
+			/**
+			 * Discard an info message.
+			 *
+			 * @param string $message Ignored.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function info($message): void {
+			}//end info()
 
-            /**
-             * Discard a warning.
-             *
-             * The repair step's own warnings are not lost by being discarded
-             * here: {@see run()} logs the outcome, and REQ-001 requires every
-             * failure path to log through LoggerInterface as well as $output.
-             *
-             * @param string $message Ignored.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function warning($message): void
-            {
-            }//end warning()
+			/**
+			 * Discard a warning.
+			 *
+			 * The repair step's own warnings are not lost by being discarded
+			 * here: {@see run()} logs the outcome, and REQ-001 requires every
+			 * failure path to log through LoggerInterface as well as $output.
+			 *
+			 * @param string $message Ignored.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function warning($message): void {
+			}//end warning()
 
-            /**
-             * Ignore the step count.
-             *
-             * @param integer $max Ignored.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function startProgress($max=0): void
-            {
-            }//end startProgress()
+			/**
+			 * Ignore the step count.
+			 *
+			 * @param integer $max Ignored.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function startProgress($max = 0): void {
+			}//end startProgress()
 
-            /**
-             * Ignore progress advances.
-             *
-             * @param integer $step        Ignored.
-             * @param string  $description Ignored.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function advance($step=1, $description=''): void
-            {
-            }//end advance()
+			/**
+			 * Ignore progress advances.
+			 *
+			 * @param integer $step Ignored.
+			 * @param string $description Ignored.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function advance($step = 1, $description = ''): void {
+			}//end advance()
 
-            /**
-             * Ignore progress completion.
-             *
-             * @return void
-             *
-             * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
-             */
-            public function finishProgress(): void
-            {
-            }//end finishProgress()
-        };
+			/**
+			 * Ignore progress completion.
+			 *
+			 * @return void
+			 *
+			 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+			 */
+			public function finishProgress(): void {
+			}//end finishProgress()
+		};
 
-    }//end silentOutput()
+	}//end silentOutput()
 }//end class

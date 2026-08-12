@@ -45,106 +45,101 @@ use OCP\IUserSession;
  *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
  */
-class EnvironmentController extends Controller
-{
-    /**
-     * Constructor for the EnvironmentController.
-     *
-     * @param string             $appName            The name of the app.
-     * @param IRequest           $request            The request object.
-     * @param EnvironmentService $environmentService The environment CRUD service.
-     * @param IL10N              $l                  The localization service.
-     * @param IUserSession       $userSession        The user session.
-     * @param ActionAuthService  $actionAuth         The action authorization service.
-     *
-     * @return void
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-        private readonly EnvironmentService $environmentService,
-        private readonly IL10N $l,
-        private readonly IUserSession $userSession,
-        private readonly ActionAuthService $actionAuth,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class EnvironmentController extends Controller {
+	/**
+	 * Constructor for the EnvironmentController.
+	 *
+	 * @param string $appName The name of the app.
+	 * @param IRequest $request The request object.
+	 * @param EnvironmentService $environmentService The environment CRUD service.
+	 * @param IL10N $l The localization service.
+	 * @param IUserSession $userSession The user session.
+	 * @param ActionAuthService $actionAuth The action authorization service.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+		private readonly EnvironmentService $environmentService,
+		private readonly IL10N $l,
+		private readonly IUserSession $userSession,
+		private readonly ActionAuthService $actionAuth,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * List registered environments (REQ-001).
-     *
-     * `#[NoAdminRequired]` + the ADR-023 `environment.manage` action gate in
-     * the body (hydra no-admin-idor gate).
-     *
-     * @return JSONResponse The list of environment objects.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
-     */
-    #[NoAdminRequired]
-    public function index(): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+	/**
+	 * List registered environments (REQ-001).
+	 *
+	 * `#[NoAdminRequired]` + the ADR-023 `environment.manage` action gate in
+	 * the body (hydra no-admin-idor gate).
+	 *
+	 * @return JSONResponse The list of environment objects.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
+	 */
+	#[NoAdminRequired]
+	public function index(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        try {
-            $this->actionAuth->requireAction(user: $user, action: 'environment.manage');
-        } catch (OCSForbiddenException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        }
+		try {
+			$this->actionAuth->requireAction(user: $user, action: 'environment.manage');
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
 
-        $environments = array_map(
-            static fn ($entity) => $entity->getObject() + ['uuid' => $entity->getUuid()],
-            $this->environmentService->list()
-        );
+		$environments = array_map(
+			static fn ($entity) => $entity->getObject() + ['uuid' => $entity->getUuid()],
+			$this->environmentService->list()
+		);
 
-        return new JSONResponse(['results' => $environments, 'total' => count($environments)]);
+		return new JSONResponse(['results' => $environments, 'total' => count($environments)]);
+	}//end index()
 
-    }//end index()
+	/**
+	 * Create an environment (REQ-001 scenario 1).
+	 *
+	 * `#[NoAdminRequired]` + the ADR-023 `environment.manage` action gate in
+	 * the body (hydra no-admin-idor gate).
+	 *
+	 * @return JSONResponse The created environment object.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/environments-and-promotion/spec.md#scenario-creating-an-environment-requires-an-existing-source-reference
+	 */
+	#[NoAdminRequired]
+	public function create(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-    /**
-     * Create an environment (REQ-001 scenario 1).
-     *
-     * `#[NoAdminRequired]` + the ADR-023 `environment.manage` action gate in
-     * the body (hydra no-admin-idor gate).
-     *
-     * @return JSONResponse The created environment object.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/environments-and-promotion/spec.md#scenario-creating-an-environment-requires-an-existing-source-reference
-     */
-    #[NoAdminRequired]
-    public function create(): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+		try {
+			$this->actionAuth->requireAction(user: $user, action: 'environment.manage');
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
 
-        try {
-            $this->actionAuth->requireAction(user: $user, action: 'environment.manage');
-        } catch (OCSForbiddenException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        }
+		$data = $this->request->getParams();
 
-        $data = $this->request->getParams();
+		try {
+			$environment = $this->environmentService->create(data: $data);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return new JSONResponse(
+				['error' => $this->l->t('Could not create environment: %s', [$e->getMessage()])],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
-        try {
-            $environment = $this->environmentService->create(data: $data);
-        } catch (InvalidArgumentException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return new JSONResponse(
-                ['error' => $this->l->t('Could not create environment: %s', [$e->getMessage()])],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-
-        return new JSONResponse($environment->getObject() + ['uuid' => $environment->getUuid()], Http::STATUS_CREATED);
-
-    }//end create()
+		return new JSONResponse($environment->getObject() + ['uuid' => $environment->getUuid()], Http::STATUS_CREATED);
+	}//end create()
 }//end class

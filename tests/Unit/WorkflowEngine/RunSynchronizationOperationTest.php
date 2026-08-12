@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for RunSynchronizationOperation.
  *
@@ -34,238 +35,215 @@ use Psr\Log\LoggerInterface;
 /**
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-run-synchronization-operations-onevent-must-dispatch-to-synchronizationservice-req-002
  */
-class RunSynchronizationOperationTest extends TestCase
-{
+class RunSynchronizationOperationTest extends TestCase {
 
+	/**
+	 * Build an operation instance with the given (possibly mocked) synchronization service.
+	 *
+	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 * @param LoggerInterface|null $logger Optional logger mock.
+	 *
+	 * @return RunSynchronizationOperation
+	 */
+	private function makeOperation(SynchronizationService $synchronizationService, ?LoggerInterface $logger = null): RunSynchronizationOperation {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text) => $text);
 
-    /**
-     * Build an operation instance with the given (possibly mocked) synchronization service.
-     *
-     * @param SynchronizationService $synchronizationService The synchronization service.
-     * @param LoggerInterface|null   $logger                 Optional logger mock.
-     *
-     * @return RunSynchronizationOperation
-     */
-    private function makeOperation(SynchronizationService $synchronizationService, ?LoggerInterface $logger=null): RunSynchronizationOperation
-    {
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnCallback(static fn(string $text) => $text);
+		return new RunSynchronizationOperation(
+			$synchronizationService,
+			$l10n,
+			$this->createMock(IURLGenerator::class),
+			($logger ?? $this->createMock(LoggerInterface::class))
+		);
 
-        return new RunSynchronizationOperation(
-            $synchronizationService,
-            $l10n,
-            $this->createMock(IURLGenerator::class),
-            ($logger ?? $this->createMock(LoggerInterface::class))
-        );
+	}//end makeOperation()
 
-    }//end makeOperation()
+	/**
+	 * getEntityId() returns NC core's only bundled IEntity, referenced only
+	 * as a compile-time ::class string (no autoload of OCA\WorkflowEngine).
+	 *
+	 * @return void
+	 */
+	public function testGetEntityIdReturnsFileEntity(): void {
+		$operation = $this->makeOperation($this->createMock(SynchronizationService::class));
+		$this->assertSame('OCA\WorkflowEngine\Entity\File', $operation->getEntityId());
 
+	}//end testGetEntityIdReturnsFileEntity()
 
-    /**
-     * getEntityId() returns NC core's only bundled IEntity, referenced only
-     * as a compile-time ::class string (no autoload of OCA\WorkflowEngine).
-     *
-     * @return void
-     */
-    public function testGetEntityIdReturnsFileEntity(): void
-    {
-        $operation = $this->makeOperation($this->createMock(SynchronizationService::class));
-        $this->assertSame('OCA\WorkflowEngine\Entity\File', $operation->getEntityId());
+	/**
+	 * isAvailableForScope() returns true only for SCOPE_ADMIN (REQ-005).
+	 *
+	 * @return void
+	 */
+	public function testIsAvailableOnlyForAdminScope(): void {
+		$operation = $this->makeOperation($this->createMock(SynchronizationService::class));
+		$this->assertTrue($operation->isAvailableForScope(IManager::SCOPE_ADMIN));
+		$this->assertFalse($operation->isAvailableForScope(IManager::SCOPE_USER));
 
-    }//end testGetEntityIdReturnsFileEntity()
+	}//end testIsAvailableOnlyForAdminScope()
 
+	/**
+	 * A matching flow runs the configured synchronization: getSynchronization()
+	 * then synchronize() are both called with the resolved id/object.
+	 *
+	 * @return void
+	 */
+	public function testOnEventRunsTheConfiguredSynchronization(): void {
+		$synchronization = $this->createMock(ObjectEntity::class);
 
-    /**
-     * isAvailableForScope() returns true only for SCOPE_ADMIN (REQ-005).
-     *
-     * @return void
-     */
-    public function testIsAvailableOnlyForAdminScope(): void
-    {
-        $operation = $this->makeOperation($this->createMock(SynchronizationService::class));
-        $this->assertTrue($operation->isAvailableForScope(IManager::SCOPE_ADMIN));
-        $this->assertFalse($operation->isAvailableForScope(IManager::SCOPE_USER));
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->expects($this->once())
+			->method('getSynchronization')
+			->with(id: 'abc-123')
+			->willReturn($synchronization);
+		$syncService->expects($this->once())
+			->method('synchronize')
+			->with(synchronization: $synchronization);
 
-    }//end testIsAvailableOnlyForAdminScope()
+		$ruleMatcher = $this->createMock(IRuleMatcher::class);
+		$ruleMatcher->method('getFlows')
+			->with(false)
+			->willReturn([['operation' => json_encode(['synchronizationId' => 'abc-123'])]]);
 
+		$operation = $this->makeOperation($syncService);
+		$operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
 
-    /**
-     * A matching flow runs the configured synchronization: getSynchronization()
-     * then synchronize() are both called with the resolved id/object.
-     *
-     * @return void
-     */
-    public function testOnEventRunsTheConfiguredSynchronization(): void
-    {
-        $synchronization = $this->createMock(ObjectEntity::class);
+	}//end testOnEventRunsTheConfiguredSynchronization()
 
-        $syncService = $this->createMock(SynchronizationService::class);
-        $syncService->expects($this->once())
-            ->method('getSynchronization')
-            ->with(id: 'abc-123')
-            ->willReturn($synchronization);
-        $syncService->expects($this->once())
-            ->method('synchronize')
-            ->with(synchronization: $synchronization);
+	/**
+	 * Multiple matching flows each dispatch their own synchronize() call, and a
+	 * failure on one flow does not prevent the sibling flow from being dispatched.
+	 *
+	 * @return void
+	 */
+	public function testMultipleFlowsEachDispatchIndependently(): void {
+		$syncA = $this->createMock(ObjectEntity::class);
+		$syncB = $this->createMock(ObjectEntity::class);
 
-        $ruleMatcher = $this->createMock(IRuleMatcher::class);
-        $ruleMatcher->method('getFlows')
-            ->with(false)
-            ->willReturn([['operation' => json_encode(['synchronizationId' => 'abc-123'])]]);
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->method('getSynchronization')
+			->willReturnMap(
+				[
+					['abc-123', [], $syncA],
+					['def-456', [], $syncB],
+				]
+			);
+		$syncService->expects($this->exactly(2))
+			->method('synchronize')
+			->with($this->logicalOr($syncA, $syncB));
 
-        $operation = $this->makeOperation($syncService);
-        $operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
+		$ruleMatcher = $this->createMock(IRuleMatcher::class);
+		$ruleMatcher->method('getFlows')->willReturn(
+			[
+				['operation' => json_encode(['synchronizationId' => 'abc-123'])],
+				['operation' => json_encode(['synchronizationId' => 'def-456'])],
+			]
+		);
 
-    }//end testOnEventRunsTheConfiguredSynchronization()
+		$operation = $this->makeOperation($syncService);
+		$operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
 
+	}//end testMultipleFlowsEachDispatchIndependently()
 
-    /**
-     * Multiple matching flows each dispatch their own synchronize() call, and a
-     * failure on one flow does not prevent the sibling flow from being dispatched.
-     *
-     * @return void
-     */
-    public function testMultipleFlowsEachDispatchIndependently(): void
-    {
-        $syncA = $this->createMock(ObjectEntity::class);
-        $syncB = $this->createMock(ObjectEntity::class);
+	/**
+	 * A deleted target synchronization is logged and does not throw out of onEvent().
+	 *
+	 * @return void
+	 */
+	public function testDeletedSynchronizationIsLoggedAndDoesNotThrow(): void {
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->method('getSynchronization')->willThrowException(new DoesNotExistException('gone'));
+		$syncService->expects($this->never())->method('synchronize');
 
-        $syncService = $this->createMock(SynchronizationService::class);
-        $syncService->method('getSynchronization')
-            ->willReturnMap(
-                [
-                    ['abc-123', [], $syncA],
-                    ['def-456', [], $syncB],
-                ]
-            );
-        $syncService->expects($this->exactly(2))
-            ->method('synchronize')
-            ->with($this->logicalOr($syncA, $syncB));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning');
 
-        $ruleMatcher = $this->createMock(IRuleMatcher::class);
-        $ruleMatcher->method('getFlows')->willReturn(
-            [
-                ['operation' => json_encode(['synchronizationId' => 'abc-123'])],
-                ['operation' => json_encode(['synchronizationId' => 'def-456'])],
-            ]
-        );
+		$ruleMatcher = $this->createMock(IRuleMatcher::class);
+		$ruleMatcher->method('getFlows')->willReturn([['operation' => json_encode(['synchronizationId' => 'gone-123'])]]);
 
-        $operation = $this->makeOperation($syncService);
-        $operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
+		$operation = $this->makeOperation($syncService, $logger);
 
-    }//end testMultipleFlowsEachDispatchIndependently()
+		// Must not throw.
+		$operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
+		$this->addToAssertionCount(1);
 
+	}//end testDeletedSynchronizationIsLoggedAndDoesNotThrow()
 
-    /**
-     * A deleted target synchronization is logged and does not throw out of onEvent().
-     *
-     * @return void
-     */
-    public function testDeletedSynchronizationIsLoggedAndDoesNotThrow(): void
-    {
-        $syncService = $this->createMock(SynchronizationService::class);
-        $syncService->method('getSynchronization')->willThrowException(new DoesNotExistException('gone'));
-        $syncService->expects($this->never())->method('synchronize');
+	/**
+	 * A flow with malformed JSON settings is skipped (no crash, no dispatch).
+	 *
+	 * @return void
+	 */
+	public function testMalformedJsonIsSkipped(): void {
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->expects($this->never())->method('getSynchronization');
+		$syncService->expects($this->never())->method('synchronize');
 
-        $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects($this->once())->method('warning');
+		$ruleMatcher = $this->createMock(IRuleMatcher::class);
+		$ruleMatcher->method('getFlows')->willReturn([['operation' => 'not-json']]);
 
-        $ruleMatcher = $this->createMock(IRuleMatcher::class);
-        $ruleMatcher->method('getFlows')->willReturn([['operation' => json_encode(['synchronizationId' => 'gone-123'])]]);
+		$operation = $this->makeOperation($syncService);
+		$operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
+		$this->addToAssertionCount(1);
 
-        $operation = $this->makeOperation($syncService, $logger);
+	}//end testMalformedJsonIsSkipped()
 
-        // Must not throw.
-        $operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
-        $this->addToAssertionCount(1);
+	/**
+	 * validateOperation() throws UnexpectedValueException on malformed JSON.
+	 *
+	 * @return void
+	 */
+	public function testValidateOperationRejectsMalformedJson(): void {
+		$this->expectException(\UnexpectedValueException::class);
 
-    }//end testDeletedSynchronizationIsLoggedAndDoesNotThrow()
+		$operation = $this->makeOperation($this->createMock(SynchronizationService::class));
+		$operation->validateOperation('rule', [], 'not-json');
 
+	}//end testValidateOperationRejectsMalformedJson()
 
-    /**
-     * A flow with malformed JSON settings is skipped (no crash, no dispatch).
-     *
-     * @return void
-     */
-    public function testMalformedJsonIsSkipped(): void
-    {
-        $syncService = $this->createMock(SynchronizationService::class);
-        $syncService->expects($this->never())->method('getSynchronization');
-        $syncService->expects($this->never())->method('synchronize');
+	/**
+	 * validateOperation() throws UnexpectedValueException when synchronizationId is missing.
+	 *
+	 * @return void
+	 */
+	public function testValidateOperationRejectsMissingSynchronizationId(): void {
+		$this->expectException(\UnexpectedValueException::class);
 
-        $ruleMatcher = $this->createMock(IRuleMatcher::class);
-        $ruleMatcher->method('getFlows')->willReturn([['operation' => 'not-json']]);
+		$operation = $this->makeOperation($this->createMock(SynchronizationService::class));
+		$operation->validateOperation('rule', [], json_encode([]));
 
-        $operation = $this->makeOperation($syncService);
-        $operation->onEvent('OCP\Files::postWrite', new Event(), $ruleMatcher);
-        $this->addToAssertionCount(1);
+	}//end testValidateOperationRejectsMissingSynchronizationId()
 
-    }//end testMalformedJsonIsSkipped()
+	/**
+	 * validateOperation() throws UnexpectedValueException when the referenced
+	 * synchronization does not resolve.
+	 *
+	 * @return void
+	 */
+	public function testValidateOperationRejectsUnresolvableSynchronization(): void {
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->method('getSynchronization')->willThrowException(new DoesNotExistException('gone'));
 
+		$this->expectException(\UnexpectedValueException::class);
 
-    /**
-     * validateOperation() throws UnexpectedValueException on malformed JSON.
-     *
-     * @return void
-     */
-    public function testValidateOperationRejectsMalformedJson(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
+		$operation = $this->makeOperation($syncService);
+		$operation->validateOperation('rule', [], json_encode(['synchronizationId' => 'gone-123']));
 
-        $operation = $this->makeOperation($this->createMock(SynchronizationService::class));
-        $operation->validateOperation('rule', [], 'not-json');
+	}//end testValidateOperationRejectsUnresolvableSynchronization()
 
-    }//end testValidateOperationRejectsMalformedJson()
+	/**
+	 * validateOperation() does not throw for a valid, resolvable synchronizationId.
+	 *
+	 * @return void
+	 */
+	public function testValidateOperationAcceptsValidSettings(): void {
+		$synchronization = $this->createMock(ObjectEntity::class);
+		$syncService = $this->createMock(SynchronizationService::class);
+		$syncService->method('getSynchronization')->with(id: 'abc-123')->willReturn($synchronization);
 
+		$operation = $this->makeOperation($syncService);
+		$operation->validateOperation('rule', [], json_encode(['synchronizationId' => 'abc-123']));
+		$this->addToAssertionCount(1);
 
-    /**
-     * validateOperation() throws UnexpectedValueException when synchronizationId is missing.
-     *
-     * @return void
-     */
-    public function testValidateOperationRejectsMissingSynchronizationId(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-
-        $operation = $this->makeOperation($this->createMock(SynchronizationService::class));
-        $operation->validateOperation('rule', [], json_encode([]));
-
-    }//end testValidateOperationRejectsMissingSynchronizationId()
-
-
-    /**
-     * validateOperation() throws UnexpectedValueException when the referenced
-     * synchronization does not resolve.
-     *
-     * @return void
-     */
-    public function testValidateOperationRejectsUnresolvableSynchronization(): void
-    {
-        $syncService = $this->createMock(SynchronizationService::class);
-        $syncService->method('getSynchronization')->willThrowException(new DoesNotExistException('gone'));
-
-        $this->expectException(\UnexpectedValueException::class);
-
-        $operation = $this->makeOperation($syncService);
-        $operation->validateOperation('rule', [], json_encode(['synchronizationId' => 'gone-123']));
-
-    }//end testValidateOperationRejectsUnresolvableSynchronization()
-
-
-    /**
-     * validateOperation() does not throw for a valid, resolvable synchronizationId.
-     *
-     * @return void
-     */
-    public function testValidateOperationAcceptsValidSettings(): void
-    {
-        $synchronization = $this->createMock(ObjectEntity::class);
-        $syncService     = $this->createMock(SynchronizationService::class);
-        $syncService->method('getSynchronization')->with(id: 'abc-123')->willReturn($synchronization);
-
-        $operation = $this->makeOperation($syncService);
-        $operation->validateOperation('rule', [], json_encode(['synchronizationId' => 'abc-123']));
-        $this->addToAssertionCount(1);
-
-    }//end testValidateOperationAcceptsValidSettings()
+	}//end testValidateOperationAcceptsValidSettings()
 }//end class

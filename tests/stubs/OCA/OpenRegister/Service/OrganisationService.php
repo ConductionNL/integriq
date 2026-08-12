@@ -15,15 +15,12 @@ namespace OCA\OpenRegister\Service;
 /**
  * Minimal stub for OCA\OpenRegister\Service\OrganisationService.
  */
-class OrganisationService
-{
-    public function getOrganisation(string $userId): ?array
-    {
-        return null;
-    }
+class OrganisationService {
+	public function getOrganisation(string $userId): ?array {
+		return null;
+	}
 
-    public function setOrganisation(string $userId, array $data): bool
-    {
-        return true;
-    }
+	public function setOrganisation(string $userId, array $data): bool {
+		return true;
+	}
 }

@@ -36,6 +36,5 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
  */
-class FscDirectoryException extends FscConnectivityException
-{
+class FscDirectoryException extends FscConnectivityException {
 }//end class

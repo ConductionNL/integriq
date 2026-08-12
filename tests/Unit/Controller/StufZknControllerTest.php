@@ -41,289 +41,277 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
  */
-class StufZknControllerTest extends TestCase
-{
+class StufZknControllerTest extends TestCase {
 
-    /**
-     * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $request;
 
-    /**
-     * @var StufZknSyncService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $syncService;
+	/**
+	 * @var StufZknSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $syncService;
 
-    /**
-     * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $signatureService;
+	/**
+	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $signatureService;
 
-    /**
-     * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $userSession;
+	/**
+	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $actionAuth;
+	/**
+	 * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $actionAuth;
 
-    /**
-     * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $l;
+	/**
+	 * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $l;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var StufZknController
-     */
-    private StufZknController $controller;
+	/**
+	 * @var StufZknController
+	 */
+	private StufZknController $controller;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request          = $this->createMock(IRequest::class);
-        $this->syncService      = $this->createMock(StufZknSyncService::class);
-        $this->signatureService = $this->createMock(WebhookSignatureService::class);
-        $this->userSession      = $this->createMock(IUserSession::class);
-        $this->actionAuth       = $this->createMock(ActionAuthService::class);
-        $this->l                = $this->createMock(IL10N::class);
-        $this->l->method('t')->willReturnArgument(0);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->syncService = $this->createMock(StufZknSyncService::class);
+		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->actionAuth = $this->createMock(ActionAuthService::class);
+		$this->l = $this->createMock(IL10N::class);
+		$this->l->method('t')->willReturnArgument(0);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $user = $this->createMock(IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->controller = $this->buildController();
+		$this->controller = $this->buildController();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a controller instance wired to the current mocks.
-     *
-     * @return StufZknController
-     */
-    private function buildController(): StufZknController
-    {
-        return new StufZknController(
-            'openconnector',
-            $this->request,
-            $this->syncService,
-            $this->signatureService,
-            $this->userSession,
-            $this->actionAuth,
-            $this->l,
-            $this->logger
-        );
+	/**
+	 * Build a controller instance wired to the current mocks.
+	 *
+	 * @return StufZknController
+	 */
+	private function buildController(): StufZknController {
+		return new StufZknController(
+			'openconnector',
+			$this->request,
+			$this->syncService,
+			$this->signatureService,
+			$this->userSession,
+			$this->actionAuth,
+			$this->l,
+			$this->logger
+		);
 
-    }//end buildController()
+	}//end buildController()
 
-    /**
-     * No stuf-zkn source configured at all fails the inbound endpoint closed (401) — no secret
-     * to verify against.
-     *
-     * @return void
-     */
-    public function testInboundWithNoSourceConfiguredReturns401(): void
-    {
-        $this->syncService->method('resolveActiveSource')
-            ->willThrowException(new StufZknProviderException(message: 'no source'));
-        $this->signatureService->expects($this->never())->method('verify');
+	/**
+	 * No stuf-zkn source configured at all fails the inbound endpoint closed (401) — no secret
+	 * to verify against.
+	 *
+	 * @return void
+	 */
+	public function testInboundWithNoSourceConfiguredReturns401(): void {
+		$this->syncService->method('resolveActiveSource')
+			->willThrowException(new StufZknProviderException(message: 'no source'));
+		$this->signatureService->expects($this->never())->method('verify');
 
-        $response = $this->controller->inbound();
+		$response = $this->controller->inbound();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    }//end testInboundWithNoSourceConfiguredReturns401()
+	}//end testInboundWithNoSourceConfiguredReturns401()
 
-    /**
-     * An unsigned/tampered inbound request is rejected 401 before any processing.
-     *
-     * @return void
-     */
-    public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void
-    {
-        $source = new ObjectEntity();
-        $source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-        $this->syncService->method('resolveActiveSource')->willReturn($source);
-        $this->signatureService->method('verify')->willReturn(false);
+	/**
+	 * An unsigned/tampered inbound request is rejected 401 before any processing.
+	 *
+	 * @return void
+	 */
+	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
+		$source = new ObjectEntity();
+		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
+		$this->syncService->method('resolveActiveSource')->willReturn($source);
+		$this->signatureService->method('verify')->willReturn(false);
 
-        $this->syncService->expects($this->never())->method('receiveInbound');
+		$this->syncService->expects($this->never())->method('receiveInbound');
 
-        $response = $this->controller->inbound();
+		$response = $this->controller->inbound();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame('invalid signature', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame('invalid signature', $response->getData()['error']);
 
-    }//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
+	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
 
-    /**
-     * A verified inbound request is routed to receiveInbound() and its Bv03/Fo03 reply is
-     * returned verbatim as an XML body.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
-     */
-    public function testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim(): void
-    {
-        $source = new ObjectEntity();
-        $source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-        $this->syncService->method('resolveActiveSource')->willReturn($source);
-        $this->signatureService->method('verify')->willReturn(true);
+	/**
+	 * A verified inbound request is routed to receiveInbound() and its Bv03/Fo03 reply is
+	 * returned verbatim as an XML body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
+	 */
+	public function testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim(): void {
+		$source = new ObjectEntity();
+		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
+		$this->syncService->method('resolveActiveSource')->willReturn($source);
+		$this->signatureService->method('verify')->willReturn(true);
 
-        $ackXml = '<soap:Envelope><soap:Body><StUF:Bv03Bericht/></soap:Body></soap:Envelope>';
-        $this->syncService->expects($this->once())->method('receiveInbound')->willReturn($ackXml);
+		$ackXml = '<soap:Envelope><soap:Body><StUF:Bv03Bericht/></soap:Body></soap:Envelope>';
+		$this->syncService->expects($this->once())->method('receiveInbound')->willReturn($ackXml);
 
-        $response = $this->controller->inbound();
+		$response = $this->controller->inbound();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame($ackXml, $response->render());
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($ackXml, $response->render());
 
-        // Response::getHeaders() needs a booted \OC (it appends the CSP
-        // header via the server container), so read the raw protected
-        // headers property instead — standalone-suite safe (mirrors
-        // ConfigurationControllerTest::testExportReturnsAttachmentWithServiceDocument()).
-        $property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
-        $headers  = $property->getValue($response);
-        $this->assertSame('text/xml; charset=utf-8', $headers['Content-Type']);
+		// Response::getHeaders() needs a booted \OC (it appends the CSP
+		// header via the server container), so read the raw protected
+		// headers property instead — standalone-suite safe (mirrors
+		// ConfigurationControllerTest::testExportReturnsAttachmentWithServiceDocument()).
+		$property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+		$headers = $property->getValue($response);
+		$this->assertSame('text/xml; charset=utf-8', $headers['Content-Type']);
 
-    }//end testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim()
+	}//end testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim()
 
-    /**
-     * An unauthenticated caller gets 401 on the outbound push endpoint without reaching the
-     * sync service.
-     *
-     * @return void
-     */
-    public function testOutboundRequiresAuthentication(): void
-    {
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->controller  = $this->buildController();
+	/**
+	 * An unauthenticated caller gets 401 on the outbound push endpoint without reaching the
+	 * sync service.
+	 *
+	 * @return void
+	 */
+	public function testOutboundRequiresAuthentication(): void {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->controller = $this->buildController();
 
-        $this->syncService->expects($this->never())->method('sendKennisgeving');
+		$this->syncService->expects($this->never())->method('sendKennisgeving');
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    }//end testOutboundRequiresAuthentication()
+	}//end testOutboundRequiresAuthentication()
 
-    /**
-     * A missing required field (`zaak`/`verwerkingssoort`) is rejected with 400.
-     *
-     * @return void
-     */
-    public function testOutboundRequiresZaakAndVerwerkingssoort(): void
-    {
-        $this->request->method('getParams')->willReturn(['zaak' => ['identificatie' => 'X']]);
+	/**
+	 * A missing required field (`zaak`/`verwerkingssoort`) is rejected with 400.
+	 *
+	 * @return void
+	 */
+	public function testOutboundRequiresZaakAndVerwerkingssoort(): void {
+		$this->request->method('getParams')->willReturn(['zaak' => ['identificatie' => 'X']]);
 
-        $this->syncService->expects($this->never())->method('sendKennisgeving');
+		$this->syncService->expects($this->never())->method('sendKennisgeving');
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('missing_fields', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('missing_fields', $response->getData()['error']);
 
-    }//end testOutboundRequiresZaakAndVerwerkingssoort()
+	}//end testOutboundRequiresZaakAndVerwerkingssoort()
 
-    /**
-     * A valid push request returns the sync service's result verbatim.
-     *
-     * @return void
-     */
-    public function testOutboundReturnsResult(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
-        );
+	/**
+	 * A valid push request returns the sync service's result verbatim.
+	 *
+	 * @return void
+	 */
+	public function testOutboundReturnsResult(): void {
+		$this->request->method('getParams')->willReturn(
+			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
+		);
 
-        $this->syncService->expects($this->once())
-            ->method('sendKennisgeving')
-            ->willReturn(['referentienummer' => 'ZKN-abc', 'ref' => 'ack-1']);
+		$this->syncService->expects($this->once())
+			->method('sendKennisgeving')
+			->willReturn(['referentienummer' => 'ZKN-abc', 'ref' => 'ack-1']);
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(['referentienummer' => 'ZKN-abc', 'ref' => 'ack-1'], $response->getData());
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['referentienummer' => 'ZKN-abc', 'ref' => 'ack-1'], $response->getData());
 
-    }//end testOutboundReturnsResult()
+	}//end testOutboundReturnsResult()
 
-    /**
-     * A StufZknTranslationException (incomplete zaak) maps to 400 `invalid_kennisgeving`.
-     *
-     * @return void
-     */
-    public function testOutboundMapsTranslationExceptionTo400(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
-        );
+	/**
+	 * A StufZknTranslationException (incomplete zaak) maps to 400 `invalid_kennisgeving`.
+	 *
+	 * @return void
+	 */
+	public function testOutboundMapsTranslationExceptionTo400(): void {
+		$this->request->method('getParams')->willReturn(
+			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
+		);
 
-        $this->syncService->method('sendKennisgeving')->willThrowException(
-            new StufZknTranslationException(message: 'Required field "omschrijving" is missing or empty.')
-        );
+		$this->syncService->method('sendKennisgeving')->willThrowException(
+			new StufZknTranslationException(message: 'Required field "omschrijving" is missing or empty.')
+		);
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('invalid_kennisgeving', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame('invalid_kennisgeving', $response->getData()['error']);
 
-    }//end testOutboundMapsTranslationExceptionTo400()
+	}//end testOutboundMapsTranslationExceptionTo400()
 
-    /**
-     * When no stuf-zkn source is configured, the endpoint reports a clean 503 `not_configured`.
-     *
-     * @return void
-     */
-    public function testOutboundReportsNotConfiguredCleanly(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
-        );
+	/**
+	 * When no stuf-zkn source is configured, the endpoint reports a clean 503 `not_configured`.
+	 *
+	 * @return void
+	 */
+	public function testOutboundReportsNotConfiguredCleanly(): void {
+		$this->request->method('getParams')->willReturn(
+			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
+		);
 
-        $this->syncService->method('sendKennisgeving')->willThrowException(
-            new StufZknProviderException(message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.')
-        );
+		$this->syncService->method('sendKennisgeving')->willThrowException(
+			new StufZknProviderException(message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.')
+		);
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
-        $this->assertSame('not_configured', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('not_configured', $response->getData()['error']);
 
-    }//end testOutboundReportsNotConfiguredCleanly()
+	}//end testOutboundReportsNotConfiguredCleanly()
 
-    /**
-     * A generic transport failure (source configured, but transport itself errors) maps to 502.
-     *
-     * @return void
-     */
-    public function testOutboundMapsProviderFailureTo502(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            ['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
-        );
+	/**
+	 * A generic transport failure (source configured, but transport itself errors) maps to 502.
+	 *
+	 * @return void
+	 */
+	public function testOutboundMapsProviderFailureTo502(): void {
+		$this->request->method('getParams')->willReturn(
+			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
+		);
 
-        $this->syncService->method('sendKennisgeving')->willThrowException(
-            new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP 503.')
-        );
+		$this->syncService->method('sendKennisgeving')->willThrowException(
+			new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP 503.')
+		);
 
-        $response = $this->controller->outbound();
+		$response = $this->controller->outbound();
 
-        $this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
-        $this->assertSame('stuf_zkn_send_failed', $response->getData()['error']);
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame('stuf_zkn_send_failed', $response->getData()['error']);
 
-    }//end testOutboundMapsProviderFailureTo502()
+	}//end testOutboundMapsProviderFailureTo502()
 }//end class

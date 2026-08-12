@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Authentication Exception.
  *
@@ -24,37 +25,33 @@ use Exception;
 /**
  * Exception for storing authentication exceptions with details.
  */
-class AuthenticationException extends Exception
-{
+class AuthenticationException extends Exception {
 
-    /**
-     * Detail payload describing why the authentication failed.
-     *
-     * @var array
-     */
-    private array $details;
+	/**
+	 * Detail payload describing why the authentication failed.
+	 *
+	 * @var array
+	 */
+	private array $details;
 
-    /**
-     * Constructor.
-     *
-     * @param string $message The exception message.
-     * @param array  $details The details describing why an authentication failed.
-     */
-    public function __construct(string $message, array $details)
-    {
-        $this->details = $details;
-        parent::__construct(message: $message);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message The exception message.
+	 * @param array $details The details describing why an authentication failed.
+	 */
+	public function __construct(string $message, array $details) {
+		$this->details = $details;
+		parent::__construct(message: $message);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Retrieves the details to display them.
-     *
-     * @return array The details array.
-     */
-    public function getDetails(): array
-    {
-        return $this->details;
-
-    }//end getDetails()
+	/**
+	 * Retrieves the details to display them.
+	 *
+	 * @return array The details array.
+	 */
+	public function getDetails(): array {
+		return $this->details;
+	}//end getDetails()
 }//end class

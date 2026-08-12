@@ -29,90 +29,82 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class BesluitTranslatorTest extends TestCase
-{
+class BesluitTranslatorTest extends TestCase {
 
-    /**
-     * @var BesluitTranslator
-     */
-    private BesluitTranslator $translator;
+	/**
+	 * @var BesluitTranslator
+	 */
+	private BesluitTranslator $translator;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->translator = new BesluitTranslator();
-    }//end setUp()
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->translator = new BesluitTranslator();
+	}//end setUp()
 
-    /**
-     * A conformant `1.0` besluit fixture.
-     *
-     * @return array<string, mixed>
-     */
-    private function conformantPayload(): array
-    {
-        return [
-            'url'           => 'https://host/api/zgw/besluiten/v1/besluiten/bes',
-            'uuid'          => 'bes',
-            'identificatie' => 'BES-001',
-            'zaak'          => 'https://host/api/zgw/zaken/v1/zaken/abc',
-            'besluittype'   => 'https://host/api/zgw/catalogi/v1/besluittypen/bt',
-            'datum'         => '2026-01-01',
-        ];
-    }//end conformantPayload()
+	/**
+	 * A conformant `1.0` besluit fixture.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function conformantPayload(): array {
+		return [
+			'url' => 'https://host/api/zgw/besluiten/v1/besluiten/bes',
+			'uuid' => 'bes',
+			'identificatie' => 'BES-001',
+			'zaak' => 'https://host/api/zgw/zaken/v1/zaken/abc',
+			'besluittype' => 'https://host/api/zgw/catalogi/v1/besluittypen/bt',
+			'datum' => '2026-01-01',
+		];
+	}//end conformantPayload()
 
-    /**
-     * @return void
-     */
-    public function testGetResource(): void
-    {
-        $this->assertSame(expected: 'besluit', actual: $this->translator->getResource());
-    }//end testGetResource()
+	/**
+	 * @return void
+	 */
+	public function testGetResource(): void {
+		$this->assertSame(expected: 'besluit', actual: $this->translator->getResource());
+	}//end testGetResource()
 
-    /**
-     * @return void
-     */
-    public function testTranslateToV16IsStructurallyIdentical(): void
-    {
-        $payload = $this->conformantPayload();
-        $this->assertSame(expected: $payload, actual: $this->translator->translateToV16(payload: $payload));
-    }//end testTranslateToV16IsStructurallyIdentical()
+	/**
+	 * @return void
+	 */
+	public function testTranslateToV16IsStructurallyIdentical(): void {
+		$payload = $this->conformantPayload();
+		$this->assertSame(expected: $payload, actual: $this->translator->translateToV16(payload: $payload));
+	}//end testTranslateToV16IsStructurallyIdentical()
 
-    /**
-     * @return void
-     */
-    public function testTranslateToV1xIsStructurallyIdentical(): void
-    {
-        $payload = $this->conformantPayload();
-        $this->assertSame(expected: $payload, actual: $this->translator->translateToV1x(payload: $payload));
-    }//end testTranslateToV1xIsStructurallyIdentical()
+	/**
+	 * @return void
+	 */
+	public function testTranslateToV1xIsStructurallyIdentical(): void {
+		$payload = $this->conformantPayload();
+		$this->assertSame(expected: $payload, actual: $this->translator->translateToV1x(payload: $payload));
+	}//end testTranslateToV1xIsStructurallyIdentical()
 
-    /**
-     * @return void
-     */
-    public function testMissingRequiredFieldThrowsLiteralLeak(): void
-    {
-        $payload = $this->conformantPayload();
-        unset($payload['besluittype']);
+	/**
+	 * @return void
+	 */
+	public function testMissingRequiredFieldThrowsLiteralLeak(): void {
+		$payload = $this->conformantPayload();
+		unset($payload['besluittype']);
 
-        $this->expectException(ZgwLiteralLeakException::class);
-        $this->translator->translateToV16(payload: $payload);
-    }//end testMissingRequiredFieldThrowsLiteralLeak()
+		$this->expectException(ZgwLiteralLeakException::class);
+		$this->translator->translateToV16(payload: $payload);
+	}//end testMissingRequiredFieldThrowsLiteralLeak()
 
-    /**
-     * @return void
-     */
-    public function testRoundTripIsLossless(): void
-    {
-        $payload      = $this->conformantPayload();
-        $roundTripped = $this->translator->translateToV1x(
-            payload: $this->translator->translateToV16(payload: $payload)
-        );
+	/**
+	 * @return void
+	 */
+	public function testRoundTripIsLossless(): void {
+		$payload = $this->conformantPayload();
+		$roundTripped = $this->translator->translateToV1x(
+			payload: $this->translator->translateToV16(payload: $payload)
+		);
 
-        $this->assertSame(expected: $payload, actual: $roundTripped);
-    }//end testRoundTripIsLossless()
+		$this->assertSame(expected: $payload, actual: $roundTripped);
+	}//end testRoundTripIsLossless()
 }//end class

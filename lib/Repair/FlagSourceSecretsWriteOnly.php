@@ -45,101 +45,98 @@ use Throwable;
 /**
  * Retro-flags the source schema's credential fields write-only on existing installs.
  */
-class FlagSourceSecretsWriteOnly implements IRepairStep
-{
-    /**
-     * OR's SchemaMapper, resolved lazily so OpenConnector still boots without OpenRegister.
-     *
-     * @var string
-     */
-    private const SCHEMA_MAPPER = 'OCA\\OpenRegister\\Db\\SchemaMapper';
+class FlagSourceSecretsWriteOnly implements IRepairStep {
+	/**
+	 * OR's SchemaMapper, resolved lazily so OpenConnector still boots without OpenRegister.
+	 *
+	 * @var string
+	 */
+	private const SCHEMA_MAPPER = 'OCA\\OpenRegister\\Db\\SchemaMapper';
 
-    /**
-     * The credential fields that must never be returned by the API.
-     *
-     * @var array<int, string>
-     */
-    private const SECRET_FIELDS = ['apikey', 'secret', 'password', 'jwt', 'authenticationConfig'];
+	/**
+	 * The credential fields that must never be returned by the API.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SECRET_FIELDS = ['apikey', 'secret', 'password', 'jwt', 'authenticationConfig'];
 
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container The DI container (to resolve OR lazily).
-     * @param LoggerInterface    $logger    The logger.
-     */
-    public function __construct(
-        private ContainerInterface $container,
-        private LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container The DI container (to resolve OR lazily).
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private ContainerInterface $container,
+		private LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return 'Flag the OpenConnector source schema credential fields as write-only';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return 'Flag the OpenConnector source schema credential fields as write-only';
+	}//end getName()
 
-    /**
-     * Patch the write-only flags onto the live source schema.
-     *
-     * @param IOutput $output The output interface.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
-     */
-    public function run(IOutput $output): void
-    {
-        if (class_exists('\\'.self::SCHEMA_MAPPER) === false) {
-            $output->info('OpenConnector: OpenRegister not available; skipping source-secret write-only flagging.');
-            return;
-        }
+	/**
+	 * Patch the write-only flags onto the live source schema.
+	 *
+	 * @param IOutput $output The output interface.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+	 */
+	public function run(IOutput $output): void {
+		if (class_exists('\\' . self::SCHEMA_MAPPER) === false) {
+			$output->info('OpenConnector: OpenRegister not available; skipping source-secret write-only flagging.');
+			return;
+		}
 
-        try {
-            $schemaMapper = $this->container->get(self::SCHEMA_MAPPER);
+		try {
+			$schemaMapper = $this->container->get(self::SCHEMA_MAPPER);
 
-            // The source schema is created by InitializeRegister (which runs first). Resolve
-            // it by slug; if it is not there yet, there is nothing to flag.
-            $schema     = $schemaMapper->find('source');
-            $properties = $schema->getProperties();
-            if (is_array($properties) === false) {
-                return;
-            }
+			// The source schema is created by InitializeRegister (which runs first). Resolve
+			// it by slug; if it is not there yet, there is nothing to flag.
+			$schema = $schemaMapper->find('source');
+			$properties = $schema->getProperties();
+			if (is_array($properties) === false) {
+				return;
+			}
 
-            $changed = false;
-            foreach (self::SECRET_FIELDS as $field) {
-                if (isset($properties[$field]) === false || is_array($properties[$field]) === false) {
-                    continue;
-                }
+			$changed = false;
+			foreach (self::SECRET_FIELDS as $field) {
+				if (isset($properties[$field]) === false || is_array($properties[$field]) === false) {
+					continue;
+				}
 
-                if (($properties[$field]['writeOnly'] ?? false) !== true) {
-                    $properties[$field]['writeOnly'] = true;
+				if (($properties[$field]['writeOnly'] ?? false) !== true) {
+					$properties[$field]['writeOnly'] = true;
 
-                    $changed = true;
-                }
-            }
+					$changed = true;
+				}
+			}
 
-            if ($changed === false) {
-                $output->info('OpenConnector: source-secret write-only flags already set.');
-                return;
-            }
+			if ($changed === false) {
+				$output->info('OpenConnector: source-secret write-only flags already set.');
+				return;
+			}
 
-            $schema->setProperties($properties);
-            $schemaMapper->update($schema);
+			$schema->setProperties($properties);
+			$schemaMapper->update($schema);
 
-            $output->info('OpenConnector: flagged source credential fields (apikey/secret/password/jwt/authenticationConfig) write-only.');
-        } catch (Throwable $e) {
-            // Never fatal: leaving the flags unset is the pre-existing state. But it is a
-            // security control, so say so loudly.
-            $output->warning('OpenConnector: could not flag source secrets write-only: '.$e->getMessage());
-            $this->logger->error(
-                'OpenConnector: FlagSourceSecretsWriteOnly failed; source credentials may still be returned by the API',
-                ['exception' => $e->getMessage()]
-            );
-        }//end try
-    }//end run()
+			$output->info('OpenConnector: flagged source credential fields (apikey/secret/password/jwt/authenticationConfig) write-only.');
+		} catch (Throwable $e) {
+			// Never fatal: leaving the flags unset is the pre-existing state. But it is a
+			// security control, so say so loudly.
+			$output->warning('OpenConnector: could not flag source secrets write-only: ' . $e->getMessage());
+			$this->logger->error(
+				'OpenConnector: FlagSourceSecretsWriteOnly failed; source credentials may still be returned by the API',
+				['exception' => $e->getMessage()]
+			);
+		}//end try
+	}//end run()
 }//end class

@@ -59,149 +59,144 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-final class BerichtenboxSourceAdapter
-{
-    /**
-     * App id used for IAppConfig look-ups.
-     */
-    public const APP_ID = 'openconnector';
+final class BerichtenboxSourceAdapter {
+	/**
+	 * App id used for IAppConfig look-ups.
+	 */
+	public const APP_ID = 'openconnector';
 
-    /**
-     * App-config key for the dormant-flag toggle.
-     */
-    public const FLAG_KEY = 'logius.berichtenbox.feature_flag';
+	/**
+	 * App-config key for the dormant-flag toggle.
+	 */
+	public const FLAG_KEY = 'logius.berichtenbox.feature_flag';
 
-    /**
-     * Canonical Source row id this adapter is registered under.
-     */
-    public const SOURCE_ID = 'logius-berichtenbox';
+	/**
+	 * Canonical Source row id this adapter is registered under.
+	 */
+	public const SOURCE_ID = 'logius-berichtenbox';
 
-    /**
-     * Source category — `overheid-messaging` per the
-     * connector-categories taxonomy.
-     */
-    public const SOURCE_CATEGORY = 'overheid-messaging';
+	/**
+	 * Source category — `overheid-messaging` per the
+	 * connector-categories taxonomy.
+	 */
+	public const SOURCE_CATEGORY = 'overheid-messaging';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig         $config             App-config service
-     *                                               (feature-flag
-     *                                               check).
-     * @param LoggerInterface    $logger             Structured logger.
-     * @param BerichtenboxClient $berichtenboxClient Resolved client
-     *                                               (mock or http).
-     */
-    public function __construct(
-        private readonly IAppConfig $config,
-        private readonly LoggerInterface $logger,
-        private readonly BerichtenboxClient $berichtenboxClient
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $config App-config service
+	 *                           (feature-flag
+	 *                           check).
+	 * @param LoggerInterface $logger Structured logger.
+	 * @param BerichtenboxClient $berichtenboxClient Resolved client
+	 *                                               (mock or http).
+	 */
+	public function __construct(
+		private readonly IAppConfig $config,
+		private readonly LoggerInterface $logger,
+		private readonly BerichtenboxClient $berichtenboxClient,
+	) {
+	}//end __construct()
 
-    /**
-     * Whether the live Logius Berichtenbox transport is enabled by
-     * the operator.
-     *
-     * @return bool True when `logius.berichtenbox.feature_flag` is
-     *              `1` / `true`.
-     */
-    public function isActive(): bool
-    {
-        $raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
-        return ($raw === '1' || strtolower($raw) === 'true');
-    }//end isActive()
+	/**
+	 * Whether the live Logius Berichtenbox transport is enabled by
+	 * the operator.
+	 *
+	 * @return bool True when `logius.berichtenbox.feature_flag` is
+	 *              `1` / `true`.
+	 */
+	public function isActive(): bool {
+		$raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
+		return ($raw === '1' || strtolower($raw) === 'true');
+	}//end isActive()
 
-    /**
-     * Dispatch a BBK 1.7 message envelope.
-     *
-     * @param array<string,mixed> $message BBK 1.7-shaped envelope.
-     * @param string              $pkiCert PEM-encoded PKIoverheid
-     *                                     Services-server cert.
-     * @param string              $pkiKey  PEM-encoded private key.
-     *
-     * @return array<string,mixed> Logius response envelope.
-     */
-    public function dispatch(array $message, string $pkiCert, string $pkiKey): array
-    {
-        // Compute a non-PII-bearing summary of the message for the
-        // debug log — never log the recipientBsn, body, or
-        // attachment bytes.
-        $attachmentCount = 0;
-        if (is_array($message['attachments'] ?? null) === true) {
-            $attachmentCount = count($message['attachments']);
-        }
+	/**
+	 * Dispatch a BBK 1.7 message envelope.
+	 *
+	 * @param array<string,mixed> $message BBK 1.7-shaped envelope.
+	 * @param string $pkiCert PEM-encoded PKIoverheid
+	 *                        Services-server cert.
+	 * @param string $pkiKey PEM-encoded private key.
+	 *
+	 * @return array<string,mixed> Logius response envelope.
+	 */
+	public function dispatch(array $message, string $pkiCert, string $pkiKey): array {
+		// Compute a non-PII-bearing summary of the message for the
+		// debug log — never log the recipientBsn, body, or
+		// attachment bytes.
+		$attachmentCount = 0;
+		if (is_array($message['attachments'] ?? null) === true) {
+			$attachmentCount = count($message['attachments']);
+		}
 
-        $summary = [
-            'conversationId'  => (string) ($message['conversationId'] ?? ''),
-            'priority'        => (string) ($message['priority'] ?? ''),
-            'attachmentCount' => $attachmentCount,
-        ];
+		$summary = [
+			'conversationId' => (string)($message['conversationId'] ?? ''),
+			'priority' => (string)($message['priority'] ?? ''),
+			'attachmentCount' => $attachmentCount,
+		];
 
-        $this->logger->debug(
-            'logius-berichtenbox.dispatch',
-            [
-                'source'   => self::SOURCE_ID,
-                'category' => self::SOURCE_CATEGORY,
-                'summary'  => $summary,
-                'active'   => $this->isActive(),
-                'flavour'  => $this->berichtenboxClient->flavour(),
-            ]
-        );
+		$this->logger->debug(
+			'logius-berichtenbox.dispatch',
+			[
+				'source' => self::SOURCE_ID,
+				'category' => self::SOURCE_CATEGORY,
+				'summary' => $summary,
+				'active' => $this->isActive(),
+				'flavour' => $this->berichtenboxClient->flavour(),
+			]
+		);
 
-        return $this->berichtenboxClient->dispatch($message, $pkiCert, $pkiKey);
-    }//end dispatch()
+		return $this->berichtenboxClient->dispatch($message, $pkiCert, $pkiKey);
+	}//end dispatch()
 
-    /**
-     * Verify an inbound delivery-receipt webhook.
-     *
-     * @param string               $rawBody Raw inbound body bytes.
-     * @param array<string,string> $headers Inbound headers.
-     *
-     * @return array<string,mixed> Verified envelope.
-     */
-    public function verifyWebhook(string $rawBody, array $headers): array
-    {
-        // Body is never logged — may contain delivery PII; only the
-        // length + signature-presence boolean go through.
-        $this->logger->debug(
-            'logius-berichtenbox.verifyWebhook',
-            [
-                'source'           => self::SOURCE_ID,
-                'category'         => self::SOURCE_CATEGORY,
-                'bodyLength'       => strlen($rawBody),
-                'signaturePresent' => isset($headers['X-Logius-Signature']) || isset($headers['x-logius-signature']),
-                'active'           => $this->isActive(),
-                'flavour'          => $this->berichtenboxClient->flavour(),
-            ]
-        );
+	/**
+	 * Verify an inbound delivery-receipt webhook.
+	 *
+	 * @param string $rawBody Raw inbound body bytes.
+	 * @param array<string,string> $headers Inbound headers.
+	 *
+	 * @return array<string,mixed> Verified envelope.
+	 */
+	public function verifyWebhook(string $rawBody, array $headers): array {
+		// Body is never logged — may contain delivery PII; only the
+		// length + signature-presence boolean go through.
+		$this->logger->debug(
+			'logius-berichtenbox.verifyWebhook',
+			[
+				'source' => self::SOURCE_ID,
+				'category' => self::SOURCE_CATEGORY,
+				'bodyLength' => strlen($rawBody),
+				'signaturePresent' => isset($headers['X-Logius-Signature']) || isset($headers['x-logius-signature']),
+				'active' => $this->isActive(),
+				'flavour' => $this->berichtenboxClient->flavour(),
+			]
+		);
 
-        return $this->berichtenboxClient->verifyWebhook($rawBody, $headers);
-    }//end verifyWebhook()
+		return $this->berichtenboxClient->verifyWebhook($rawBody, $headers);
+	}//end verifyWebhook()
 
-    /**
-     * Check whether a BSN has an active Berichtenbox mailbox.
-     *
-     * The BSN itself is NEVER passed to the logger — only a
-     * `bsn_length_check` boolean goes through.
-     *
-     * @param string $bsn 9-digit Burgerservicenummer.
-     *
-     * @return array<string,mixed> Mailbox-status envelope.
-     */
-    public function checkMailbox(string $bsn): array
-    {
-        $this->logger->debug(
-            'logius-berichtenbox.checkMailbox',
-            [
-                'source'           => self::SOURCE_ID,
-                'category'         => self::SOURCE_CATEGORY,
-                'bsn_length_check' => (strlen($bsn) === 9),
-                'active'           => $this->isActive(),
-                'flavour'          => $this->berichtenboxClient->flavour(),
-            ]
-        );
+	/**
+	 * Check whether a BSN has an active Berichtenbox mailbox.
+	 *
+	 * The BSN itself is NEVER passed to the logger — only a
+	 * `bsn_length_check` boolean goes through.
+	 *
+	 * @param string $bsn 9-digit Burgerservicenummer.
+	 *
+	 * @return array<string,mixed> Mailbox-status envelope.
+	 */
+	public function checkMailbox(string $bsn): array {
+		$this->logger->debug(
+			'logius-berichtenbox.checkMailbox',
+			[
+				'source' => self::SOURCE_ID,
+				'category' => self::SOURCE_CATEGORY,
+				'bsn_length_check' => (strlen($bsn) === 9),
+				'active' => $this->isActive(),
+				'flavour' => $this->berichtenboxClient->flavour(),
+			]
+		);
 
-        return $this->berichtenboxClient->checkMailbox($bsn);
-    }//end checkMailbox()
+		return $this->berichtenboxClient->checkMailbox($bsn);
+	}//end checkMailbox()
 }//end class

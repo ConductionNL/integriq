@@ -48,69 +48,68 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-never-fails-open-to-plaintext-or-token-auth-req-003
  */
-class MtlsTransportService
-{
-    /**
-     * Constructor.
-     *
-     * @param MtlsTransportOptionsBuilder $optionsBuilder Materialises certificate material + builds Guzzle TLS options.
-     * @param LoggerInterface             $logger         Logger for secret-free failure diagnostics.
-     */
-    public function __construct(
-        private readonly MtlsTransportOptionsBuilder $optionsBuilder,
-        private readonly LoggerInterface $logger,
-    ) {
+class MtlsTransportService {
+	/**
+	 * Constructor.
+	 *
+	 * @param MtlsTransportOptionsBuilder $optionsBuilder Materialises certificate material + builds Guzzle TLS options.
+	 * @param LoggerInterface $logger Logger for secret-free failure diagnostics.
+	 */
+	public function __construct(
+		private readonly MtlsTransportOptionsBuilder $optionsBuilder,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Dispatch one request with the given certificate bundle attached.
-     *
-     * @param Client                $httpClient     The caller's own injected Guzzle client (no parallel HTTP stack).
-     * @param string                $method         The HTTP method.
-     * @param string                $url            The absolute request URL.
-     * @param array<string, mixed>  $requestOptions The caller's Guzzle request options (headers, body/json, etc.);
-     *                                              the mTLS `cert`/`ssl_key`/`verify` options are merged in and
-     *                                              take precedence over any caller-supplied value of the same key.
-     * @param MtlsCertificateBundle $bundle         The validated, decrypted certificate material.
-     *
-     * @return ResponseInterface The Guzzle response.
-     *
-     * @throws MtlsHandshakeException When the wrapped dispatch fails for any reason.
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-a-handshake-failure-raises-a-typed-exception-not-a-silent-fallback
-     */
-    public function request(
-        Client $httpClient,
-        string $method,
-        string $url,
-        array $requestOptions,
-        MtlsCertificateBundle $bundle
-    ): ResponseInterface {
-        $files = $this->optionsBuilder->materialize(bundle: $bundle);
+	/**
+	 * Dispatch one request with the given certificate bundle attached.
+	 *
+	 * @param Client $httpClient The caller's own injected Guzzle client (no parallel HTTP stack).
+	 * @param string $method The HTTP method.
+	 * @param string $url The absolute request URL.
+	 * @param array<string, mixed> $requestOptions The caller's Guzzle request options (headers, body/json, etc.);
+	 *                                             the mTLS `cert`/`ssl_key`/`verify` options are merged in and
+	 *                                             take precedence over any caller-supplied value of the same key.
+	 * @param MtlsCertificateBundle $bundle The validated, decrypted certificate material.
+	 *
+	 * @return ResponseInterface The Guzzle response.
+	 *
+	 * @throws MtlsHandshakeException When the wrapped dispatch fails for any reason.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-a-handshake-failure-raises-a-typed-exception-not-a-silent-fallback
+	 */
+	public function request(
+		Client $httpClient,
+		string $method,
+		string $url,
+		array $requestOptions,
+		MtlsCertificateBundle $bundle,
+	): ResponseInterface {
+		$files = $this->optionsBuilder->materialize(bundle: $bundle);
 
-        try {
-            $tlsOptions    = $this->optionsBuilder->toGuzzleOptions(files: $files, passphrase: $bundle->passphrase);
-            $mergedOptions = array_merge($requestOptions, $tlsOptions);
+		try {
+			$tlsOptions = $this->optionsBuilder->toGuzzleOptions(files: $files, passphrase: $bundle->passphrase);
+			$mergedOptions = array_merge($requestOptions, $tlsOptions);
 
-            try {
-                return $httpClient->request($method, $url, $mergedOptions);
-            } catch (GuzzleException $exception) {
-                $this->logger->warning(
-                    '[MtlsTransportService] mTLS dispatch failed',
-                    ['exception' => $exception->getMessage()]
-                );
-                throw new MtlsHandshakeException(
-                    message: 'The mTLS-authenticated request failed: '.$exception->getMessage(),
-                    errorCode: MtlsTransportException::ERROR_HANDSHAKE_FAILED,
-                    previous: $exception
-                );
-            }
-        } finally {
-            // Cleanup ALWAYS runs — success, GuzzleException, or any other
-            // throwable escaping the block above.
-            $this->optionsBuilder->cleanup(files: $files);
-        }//end try
+			try {
+				return $httpClient->request($method, $url, $mergedOptions);
+			} catch (GuzzleException $exception) {
+				$this->logger->warning(
+					'[MtlsTransportService] mTLS dispatch failed',
+					['exception' => $exception->getMessage()]
+				);
+				throw new MtlsHandshakeException(
+					message: 'The mTLS-authenticated request failed: ' . $exception->getMessage(),
+					errorCode: MtlsTransportException::ERROR_HANDSHAKE_FAILED,
+					previous: $exception
+				);
+			}
+		} finally {
+			// Cleanup ALWAYS runs — success, GuzzleException, or any other
+			// throwable escaping the block above.
+			$this->optionsBuilder->cleanup(files: $files);
+		}//end try
 
-    }//end request()
+	}//end request()
 }//end class

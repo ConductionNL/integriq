@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Nextcloud Calendar EventListener.
  *
@@ -66,121 +67,119 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-calendar-events-must-be-normalized-to-cloudevents-with-an-oca-stability-caveat-req-002
  */
-class NextcloudCalendarEventListener implements IEventListener
-{
+class NextcloudCalendarEventListener implements IEventListener {
 
-    /**
-     * The CloudEvents `source` this producer stamps on every event.
-     *
-     * @var string
-     */
-    private const SOURCE = '/nextcloud/calendar';
+	/**
+	 * The CloudEvents `source` this producer stamps on every event.
+	 *
+	 * @var string
+	 */
+	private const SOURCE = '/nextcloud/calendar';
 
-    /**
-     * Constructor.
-     *
-     * @param EventService    $eventService Service for managing CloudEvents.
-     * @param LoggerInterface $logger       Logger instance.
-     */
-    public function __construct(
-        private readonly EventService $eventService,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param LoggerInterface $logger Logger instance.
+	 */
+	public function __construct(
+		private readonly EventService $eventService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired calendar object event by normalizing and forwarding it.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) -- the branching IS the
-     * feature: six recognised event classes across two API families (OCP +
-     * OCA) plus the mandated defensive OCA-stability accessor checks (REQ-002)
-     * are inherently multi-branch; splitting them would obscure the one
-     * normalize-and-forward flow.
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-calendar-events-must-be-normalized-to-cloudevents-with-an-oca-stability-caveat-req-002
-     */
-    public function handle(Event $event): void
-    {
-        $type = null;
-        if ($event instanceof CalendarObjectCreatedEvent || $event instanceof CachedCalendarObjectCreatedEvent) {
-            $type = 'com.nextcloud.calendar.object.created';
-        } else if ($event instanceof CalendarObjectUpdatedEvent || $event instanceof CachedCalendarObjectUpdatedEvent) {
-            $type = 'com.nextcloud.calendar.object.updated';
-        } else if ($event instanceof CalendarObjectDeletedEvent || $event instanceof CachedCalendarObjectDeletedEvent) {
-            $type = 'com.nextcloud.calendar.object.deleted';
-        }
+	/**
+	 * Handle a fired calendar object event by normalizing and forwarding it.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) -- the branching IS the
+	 * feature: six recognised event classes across two API families (OCP +
+	 * OCA) plus the mandated defensive OCA-stability accessor checks (REQ-002)
+	 * are inherently multi-branch; splitting them would obscure the one
+	 * normalize-and-forward flow.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-calendar-events-must-be-normalized-to-cloudevents-with-an-oca-stability-caveat-req-002
+	 */
+	public function handle(Event $event): void {
+		$type = null;
+		if ($event instanceof CalendarObjectCreatedEvent || $event instanceof CachedCalendarObjectCreatedEvent) {
+			$type = 'com.nextcloud.calendar.object.created';
+		} elseif ($event instanceof CalendarObjectUpdatedEvent || $event instanceof CachedCalendarObjectUpdatedEvent) {
+			$type = 'com.nextcloud.calendar.object.updated';
+		} elseif ($event instanceof CalendarObjectDeletedEvent || $event instanceof CachedCalendarObjectDeletedEvent) {
+			$type = 'com.nextcloud.calendar.object.deleted';
+		}
 
-        if ($type === null) {
-            return;
-        }
+		if ($type === null) {
+			return;
+		}
 
-        // Defensive OCA-stability check (REQ-002): both families are expected
-        // to expose getCalendarId()/getSubscriptionId() + getObjectData();
-        // a shape mismatch (e.g. an NC-major DAV signature change) logs and
-        // skips rather than throwing into the NC event dispatcher.
-        $idMethod = null;
-        if (method_exists($event, 'getCalendarId') === true) {
-            $idMethod = 'getCalendarId';
-        } else if (method_exists($event, 'getSubscriptionId') === true) {
-            $idMethod = 'getSubscriptionId';
-        }
+		// Defensive OCA-stability check (REQ-002): both families are expected
+		// to expose getCalendarId()/getSubscriptionId() + getObjectData();
+		// a shape mismatch (e.g. an NC-major DAV signature change) logs and
+		// skips rather than throwing into the NC event dispatcher.
+		$idMethod = null;
+		if (method_exists($event, 'getCalendarId') === true) {
+			$idMethod = 'getCalendarId';
+		} elseif (method_exists($event, 'getSubscriptionId') === true) {
+			$idMethod = 'getSubscriptionId';
+		}
 
-        if ($idMethod === null || method_exists($event, 'getObjectData') === false) {
-            $this->logger->warning(
-                    'Skipped Nextcloud calendar event: unexpected event shape (missing calendar/subscription id or object data accessor).',
-                    ['event' => get_class($event)]
-                    );
-            return;
-        }
+		if ($idMethod === null || method_exists($event, 'getObjectData') === false) {
+			$this->logger->warning(
+				'Skipped Nextcloud calendar event: unexpected event shape (missing calendar/subscription id or object data accessor).',
+				['event' => get_class($event)]
+			);
+			return;
+		}
 
-        try {
-            // Firehose gate: no configured subscriptions anywhere on this
-            // instance means the outbound-webhooks capability is unused — do
-            // not pay a persistence cost for every calendar mutation
-            // fleet-wide.
-            if ($this->eventService->hasActiveSubscriptions() === false) {
-                return;
-            }
+		try {
+			// Firehose gate: no configured subscriptions anywhere on this
+			// instance means the outbound-webhooks capability is unused — do
+			// not pay a persistence cost for every calendar mutation
+			// fleet-wide.
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return;
+			}
 
-            $calendarId = $event->{$idMethod}();
-            $objectData = $event->getObjectData();
-            $objectUri  = ($objectData['uri'] ?? null);
-            $provenance = 'cached-subscription';
-            if ($idMethod === 'getCalendarId') {
-                $provenance = 'own';
-            }
+			$calendarId = $event->{$idMethod}();
+			$objectData = $event->getObjectData();
+			$objectUri = ($objectData['uri'] ?? null);
+			$provenance = 'cached-subscription';
+			if ($idMethod === 'getCalendarId') {
+				$provenance = 'own';
+			}
 
-            $this->eventService->handleNextcloudEvent(
-                type: $type,
-                payload: [
-                    'source'  => self::SOURCE,
-                    'subject' => $objectUri,
-                    'data'    => [
-                        'calendarId' => $calendarId,
-                        'objectUri'  => $objectUri,
-                        'provenance' => $provenance,
-                        'etag'       => ($objectData['etag'] ?? null),
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            // Broad catch is deliberate: this listener runs synchronously
-            // inside the CalDAV operation that triggered it. A failure here
-            // must never unwind into — and 500 — that unrelated operation.
-            $this->logger->error(
-                    'Failed to process Nextcloud calendar event: '.$e->getMessage(),
-                    [
-                        'exception' => $e,
-                        'event'     => get_class($event),
-                    ]
-                    );
-        }//end try
+			$this->eventService->handleNextcloudEvent(
+				type: $type,
+				payload: [
+					'source' => self::SOURCE,
+					'subject' => $objectUri,
+					'data' => [
+						'calendarId' => $calendarId,
+						'objectUri' => $objectUri,
+						'provenance' => $provenance,
+						'etag' => ($objectData['etag'] ?? null),
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// Broad catch is deliberate: this listener runs synchronously
+			// inside the CalDAV operation that triggered it. A failure here
+			// must never unwind into — and 500 — that unrelated operation.
+			$this->logger->error(
+				'Failed to process Nextcloud calendar event: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'event' => get_class($event),
+				]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 }//end class

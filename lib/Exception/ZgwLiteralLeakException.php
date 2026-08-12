@@ -35,6 +35,5 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZgwLiteralLeakException extends ZgwVersionTranslationException
-{
+class ZgwLiteralLeakException extends ZgwVersionTranslationException {
 }//end class

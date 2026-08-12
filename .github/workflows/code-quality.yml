@@ -78,7 +78,24 @@ jobs:
       # dependency and fails ~70s later on missing tables — which reads like a
       # migration fault rather than a missing app. Testing a version the app
       # cannot support produces red that says nothing. See issue #1172.
-      nextcloud-test-refs: '["stable32", "stable33"]'
+      #
+      # WHY THIS IS NOW stable34 AND NOT `["stable32", "stable33"]`. This PR
+      # moves the dev requirement to `nextcloud/ocp ^34`, so the stubs every
+      # static-analysis leg resolves against are NC34's. Running the suite
+      # against an older server would check the app under one set of API
+      # signatures and analyse it under another, and the two disagreeing is
+      # exactly the class of defect the analysers exist to find.
+      #
+      # ✅ THE NARROWING IS CLOSED, THE FIRST WAY. The previous revision of this
+      # comment recorded a deliberate trade: info.xml declared three server
+      # versions while the suite exercised one, leaving NC32 and NC33 unmeasured
+      # rather than known-broken. It named its own closure condition — "restoring
+      # the older refs alongside stable34 once ocp ^34 stubs are proven compatible
+      # with them" — and that condition is now met: portaliq runs stable32,
+      # stable33 and stable34 against `nextcloud/ocp ^34` and all six PHPUnit
+      # legs pass (run 31599055849). So the refs come back rather than info.xml's
+      # floor going up, and the two numbers agree again.
+      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
       # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
       # the comment it replaced instructed: "Remove this line in the change
       # that wires those producers up, so the coverage requirement arrives with

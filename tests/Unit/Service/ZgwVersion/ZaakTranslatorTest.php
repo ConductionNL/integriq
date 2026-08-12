@@ -29,111 +29,102 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTranslatorTest extends TestCase
-{
+class ZaakTranslatorTest extends TestCase {
 
-    /**
-     * @var ZaakTranslator
-     */
-    private ZaakTranslator $translator;
+	/**
+	 * @var ZaakTranslator
+	 */
+	private ZaakTranslator $translator;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->translator = new ZaakTranslator();
-    }//end setUp()
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->translator = new ZaakTranslator();
+	}//end setUp()
 
-    /**
-     * A conformant `1.0` zaak fixture.
-     *
-     * @return array<string, mixed>
-     */
-    private function conformantPayload(): array
-    {
-        return [
-            'url'                          => 'https://host/api/zgw/zaken/v1/zaken/abc',
-            'uuid'                         => 'abc',
-            'identificatie'                => 'ZAAK-001',
-            'bronorganisatie'              => '123456782',
-            'omschrijving'                 => 'Test zaak',
-            'toelichting'                  => '',
-            'zaaktype'                     => 'https://host/api/zgw/catalogi/v1/zaaktypen/def',
-            'registratiedatum'             => '2026-01-01',
-            'startdatum'                   => '2026-01-01',
-            'vertrouwelijkheidaanduiding'  => 'openbaar',
-            'verantwoordelijkeOrganisatie' => '123456782',
-        ];
-    }//end conformantPayload()
+	/**
+	 * A conformant `1.0` zaak fixture.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function conformantPayload(): array {
+		return [
+			'url' => 'https://host/api/zgw/zaken/v1/zaken/abc',
+			'uuid' => 'abc',
+			'identificatie' => 'ZAAK-001',
+			'bronorganisatie' => '123456782',
+			'omschrijving' => 'Test zaak',
+			'toelichting' => '',
+			'zaaktype' => 'https://host/api/zgw/catalogi/v1/zaaktypen/def',
+			'registratiedatum' => '2026-01-01',
+			'startdatum' => '2026-01-01',
+			'vertrouwelijkheidaanduiding' => 'openbaar',
+			'verantwoordelijkeOrganisatie' => '123456782',
+		];
+	}//end conformantPayload()
 
-    /**
-     * @return void
-     */
-    public function testGetResource(): void
-    {
-        $this->assertSame(expected: 'zaak', actual: $this->translator->getResource());
-    }//end testGetResource()
+	/**
+	 * @return void
+	 */
+	public function testGetResource(): void {
+		$this->assertSame(expected: 'zaak', actual: $this->translator->getResource());
+	}//end testGetResource()
 
-    /**
-     * @return void
-     */
-    public function testTranslateToV16IsStructurallyIdentical(): void
-    {
-        $payload    = $this->conformantPayload();
-        $translated = $this->translator->translateToV16(payload: $payload);
+	/**
+	 * @return void
+	 */
+	public function testTranslateToV16IsStructurallyIdentical(): void {
+		$payload = $this->conformantPayload();
+		$translated = $this->translator->translateToV16(payload: $payload);
 
-        $this->assertSame(expected: $payload, actual: $translated);
-    }//end testTranslateToV16IsStructurallyIdentical()
+		$this->assertSame(expected: $payload, actual: $translated);
+	}//end testTranslateToV16IsStructurallyIdentical()
 
-    /**
-     * @return void
-     */
-    public function testTranslateToV1xIsStructurallyIdentical(): void
-    {
-        $payload    = $this->conformantPayload();
-        $translated = $this->translator->translateToV1x(payload: $payload);
+	/**
+	 * @return void
+	 */
+	public function testTranslateToV1xIsStructurallyIdentical(): void {
+		$payload = $this->conformantPayload();
+		$translated = $this->translator->translateToV1x(payload: $payload);
 
-        $this->assertSame(expected: $payload, actual: $translated);
-    }//end testTranslateToV1xIsStructurallyIdentical()
+		$this->assertSame(expected: $payload, actual: $translated);
+	}//end testTranslateToV1xIsStructurallyIdentical()
 
-    /**
-     * @return void
-     */
-    public function testRoundTripIsLossless(): void
-    {
-        $payload = $this->conformantPayload();
-        $roundTripped = $this->translator->translateToV1x(
-            payload: $this->translator->translateToV16(payload: $payload)
-        );
+	/**
+	 * @return void
+	 */
+	public function testRoundTripIsLossless(): void {
+		$payload = $this->conformantPayload();
+		$roundTripped = $this->translator->translateToV1x(
+			payload: $this->translator->translateToV16(payload: $payload)
+		);
 
-        $this->assertSame(expected: $payload, actual: $roundTripped);
-    }//end testRoundTripIsLossless()
+		$this->assertSame(expected: $payload, actual: $roundTripped);
+	}//end testRoundTripIsLossless()
 
-    /**
-     * @return void
-     */
-    public function testMissingRequiredFieldThrowsLiteralLeak(): void
-    {
-        $payload = $this->conformantPayload();
-        unset($payload['zaaktype']);
+	/**
+	 * @return void
+	 */
+	public function testMissingRequiredFieldThrowsLiteralLeak(): void {
+		$payload = $this->conformantPayload();
+		unset($payload['zaaktype']);
 
-        $this->expectException(ZgwLiteralLeakException::class);
-        $this->translator->translateToV16(payload: $payload);
-    }//end testMissingRequiredFieldThrowsLiteralLeak()
+		$this->expectException(ZgwLiteralLeakException::class);
+		$this->translator->translateToV16(payload: $payload);
+	}//end testMissingRequiredFieldThrowsLiteralLeak()
 
-    /**
-     * @return void
-     */
-    public function testOutOfSetEnumValueThrowsLiteralLeak(): void
-    {
-        $payload = $this->conformantPayload();
-        $payload['vertrouwelijkheidaanduiding'] = 'top-secret';
+	/**
+	 * @return void
+	 */
+	public function testOutOfSetEnumValueThrowsLiteralLeak(): void {
+		$payload = $this->conformantPayload();
+		$payload['vertrouwelijkheidaanduiding'] = 'top-secret';
 
-        $this->expectException(ZgwLiteralLeakException::class);
-        $this->translator->translateToV16(payload: $payload);
-    }//end testOutOfSetEnumValueThrowsLiteralLeak()
+		$this->expectException(ZgwLiteralLeakException::class);
+		$this->translator->translateToV16(payload: $payload);
+	}//end testOutOfSetEnumValueThrowsLiteralLeak()
 }//end class

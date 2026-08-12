@@ -43,44 +43,42 @@ use Twig\TwigFunction;
  *
  * @template-implements IEventListener<Event>
  */
-class MappingFunctionRegistrationListener implements IEventListener
-{
-    /**
-     * Contribute the functions OpenRegister cannot provide for itself.
-     *
-     * No class_exists() guard, matching how FlowNodeListener is registered:
-     * addServiceListener is lazy, so this class is only constructed when the
-     * event actually fires — which can only happen if OpenRegister is present
-     * and dispatching it. On an older OpenRegister nothing dispatches and this
-     * stays inert.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/authentication-twig/spec.md#requirement-twig-mapping-runtime-encoding-mapping-execution-file-lookup-slug-req-005
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent) === false) {
-            return;
-        }
+class MappingFunctionRegistrationListener implements IEventListener {
+	/**
+	 * Contribute the functions OpenRegister cannot provide for itself.
+	 *
+	 * No class_exists() guard, matching how FlowNodeListener is registered:
+	 * addServiceListener is lazy, so this class is only constructed when the
+	 * event actually fires — which can only happen if OpenRegister is present
+	 * and dispatching it. On an older OpenRegister nothing dispatches and this
+	 * stays inert.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md#requirement-twig-mapping-runtime-encoding-mapping-execution-file-lookup-slug-req-005
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent) === false) {
+			return;
+		}
 
-        $event->registerFunction(
-            new TwigFunction(name: 'callSource', callable: [MappingRuntime::class, 'callSource'])
-        );
-        $event->registerFunction(
-            new TwigFunction(
-                name: 'getTargetIdByOriginId',
-                callable: [MappingRuntime::class, 'getTargetIdByOriginId']
-            )
-        );
-        $event->registerFunction(
-            new TwigFunction(
-                name: 'getOriginIdByTargetId',
-                callable: [MappingRuntime::class, 'getOriginIdByTargetId']
-            )
-        );
+		$event->registerFunction(
+			new TwigFunction(name: 'callSource', callable: [MappingRuntime::class, 'callSource'])
+		);
+		$event->registerFunction(
+			new TwigFunction(
+				name: 'getTargetIdByOriginId',
+				callable: [MappingRuntime::class, 'getTargetIdByOriginId']
+			)
+		);
+		$event->registerFunction(
+			new TwigFunction(
+				name: 'getOriginIdByTargetId',
+				callable: [MappingRuntime::class, 'getOriginIdByTargetId']
+			)
+		);
 
-    }//end handle()
+	}//end handle()
 }//end class

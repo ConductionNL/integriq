@@ -33,62 +33,55 @@ namespace OCA\OpenConnector\Service\Dso;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogDsoConnectorProvider implements DsoConnectorProviderInterface
-{
+class LogDsoConnectorProvider implements DsoConnectorProviderInterface {
 
-    /**
-     * Per-process counter for synthetic references (`MOCK-DSO-<n>`).
-     *
-     * A per-process, in-memory counter is sufficient for a sandbox binding —
-     * refs only need to be locally unique for the duration of one
-     * request/job run (mirrors LogIwmoIjwProvider::$counter).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic references (`MOCK-DSO-<n>`).
+	 *
+	 * A per-process, in-memory counter is sufficient for a sandbox binding —
+	 * refs only need to be locally unique for the duration of one
+	 * request/job run (mirrors LogIwmoIjwProvider::$counter).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array {
+		return ['type' => 'object', 'properties' => []];
+	}//end getConfigSchema()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> An empty schema — the log provider needs no configuration.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array
-    {
-        return ['type' => 'object', 'properties' => []];
-
-    }//end getConfigSchema()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param string $verzoekId           Unused.
-     * @param string $type                Unused.
-     * @param array  $payload             Unused.
-     *
-     * @return string The synthetic `MOCK-DSO-<n>` reference.
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
-     */
-    public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string
-    {
-        self::$counter++;
-        return 'MOCK-DSO-'.self::$counter;
-
-    }//end send()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param string $verzoekId Unused.
+	 * @param string $type Unused.
+	 * @param array $payload Unused.
+	 *
+	 * @return string The synthetic `MOCK-DSO-<n>` reference.
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 */
+	public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string {
+		self::$counter++;
+		return 'MOCK-DSO-' . self::$counter;
+	}//end send()
 }//end class

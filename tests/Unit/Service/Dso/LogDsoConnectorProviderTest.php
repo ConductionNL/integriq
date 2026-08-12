@@ -28,74 +28,68 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogDsoConnectorProviderTest extends TestCase
-{
+class LogDsoConnectorProviderTest extends TestCase {
 
-    /**
-     * @var LogDsoConnectorProvider
-     */
-    private LogDsoConnectorProvider $provider;
+	/**
+	 * @var LogDsoConnectorProvider
+	 */
+	private LogDsoConnectorProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->provider = new LogDsoConnectorProvider();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->provider = new LogDsoConnectorProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * getProviderId() returns "log".
-     *
-     * @return void
-     */
-    public function testGetProviderId(): void
-    {
-        $this->assertSame('log', $this->provider->getProviderId());
+	/**
+	 * getProviderId() returns "log".
+	 *
+	 * @return void
+	 */
+	public function testGetProviderId(): void {
+		$this->assertSame('log', $this->provider->getProviderId());
 
-    }//end testGetProviderId()
+	}//end testGetProviderId()
 
-    /**
-     * getConfigSchema() needs no configuration.
-     *
-     * @return void
-     */
-    public function testGetConfigSchemaIsEmpty(): void
-    {
-        $schema = $this->provider->getConfigSchema();
-        $this->assertSame('object', $schema['type']);
-        $this->assertSame([], $schema['properties']);
+	/**
+	 * getConfigSchema() needs no configuration.
+	 *
+	 * @return void
+	 */
+	public function testGetConfigSchemaIsEmpty(): void {
+		$schema = $this->provider->getConfigSchema();
+		$this->assertSame('object', $schema['type']);
+		$this->assertSame([], $schema['properties']);
 
-    }//end testGetConfigSchemaIsEmpty()
+	}//end testGetConfigSchemaIsEmpty()
 
-    /**
-     * send() returns a synthetic MOCK-DSO-<n> ref with no configuration needed.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
-     */
-    public function testSendReturnsSyntheticRef(): void
-    {
-        $ref = $this->provider->send([], 'dso-12345', 'status', ['status' => 'in_behandeling']);
-        $this->assertStringStartsWith('MOCK-DSO-', $ref);
+	/**
+	 * send() returns a synthetic MOCK-DSO-<n> ref with no configuration needed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 */
+	public function testSendReturnsSyntheticRef(): void {
+		$ref = $this->provider->send([], 'dso-12345', 'status', ['status' => 'in_behandeling']);
+		$this->assertStringStartsWith('MOCK-DSO-', $ref);
 
-    }//end testSendReturnsSyntheticRef()
+	}//end testSendReturnsSyntheticRef()
 
-    /**
-     * Successive send() calls return distinct synthetic refs.
-     *
-     * @return void
-     */
-    public function testSendReturnsDistinctRefsAcrossCalls(): void
-    {
-        $first  = $this->provider->send([], 'dso-1', 'status', []);
-        $second = $this->provider->send([], 'dso-2', 'besluit', []);
-        $this->assertNotSame($first, $second);
+	/**
+	 * Successive send() calls return distinct synthetic refs.
+	 *
+	 * @return void
+	 */
+	public function testSendReturnsDistinctRefsAcrossCalls(): void {
+		$first = $this->provider->send([], 'dso-1', 'status', []);
+		$second = $this->provider->send([], 'dso-2', 'besluit', []);
+		$this->assertNotSame($first, $second);
 
-    }//end testSendReturnsDistinctRefsAcrossCalls()
+	}//end testSendReturnsDistinctRefsAcrossCalls()
 }//end class

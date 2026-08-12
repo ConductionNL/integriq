@@ -21,40 +21,38 @@ namespace OCA\OpenRegister\Service\Handoff;
 /**
  * Minimal stub for OCA\OpenRegister\Service\Handoff\HandoffService.
  */
-class HandoffService
-{
-    /**
-     * Execute a declared handoff on a source object (or park it, queue mode).
-     *
-     * @param  string      $register
-     * @param  string      $schema
-     * @param  string      $id
-     * @param  string      $handoffId
-     * @param  bool        $deferred
-     * @param  string|null $correlationId
-     * @return array<string, mixed>
-     */
-    public function execute(
-        string $register,
-        string $schema,
-        string $id,
-        string $handoffId,
-        bool $deferred = false,
-        ?string $correlationId = null
-    ): array {
-        return ['status' => 'executed', 'target' => [], 'correlationId' => ''];
-    }
+class HandoffService {
+	/**
+	 * Execute a declared handoff on a source object (or park it, queue mode).
+	 *
+	 * @param string $register
+	 * @param string $schema
+	 * @param string $id
+	 * @param string $handoffId
+	 * @param bool $deferred
+	 * @param string|null $correlationId
+	 * @return array<string, mixed>
+	 */
+	public function execute(
+		string $register,
+		string $schema,
+		string $id,
+		string $handoffId,
+		bool $deferred = false,
+		?string $correlationId = null,
+	): array {
+		return ['status' => 'executed', 'target' => [], 'correlationId' => ''];
+	}
 
-    /**
-     * Report handoff availability for one object.
-     *
-     * @param  string $register
-     * @param  string $schema
-     * @param  string $id
-     * @return array<int, array<string, mixed>>
-     */
-    public function listAvailability(string $register, string $schema, string $id): array
-    {
-        return [];
-    }
+	/**
+	 * Report handoff availability for one object.
+	 *
+	 * @param string $register
+	 * @param string $schema
+	 * @param string $id
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function listAvailability(string $register, string $schema, string $id): array {
+		return [];
+	}
 }

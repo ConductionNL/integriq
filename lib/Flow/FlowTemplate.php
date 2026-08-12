@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Flow Template.
  *
@@ -52,267 +53,253 @@ namespace OCA\OpenConnector\Flow;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
-final class FlowTemplate
-{
+final class FlowTemplate {
 
-    /**
-     * Matches a single `{{ dotted.path }}` placeholder.
-     *
-     * @var string
-     */
-    private const PLACEHOLDER = '/\{\{\s*([A-Za-z0-9_@.\-]+)\s*\}\}/';
+	/**
+	 * Matches a single `{{ dotted.path }}` placeholder.
+	 *
+	 * @var string
+	 */
+	private const PLACEHOLDER = '/\{\{\s*([A-Za-z0-9_@.\-]+)\s*\}\}/';
 
-    /**
-     * Matches a value that is EXACTLY one placeholder and nothing else.
-     *
-     * @var string
-     */
-    private const WHOLE_PLACEHOLDER = '/^\{\{\s*([A-Za-z0-9_@.\-]+)\s*\}\}$/';
+	/**
+	 * Matches a value that is EXACTLY one placeholder and nothing else.
+	 *
+	 * @var string
+	 */
+	private const WHOLE_PLACEHOLDER = '/^\{\{\s*([A-Za-z0-9_@.\-]+)\s*\}\}$/';
 
-    /**
-     * Whether a string carries at least one placeholder.
-     *
-     * Used by the nodes to decide whether an SSRF containment check on the
-     * LITERAL authored value can be conclusive, or whether it must be repeated
-     * against the RENDERED value at execute time.
-     *
-     * @param string $value The authored value.
-     *
-     * @return boolean Whether a placeholder is present.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function hasPlaceholder(string $value): bool
-    {
-        return (preg_match(self::PLACEHOLDER, $value) === 1);
+	/**
+	 * Whether a string carries at least one placeholder.
+	 *
+	 * Used by the nodes to decide whether an SSRF containment check on the
+	 * LITERAL authored value can be conclusive, or whether it must be repeated
+	 * against the RENDERED value at execute time.
+	 *
+	 * @param string $value The authored value.
+	 *
+	 * @return boolean Whether a placeholder is present.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function hasPlaceholder(string $value): bool {
+		return (preg_match(self::PLACEHOLDER, $value) === 1);
+	}//end hasPlaceholder()
 
-    }//end hasPlaceholder()
+	/**
+	 * Render a template to a string.
+	 *
+	 * Always returns a string, so it is the right entry point for values that
+	 * are structurally strings — an endpoint path above all.
+	 *
+	 * @param string $template The authored template.
+	 * @param array $json The current item's record.
+	 *
+	 * @return string The rendered string.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function renderString(string $template, array $json): string {
+		return (string)preg_replace_callback(
+			self::PLACEHOLDER,
+			static function (array $matches) use ($json) {
+				$value = self::lookup(path: $matches[1], json: $json);
+				if ($value === null) {
+					return '';
+				}
 
-    /**
-     * Render a template to a string.
-     *
-     * Always returns a string, so it is the right entry point for values that
-     * are structurally strings — an endpoint path above all.
-     *
-     * @param string $template The authored template.
-     * @param array  $json     The current item's record.
-     *
-     * @return string The rendered string.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function renderString(string $template, array $json): string
-    {
-        return (string) preg_replace_callback(
-            self::PLACEHOLDER,
-            static function (array $matches) use ($json) {
-                $value = self::lookup(path: $matches[1], json: $json);
-                if ($value === null) {
-                    return '';
-                }
+				if (is_array($value) === true) {
+					return (string)json_encode($value);
+				}
 
-                if (is_array($value) === true) {
-                    return (string) json_encode($value);
-                }
+				if (is_bool($value) === true) {
+					if ($value === true) {
+						return 'true';
+					}
 
-                if (is_bool($value) === true) {
-                    if ($value === true) {
-                        return 'true';
-                    }
+					return 'false';
+				}
 
-                    return 'false';
-                }
+				return (string)$value;
+			},
+			$template
+		);
 
-                return (string) $value;
-            },
-            $template
-        );
+	}//end renderString()
 
-    }//end renderString()
+	/**
+	 * Render a value, preserving the resolved type for a whole-placeholder.
+	 *
+	 * @param mixed $value The authored value (string, array, or scalar).
+	 * @param array $json The current item's record.
+	 *
+	 * @return mixed The rendered value.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function renderValue(mixed $value, array $json): mixed {
+		if (is_array($value) === true) {
+			$rendered = [];
+			foreach ($value as $key => $member) {
+				$renderedKey = $key;
+				if (is_string($key) === true) {
+					$renderedKey = self::renderString(template: $key, json: $json);
+				}
 
-    /**
-     * Render a value, preserving the resolved type for a whole-placeholder.
-     *
-     * @param mixed $value The authored value (string, array, or scalar).
-     * @param array $json  The current item's record.
-     *
-     * @return mixed The rendered value.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function renderValue(mixed $value, array $json): mixed
-    {
-        if (is_array($value) === true) {
-            $rendered = [];
-            foreach ($value as $key => $member) {
-                $renderedKey = $key;
-                if (is_string($key) === true) {
-                    $renderedKey = self::renderString(template: $key, json: $json);
-                }
+				$rendered[$renderedKey] = self::renderValue(value: $member, json: $json);
+			}
 
-                $rendered[$renderedKey] = self::renderValue(value: $member, json: $json);
-            }
+			return $rendered;
+		}
 
-            return $rendered;
-        }
+		if (is_string($value) === false) {
+			return $value;
+		}
 
-        if (is_string($value) === false) {
-            return $value;
-        }
+		$matches = [];
+		if (preg_match(self::WHOLE_PLACEHOLDER, $value, $matches) === 1) {
+			return self::lookup(path: $matches[1], json: $json);
+		}
 
-        $matches = [];
-        if (preg_match(self::WHOLE_PLACEHOLDER, $value, $matches) === 1) {
-            return self::lookup(path: $matches[1], json: $json);
-        }
+		return self::renderString(template: $value, json: $json);
+	}//end renderValue()
 
-        return self::renderString(template: $value, json: $json);
+	/**
+	 * Resolve one dotted path against the record.
+	 *
+	 * @param string $path The dotted path.
+	 * @param array $json The current item's record.
+	 *
+	 * @return mixed The resolved value, or null when the path is absent.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function lookup(string $path, array $json): mixed {
+		$value = $json;
+		foreach (explode('.', $path) as $segment) {
+			if (is_array($value) === false || array_key_exists($segment, $value) === false) {
+				return null;
+			}
 
-    }//end renderValue()
+			$value = $value[$segment];
+		}
 
-    /**
-     * Resolve one dotted path against the record.
-     *
-     * @param string $path The dotted path.
-     * @param array  $json The current item's record.
-     *
-     * @return mixed The resolved value, or null when the path is absent.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function lookup(string $path, array $json): mixed
-    {
-        $value = $json;
-        foreach (explode('.', $path) as $segment) {
-            if (is_array($value) === false || array_key_exists($segment, $value) === false) {
-                return null;
-            }
+		return $value;
+	}//end lookup()
 
-            $value = $value[$segment];
-        }
+	/**
+	 * Write a value into a record at a dotted target path.
+	 *
+	 * Missing intermediate levels are created; a non-array value standing where
+	 * a level is needed is replaced, because the author named that target and a
+	 * silently skipped write is the failure mode this whole change exists to
+	 * avoid.
+	 *
+	 * @param array $json The record to write into.
+	 * @param string $path The dotted target path.
+	 * @param mixed $value The value to write.
+	 *
+	 * @return array The record, with the value written.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function write(array $json, string $path, mixed $value): array {
+		$segments = explode('.', $path);
+		$cursor = &$json;
 
-        return $value;
+		foreach ($segments as $index => $segment) {
+			if ($index === (count($segments) - 1)) {
+				$cursor[$segment] = $value;
+				break;
+			}
 
-    }//end lookup()
+			if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
+				$cursor[$segment] = [];
+			}
 
-    /**
-     * Write a value into a record at a dotted target path.
-     *
-     * Missing intermediate levels are created; a non-array value standing where
-     * a level is needed is replaced, because the author named that target and a
-     * silently skipped write is the failure mode this whole change exists to
-     * avoid.
-     *
-     * @param array  $json  The record to write into.
-     * @param string $path  The dotted target path.
-     * @param mixed  $value The value to write.
-     *
-     * @return array The record, with the value written.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function write(array $json, string $path, mixed $value): array
-    {
-        $segments = explode('.', $path);
-        $cursor   = &$json;
+			$cursor = &$cursor[$segment];
+		}
 
-        foreach ($segments as $index => $segment) {
-            if ($index === (count($segments) - 1)) {
-                $cursor[$segment] = $value;
-                break;
-            }
+		unset($cursor);
 
-            if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
-                $cursor[$segment] = [];
-            }
+		return $json;
+	}//end write()
 
-            $cursor = &$cursor[$segment];
-        }
+	/**
+	 * Select a value out of a response payload using the node's selector grammar.
+	 *
+	 * The grammar is deliberately small and documented rather than "JSONPath,
+	 * roughly": a dotted path for the common case, an optional leading `$.`,
+	 * numeric segments for list indices, and `[*]` (or a bare `*`) to map the
+	 * remainder of the path across every member of a list. Anything else is not
+	 * supported and resolves to null rather than to a guess.
+	 *
+	 * @param mixed $payload The decoded response payload.
+	 * @param string $selector The selector.
+	 *
+	 * @return mixed The selected value, or null when the selector matches nothing.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public static function select(mixed $payload, string $selector): mixed {
+		$normalised = trim($selector);
+		if (str_starts_with($normalised, '$.') === true) {
+			$normalised = substr($normalised, 2);
+		} elseif ($normalised === '$') {
+			return $payload;
+		}
 
-        unset($cursor);
+		// Normalise `a[*].b` / `a[0].b` bracket syntax into dotted segments.
+		$normalised = (string)preg_replace('/\[([^\]]*)\]/', '.$1', $normalised);
+		$segments = array_values(
+			array_filter(
+				explode('.', $normalised),
+				static function ($segment) {
+					return ($segment !== '');
+				}
+			)
+		);
 
-        return $json;
+		return self::walk(value: $payload, segments: $segments);
+	}//end select()
 
-    }//end write()
+	/**
+	 * Walk the remaining selector segments over a value.
+	 *
+	 * @param mixed $value The current value.
+	 * @param array $segments The remaining segments.
+	 *
+	 * @return mixed The selected value, or null.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private static function walk(mixed $value, array $segments): mixed {
+		if ($segments === []) {
+			return $value;
+		}
 
-    /**
-     * Select a value out of a response payload using the node's selector grammar.
-     *
-     * The grammar is deliberately small and documented rather than "JSONPath,
-     * roughly": a dotted path for the common case, an optional leading `$.`,
-     * numeric segments for list indices, and `[*]` (or a bare `*`) to map the
-     * remainder of the path across every member of a list. Anything else is not
-     * supported and resolves to null rather than to a guess.
-     *
-     * @param mixed  $payload  The decoded response payload.
-     * @param string $selector The selector.
-     *
-     * @return mixed The selected value, or null when the selector matches nothing.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public static function select(mixed $payload, string $selector): mixed
-    {
-        $normalised = trim($selector);
-        if (str_starts_with($normalised, '$.') === true) {
-            $normalised = substr($normalised, 2);
-        } else if ($normalised === '$') {
-            return $payload;
-        }
+		$segment = array_shift($segments);
 
-        // Normalise `a[*].b` / `a[0].b` bracket syntax into dotted segments.
-        $normalised = (string) preg_replace('/\[([^\]]*)\]/', '.$1', $normalised);
-        $segments   = array_values(
-            array_filter(
-                explode('.', $normalised),
-                static function ($segment) {
-                    return ($segment !== '');
-                }
-            )
-        );
+		if ($segment === '*') {
+			if (is_array($value) === false) {
+				return null;
+			}
 
-        return self::walk(value: $payload, segments: $segments);
+			$collected = [];
+			foreach ($value as $member) {
+				$selected = self::walk(value: $member, segments: $segments);
+				if ($selected !== null) {
+					$collected[] = $selected;
+				}
+			}
 
-    }//end select()
+			return $collected;
+		}
 
-    /**
-     * Walk the remaining selector segments over a value.
-     *
-     * @param mixed $value    The current value.
-     * @param array $segments The remaining segments.
-     *
-     * @return mixed The selected value, or null.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private static function walk(mixed $value, array $segments): mixed
-    {
-        if ($segments === []) {
-            return $value;
-        }
+		if (is_array($value) === false || array_key_exists($segment, $value) === false) {
+			return null;
+		}
 
-        $segment = array_shift($segments);
-
-        if ($segment === '*') {
-            if (is_array($value) === false) {
-                return null;
-            }
-
-            $collected = [];
-            foreach ($value as $member) {
-                $selected = self::walk(value: $member, segments: $segments);
-                if ($selected !== null) {
-                    $collected[] = $selected;
-                }
-            }
-
-            return $collected;
-        }
-
-        if (is_array($value) === false || array_key_exists($segment, $value) === false) {
-            return null;
-        }
-
-        return self::walk(value: $value[$segment], segments: $segments);
-
-    }//end walk()
+		return self::walk(value: $value[$segment], segments: $segments);
+	}//end walk()
 }//end class

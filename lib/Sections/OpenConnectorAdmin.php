@@ -42,6 +42,5 @@ use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
  *
  * @spec openspec/specs/apphost-adoption/spec.md
  */
-class OpenConnectorAdmin extends GenericSettingsSection
-{
+class OpenConnectorAdmin extends GenericSettingsSection {
 }//end class

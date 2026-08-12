@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for RegisterOperationsListener.
  *
@@ -31,51 +32,46 @@ use PHPUnit\Framework\TestCase;
 /**
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
-class RegisterOperationsListenerTest extends TestCase
-{
+class RegisterOperationsListenerTest extends TestCase {
 
+	/**
+	 * handle() registers all three operations exactly once each when a
+	 * RegisterOperationsEvent fires.
+	 *
+	 * @return void
+	 */
+	public function testHandleRegistersAllThreeOperations(): void {
+		$runSynchronizationOperation = $this->createMock(RunSynchronizationOperation::class);
+		$callEndpointOperation = $this->createMock(CallEndpointOperation::class);
+		$fireCloudEventOperation = $this->createMock(FireCloudEventOperation::class);
 
-    /**
-     * handle() registers all three operations exactly once each when a
-     * RegisterOperationsEvent fires.
-     *
-     * @return void
-     */
-    public function testHandleRegistersAllThreeOperations(): void
-    {
-        $runSynchronizationOperation = $this->createMock(RunSynchronizationOperation::class);
-        $callEndpointOperation       = $this->createMock(CallEndpointOperation::class);
-        $fireCloudEventOperation     = $this->createMock(FireCloudEventOperation::class);
+		$manager = $this->createMock(IManager::class);
+		$manager->expects($this->exactly(3))
+			->method('registerOperation')
+			->with(
+				$this->logicalOr($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation)
+			);
 
-        $manager = $this->createMock(IManager::class);
-        $manager->expects($this->exactly(3))
-            ->method('registerOperation')
-            ->with(
-                $this->logicalOr($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation)
-            );
+		$listener = new RegisterOperationsListener($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation);
+		$listener->handle(new RegisterOperationsEvent($manager));
 
-        $listener = new RegisterOperationsListener($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation);
-        $listener->handle(new RegisterOperationsEvent($manager));
+	}//end testHandleRegistersAllThreeOperations()
 
-    }//end testHandleRegistersAllThreeOperations()
+	/**
+	 * handle() is a no-op for any event other than RegisterOperationsEvent.
+	 *
+	 * @return void
+	 */
+	public function testHandleIgnoresOtherEvents(): void {
+		$runSynchronizationOperation = $this->createMock(RunSynchronizationOperation::class);
+		$callEndpointOperation = $this->createMock(CallEndpointOperation::class);
+		$fireCloudEventOperation = $this->createMock(FireCloudEventOperation::class);
 
+		$listener = new RegisterOperationsListener($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation);
 
-    /**
-     * handle() is a no-op for any event other than RegisterOperationsEvent.
-     *
-     * @return void
-     */
-    public function testHandleIgnoresOtherEvents(): void
-    {
-        $runSynchronizationOperation = $this->createMock(RunSynchronizationOperation::class);
-        $callEndpointOperation       = $this->createMock(CallEndpointOperation::class);
-        $fireCloudEventOperation     = $this->createMock(FireCloudEventOperation::class);
+		// Must not throw or attempt to register anything against an unrelated event.
+		$listener->handle(new Event());
+		$this->addToAssertionCount(1);
 
-        $listener = new RegisterOperationsListener($runSynchronizationOperation, $callEndpointOperation, $fireCloudEventOperation);
-
-        // Must not throw or attempt to register anything against an unrelated event.
-        $listener->handle(new Event());
-        $this->addToAssertionCount(1);
-
-    }//end testHandleIgnoresOtherEvents()
+	}//end testHandleIgnoresOtherEvents()
 }//end class

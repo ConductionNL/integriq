@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for EventRetryJob.
  *
@@ -27,88 +28,79 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
  */
-class EventRetryJobTest extends TestCase
-{
+class EventRetryJobTest extends TestCase {
 
-    /**
-     * @var EventService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $eventService;
+	/**
+	 * @var EventService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $eventService;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var EventRetryJob
-     */
-    private EventRetryJob $job;
+	/**
+	 * @var EventRetryJob
+	 */
+	private EventRetryJob $job;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->eventService = $this->createMock(EventService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $timeFactory        = $this->createMock(ITimeFactory::class);
-        $this->eventService = $this->createMock(EventService::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+		$this->job = new EventRetryJob($timeFactory, $this->eventService, $this->logger);
+	}//end setUp()
 
-        $this->job = new EventRetryJob($timeFactory, $this->eventService, $this->logger);
-    }//end setUp()
+	/**
+	 * The job wires its dependencies and constructs without error.
+	 *
+	 * @return void
+	 */
+	public function testConstructs(): void {
+		$this->assertInstanceOf(EventRetryJob::class, $this->job);
+	}//end testConstructs()
 
+	/**
+	 * REQ-007: running the job invokes processRetries.
+	 *
+	 * @return void
+	 */
+	public function testRunInvokesProcessRetries(): void {
+		$this->eventService->expects($this->once())
+			->method('processRetries')
+			->willReturn(3);
 
-    /**
-     * The job wires its dependencies and constructs without error.
-     *
-     * @return void
-     */
-    public function testConstructs(): void
-    {
-        $this->assertInstanceOf(EventRetryJob::class, $this->job);
-    }//end testConstructs()
+		// run() is protected; exercise it via the public TimedJob entry shape.
+		$reflection = new \ReflectionMethod($this->job, 'run');
+		$reflection->setAccessible(true);
+		$reflection->invoke($this->job, null);
+	}//end testRunInvokesProcessRetries()
 
+	/**
+	 * REQ-007: a sweep exception is caught and logged, never rethrown.
+	 *
+	 * @return void
+	 */
+	public function testRunContainsExceptions(): void {
+		$this->eventService->method('processRetries')
+			->willThrowException(new \RuntimeException('poisoned message'));
 
-    /**
-     * REQ-007: running the job invokes processRetries.
-     *
-     * @return void
-     */
-    public function testRunInvokesProcessRetries(): void
-    {
-        $this->eventService->expects($this->once())
-            ->method('processRetries')
-            ->willReturn(3);
+		$this->logger->expects($this->once())->method('error');
 
-        // run() is protected; exercise it via the public TimedJob entry shape.
-        $reflection = new \ReflectionMethod($this->job, 'run');
-        $reflection->setAccessible(true);
-        $reflection->invoke($this->job, null);
-    }//end testRunInvokesProcessRetries()
+		$reflection = new \ReflectionMethod($this->job, 'run');
+		$reflection->setAccessible(true);
 
-
-    /**
-     * REQ-007: a sweep exception is caught and logged, never rethrown.
-     *
-     * @return void
-     */
-    public function testRunContainsExceptions(): void
-    {
-        $this->eventService->method('processRetries')
-            ->willThrowException(new \RuntimeException('poisoned message'));
-
-        $this->logger->expects($this->once())->method('error');
-
-        $reflection = new \ReflectionMethod($this->job, 'run');
-        $reflection->setAccessible(true);
-
-        // Must not throw.
-        $reflection->invoke($this->job, null);
-        $this->assertTrue(true);
-    }//end testRunContainsExceptions()
+		// Must not throw.
+		$reflection->invoke($this->job, null);
+		$this->assertTrue(true);
+	}//end testRunContainsExceptions()
 }//end class
