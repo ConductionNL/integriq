@@ -432,7 +432,10 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/synchronization'),
-					{ params: { limit: 500 } },
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const list = Array.isArray(response.data?.results) ? response.data.results : (Array.isArray(response.data) ? response.data : [])
 				this.synchronizationOptions = list.map((item) => ({
@@ -458,7 +461,10 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/job'),
-					{ params: { limit: 500 } },
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const list = Array.isArray(response.data?.results) ? response.data.results : (Array.isArray(response.data) ? response.data : [])
 				this.jobOptions = list.map((item) => ({

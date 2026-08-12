@@ -145,12 +145,20 @@ class ExecutionTraceService
      * @return ObjectEntity|null The trace, or null when not found.
      *
      * @spec exclude Not a CRUD pass-through with no callers (ADR-022). It pins
-     *       the register/schema pair, turns OR's rbac and multitenancy off —
-     *       a trace is infrastructure telemetry, not a tenant-owned object —
-     *       and converts a MISS from a throw into null. Both callers
-     *       (ExecutionTracesController::show and replay() below) depend on
-     *       exactly that shape; deleting it duplicates five arguments and a
-     *       try/catch at each of them.
+     *       the register/schema pair and converts a MISS from a throw into
+     *       null. Both callers (ExecutionTracesController::show and replay()
+     *       below) depend on exactly that shape; deleting it duplicates the
+     *       arguments and a try/catch at each of them.
+     *
+     * ⚠️ This method used to pass `_rbac: false, _multitenancy: false`, on the
+     * reason *"a trace is infrastructure telemetry, not a tenant-owned
+     * object"*. That reason justifies the WRITE in persist(), which runs from
+     * background jobs with no session. It does not justify the READ: both
+     * callers are `#[NoAdminRequired]` HTTP endpoints taking a caller-supplied
+     * id, so switching OR's own layer off in source made this the only place
+     * an access decision could ever be made — and none was. The decision now
+     * lives in the controllers' `ActionAuthService::requireAction()` calls, and
+     * OR's layer is left at its defaults so it can become a second one.
      *
      * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
      *
@@ -164,9 +172,7 @@ class ExecutionTraceService
             return $this->orObjectService->find(
                 id: $traceId,
                 register: self::REGISTER,
-                schema: self::SCHEMA,
-                _rbac: false,
-                _multitenancy: false
+                schema: self::SCHEMA
             );
         } catch (DoesNotExistException $exception) {
             // A miss is null. Everything else — an OpenRegister outage, a

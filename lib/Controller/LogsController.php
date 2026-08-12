@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -29,6 +30,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\AppFramework\OCS\OCSNotFoundException;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -39,6 +41,22 @@ use OCP\IUserSession;
  *
  * This controller handles CRUD operations for synchronization logs,
  * including filtering, pagination, and statistics.
+ *
+ * Authorization posture (ADR-023, ADR-005 Rule 3): a synchronization log is
+ * instance-wide operational audit data, not a per-user object — it records
+ * which integration ran, against which source, carrying which payload, on
+ * behalf of which `userId`. There is therefore no per-object owner to scope
+ * to; the correct boundary is the action-RBAC matrix, which every other
+ * log-reading surface in this app already uses (`source.logs`, `job.logs`,
+ * `endpoint.logs`, `synchronization.logs`).
+ *
+ * The five `log.*` actions this controller now enforces were declared and
+ * seeded in `lib/actions.seed.json` when action RBAC was introduced, and were
+ * never called from anywhere. `#[NoAdminRequired]` plus an authentication
+ * check was the whole of the access control, so any authenticated account
+ * could read and DELETE any other account's audit record.
+ *
+ * @spec openspec/specs/logs-and-statistics/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.LongVariable)
@@ -64,11 +82,12 @@ class LogsController extends Controller
     /**
      * Constructor for the LogsController.
      *
-     * @param string          $appName         The application name.
-     * @param IRequest        $request         The request interface.
-     * @param OrObjectService $orObjectService The OR object service.
-     * @param IL10N           $l               The localization service.
-     * @param IUserSession    $userSession     The user session.
+     * @param string            $appName         The application name.
+     * @param IRequest          $request         The request interface.
+     * @param OrObjectService   $orObjectService The OR object service.
+     * @param IL10N             $l               The localization service.
+     * @param IUserSession      $userSession     The user session.
+     * @param ActionAuthService $actionAuth      The ADR-023 action authorization service.
      */
     public function __construct(
         string $appName,
@@ -76,6 +95,7 @@ class LogsController extends Controller
         OrObjectService $orObjectService,
         IL10N $l,
         private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -83,6 +103,58 @@ class LogsController extends Controller
         $this->l = $l;
 
     }//end __construct()
+
+    /**
+     * Build the OpenRegister filter array from the optional query parameters.
+     *
+     * Both index() and export() had byte-identical copies of this block —
+     * export()'s own comment said "same as index method" — and five sequential
+     * optional assignments are 32 NPath paths each. Extracting it removes the
+     * duplication and keeps index() under the complexity threshold now that it
+     * carries an authorization branch as well.
+     *
+     * @param string|null $level             Filter by log level.
+     * @param string|null $message           Search in log messages.
+     * @param string|null $synchronizationId Filter by synchronization ID.
+     * @param string|null $dateFrom          Filter logs from this date.
+     * @param string|null $dateTo            Filter logs until this date.
+     *
+     * @return array<string, string> The filters, omitting every unset parameter.
+     *
+     * @spec openspec/specs/logs-and-statistics/spec.md
+     */
+    private function buildFilters(
+        ?string $level,
+        ?string $message,
+        ?string $synchronizationId,
+        ?string $dateFrom,
+        ?string $dateTo
+    ): array {
+        $filters = [];
+
+        if ($level !== null) {
+            $filters['level'] = $level;
+        }
+
+        if ($message !== null) {
+            $filters['message'] = $message;
+        }
+
+        if ($synchronizationId !== null) {
+            $filters['synchronization_id'] = $synchronizationId;
+        }
+
+        if ($dateFrom !== null) {
+            $filters['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo !== null) {
+            $filters['date_to'] = $dateTo;
+        }
+
+        return $filters;
+
+    }//end buildFilters()
 
     /**
      * Get all synchronization logs.
@@ -115,33 +187,24 @@ class LogsController extends Controller
         ?string $dateFrom=null,
         ?string $dateTo=null
     ): JSONResponse {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        // Build filters array.
-        $filters = [];
-
-        // Add individual filters if provided.
-        if ($level !== null) {
-            $filters['level'] = $level;
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'log.index');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
-        if ($message !== null) {
-            $filters['message'] = $message;
-        }
-
-        if ($synchronizationId !== null) {
-            $filters['synchronization_id'] = $synchronizationId;
-        }
-
-        if ($dateFrom !== null) {
-            $filters['date_from'] = $dateFrom;
-        }
-
-        if ($dateTo !== null) {
-            $filters['date_to'] = $dateTo;
-        }
+        $filters = $this->buildFilters(
+                level: $level,
+                message: $message,
+                synchronizationId: $synchronizationId,
+                dateFrom: $dateFrom,
+                dateTo: $dateTo
+            );
 
         // Get logs with pagination via OR ObjectService.
         $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
@@ -192,20 +255,33 @@ class LogsController extends Controller
     #[NoCSRFRequired]
     public function show(string $id): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'log.show');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         // `find()` does not only return null for a miss — it throws
         // DoesNotExistException. Without this catch an unknown id was a 500
         // rather than the 404 the null branch below was written to produce.
+        //
+        // OR's own rbac/multitenancy are left at their defaults. They used to
+        // be switched off here in writing (`_rbac: false, _multitenancy:
+        // false`), which meant no future OpenRegister default and no
+        // `authorization` block on the `synchronization_log` schema could ever
+        // narrow this read. The action check above is the guard that decides;
+        // OR is a second layer, and a second layer that is disabled in source
+        // can never become one.
         try {
             $log = $this->orObjectService->find(
                 id: $id,
                 register: 'openconnector',
-                schema: 'synchronization_log',
-                _rbac: false,
-                _multitenancy: false
+                schema: 'synchronization_log'
             );
         } catch (DoesNotExistException $e) {
             $log = null;
@@ -237,21 +313,30 @@ class LogsController extends Controller
     #[NoCSRFRequired]
     public function destroy(string $id): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'log.destroy');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         // Both calls throw DoesNotExistException rather than only returning
         // null — including deleteObject(), which can lose a race with a
         // concurrent delete between the read above and the write below. Either
         // way the log is gone, which is the 404 this method already meant.
+        //
+        // OR's rbac/multitenancy are left at their defaults here for the same
+        // reason as in show(): this is the destructive endpoint, and it is the
+        // one that must not opt out of the platform's own layer in writing.
         try {
             $log = $this->orObjectService->find(
                 id: $id,
                 register: 'openconnector',
-                schema: 'synchronization_log',
-                _rbac: false,
-                _multitenancy: false
+                schema: 'synchronization_log'
             );
             if ($log === null) {
                 return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
@@ -282,8 +367,19 @@ class LogsController extends Controller
     #[NoCSRFRequired]
     public function statistics(): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        // Outside the try/catch below on purpose: that block catches
+        // \Exception and answers 500, and OCSForbiddenException is an
+        // \Exception — a refusal placed inside it would be reported as a
+        // server error and would look like an outage rather than a denial.
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'log.statistics');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         }
 
         try {
@@ -352,33 +448,26 @@ class LogsController extends Controller
         ?string $dateFrom=null,
         ?string $dateTo=null
     ): JSONResponse {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
+        // Outside the try/catch below on purpose — see statistics().
         try {
-            // Build filters array (same as index method).
-            $filters = [];
+            $this->actionAuth->requireAction(user: $user, action: 'log.export');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        }
 
-            if ($level !== null) {
-                $filters['level'] = $level;
-            }
-
-            if ($message !== null) {
-                $filters['message'] = $message;
-            }
-
-            if ($synchronizationId !== null) {
-                $filters['synchronization_id'] = $synchronizationId;
-            }
-
-            if ($dateFrom !== null) {
-                $filters['date_from'] = $dateFrom;
-            }
-
-            if ($dateTo !== null) {
-                $filters['date_to'] = $dateTo;
-            }
+        try {
+            $filters = $this->buildFilters(
+                level: $level,
+                message: $message,
+                synchronizationId: $synchronizationId,
+                dateFrom: $dateFrom,
+                dateTo: $dateTo
+            );
 
             // Get all logs matching filters (no pagination for export).
             $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);

@@ -30,7 +30,13 @@ export async function fetchOpenRegisterCollection(schema, register = 'openconnec
 	try {
 		const response = await axios.get(
 			generateUrl(`/apps/openregister/api/objects/${register}/${schema}`),
-			{ params: { limit } },
+			// `_limit`, not `limit`. OpenRegister's object API treats every
+			// UNPREFIXED query parameter as a PROPERTY FILTER, so `limit=500`
+			// asked for objects whose `limit` property equals 500 and got
+			// `total: 0` back under HTTP 200 — an empty picker that looks
+			// exactly like an empty register. Control params take the
+			// underscore. See FlowDetailPage.fetchPickerOptions().
+			{ params: { _limit: limit } },
 		)
 		const data = response.data
 		const list = Array.isArray(data?.results)

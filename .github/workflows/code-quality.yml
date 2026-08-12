@@ -108,13 +108,65 @@ jobs:
       #   [hydra-gates] COVERAGE: 63 of 64 declared gates reported a result
       #   (1 not applicable to this repo/diff; 63 of 63 applicable gates ran).
       #
-      # ZERO structural skips, ZERO wiring skips. The single not-applicable is
-      # gate-33 axe-core, which declares itself so because this caller has not
-      # set `enable-axe` — a choice recorded a few lines below, not a gap. `na`
-      # does not count against coverage, so the requirement is satisfied.
+      # ZERO structural skips, ZERO wiring skips. The single not-applicable was
+      # gate-33 axe-core, which declared itself so because this caller had not
+      # set `enable-axe`.
       #
-      # Gates 4 and 33 were never starved by a producer this repo declines to
-      # switch on; they declare themselves not applicable. And gate-24
+      # THAT IS NO LONGER TRUE: `enable-axe: true` is set below, and gate-33
+      # now reports a real verdict instead of `na`. CONFIRMED IN CI on the PR
+      # that turned it on (#1211, job 93785212530):
+      #
+      #   [gate-33] axe-core: PASS
+      #   [hydra-gates] gate-33 axe-core: report read — 0 violation(s)
+      #                 present, 0 serious/critical. A PASS here is a PASS
+      #                 over that number, not over silence.
+      #
+      # "report read" is the part that matters: the report survived the
+      # provenance check rather than being rejected and deleted, which is the
+      # failure mode where gate-33 goes back to skipping loudly.
+      #
+      # DO NOT READ THE COVERAGE LINE AS A CONSTANT. An earlier draft of this
+      # comment predicted it would move from `63 of 64` to `64 of 64`. That
+      # was wrong, and wrong in the way this fleet keeps getting caught by:
+      # the count is a function of the DIFF, not of the repo. The same run
+      # that produced the PASS above printed
+      #
+      #   [hydra-gates] COVERAGE: 28 of 64 declared gates reported a result
+      #   (36 not applicable to this repo/diff; 28 of 28 applicable gates ran).
+      #
+      # because a two-file PR gives 36 gates no subject matter. The `63 of 64`
+      # figure quoted higher up came from a FULL-SCOPE run. Compare like with
+      # like or the number means nothing. What is genuinely comparable is that
+      # gate-33 is now inside the applicable set in both scopes instead of
+      # declaring itself `na`.
+      #
+      # ⚠️ AND THE SAME CAVEAT USED TO APPLY TO A GATE THAT PRINTS `PASS`.
+      # gate-16 spec-coverage takes its base from `HYDRA_GATE_BASE_REF`, and
+      # the runner supplied none on `--full`, so a full-scope run ON
+      # `development` diffed the branch against itself, inspected nothing, and
+      # printed PASS — a PASS that COUNTED toward "N of N applicable gates
+      # ran" (ConductionNL/.github#361). **#364 has since MERGED**: a
+      # full-repo run with no diff now reports
+      # `NOT APPLICABLE — full-repo run computed NO diff … This is NOT a
+      # pass.` So do not read a historical green gate-16 cell on this repo as
+      # a measurement — re-measure with an explicit base.
+      #
+      # Measured here on `development` @7c1d9c6d with the canonical package
+      # @81c8c97 (which still carried the old behaviour), changing ONLY the
+      # base:
+      #
+      #   base origin/development (= what CI's --full run uses) -> count=0
+      #   base origin/beta                                      -> count=0
+      #   base origin/main                                      -> count=30
+      #   --mode report (whole tree, no diff at all)            -> 30
+      #
+      # A committed, untagged public method planted in lib/Service and a
+      # matching Vue method moved every one of those numbers by exactly +2 and
+      # named both plants, so the zeros above are real zeros and not a dead
+      # gate. openconnector's genuine gate-16 debt is 30 methods, all backend.
+      #
+      # Gate 4 was never starved by a producer this repo declines to switch
+      # on; it declares itself not applicable. And gate-24
       # integration-parity — named by the first version of this comment as the
       # real gap, which it then was — now PASSES: `scripts/check-integration-
       # parity.sh` landed on `development` after this PR was opened, so the
@@ -280,9 +332,51 @@ jobs:
       # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
       # refused with exit 99 (permanently red). The scope is now
       # `github.event.before...HEAD`, what the push actually changed.
-      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
-      # reports serious/critical violations on core's OWN routes that DOM
-      # scoping does not remove. Enabling axe is a separate decision.
+      # ── axe-core (gate-33) ───────────────────────────────────────────────
+      # `enable-axe` used to be deliberately unset here, on the grounds that a
+      # vanilla Nextcloud 34 reports serious/critical violations on core's OWN
+      # routes that DOM scoping does not remove. That reasoning is now out of
+      # date in the part that mattered: `axe-include-selector` defaults to
+      # `#content-vue, #content`, which scopes the analysis to the app's own
+      # rendered DOM, and the runner proves on every run that the scope is a
+      # SCOPE and not a MUTE (it injects a violation inside the container and
+      # asserts it is reported, and one outside and asserts it is not).
+      #
+      # So this is turned on against a MEASUREMENT, not a hope. Run locally
+      # with the canonical runner (ConductionNL/.github@main b8c7ead,
+      # @axe-core/playwright 4.12.1) against a dedicated Nextcloud 34 with
+      # openregister + openconnector installed and the register seeded:
+      #
+      #   /index.php/apps/openconnector/          HTTP 200  passes=19  violations=0
+      #   /index.php/apps/openconnector/#/sources HTTP 200  passes=17  violations=0
+      #
+      # with `axe self-test OK` and `axe scope control OK` on both. Zero
+      # violations at any impact, so zero serious/critical — gate-33 has
+      # nothing to fail on today.
+      enable-axe: true
+      # ONE ROUTE, AND THAT IS A RUNNER DEFECT, NOT A CHOICE — see
+      # ConductionNL/.github#351.
+      #
+      # `axe-run.cjs` treats a null `page.goto()` response as HTTP 0 and dies.
+      # A fragment-only navigation returns null because no document is fetched,
+      # so for a hash-routed SPA — which this app is (`createWebHashHistory()`)
+      # — every route after the first one shares a document with it and is
+      # reported as `returned HTTP 0. … Set the axe-routes input to routes this
+      # app actually serves.` The route is served fine; only its POSITION in
+      # the list decides. Proven both ways on the same instance: `#/sources`
+      # listed FIRST analysed cleanly at HTTP 200; the SAME route listed after
+      # the app root killed the run with exit 2 and wrote no report at all.
+      #
+      # That is the trap in this input: the error blames the caller, so the
+      # obvious response is to delete routes until it goes green, which
+      # silently narrows accessibility coverage to the landing page and reads
+      # as a config fix. Recording it here so the next person widens the list
+      # by fixing #351 rather than by guessing.
+      #
+      # Until #351 lands this is the app root only. It is a real verdict on a
+      # real page — gate-33 has reported SKIPPED in this repo since it was
+      # written — but it is one page, not the app.
+      axe-routes: "/index.php/apps/openconnector/"
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
