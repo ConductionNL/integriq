@@ -2136,7 +2136,7 @@
                 },
                 "rowDetail": true,
                 "fixedLayout": true,
-                "_columnsNote": "`created` is absent from the stored rows and resolves through CnDataTable's @self fallback. The run counters live under the nested `result.objects` bag, hence the dot paths; the full bag (timing stages, deletion guard) is in the row-detail dialog. NOT filterable: SynchronizationLogService::normalize() drops synchronizationId before the insert, so no stored row links back to its synchronization — neither `synchronization` nor `synchronizationId` matches any of the 10 rows on the reference instance. See handlers/logTargets.js.",
+                "_columnsNote": "`created` is absent from the stored rows and resolves through CnDataTable's @self fallback. The run counters live under the nested `result.objects` bag, hence the dot paths; the full bag (timing stages, deletion guard) is in the row-detail dialog. Filterable on `synchronizationId`, but only for rows written after this release: SynchronizationService read the id from the absent `uuid` key, so SynchronizationLogService::normalize() stripped the null FK before every insert and no pre-existing row links back to its synchronization (none of the 10 rows on the reference instance). The writer is fixed and `view-synchronization-logs` carries `queryParam: 'synchronizationId'` again, so the row action scopes correctly from now on — historical rows stay unattributable and will read as an empty page. See handlers/logTargets.js.",
                 "columns": [
                     {
                         "key": "created",

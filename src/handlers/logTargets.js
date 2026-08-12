@@ -37,6 +37,13 @@
  * `synchronizationId` was always null and `normalize()` stripped it. New rows
  * carry it; the old ones stay unattributable.
  *
+ * That last point has a deploy-day consequence worth stating plainly: because
+ * this target is scoped rather than unfiltered, "View logs" on a synchronization
+ * whose history predates the fix renders an EMPTY page — and those are exactly
+ * the synchronizations an operator reaches for first. The alternative is an
+ * unfiltered firehose forever, so scoped-and-empty is the deliberate trade, not
+ * an oversight. It resolves itself as new runs accumulate.
+ *
  * `event` stays null — filtering on a field nothing writes renders an EMPTY
  * page, which is strictly worse than the unfiltered listing. `call_log`
  * declares no event property whatsoever (its FKs are `source`/`sourceId`,
