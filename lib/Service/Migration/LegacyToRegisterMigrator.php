@@ -45,8 +45,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Migration;
 
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
 use LogicException;
 use OCP\AppFramework\Services\IAppConfig;
@@ -358,12 +356,57 @@ class LegacyToRegisterMigrator
             ->from('openregister_objects')
             ->where($qb->expr()->eq('register', $qb->createNamedParameter($this->registerPk, \PDO::PARAM_INT)))
             ->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaPk, \PDO::PARAM_INT)));
+        // `fetchOne()`/`fetch()`/`fetchAll()` throughout this class rather than
+        // Doctrine's `fetch*Associative()`: those only reached `OCP\DB\IResult`
+        // in Nextcloud 33, and appinfo/info.xml advertises `min-version="32"`.
+        // On 32 they raise "Call to undefined method", which several callers
+        // here swallow into a `catch (\Throwable)` and report as a database
+        // problem — so the incompatibility would present as bad data rather
+        // than as a missing method.
         $result = $qb->executeQuery();
-        $row    = $result->fetchAssociative();
+        $count  = $result->fetchOne();
         $result->closeCursor();
-        return (int) ($row['c'] ?? 0);
+        return (int) $count;
 
     }//end countRegisterObjects()
+
+    /**
+     * Which JSON dialect a Nextcloud database provider gets.
+     *
+     * MariaDB is listed EXPLICITLY. The `instanceof AbstractMySQLPlatform`
+     * test this replaced caught MySQL and MariaDB in one branch, while
+     * `getDatabaseProvider()` reports them as two distinct constants — so
+     * comparing against `PLATFORM_MYSQL` alone would send every MariaDB
+     * instance down the fallback below. It would still land on `'mysql'`, by
+     * accident, after logging a warning about a platform that is not unknown
+     * at all — which is the kind of correct-by-coincidence that stops being
+     * correct the moment the fallback changes.
+     *
+     * Extracted from `resolveStartupState()` so the mapping can be asserted
+     * without a database: that method goes on to query the register and schema
+     * tables, and the platform choice is the part with three branches.
+     *
+     * @param string $provider One of IDBConnection::PLATFORM_*.
+     *
+     * @return string `'pgsql'` or `'mysql'`.
+     */
+    private function platformFor(string $provider): string
+    {
+        if ($provider === IDBConnection::PLATFORM_POSTGRES) {
+            return 'pgsql';
+        }
+
+        if ($provider === IDBConnection::PLATFORM_MYSQL || $provider === IDBConnection::PLATFORM_MARIADB) {
+            return 'mysql';
+        }
+
+        $this->logger->warning(
+            sprintf('chain-B: unknown DB platform (provider=%s) — defaulting to mysql JSON syntax', $provider)
+        );
+
+        return 'mysql';
+
+    }//end platformFor()
 
     /**
      * Resolve register PK + 15 schema PKs once at startup. Detect platform.
@@ -374,29 +417,14 @@ class LegacyToRegisterMigrator
      */
     private function resolveStartupState(): void
     {
-        $platformObj = $this->db->getDatabasePlatform();
-        if ($platformObj instanceof PostgreSQLPlatform) {
-            $this->platform = 'pgsql';
-        } else if ($platformObj instanceof AbstractMySQLPlatform) {
-            $this->platform = 'mysql';
-        } else {
-            $this->platform = $this->db->getDatabaseProvider();
-            $this->logger->warning(
-                    sprintf(
-                'chain-B: unknown DB platform %s (provider=%s) — defaulting to mysql JSON syntax',
-                get_class($platformObj),
-                $this->platform
-            )
-                    );
-            $this->platform = 'mysql';
-        }
+        $this->platform = $this->platformFor(provider: $this->db->getDatabaseProvider());
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_registers')
             ->where($qb->expr()->eq('slug', $qb->createNamedParameter(self::REGISTER_SLUG)));
         $result = $qb->executeQuery();
-        $row    = $result->fetchAssociative();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         if ($row === false) {
@@ -414,7 +442,7 @@ class LegacyToRegisterMigrator
             ->from('openregister_schemas')
             ->where($qb->expr()->eq('application', $qb->createNamedParameter(self::REGISTER_SLUG)));
         $result = $qb->executeQuery();
-        while (($row = $result->fetchAssociative()) !== false) {
+        while (($row = $result->fetch()) !== false) {
             $this->schemaPks[(string) $row['slug']] = (int) $row['id'];
         }
 
@@ -593,9 +621,9 @@ class LegacyToRegisterMigrator
         $qb->select($qb->func()->count('*', 'c'))
             ->from($tableShort);
         $result = $qb->executeQuery();
-        $row    = $result->fetchAssociative();
+        $count  = $result->fetchOne();
         $result->closeCursor();
-        return (int) ($row['c'] ?? 0);
+        return (int) $count;
 
     }//end countLegacyRows()
 
@@ -617,7 +645,7 @@ class LegacyToRegisterMigrator
             ->setFirstResult($offset)
             ->setMaxResults($batchSize);
         $result = $qb->executeQuery();
-        $rows   = $result->fetchAllAssociative();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
         return $rows;
 
@@ -734,7 +762,7 @@ class LegacyToRegisterMigrator
                 ->from('openconnector_sources')
                 ->where($qb->expr()->eq('id', $qb->createNamedParameter($id)));
             $result = $qb->executeQuery();
-            $row    = $result->fetchAssociative();
+            $row    = $result->fetch();
             $result->closeCursor();
             if ($row !== false) {
                 return (string) $row['uuid'];

@@ -310,10 +310,25 @@ class Version2Date20260520000099 extends SimpleMigrationStep
         try {
             $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*', 'c'))->from($tableShort);
+            // `fetchOne()`, not `fetchAssociative()`: the latter only reached
+            // `OCP\DB\IResult` in Nextcloud 33 and this app advertises
+            // `min-version="32"`. On 32 the Error lands in the catch below,
+            // which returns -1 — "unsafe to drop" — for EVERY table, so the
+            // cleanup would silently never complete and the failure would read
+            // as a database problem rather than a missing method.
             $result = $qb->executeQuery();
-            $row    = $result->fetchAssociative();
+            $count  = $result->fetchOne();
             $result->closeCursor();
-            return (int) ($row['c'] ?? -1);
+
+            // A COUNT always has exactly one row, so `false` here means the
+            // read produced nothing — unknown, not zero. `(int) false` is 0,
+            // which this method's contract reads as "empty, safe to drop", so
+            // the cast has to be guarded rather than applied.
+            if ($count === false) {
+                return -1;
+            }
+
+            return (int) $count;
         } catch (\Throwable $e) {
             $logger->warning(
                 sprintf(
@@ -323,7 +338,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep
                 )
             );
             return -1;
-        }
+        }//end try
 
     }//end countRows()
 }//end class
