@@ -152,9 +152,6 @@
                 <!-- OpenRegister additional runtime classes -->
                 <referencedClass name="OCA\OpenRegister\Service\ObjectServiceMapperAdapter"/>
                 <referencedClass name="OCA\OpenRegister\Exception\ValidationException"/>
-                <!-- Doctrine\DBAL (shipped by NC server; not in standalone stubs) -->
-                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
                 <!-- PHP extension classes (loaded at runtime) -->
                 <referencedClass name="SoapFault"/>
                 <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->

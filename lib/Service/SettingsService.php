@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCP\IDBConnection;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -74,8 +73,12 @@ class SettingsService
      */
     private function expiresExpression(string $createdColumn): string
     {
-        $platform = $this->db->getDatabasePlatform();
-        if ($platform instanceof PostgreSQLPlatform) {
+        // Tested against PostgreSQL rather than FOR MySQL, deliberately.
+        // `::interval` is PostgreSQL-only syntax, so a platform this code has
+        // not met must not receive it — `DATE_ADD` at least fails on a server
+        // that can parse the rest of the statement. Inverting the test would
+        // make every unrecognised platform emit SQL nothing else understands.
+        if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
             return sprintf('%s + (? || \' microseconds\')::interval', $createdColumn);
         }
 
@@ -97,9 +100,8 @@ class SettingsService
      */
     private function columnExists(string $unprefixedTable, string $column): bool
     {
-        $platform = $this->db->getDatabasePlatform();
         try {
-            if ($platform instanceof PostgreSQLPlatform) {
+            if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
                 $stmt = $this->db->prepare(
                     'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1'
                 );
