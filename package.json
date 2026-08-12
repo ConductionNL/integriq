@@ -8,8 +8,11 @@
   },
   "scripts": {
     "test:l10n": "node tests/l10n/check-l10n.js",
-    "test:l10n:parity": "node tests/l10n/check-l10n.js --parity",
+    "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "check:l10n": "node scripts/check-l10n.js",
+    "clean:l10n": "node scripts/clean-l10n.js",
+    "find:unwrapped": "node scripts/find-unwrapped.js",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
