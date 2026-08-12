@@ -79,6 +79,16 @@ use Twig\Error\SyntaxError;
 class SynchronizationService {
 
 	/**
+	 * Total pages the last fetched page advertised via its `Link` header.
+	 *
+	 * Null when the source does not use RFC 5988 pagination, which is the
+	 * previous behaviour: page until a page comes back empty.
+	 *
+	 * @var int|null
+	 */
+	private ?int $lastPageFromLink = null;
+
+	/**
 	 * The synchronizations currently on the chaining call stack.
 	 *
 	 * OpenConnector chains synchronizations two ways — a `synchronization` rule
@@ -4803,6 +4813,14 @@ class SynchronizationService {
 			// Add objects to our collection.
 			$allObjects = array_merge($allObjects, $pageObjects);
 
+			// The source told us how many pages it has, so stop on the last one
+			// rather than spending a whole extra request discovering that page
+			// N+1 is empty. Only when the header was present — without it this is
+			// null and the empty-page rule above still decides.
+			if ($this->lastPageFromLink !== null && $pageCount >= $this->lastPageFromLink) {
+				break;
+			}
+
 			// Determine the next page URL/config.
 			$nextInfo = $this->getNextPageInfo(
 				source: $source,
@@ -4975,6 +4993,41 @@ class SynchronizationService {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
+	private function parseLastPageFromLinkHeader(array $headers): ?int {
+		// Header names are case-insensitive and Guzzle preserves the server's
+		// casing, so match on a lowercased key rather than assuming `Link`.
+		$link = null;
+		foreach ($headers as $name => $value) {
+			if (strtolower((string)$name) === 'link') {
+				$link = is_array($value) === true ? implode(', ', $value) : (string)$value;
+				break;
+			}
+		}
+
+		if ($link === null || $link === '') {
+			return null;
+		}
+
+		// <https://api.github.com/...?page=4>; rel="last"
+		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $m) !== 1) {
+			return null;
+		}
+
+		$last = (int)$m[2];
+
+		return $last > 0 ? $last : null;
+	}//end parseLastPageFromLinkHeader()
+
+	/**
+	 * Fetch one page of source data.
+	 *
+	 * @param array  $source          The source to call.
+	 * @param string $endpoint        The endpoint to call.
+	 * @param array  $config          The call configuration.
+	 * @param array  $synchronization The synchronization being run.
+	 *
+	 * @return array The page's objects and raw result.
+	 */
 	private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array {
 		// Make the API call (CallService is OpenRegister-native; callSourceObject
 		// resolves the source's OpenRegister object before invoking it).
@@ -5006,6 +5059,17 @@ class SynchronizationService {
 		}
 
 		$body = $response['body'];
+
+		// How many pages the source says it has, from the RFC 5988 `Link` header.
+		// The engine only ever inspected the response BODY for a `next` key, so a
+		// source that advertises `rel="last"` — GitHub does, and it is the
+		// conventional way to express this — was still paged blindly until a page
+		// came back empty. That costs one whole extra request per synchronization,
+		// and it is also the fact a parallel fetch needs: you cannot fan out pages
+		// without knowing how many there are.
+		$this->lastPageFromLink = $this->parseLastPageFromLinkHeader(
+			headers: ($response['headers'] ?? [])
+		);
 
 		// #97: .tar.gz bulk archives are NOT supported — gzip decompression
 		// alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
