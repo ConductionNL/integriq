@@ -3608,7 +3608,19 @@ class SynchronizationService {
 		// recorded, file missing" — recoverable, and re-syncable onto the same
 		// target. The persistContract() call at the end of this method still runs
 		// and updates the same row with the rule outcomes and log references.
-		if (($synchronizationContract['targetId'] ?? null) !== null) {
+		// ...but ONLY when there are after-rules that could throw. processRules()
+		// returns immediately when `actions` is empty, so on a synchronization
+		// without them nothing between here and the end-of-method persist can
+		// fail, and this write protects nothing while costing a full object save
+		// on every record.
+		//
+		// Measured on a 374-record GitHub sync: 1,464 object writes for 374
+		// records — 3.9 per record at 78ms each, 114s of a 156s run. One target
+		// write plus a contract written repeatedly is where a large sync's time
+		// goes, so a write that buys no safety is worth not doing.
+		$hasAfterRules = empty($synchronization['actions'] ?? []) === false;
+
+		if (($synchronizationContract['targetId'] ?? null) !== null && $hasAfterRules === true) {
 			if (($synchronizationContract['uuid'] ?? null) === null) {
 				$synchronizationContract['uuid'] = (string)Uuid::v4();
 			}
