@@ -74,9 +74,11 @@ interface KlantinteractiesProviderInterface {
 	 *                           (the first sync / full backfill).
 	 * @param integer $pageSize Maximum number of klantcontacten to return in one call.
 	 *
-	 * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null} The page of
-	 *                                                                                 klantcontacten (each carrying `betrokkenen` and `onderwerpobjecten`) plus the
-	 *                                                                                 `registratiedatum` of the most recent item in the page (or null when the page is empty).
+	 * Returns the page of klantcontacten (each carrying `betrokkenen` and
+	 * `onderwerpobjecten`) plus the `registratiedatum` of the most recent item
+	 * in the page, or null for that cursor when the page is empty.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null}
 	 *
 	 * @throws KissProviderException When the KISS instance is unreachable, errors, or is misconfigured.
 	 *

@@ -197,8 +197,12 @@ class PromotionController extends Controller {
 	 * Extract and validate the shared `configurationId`/`targetEnvironmentSlug`/
 	 * `credentialBindings` request params.
 	 *
+	 * Returns `[configurationId, targetEnvironmentSlug, credentialBindings,
+	 * missingParamError]` — the description lives here rather than beside the
+	 * `@return` tag because php-cs-fixer aligns a continuation line under a
+	 * type this wide and phpcs then rejects the result as over-long.
+	 *
 	 * @return array{0: string, 1: string, 2: array<int,array<string,mixed>>, 3: string|null}
-	 *                                                                                        `[configurationId, targetEnvironmentSlug, credentialBindings, missingParamError]`.
 	 */
 	private function extractPromotionParams(): array {
 		$configurationId = $this->request->getParam('configurationId');

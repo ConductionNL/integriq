@@ -2170,7 +2170,12 @@ class SynchronizationService {
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
 	 */
-	public function replaySynchronizationItem(array $synchronization, array $payload, bool $isTest = false, ?ExecutionTraceContext $trace = null): array {
+	public function replaySynchronizationItem(
+		array $synchronization,
+		array $payload,
+		bool $isTest = false,
+		?ExecutionTraceContext $trace = null,
+	): array {
 		$log = new SynchronizationRunLog();
 		$flowToken = new FlowToken();
 
@@ -3261,8 +3266,12 @@ class SynchronizationService {
 	 * Synchronize a contract.
 	 *
 	 * @param array $synchronizationContract The contract payload array to synchronize.
+	 * @param FlowToken $flowToken The flow token shared across the run. Declared
+	 *                             BEFORE the optional parameters: a required
+	 *                             parameter after an optional one is deprecated
+	 *                             as of PHP 8.1, and every caller passes this
+	 *                             by name, so the position is free to move.
 	 * @param array|null $synchronization The synchronization configuration.
-	 * @param FlowToken $flowToken The flow token shared across the run.
 	 * @param array $object The object being synchronized.
 	 * @param bool|null $isTest False by default, added for the test endpoint.
 	 * @param bool|null $force False by default; if true, always update.
@@ -3285,8 +3294,8 @@ class SynchronizationService {
 	 */
 	public function synchronizeContract(
 		array $synchronizationContract,
-		?array $synchronization = null,
 		FlowToken &$flowToken,
+		?array $synchronization = null,
 		array &$object = [],
 		?bool $isTest = false,
 		?bool $force = false,
@@ -4541,9 +4550,11 @@ class SynchronizationService {
 	 * @param bool|null $usesNextEndpoint Whether the API uses next endpoint URLs
 	 * @param bool $usesPagination Whether pagination is enabled
 	 *
-	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int} Combined objects
-	 *                                                                                          from all pages plus fetch-completeness metadata (private helper — only this
-	 *                                                                                          class calls it, so its return shape is free to change).
+	 * Returns the combined objects from all pages plus fetch-completeness
+	 * metadata. Private helper — only this class calls it, so its return shape
+	 * is free to change.
+	 *
+	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int}
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009

@@ -2213,29 +2213,6 @@ class CallService {
 	}//end resetCircuitBreaker()
 
 	/**
-	 * Phase 7b helper: detect + validate a brokered (credentialRef) source call.
-	 *
-	 * Returns null when the merged configuration carries no credentialRef
-	 * (legacy path), the resolved dispatch identity array when the brokered
-	 * call may proceed, or a persisted synthetic 409 config-error CallLog
-	 * ObjectEntity when any brokered config guard fails — the caller must
-	 * return that entity immediately (no outbound request, no fallback to
-	 * embedded secrets, REQ-SBC-004).
-	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $config The merged call configuration (Phase 7 output).
-	 * @param array $sourceData The raw source data array.
-	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
-	 * @param \DateTime|null $errorExpires Expiry for error log entries.
-	 *
-	 * @return ObjectEntity|array{credentialId: string, actingUserId: string|null}|null
-	 *
-	 * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
-	 *
-	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
-	 */
-
-	/**
 	 * Whether this call will go through the credential broker.
 	 *
 	 * Answered BEFORE `prepareCall()`, because the answer decides whether the
@@ -2275,6 +2252,28 @@ class CallService {
 		return $this->brokeredCallService->hasCredentialRef(config: $sourceConfiguration);
 	}//end dispatchesThroughBroker()
 
+	/**
+	 * Phase 7b helper: detect + validate a brokered (credentialRef) source call.
+	 *
+	 * Returns null when the merged configuration carries no credentialRef
+	 * (legacy path), the resolved dispatch identity array when the brokered
+	 * call may proceed, or a persisted synthetic 409 config-error CallLog
+	 * ObjectEntity when any brokered config guard fails — the caller must
+	 * return that entity immediately (no outbound request, no fallback to
+	 * embedded secrets, REQ-SBC-004).
+	 *
+	 * @param ObjectEntity $source The source ObjectEntity.
+	 * @param array $config The merged call configuration (Phase 7 output).
+	 * @param array $sourceData The raw source data array.
+	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
+	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 *
+	 * @return ObjectEntity|array{credentialId: string, actingUserId: string|null}|null
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
 	private function resolveBrokeredDispatch(
 		ObjectEntity $source,
 		array $config,

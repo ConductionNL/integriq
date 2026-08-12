@@ -71,8 +71,10 @@ interface FscConnectivityProviderInterface {
 	 * @param string $organisation The target organisation identifier (e.g. an OIN).
 	 * @param string $service The target service identifier, scoped to that organisation.
 	 *
+	 * Returns the resolution: a routable endpoint plus any auth context
+	 * `call()` needs.
+	 *
 	 * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
-	 *                                                                                                                                The resolution: a routable endpoint plus any auth context `call()` needs.
 	 *
 	 * @throws FscDirectoryException When the organisation or service is not known to the directory.
 	 * @throws FscConnectivityException When the directory itself is unreachable, errors, or is misconfigured.

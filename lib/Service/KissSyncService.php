@@ -468,10 +468,11 @@ class KissSyncService {
 	 *
 	 * @param array $onderwerpobjecten The expanded onderwerpobjecten array (may be empty).
 	 *
-	 * @return array{reference: string|null, objectType: string|null} The extracted mapping, both null
-	 *                                                                when no onderwerpobject is present or none matches the case/zaak marker (a "foreign"
-	 *                                                                onderwerpobjectidentificator — e.g. linking to a different object type — is left
-	 *                                                                unmapped, not misattributed as a case).
+	 * @return array{reference: string|null, objectType: string|null} The extracted
+	 *                                                                mapping, both null when no onderwerpobject is present or none matches
+	 *                                                                the case/zaak marker (a "foreign" onderwerpobjectidentificator — e.g.
+	 *                                                                linking to a different object type — is left unmapped, not
+	 *                                                                misattributed as a case).
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */

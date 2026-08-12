@@ -154,18 +154,17 @@ class BankfeedSyncService {
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param callable|null $storeResolver Returns the OpenRegister credential
 	 *                                     store to broker consent tokens into.
-	 *
-	 *                                                  Injectable so the fail-closed path can
-	 *                                                  be tested on purpose. It used to be
-	 *                                                  reached only through \OCP\Server::get(),
-	 *                                                  which meant the one test covering it
-	 *                                                  passed because the unit environment had
-	 *                                                  no container — an accident, not a check.
-	 *                                                  When the suite began running against a
-	 *                                                  real Nextcloud the brokering succeeded,
-	 *                                                  the token was stored correctly, and the
-	 *                                                  test failed. Null keeps the production
-	 *                                                  lookup exactly as it was.
+	 *                                     Injectable so the fail-closed path can
+	 *                                     be tested on purpose. It used to be
+	 *                                     reached only through \OCP\Server::get(),
+	 *                                     which meant the one test covering it
+	 *                                     passed because the unit environment had
+	 *                                     no container — an accident, not a check.
+	 *                                     When the suite began running against a
+	 *                                     real Nextcloud the brokering succeeded,
+	 *                                     the token was stored correctly, and the
+	 *                                     test failed. Null keeps the production
+	 *                                     lookup exactly as it was.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,

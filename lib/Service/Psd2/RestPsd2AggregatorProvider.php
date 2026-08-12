@@ -159,8 +159,9 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 	 * @param array $sourceConfiguration The PSD2 source's `configuration` object.
 	 * @param string $consentReference The requisition id of an active consent.
 	 *
-	 * @return array<int, array{aggregatorAccountId: string, bic: string, currency: string, iban: string}> The
-	 *                                                                                                     authorised accounts with IBAN/BIC/currency/account-id.
+	 * Returns the authorised accounts with IBAN/BIC/currency/account-id.
+	 *
+	 * @return array<int, array{aggregatorAccountId: string, bic: string, currency: string, iban: string}>
 	 *
 	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
 	 */
