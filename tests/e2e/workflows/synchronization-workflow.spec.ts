@@ -26,6 +26,14 @@
  * loopback-exempts from the TLS policy. This is a genuine api→register/schema
  * transfer, not a render smoke.
  *
+ * ⚠️ THE FIXTURE'S SOURCE IS THE WRONG SHAPE (ocon#1190). That HTTP 200 is a
+ * session/redirect page, not the seeded objects: the in-container fetch has no
+ * admin session. So this fixture exercises Nextcloud's auth middleware, not
+ * the sync engine. It needs an EXTERNAL-shaped source — one that answers
+ * without a Nextcloud session — and `sourceType: 'register/schema'` is not the
+ * way out either: reading FROM a register/schema is `@todo: implement` in
+ * `getAllObjectsFromSource()`. Still open; see the note on the first fixme.
+ *
  * SETUP + LINKING are asserted live (register/schema/source/sync created and
  * persisted, the run endpoint resolves the sync, etc).
  *
@@ -205,13 +213,26 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	 * does not exist`), executes the full engine and returns HTTP 200 with a
 	 * `message: "Success"` run-log (verified live).
 	 *
-	 * REMAINING BLOCKER for this specific assertion (NOT the mapper cutover): the
-	 * Source in this fixture points at OpenRegister's own REST endpoint, and the
-	 * in-container CallService request reaches it UNAUTHENTICATED (no admin
-	 * session), so OR answers 200 with a ~322-byte session/redirect body instead
-	 * of the 2 seeded objects → the run reports found:0 and transfers nothing.
-	 * Authenticating the in-container source fetch is a separate concern. The body
-	 * below PASSES once the source fetch returns the seeded objects.
+	 * REMAINING BLOCKER for this specific assertion (NOT the mapper cutover):
+	 * ocon#1190. The Source in this fixture points at OpenRegister's own REST
+	 * endpoint, and the in-container CallService request reaches it
+	 * UNAUTHENTICATED (no admin session), so OR answers 200 with a ~322-byte
+	 * session/redirect body instead of the 2 seeded objects.
+	 *
+	 * THE SYMPTOM HAS CHANGED, and this note with it. The engine no longer
+	 * reads that body as an empty page: an unparseable 200 is now a FAILED
+	 * page, logged as such and naming the HTML shape, so the run reports a
+	 * failure instead of a success that found nothing. That was the product
+	 * half of #1190 and it is fixed.
+	 *
+	 * What is still open is the FIXTURE half: this Source is the wrong shape.
+	 * Pointing it at an authenticated localhost endpoint tests Nextcloud's auth
+	 * middleware, not the sync engine, so it needs an external-shaped source
+	 * that answers without a Nextcloud session. `sourceType: 'register/schema'`
+	 * is not the way out — reading FROM a register/schema is `@todo: implement`
+	 * in `getAllObjectsFromSource()`.
+	 *
+	 * The body below PASSES once the source fetch returns the seeded objects.
 	 */
 	test.fixme('running the sync transfers the 2 source objects into the target register', async () => {
 		const { api, syncId, registerId, tgtSchemaId } = fx!
@@ -243,6 +264,10 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	 * not always returned by a subsequent search in that window (a known OR
 	 * constraint being addressed separately). It PASSES once the just-written log
 	 * is searchable.
+	 *
+	 * Tracked as ocon#1190 (second half). Recorded here rather than left as a
+	 * floating comment: a fixme with an issue number is honest quarantine, one
+	 * without is indistinguishable from a test somebody gave up on.
 	 */
 	test.fixme('the run records a synchronization log with a success status', async () => {
 		const { api, syncId } = fx!
