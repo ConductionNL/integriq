@@ -3769,12 +3769,34 @@ class SynchronizationService {
 
 				$targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
-				$target = $objectService->saveObject(
+				// `events: false` on the synchronization runs the write inside
+				// OpenRegister's SystemOperationContext, which is what actually
+				// withholds the object lifecycle event — MagicMapper checks that
+				// context, and it is the mechanism config imports and repair steps
+				// already use. saveObject()'s `silent` flag is NOT the lever here:
+				// it gates the audit row and inverse-relation work in SaveObject,
+				// while the ObjectCreated/Updated dispatch lives a layer lower in
+				// MagicMapper and never sees it. Measured that mistake — writes
+				// stayed at exactly 1,090 with `silent` set.
+				//
+				// Why it is worth a switch at all: a THIRD of every sync write on
+				// this instance was DocuDesk's MetadataService::saveEnrichedMetadata
+				// reacting to the save event and writing its own object per record.
+				//
+				// Defaults to events ON, so a sync whose objects must trigger
+				// downstream flows is untouched.
+				$writeTarget = fn (): mixed => $objectService->saveObject(
 					register: $register,
 					schema: $schema,
 					object: $targetObject,
 					uuid: ($synchronizationContract['targetId'] ?? null)
 				);
+
+				if (($sourceConfig['events'] ?? true) === false) {
+					$target = \OCA\OpenRegister\Service\SystemOperationContext::run($writeTarget);
+				} else {
+					$target = $writeTarget();
+				}
 				// Get the id form the target object.
 				$synchronizationContract['targetId'] = $target->getUuid();
 
