@@ -1,20 +1,18 @@
+# OpenConnector — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
 includes:
-    # Per-app tracked lint debt lives here (auto-generated via `phpstan --generate-baseline`).
-    # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
-    # across the fleet.
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
     - phpstan-baseline.neon
 
 parameters:
-    level: 5
-    paths:
-        - lib
-    bootstrapFiles:
-        - phpstan-bootstrap.php
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
-        - vendor
-        - vendor-bin
-        # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuilt).
-        - lib/Resources/template
         # Extends AbstractIntegrationProvider from OCA\OpenRegister which is only
         # available at runtime (registered via IntegrationRegistry at app boot).
         # PHPStan cannot baseline "extends unknown class" errors — exclusion is required.
@@ -54,18 +52,8 @@ parameters:
         # SynchronizationContractProvider above and opencatalogi's metrics provider.
         - lib/Observability/OpenConnectorMetricsProvider.php
         - lib/Service/Adapter/AbstractCategoryAdapterProvider.php
-    scanDirectories:
-        - vendor/nextcloud/ocp
-    reportUnmatchedIgnoredErrors: false
+
     ignoreErrors:
-        # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
-        - '#Call to an undefined method OC::#'
-        - '#Class OC not found#'
-        - '#Access to static property \$server on an unknown class OC#'
-        - '#unknown class OC\\#'
-        - '#Caught class OC\\#'
-        - '#unknown class OC_App#'
-        - '#Class OC_App not found#'
         # flow-workflowengine-integration: NC's concrete IRequest implementation
         # (\OC\AppFramework\Http\Request), synthesized by
         # EndpointService::buildSyntheticRequest() (design.md Decision 5) — a
@@ -76,19 +64,8 @@ parameters:
         # IEntity, referenced only as a compile-time ::class string by the three
         # operation classes' getEntityId() (no autoload triggered).
         - '#Class OCA\\WorkflowEngine\\Entity\\File not found#'
-        # OCA\DAV is server-internal and not in nextcloud/ocp stubs
-        - '#unknown class OCA\\DAV\\#'
-        - '#Class OCA\\DAV\\#'
-        # nextcloud-event-hub: optional-app event classes referenced only via
-        # ::class / instanceof (safe when absent). OCA\Tables\ + OCA\Forms\ are
-        # optional App Store apps, so they are genuinely not in the vendor tree.
-        #
-        # The two OCP\Calendar\Events\ patterns that used to sit here are GONE
-        # (#1174). They were justified by "@since 32.0.0, newer than the pinned
-        # nextcloud/ocp: dev-stable29 stub" — an accurate reason that stopped
-        # being true when this repo pinned nextcloud/ocp ^32.0. Those classes are
-        # now real, analysed OCP, and `reportUnmatchedIgnoredErrors: true`
-        # confirms both patterns match nothing.
+        # nextcloud-event-hub: optional-app event classes (Tables, Forms) referenced
+        # only via ::class / instanceof, safe when the app is absent.
         - '#unknown class OCA\\Tables\\#'
         - '#Class OCA\\Tables\\#'
         - '#unknown class OCA\\Forms\\#'
@@ -96,35 +73,8 @@ parameters:
         - '#on an unknown class OCA\\Forms\\#'
         # @throws referencing an OpenRegister exception class. PHPStan cannot resolve the
         # class to verify it is Throwable because OCA\OpenRegister is not on the analysis
-        # path (see the ignores below). Same documented entry opencatalogi already carries.
+        # path (see the base's OpenRegister ignores).
         - '#PHPDoc tag @throws with type OCA\\OpenRegister\\.*is not subtype of Throwable#'
-        # OCA classes from other apps (OpenRegister) not available during static analysis
-        - '#unknown class OCA\\OpenRegister\\#'
-        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCA\\OpenRegister\\#'
-        - '#has invalid return type OCA\\OpenRegister\\#'
-        - '#has invalid type OCA\\OpenRegister\\#'
-        - '#implements unknown interface OCA\\OpenRegister\\#'
-        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
-        - '#unknown class GuzzleHttp\\#'
-        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class GuzzleHttp\\#'
-        - '#invalid type GuzzleHttp\\#'
-        - '#Caught class GuzzleHttp\\#'
-        # Doctrine\DBAL is shipped by Nextcloud server but not stubbed in nextcloud/ocp
-        - '#unknown class Doctrine\\DBAL\\#'
-        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class Doctrine\\DBAL\\#'
-        # Dynamic HTTP status codes from business rule validation results
-        # (matches both `Parameter $statusCode` and `Parameter #N $statusCode` forms emitted by phpstan)
-        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
-        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
-        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
-        # OCP stub gaps for methods that exist at runtime
-        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
-        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
-        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
-        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
         # HealthController and MetricsController are excluded from analysis (they extend
         # unknown OR classes) — Application.php registers them via DI without knowing
         # the parent constructor. The "does not have a constructor" error in Application.php
