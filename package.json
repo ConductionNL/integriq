@@ -23,7 +23,7 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
-    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
+    "stylelint": "stylelint \"src/**/*.{vue,scss,css}\"",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",

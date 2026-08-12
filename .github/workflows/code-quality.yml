@@ -78,7 +78,7 @@ jobs:
       # dependency and fails ~70s later on missing tables — which reads like a
       # migration fault rather than a missing app. Testing a version the app
       # cannot support produces red that says nothing. See issue #1172.
-      nextcloud-test-refs: '["stable32", "stable33"]'
+      nextcloud-test-refs: '["stable34"]'
       # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
       # the comment it replaced instructed: "Remove this line in the change
       # that wires those producers up, so the coverage requirement arrives with
