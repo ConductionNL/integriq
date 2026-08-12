@@ -194,6 +194,32 @@ class MigrateLegacyStorageTest extends TestCase
 
 
     /**
+     * `appinfo/info.xml`, parsed from a STRING rather than from the path.
+     *
+     * `simplexml_load_file()` resolves the document itself through libxml's
+     * external-entity loader, and Nextcloud pins that loader to return null
+     * (`lib/base.php`, `libxml_set_external_entity_loader`). So the moment
+     * these tests run inside a booted server — which is what CI does and what
+     * a bare local run does not — `simplexml_load_file()` returns false and
+     * both wiring tests fail claiming the XML does not parse. It parses fine.
+     *
+     * Reading the bytes first sidesteps the loader entirely.
+     *
+     * @return \SimpleXMLElement|false The parsed manifest.
+     */
+    private function appInfo()
+    {
+        $path = __DIR__.'/../../../appinfo/info.xml';
+        $raw  = file_get_contents($path);
+
+        $this->assertNotFalse($raw, 'appinfo/info.xml should be readable at '.$path);
+
+        return simplexml_load_string($raw);
+
+    }//end appInfo()
+
+
+    /**
      * A fresh install — no legacy table exists — declares the cutover complete.
      *
      * This is the ocon#1180 scenario: `Version2Date20260520000099` drops every
@@ -340,7 +366,7 @@ class MigrateLegacyStorageTest extends TestCase
      */
     public function testTheStepIsWiredForBothInstallAndUpgrade(): void
     {
-        $info = simplexml_load_file(__DIR__.'/../../../appinfo/info.xml');
+        $info = $this->appInfo();
 
         $this->assertNotFalse($info, 'appinfo/info.xml should parse');
 
@@ -371,7 +397,7 @@ class MigrateLegacyStorageTest extends TestCase
      */
     public function testEveryDeclaredRepairStepClassExists(): void
     {
-        $info = simplexml_load_file(__DIR__.'/../../../appinfo/info.xml');
+        $info = $this->appInfo();
 
         $this->assertNotFalse($info, 'appinfo/info.xml should parse');
 
