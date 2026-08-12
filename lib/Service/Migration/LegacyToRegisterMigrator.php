@@ -349,10 +349,17 @@ class LegacyToRegisterMigrator {
 			->from('openregister_objects')
 			->where($qb->expr()->eq('register', $qb->createNamedParameter($this->registerPk, \PDO::PARAM_INT)))
 			->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaPk, \PDO::PARAM_INT)));
+		// `fetchOne()`/`fetch()`/`fetchAll()` throughout this class rather than
+		// Doctrine's `fetch*Associative()`: those only reached `OCP\DB\IResult`
+		// in Nextcloud 33, and appinfo/info.xml advertises `min-version="32"`.
+		// On 32 they raise "Call to undefined method", which several callers
+		// here swallow into a `catch (\Throwable)` and report as a database
+		// problem — so the incompatibility would present as bad data rather
+		// than as a missing method.
 		$result = $qb->executeQuery();
-		$row = $result->fetchAssociative();
+		$count = $result->fetchOne();
 		$result->closeCursor();
-		return (int)($row['c'] ?? 0);
+		return (int)$count;
 	}//end countRegisterObjects()
 
 	/**
@@ -406,7 +413,7 @@ class LegacyToRegisterMigrator {
 			->from('openregister_registers')
 			->where($qb->expr()->eq('slug', $qb->createNamedParameter(self::REGISTER_SLUG)));
 		$result = $qb->executeQuery();
-		$row = $result->fetchAssociative();
+		$row = $result->fetch();
 		$result->closeCursor();
 
 		if ($row === false) {
@@ -424,7 +431,7 @@ class LegacyToRegisterMigrator {
 			->from('openregister_schemas')
 			->where($qb->expr()->eq('application', $qb->createNamedParameter(self::REGISTER_SLUG)));
 		$result = $qb->executeQuery();
-		while (($row = $result->fetchAssociative()) !== false) {
+		while (($row = $result->fetch()) !== false) {
 			$this->schemaPks[(string)$row['slug']] = (int)$row['id'];
 		}
 
@@ -599,9 +606,9 @@ class LegacyToRegisterMigrator {
 		$qb->select($qb->func()->count('*', 'c'))
 			->from($tableShort);
 		$result = $qb->executeQuery();
-		$row = $result->fetchAssociative();
+		$count = $result->fetchOne();
 		$result->closeCursor();
-		return (int)($row['c'] ?? 0);
+		return (int)$count;
 	}//end countLegacyRows()
 
 	/**
@@ -621,7 +628,7 @@ class LegacyToRegisterMigrator {
 			->setFirstResult($offset)
 			->setMaxResults($batchSize);
 		$result = $qb->executeQuery();
-		$rows = $result->fetchAllAssociative();
+		$rows = $result->fetchAll();
 		$result->closeCursor();
 		return $rows;
 	}//end fetchLegacyBatch()
@@ -730,7 +737,7 @@ class LegacyToRegisterMigrator {
 				->from('openconnector_sources')
 				->where($qb->expr()->eq('id', $qb->createNamedParameter($id)));
 			$result = $qb->executeQuery();
-			$row = $result->fetchAssociative();
+			$row = $result->fetch();
 			$result->closeCursor();
 			if ($row !== false) {
 				return (string)$row['uuid'];

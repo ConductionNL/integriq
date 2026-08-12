@@ -88,9 +88,34 @@
 	</background-jobs>
 
 	<repair-steps>
+		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
+		     `post-migration` steps below: `Installer::installAppLastSteps()` passes
+		     `$schemaOnly = true` when there is no previous version, which routes
+		     `MigrationService::migrate()` to `migrateSchemaOnly()` (changeSchema
+		     only, then every version marked executed), and it guards the
+		     post-migration steps behind the same `$previousVersion !== ''`.
+		     `<install>` is the only hook that runs unconditionally on a first
+		     install, so the steps a fresh instance cannot work without are
+		     declared here as well. All four are idempotent, so an instance that
+		     reaches them by both routes does the work once. -->
+		<install>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
+			<!-- The three inline-secret steps are deliberately NOT here. A first
+			     install has no sources, so they would have nothing to migrate,
+			     and RemoveMigratedSourceSecretFields is IRREVERSIBLE: it would
+			     find the empty instance trivially clean and strip the four
+			     secret fields from the live source schema before any source
+			     exists. Whether a brand-new instance should ship without those
+			     fields is a product decision, tracked separately, not one this
+			     fix should take by side effect. -->
+		</install>
 		<post-migration>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
 			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
 			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
 			     verify, write credentialRef, null the inline value) now that

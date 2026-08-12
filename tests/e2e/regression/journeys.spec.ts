@@ -374,12 +374,69 @@ async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: st
  * Used by J5 (create → edit → mass-delete) to exercise the mass-delete
  * code path end-to-end in at least one journey.
  */
+/**
+ * Locate an item by name, paging forward until it is on screen.
+ *
+ * The index lists are SERVER-paginated at 20/page, and a freshly created row
+ * is not on page 1 of the default ordering once the list is longer than a
+ * page. `createViaUi()` already refuses to look for it in the DOM for exactly
+ * this reason and asks OpenRegister by name instead — but edit and delete need
+ * the row itself, to click its Actions menu, so an API lookup cannot help
+ * them: the row has to be rendered.
+ *
+ * Sorting cannot substitute for this. `CnIndexPage`/`CnTable` sort CLIENT-SIDE
+ * over the already-loaded page and the in-list search box is not wired to a
+ * server `_search` (#996, and the fix lives in @conduction/nextcloud-vue), so
+ * a row the server placed on page 2 is not present to be sorted or filtered
+ * into view. The pager is the one control that re-queries.
+ *
+ * Same approach as `walkToRow()` in `workflows/source-mapping-crud.spec.ts`,
+ * adapted to Cards view: these journeys switch away from the table because its
+ * cells render as "—".
+ *
+ * ⚠️ This is not a CI-only nicety. A real install imports the register
+ * descriptor WITH its shipped objects — `InitializeRegister` does exactly that
+ * — so the Sources list starts past one page on any real instance. CI only
+ * looked short because `tests/e2e/ci-seed.sh` deliberately strips the demo
+ * objects before importing. These journeys were passing on a list kept
+ * artificially small, and measuring page size rather than the app.
+ *
+ * @param page The page, already on the index route in Cards view.
+ * @param name The exact item name to find.
+ *
+ * @returns A locator for the item's name text, on whichever page it landed.
+ */
+async function walkToItem(page: Page, name: string) {
+	// Bounded so a broken pager cannot spin forever. 40 pages at 20/page is
+	// far more than this suite can generate.
+	for (let hop = 0; hop < 40; hop++) {
+		const hit = page.getByText(name).first()
+		if (await hit.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			return hit
+		}
+
+		// `isEnabled()` is false on the last page (the button renders
+		// disabled) and throws when there is no pager at all — a single-page
+		// list. Both mean there is nowhere left to look, so return the locator
+		// and let the caller's expect() produce the real failure message.
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (await next.isEnabled({ timeout: 2_000 }).catch(() => false) === false) {
+			return page.getByText(name).first()
+		}
+
+		await next.click()
+		await page.waitForTimeout(900)
+	}
+
+	return page.getByText(name).first()
+}
+
 async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: string = '') {
 	// 1. Switch to Cards view so item names are visible.
 	await switchToCardsView(page)
 
-	// 2. Find the item card/row by visible name text.
-	const itemText = page.getByText(name).first()
+	// 2. Find the item card/row by visible name text, paging if needed.
+	const itemText = await walkToItem(page, name)
 	await expect(itemText, `target item "${name}" must be visible in Cards view`).toBeVisible({ timeout: 10_000 })
 
 	// 3. Find the row/card that contains the name text and tick its checkbox.
@@ -462,7 +519,7 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	// Switch to Cards so item names are visible.
 	await switchToCardsView(page)
 
-	const itemText = page.getByText(name).first()
+	const itemText = await walkToItem(page, name)
 	await expect(itemText, `target item "${name}" must exist for edit`).toBeVisible({ timeout: 10_000 })
 
 	// Find the card/row container and its Actions button.
@@ -535,7 +592,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	// Switch to Cards so item names are visible (table cells show "—").
 	await switchToCardsView(page)
 
-	const itemText = page.getByText(name).first()
+	const itemText = await walkToItem(page, name)
 	await expect(itemText, `target item "${name}" must exist for single delete`).toBeVisible({ timeout: 10_000 })
 
 	// Find and click the Actions button near the item name.
