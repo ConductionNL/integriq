@@ -4991,23 +4991,82 @@ class SynchronizationService
         }
 
         // Try parsing the response body in different formats, starting with JSON.
+        //
+        // `$parsed` tracks whether ANY parser understood the body, which is a
+        // different question from whether the body held anything. `[]` and
+        // `{}` decode cleanly to an empty array — that is a source saying
+        // "no more pages", and it is how pagination ends. A login page decodes
+        // to nothing at all. Collapsing the two is oc#1190.
         $result = json_decode($body, true);
+        $parsed = (json_last_error() === JSON_ERROR_NONE);
+
+        // An HTML DOCUMENT is never XML to be parsed here, even when it
+        // happens to be well-formed enough to succeed. A minimal login page —
+        // `<html><body>Please log in</body></html>` — is valid XML, so without
+        // this guard it parses, `$result` is non-empty, and the fetch walks on
+        // into object extraction to die there on "cannot determine the
+        // position of objects in the return body": a confusing error about the
+        // source's shape when the actual problem is that nobody was logged in.
+        //
+        // A source that genuinely serves HTML declares
+        // `Source.configuration.format: "html"` (oc#107) and was handled well
+        // above this point, so reaching here with an HTML document means
+        // nothing expected one.
+        $isHtmlDocument = $this->looksLikeHtmlDocument(body: $body);
 
         // If JSON parsing failed, try XML. `$body` is the response of an
         // arbitrary configured Source, so it is untrusted input and must go
         // through SafeXmlParser (pinned null entity loader + LIBXML_NONET).
-        if (empty($result) === true) {
+        if ($isHtmlDocument === false && ($parsed === false || empty($result) === true)) {
             libxml_use_internal_errors(true);
             $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);
+                $parsed = true;
             }
         }
 
         if (empty($result) === true) {
+            // A 200 THAT IS NOT A SUCCESS. The source answered, the answer had
+            // content, and no parser could read it — most often an HTML login
+            // or redirect page returned to an unauthenticated fetch. Treated as
+            // an empty page it becomes `found: 0` on a run that reports
+            // success, which is indistinguishable from a source that genuinely
+            // had nothing: no error, no alert, and nothing transferred.
+            //
+            // `failed` is the flag `fetchAllPages()` already checks BEFORE the
+            // end-of-pagination test (REQ-009), so marking it here also stops
+            // downstream cleanup treating this as "nothing left in the source".
+            if ($parsed === false && trim($body) !== '') {
+                $shape = '';
+                if ($isHtmlDocument === true) {
+                    $shape = ', HTML — check the source\'s credentials, this is the shape of a login'
+                        .' or redirect page';
+                }
+
+                $this->logger->error(
+                    'SynchronizationService: source {endpoint} answered {status} with a body no parser '
+                    .'could read ({length} bytes{shape}) — treating the page as FAILED rather than empty, '
+                    .'so the run is not reported as a success that found nothing.',
+                    [
+                        'endpoint' => $endpoint,
+                        'status'   => ($statusCode ?? 200),
+                        'length'   => strlen($body),
+                        'shape'    => $shape,
+                    ]
+                );
+
+                return [
+                    'objects'    => [],
+                    'result'     => [],
+                    'failed'     => true,
+                    'statusCode' => $statusCode,
+                ];
+            }//end if
+
             return ['objects' => [], 'result' => []];
-        }
+        }//end if
 
         // Process and return the objects from this page.
         return [
@@ -5015,6 +5074,34 @@ class SynchronizationService
             'result'  => $result,
         ];
     }//end fetchSinglePageData()
+
+    /**
+     * Whether an unparseable body looks like an HTML document.
+     *
+     * Used only to sharpen the log line, never to decide anything: a body that
+     * no parser could read is already a failure whatever its shape. The check
+     * earns its place because HTML is overwhelmingly the shape this takes — a
+     * login form or a redirect interstitial served with a 200 to a fetch that
+     * had no session — and naming that in the log is the difference between an
+     * operator checking the source's credentials and hunting a phantom empty
+     * source.
+     *
+     * Deliberately looks only at the START of the body: a JSON document that
+     * merely CONTAINS an HTML string somewhere is not an HTML document, and
+     * would not have reached here anyway.
+     *
+     * @param string $body The raw response body.
+     *
+     * @return boolean True when the body opens like an HTML document.
+     */
+    private function looksLikeHtmlDocument(string $body): bool
+    {
+        $head = strtolower(ltrim(substr($body, 0, 512)));
+
+        return str_starts_with($head, '<!doctype html') === true
+            || str_starts_with($head, '<html') === true;
+
+    }//end looksLikeHtmlDocument()
 
     /**
      * Determines whether a fetched page body is gzip-compressed.
