@@ -72,10 +72,16 @@ class SynchronizationContractService {
 	 * @return ObjectEntity|null The OR contract object or null when not found.
 	 */
 	public function findObject(string|int $id): ?ObjectEntity {
+		// _audit: false — a synchronization contract is the engine's own
+		// bookkeeping, and reading it is machine-to-machine inside one operation,
+		// not a person opening a record. Auditing these reads put 2.8 MILLION
+		// `read` rows into this instance's audit table, 91% of everything in it,
+		// and every one of those inserts maintained nine indexes.
 		return $this->orObjectService->find(
 			id: (string)$id,
 			register: self::REGISTER,
-			schema: self::SCHEMA
+			schema: self::SCHEMA,
+			_audit: false
 		);
 
 	}//end findObject()
