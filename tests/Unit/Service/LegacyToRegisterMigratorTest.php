@@ -73,13 +73,15 @@ class LegacyToRegisterMigratorTest extends TestCase
 
         $this->insertedBodies = [];
 
-        // The migrator only does `instanceof PostgreSQLPlatform / AbstractMySQLPlatform`
-        // checks on the platform object; the concrete Doctrine platform classes are not
-        // in the bare unit vendor, so a generic object suffices — the migrator falls back
-        // to the MySQL JSON syntax path, which is irrelevant to sourceId branching (that
-        // happens in buildJsonBody, platform-agnostic).
-        $platform = new \stdClass();
-        $this->db->method('getDatabasePlatform')->willReturn($platform);
+        // `'sqlite'` puts the migrator on its fallback, which is the MySQL JSON
+        // syntax path — irrelevant to sourceId branching, which happens in
+        // buildJsonBody and is platform-agnostic.
+        //
+        // Note what this CANNOT test: the fallback returns the same dialect as
+        // the MySQL and MariaDB branches, so every provider looks alike from
+        // here. The provider → dialect mapping has its own tests in
+        // LegacyMigratorPlatformTest, which distinguish "recognised" from
+        // "defaulted" by whether a warning was logged.
         $this->db->method('getDatabaseProvider')->willReturn('sqlite');
 
     }//end setUp()

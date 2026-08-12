@@ -45,8 +45,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Migration;
 
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
 use LogicException;
 use OCP\AppFramework\Services\IAppConfig;
@@ -366,6 +364,44 @@ class LegacyToRegisterMigrator
     }//end countRegisterObjects()
 
     /**
+     * Which JSON dialect a Nextcloud database provider gets.
+     *
+     * MariaDB is listed EXPLICITLY. The `instanceof AbstractMySQLPlatform`
+     * test this replaced caught MySQL and MariaDB in one branch, while
+     * `getDatabaseProvider()` reports them as two distinct constants — so
+     * comparing against `PLATFORM_MYSQL` alone would send every MariaDB
+     * instance down the fallback below. It would still land on `'mysql'`, by
+     * accident, after logging a warning about a platform that is not unknown
+     * at all — which is the kind of correct-by-coincidence that stops being
+     * correct the moment the fallback changes.
+     *
+     * Extracted from `resolveStartupState()` so the mapping can be asserted
+     * without a database: that method goes on to query the register and schema
+     * tables, and the platform choice is the part with three branches.
+     *
+     * @param string $provider One of IDBConnection::PLATFORM_*.
+     *
+     * @return string `'pgsql'` or `'mysql'`.
+     */
+    private function platformFor(string $provider): string
+    {
+        if ($provider === IDBConnection::PLATFORM_POSTGRES) {
+            return 'pgsql';
+        }
+
+        if ($provider === IDBConnection::PLATFORM_MYSQL || $provider === IDBConnection::PLATFORM_MARIADB) {
+            return 'mysql';
+        }
+
+        $this->logger->warning(
+            sprintf('chain-B: unknown DB platform (provider=%s) — defaulting to mysql JSON syntax', $provider)
+        );
+
+        return 'mysql';
+
+    }//end platformFor()
+
+    /**
      * Resolve register PK + 15 schema PKs once at startup. Detect platform.
      *
      * @return void
@@ -374,22 +410,7 @@ class LegacyToRegisterMigrator
      */
     private function resolveStartupState(): void
     {
-        $platformObj = $this->db->getDatabasePlatform();
-        if ($platformObj instanceof PostgreSQLPlatform) {
-            $this->platform = 'pgsql';
-        } else if ($platformObj instanceof AbstractMySQLPlatform) {
-            $this->platform = 'mysql';
-        } else {
-            $this->platform = $this->db->getDatabaseProvider();
-            $this->logger->warning(
-                    sprintf(
-                'chain-B: unknown DB platform %s (provider=%s) — defaulting to mysql JSON syntax',
-                get_class($platformObj),
-                $this->platform
-            )
-                    );
-            $this->platform = 'mysql';
-        }
+        $this->platform = $this->platformFor(provider: $this->db->getDatabaseProvider());
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
