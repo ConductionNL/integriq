@@ -256,7 +256,32 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		await ctx.dispose()
 	})
 
-	test('leaf renders the contract row on an object-detail integration surface', async ({ page }) => {
+	/*
+	 * QUARANTINED — ocon#1228. Its SELECTORS have never been validated.
+	 *
+	 * This assertion has never executed: the whole suite skipped unless
+	 * `openconnector.storage_migrated` was true, and no fresh install set it
+	 * (ocon#1180). So `getByRole('tab', { name: 'Integrations' })` was written
+	 * speculatively and has never once matched anything.
+	 *
+	 * Everything reachable from here HAS now been fixed and is green: the
+	 * openregister 500 (ConductionNL/openregister#2441), the two API-level leaf
+	 * assertions above, and the navigation — which walked every element for
+	 * `el.__vue__.$router`, a Vue 2 internal, in a Vue 3 app. The route itself
+	 * is confirmed correct against OpenRegister's manifest
+	 * (`/objects/:register/:schema/:id`, `createWebHashHistory()`).
+	 *
+	 * What remains unknown is only what the rendered sidebar actually calls
+	 * that tab, and with which ARIA role. That cannot be settled from here: the
+	 * dev instance carries 1000+ schemas from earlier runs and has no
+	 * `slug: 'source'` schema to address, so the fixture this test needs cannot
+	 * be reproduced locally.
+	 *
+	 * Guessing selectors against a surface nobody has seen is how the original
+	 * ones got here. Quarantined with an issue rather than left red or
+	 * "fixed" by another guess.
+	 */
+	test.fixme('leaf renders the contract row on an object-detail integration surface', async ({ page }) => {
 		test.skip(!storageMigrated, skipReason)
 
 		// OpenRegister's own object detail mounts the same registry-driven
