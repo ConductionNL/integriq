@@ -1906,7 +1906,11 @@ class SynchronizationService {
 			// batch via a single approval_request, not per object
 			// (design.md Decision 6).
 			if ($isTest === false && (bool)($sourceConfig['requiresApproval'] ?? false) === true) {
-				$synchronizationId = (string)($synchronization['uuid'] ?? '');
+				// `id` first — same reason as the run log below: OpenRegister
+				// exposes no top-level `uuid`, so this resolved to '' and the
+				// approval gate looked up (and suspended against) an empty
+				// synchronization id.
+				$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
 
 				$gatedApprovalRequest = $this->resolveApprovalForSynchronization(
 					synchronizationId: $synchronizationId,
@@ -2588,7 +2592,11 @@ class SynchronizationService {
 		if ($ownsTrace === true) {
 			$trace = new ExecutionTraceContext(
 				entryPoint: 'sync',
-				entryPointId: ($synchronization['uuid'] ?? null),
+				// `id` first: OpenRegister returns an object's identifier as
+				// `id` (mirrored on `@self.id`) and does NOT expose a top-level
+				// `uuid`, so reading `uuid` alone always yielded null and every
+				// sync-entryPoint trace was stored without an entryPointId.
+				entryPointId: (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
 				triggeredBy: 'manual'
 			);
 		}

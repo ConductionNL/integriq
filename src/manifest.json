@@ -1031,7 +1031,83 @@
             "title": "Source logs",
             "config": {
                 "register": "openconnector",
-                "schema": "call_log"
+                "schema": "call_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "Outbound calls. Verified against live rows: only statusCode, statusMessage, request, response, source and created are ever populated, and url/method/duration live INSIDE the request/response bags — hence the dot paths. The top-level `responseTime` the schema declares is written only by the inbound endpoint path, so it is not used here. `?source=` filters correctly (11 of 15 rows on the reference instance).",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "15%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "statusCode",
+                        "label": "Status",
+                        "sortable": true,
+                        "width": "9%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "200": "success",
+                                "201": "success",
+                                "202": "success",
+                                "204": "success",
+                                "301": "info",
+                                "302": "info",
+                                "304": "info",
+                                "400": "warning",
+                                "401": "warning",
+                                "403": "warning",
+                                "404": "warning",
+                                "409": "warning",
+                                "422": "warning",
+                                "429": "warning",
+                                "500": "error",
+                                "502": "error",
+                                "503": "error",
+                                "504": "error"
+                            }
+                        }
+                    },
+                    {
+                        "key": "statusMessage",
+                        "label": "Result",
+                        "sortable": true,
+                        "width": "12%"
+                    },
+                    {
+                        "key": "request.method",
+                        "label": "Method",
+                        "sortable": false,
+                        "width": "8%"
+                    },
+                    {
+                        "key": "request.url",
+                        "label": "URL",
+                        "sortable": false,
+                        "width": "40%",
+                        "cellClass": "cn-cell--truncate"
+                    },
+                    {
+                        "key": "response.responseTime",
+                        "label": "Duration",
+                        "sortable": false,
+                        "width": "16%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    }
+                ]
             }
         },
         {
@@ -1184,7 +1260,88 @@
             "title": "Endpoint logs",
             "config": {
                 "register": "openconnector",
-                "schema": "call_log"
+                "schema": "call_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "Inbound requests. Columns mirror exactly what EndpointService::recordInboundCallLog() writes — statusCode, statusMessage, direction, product, endpoint and a TOP-LEVEL responseTime (unlike the outbound source path, which nests it under `response`). No rows exist yet: EndpointsController::logs() still returns a hard-coded empty result and is not wired to call_log, so these columns are authored from the writer rather than from observed data.",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "17%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "statusCode",
+                        "label": "Status",
+                        "sortable": true,
+                        "width": "10%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "200": "success",
+                                "201": "success",
+                                "202": "success",
+                                "204": "success",
+                                "301": "info",
+                                "302": "info",
+                                "304": "info",
+                                "400": "warning",
+                                "401": "warning",
+                                "403": "warning",
+                                "404": "warning",
+                                "409": "warning",
+                                "422": "warning",
+                                "429": "warning",
+                                "500": "error",
+                                "502": "error",
+                                "503": "error",
+                                "504": "error"
+                            }
+                        }
+                    },
+                    {
+                        "key": "statusMessage",
+                        "label": "Result",
+                        "sortable": true,
+                        "width": "25%"
+                    },
+                    {
+                        "key": "direction",
+                        "label": "Direction",
+                        "sortable": true,
+                        "width": "12%"
+                    },
+                    {
+                        "key": "responseTime",
+                        "label": "Duration",
+                        "sortable": true,
+                        "width": "12%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    },
+                    {
+                        "key": "product",
+                        "label": "API product",
+                        "sortable": true,
+                        "width": "24%",
+                        "widget": "fkResolve",
+                        "widgetProps": {
+                            "register": "openconnector",
+                            "schema": "api_product",
+                            "labelField": "name"
+                        }
+                    }
+                ]
             }
         },
         {
@@ -1192,6 +1349,7 @@
             "route": "/consumers",
             "type": "index",
             "title": "Consumers",
+            "_note": "The create/edit dialog is ConsumerEditorModal via slots['form-dialog'], so there is deliberately NO `includeFields` / `fieldOverrides` here — CnFormDialog never mounts and either key would be dead config that reads as if it governed the form. It replaces the whole dialog rather than its content because it has to own the submit PAYLOAD, which a `form-fields` slot cannot reach: `domains`/`ips` are bare `type: array` → the `tags` widget, and CnFormDialog.initFormData() seeds every tags field to `[]` on create, which ConsumerScopeService::isAllowed() reads as an allowlist admitting nobody (it gates on is_array), so every consumer authored here would have rejected all inbound traffic with a 403. See src/modals/v2/consumerDraft.js for the three-state table. Field ORDER and the object-property widgets live in the consumer schema (lib/Settings/register.d/consumer-form-fields.json) for the DETAIL page's data widget, which does read the schema.",
             "config": {
                 "register": "openconnector",
                 "schema": "consumer",
@@ -1200,11 +1358,6 @@
                     "authorizationType",
                     "domains",
                     "updated"
-                ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "authorizationType"
                 ],
                 "sidebar": {
                     "enabled": true,
@@ -1221,6 +1374,9 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-dialog": "ConsumerEditorModal"
             }
         },
         {
@@ -1295,8 +1451,12 @@
                         "type": "data",
                         "icon": "ShieldCheckOutline",
                         "title": "Access policy",
+                        "_note": "`exclude` drops authorizationConfiguration only. The consumer-form-fields register fragment gives the three object-typed properties `widget: 'json'` so fieldsFromSchema stops filtering them, which is what puts rateLimit and quota on this panel — the right place for them, since the panel's job is confirming the access policy. authorizationConfiguration is `writeOnly: true`, so OpenRegister strips it from every response and it could only ever render as a permanently empty row.",
                         "content": {
-                            "columns": 2
+                            "columns": 2,
+                            "exclude": [
+                                "authorizationConfiguration"
+                            ]
                         }
                     },
                     {
@@ -1665,7 +1825,78 @@
             "title": "Job logs",
             "config": {
                 "register": "openconnector",
-                "schema": "job_log"
+                "schema": "job_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "No `jobId` column: this page is not in the menu, so it is only ever reached from the Jobs row action or the run modal — both of which push `?jobId=` (see handlers/logTargets.js), making the column the same value on every row. `level` needs an explicit `widget: badge` because the job_log schema property carries no `enum`, so CnCellRenderer's auto-enum-badge path never fires; CnStatusBadge matches colorMap case-insensitively, which is what lets the lowercase keys resolve the uppercase INFO/WARNING/ERROR values JobService writes. `executionTime` is an integer of MILLISECONDS (JobService rounds `($end-$start)*1000`), hence the unit. `created` uses the absolute `datetime` formatter rather than the schema's relative-time default — a log wants a timestamp, not \"3 hours ago\".",
+                "_widthsNote": "Percentages summing to 100, paired with `fixedLayout` so they are honoured exactly. Under the default auto layout a table column's `width` is only a hint: `message` was the one unsized column so it absorbed every spare pixel, while `jobClass` — an unbreakable 45-char FQCN like OCA\\OpenConnector\\Action\\SynchronizationAction — was squeezed narrower than its own text and painted over the `stackTrace` cell next to it. Fixed layout makes the widths binding and lets long values wrap inside their cell. Keep the six summing to 100 when editing.",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "14%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "level",
+                        "label": "Level",
+                        "sortable": true,
+                        "width": "9%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "success": "success",
+                                "info": "info",
+                                "notice": "info",
+                                "debug": "default",
+                                "warning": "warning",
+                                "error": "error",
+                                "critical": "error"
+                            }
+                        }
+                    },
+                    {
+                        "key": "message",
+                        "label": "Message",
+                        "sortable": false,
+                        "width": "38%"
+                    },
+                    {
+                        "key": "executionTime",
+                        "label": "Duration",
+                        "sortable": true,
+                        "width": "9%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    },
+                    {
+                        "key": "jobClass",
+                        "label": "Job class",
+                        "sortable": true,
+                        "width": "19%"
+                    },
+                    {
+                        "key": "stackTrace",
+                        "label": "Stack trace",
+                        "sortable": false,
+                        "width": "11%",
+                        "formatter": "count",
+                        "formatterOptions": {
+                            "singular": "{n} frame",
+                            "plural": "{n} frames",
+                            "zero": "—"
+                        }
+                    }
+                ]
             }
         },
         {
@@ -1897,7 +2128,70 @@
             "title": "Synchronization logs",
             "config": {
                 "register": "openconnector",
-                "schema": "synchronization_log"
+                "schema": "synchronization_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "`created` is absent from the stored rows and resolves through CnDataTable's @self fallback. The run counters live under the nested `result.objects` bag, hence the dot paths; the full bag (timing stages, deletion guard) is in the row-detail dialog. Filterable on `synchronizationId`, but only for rows written after this release: SynchronizationService read the id from the absent `uuid` key, so SynchronizationLogService::normalize() stripped the null FK before every insert and no pre-existing row links back to its synchronization (none of the 10 rows on the reference instance). The writer is fixed and `view-synchronization-logs` carries `queryParam: 'synchronizationId'` again, so the row action scopes correctly from now on — historical rows stay unattributable and will read as an empty page. See handlers/logTargets.js.",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "16%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "message",
+                        "label": "Message",
+                        "sortable": true,
+                        "width": "24%"
+                    },
+                    {
+                        "key": "result.objects.found",
+                        "label": "Found",
+                        "sortable": false,
+                        "width": "9%"
+                    },
+                    {
+                        "key": "result.objects.invalid",
+                        "label": "Invalid",
+                        "sortable": false,
+                        "width": "9%"
+                    },
+                    {
+                        "key": "executionTime",
+                        "label": "Duration",
+                        "sortable": true,
+                        "width": "12%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    },
+                    {
+                        "key": "test",
+                        "label": "Test mode",
+                        "sortable": true,
+                        "width": "10%"
+                    },
+                    {
+                        "key": "force",
+                        "label": "Forced",
+                        "sortable": true,
+                        "width": "9%"
+                    },
+                    {
+                        "key": "userId",
+                        "label": "User",
+                        "sortable": true,
+                        "width": "11%"
+                    }
+                ]
             }
         },
         {
@@ -2086,7 +2380,83 @@
             "title": "Cloud event logs",
             "config": {
                 "register": "openconnector",
-                "schema": "call_log"
+                "schema": "call_log",
+                "sortKey": "created",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowDetail": true,
+                "fixedLayout": true,
+                "_columnsNote": "Same call_log schema as SourceLogs, so the same populated fields, plus `direction` because this page mixes inbound and outbound rows. NOT filterable: call_log declares no event FK and nothing writes one, so the page lists every call until cloud-event logging gets a field (or its own schema — event_message is the likely candidate). See handlers/logTargets.js.",
+                "columns": [
+                    {
+                        "key": "created",
+                        "label": "Time",
+                        "sortable": true,
+                        "width": "15%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "statusCode",
+                        "label": "Status",
+                        "sortable": true,
+                        "width": "9%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "200": "success",
+                                "201": "success",
+                                "202": "success",
+                                "204": "success",
+                                "301": "info",
+                                "302": "info",
+                                "304": "info",
+                                "400": "warning",
+                                "401": "warning",
+                                "403": "warning",
+                                "404": "warning",
+                                "409": "warning",
+                                "422": "warning",
+                                "429": "warning",
+                                "500": "error",
+                                "502": "error",
+                                "503": "error",
+                                "504": "error"
+                            }
+                        }
+                    },
+                    {
+                        "key": "statusMessage",
+                        "label": "Result",
+                        "sortable": true,
+                        "width": "12%"
+                    },
+                    {
+                        "key": "direction",
+                        "label": "Direction",
+                        "sortable": true,
+                        "width": "11%"
+                    },
+                    {
+                        "key": "request.url",
+                        "label": "URL",
+                        "sortable": false,
+                        "width": "37%",
+                        "cellClass": "cn-cell--truncate"
+                    },
+                    {
+                        "key": "response.responseTime",
+                        "label": "Duration",
+                        "sortable": false,
+                        "width": "16%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    }
+                ]
             }
         },
         {
@@ -2179,7 +2549,89 @@
             "config": {
                 "register": "openconnector",
                 "schema": "execution_trace",
-                "detailRoute": "TraceDetail"
+                "sortKey": "startedAt",
+                "sortOrder": "desc",
+                "pagination": {
+                    "limit": 50
+                },
+                "rowRoute": "TraceDetail",
+                "fixedLayout": true,
+                "_columnsNote": "`rowRoute` replaces the former `detailRoute`, which CnLogsPage had no prop for and so was dead config — the row click now reaches the TraceDetail page it always named. No `rowDetail`: TraceDetailPage renders the step timeline and owns the Replay action, which a read-only dialog cannot. The steps array runs to ~100 entries per trace, unreadable in a cell, so the table shows a count. entryPoint/status/triggeredBy carry schema enums, coloured explicitly so a failed trace is visible at a glance.",
+                "columns": [
+                    {
+                        "key": "startedAt",
+                        "label": "Started",
+                        "sortable": true,
+                        "width": "18%",
+                        "formatter": "datetime"
+                    },
+                    {
+                        "key": "entryPoint",
+                        "label": "Entry point",
+                        "sortable": true,
+                        "width": "13%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "endpoint": "info",
+                                "job": "primary",
+                                "event": "warning",
+                                "sync": "success"
+                            }
+                        }
+                    },
+                    {
+                        "key": "status",
+                        "label": "Status",
+                        "sortable": true,
+                        "width": "13%",
+                        "widget": "badge",
+                        "widgetProps": {
+                            "variant": "default",
+                            "colorMap": {
+                                "running": "info",
+                                "success": "success",
+                                "failed": "error",
+                                "short_circuited": "warning"
+                            }
+                        }
+                    },
+                    {
+                        "key": "triggeredBy",
+                        "label": "Triggered by",
+                        "sortable": true,
+                        "width": "14%"
+                    },
+                    {
+                        "key": "durationMs",
+                        "label": "Duration",
+                        "sortable": true,
+                        "width": "13%",
+                        "format": {
+                            "style": "duration",
+                            "unit": "milliseconds"
+                        }
+                    },
+                    {
+                        "key": "steps",
+                        "label": "Steps",
+                        "sortable": false,
+                        "width": "15%",
+                        "formatter": "count",
+                        "formatterOptions": {
+                            "singular": "{n} step",
+                            "plural": "{n} steps",
+                            "zero": "—"
+                        }
+                    },
+                    {
+                        "key": "dryRun",
+                        "label": "Dry run",
+                        "sortable": true,
+                        "width": "14%"
+                    }
+                ]
             }
         },
         {

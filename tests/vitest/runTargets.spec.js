@@ -355,10 +355,10 @@ describe('logsLink', () => {
 	it('matches the route + query pair the "View logs" row action uses', () => {
 		expect(
 			getRunDescriptor('synchronization', 'test').logsLink({ id: 9 }),
-		).toEqual({ name: 'SynchronizationLogs', query: { synchronization: 9 } })
+		).toEqual({ name: 'SynchronizationLogs', query: { synchronizationId: 9 } })
 		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 })).toEqual({
 			name: 'JobLogs',
-			query: { job: 3 },
+			query: { jobId: 3 },
 		})
 	})
 

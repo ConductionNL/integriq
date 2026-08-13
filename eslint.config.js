@@ -46,6 +46,9 @@ module.exports = defineConfig([
 		],
 	},
 	{
+		ignores: ['scripts/'],
+	},
+	{
 		extends: compat.extends('@nextcloud'),
 
 		// The `@nextcloud` shared config, pulled in through FlatCompat, resolves to
