@@ -1,5 +1,11 @@
 <script setup>
-import { ruleStore, navigationStore, mappingStore, synchronizationStore, sourceStore } from '../../store/store.js'
+import {
+	ruleStore,
+	navigationStore,
+	mappingStore,
+	synchronizationStore,
+	sourceStore,
+} from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import { Rule } from '../../entities/index.js'
 import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
@@ -7,24 +13,44 @@ import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
-	<NcModal ref="modalRef"
-		label-id="editRule"
-		@close="closeModal">
+	<NcModal ref="modalRef" label-id="editRule" @close="closeModal">
 		<div class="modalContent">
-			<h2>{{ ruleItem.id ? t('openconnector', 'Edit') : t('openconnector', 'Add') }} {{ t('openconnector', 'Rule') }}</h2>
+			<h2>
+				{{
+					ruleItem.id
+						? t('openconnector', 'Edit')
+						: t('openconnector', 'Add')
+				}}
+				{{ t('openconnector', 'Rule') }}
+			</h2>
 
-			<div v-if="!openRegister.isInstalled && !closeAlert" class="openregister-notecard">
+			<div
+				v-if="!openRegister.isInstalled && !closeAlert"
+				class="openregister-notecard">
 				<NcNoteCard
 					:type="openRegister.isAvailable ? 'info' : 'error'"
-					:heading="openRegister.isAvailable ? t('openconnector', 'Open register is not installed') : t('openconnector', 'Failed to install open register')">
+					:heading="
+						openRegister.isAvailable
+							? t('openconnector', 'Open register is not installed')
+							: t('openconnector', 'Failed to install open register')
+					">
 					<p>
-						{{ openRegister.isAvailable
-							? t('openconnector', 'Some features require open register to be installed')
-							: t('openconnector', 'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password') }}
+						{{
+							openRegister.isAvailable
+								? t(
+										'openconnector',
+										'Some features require open register to be installed',
+									)
+								: t(
+										'openconnector',
+										'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password',
+									)
+						}}
 					</p>
 
 					<div class="install-buttons">
-						<NcButton v-if="openRegister.isAvailable"
+						<NcButton
+							v-if="openRegister.isAvailable"
 							:aria-label="t('openconnector', 'Install OpenRegister')"
 							size="small"
 							type="primary"
@@ -35,10 +61,17 @@ import { translate as t } from '@nextcloud/l10n'
 							{{ t('openconnector', 'Install OpenRegister') }}
 						</NcButton>
 						<NcButton
-							:aria-label="t('openconnector', 'Install OpenRegister manually')"
+							:aria-label="
+								t('openconnector', 'Install OpenRegister manually')
+							"
 							size="small"
 							type="secondary"
-							@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
+							@click="
+								openLink(
+									'/index.php/settings/apps/organization/openregister',
+									'_blank',
+								)
+							">
 							<template #icon>
 								<OpenInNew :size="20" />
 							</template>
@@ -47,7 +80,9 @@ import { translate as t } from '@nextcloud/l10n'
 					</div>
 					<div class="close-button">
 						<NcActions>
-							<NcActionButton close-after-click @click="closeAlert = true">
+							<NcActionButton
+								close-after-click
+								@click="closeAlert = true">
 								<template #icon>
 									<Close :size="20" />
 								</template>
@@ -77,7 +112,8 @@ import { translate as t } from '@nextcloud/l10n'
 			<!--          Form          -->
 			<!-- ====================== -->
 			<form v-if="!success" @submit.prevent="handleSubmit">
-				<NcTextField v-model="ruleItem.name"
+				<NcTextField
+					v-model="ruleItem.name"
 					:label="t('openconnector', 'Name')"
 					required />
 
@@ -87,24 +123,30 @@ import { translate as t } from '@nextcloud/l10n'
 					:label="t('openconnector', 'Description')" />
 
 				<div class="json-editor">
-					<label>{{ t('openconnector', 'Conditions (JSON logic)') }}</label>
+					<label>{{
+						t('openconnector', 'Conditions (JSON logic)')
+					}}</label>
 					<div :class="`codeMirrorContainer ${getTheme()}`">
-						<CodeMirror v-model="ruleItem.conditions"
+						<CodeMirror
+							v-model="ruleItem.conditions"
 							:basic="true"
-							placeholder="{&quot;and&quot;: [{&quot;==&quot;: [{&quot;var&quot;: &quot;status&quot;}, &quot;active&quot;]}, {&quot;>=&quot;: [{&quot;var&quot;: &quot;age&quot;}, 18]}]}"
+							placeholder='{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
 							:dark="getTheme() === 'dark'"
 							:linter="jsonParseLinter()"
 							:lang="json()"
 							:tab-size="2" />
 
-						<NcButton class="format-json-button"
+						<NcButton
+							class="format-json-button"
 							type="secondary"
 							size="small"
 							@click="formatJSONCondictions">
 							{{ t('openconnector', 'Format JSON') }}
 						</NcButton>
 					</div>
-					<span v-if="!isValidJson(ruleItem.conditions)" class="error-message">
+					<span
+						v-if="!isValidJson(ruleItem.conditions)"
+						class="error-message">
 						{{ t('openconnector', 'Invalid JSON format') }}
 					</span>
 				</div>
@@ -117,22 +159,35 @@ import { translate as t } from '@nextcloud/l10n'
 						:input-label="t('openconnector', 'Timing')" />
 				</div>
 
-				<NcTextField v-model="ruleItem.order"
+				<NcTextField
+					v-model="ruleItem.order"
 					:label="t('openconnector', 'Order')"
 					type="number" />
 
-				<NcSelect v-bind="actionOptions"
+				<NcSelect
+					v-bind="actionOptions"
 					v-model="actionOptions.value"
 					:clearable="false"
 					:input-label="t('openconnector', 'Action')" />
 
-				<NcSelect v-bind="typeOptions"
+				<NcSelect
+					v-bind="typeOptions"
 					:input-label="t('openconnector', 'Type')"
 					v-model="typeOptions.value"
-					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true" />
+					:selectable="
+						(option) =>
+							option.label === 'Fileparts Create'
+							|| option.label === 'Filepart Upload'
+								? openRegister?.isInstalled
+								: true
+					" />
 
 				<!-- Add mapping select -->
-				<NcSelect v-if="typeOptions.value?.id === 'mapping' || typeOptions.value?.id === 'save_object'"
+				<NcSelect
+					v-if="
+						typeOptions.value?.id === 'mapping'
+						|| typeOptions.value?.id === 'save_object'
+					"
 					v-bind="mappingOptions"
 					v-model="mappingOptions.value"
 					:loading="mappingOptions.loading"
@@ -153,7 +208,9 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Retain response')"
-						v-model="ruleItem.configuration.synchronization.retainResponse">
+						v-model="
+							ruleItem.configuration.synchronization.retainResponse
+						">
 						{{ t('openconnector', 'Retain original response') }}
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -179,13 +236,30 @@ import { translate as t } from '@nextcloud/l10n'
 						resize="vertical"
 						maxlength="2550"
 						v-model="ruleItem.configuration.error.message"
-						:placeholder="t('openconnector', 'We encountered an unexpected problem')" />
+						:placeholder="
+							t(
+								'openconnector',
+								'We encountered an unexpected problem',
+							)
+						" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
-						:label="t('openconnector', 'Include JSON Logic results in errors array')"
-						v-model="ruleItem.configuration.error.includeJsonLogicResult">
-						{{ t('openconnector', 'Include JSON Logic results in errors array') }}
+						:label="
+							t(
+								'openconnector',
+								'Include JSON Logic results in errors array',
+							)
+						"
+						v-model="
+							ruleItem.configuration.error.includeJsonLogicResult
+						">
+						{{
+							t(
+								'openconnector',
+								'Include JSON Logic results in errors array',
+							)
+						}}
 					</NcCheckboxRadioSwitch>
 				</template>
 
@@ -196,7 +270,9 @@ import { translate as t } from '@nextcloud/l10n'
 						:label="t('openconnector', 'JavaScript Code')"
 						v-model="ruleItem.configuration.javascript"
 						class="code-editor"
-						:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
+						:placeholder="
+							t('openconnector', 'Enter your JavaScript code here...')
+						"
 						rows="10" />
 				</template>
 
@@ -206,12 +282,24 @@ import { translate as t } from '@nextcloud/l10n'
 						v-model="authenticationTypeOptions.value"
 						:options="authenticationTypeOptions.options"
 						:input-label="t('openconnector', 'Authentication Type')" />
-					<template v-if="authenticationTypeOptions.value.value === 'api-key'">
+					<template
+						v-if="authenticationTypeOptions.value.value === 'api-key'">
 						<NcNoteCard type="warning">
-							{{ t('openconnector', 'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.') }}
+							{{
+								t(
+									'openconnector',
+									'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.',
+								)
+							}}
 						</NcNoteCard>
-						<VueDraggable v-model="apiKeys" easing="ease-in-out" draggable="div:not(:last-child)">
-							<div v-for="(item, index) in apiKeys" :key="index" class="draggable-item-container">
+						<VueDraggable
+							v-model="apiKeys"
+							easing="ease-in-out"
+							draggable="div:not(:last-child)">
+							<div
+								v-for="(item, index) in apiKeys"
+								:key="index"
+								class="draggable-item-container">
 								<div :class="`draggable-form-item ${getTheme()}`">
 									<Drag class="drag-handle" :size="40" />
 									<NcTextArea
@@ -223,10 +311,14 @@ import { translate as t } from '@nextcloud/l10n'
 									<NcSelect
 										v-model="item.user"
 										v-bind="usersList"
-										:aria-label-combobox="t('openconnector', 'Select allowed user')"
+										:aria-label-combobox="
+											t('openconnector', 'Select allowed user')
+										"
 										:user-select="true"
 										:clearable="true"
-										:placeholder="t('openconnector', 'Select allowed user')"
+										:placeholder="
+											t('openconnector', 'Select allowed user')
+										"
 										class="apiKeyUserSelect" />
 								</div>
 							</div>
@@ -241,7 +333,9 @@ import { translate as t } from '@nextcloud/l10n'
 							:user-select="true"
 							:multiple="true"
 							:clearable="true"
-							:placeholder="t('openconnector', 'Select users who can access')" />
+							:placeholder="
+								t('openconnector', 'Select users who can access')
+							" />
 
 						<!-- Groups Multi-Select -->
 						<NcSelect
@@ -250,35 +344,53 @@ import { translate as t } from '@nextcloud/l10n'
 							:input-label="t('openconnector', 'Allowed Groups')"
 							:multiple="true"
 							:clearable="true"
-							:placeholder="t('openconnector', 'Select groups who can access')" />
+							:placeholder="
+								t('openconnector', 'Select groups who can access')
+							" />
 					</template>
 				</template>
 
 				<!-- Extend Input Configuration -->
 				<template v-if="typeOptions.value?.id === 'extend_input'">
 					<div class="extendList">
-						<div v-for="(item, idx) in ruleItem.configuration.extend_input.items" :key="idx" class="extendItem">
+						<div
+							v-for="(item, idx) in ruleItem.configuration.extend_input
+								.items"
+							:key="idx"
+							class="extendItem">
 							<div class="extendItemProperty">
 								<NcTextField
 									v-model="item.property"
-									:label="t('openconnector', 'Property (dot path)')"
+									:label="
+										t('openconnector', 'Property (dot path)')
+									"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
-								<label>{{ t('openconnector', 'Extends (dot array)') }}</label>
+								<label>{{
+									t('openconnector', 'Extends (dot array)')
+								}}</label>
 								<NcSelect
-									:aria-label-combobox="t('openconnector', 'Extends (dot array)')"
+									:aria-label-combobox="
+										t('openconnector', 'Extends (dot array)')
+									"
 									v-model="item.extends"
 									:taggable="true"
 									:multiple="true"
 									:clearable="true"
 									:options="[]">
 									<template #no-options>
-										{{ t('openconnector', 'type to add path to extend') }}
+										{{
+											t(
+												'openconnector',
+												'type to add path to extend',
+											)
+										}}
 									</template>
 								</NcSelect>
 							</div>
-							<NcButton class="remove-action"
+							<NcButton
+								class="remove-action"
 								size="small"
 								type="tertiary"
 								:disabled="idx === 0"
@@ -296,13 +408,23 @@ import { translate as t } from '@nextcloud/l10n'
 				<template v-if="typeOptions.value?.id === 'extend_external_input'">
 					<NcCheckboxRadioSwitch
 						type="checkbox"
-						:label="t('openconnector', 'Validate fetched object with schema')"
-						v-model="ruleItem.configuration.extend_external_input.validate">
-						{{ t('openconnector', 'Validate fetched object with schema') }}
+						:label="
+							t('openconnector', 'Validate fetched object with schema')
+						"
+						v-model="
+							ruleItem.configuration.extend_external_input.validate
+						">
+						{{
+							t('openconnector', 'Validate fetched object with schema')
+						}}
 					</NcCheckboxRadioSwitch>
 
 					<div class="extendList">
-						<div v-for="(item, idx) in ruleItem.configuration.extend_external_input.properties" :key="idx" class="extendItem">
+						<div
+							v-for="(item, idx) in ruleItem.configuration
+								.extend_external_input.properties"
+							:key="idx"
+							class="extendItem">
 							<div class="extendItemProperty">
 								<NcTextField
 									v-model="item.property"
@@ -315,7 +437,8 @@ import { translate as t } from '@nextcloud/l10n'
 									:label="t('openconnector', 'Schema ID')"
 									placeholder="schemaId" />
 							</div>
-							<NcButton class="remove-action"
+							<NcButton
+								class="remove-action"
 								size="small"
 								type="tertiary"
 								:disabled="idx === 0"
@@ -339,7 +462,10 @@ import { translate as t } from '@nextcloud/l10n'
 						placeholder="Position of file ID in URL path (e.g. 2)" />
 
 					<div class="info-text">
-						<p>The system will automatically check if the authenticated user has access rights to the requested file.</p>
+						<p>
+							The system will automatically check if the authenticated
+							user has access rights to the requested file.
+						</p>
 					</div>
 				</template>
 
@@ -363,7 +489,10 @@ import { translate as t } from '@nextcloud/l10n'
 						placeholder="10" />
 
 					<div class="info-text">
-						<p>Configure file upload settings including path, allowed types and maximum file size.</p>
+						<p>
+							Configure file upload settings including path, allowed
+							types and maximum file size.
+						</p>
 					</div>
 				</template>
 
@@ -373,7 +502,7 @@ import { translate as t } from '@nextcloud/l10n'
 						v-model="ruleItem.configuration.locking.action"
 						:options="[
 							{ label: 'Lock Resource', value: 'lock' },
-							{ label: 'Unlock Resource', value: 'unlock' }
+							{ label: 'Unlock Resource', value: 'unlock' },
 						]"
 						input-label="Lock Action" />
 
@@ -385,7 +514,10 @@ import { translate as t } from '@nextcloud/l10n'
 						placeholder="30" />
 
 					<div class="info-text">
-						<p>Lock or unlock resources for exclusive access by the current user.</p>
+						<p>
+							Lock or unlock resources for exclusive access by the
+							current user.
+						</p>
 					</div>
 				</template>
 
@@ -403,13 +535,12 @@ import { translate as t } from '@nextcloud/l10n'
 						v-model="methodOptions.value"
 						input-label="Method" />
 
-					<NcSelect v-model="ruleItem.configuration.fetch_file.tags"
+					<NcSelect
+						v-model="ruleItem.configuration.fetch_file.tags"
 						:taggable="true"
 						:multiple="true"
 						input-label="Tags">
-						<template #no-options>
-							type to add tags
-						</template>
+						<template #no-options> type to add tags </template>
 					</NcSelect>
 
 					<NcTextField
@@ -437,7 +568,11 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="json-editor">
 						<label>Source Configuration (JSON)</label>
 						<div :class="`codeMirrorContainer ${getTheme()}`">
-							<CodeMirror v-model="ruleItem.configuration.fetch_file.sourceConfiguration"
+							<CodeMirror
+								v-model="
+									ruleItem.configuration.fetch_file
+										.sourceConfiguration
+								"
 								:basic="true"
 								placeholder="[]"
 								:dark="getTheme() === 'dark'"
@@ -445,14 +580,22 @@ import { translate as t } from '@nextcloud/l10n'
 								:lang="json()"
 								:tab-size="2" />
 
-							<NcButton class="format-json-button"
+							<NcButton
+								class="format-json-button"
 								type="secondary"
 								size="small"
 								@click="formatJSONSourceConfiguration">
 								Format JSON
 							</NcButton>
 						</div>
-						<span v-if="!isValidJson(ruleItem.configuration.fetch_file.sourceConfiguration)" class="error-message">
+						<span
+							v-if="
+								!isValidJson(
+									ruleItem.configuration.fetch_file
+										.sourceConfiguration,
+								)
+							"
+							class="error-message">
 							Invalid JSON format
 						</span>
 					</div>
@@ -496,13 +639,12 @@ import { translate as t } from '@nextcloud/l10n'
 						v-model="ruleItem.configuration.write_file.fileNamePath"
 						placeholder="path.to.file.name" />
 
-					<NcSelect v-model="ruleItem.configuration.write_file.tags"
+					<NcSelect
+						v-model="ruleItem.configuration.write_file.tags"
 						:taggable="true"
 						:multiple="true"
 						input-label="Tags">
-						<template #no-options>
-							type to add tags
-						</template>
+						<template #no-options> type to add tags </template>
 					</NcSelect>
 
 					<NcCheckboxRadioSwitch
@@ -518,25 +660,32 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextField
 						label="Size Location"
 						required
-						v-model="ruleItem.configuration.fileparts_create.sizeLocation"
+						v-model="
+							ruleItem.configuration.fileparts_create.sizeLocation
+						"
 						placeholder="path.to.size.location" />
 
-					<NcSelect v-bind="schemaOptions"
+					<NcSelect
+						v-bind="schemaOptions"
 						v-model="schemaOptions.value"
 						input-label="Schema *"
 						:loading="schemasLoading"
 						:disabled="!openRegister.isInstalled"
 						required>
 						<template #no-options="{ loading: schemasTemplateLoading }">
-							<p v-if="schemasTemplateLoading">
-								Loading...
-							</p>
-							<p v-if="!schemasTemplateLoading && !schemaOptions.options?.length">
+							<p v-if="schemasTemplateLoading">Loading...</p>
+							<p
+								v-if="
+									!schemasTemplateLoading
+									&& !schemaOptions.options?.length
+								">
 								Er zijn geen schemas beschikbaar
 							</p>
 						</template>
 						<template #option="{ id, label, fullSchema, removeStyle }">
-							<div :key="id" :class="removeStyle !== true && 'schema-option'">
+							<div
+								:key="id"
+								:class="removeStyle !== true && 'schema-option'">
 								<!-- custom style is enabled -->
 								<FileTreeOutline v-if="!removeStyle" :size="25" />
 								<span v-if="!removeStyle">
@@ -555,12 +704,16 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="Filename Location"
-						v-model="ruleItem.configuration.fileparts_create.filenameLocation"
+						v-model="
+							ruleItem.configuration.fileparts_create.filenameLocation
+						"
 						placeholder="path.to.filename.location" />
 
 					<NcTextField
 						label="Filepart Location"
-						v-model="ruleItem.configuration.fileparts_create.filePartLocation"
+						v-model="
+							ruleItem.configuration.fileparts_create.filePartLocation
+						"
 						placeholder="path.to.filepart.location" />
 
 					<NcSelect
@@ -597,25 +750,52 @@ import { translate as t } from '@nextcloud/l10n'
 			</form>
 
 			<div class="modal-actions">
-				<NcButton v-if="!success"
-					@click="closeModal">
+				<NcButton v-if="!success" @click="closeModal">
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
-				<NcButton v-if="!success"
-					:disabled="(loading
+				<NcButton
+					v-if="!success"
+					:disabled="
+						loading
 						|| !ruleItem.name
 						|| !isValidJson(ruleItem.conditions)
-						|| typeOptions.value?.id === 'fetch_file' && (!sourceOptions.sourceValue)
-						|| typeOptions.value?.id === 'save_object' && (!ruleItem.configuration.save_object.schema || !ruleItem.configuration.save_object.register)
-						|| typeOptions.value?.id === 'write_file' && (!ruleItem.configuration.write_file.filePath || !ruleItem.configuration.write_file.fileNamePath)
-						|| typeOptions.value?.id === 'fileparts_create' && (!schemaOptions.value || !ruleItem.configuration.fileparts_create.sizeLocation)
-						|| typeOptions.value?.id === 'filepart_upload' && !filepartUploadMappingOptions.value
-						|| typeOptions.value?.id === 'extend_input' && !(ruleItem.configuration.extend_input.items && ruleItem.configuration.extend_input.items.filter(p => p.property && p.property.trim()).length > 0)
-						|| typeOptions.value?.id === 'extend_external_input' && !(ruleItem.configuration.extend_external_input.properties && ruleItem.configuration.extend_external_input.properties.filter(p => p.property && p.property.trim() && p.schema && p.schema.trim()).length > 0)
-					)"
+						|| (typeOptions.value?.id === 'fetch_file'
+							&& !sourceOptions.sourceValue)
+						|| (typeOptions.value?.id === 'save_object'
+							&& (!ruleItem.configuration.save_object.schema
+								|| !ruleItem.configuration.save_object.register))
+						|| (typeOptions.value?.id === 'write_file'
+							&& (!ruleItem.configuration.write_file.filePath
+								|| !ruleItem.configuration.write_file.fileNamePath))
+						|| (typeOptions.value?.id === 'fileparts_create'
+							&& (!schemaOptions.value
+								|| !ruleItem.configuration.fileparts_create
+									.sizeLocation))
+						|| (typeOptions.value?.id === 'filepart_upload'
+							&& !filepartUploadMappingOptions.value)
+						|| (typeOptions.value?.id === 'extend_input'
+							&& !(
+								ruleItem.configuration.extend_input.items
+								&& ruleItem.configuration.extend_input.items.filter(
+									(p) => p.property && p.property.trim(),
+								).length > 0
+							))
+						|| (typeOptions.value?.id === 'extend_external_input'
+							&& !(
+								ruleItem.configuration.extend_external_input
+									.properties
+								&& ruleItem.configuration.extend_external_input.properties.filter(
+									(p) =>
+										p.property
+										&& p.property.trim()
+										&& p.schema
+										&& p.schema.trim(),
+								).length > 0
+							))
+					"
 					type="primary"
 					@click="editRule()">
 					<template #icon>
@@ -728,15 +908,11 @@ export default {
 				timing: '',
 				configuration: {
 					extend_input: {
-						items: [
-							{ property: '', extends: [] },
-						],
+						items: [{ property: '', extends: [] }],
 					},
 					extend_external_input: {
 						validate: true,
-						properties: [
-							{ property: '', schema: '' },
-						],
+						properties: [{ property: '', schema: '' }],
 					},
 					mapping: null,
 					synchronization: {
@@ -866,14 +1042,23 @@ export default {
 				const lastItem = newVal[newVal.length - 1]
 				// If last item has a property value, add a new empty item
 				if (lastItem.property && lastItem.property.trim() !== '') {
-					this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
+					this.ruleItem.configuration.extend_input.items.push({
+						property: '',
+						extends: [],
+					})
 				}
 
 				// Remove empty items from the middle (except the last one)
 				if (newVal.length > 1) {
 					for (let i = newVal.length - 2; i >= 0; i--) {
-						if (!newVal[i].property || newVal[i].property.trim() === '') {
-							this.ruleItem.configuration.extend_input.items.splice(i, 1)
+						if (
+							!newVal[i].property
+							|| newVal[i].property.trim() === ''
+						) {
+							this.ruleItem.configuration.extend_input.items.splice(
+								i,
+								1,
+							)
 						}
 					}
 				}
@@ -888,18 +1073,29 @@ export default {
 
 				const lastItem = newVal[newVal.length - 1]
 				// If last item has both property and schema values, add a new empty item
-				if (lastItem.property && lastItem.property.trim() !== ''
-					&& lastItem.schema && lastItem.schema.trim() !== '') {
-					this.ruleItem.configuration.extend_external_input.properties.push({ property: '', schema: '' })
+				if (
+					lastItem.property
+					&& lastItem.property.trim() !== ''
+					&& lastItem.schema
+					&& lastItem.schema.trim() !== ''
+				) {
+					this.ruleItem.configuration.extend_external_input.properties.push(
+						{ property: '', schema: '' },
+					)
 				}
 
 				// Remove empty items from the middle (except the last one)
 				if (newVal.length > 1) {
 					for (let i = newVal.length - 2; i >= 0; i--) {
 						const item = newVal[i]
-						if ((!item.property || item.property.trim() === '')
-							&& (!item.schema || item.schema.trim() === '')) {
-							this.ruleItem.configuration.extend_external_input.properties.splice(i, 1)
+						if (
+							(!item.property || item.property.trim() === '')
+							&& (!item.schema || item.schema.trim() === '')
+						) {
+							this.ruleItem.configuration.extend_external_input.properties.splice(
+								i,
+								1,
+							)
 						}
 					}
 				}
@@ -909,7 +1105,6 @@ export default {
 	},
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	mounted() {
-
 		if (this.IS_EDIT) {
 			const originalConfig = ruleStore.ruleItem.configuration || {}
 
@@ -921,15 +1116,23 @@ export default {
 					error: {
 						code: originalConfig.error?.code ?? 500,
 						name: originalConfig.error?.name ?? 'Something went wrong',
-						message: originalConfig.error?.message ?? 'We encountered an unexpected problem',
-						includeJsonLogicResult: originalConfig.error?.includeJsonLogicResult ?? false,
+						message:
+							originalConfig.error?.message
+							?? 'We encountered an unexpected problem',
+						includeJsonLogicResult:
+							originalConfig.error?.includeJsonLogicResult ?? false,
 					},
 					synchronization: {
-						synchronization: originalConfig.synchronization?.synchronization ?? null,
-						retainResponse: originalConfig.synchronization?.retainResponse ?? false,
+						synchronization:
+							originalConfig.synchronization?.synchronization ?? null,
+						retainResponse:
+							originalConfig.synchronization?.retainResponse ?? false,
 					},
 					authentication: {
-						type: originalConfig.authentication?.type ?? { label: 'Basic Authentication', value: 'basic' },
+						type: originalConfig.authentication?.type ?? {
+							label: 'Basic Authentication',
+							value: 'basic',
+						},
 						users: originalConfig.authentication?.users ?? [],
 						groups: originalConfig.authentication?.groups ?? [],
 						keys: originalConfig.authentication?.keys ?? [],
@@ -949,19 +1152,26 @@ export default {
 					fetch_file: {
 						source: originalConfig.fetch_file?.source ?? '',
 						filePath: originalConfig.fetch_file?.filePath ?? '',
-						subObjectFilepath: originalConfig.fetch_file?.subObjectFilepath ?? '',
+						subObjectFilepath:
+							originalConfig.fetch_file?.subObjectFilepath ?? '',
 						objectIdPath: originalConfig.fetch_file?.objectIdPath ?? '',
 						method: originalConfig.fetch_file?.method ?? '',
 						tags: originalConfig.fetch_file?.tags ?? [],
-						sourceConfiguration: originalConfig.fetch_file?.sourceConfiguration
-							? JSON.stringify(originalConfig.fetch_file.sourceConfiguration, null, 2)
+						sourceConfiguration: originalConfig.fetch_file
+							?.sourceConfiguration
+							? JSON.stringify(
+									originalConfig.fetch_file.sourceConfiguration,
+									null,
+									2,
+								)
 							: '[]',
 						autoShare: originalConfig.fetch_file?.autoShare ?? false,
 						endpoint: originalConfig.fetch_file?.endpoint ?? '',
 						contentPath: originalConfig.fetch_file?.contentPath ?? '',
 						originIdPath: originalConfig.fetch_file?.originIdPath ?? '',
 						filenamePath: originalConfig.fetch_file?.filenamePath ?? '',
-						fileExtension: originalConfig.fetch_file?.fileExtension ?? '',
+						fileExtension:
+							originalConfig.fetch_file?.fileExtension ?? '',
 					},
 					write_file: {
 						filePath: originalConfig.write_file?.filePath ?? '',
@@ -970,10 +1180,13 @@ export default {
 						autoShare: originalConfig.write_file?.autoShare ?? false,
 					},
 					fileparts_create: {
-						sizeLocation: originalConfig.fileparts_create?.sizeLocation ?? '',
+						sizeLocation:
+							originalConfig.fileparts_create?.sizeLocation ?? '',
 						schemaId: originalConfig.fileparts_create?.schemaId ?? '',
-						filenameLocation: originalConfig.fileparts_create?.filenameLocation ?? '',
-						filePartLocation: originalConfig.fileparts_create?.filePartLocation ?? '',
+						filenameLocation:
+							originalConfig.fileparts_create?.filenameLocation ?? '',
+						filePartLocation:
+							originalConfig.fileparts_create?.filePartLocation ?? '',
 						mappingId: originalConfig.fileparts_create?.mappingId ?? '',
 					},
 					filepart_upload: {
@@ -990,13 +1203,15 @@ export default {
 			}
 
 			const foundType = this.typeOptions.options.find(
-				option => option.id === this.ruleItem.type,
+				(option) => option.id === this.ruleItem.type,
 			)
 
 			if (foundType) {
 				this.typeOptions.value = foundType
 			} else {
-				console.warn(`Unknown rule type: ${this.ruleItem.type}. Configuration preserved.`)
+				console.warn(
+					`Unknown rule type: ${this.ruleItem.type}. Configuration preserved.`,
+				)
 				this.typeOptions.value = {
 					label: `Unknown: ${this.ruleItem.type}`,
 					id: this.ruleItem.type,
@@ -1004,12 +1219,19 @@ export default {
 				this.warning = `Unknown rule type: ${this.ruleItem.type}. Some configuration may not be editable in this UI.`
 			}
 
-			this.authenticationTypeOptions.value = this.authenticationTypeOptions.options.find(
-				option => option.value === (originalConfig.authentication?.type ?? Symbol('backup value')),
-			)
+			this.authenticationTypeOptions.value =
+				this.authenticationTypeOptions.options.find(
+					(option) =>
+						option.value
+						=== (originalConfig.authentication?.type
+							?? Symbol('backup value')),
+				)
 		}
 		if (!this.IS_EDIT) {
-			this.authenticationTypeOptions.value = { label: 'Basic Authentication', value: 'basic' }
+			this.authenticationTypeOptions.value = {
+				label: 'Basic Authentication',
+				value: 'basic',
+			}
 		}
 		this.setMethodOptions()
 		this.setActionOptions()
@@ -1028,8 +1250,14 @@ export default {
 				validate: true,
 				properties: [{ property: '', schema: '' }],
 			}
-		} else if (!this.ruleItem.configuration.extend_external_input.properties || this.ruleItem.configuration.extend_external_input.properties.length === 0) {
-			this.ruleItem.configuration.extend_external_input.properties = [{ property: '', schema: '' }]
+		} else if (
+			!this.ruleItem.configuration.extend_external_input.properties
+			|| this.ruleItem.configuration.extend_external_input.properties.length
+				=== 0
+		) {
+			this.ruleItem.configuration.extend_external_input.properties = [
+				{ property: '', schema: '' },
+			]
 		}
 
 		if (this.ruleItem.configuration?.extend_input?.properties) {
@@ -1038,15 +1266,28 @@ export default {
 			this.ruleItem.configuration.extend_input = {
 				items: props.map((p) => ({ property: p, extends: ext[p] || [] })),
 			}
-			if (this.ruleItem.configuration.extend_input.items.length === 0 || this.ruleItem.configuration.extend_input.items[this.ruleItem.configuration.extend_input.items.length - 1].property) {
-				this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
+			if (
+				this.ruleItem.configuration.extend_input.items.length === 0
+				|| this.ruleItem.configuration.extend_input.items[
+					this.ruleItem.configuration.extend_input.items.length - 1
+				].property
+			) {
+				this.ruleItem.configuration.extend_input.items.push({
+					property: '',
+					extends: [],
+				})
 			}
 		} else if (!this.ruleItem.configuration.extend_input) {
 			this.ruleItem.configuration['extend_input'] = {
 				items: [{ property: '', extends: [] }],
 			}
-		} else if (!this.ruleItem.configuration.extend_input.items || this.ruleItem.configuration.extend_input.items.length === 0) {
-			this.ruleItem.configuration.extend_input.items = [{ property: '', extends: [] }]
+		} else if (
+			!this.ruleItem.configuration.extend_input.items
+			|| this.ruleItem.configuration.extend_input.items.length === 0
+		) {
+			this.ruleItem.configuration.extend_input.items = [
+				{ property: '', extends: [] },
+			]
 		}
 	},
 	methods: {
@@ -1059,39 +1300,48 @@ export default {
 				// Use the store's mappingList directly
 				const mappings = mappingStore.mappingList
 				if (mappings?.length) {
-
 					// Set active filepart upload mapping
-					const activeFilepartUploadMapping = mappings.find((mapping) => mapping?.id.toString() === (this.ruleItem.configuration.filepart_upload.mappingId?.toString() ?? ''))
+					const activeFilepartUploadMapping = mappings.find(
+						(mapping) =>
+							mapping?.id.toString()
+							=== (this.ruleItem.configuration.filepart_upload.mappingId?.toString()
+								?? ''),
+					)
 					this.filepartUploadMappingOptions = {
-						options: mappings.map(mapping => ({
+						options: mappings.map((mapping) => ({
 							label: mapping.name,
 							value: mapping.id,
 						})),
 						value: activeFilepartUploadMapping
 							? {
-								label: activeFilepartUploadMapping.name,
-								value: activeFilepartUploadMapping.id,
-							}
+									label: activeFilepartUploadMapping.name,
+									value: activeFilepartUploadMapping.id,
+								}
 							: null,
 					}
 
 					// Set active filepart upload mapping
-					const activeFilepartsCreateMapping = mappings.find((mapping) => mapping?.id.toString() === (this.ruleItem.configuration.fileparts_create.mappingId?.toString() ?? ''))
+					const activeFilepartsCreateMapping = mappings.find(
+						(mapping) =>
+							mapping?.id.toString()
+							=== (this.ruleItem.configuration.fileparts_create.mappingId?.toString()
+								?? ''),
+					)
 					this.filepartsCreateMappingOptions = {
-						options: mappings.map(mapping => ({
+						options: mappings.map((mapping) => ({
 							label: mapping.name,
 							value: mapping.id,
 						})),
 						value: activeFilepartsCreateMapping
 							? {
-								label: activeFilepartsCreateMapping.name,
-								value: activeFilepartsCreateMapping.id,
-							}
+									label: activeFilepartsCreateMapping.name,
+									value: activeFilepartsCreateMapping.id,
+								}
 							: null,
 					}
 
 					// Set mapping options
-					this.mappingOptions.options = mappings.map(mapping => ({
+					this.mappingOptions.options = mappings.map((mapping) => ({
 						label: mapping.name,
 						value: mapping.id,
 					}))
@@ -1099,7 +1349,8 @@ export default {
 					// Set active mapping if editing
 					if (this.IS_EDIT && this.ruleItem.configuration?.mapping) {
 						const activeMapping = this.mappingOptions.options.find(
-							option => option.value === this.ruleItem.configuration.mapping,
+							(option) =>
+								option.value === this.ruleItem.configuration.mapping,
 						)
 						if (activeMapping) {
 							this.mappingOptions.value = activeMapping
@@ -1117,23 +1368,28 @@ export default {
 		getSources() {
 			this.sourcesLoading = true
 
-			sourceStore.refreshSourceList()
+			sourceStore
+				.refreshSourceList()
 				.then(() => {
-
 					const sources = sourceStore.sourceList
 
-					const activeSourceSource = sources.find(source => source.id.toString() === (this.ruleItem.configuration.fetch_file.source.toString() ?? ''))
+					const activeSourceSource = sources.find(
+						(source) =>
+							source.id.toString()
+							=== (this.ruleItem.configuration.fetch_file.source.toString()
+								?? ''),
+					)
 
 					this.sourceOptions = {
-						options: sources.map(source => ({
+						options: sources.map((source) => ({
 							label: source.name,
 							id: source.id,
 						})),
 						sourceValue: activeSourceSource
 							? {
-								label: activeSourceSource.name,
-								id: activeSourceSource.id,
-							}
+									label: activeSourceSource.name,
+									id: activeSourceSource.id,
+								}
 							: null,
 					}
 				})
@@ -1147,20 +1403,23 @@ export default {
 
 			// checking if OpenRegister is installed
 			console.info('Fetching schemas from Open Register')
-			const response = await fetch('/index.php/apps/openregister/api/schemas', {
-				headers: {
-					accept: '*/*',
-					'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-					'cache-control': 'no-cache',
-					pragma: 'no-cache',
-					'x-requested-with': 'XMLHttpRequest',
+			const response = await fetch(
+				'/index.php/apps/openregister/api/schemas',
+				{
+					headers: {
+						accept: '*/*',
+						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
+						'cache-control': 'no-cache',
+						pragma: 'no-cache',
+						'x-requested-with': 'XMLHttpRequest',
+					},
+					referrerPolicy: 'no-referrer',
+					body: null,
+					method: 'GET',
+					mode: 'cors',
+					credentials: 'include',
 				},
-				referrerPolicy: 'no-referrer',
-				body: null,
-				method: 'GET',
-				mode: 'cors',
-				credentials: 'include',
-			})
+			)
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -1169,14 +1428,16 @@ export default {
 				return
 			}
 
-			this.typeOptions.options = [
-				...this.typeOptions.options,
-
-			]
+			this.typeOptions.options = [...this.typeOptions.options]
 
 			const responseData = (await response.json()).results
 
-			const activeSchema = responseData.find(schema => schema.id.toString() === (this.ruleItem.configuration.fileparts_create.schemaId.toString() ?? ''))
+			const activeSchema = responseData.find(
+				(schema) =>
+					schema.id.toString()
+					=== (this.ruleItem.configuration.fileparts_create.schemaId.toString()
+						?? ''),
+			)
 
 			this.schemaOptions = {
 				options: responseData.map((schema) => ({
@@ -1186,9 +1447,9 @@ export default {
 				})),
 				value: activeSchema
 					? {
-						id: activeSchema.id,
-						label: activeSchema.title,
-					}
+							id: activeSchema.id,
+							label: activeSchema.title,
+						}
 					: null,
 			}
 
@@ -1204,15 +1465,22 @@ export default {
 				// Use the store's synchronizationList directly
 				const synchronizations = synchronizationStore.synchronizationList
 				if (synchronizations?.length) {
-					this.syncOptions.options = synchronizations.map(sync => ({
+					this.syncOptions.options = synchronizations.map((sync) => ({
 						label: sync.name,
 						value: sync.id,
 					}))
 
 					// Set active synchronization if editing
-					if (this.IS_EDIT && this.ruleItem.configuration?.synchronization.synchronization) {
+					if (
+						this.IS_EDIT
+						&& this.ruleItem.configuration?.synchronization
+							.synchronization
+					) {
 						const activeSync = this.syncOptions.options.find(
-							option => option.value === this.ruleItem.configuration.synchronization.synchronization,
+							(option) =>
+								option.value
+								=== this.ruleItem.configuration.synchronization
+									.synchronization,
 						)
 						if (activeSync) {
 							this.syncOptions.value = activeSync
@@ -1244,7 +1512,11 @@ export default {
 
 			const responseData = await response.json()
 
-			const selectedUsersValues = await Object.values(responseData.ocs.data.users).filter(user => this.ruleItem.configuration.authentication.users.includes(user.id))
+			const selectedUsersValues = await Object.values(
+				responseData.ocs.data.users,
+			).filter((user) =>
+				this.ruleItem.configuration.authentication.users.includes(user.id),
+			)
 
 			this.usersList = {
 				options: Object.values(responseData.ocs.data.users).map((user) => ({
@@ -1254,21 +1526,22 @@ export default {
 					user: user.id,
 				})),
 				value: selectedUsersValues
-					? selectedUsersValues.map(user => ({
-						id: user.id,
-						displayName: user.displayname,
-						subname: user.email,
-						user: user.id,
-					}))
+					? selectedUsersValues.map((user) => ({
+							id: user.id,
+							displayName: user.displayname,
+							subname: user.email,
+							user: user.id,
+						}))
 					: [],
 			}
 
-			this.ruleItem.configuration.authentication.users = selectedUsersValues.map(user => ({
-				id: user.id,
-				displayName: user.displayname,
-				subname: user.email,
-				user: user.id,
-			}))
+			this.ruleItem.configuration.authentication.users =
+				selectedUsersValues.map((user) => ({
+					id: user.id,
+					displayName: user.displayname,
+					subname: user.email,
+					user: user.id,
+				}))
 
 			this.usersLoading = false
 		},
@@ -1302,34 +1575,33 @@ export default {
 			}
 
 			if (this.ruleItem.configuration.authentication.keys) {
+				this.apiKeys = this.ruleItem.configuration.authentication.keys.map(
+					(key) => {
+						let user = null
+						let apiKey = null
 
-				this.apiKeys = this.ruleItem.configuration.authentication.keys.map((key) => {
+						Object.entries(key).forEach(([key, value]) => {
+							apiKey = key
+							user = value
+						})
 
-					let user = null
-					let apiKey = null
-
-					Object.entries(key).forEach(([key, value]) => {
-						apiKey = key
-						user = value
-
-					})
-
-					const selectedUser = Object.values(responseData.ocs.data.users).find(_user => user === _user.id)
-					return {
-						apiKey,
-						user: selectedUser
-							? {
-								id: selectedUser.id,
-								displayName: selectedUser.displayname,
-								subname: selectedUser.email,
-								user: selectedUser.id,
-							}
-							: null,
-					}
-				})
-
+						const selectedUser = Object.values(
+							responseData.ocs.data.users,
+						).find((_user) => user === _user.id)
+						return {
+							apiKey,
+							user: selectedUser
+								? {
+										id: selectedUser.id,
+										displayName: selectedUser.displayname,
+										subname: selectedUser.email,
+										user: selectedUser.id,
+									}
+								: null,
+						}
+					},
+				)
 			}
-
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -1341,8 +1613,7 @@ export default {
 					Accept: 'application/json',
 					'OCS-APIRequest': 'true',
 				},
-			},
-			)
+			})
 			if (!response.ok) {
 				console.info('Fetching groups was not successful')
 				this.groupsLoading = false
@@ -1351,25 +1622,31 @@ export default {
 
 			const responseData = await response.json()
 
-			const selectedGroupsValues = await responseData.ocs.data.groups.filter(group => this.ruleItem.configuration.authentication.groups.includes(group.id))
+			const selectedGroupsValues = await responseData.ocs.data.groups.filter(
+				(group) =>
+					this.ruleItem.configuration.authentication.groups.includes(
+						group.id,
+					),
+			)
 
 			this.groupsList = {
-				options: await responseData.ocs.data.groups.map(group => ({
+				options: await responseData.ocs.data.groups.map((group) => ({
 					label: group.displayname,
 					value: group.id,
 				})),
 				value: selectedGroupsValues
-					? selectedGroupsValues.map(group => ({
-						label: group.displayname,
-						value: group.id,
-					}))
+					? selectedGroupsValues.map((group) => ({
+							label: group.displayname,
+							value: group.id,
+						}))
 					: [],
 			}
 
-			this.ruleItem.configuration.authentication.groups = selectedGroupsValues.map(group => ({
-				label: group.displayname,
-				value: group.id,
-			}))
+			this.ruleItem.configuration.authentication.groups =
+				selectedGroupsValues.map((group) => ({
+					label: group.displayname,
+					value: group.id,
+				}))
 
 			this.groupsLoading = false
 		},
@@ -1386,7 +1663,11 @@ export default {
 
 			this.methodOptions = {
 				options,
-				value: options.find(option => option.label === this.ruleItem.configuration.fetch_file.method),
+				value: options.find(
+					(option) =>
+						option.label
+						=== this.ruleItem.configuration.fetch_file.method,
+				),
 			}
 		},
 
@@ -1401,7 +1682,9 @@ export default {
 
 			this.actionOptions = {
 				options,
-				value: options.find(option => option.id === this.ruleItem.action) || options[0],
+				value:
+					options.find((option) => option.id === this.ruleItem.action)
+					|| options[0],
 			}
 		},
 
@@ -1414,28 +1697,42 @@ export default {
 
 			this.timingOptions = {
 				options,
-				value: options.find(option => option.id === this.ruleItem.timing) || options[0],
+				value:
+					options.find((option) => option.id === this.ruleItem.timing)
+					|| options[0],
 			}
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendExternalItem() {
 			if (!this.ruleItem.configuration.extend_external_input) {
-				this.ruleItem.configuration.extend_external_input = { validate: true, properties: [] }
+				this.ruleItem.configuration.extend_external_input = {
+					validate: true,
+					properties: [],
+				}
 			}
-			this.ruleItem.configuration.extend_external_input.properties.push({ property: '', schema: '' })
+			this.ruleItem.configuration.extend_external_input.properties.push({
+				property: '',
+				schema: '',
+			})
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendExternalItem(index) {
 			if (index === 0) return
-			this.ruleItem.configuration.extend_external_input.properties.splice(index, 1)
+			this.ruleItem.configuration.extend_external_input.properties.splice(
+				index,
+				1,
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendInputItem() {
 			if (!this.ruleItem.configuration.extend_input) {
 				this.ruleItem.configuration.extend_input = { items: [] }
 			}
-			this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
+			this.ruleItem.configuration.extend_input.items.push({
+				property: '',
+				extends: [],
+			})
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendInputItem(index) {
@@ -1477,8 +1774,11 @@ export default {
 		formatJSONSourceConfiguration() {
 			try {
 				if (this.ruleItem.configuration.fetch_file.sourceConfiguration) {
-					const parsed = JSON.parse(this.ruleItem.configuration.fetch_file.sourceConfiguration)
-					this.ruleItem.configuration.fetch_file.sourceConfiguration = JSON.stringify(parsed, null, 2)
+					const parsed = JSON.parse(
+						this.ruleItem.configuration.fetch_file.sourceConfiguration,
+					)
+					this.ruleItem.configuration.fetch_file.sourceConfiguration =
+						JSON.stringify(parsed, null, 2)
 				}
 			} catch (e) {
 				// Keep invalid JSON as-is to allow user to fix it
@@ -1488,7 +1788,9 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async installOpenRegister() {
 			console.info('Installing Open Register')
-			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
+			const token = document
+				.querySelector('head[data-requesttoken]')
+				.getAttribute('data-requesttoken')
 
 			const response = await fetch('/index.php/settings/apps/enable', {
 				headers: {
@@ -1527,133 +1829,191 @@ export default {
 
 			// Build configuration based on type
 			switch (type) {
-			case 'error':
-				configuration.error = {
-					code: this.ruleItem.configuration.error.code,
-					name: this.ruleItem.configuration.error.name,
-					message: this.ruleItem.configuration.error.message,
-					includeJsonLogicResult: this.ruleItem.configuration.error.includeJsonLogicResult,
-				}
-				break
-			case 'mapping':
-				configuration.mapping = this.mappingOptions.value?.value
-				break
-			case 'synchronization':
-				configuration.synchronization = {}
-				configuration.synchronization.synchronization = this.syncOptions.value?.value
-				configuration.synchronization.retainResponse = this.ruleItem.configuration.synchronization.retainResponse
-				break
-			case 'javascript':
-				configuration.javascript = this.ruleItem.configuration.javascript
-				break
-			case 'authentication':
-				// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
-				// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
-				// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
-				// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
-				// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
-				configuration.authentication = buildAuthenticationConfiguration({
-					type: this.authenticationTypeOptions.value.value,
-					users: this.ruleItem.configuration.authentication.users.map(user => user.id),
-					groups: this.ruleItem.configuration.authentication.groups.map(group => group.value),
-					apiKeys: this.apiKeys,
-				})
-				break
-			case 'download':
-				configuration.download = {
-					fileIdPosition: this.ruleItem.configuration.download.fileIdPosition,
-				}
-				break
-			case 'upload':
-				configuration.upload = {
-					path: this.ruleItem.configuration.upload.path,
-					allowedTypes: this.ruleItem.configuration.upload.allowedTypes,
-					maxSize: this.ruleItem.configuration.upload.maxSize,
-				}
-				break
-			case 'locking':
-				configuration.locking = {
-					action: this.ruleItem.configuration.locking.action.value || this.ruleItem.configuration.locking.action,
-					timeout: this.ruleItem.configuration.locking.timeout,
-				}
-				break
-			case 'extend_input':
-				configuration.extend_input = {
-					properties: (this.ruleItem.configuration.extend_input?.items ?? [])
-						.filter(i => i.property && i.property.trim())
-						.map(i => i.property),
-					extends: (this.ruleItem.configuration.extend_input?.items ?? [])
-						.filter(i => i.property && i.property.trim())
-						.reduce((acc, i) => { acc[i.property] = i.extends || []; return acc }, {}),
-				}
-				break
-			case 'extend_external_input':
-				configuration.extend_external_input = {
-					validate: this.ruleItem.configuration.extend_external_input?.validate ?? true,
-					properties: (this.ruleItem.configuration.extend_external_input?.properties ?? [])
-						.filter(p => p.property && p.property.trim() && p.schema && p.schema.trim())
-						.map(p => ({ property: p.property, schema: p.schema })),
-				}
-				break
-			case 'fetch_file':
-				configuration.fetch_file = {
-					source: this.sourceOptions.sourceValue?.id,
-					filePath: this.ruleItem.configuration.fetch_file.filePath,
-					subObjectFilepath: this.ruleItem.configuration.fetch_file.subObjectFilepath,
-					objectIdPath: this.ruleItem.configuration.fetch_file.objectIdPath,
-					method: this.methodOptions.value?.label,
-					tags: this.ruleItem.configuration.fetch_file.tags,
-					sourceConfiguration: this.ruleItem.configuration.fetch_file.sourceConfiguration ? JSON.parse(this.ruleItem.configuration.fetch_file.sourceConfiguration) : [],
-					autoShare: this.ruleItem.configuration.fetch_file.autoShare,
-					endpoint: this.ruleItem.configuration?.fetch_file?.endpoint ?? '',
-					contentPath: this.ruleItem.configuration?.fetch_file?.contentPath ?? '',
-					originIdPath: this.ruleItem.configuration?.fetch_file?.originIdPath ?? '',
-					filenamePath: this.ruleItem.configuration?.fetch_file?.filenamePath ?? '',
-					fileExtension: this.ruleItem.configuration?.fetch_file?.fileExtension ?? '',
-
-				}
-				break
-			case 'write_file':
-				configuration.write_file = {
-					filePath: this.ruleItem.configuration.write_file.filePath,
-					fileNamePath: this.ruleItem.configuration.write_file.fileNamePath,
-					tags: this.ruleItem.configuration.write_file.tags,
-					autoShare: this.ruleItem.configuration.write_file.autoShare,
-				}
-				break
-			case 'fileparts_create':
-				configuration.fileparts_create = {
-					sizeLocation: this.ruleItem.configuration.fileparts_create.sizeLocation,
-					schemaId: this.schemaOptions.value?.id,
-					filenameLocation: this.ruleItem.configuration.fileparts_create.filenameLocation,
-					filePartLocation: this.ruleItem.configuration.fileparts_create.filePartLocation,
-					mappingId: this.filepartsCreateMappingOptions.value?.value,
-				}
-				break
-			case 'filepart_upload':
-				configuration.filepart_upload = {
-					mappingId: this.filepartUploadMappingOptions.value?.value,
-				}
-				break
-			case 'save_object':
-				configuration.save_object = {
-					register: this.ruleItem.configuration.save_object.register,
-					schema: this.ruleItem.configuration.save_object.schema,
-					mapping: this.mappingOptions.value?.value,
-				}
-				break
+				case 'error':
+					configuration.error = {
+						code: this.ruleItem.configuration.error.code,
+						name: this.ruleItem.configuration.error.name,
+						message: this.ruleItem.configuration.error.message,
+						includeJsonLogicResult:
+							this.ruleItem.configuration.error.includeJsonLogicResult,
+					}
+					break
+				case 'mapping':
+					configuration.mapping = this.mappingOptions.value?.value
+					break
+				case 'synchronization':
+					configuration.synchronization = {}
+					configuration.synchronization.synchronization =
+						this.syncOptions.value?.value
+					configuration.synchronization.retainResponse =
+						this.ruleItem.configuration.synchronization.retainResponse
+					break
+				case 'javascript':
+					configuration.javascript = this.ruleItem.configuration.javascript
+					break
+				case 'authentication':
+					// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
+					// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
+					// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
+					// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
+					// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
+					configuration.authentication = buildAuthenticationConfiguration({
+						type: this.authenticationTypeOptions.value.value,
+						users: this.ruleItem.configuration.authentication.users.map(
+							(user) => user.id,
+						),
+						groups: this.ruleItem.configuration.authentication.groups.map(
+							(group) => group.value,
+						),
+						apiKeys: this.apiKeys,
+					})
+					break
+				case 'download':
+					configuration.download = {
+						fileIdPosition:
+							this.ruleItem.configuration.download.fileIdPosition,
+					}
+					break
+				case 'upload':
+					configuration.upload = {
+						path: this.ruleItem.configuration.upload.path,
+						allowedTypes:
+							this.ruleItem.configuration.upload.allowedTypes,
+						maxSize: this.ruleItem.configuration.upload.maxSize,
+					}
+					break
+				case 'locking':
+					configuration.locking = {
+						action:
+							this.ruleItem.configuration.locking.action.value
+							|| this.ruleItem.configuration.locking.action,
+						timeout: this.ruleItem.configuration.locking.timeout,
+					}
+					break
+				case 'extend_input':
+					configuration.extend_input = {
+						properties: (
+							this.ruleItem.configuration.extend_input?.items ?? []
+						)
+							.filter((i) => i.property && i.property.trim())
+							.map((i) => i.property),
+						extends: (
+							this.ruleItem.configuration.extend_input?.items ?? []
+						)
+							.filter((i) => i.property && i.property.trim())
+							.reduce((acc, i) => {
+								acc[i.property] = i.extends || []
+								return acc
+							}, {}),
+					}
+					break
+				case 'extend_external_input':
+					configuration.extend_external_input = {
+						validate:
+							this.ruleItem.configuration.extend_external_input
+								?.validate ?? true,
+						properties: (
+							this.ruleItem.configuration.extend_external_input
+								?.properties ?? []
+						)
+							.filter(
+								(p) =>
+									p.property
+									&& p.property.trim()
+									&& p.schema
+									&& p.schema.trim(),
+							)
+							.map((p) => ({
+								property: p.property,
+								schema: p.schema,
+							})),
+					}
+					break
+				case 'fetch_file':
+					configuration.fetch_file = {
+						source: this.sourceOptions.sourceValue?.id,
+						filePath: this.ruleItem.configuration.fetch_file.filePath,
+						subObjectFilepath:
+							this.ruleItem.configuration.fetch_file.subObjectFilepath,
+						objectIdPath:
+							this.ruleItem.configuration.fetch_file.objectIdPath,
+						method: this.methodOptions.value?.label,
+						tags: this.ruleItem.configuration.fetch_file.tags,
+						sourceConfiguration: this.ruleItem.configuration.fetch_file
+							.sourceConfiguration
+							? JSON.parse(
+									this.ruleItem.configuration.fetch_file
+										.sourceConfiguration,
+								)
+							: [],
+						autoShare: this.ruleItem.configuration.fetch_file.autoShare,
+						endpoint:
+							this.ruleItem.configuration?.fetch_file?.endpoint ?? '',
+						contentPath:
+							this.ruleItem.configuration?.fetch_file?.contentPath
+							?? '',
+						originIdPath:
+							this.ruleItem.configuration?.fetch_file?.originIdPath
+							?? '',
+						filenamePath:
+							this.ruleItem.configuration?.fetch_file?.filenamePath
+							?? '',
+						fileExtension:
+							this.ruleItem.configuration?.fetch_file?.fileExtension
+							?? '',
+					}
+					break
+				case 'write_file':
+					configuration.write_file = {
+						filePath: this.ruleItem.configuration.write_file.filePath,
+						fileNamePath:
+							this.ruleItem.configuration.write_file.fileNamePath,
+						tags: this.ruleItem.configuration.write_file.tags,
+						autoShare: this.ruleItem.configuration.write_file.autoShare,
+					}
+					break
+				case 'fileparts_create':
+					configuration.fileparts_create = {
+						sizeLocation:
+							this.ruleItem.configuration.fileparts_create
+								.sizeLocation,
+						schemaId: this.schemaOptions.value?.id,
+						filenameLocation:
+							this.ruleItem.configuration.fileparts_create
+								.filenameLocation,
+						filePartLocation:
+							this.ruleItem.configuration.fileparts_create
+								.filePartLocation,
+						mappingId: this.filepartsCreateMappingOptions.value?.value,
+					}
+					break
+				case 'filepart_upload':
+					configuration.filepart_upload = {
+						mappingId: this.filepartUploadMappingOptions.value?.value,
+					}
+					break
+				case 'save_object':
+					configuration.save_object = {
+						register: this.ruleItem.configuration.save_object.register,
+						schema: this.ruleItem.configuration.save_object.schema,
+						mapping: this.mappingOptions.value?.value,
+					}
+					break
 			}
 
 			const newRuleItem = new Rule({
 				...this.ruleItem,
-				conditions: this.ruleItem.conditions ? JSON.parse(this.ruleItem.conditions) : [],
+				conditions: this.ruleItem.conditions
+					? JSON.parse(this.ruleItem.conditions)
+					: [],
 				action: this.actionOptions.value?.id || null,
 				timing: this.timingOptions.value?.id || null,
 				type: type || null,
 				configuration,
 			})
 
-			ruleStore.saveRule(newRuleItem)
+			ruleStore
+				.saveRule(newRuleItem)
 				.then(({ response, data }) => {
 					this.success = response.ok
 					this.error = !response.ok && 'Failed to save rule'
@@ -1679,17 +2039,24 @@ export default {
 							extend_external_input: ['extend_external_input'],
 						}
 						const allowed = new Set(known[type] || [])
-						const unknown = Object.keys(cfg).filter(k => !allowed.has(k))
+						const unknown = Object.keys(cfg).filter(
+							(k) => !allowed.has(k),
+						)
 						if (unknown.length) {
 							this.warning = `Configuration contains unrecognized keys: ${unknown.join(', ')} — they were preserved.`
 						}
 					}
 
-					response.ok && (this.closeTimeoutFunc = setTimeout(this.closeModal, 2000))
+					response.ok
+						&& (this.closeTimeoutFunc = setTimeout(
+							this.closeModal,
+							2000,
+						))
 				})
-				.catch(error => {
+				.catch((error) => {
 					this.success = false
-					this.error = error.message || 'An error occurred while saving the rule'
+					this.error =
+						error.message || 'An error occurred while saving the rule'
 				})
 				.finally(() => {
 					this.loading = false

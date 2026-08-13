@@ -27,10 +27,16 @@
 -->
 <template>
 	<div class="sync-mapping-preview">
-		<div class="sync-mapping-preview__header" :class="{ 'sync-mapping-preview__header--collapsed': !expanded }">
+		<div
+			class="sync-mapping-preview__header"
+			:class="{ 'sync-mapping-preview__header--collapsed': !expanded }">
 			<NcButton
 				type="tertiary-no-background"
-				:aria-label="expanded ? t('openconnector', 'Hide mapping preview') : t('openconnector', 'Show mapping preview')"
+				:aria-label="
+					expanded
+						? t('openconnector', 'Hide mapping preview')
+						: t('openconnector', 'Show mapping preview')
+				"
 				@click="expanded = !expanded">
 				<template #icon>
 					<ChevronDown v-if="expanded" :size="18" />
@@ -39,7 +45,12 @@
 				{{ t('openconnector', 'Preview') }}
 			</NcButton>
 			<span class="sync-mapping-preview__hint">
-				{{ t('openconnector', 'Run the picked mapping against a sample object to see the transformed output.') }}
+				{{
+					t(
+						'openconnector',
+						'Run the picked mapping against a sample object to see the transformed output.',
+					)
+				}}
 			</span>
 			<div class="sync-mapping-preview__spacer" />
 			<NcLoadingIcon v-if="running" :size="18" />
@@ -47,7 +58,12 @@
 
 		<div v-if="expanded" class="sync-mapping-preview__body">
 			<div v-if="!mappingId" class="sync-mapping-preview__empty">
-				{{ t('openconnector', 'Pick a Source → Target mapping above to enable the preview.') }}
+				{{
+					t(
+						'openconnector',
+						'Pick a Source → Target mapping above to enable the preview.',
+					)
+				}}
 			</div>
 			<template v-else>
 				<div class="sync-mapping-preview__panes">
@@ -74,12 +90,22 @@
 						<div v-if="loadError" class="sync-mapping-preview__error">
 							{{ loadError }}
 						</div>
-						<div v-else-if="runError" class="sync-mapping-preview__error">
+						<div
+							v-else-if="runError"
+							class="sync-mapping-preview__error">
 							{{ runError }}
 						</div>
-						<pre v-else-if="resultJson" class="sync-mapping-preview__pre">{{ resultJson }}</pre>
+						<pre
+							v-else-if="resultJson"
+							class="sync-mapping-preview__pre"
+							>{{ resultJson }}</pre>
 						<div v-else class="sync-mapping-preview__placeholder">
-							{{ t('openconnector', 'Type in the input pane to see the transformed output here.') }}
+							{{
+								t(
+									'openconnector',
+									'Type in the input pane to see the transformed output here.',
+								)
+							}}
 						</div>
 					</section>
 				</div>
@@ -240,9 +266,12 @@ export default {
 				// endpoint resolves either slug or uuid against the lookup
 				// key — so the same URL works for legacy id-keyed rows too.
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/mapping/{id}', {
-						id: this.mappingId,
-					}),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/mapping/{id}',
+						{
+							id: this.mappingId,
+						},
+					),
 				)
 				this.mapping = response.data?.object || response.data || null
 				if (!this.mapping) {
@@ -253,7 +282,8 @@ export default {
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[SyncMappingPreview] mapping fetch failed', err)
-				this.loadError = err?.response?.data?.message
+				this.loadError =
+					err?.response?.data?.message
 					|| err?.message
 					|| t('openconnector', 'Failed to load mapping.')
 			}
@@ -292,7 +322,8 @@ export default {
 				)
 				this.result = response.data?.resultObject ?? response.data
 			} catch (err) {
-				this.runError = err?.response?.data?.message
+				this.runError =
+					err?.response?.data?.message
 					|| err?.message
 					|| t('openconnector', 'Mapping preview failed.')
 				this.result = null

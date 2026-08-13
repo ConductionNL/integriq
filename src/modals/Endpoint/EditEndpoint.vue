@@ -5,12 +5,19 @@ import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'editEndpoint'"
+	<NcModal
+		v-if="navigationStore.modal === 'editEndpoint'"
 		ref="modalRef"
 		label-id="editEndpoint"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ endpointItem.id ? t('openconnector', 'Edit endpoint') : t('openconnector', 'Add endpoint') }}</h2>
+			<h2>
+				{{
+					endpointItem.id
+						? t('openconnector', 'Edit endpoint')
+						: t('openconnector', 'Add endpoint')
+				}}
+			</h2>
 
 			<div v-if="success !== null">
 				<NcNoteCard v-if="success" type="success">
@@ -50,31 +57,36 @@ import { translate as t } from '@nextcloud/l10n'
 						v-model="endpointItem.slug" />
 
 					<div>
-						<NcSelect v-bind="methodOptions"
+						<NcSelect
+							v-bind="methodOptions"
 							:input-label="t('openconnector', 'Method')"
 							v-model="methodOptions.value" />
 					</div>
 
 					<div>
-						<NcSelect v-bind="targetTypeOptions"
+						<NcSelect
+							v-bind="targetTypeOptions"
 							:input-label="t('openconnector', 'Target Type')"
 							v-model="targetTypeOptions.value" />
 					</div>
 
 					<div>
-						<NcSelect v-bind="registerOptions"
+						<NcSelect
+							v-bind="registerOptions"
 							v-model="registerOptions.value"
 							:input-label="t('openconnector', 'Register')"
 							:disabled="registersLoading" />
 
-						<NcSelect v-bind="schemaOptions"
+						<NcSelect
+							v-bind="schemaOptions"
 							v-model="schemaOptions.value"
 							:disabled="!registerOptions.value || schemasLoading"
 							:input-label="t('openconnector', 'Schema')" />
 					</div>
 
 					<div>
-						<NcSelect v-bind="configurationOptions"
+						<NcSelect
+							v-bind="configurationOptions"
 							v-model="configurationOptions.value"
 							:input-label="t('openconnector', 'Configurations')"
 							:multiple="true"
@@ -84,9 +96,7 @@ import { translate as t } from '@nextcloud/l10n'
 			</form>
 
 			<div class="modal-actions">
-				<NcButton
-					v-if="success === null"
-					@click="closeModal">
+				<NcButton v-if="success === null" @click="closeModal">
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
@@ -94,7 +104,12 @@ import { translate as t } from '@nextcloud/l10n'
 				</NcButton>
 				<NcButton
 					v-if="success === null"
-					:disabled="loading || !endpointItem.name || !registerOptions.value || !schemaOptions.value"
+					:disabled="
+						loading
+						|| !endpointItem.name
+						|| !registerOptions.value
+						|| !schemaOptions.value
+					"
 					type="primary"
 					@click="editEndpoint()">
 					<template #icon>
@@ -165,9 +180,7 @@ export default {
 			},
 			targetTypeOptions: {
 				inputLabel: 'Target Type',
-				options: [
-					{ label: 'register/schema' },
-				],
+				options: [{ label: 'register/schema' }],
 				value: {
 					label: 'register/schema',
 				},
@@ -225,10 +238,13 @@ export default {
 					name: endpointStore.endpointItem.name,
 					description: endpointStore.endpointItem.description,
 					endpoint: endpointStore.endpointItem.endpoint,
-					endpointArray: endpointStore.endpointItem.endpointArray.join(', '),
+					endpointArray:
+						endpointStore.endpointItem.endpointArray.join(', '),
 					endpointRegex: endpointStore.endpointItem.endpointRegex,
 					method: endpointStore.endpointItem.method,
-					targetType: this.targetTypeOptions.options.find(i => i.label === endpointStore.endpointItem.targetType),
+					targetType: this.targetTypeOptions.options.find(
+						(i) => i.label === endpointStore.endpointItem.targetType,
+					),
 					targetId: endpointStore.endpointItem.targetId,
 					slug: endpointStore.endpointItem.slug,
 					configurations: endpointStore.endpointItem.configurations || [],
@@ -236,16 +252,26 @@ export default {
 
 				// If the method of the endpointItem exists on the methodOptions, apply it to the value
 				// this is done for future proofing incase we were to change the method options
-				if (this.methodOptions.options.map(i => i.label).indexOf(endpointStore.endpointItem.method) >= 0) {
-					this.methodOptions.value = { label: endpointStore.endpointItem.method }
+				if (
+					this.methodOptions.options
+						.map((i) => i.label)
+						.indexOf(endpointStore.endpointItem.method) >= 0
+				) {
+					this.methodOptions.value = {
+						label: endpointStore.endpointItem.method,
+					}
 				}
 
 				// Set the configurations value if there are any
 				if (this.endpointItem.configurations?.length > 0) {
-					this.configurationOptions.value = this.endpointItem.configurations.map(id => ({
-						id,
-						label: this.configurationOptions.options.find(opt => opt.id === id)?.label || id,
-					}))
+					this.configurationOptions.value =
+						this.endpointItem.configurations.map((id) => ({
+							id,
+							label:
+								this.configurationOptions.options.find(
+									(opt) => opt.id === id,
+								)?.label || id,
+						}))
 				}
 			}
 		},
@@ -279,20 +305,23 @@ export default {
 
 			// checking if OpenRegister is installed
 			console.info('Fetching registers from Open Register')
-			const response = await fetch('/index.php/apps/openregister/api/registers', {
-				headers: {
-					accept: '*/*',
-					'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-					'cache-control': 'no-cache',
-					pragma: 'no-cache',
-					'x-requested-with': 'XMLHttpRequest',
+			const response = await fetch(
+				'/index.php/apps/openregister/api/registers',
+				{
+					headers: {
+						accept: '*/*',
+						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
+						'cache-control': 'no-cache',
+						pragma: 'no-cache',
+						'x-requested-with': 'XMLHttpRequest',
+					},
+					referrerPolicy: 'no-referrer',
+					body: null,
+					method: 'GET',
+					mode: 'cors',
+					credentials: 'include',
 				},
-				referrerPolicy: 'no-referrer',
-				body: null,
-				method: 'GET',
-				mode: 'cors',
-				credentials: 'include',
-			})
+			)
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -307,7 +336,9 @@ export default {
 
 			const registerId = endpointStore.endpointItem?.targetId?.split('/')[0]
 
-			const selectedRegister = responseData.find(register => String(register.id) === registerId)
+			const selectedRegister = responseData.find(
+				(register) => String(register.id) === registerId,
+			)
 
 			this.registerOptions = {
 				options: responseData.map((register) => ({
@@ -317,10 +348,10 @@ export default {
 				})),
 				value: selectedRegister
 					? {
-						label: selectedRegister.title,
-						id: selectedRegister.id,
-						schemas: selectedRegister.schemas,
-					}
+							label: selectedRegister.title,
+							id: selectedRegister.id,
+							schemas: selectedRegister.schemas,
+						}
 					: null,
 			}
 
@@ -332,20 +363,23 @@ export default {
 
 			// checking if OpenRegister is installed
 			console.info('Fetching schemas from Open Register')
-			const response = await fetch('/index.php/apps/openregister/api/schemas', {
-				headers: {
-					accept: '*/*',
-					'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-					'cache-control': 'no-cache',
-					pragma: 'no-cache',
-					'x-requested-with': 'XMLHttpRequest',
+			const response = await fetch(
+				'/index.php/apps/openregister/api/schemas',
+				{
+					headers: {
+						accept: '*/*',
+						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
+						'cache-control': 'no-cache',
+						pragma: 'no-cache',
+						'x-requested-with': 'XMLHttpRequest',
+					},
+					referrerPolicy: 'no-referrer',
+					body: null,
+					method: 'GET',
+					mode: 'cors',
+					credentials: 'include',
 				},
-				referrerPolicy: 'no-referrer',
-				body: null,
-				method: 'GET',
-				mode: 'cors',
-				credentials: 'include',
-			})
+			)
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -368,20 +402,23 @@ export default {
 
 			try {
 				console.info('Fetching configurations from Open Register')
-				const response = await fetch('/index.php/apps/openregister/api/configurations', {
-					headers: {
-						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						pragma: 'no-cache',
-						'x-requested-with': 'XMLHttpRequest',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/configurations',
+					{
+						headers: {
+							accept: '*/*',
+							'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
+							'cache-control': 'no-cache',
+							pragma: 'no-cache',
+							'x-requested-with': 'XMLHttpRequest',
+						},
+						referrerPolicy: 'no-referrer',
+						body: null,
+						method: 'GET',
+						mode: 'cors',
+						credentials: 'include',
 					},
-					referrerPolicy: 'no-referrer',
-					body: null,
-					method: 'GET',
-					mode: 'cors',
-					credentials: 'include',
-				})
+				)
 
 				if (!response.ok) {
 					console.info('Failed to fetch configurations')
@@ -395,10 +432,11 @@ export default {
 						id: config.id,
 						label: config.name,
 					})),
-					value: this.endpointItem.configurations?.map(id => ({
-						id,
-						label: responseData.find(c => c.id === id)?.name || id,
-					})) || [],
+					value:
+						this.endpointItem.configurations?.map((id) => ({
+							id,
+							label: responseData.find((c) => c.id === id)?.name || id,
+						})) || [],
 				}
 			} catch (error) {
 				console.error('Error fetching configurations:', error)
@@ -410,27 +448,34 @@ export default {
 		setSchemaOptions(register) {
 			const schemaId = endpointStore.endpointItem?.targetId.split('/')[1]
 
-			const selectedSchema = this.schemas.find(schema => String(schema.id) === schemaId)
+			const selectedSchema = this.schemas.find(
+				(schema) => String(schema.id) === schemaId,
+			)
 
-			const selectableSchemas = this.schemas.filter(schema => register?.schemas?.includes(schema.id))
+			const selectableSchemas = this.schemas.filter((schema) =>
+				register?.schemas?.includes(schema.id),
+			)
 
-			const isSchemaInSelectableSchemas = selectableSchemas.includes(selectedSchema)
+			const isSchemaInSelectableSchemas =
+				selectableSchemas.includes(selectedSchema)
 
 			this.schemaOptions = {
 				options: selectableSchemas.map((schema) => ({
 					id: schema.id,
 					label: schema.title,
 				})),
-				value: !this.initialSchemaSet && isSchemaInSelectableSchemas && selectedSchema
-					? {
-						label: selectedSchema.title,
-						id: selectedSchema.id,
-					}
-					: null,
+				value:
+					!this.initialSchemaSet
+					&& isSchemaInSelectableSchemas
+					&& selectedSchema
+						? {
+								label: selectedSchema.title,
+								id: selectedSchema.id,
+							}
+						: null,
 			}
 
 			this.initialSchemaSet = true
-
 		},
 		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async editEndpoint() {
@@ -442,17 +487,21 @@ export default {
 				method: this.methodOptions.value.label,
 				targetType: this.targetTypeOptions.value.label,
 				targetId: `${this.registerOptions.value.id}/${this.schemaOptions.value.id}`,
-				configurations: this.configurationOptions.value.map(v => v.id),
+				configurations: this.configurationOptions.value.map((v) => v.id),
 			})
 
-			await endpointStore.saveEndpoint(endpointItem)
+			await endpointStore
+				.saveEndpoint(endpointItem)
 				.then(({ response }) => {
 					this.success = response.ok
 					this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)
-				}).catch((e) => {
+				})
+				.catch((e) => {
 					this.success = false
-					this.error = e.message || 'An error occurred while saving the endpoint'
-				}).finally(() => {
+					this.error =
+						e.message || 'An error occurred while saving the endpoint'
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},

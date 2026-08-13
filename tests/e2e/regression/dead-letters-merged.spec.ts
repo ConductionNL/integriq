@@ -46,18 +46,23 @@ let _root: string | null = null
 async function rootUrl(page: Page): Promise<string> {
 	if (_root) return _root
 	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, { failOnStatusCode: false })
+		const res = await page.request.get(`${candidate}/sources`, {
+			failOnStatusCode: false,
+		})
 		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
 			_root = candidate
 			return candidate
 		}
 	}
-	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 test.describe('ADR-080 — merged Dead letters operations surface', () => {
-
-	test('DeadLetters page mounts at /dead-letters with both queues offered', async ({ page }) => {
+	test('DeadLetters page mounts at /dead-letters with both queues offered', async ({
+		page,
+	}) => {
 		const root = await rootUrl(page)
 		// ⚠️ Hash-mode router (createWebHashHistory, src/main.js) — without the
 		// `#` this serves the SPA shell and renders the Dashboard instead.
@@ -75,11 +80,17 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 
 		// Events is the default queue, and it is the one actually MOUNTED —
 		// asserting only the button would pass even if neither surface rendered.
-		await expect(page.locator('[data-testid="dead-letters-events"]')).toBeVisible()
-		await expect(page.locator('[data-testid="dead-letters-sync"]')).toHaveCount(0)
+		await expect(
+			page.locator('[data-testid="dead-letters-events"]'),
+		).toBeVisible()
+		await expect(page.locator('[data-testid="dead-letters-sync"]')).toHaveCount(
+			0,
+		)
 	})
 
-	test('switching queue swaps the mounted surface and reflects it in the URL', async ({ page }) => {
+	test('switching queue swaps the mounted surface and reflects it in the URL', async ({
+		page,
+	}) => {
 		const root = await rootUrl(page)
 		await page.goto(`${root}/#/dead-letters`, {
 			waitUntil: 'domcontentloaded',
@@ -90,8 +101,12 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 
 		// The queues are different backends, so switching must UNMOUNT one and
 		// MOUNT the other — not merely refilter a single list.
-		await expect(page.locator('[data-testid="dead-letters-sync"]')).toBeVisible({ timeout: 15_000 })
-		await expect(page.locator('[data-testid="dead-letters-events"]')).toHaveCount(0)
+		await expect(page.locator('[data-testid="dead-letters-sync"]')).toBeVisible({
+			timeout: 15_000,
+		})
+		await expect(
+			page.locator('[data-testid="dead-letters-events"]'),
+		).toHaveCount(0)
 
 		await expect(
 			page.locator('[data-testid="dead-letters-queue-sync"]'),
@@ -99,21 +114,27 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 		expect(page.url()).toContain('queue=sync')
 	})
 
-	test('the two legacy routes each land on the queue their bookmark meant', async ({ page }) => {
+	test('the two legacy routes each land on the queue their bookmark meant', async ({
+		page,
+	}) => {
 		const root = await rootUrl(page)
 
 		await page.goto(`${root}/#/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
-		await expect(page.locator('[data-testid="dead-letters-events"]')).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.locator('[data-testid="dead-letters-events"]'),
+		).toBeVisible({ timeout: 15_000 })
 		expect(page.url()).toContain('/dead-letters')
 
 		await page.goto(`${root}/#/synchronizations/dead-letters`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
-		await expect(page.locator('[data-testid="dead-letters-sync"]')).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('[data-testid="dead-letters-sync"]')).toBeVisible({
+			timeout: 15_000,
+		})
 		expect(page.url()).toContain('queue=sync')
 	})
 })

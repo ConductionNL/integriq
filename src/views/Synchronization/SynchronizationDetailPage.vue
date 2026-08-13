@@ -63,10 +63,7 @@
 				</template>
 				{{ t('openconnector', 'Save changes') }}
 			</NcButton>
-			<NcButton
-				v-if="dirty"
-				:disabled="saving"
-				@click="resetEdits">
+			<NcButton v-if="dirty" :disabled="saving" @click="resetEdits">
 				<template #icon>
 					<UndoIcon :size="20" />
 				</template>
@@ -107,7 +104,9 @@
 						:source-id="draft.sourceId"
 						:config="draft.sourceConfig"
 						@update:source-id="(value) => updateDraft('sourceId', value)"
-						@update:config="(value) => updateDraft('sourceConfig', value)" />
+						@update:config="
+							(value) => updateDraft('sourceConfig', value)
+						" />
 
 					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
 					<div class="sync-detail__field">
@@ -122,7 +121,12 @@
 							:clearable="false"
 							@update:model-value="onSyncModeChange" />
 						<span class="sync-detail__helper">
-							{{ t('openconnector', 'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.') }}
+							{{
+								t(
+									'openconnector',
+									'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.',
+								)
+							}}
 						</span>
 					</div>
 
@@ -132,33 +136,60 @@
 								:label="t('openconnector', 'Cursor field')"
 								:model-value="draft.sourceConfig.cursorField || ''"
 								:placeholder="t('openconnector', 'e.g. updatedAt')"
-								@update:model-value="(value) => updateSourceConfigField('cursorField', value)" />
+								@update:model-value="
+									(value) =>
+										updateSourceConfigField('cursorField', value)
+								" />
 						</div>
 
 						<div class="sync-detail__field">
-							<label :for="'sync-cursor-comparator'" class="sync-detail__label">
+							<label
+								:for="'sync-cursor-comparator'"
+								class="sync-detail__label">
 								{{ t('openconnector', 'Cursor comparator') }}
 							</label>
 							<NcSelect
 								:input-id="'sync-cursor-comparator'"
-								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
+								:aria-label-combobox="
+									t('openconnector', 'Cursor comparator')
+								"
 								:model-value="selectedCursorComparator"
 								:options="cursorComparatorOptions"
 								@update:model-value="onCursorComparatorChange" />
 						</div>
 
 						<div class="sync-detail__field">
-							<span class="sync-detail__label">{{ t('openconnector', 'Cursor watermark') }}</span>
+							<span class="sync-detail__label">{{
+								t('openconnector', 'Cursor watermark')
+							}}</span>
 							<span class="sync-detail__helper">
-								{{ original && original.cursorWatermark ? original.cursorWatermark : t('openconnector', '(not set — the next run requests an unfiltered fetch)') }}
+								{{
+									original && original.cursorWatermark
+										? original.cursorWatermark
+										: t(
+												'openconnector',
+												'(not set — the next run requests an unfiltered fetch)',
+											)
+								}}
 							</span>
 							<NcButton
 								type="secondary"
-								:disabled="resettingCursor || !objectIdString || !(original && original.cursorWatermark)"
-								:title="t('openconnector', 'Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.')"
+								:disabled="
+									resettingCursor
+									|| !objectIdString
+									|| !(original && original.cursorWatermark)
+								"
+								:title="
+									t(
+										'openconnector',
+										'Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.',
+									)
+								"
 								@click="resetCursor">
 								<template #icon>
-									<NcLoadingIcon v-if="resettingCursor" :size="20" />
+									<NcLoadingIcon
+										v-if="resettingCursor"
+										:size="20" />
 									<RestoreIcon v-else :size="20" />
 								</template>
 								{{ t('openconnector', 'Reset cursor') }}
@@ -178,7 +209,9 @@
 							:label="t('openconnector', 'Name')"
 							:model-value="draft.name || ''"
 							required
-							@update:model-value="(value) => updateDraft('name', value)" />
+							@update:model-value="
+								(value) => updateDraft('name', value)
+							" />
 					</div>
 
 					<div class="sync-detail__field">
@@ -190,7 +223,9 @@
 							class="sync-detail__textarea"
 							:value="draft.description || ''"
 							rows="3"
-							@input="updateDraft('description', $event.target.value)" />
+							@input="
+								updateDraft('description', $event.target.value)
+							" />
 					</div>
 
 					<!-- Flow indicator -->
@@ -218,7 +253,9 @@
 						<h3>{{ t('openconnector', 'Target') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{ t('openconnector', 'Configure where data is written to.') }}
+						{{
+							t('openconnector', 'Configure where data is written to.')
+						}}
 					</p>
 
 					<!-- Target type discriminator -->
@@ -242,7 +279,9 @@
 						:source-id="draft.targetId"
 						:config="draft.targetConfig"
 						@update:source-id="(value) => updateDraft('targetId', value)"
-						@update:config="(value) => updateDraft('targetConfig', value)" />
+						@update:config="
+							(value) => updateDraft('targetConfig', value)
+						" />
 				</section>
 			</div>
 
@@ -259,9 +298,15 @@
 						:value="draft.sourceTargetMapping"
 						:hash-value="draft.sourceHashMapping"
 						:target-source-value="draft.targetSourceMapping"
-						@update:value="(value) => updateDraft('sourceTargetMapping', value)"
-						@update:hash-value="(value) => updateDraft('sourceHashMapping', value)"
-						@update:target-source-value="(value) => updateDraft('targetSourceMapping', value)" />
+						@update:value="
+							(value) => updateDraft('sourceTargetMapping', value)
+						"
+						@update:hash-value="
+							(value) => updateDraft('sourceHashMapping', value)
+						"
+						@update:target-source-value="
+							(value) => updateDraft('targetSourceMapping', value)
+						" />
 				</section>
 
 				<section class="sync-detail__card sync-detail__actions">
@@ -270,7 +315,12 @@
 						<h3>{{ t('openconnector', 'Actions') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{ t('openconnector', 'Rules applied during each sync pass.') }}
+						{{
+							t(
+								'openconnector',
+								'Rules applied during each sync pass.',
+							)
+						}}
 					</p>
 
 					<!-- #actions-list-widget -->
@@ -278,7 +328,9 @@
 						schema="rule"
 						label-key="name"
 						:value="draft.actions"
-						:placeholder="t('openconnector', 'Pick rules to run during sync')"
+						:placeholder="
+							t('openconnector', 'Pick rules to run during sync')
+						"
 						:empty-label="t('openconnector', 'No rules linked yet.')"
 						@input="(value) => updateDraft('actions', value)" />
 				</section>
@@ -289,7 +341,12 @@
 						<h3>{{ t('openconnector', 'Follow-ups') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{ t('openconnector', 'Synchronizations to trigger when this one completes.') }}
+						{{
+							t(
+								'openconnector',
+								'Synchronizations to trigger when this one completes.',
+							)
+						}}
 					</p>
 
 					<!-- #followups-list-widget -->
@@ -298,8 +355,12 @@
 						label-key="name"
 						:value="draft.followUps"
 						:exclude-id="objectIdString"
-						:placeholder="t('openconnector', 'Pick follow-up synchronizations')"
-						:empty-label="t('openconnector', 'No follow-ups linked yet.')"
+						:placeholder="
+							t('openconnector', 'Pick follow-up synchronizations')
+						"
+						:empty-label="
+							t('openconnector', 'No follow-ups linked yet.')
+						"
 						@input="(value) => updateDraft('followUps', value)" />
 				</section>
 			</div>
@@ -313,16 +374,35 @@
 						<div class="sync-detail__card-header-spacer" />
 						<NcButton
 							type="tertiary"
-							:aria-label="rawConditions ? t('openconnector', 'Switch back to visual builder') : t('openconnector', 'Edit conditions as raw JSON')"
+							:aria-label="
+								rawConditions
+									? t(
+											'openconnector',
+											'Switch back to visual builder',
+										)
+									: t(
+											'openconnector',
+											'Edit conditions as raw JSON',
+										)
+							"
 							@click="toggleRawConditions">
 							<template #icon>
 								<CodeJson :size="18" />
 							</template>
-							{{ rawConditions ? t('openconnector', 'Visual builder') : t('openconnector', 'Raw JSON') }}
+							{{
+								rawConditions
+									? t('openconnector', 'Visual builder')
+									: t('openconnector', 'Raw JSON')
+							}}
 						</NcButton>
 					</header>
 					<p class="sync-detail__hint">
-						{{ t('openconnector', 'JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.') }}
+						{{
+							t(
+								'openconnector',
+								'JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.',
+							)
+						}}
 					</p>
 					<RuleConditionGroup
 						v-if="!rawConditions"
@@ -342,8 +422,16 @@
 							@input="onRawConditionsInput($event.target.value)" />
 						<span
 							class="sync-detail__helper"
-							:class="{ 'sync-detail__helper--error': rawConditionsError }">
-							{{ rawConditionsError || t('openconnector', 'Edit the JSON Logic directly. Saved into the synchronization conditions field exactly as typed.') }}
+							:class="{
+								'sync-detail__helper--error': rawConditionsError,
+							}">
+							{{
+								rawConditionsError
+								|| t(
+									'openconnector',
+									'Edit the JSON Logic directly. Saved into the synchronization conditions field exactly as typed.',
+								)
+							}}
 						</span>
 					</div>
 				</section>
@@ -364,9 +452,7 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import {
-	CnDetailPage,
-} from '@conduction/nextcloud-vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
 import { useObjectStore } from '../../store/objectStore.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
@@ -470,7 +556,11 @@ export default {
 		// RuleDetailPage / MappingDetailPage; without this, fetchObject throws
 		// "Object type 'synchronization' is not registered in the store".
 		if (typeof objectStore.registerObjectType === 'function') {
-			objectStore.registerObjectType(SCHEMA_SLUG, props.schema || SCHEMA_SLUG, props.register || REGISTER_SLUG)
+			objectStore.registerObjectType(
+				SCHEMA_SLUG,
+				props.schema || SCHEMA_SLUG,
+				props.register || REGISTER_SLUG,
+			)
 		}
 		return { objectStore }
 	},
@@ -523,7 +613,10 @@ export default {
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
-			return this.loadError || t('openconnector', 'Failed to load synchronization')
+			return (
+				this.loadError
+				|| t('openconnector', 'Failed to load synchronization')
+			)
 		},
 		/**
 		 * Kind options offered in the source/target selectors. `nextcloud-table`
@@ -535,7 +628,8 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		typeOptions() {
-			const usesTable = this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
+			const usesTable =
+				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
 				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
 			if (this.tablesEnabled || usesTable) {
 				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
@@ -562,11 +656,18 @@ export default {
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSourceType() {
-			return this.sourceTypeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+			return (
+				this.sourceTypeOptions.find(
+					(opt) => opt.id === this.draft?.sourceType,
+				) || TYPE_OPTIONS[0]
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
-			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
+			return (
+				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
+				|| TYPE_OPTIONS[1]
+			)
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		syncModeOptions() {
@@ -574,7 +675,10 @@ export default {
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		selectedSyncMode() {
-			return SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode) || SYNC_MODE_OPTIONS[0]
+			return (
+				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
+				|| SYNC_MODE_OPTIONS[0]
+			)
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		isIncremental() {
@@ -596,7 +700,10 @@ export default {
 			// always rendered as the group-node object), so a JSON.stringify
 			// diff compares apples-to-apples even though the wire-format
 			// stores conditions as `array<object>`.
-			return JSON.stringify(this.draft) !== JSON.stringify(this.normalizeForDiff(this.original))
+			return (
+				JSON.stringify(this.draft)
+				!== JSON.stringify(this.normalizeForDiff(this.original))
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
@@ -637,7 +744,11 @@ export default {
 		rawConditions(value) {
 			if (value) {
 				try {
-					this.rawConditionsDraft = JSON.stringify(this.rootConditionGroup, null, 2)
+					this.rawConditionsDraft = JSON.stringify(
+						this.rootConditionGroup,
+						null,
+						2,
+					)
 					this.rawConditionsError = ''
 				} catch (_e) {
 					this.rawConditionsDraft = ''
@@ -694,9 +805,14 @@ export default {
 			this.loading = true
 			this.loadError = ''
 			try {
-				const data = await this.objectStore.fetchObject(this.schemaSlug, this.objectIdString)
+				const data = await this.objectStore.fetchObject(
+					this.schemaSlug,
+					this.objectIdString,
+				)
 				if (!data) {
-					this.loadError = this.objectStore.errors?.[this.schemaSlug] || t('openconnector', 'Failed to load synchronization')
+					this.loadError =
+						this.objectStore.errors?.[this.schemaSlug]
+						|| t('openconnector', 'Failed to load synchronization')
 					this.draft = null
 					this.original = null
 					return
@@ -707,7 +823,9 @@ export default {
 				// applyLiveObject (dirty-guarded) refreshes the working copy.
 				this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
 			} catch (err) {
-				this.loadError = err?.message || t('openconnector', 'Failed to load synchronization')
+				this.loadError =
+					err?.message
+					|| t('openconnector', 'Failed to load synchronization')
 				this.draft = null
 				this.original = null
 			} finally {
@@ -756,9 +874,10 @@ export default {
 						// builder sees a consistent group node.
 						out[key] = normaliseConditions(obj[key])
 					} else if (typeof base[key] === 'object') {
-						out[key] = (typeof obj[key] === 'object' && !Array.isArray(obj[key]))
-							? { ...obj[key] }
-							: {}
+						out[key] =
+							typeof obj[key] === 'object' && !Array.isArray(obj[key])
+								? { ...obj[key] }
+								: {}
 					} else {
 						out[key] = obj[key]
 					}
@@ -807,7 +926,11 @@ export default {
 				this.rawConditionsError = ''
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
-				this.rawConditionsError = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.rawConditionsError = t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 		/**
@@ -923,13 +1046,24 @@ export default {
 			this.resettingCursor = true
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`),
+					generateUrl(
+						`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`,
+					),
 				)
 				const cleared = response.data?.cursorWatermark ?? ''
 				if (this.original) this.original.cursorWatermark = cleared
-				showSuccess(t('openconnector', 'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.'))
+				showSuccess(
+					t(
+						'openconnector',
+						'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.',
+					),
+				)
 			} catch (err) {
-				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to reset cursor'))
+				showError(
+					err?.response?.data?.error
+						|| err?.message
+						|| t('openconnector', 'Failed to reset cursor'),
+				)
 			} finally {
 				this.resettingCursor = false
 			}
@@ -948,9 +1082,14 @@ export default {
 					// into a single-element array so OR validation passes.
 					conditions: serializeConditions(this.draft.conditions),
 				}
-				const saved = await this.objectStore.saveObject(this.schemaSlug, payload)
+				const saved = await this.objectStore.saveObject(
+					this.schemaSlug,
+					payload,
+				)
 				if (!saved) {
-					this.saveError = this.objectStore.errors?.[this.schemaSlug] || t('openconnector', 'Save failed')
+					this.saveError =
+						this.objectStore.errors?.[this.schemaSlug]
+						|| t('openconnector', 'Save failed')
 					return
 				}
 				this.original = saved

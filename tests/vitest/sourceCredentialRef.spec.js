@@ -32,14 +32,20 @@ const UUID = '00000000-0000-0000-0000-000000000000'
 
 describe('detection', () => {
 	it('reads a credentialRef at configuration.authentication.credentialRef', () => {
-		const formData = { configuration: { authentication: { credentialRef: { credentialId: UUID } } } }
+		const formData = {
+			configuration: {
+				authentication: { credentialRef: { credentialId: UUID } },
+			},
+		}
 		expect(readCredentialRef(formData)).toEqual({ credentialId: UUID })
 		expect(isBrokered(formData)).toBe(true)
 		expect(readCredentialId(formData)).toBe(UUID)
 	})
 
 	it('is not brokered for embedded secrets or empty models', () => {
-		expect(isBrokered({ configuration: { authentication: { apikey: 'x' } } })).toBe(false)
+		expect(
+			isBrokered({ configuration: { authentication: { apikey: 'x' } } }),
+		).toBe(false)
 		expect(isBrokered({ apikey: 'x' })).toBe(false)
 		expect(isBrokered({})).toBe(false)
 		expect(isBrokered(null)).toBe(false)
@@ -47,7 +53,11 @@ describe('detection', () => {
 	})
 
 	it('reads null credentialId when only a credentialName is present', () => {
-		const formData = { configuration: { authentication: { credentialRef: { credentialName: 'doffin' } } } }
+		const formData = {
+			configuration: {
+				authentication: { credentialRef: { credentialName: 'doffin' } },
+			},
+		}
 		expect(isBrokered(formData)).toBe(true)
 		expect(readCredentialId(formData)).toBe(null)
 	})
@@ -57,12 +67,19 @@ describe('writeCredentialRef — picking a credential', () => {
 	it('writes { credentialId } and preserves other configuration keys', () => {
 		const config = { rateLimit: 10, authentication: { legacy: true } }
 		const next = writeCredentialRef(config, UUID)
-		expect(next.authentication).toEqual({ credentialRef: { credentialId: UUID } })
+		expect(next.authentication).toEqual({
+			credentialRef: { credentialId: UUID },
+		})
 		expect(next.rateLimit).toBe(10)
 	})
 
 	it('drops any sibling secret under authentication (mutual exclusivity)', () => {
-		const config = { authentication: { apikey: 'sekret', credentialRef: { credentialId: 'old' } } }
+		const config = {
+			authentication: {
+				apikey: 'sekret',
+				credentialRef: { credentialId: 'old' },
+			},
+		}
 		const next = writeCredentialRef(config, UUID)
 		// authentication is collapsed to credentialRef only — no sibling can reach the backend.
 		expect(Object.keys(next.authentication)).toEqual(['credentialRef'])
@@ -76,20 +93,27 @@ describe('writeCredentialRef — picking a credential', () => {
 	})
 
 	it('handles an undefined configuration', () => {
-		expect(writeCredentialRef(undefined, UUID)).toEqual({ authentication: { credentialRef: { credentialId: UUID } } })
+		expect(writeCredentialRef(undefined, UUID)).toEqual({
+			authentication: { credentialRef: { credentialId: UUID } },
+		})
 	})
 })
 
 describe('clearCredentialRef — turning brokered off', () => {
 	it('removes the credentialRef and empties authentication', () => {
-		const config = { authentication: { credentialRef: { credentialId: UUID } }, rateLimit: 5 }
+		const config = {
+			authentication: { credentialRef: { credentialId: UUID } },
+			rateLimit: 5,
+		}
 		const next = clearCredentialRef(config)
 		expect(next.authentication).toBeUndefined()
 		expect(next.rateLimit).toBe(5)
 	})
 
 	it('preserves other siblings under authentication', () => {
-		const config = { authentication: { credentialRef: { credentialId: UUID }, note: 'keep' } }
+		const config = {
+			authentication: { credentialRef: { credentialId: UUID }, note: 'keep' },
+		}
 		const next = clearCredentialRef(config)
 		expect(next.authentication).toEqual({ note: 'keep' })
 	})
@@ -102,16 +126,32 @@ describe('clearCredentialRef — turning brokered off', () => {
 
 describe('embedded-secret fields hidden while brokered', () => {
 	it('lists the top-level source auth secrets', () => {
-		for (const key of ['auth', 'authenticationConfig', 'apikey', 'secret', 'username', 'password', 'jwt', 'jwtId', 'authorizationHeader']) {
+		for (const key of [
+			'auth',
+			'authenticationConfig',
+			'apikey',
+			'secret',
+			'username',
+			'password',
+			'jwt',
+			'jwtId',
+			'authorizationHeader',
+		]) {
 			expect(EMBEDDED_SECRET_FIELDS).toContain(key)
 		}
 	})
 
 	it('filters exactly the secret fields out of a field list (editor visibleFields logic)', () => {
 		const fields = [
-			{ key: 'name' }, { key: 'type' }, { key: 'apikey' }, { key: 'secret' }, { key: 'configuration' },
+			{ key: 'name' },
+			{ key: 'type' },
+			{ key: 'apikey' },
+			{ key: 'secret' },
+			{ key: 'configuration' },
 		]
-		const visible = fields.filter((f) => !EMBEDDED_SECRET_FIELDS.includes(f.key)).map((f) => f.key)
+		const visible = fields
+			.filter((f) => !EMBEDDED_SECRET_FIELDS.includes(f.key))
+			.map((f) => f.key)
 		expect(visible).toEqual(['name', 'type', 'configuration'])
 	})
 
@@ -122,7 +162,9 @@ describe('embedded-secret fields hidden while brokered', () => {
 
 describe('OR credentials endpoint mapping', () => {
 	it('unwraps the { results } envelope and a bare array; tolerates garbage', () => {
-		expect(extractCredentialResults({ results: [{ id: 'a' }] })).toEqual([{ id: 'a' }])
+		expect(extractCredentialResults({ results: [{ id: 'a' }] })).toEqual([
+			{ id: 'a' },
+		])
 		expect(extractCredentialResults([{ id: 'b' }])).toEqual([{ id: 'b' }])
 		expect(extractCredentialResults(null)).toEqual([])
 		expect(extractCredentialResults({})).toEqual([])
@@ -134,14 +176,23 @@ describe('OR credentials endpoint mapping', () => {
 			{ uuid: 'u2', name: 'GitHub publisher' },
 			{ '@self': { id: 'u3' }, name: 'GitLab' },
 		])
-		expect(options[0]).toEqual({ id: UUID, label: 'Doffin subscription (doffin)', name: 'Doffin subscription', provider: 'doffin' })
+		expect(options[0]).toEqual({
+			id: UUID,
+			label: 'Doffin subscription (doffin)',
+			name: 'Doffin subscription',
+			provider: 'doffin',
+		})
 		expect(options[1].id).toBe('u2')
 		expect(options[1].label).toBe('GitHub publisher')
 		expect(options[2].id).toBe('u3')
 	})
 
 	it('drops rows with no resolvable id', () => {
-		const options = mapCredentialOptions([{ name: 'orphan' }, null, { id: 'x', name: 'ok' }])
+		const options = mapCredentialOptions([
+			{ name: 'orphan' },
+			null,
+			{ id: 'x', name: 'ok' },
+		])
 		expect(options).toHaveLength(1)
 		expect(options[0].id).toBe('x')
 	})

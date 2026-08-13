@@ -25,7 +25,8 @@
   same reset-on-open watcher, same styling vocabulary.
 -->
 <template>
-	<NcModal v-if="open && descriptor"
+	<NcModal
+		v-if="open && descriptor"
 		label-id="runActionModal"
 		size="normal"
 		@close="onClose">
@@ -41,11 +42,15 @@
 
 			<!-- Step 1: options. Nothing has been sent yet. -->
 			<template v-if="step === 'options'">
-				<div v-for="option in options" :key="option.key" class="cn-run-action__option">
+				<div
+					v-for="option in options"
+					:key="option.key"
+					class="cn-run-action__option">
 					<NcNoteCard :type="noteTypeFor(option)">
 						<p>{{ noteFor(option) }}</p>
 					</NcNoteCard>
-					<NcCheckboxRadioSwitch type="switch"
+					<NcCheckboxRadioSwitch
+						type="switch"
 						:model-value="values[option.key] === true"
 						:disabled="isOptionDisabled(option)"
 						@update:model-value="setOption(option, $event)">
@@ -54,7 +59,14 @@
 				</div>
 
 				<NcNoteCard v-if="!subjectId" type="error">
-					<p>{{ t('openconnector', 'This row has no id, so it cannot be run.') }}</p>
+					<p>
+						{{
+							t(
+								'openconnector',
+								'This row has no id, so it cannot be run.',
+							)
+						}}
+					</p>
 				</NcNoteCard>
 
 				<div class="cn-run-action__actions">
@@ -73,7 +85,14 @@
 			<!-- Step 2: in flight. -->
 			<div v-else-if="step === 'running'" class="cn-run-action__running">
 				<NcLoadingIcon :size="44" :name="descriptor.title" />
-				<p>{{ t('openconnector', 'Running… this can take a while for a large source.') }}</p>
+				<p>
+					{{
+						t(
+							'openconnector',
+							'Running… this can take a while for a large source.',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- Step 3: outcome. -->
@@ -82,7 +101,10 @@
 					<p>{{ status.text }}</p>
 				</NcNoteCard>
 
-				<section v-for="section in sections" :key="section.id" class="cn-run-action__section">
+				<section
+					v-for="section in sections"
+					:key="section.id"
+					class="cn-run-action__section">
 					<h3>{{ section.title }}</h3>
 
 					<!-- Prose explanation with optional supporting figures —
@@ -91,7 +113,9 @@
 						<NcNoteCard :type="section.noteType || 'info'">
 							<p>{{ section.value }}</p>
 						</NcNoteCard>
-						<dl v-if="section.rows && section.rows.length" class="cn-run-action__meta">
+						<dl
+							v-if="section.rows && section.rows.length"
+							class="cn-run-action__meta">
 							<template v-for="row in section.rows" :key="row.label">
 								<dt>{{ row.label }}</dt>
 								<dd>{{ row.value }}</dd>
@@ -100,15 +124,26 @@
 					</template>
 
 					<!-- Counter grid — the synchronization object tallies. -->
-					<div v-else-if="section.kind === 'counters'" class="cn-run-action__counters">
-						<div v-for="cell in section.value" :key="cell.label" class="cn-run-action__counter">
-							<span class="cn-run-action__counter-value">{{ cell.value }}</span>
-							<span class="cn-run-action__counter-label">{{ cell.label }}</span>
+					<div
+						v-else-if="section.kind === 'counters'"
+						class="cn-run-action__counters">
+						<div
+							v-for="cell in section.value"
+							:key="cell.label"
+							class="cn-run-action__counter">
+							<span class="cn-run-action__counter-value">{{
+								cell.value
+							}}</span>
+							<span class="cn-run-action__counter-label">{{
+								cell.label
+							}}</span>
 						</div>
 					</div>
 
 					<!-- Label/value pairs. -->
-					<dl v-else-if="section.kind === 'meta'" class="cn-run-action__meta">
+					<dl
+						v-else-if="section.kind === 'meta'"
+						class="cn-run-action__meta">
 						<template v-for="row in section.value" :key="row.label">
 							<dt>{{ row.label }}</dt>
 							<dd>{{ row.value }}</dd>
@@ -116,7 +151,9 @@
 					</dl>
 
 					<!-- Ordered lines — a job's stack-trace frames. -->
-					<ol v-else-if="section.kind === 'list'" class="cn-run-action__list">
+					<ol
+						v-else-if="section.kind === 'list'"
+						class="cn-run-action__list">
 						<li v-for="(line, index) in section.value" :key="index">
 							{{ line }}
 						</li>
@@ -137,7 +174,10 @@
 						</template>
 						{{ t('openconnector', 'View full log') }}
 					</NcButton>
-					<NcButton v-if="retryAction" type="secondary" @click="runAgain(retryAction.values)">
+					<NcButton
+						v-if="retryAction"
+						type="secondary"
+						@click="runAgain(retryAction.values)">
 						<template #icon>
 							<RestartIcon :size="20" />
 						</template>
@@ -227,7 +267,7 @@ export default {
 
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
 		subjectName() {
-			return (this.item?.name || this.item?.title || '')
+			return this.item?.name || this.item?.title || ''
 		},
 
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
@@ -246,7 +286,9 @@ export default {
 				return { type: 'error', text: this.requestError }
 			}
 
-			return (this.descriptor?.status(this.payload) ?? { type: 'info', text: '' })
+			return (
+				this.descriptor?.status(this.payload) ?? { type: 'info', text: '' }
+			)
 		},
 
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
@@ -255,7 +297,7 @@ export default {
 				return []
 			}
 
-			return (this.descriptor?.sections(this.payload) ?? [])
+			return this.descriptor?.sections(this.payload) ?? []
 		},
 
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
@@ -264,7 +306,7 @@ export default {
 				return null
 			}
 
-			return (this.descriptor?.logsLink(this.item) ?? null)
+			return this.descriptor?.logsLink(this.item) ?? null
 		},
 
 		/**
@@ -357,8 +399,11 @@ export default {
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
 		 */
 		noteFor(option) {
-			if (option.disabledNote && typeof option.disabledWhen === 'function'
-				&& option.disabledWhen(this.item) === true) {
+			if (
+				option.disabledNote
+				&& typeof option.disabledWhen === 'function'
+				&& option.disabledWhen(this.item) === true
+			) {
 				return option.disabledNote
 			}
 
@@ -367,12 +412,15 @@ export default {
 
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
 		noteTypeFor(option) {
-			if (option.disabledNote && typeof option.disabledWhen === 'function'
-				&& option.disabledWhen(this.item) === true) {
+			if (
+				option.disabledNote
+				&& typeof option.disabledWhen === 'function'
+				&& option.disabledWhen(this.item) === true
+			) {
 				return 'info'
 			}
 
-			return (option.noteType || 'info')
+			return option.noteType || 'info'
 		},
 
 		/**
@@ -386,7 +434,7 @@ export default {
 				return
 			}
 
-			this.values = { ...this.values, [option.key]: (value === true) }
+			this.values = { ...this.values, [option.key]: value === true }
 		},
 
 		/**
@@ -416,7 +464,7 @@ export default {
 				const response = await axios.post(generateUrl(url), body)
 				// A literal `null` body is a real, documented outcome (a job that was
 				// not due) — `?? null` normalises `undefined` without swallowing it.
-				this.payload = (response.data ?? null)
+				this.payload = response.data ?? null
 			} catch (err) {
 				this.requestError = this.extractError(err)
 			} finally {
@@ -432,8 +480,8 @@ export default {
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
 		 */
 		extractError(err) {
-			const data = (err?.response?.data || {})
-			const detail = (data.message || data.error || err?.message || '')
+			const data = err?.response?.data || {}
+			const detail = data.message || data.error || err?.message || ''
 
 			if (detail) {
 				return detail
@@ -461,7 +509,10 @@ export default {
 				// twice; swallow that specific case, surface anything else.
 				if (err && err.name !== 'NavigationDuplicated') {
 					// eslint-disable-next-line no-console
-					console.warn('[openconnector] RunActionModal log navigation failed', err)
+					console.warn(
+						'[openconnector] RunActionModal log navigation failed',
+						err,
+					)
 				}
 			})
 		},

@@ -30,7 +30,9 @@ import { APP_BASE } from './_helpers'
 
 test.describe('REQ-EP-UI-001: Endpoints list page mounts', () => {
 	// @e2e endpoint-runtime::endpoints-list-page-mounts-and-shows-navigation-item
-	test('Endpoints index page renders inside app-content area', async ({ page }) => {
+	test('Endpoints index page renders inside app-content area', async ({
+		page,
+	}) => {
 		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
@@ -44,12 +46,19 @@ test.describe('REQ-EP-UI-001: Add Endpoint modal', () => {
 		await page.goto(`${APP_BASE}/endpoints`, { waitUntil: 'domcontentloaded' })
 		// Wait for Vue to mount the list view
 		const addBtn = page.getByRole('button', { name: 'Add Endpoint' })
-		await expect(addBtn, 'Add Endpoint button must be visible').toBeVisible({ timeout: 20_000 })
+		await expect(addBtn, 'Add Endpoint button must be visible').toBeVisible({
+			timeout: 20_000,
+		})
 		await addBtn.click()
 		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Endpoint').toBeVisible({ timeout: 10_000 })
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Endpoint',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -60,14 +69,18 @@ test.describe('REQ-EP-UI-001: Add Endpoint modal', () => {
 
 test.describe('REQ-EP-UI-001: Endpoint detail page', () => {
 	// @e2e endpoint-runtime::endpoint-detail-page-renders-for-an-existing-endpoint
-	test('Endpoint detail URL renders app-content without crashing', async ({ page }) => {
+	test('Endpoint detail URL renders app-content without crashing', async ({
+		page,
+	}) => {
 		// Navigate directly to a detail-style URL; SPA gracefully handles nonexistent IDs.
 		// Like the mapping-detail surface (see mapping-and-search.spec.ts), the
 		// endpoint-detail surface keeps polling an OR fetch for the nonexistent id,
 		// so `networkidle` never settles and the goto burns the whole test timeout.
 		// Wait for the DOM and assert on the rendered content instead — the
 		// assertions below are unchanged and remain the real signal.
-		await page.goto(`${APP_BASE}/endpoints/__nonexistent__`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/endpoints/__nonexistent__`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)
@@ -76,8 +89,12 @@ test.describe('REQ-EP-UI-001: Endpoint detail page', () => {
 
 test.describe('REQ-EP-UI-001: Endpoint logs sub-page', () => {
 	// @e2e endpoint-runtime::endpoints-logs-sub-page-mounts
-	test('Endpoint logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/endpoints/logs`, { waitUntil: 'domcontentloaded' })
+	test('Endpoint logs page mounts and shows main content area', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/endpoints/logs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })

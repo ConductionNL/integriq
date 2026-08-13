@@ -30,7 +30,11 @@ import { generateUrl } from '@nextcloud/router'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 
-import { EMPTY_ROOT_GROUP, emptyRootGroup, normaliseConditions } from '../Rule/ruleDraft.js'
+import {
+	EMPTY_ROOT_GROUP,
+	emptyRootGroup,
+	normaliseConditions,
+} from '../Rule/ruleDraft.js'
 
 // Re-exported, not redefined: SynchronizationDetailPage,
 // SynchronizationEditorModal and SyncConfigWidget all import these from here.
@@ -53,7 +57,10 @@ export const TYPE_OPTIONS = [
  * Option appended to TYPE_OPTIONS only when the backend reports the Tables app
  * is enabled (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006).
  */
-export const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
+export const NEXTCLOUD_TABLE_OPTION = {
+	id: NEXTCLOUD_TABLE_KIND,
+	label: 'Nextcloud Table',
+}
 
 /**
  * Option appended to the SOURCE-only type list when the backend reports the
@@ -61,7 +68,10 @@ export const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcl
  * REQ-SYNCUI-008). Never offered as a target option — nextcloud-form is a
  * source-only type (nextcloud-forms-connector REQ-002).
  */
-export const NEXTCLOUD_FORM_OPTION = { id: NEXTCLOUD_FORM_KIND, label: 'Nextcloud Form' }
+export const NEXTCLOUD_FORM_OPTION = {
+	id: NEXTCLOUD_FORM_KIND,
+	label: 'Nextcloud Form',
+}
 
 /**
  * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync with
@@ -147,7 +157,9 @@ export function serializeConditions(group) {
 export async function fetchBridgeStatus(bridge) {
 	try {
 		const response = await axios.get(
-			generateUrl(`/apps/openconnector/api/synchronizations/${bridge}-bridge/status`),
+			generateUrl(
+				`/apps/openconnector/api/synchronizations/${bridge}-bridge/status`,
+			),
 		)
 		return Boolean(response.data?.enabled)
 	} catch (_err) {

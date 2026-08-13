@@ -52,7 +52,9 @@
 				</div>
 			</div>
 
-			<EventDeliveriesPage v-if="activeQueue === 'events'" data-testid="dead-letters-events" />
+			<EventDeliveriesPage
+				v-if="activeQueue === 'events'"
+				data-testid="dead-letters-events" />
 			<SyncDeadLetterPage v-else data-testid="dead-letters-sync" />
 		</NcAppContent>
 	</div>
@@ -90,7 +92,8 @@ export default {
 			 *
 			 * @type {'events'|'sync'}
 			 */
-			activeQueue: this.$route?.query?.[QUEUE_PARAM] === 'sync' ? 'sync' : 'events',
+			activeQueue:
+				this.$route?.query?.[QUEUE_PARAM] === 'sync' ? 'sync' : 'events',
 		}
 	},
 

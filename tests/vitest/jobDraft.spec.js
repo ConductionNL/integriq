@@ -44,10 +44,20 @@ describe('groupFieldRuns', () => {
 	})
 
 	it('emits one run per field, in order, when nothing is grouped', () => {
-		const runs = groupFieldRuns([{ key: 'name' }, { key: 'description' }, { key: 'interval' }])
+		const runs = groupFieldRuns([
+			{ key: 'name' },
+			{ key: 'description' },
+			{ key: 'interval' },
+		])
 		expect(runs).toHaveLength(3)
-		expect(runs.map((run) => run.fields[0].key)).toEqual(['name', 'description', 'interval'])
-		expect(runs.every((run) => run.group === null && run.fields.length === 1)).toBe(true)
+		expect(runs.map((run) => run.fields[0].key)).toEqual([
+			'name',
+			'description',
+			'interval',
+		])
+		expect(
+			runs.every((run) => run.group === null && run.fields.length === 1),
+		).toBe(true)
 	})
 
 	it('coalesces four consecutive same-group fields into a single run', () => {
@@ -60,8 +70,12 @@ describe('groupFieldRuns', () => {
 			{ key: 'userId' },
 		])
 		expect(runs.map((run) => run.group)).toEqual([null, 'flags', null])
-		expect(runs[1].fields.map((field) => field.key))
-			.toEqual(['timeSensitive', 'allowParallelRuns', 'isEnabled', 'singleRun'])
+		expect(runs[1].fields.map((field) => field.key)).toEqual([
+			'timeSensitive',
+			'allowParallelRuns',
+			'isEnabled',
+			'singleRun',
+		])
 	})
 
 	it('splits a non-contiguous group into separate runs rather than reordering', () => {
@@ -74,7 +88,11 @@ describe('groupFieldRuns', () => {
 			{ key: 'isEnabled', group: 'flags' },
 		])
 		expect(runs).toHaveLength(3)
-		expect(runs.map((run) => run.fields[0].key)).toEqual(['timeSensitive', 'userId', 'isEnabled'])
+		expect(runs.map((run) => run.fields[0].key)).toEqual([
+			'timeSensitive',
+			'userId',
+			'isEnabled',
+		])
 	})
 
 	it('does not merge two different adjacent groups', () => {
@@ -96,7 +114,13 @@ describe('groupFieldRuns', () => {
 	})
 
 	it('skips descriptors with no string key instead of breaking the v-for', () => {
-		const runs = groupFieldRuns([{ key: 'name' }, null, {}, { key: 42 }, { key: 'interval' }])
+		const runs = groupFieldRuns([
+			{ key: 'name' },
+			null,
+			{},
+			{ key: 42 },
+			{ key: 'interval' },
+		])
 		expect(runs.map((run) => run.fields[0].key)).toEqual(['name', 'interval'])
 	})
 
@@ -141,7 +165,9 @@ describe('date round trip', () => {
 	})
 
 	it('serialises a date widget as a bare calendar date', () => {
-		expect(formatDateValue('date', new Date(2026, 9, 15, 14, 30, 45))).toBe('2026-10-15')
+		expect(formatDateValue('date', new Date(2026, 9, 15, 14, 30, 45))).toBe(
+			'2026-10-15',
+		)
 	})
 
 	it('serialises a datetime widget as RFC 3339 with seconds and an offset', () => {
@@ -149,7 +175,9 @@ describe('date round trip', () => {
 		// backend rejects a bare YYYY-MM-DDTHH:mm on save.
 		const date = new Date(2026, 9, 15, 14, 30, 45)
 		const serialised = formatDateValue('datetime', date)
-		expect(serialised).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/)
+		expect(serialised).toMatch(
+			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+		)
 		expect(serialised.startsWith('2026-10-15T14:30:45')).toBe(true)
 
 		// Compute the expected offset here rather than hardcoding one, so the
@@ -221,38 +249,52 @@ describe('synchronization argument round trip', () => {
 	})
 
 	it('preserves unrelated arguments', () => {
-		expect(writeSynchronizationId({ foo: 'bar' }, 'abc'))
-			.toEqual({ foo: 'bar', synchronizationId: 'abc' })
+		expect(writeSynchronizationId({ foo: 'bar' }, 'abc')).toEqual({
+			foo: 'bar',
+			synchronizationId: 'abc',
+		})
 	})
 
 	it('removes the key when cleared, rather than storing null', () => {
-		expect(writeSynchronizationId({ foo: 'bar', synchronizationId: 'x' }, null))
-			.toEqual({ foo: 'bar' })
+		expect(
+			writeSynchronizationId({ foo: 'bar', synchronizationId: 'x' }, null),
+		).toEqual({ foo: 'bar' })
 	})
 
 	it('replaces a non-object arguments value with a fresh object', () => {
 		for (const garbage of ['garbage', [], null, 7]) {
-			expect(writeSynchronizationId(garbage, 'abc')).toEqual({ synchronizationId: 'abc' })
+			expect(writeSynchronizationId(garbage, 'abc')).toEqual({
+				synchronizationId: 'abc',
+			})
 		}
 	})
 })
 
 describe('Jobs form configuration consistency', () => {
-	const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'src/manifest.json'), 'utf8'))
+	const manifest = JSON.parse(
+		fs.readFileSync(path.join(REPO_ROOT, 'src/manifest.json'), 'utf8'),
+	)
 	const jobsPage = manifest.pages.find((page) => page.id === 'Jobs')
 	const config = jobsPage.config
 	const overrides = config.fieldOverrides
 	const fragment = JSON.parse(
-		fs.readFileSync(path.join(REPO_ROOT, 'lib/Settings/register.d/job-form-fields.json'), 'utf8'),
+		fs.readFileSync(
+			path.join(REPO_ROOT, 'lib/Settings/register.d/job-form-fields.json'),
+			'utf8',
+		),
 	)
 	const fragmentProps = fragment.components.schemas.job.properties
 
 	it('offers exactly the Action classes that exist in lib/Action', () => {
 		// This is the check whose absence let FlowAction sit in lib/Action for a
 		// release without ever appearing in the picker.
-		const onDisk = fs.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
+		const onDisk = fs
+			.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
 			.filter((file) => file.endsWith('.php'))
-			.map((file) => `OCA\\OpenConnector\\Action\\${file.replace(/\.php$/, '')}`)
+			.map(
+				(file) =>
+					`OCA\\OpenConnector\\Action\\${file.replace(/\.php$/, '')}`,
+			)
 		expect([...overrides.jobClass.enum].sort()).toEqual([...onDisk].sort())
 	})
 
@@ -261,14 +303,19 @@ describe('Jobs form configuration consistency', () => {
 		// plugin. The label map lives there (not in the manifest) so the strings
 		// stay extractable by tests/l10n/check-l10n.js; without this assertion an
 		// unmapped class would silently render its raw FQN in the dropdown.
-		const sfc = fs.readFileSync(path.join(REPO_ROOT, 'src/modals/v2/JobFormFields.vue'), 'utf8')
+		const sfc = fs.readFileSync(
+			path.join(REPO_ROOT, 'src/modals/v2/JobFormFields.vue'),
+			'utf8',
+		)
 		for (const fqn of overrides.jobClass.enum) {
 			// JSON gives single backslashes; the SFC writes them doubled as JS
 			// string escapes. Compare source forms with a substring check rather
 			// than a regex — escaping backslashes for a pattern twice over is how
 			// this assertion silently passes on nothing.
 			const asWrittenInSource = `'${fqn.replace(/\\/g, '\\\\')}': t(`
-			expect(sfc.includes(asWrittenInSource), `no t() label for ${fqn}`).toBe(true)
+			expect(sfc.includes(asWrittenInSource), `no t() label for ${fqn}`).toBe(
+				true,
+			)
 		}
 	})
 
@@ -279,7 +326,10 @@ describe('Jobs form configuration consistency', () => {
 
 	it('only overrides fields it also includes', () => {
 		for (const key of Object.keys(overrides)) {
-			expect(config.includeFields, `${key} is overridden but not included`).toContain(key)
+			expect(
+				config.includeFields,
+				`${key} is overridden but not included`,
+			).toContain(key)
 		}
 	})
 
@@ -287,7 +337,9 @@ describe('Jobs form configuration consistency', () => {
 		// `arguments` is exempt: fieldsFromSchema drops bare `type: object`
 		// properties before overrides apply, so it never reaches the form and
 		// the Synchronization picker stands in for it.
-		for (const key of config.includeFields.filter((field) => field !== 'arguments')) {
+		for (const key of config.includeFields.filter(
+			(field) => field !== 'arguments',
+		)) {
 			expect(fragmentProps[key], `${key} has no schema order`).toBeDefined()
 			expect(typeof fragmentProps[key].order).toBe('number')
 		}
@@ -301,15 +353,27 @@ describe('Jobs form configuration consistency', () => {
 	})
 
 	it('puts the four scheduling flags in one contiguous group', () => {
-		const flagKeys = Object.keys(overrides).filter((key) => overrides[key].group === 'flags')
-		expect(flagKeys).toEqual(['timeSensitive', 'allowParallelRuns', 'isEnabled', 'singleRun'])
+		const flagKeys = Object.keys(overrides).filter(
+			(key) => overrides[key].group === 'flags',
+		)
+		expect(flagKeys).toEqual([
+			'timeSensitive',
+			'allowParallelRuns',
+			'isEnabled',
+			'singleRun',
+		])
 
 		// Contiguous by ORDER, not merely present: groupFieldRuns coalesces only
 		// consecutive fields, so a gap here would render two half-grids.
-		const sorted = Object.keys(fragmentProps)
-			.sort((a, b) => fragmentProps[a].order - fragmentProps[b].order)
-		const positions = flagKeys.map((key) => sorted.indexOf(key)).sort((a, b) => a - b)
-		expect(positions[positions.length - 1] - positions[0]).toBe(flagKeys.length - 1)
+		const sorted = Object.keys(fragmentProps).sort(
+			(a, b) => fragmentProps[a].order - fragmentProps[b].order,
+		)
+		const positions = flagKeys
+			.map((key) => sorted.indexOf(key))
+			.sort((a, b) => a - b)
+		expect(positions[positions.length - 1] - positions[0]).toBe(
+			flagKeys.length - 1,
+		)
 	})
 
 	it('does not put an enum or an errorRetention default in the schema', () => {

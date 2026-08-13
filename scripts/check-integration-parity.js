@@ -116,7 +116,15 @@ function collectFiles(root, test, maxDepth = 10) {
 	if (fs.existsSync(root) === false) {
 		return out
 	}
-	const skip = new Set(['node_modules', 'vendor', '.git', 'dist', 'build', 'js', 'coverage'])
+	const skip = new Set([
+		'node_modules',
+		'vendor',
+		'.git',
+		'dist',
+		'build',
+		'js',
+		'coverage',
+	])
 	const walk = (dir, depth) => {
 		if (depth > maxDepth) {
 			return
@@ -152,7 +160,7 @@ function collectFiles(root, test, maxDepth = 10) {
  */
 function balanced(src, from) {
 	const open = src[from]
-	const close = ({ '(': ')', '{': '}', '[': ']' })[open]
+	const close = { '(': ')', '{': '}', '[': ']' }[open]
 	let depth = 0
 	let quote = null
 	for (let i = from; i < src.length; i++) {
@@ -273,14 +281,17 @@ function resolvePhp(expr, localConsts, globalConsts) {
 		return m[1].replace(/\\'/g, "'").replace(/\\"/g, '"')
 	}
 	// `$this->l10n->t('X')` / `$this->l->t('X', […])` — the translated literal.
-	m = /^\$this->[A-Za-z0-9_]+->t\(\s*'((?:[^'\\]|\\.)*)'/.exec(e)
+	m =
+		/^\$this->[A-Za-z0-9_]+->t\(\s*'((?:[^'\\]|\\.)*)'/.exec(e)
 		|| /^\$this->[A-Za-z0-9_]+->t\(\s*"((?:[^"\\]|\\.)*)"/.exec(e)
 	if (m !== null) {
 		return m[1]
 	}
 	m = /^(?:self|static)::([A-Z0-9_]+)$/.exec(e)
 	if (m !== null) {
-		return Object.prototype.hasOwnProperty.call(localConsts, m[1]) ? localConsts[m[1]] : null
+		return Object.prototype.hasOwnProperty.call(localConsts, m[1])
+			? localConsts[m[1]]
+			: null
 	}
 	m = /^([A-Za-z_][A-Za-z0-9_]*)::([A-Z0-9_]+)$/.exec(e)
 	if (m !== null) {
@@ -288,7 +299,9 @@ function resolvePhp(expr, localConsts, globalConsts) {
 		if (Object.prototype.hasOwnProperty.call(FOREIGN_CONSTANTS, key) === true) {
 			return FOREIGN_CONSTANTS[key]
 		}
-		return Object.prototype.hasOwnProperty.call(globalConsts, key) ? globalConsts[key] : null
+		return Object.prototype.hasOwnProperty.call(globalConsts, key)
+			? globalConsts[key]
+			: null
 	}
 	if (e.startsWith('[') === true) {
 		const members = splitTopLevel(balanced(e, 0))
@@ -347,7 +360,9 @@ function phpLocalConsts(src) {
  */
 function collectServerFaces() {
 	const faces = []
-	const phpFiles = collectFiles(path.join(REPO_ROOT, 'lib'), (n) => n.endsWith('.php'))
+	const phpFiles = collectFiles(path.join(REPO_ROOT, 'lib'), (n) =>
+		n.endsWith('.php'),
+	)
 
 	// Global `Class::CONST` table, so `Application::APP_ID` resolves.
 	const globalConsts = {}
@@ -360,7 +375,8 @@ function collectServerFaces() {
 			continue
 		}
 		sources.set(file, src)
-		const cls = /\b(?:final\s+|abstract\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(src)
+		const cls =
+			/\b(?:final\s+|abstract\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(src)
 		if (cls === null) {
 			continue
 		}
@@ -393,13 +409,17 @@ function collectServerFaces() {
 			face.id = typeof face.fields.id === 'string' ? face.fields.id : null
 			const kinds = Array.isArray(face.fields.kinds) ? face.fields.kinds : []
 			face.renderSurface = kinds.includes('render-surface')
-			face.renderMode = typeof face.fields.renderMode === 'string' ? face.fields.renderMode : null
+			face.renderMode =
+				typeof face.fields.renderMode === 'string'
+					? face.fields.renderMode
+					: null
 			faces.push(face)
 			idx = open + 1
 		}
 
 		// --- shape 2: an IntegrationProvider ---------------------------------
-		const isProvider = /extends\s+AbstractIntegrationProvider\b/.test(src)
+		const isProvider =
+			/extends\s+AbstractIntegrationProvider\b/.test(src)
 			|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(src)
 		if (isProvider === false) {
 			continue
@@ -414,7 +434,9 @@ function collectServerFaces() {
 		}
 		const face = { kind: 'IntegrationProvider', file: rel, fields: {} }
 		for (const [method, field] of Object.entries(getters)) {
-			const sig = new RegExp(`function\\s+${method}\\s*\\([^)]*\\)[^{;]*\\{`).exec(src)
+			const sig = new RegExp(
+				`function\\s+${method}\\s*\\([^)]*\\)[^{;]*\\{`,
+			).exec(src)
 			if (sig === null) {
 				continue
 			}
@@ -434,7 +456,10 @@ function collectServerFaces() {
 			// through the capability and therefore MUST have a JS registration,
 			// but it does not itself declare a render pair.
 			face.renderSurface = false
-			face.renderMode = typeof face.fields.renderMode === 'string' ? face.fields.renderMode : null
+			face.renderMode =
+				typeof face.fields.renderMode === 'string'
+					? face.fields.renderMode
+					: null
 			faces.push(face)
 		}
 	}
@@ -452,12 +477,17 @@ function collectServerFaces() {
  */
 function resolveJs(expr, locals) {
 	const e = expr.trim()
-	let m = /^'((?:[^'\\]|\\.)*)'$/.exec(e) || /^"((?:[^"\\]|\\.)*)"$/.exec(e) || /^`([^`$]*)`$/.exec(e)
+	let m =
+		/^'((?:[^'\\]|\\.)*)'$/.exec(e)
+		|| /^"((?:[^"\\]|\\.)*)"$/.exec(e)
+		|| /^`([^`$]*)`$/.exec(e)
 	if (m !== null) {
 		return m[1].replace(/\\'/g, "'").replace(/\\"/g, '"')
 	}
 	// `t('appid', 'Label')` / `t('Label')` — the translated literal.
-	m = /^t\(\s*'[^']*'\s*,\s*'((?:[^'\\]|\\.)*)'/.exec(e) || /^t\(\s*'((?:[^'\\]|\\.)*)'\s*\)/.exec(e)
+	m =
+		/^t\(\s*'[^']*'\s*,\s*'((?:[^'\\]|\\.)*)'/.exec(e)
+		|| /^t\(\s*'((?:[^'\\]|\\.)*)'\s*\)/.exec(e)
 	if (m !== null) {
 		return m[1]
 	}
@@ -472,8 +502,10 @@ function resolveJs(expr, locals) {
 		}
 		return out
 	}
-	if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(e) === true
-		&& Object.prototype.hasOwnProperty.call(locals, e) === true) {
+	if (
+		/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(e) === true
+		&& Object.prototype.hasOwnProperty.call(locals, e) === true
+	) {
 		return locals[e]
 	}
 	return null
@@ -497,7 +529,10 @@ function jsLocalConsts(src) {
 			expr = src.slice(start, start + balanced(src, start).length + 2)
 		} else {
 			const nl = src.indexOf('\n', start)
-			expr = nl === -1 ? src.slice(start) : src.slice(start, nl).replace(/,\s*$/, '')
+			expr =
+				nl === -1
+					? src.slice(start)
+					: src.slice(start, nl).replace(/,\s*$/, '')
 		}
 		const v = resolveJs(expr, table)
 		if (v !== null) {
@@ -549,7 +584,10 @@ function collectJsRegistrations() {
 					reg.spreads.push(spread[1])
 					continue
 				}
-				const kv = /^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*(?::\s*([\s\S]+))?$/.exec(member)
+				const kv =
+					/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*(?::\s*([\s\S]+))?$/.exec(
+						member,
+					)
 				if (kv === null) {
 					continue
 				}
@@ -560,10 +598,17 @@ function collectJsRegistrations() {
 				if (value !== null) {
 					reg.fields[key] = value
 				}
-				if (key === 'offlineConfig' && kv[4] !== undefined && kv[4].trim().startsWith('{') === true) {
+				if (
+					key === 'offlineConfig'
+					&& kv[4] !== undefined
+					&& kv[4].trim().startsWith('{') === true
+				) {
 					reg.offlineConfig = {}
 					for (const cfg of splitTopLevel(balanced(kv[4].trim(), 0))) {
-						const ckv = /^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*:\s*([\s\S]+)$/.exec(cfg)
+						const ckv =
+							/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*:\s*([\s\S]+)$/.exec(
+								cfg,
+							)
 						if (ckv === null) {
 							continue
 						}
@@ -575,7 +620,10 @@ function collectJsRegistrations() {
 				}
 			}
 			reg.id = typeof reg.fields.id === 'string' ? reg.fields.id : null
-			reg.renderMode = typeof reg.fields.renderMode === 'string' ? reg.fields.renderMode : null
+			reg.renderMode =
+				typeof reg.fields.renderMode === 'string'
+					? reg.fields.renderMode
+					: null
 			// Import source per spread symbol, for R5.
 			reg.spreadSources = {}
 			for (const symbol of reg.spreads) {
@@ -600,9 +648,18 @@ function importSourceOf(src, symbol) {
 	let m
 	while ((m = re.exec(src)) !== null) {
 		const clause = m[1]
-		const named = clause.indexOf('{') === -1 ? '' : balanced(clause, clause.indexOf('{'))
-		const bindings = splitTopLevel(named).map((b) => b.split(/\s+as\s+/).pop().trim())
-		const defaultBinding = clause.replace(/\{[\s\S]*\}/, '').replace(/,/g, '').trim()
+		const named =
+			clause.indexOf('{') === -1 ? '' : balanced(clause, clause.indexOf('{'))
+		const bindings = splitTopLevel(named).map((b) =>
+			b
+				.split(/\s+as\s+/)
+				.pop()
+				.trim(),
+		)
+		const defaultBinding = clause
+			.replace(/\{[\s\S]*\}/, '')
+			.replace(/,/g, '')
+			.trim()
 		if (bindings.includes(symbol) === true || defaultBinding === symbol) {
 			return m[2]
 		}
@@ -620,7 +677,9 @@ function importSourceOf(src, symbol) {
 function collectOrSchemas() {
 	const schemas = {}
 	let files = 0
-	for (const file of collectFiles(path.join(REPO_ROOT, 'lib', 'Settings'), (n) => n.endsWith('.json'))) {
+	for (const file of collectFiles(path.join(REPO_ROOT, 'lib', 'Settings'), (n) =>
+		n.endsWith('.json'),
+	)) {
 		let doc
 		try {
 			doc = JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -628,15 +687,21 @@ function collectOrSchemas() {
 			continue
 		}
 		const declared = doc && doc.components && doc.components.schemas
-		if (declared === undefined || declared === null || typeof declared !== 'object') {
+		if (
+			declared === undefined
+			|| declared === null
+			|| typeof declared !== 'object'
+		) {
 			continue
 		}
 		files++
 		for (const [key, schema] of Object.entries(declared)) {
-			const slug = (schema && typeof schema.slug === 'string') ? schema.slug : key
-			const props = (schema && schema.properties && typeof schema.properties === 'object')
-				? Object.keys(schema.properties)
-				: []
+			const slug =
+				schema && typeof schema.slug === 'string' ? schema.slug : key
+			const props =
+				schema && schema.properties && typeof schema.properties === 'object'
+					? Object.keys(schema.properties)
+					: []
 			schemas[slug] = (schemas[slug] || []).concat(props)
 		}
 	}
@@ -698,9 +763,9 @@ function main() {
 			if (r.keys.includes(key) === false) {
 				failures.push(
 					`✗ [R1 render-pair] registerIntegration id "${r.id}" (${r.file}) declares `
-					+ `renderMode "${mode}" but is missing the required \`${key}\` key — an `
-					+ `incomplete render pair renders nothing on its surface (ADR-019 AD-11/AD-13, `
-					+ `ADR-066 decision 7).`,
+						+ `renderMode "${mode}" but is missing the required \`${key}\` key — an `
+						+ `incomplete render pair renders nothing on its surface (ADR-019 AD-11/AD-13, `
+						+ `ADR-066 decision 7).`,
 				)
 			}
 		}
@@ -712,7 +777,7 @@ function main() {
 		if (f.id === null) {
 			failures.push(
 				`✗ [R2 id-correlation] a ${f.kind} in ${f.file} declares no statically-readable `
-				+ `\`id\` — a leaf whose id cannot be read cannot be correlated with its JS half.`,
+					+ `\`id\` — a leaf whose id cannot be read cannot be correlated with its JS half.`,
 			)
 			continue
 		}
@@ -720,8 +785,8 @@ function main() {
 		if (jsById.has(f.id) === false) {
 			failures.push(
 				`✗ [R2 id-correlation] server leaf "${f.id}" (${f.kind}, ${f.file}) has NO matching `
-				+ `registerIntegration({ id: '${f.id}' }) in src/** — phantom leaf: the `
-				+ `openregister.integrations.leaves capability advertises a surface that never mounts.`,
+					+ `registerIntegration({ id: '${f.id}' }) in src/** — phantom leaf: the `
+					+ `openregister.integrations.leaves capability advertises a surface that never mounts.`,
 			)
 		}
 	}
@@ -733,10 +798,10 @@ function main() {
 		if (faceById.has(r.id) === false) {
 			failures.push(
 				`✗ [R2 id-correlation] registerIntegration id "${r.id}" (${r.file}) has NO matching `
-				+ `server-side face in lib/** (neither a \`new LeafDescriptor(id: '${r.id}')\` nor an `
-				+ `IntegrationProvider whose getId() returns '${r.id}') — orphan registration: it `
-				+ `mounts on window.OCA.OpenRegister.integrations but is invisible to the `
-				+ `openregister.integrations.leaves capability.`,
+					+ `server-side face in lib/** (neither a \`new LeafDescriptor(id: '${r.id}')\` nor an `
+					+ `IntegrationProvider whose getId() returns '${r.id}') — orphan registration: it `
+					+ `mounts on window.OCA.OpenRegister.integrations but is invisible to the `
+					+ `openregister.integrations.leaves capability.`,
 			)
 		}
 	}
@@ -752,14 +817,21 @@ function main() {
 		if (f.renderMode !== r.renderMode) {
 			failures.push(
 				`✗ [R3 renderMode] leaf "${id}" declares renderMode "${f.renderMode}" server-side `
-				+ `(${f.file}) but "${r.renderMode}" in its JS registration (${r.file}) — a `
-				+ `renderMode mismatch blanks the surface (ADR-066 decision 7).`,
+					+ `(${f.file}) but "${r.renderMode}" in its JS registration (${r.file}) — a `
+					+ `renderMode mismatch blanks the surface (ADR-066 decision 7).`,
 			)
 		}
 	}
 
 	// --- R4: cross-layer metadata agreement ---------------------------------
-	const COMPARED = ['label', 'icon', 'group', 'requiredApp', 'referenceType', 'surfaces']
+	const COMPARED = [
+		'label',
+		'icon',
+		'group',
+		'requiredApp',
+		'referenceType',
+		'surfaces',
+	]
 	counts.R4 = 0
 	for (const [id, f] of faceById) {
 		const r = jsById.get(id)
@@ -776,8 +848,8 @@ function main() {
 			if (sameValue(left, right) === false) {
 				failures.push(
 					`✗ [R4 metadata] leaf "${id}" field \`${field}\` mismatch across layers: `
-					+ `server (${f.file}) says ${JSON.stringify(left)}, JS (${r.file}) says `
-					+ `${JSON.stringify(right)} — the two halves describe different leaves.`,
+						+ `server (${f.file}) says ${JSON.stringify(left)}, JS (${r.file}) says `
+						+ `${JSON.stringify(right)} — the two halves describe different leaves.`,
 				)
 			}
 		}
@@ -792,22 +864,22 @@ function main() {
 			if (source === null) {
 				failures.push(
 					`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
-					+ `which is not imported in that file — the spread of an undefined binding `
-					+ `registers a leaf with no id.`,
+						+ `which is not imported in that file — the spread of an undefined binding `
+						+ `registers a leaf with no id.`,
 				)
 			} else if (source !== '@conduction/nextcloud-vue') {
 				failures.push(
 					`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
-					+ `imported from "${source}", not from the leaf-owning package `
-					+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
-					+ `overrides, or the id it registers under is not the one it thinks.`,
+						+ `imported from "${source}", not from the leaf-owning package `
+						+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
+						+ `overrides, or the id it registers under is not the one it thinks.`,
 				)
 			}
 		}
 		if (r.id === null && r.spreads.length === 0) {
 			failures.push(
 				`✗ [R5 spread-source] registerIntegration in ${r.file} declares neither an \`id\` `
-				+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
+					+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
 			)
 		}
 	}
@@ -821,8 +893,8 @@ function main() {
 		if (schemaFiles === 0) {
 			failures.push(
 				`✗ [R6 offlineConfig] registerIntegration in ${r.file} supplies an \`offlineConfig\` `
-				+ `naming OpenRegister schemas, but this repo declares no register/schema JSON under `
-				+ `lib/Settings/** to check it against — the mapping cannot be verified.`,
+					+ `naming OpenRegister schemas, but this repo declares no register/schema JSON under `
+					+ `lib/Settings/** to check it against — the mapping cannot be verified.`,
 			)
 			continue
 		}
@@ -836,8 +908,8 @@ function main() {
 			if (Object.prototype.hasOwnProperty.call(schemas, slug) === false) {
 				failures.push(
 					`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${slug}" (${r.file}) names a `
-					+ `schema this repo does not declare in lib/Settings/** — the leaf would query a `
-					+ `schema that does not exist. Declared slugs: ${Object.keys(schemas).sort().join(', ')}`,
+						+ `schema this repo does not declare in lib/Settings/** — the leaf would query a `
+						+ `schema that does not exist. Declared slugs: ${Object.keys(schemas).sort().join(', ')}`,
 				)
 			}
 		}
@@ -854,27 +926,32 @@ function main() {
 			if (props.includes(prop) === false) {
 				failures.push(
 					`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${prop}" (${r.file}) is not a `
-					+ `property of schema "${planned}" as declared in lib/Settings/** — the leaf `
-					+ `would filter/display on a property that does not exist. Declared properties: `
-					+ `${[...new Set(props)].sort().join(', ')}`,
+						+ `property of schema "${planned}" as declared in lib/Settings/** — the leaf `
+						+ `would filter/display on a property that does not exist. Declared properties: `
+						+ `${[...new Set(props)].sort().join(', ')}`,
 				)
 			}
 		}
 	}
 
 	// --- report --------------------------------------------------------------
-	const scope = `${faces.length} server leaf face(s), ${regs.length} JS registration(s), `
+	const scope =
+		`${faces.length} server leaf face(s), ${regs.length} JS registration(s), `
 		+ `${schemaFiles} OpenRegister schema declaration file(s)`
-	const perRule = Object.entries(counts).map(([rule, n]) => `${rule}:${n}`).join(' ')
+	const perRule = Object.entries(counts)
+		.map(([rule, n]) => `${rule}:${n}`)
+		.join(' ')
 	if (failures.length === 0) {
 		// eslint-disable-next-line no-console
-		console.log(`✓ integration parity: ${scope} — all rules pass (assertions run per rule: ${perRule})`)
+		console.log(
+			`✓ integration parity: ${scope} — all rules pass (assertions run per rule: ${perRule})`,
+		)
 		if (Object.values(counts).every((n) => n === 0) === true) {
 			// eslint-disable-next-line no-console
 			console.error(
 				'✗ integration parity: every rule had ZERO subject matter, yet gate-24 selected this '
-				+ 'repo as one that registers leaves. That contradiction means this checker failed to '
-				+ 'read what the gate can see — a pass here would be a pass over nothing.',
+					+ 'repo as one that registers leaves. That contradiction means this checker failed to '
+					+ 'read what the gate can see — a pass here would be a pass over nothing.',
 			)
 			process.exit(1)
 		}
@@ -884,7 +961,9 @@ function main() {
 	// grepping `^✗` in this log, so every violation — and only a violation —
 	// starts a line with it.
 	// eslint-disable-next-line no-console
-	console.error(`integration parity gate FAILED — ${failures.length} violation(s) over ${scope}:`)
+	console.error(
+		`integration parity gate FAILED — ${failures.length} violation(s) over ${scope}:`,
+	)
 	for (const f of failures) {
 		// eslint-disable-next-line no-console
 		console.error(f)

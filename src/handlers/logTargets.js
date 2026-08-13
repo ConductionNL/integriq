@@ -17,7 +17,10 @@ export const VIEW_LOGS_TARGETS = {
 	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
 	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
 	'view-job-logs': { route: 'JobLogs', queryParam: 'job' },
-	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronization' },
+	'view-synchronization-logs': {
+		route: 'SynchronizationLogs',
+		queryParam: 'synchronization',
+	},
 	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: 'event' },
 }
 

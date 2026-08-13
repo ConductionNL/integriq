@@ -16,7 +16,8 @@
   @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		label-id="subscription-signing"
 		data-testid="subscription-signing-modal"
 		@close="$emit('close')">
@@ -24,12 +25,25 @@
 			<h2>{{ t('openconnector', 'Webhook signing') }}</h2>
 
 			<p class="signing__intro">
-				{{ t('openconnector', 'When a signing secret is set, every delivery to this subscription carries an X-OpenConnector-Signature header receivers can verify.') }}
+				{{
+					t(
+						'openconnector',
+						'When a signing secret is set, every delivery to this subscription carries an X-OpenConnector-Signature header receivers can verify.',
+					)
+				}}
 			</p>
 
-			<div v-if="revealed" class="signing__reveal" data-testid="signing-reveal">
+			<div
+				v-if="revealed"
+				class="signing__reveal"
+				data-testid="signing-reveal">
 				<p class="signing__warn">
-					{{ t('openconnector', 'Copy this secret now — it is shown only once.') }}
+					{{
+						t(
+							'openconnector',
+							'Copy this secret now — it is shown only once.',
+						)
+					}}
 				</p>
 				<code class="signing__secret">{{ revealed }}</code>
 				<NcButton @click="copy">
@@ -37,9 +51,14 @@
 				</NcButton>
 			</div>
 			<p v-else class="signing__status">
-				{{ hasSecret
-					? t('openconnector', 'A signing secret is configured (hidden).')
-					: t('openconnector', 'No signing secret configured.') }}
+				{{
+					hasSecret
+						? t(
+								'openconnector',
+								'A signing secret is configured (hidden).',
+							)
+						: t('openconnector', 'No signing secret configured.')
+				}}
 			</p>
 
 			<div class="signing__actions">
@@ -96,7 +115,7 @@ export default {
 		open(next) {
 			if (next) {
 				this.revealed = ''
-				this.hasSecret = !!(this.subscription?.protocolSettings?.signingSecret)
+				this.hasSecret = !!this.subscription?.protocolSettings?.signingSecret
 			}
 		},
 	},
@@ -116,14 +135,20 @@ export default {
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		async generate() {
-			await this.call('signing-secret', t('openconnector', 'Signing secret generated'))
+			await this.call(
+				'signing-secret',
+				t('openconnector', 'Signing secret generated'),
+			)
 		},
 		/**
 		 * Rotate the current signing secret.
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		async rotate() {
-			await this.call('signing-secret/rotate', t('openconnector', 'Signing secret rotated'))
+			await this.call(
+				'signing-secret/rotate',
+				t('openconnector', 'Signing secret rotated'),
+			)
 		},
 		/**
 		 * POST a signing lifecycle action and reveal the returned secret once.
@@ -138,14 +163,21 @@ export default {
 			}
 			this.busy = true
 			try {
-				const res = await axios.post(generateUrl(`/apps/openconnector/api/events/subscriptions/${id}/${path}`))
+				const res = await axios.post(
+					generateUrl(
+						`/apps/openconnector/api/events/subscriptions/${id}/${path}`,
+					),
+				)
 				this.revealed = res.data?.signingSecret || ''
 				this.hasSecret = true
 				showSuccess(successMsg)
 				this.$emit('changed')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Signing operation failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Signing operation failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}

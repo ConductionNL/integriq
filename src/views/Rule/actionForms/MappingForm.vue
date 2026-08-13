@@ -20,7 +20,12 @@
 			:placeholder="t('openconnector', 'Select a mapping')"
 			@update:model-value="onPick" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Pick the mapping that will transform the request/response body.') }}
+			{{
+				t(
+					'openconnector',
+					'Pick the mapping that will transform the request/response body.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -37,13 +42,20 @@ export default {
 		// `configuration.mapping`. Parent supplies it via the `id` prop.
 		id: { type: [String, Number, null], default: '' },
 	},
-	data() { return { options: [], loading: false } },
+	data() {
+		return { options: [], loading: false }
+	},
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selected() {
 			const idStr = String(this.id || '')
 			if (!idStr) return null
-			return this.options.find((opt) => opt.id === idStr) ?? { id: idStr, label: idStr }
+			return (
+				this.options.find((opt) => opt.id === idStr) ?? {
+					id: idStr,
+					label: idStr,
+				}
+			)
 		},
 	},
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -68,9 +80,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

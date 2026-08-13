@@ -15,15 +15,24 @@
   (slug translation + REQ-005 credential redaction, unchanged).
 -->
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		:name="t('openconnector', 'Export configuration')"
 		size="normal"
 		data-testid="export-configuration-dialog"
 		@update:open="onOpenChanged">
 		<div class="oc-export-dialog">
-			<p>{{ t('openconnector', 'Download a configuration group as a slug-referenced JSON document. Credentials are always stripped from the export.') }}</p>
+			<p>
+				{{
+					t(
+						'openconnector',
+						'Download a configuration group as a slug-referenced JSON document. Credentials are always stripped from the export.',
+					)
+				}}
+			</p>
 
-			<NcSelect :model-value="selected"
+			<NcSelect
+				:model-value="selected"
 				:options="options"
 				:loading="loading"
 				:input-label="t('openconnector', 'Configuration group')"
@@ -33,7 +42,12 @@
 				@update:model-value="onSelect" />
 
 			<NcNoteCard v-if="options.length === 0 && !loading" type="info">
-				{{ t('openconnector', 'No configuration groups found. Assign entities to a configuration first.') }}
+				{{
+					t(
+						'openconnector',
+						'No configuration groups found. Assign entities to a configuration first.',
+					)
+				}}
 			</NcNoteCard>
 
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -44,7 +58,8 @@
 				<NcButton type="tertiary" @click="close">
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary"
+				<NcButton
+					type="primary"
 					:disabled="!selected || exporting"
 					data-testid="export-configuration-confirm"
 					@click="runExport">
@@ -125,7 +140,9 @@ export default {
 				}))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Could not load configuration groups') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Could not load configuration groups')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loading = false
 			}
@@ -157,9 +174,13 @@ export default {
 			this.exporting = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(`/apps/openconnector/api/configurations/${this.selected.id}/export`)
+				const url = generateUrl(
+					`/apps/openconnector/api/configurations/${this.selected.id}/export`,
+				)
 				const { data } = await axios.post(url)
-				const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+				const blob = new Blob([JSON.stringify(data, null, 2)], {
+					type: 'application/json',
+				})
 				const link = document.createElement('a')
 				link.href = URL.createObjectURL(blob)
 				link.download = `configuration-${this.selected.id}.json`
@@ -171,7 +192,9 @@ export default {
 				this.close()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Export failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Export failed')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.exporting = false
 			}

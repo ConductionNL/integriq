@@ -11,7 +11,8 @@
 -->
 <template>
 	<ol class="traceTimeline" data-testid="trace-timeline">
-		<li v-for="step in steps"
+		<li
+			v-for="step in steps"
 			:key="step.order"
 			class="traceTimeline__step"
 			:class="`traceTimeline__step--${step.status}`">
@@ -23,12 +24,17 @@
 				<span class="traceTimeline__order">{{ step.order }}</span>
 				<span class="traceTimeline__type">{{ step.type }}</span>
 				<span class="traceTimeline__name">{{ step.name }}</span>
-				<span class="traceTimeline__badge" :class="`traceTimeline__badge--${step.status}`">
+				<span
+					class="traceTimeline__badge"
+					:class="`traceTimeline__badge--${step.status}`">
 					{{ step.status }}
 				</span>
 				<span class="traceTimeline__duration">{{ step.durationMs }} ms</span>
 			</button>
-			<div v-if="expanded.includes(step.order)" class="traceTimeline__detail" data-testid="step-detail">
+			<div
+				v-if="expanded.includes(step.order)"
+				class="traceTimeline__detail"
+				data-testid="step-detail">
 				<div class="traceTimeline__detailCol">
 					<h4>{{ t('openconnector', 'Input') }}</h4>
 					<pre>{{ formatJson(step.input) }}</pre>

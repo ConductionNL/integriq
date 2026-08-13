@@ -46,8 +46,14 @@
 			@update:model-value="onOperatorPick">
 			<template #option="{ label, group }">
 				<div class="rule-condition-leaf__op-option">
-					<span class="rule-condition-leaf__op-option-label">{{ label }}</span>
-					<span v-if="group" class="rule-condition-leaf__op-option-group">{{ group }}</span>
+					<span class="rule-condition-leaf__op-option-label">{{
+						label
+					}}</span>
+					<span
+						v-if="group"
+						class="rule-condition-leaf__op-option-group"
+						>{{ group }}</span
+					>
 				</div>
 			</template>
 		</NcSelect>
@@ -56,7 +62,10 @@
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[0] || t('openconnector', 'Value')"
 				:model-value="slotString(1)"
-				:placeholder="schema.placeholders?.[0] || t('openconnector', 'Comparison value')"
+				:placeholder="
+					schema.placeholders?.[0]
+					|| t('openconnector', 'Comparison value')
+				"
 				@update:model-value="(value) => onSlotInput(1, value)" />
 			<NcTextField
 				v-if="schema.kind === 'ternary'"
@@ -74,7 +83,7 @@
 					:value="slotJson(1)"
 					spellcheck="false"
 					rows="2"
-					placeholder="{ &quot;var&quot;: &quot;a&quot; }"
+					placeholder='{ "var": "a" }'
 					@input="(event) => onJsonSlotInput(1, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
@@ -84,29 +93,40 @@
 					:value="slotJson(2)"
 					spellcheck="false"
 					rows="2"
-					placeholder="{ &quot;var&quot;: &quot;b&quot; }"
+					placeholder='{ "var": "b" }'
 					@input="(event) => onJsonSlotInput(2, event.target.value)" />
 			</label>
 		</template>
 		<template v-else-if="schema.kind === 'array-op'">
 			<label class="rule-condition-leaf__json-label">
-				{{ schema.labels?.[0] || t('openconnector', 'Collection (JsonLogic)') }}
+				{{
+					schema.labels?.[0]
+					|| t('openconnector', 'Collection (JsonLogic)')
+				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(0, { fallback: '' })"
 					spellcheck="false"
 					rows="2"
-					:placeholder="schema.placeholders?.[0] || '{ &quot;var&quot;: &quot;items&quot; }'"
+					:placeholder="
+						schema.placeholders?.[0]
+						|| '{ &quot;var&quot;: &quot;items&quot; }'
+					"
 					@input="(event) => onJsonSlotInput(0, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
-				{{ schema.labels?.[1] || t('openconnector', 'Predicate (JsonLogic)') }}
+				{{
+					schema.labels?.[1] || t('openconnector', 'Predicate (JsonLogic)')
+				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(1)"
 					spellcheck="false"
 					rows="2"
-					:placeholder="schema.placeholders?.[1] || '{ &quot;==&quot;: [{&quot;var&quot;: &quot;&quot;}, true] }'"
+					:placeholder="
+						schema.placeholders?.[1]
+						|| '{ &quot;==&quot;: [{&quot;var&quot;: &quot;&quot;}, true] }'
+					"
 					@input="(event) => onJsonSlotInput(1, event.target.value)" />
 			</label>
 		</template>
@@ -118,12 +138,13 @@
 					:value="mergeJson"
 					spellcheck="false"
 					rows="3"
-					placeholder="[ { &quot;var&quot;: &quot;a&quot; }, [ 1, 2 ] ]"
+					placeholder='[ { "var": "a" }, [ 1, 2 ] ]'
 					@input="(event) => onMergeInput(event.target.value)" />
 			</label>
 		</template>
 		<template v-else-if="schema.kind === 'unary' || schema.kind === 'var-only'">
-			<span class="rule-condition-leaf__value rule-condition-leaf__value--placeholder">
+			<span
+				class="rule-condition-leaf__value rule-condition-leaf__value--placeholder">
 				{{ t('openconnector', '(no value needed)') }}
 			</span>
 		</template>
@@ -167,14 +188,31 @@ const OPERATORS = [
 	{ id: '==', label: 'equals', group: 'comparison', kind: 'binary' },
 	{ id: '!=', label: 'does not equal', group: 'comparison', kind: 'binary' },
 	{ id: '>', label: 'greater than', group: 'comparison', kind: 'binary' },
-	{ id: '>=', label: 'greater than or equal', group: 'comparison', kind: 'binary' },
+	{
+		id: '>=',
+		label: 'greater than or equal',
+		group: 'comparison',
+		kind: 'binary',
+	},
 	{ id: '<', label: 'less than', group: 'comparison', kind: 'binary' },
 	{ id: '<=', label: 'less than or equal', group: 'comparison', kind: 'binary' },
-	{ id: 'in', label: 'in (string contains / array member)', group: 'comparison', kind: 'binary' },
+	{
+		id: 'in',
+		label: 'in (string contains / array member)',
+		group: 'comparison',
+		kind: 'binary',
+	},
 	// Negation / existence
 	{ id: '!!', label: 'exists / truthy', group: 'negation', kind: 'unary' },
 	{ id: '!', label: 'missing / falsy', group: 'negation', kind: 'unary' },
-	{ id: 'missing', label: 'missing (list of required paths)', group: 'negation', kind: 'binary', labels: ['Comma-separated paths'], placeholders: ['a,b,c'] },
+	{
+		id: 'missing',
+		label: 'missing (list of required paths)',
+		group: 'negation',
+		kind: 'binary',
+		labels: ['Comma-separated paths'],
+		placeholders: ['a,b,c'],
+	},
 	// Arithmetic
 	{ id: '+', label: 'add', group: 'arithmetic', kind: 'binary' },
 	{ id: '-', label: 'subtract', group: 'arithmetic', kind: 'binary' },
@@ -182,19 +220,67 @@ const OPERATORS = [
 	{ id: '/', label: 'divide', group: 'arithmetic', kind: 'binary' },
 	{ id: '%', label: 'modulo', group: 'arithmetic', kind: 'binary' },
 	// String
-	{ id: 'cat', label: 'concatenate strings', group: 'string', kind: 'binary', labels: ['Right operand'] },
-	{ id: 'substr', label: 'substring', group: 'string', kind: 'ternary', labels: ['Start', 'Length'], placeholders: ['0', '5'] },
+	{
+		id: 'cat',
+		label: 'concatenate strings',
+		group: 'string',
+		kind: 'binary',
+		labels: ['Right operand'],
+	},
+	{
+		id: 'substr',
+		label: 'substring',
+		group: 'string',
+		kind: 'ternary',
+		labels: ['Start', 'Length'],
+		placeholders: ['0', '5'],
+	},
 	// Array / higher-order
-	{ id: 'map', label: 'map (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'filter', label: 'filter (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'reduce', label: 'reduce (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'all', label: 'all (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'none', label: 'none (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'some', label: 'some (collection, predicate)', group: 'array', kind: 'array-op' },
+	{
+		id: 'map',
+		label: 'map (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'filter',
+		label: 'filter (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'reduce',
+		label: 'reduce (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'all',
+		label: 'all (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'none',
+		label: 'none (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'some',
+		label: 'some (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
 	{ id: 'merge', label: 'merge arrays', group: 'array', kind: 'merge' },
 	// Control flow / refs
 	{ id: 'if', label: 'if (condition, then, else)', group: 'control', kind: 'if' },
-	{ id: 'var', label: 'var (read value at path)', group: 'control', kind: 'var-only' },
+	{
+		id: 'var',
+		label: 'var (read value at path)',
+		group: 'control',
+		kind: 'var-only',
+	},
 ]
 
 let leafUidCounter = 0
@@ -239,17 +325,25 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
-			const op = keys.find((key) => OPERATORS.some((entry) => entry.id === key))
+			const op = keys.find((key) =>
+				OPERATORS.some((entry) => entry.id === key),
+			)
 			return op || '=='
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		schema() {
-			return OPERATORS.find((entry) => entry.id === this.currentOperator) || OPERATORS[0]
+			return (
+				OPERATORS.find((entry) => entry.id === this.currentOperator)
+				|| OPERATORS[0]
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
-			return this.operatorOptions.find((option) => option.id === this.currentOperator)
-				?? this.operatorOptions[0]
+			return (
+				this.operatorOptions.find(
+					(option) => option.id === this.currentOperator,
+				) ?? this.operatorOptions[0]
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		args() {
@@ -264,7 +358,11 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varPath() {
 			const first = this.args[0]
-			if (first && typeof first === 'object' && Object.prototype.hasOwnProperty.call(first, 'var')) {
+			if (
+				first
+				&& typeof first === 'object'
+				&& Object.prototype.hasOwnProperty.call(first, 'var')
+			) {
 				return String(first.var ?? '')
 			}
 			if (typeof first === 'string') return first
@@ -275,14 +373,22 @@ export default {
 			// For top-level `var` ops, args[0] is the dotted-path string.
 			const first = this.args[0]
 			if (typeof first === 'string') return first
-			if (first && typeof first === 'object' && Object.prototype.hasOwnProperty.call(first, 'var')) {
+			if (
+				first
+				&& typeof first === 'object'
+				&& Object.prototype.hasOwnProperty.call(first, 'var')
+			) {
 				return String(first.var ?? '')
 			}
 			return ''
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		mergeJson() {
-			try { return JSON.stringify(this.args, null, 2) } catch (_e) { return '[]' }
+			try {
+				return JSON.stringify(this.args, null, 2)
+			} catch (_e) {
+				return '[]'
+			}
 		},
 	},
 
@@ -370,7 +476,11 @@ export default {
 				this.parseError = ''
 				this.emitUpdate({ slot, slotValue: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.parseError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 		/**
@@ -394,13 +504,20 @@ export default {
 			try {
 				const parsed = JSON.parse(trimmed)
 				if (!Array.isArray(parsed)) {
-					this.parseError = this.t('openconnector', 'merge expects a JSON array')
+					this.parseError = this.t(
+						'openconnector',
+						'merge expects a JSON array',
+					)
 					return
 				}
 				this.parseError = ''
 				this.$emit('update', { merge: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.parseError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 		/**
@@ -417,7 +534,11 @@ export default {
 			const raw = this.args[index]
 			if (raw === null || raw === undefined) return ''
 			if (typeof raw === 'object') {
-				try { return JSON.stringify(raw) } catch (_e) { return String(raw) }
+				try {
+					return JSON.stringify(raw)
+				} catch (_e) {
+					return String(raw)
+				}
 			}
 			return String(raw)
 		},
@@ -438,7 +559,11 @@ export default {
 			const raw = this.args[index]
 			if (raw === undefined) return fallback
 			if (typeof raw === 'string') return raw
-			try { return JSON.stringify(raw, null, 2) } catch (_e) { return String(raw) }
+			try {
+				return JSON.stringify(raw, null, 2)
+			} catch (_e) {
+				return String(raw)
+			}
 		},
 		/**
 		 * Best-effort literal coercion. Numbers and booleans get
@@ -474,21 +599,30 @@ export default {
 		 */
 		emitUpdate(patch) {
 			const operator = patch.operator ?? this.currentOperator
-			const nextSchema = OPERATORS.find((entry) => entry.id === operator) || OPERATORS[0]
+			const nextSchema =
+				OPERATORS.find((entry) => entry.id === operator) || OPERATORS[0]
 
 			// Operator switch: rebuild args from scratch using current
 			// var/value where possible, falling back to defaults.
 			if (patch.operator !== undefined) {
-				const args = this.argsForKind(nextSchema, { carryVar: this.varPath, carryValue: this.args[1] })
+				const args = this.argsForKind(nextSchema, {
+					carryVar: this.varPath,
+					carryValue: this.args[1],
+				})
 				this.$emit('update', { [operator]: args })
 				return
 			}
 
 			// var-only schema funnels through onVarOnlyInput; here we
 			// rebuild non-var-only schemas.
-			const args = (this.node?.[this.currentOperator] && Array.isArray(this.node[this.currentOperator]))
-				? this.node[this.currentOperator].slice()
-				: this.argsForKind(nextSchema, { carryVar: this.varPath, carryValue: this.args[1] })
+			const args =
+				this.node?.[this.currentOperator]
+				&& Array.isArray(this.node[this.currentOperator])
+					? this.node[this.currentOperator].slice()
+					: this.argsForKind(nextSchema, {
+							carryVar: this.varPath,
+							carryValue: this.args[1],
+						})
 
 			if (patch.varPath !== undefined) {
 				args[0] = { var: patch.varPath }
@@ -499,7 +633,9 @@ export default {
 
 			// For unary, trim trailing slots.
 			if (nextSchema.kind === 'unary') {
-				this.$emit('update', { [operator]: [args[0] ?? { var: this.varPath }] })
+				this.$emit('update', {
+					[operator]: [args[0] ?? { var: this.varPath }],
+				})
 				return
 			}
 
@@ -518,22 +654,22 @@ export default {
 		 */
 		argsForKind(schema, { carryVar = '', carryValue = '' } = {}) {
 			switch (schema.kind) {
-			case 'unary':
-				return [{ var: carryVar }]
-			case 'binary':
-				return [{ var: carryVar }, carryValue ?? '']
-			case 'ternary':
-				return [{ var: carryVar }, carryValue ?? '', '']
-			case 'if':
-				return [{ var: carryVar }, '', '']
-			case 'array-op':
-				return [{ var: carryVar }, { '==': [{ var: '' }, true] }]
-			case 'merge':
-				return [{ var: carryVar }]
-			case 'var-only':
-				return [carryVar]
-			default:
-				return [{ var: carryVar }, carryValue ?? '']
+				case 'unary':
+					return [{ var: carryVar }]
+				case 'binary':
+					return [{ var: carryVar }, carryValue ?? '']
+				case 'ternary':
+					return [{ var: carryVar }, carryValue ?? '', '']
+				case 'if':
+					return [{ var: carryVar }, '', '']
+				case 'array-op':
+					return [{ var: carryVar }, { '==': [{ var: '' }, true] }]
+				case 'merge':
+					return [{ var: carryVar }]
+				case 'var-only':
+					return [carryVar]
+				default:
+					return [{ var: carryVar }, carryValue ?? '']
 			}
 		},
 	},

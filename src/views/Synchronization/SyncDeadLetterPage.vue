@@ -25,22 +25,35 @@
 		<div class="syncDeadLetters__header">
 			<h2>{{ t('openconnector', 'Sync dead letters') }}</h2>
 			<div class="syncDeadLetters__filters">
-				<NcSelect v-model="statusFilter"
+				<NcSelect
+					v-model="statusFilter"
 					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
 					@update:model-value="reload" />
-				<NcTextField v-model="synchronizationFilter"
+				<NcTextField
+					v-model="synchronizationFilter"
 					:label="t('openconnector', 'Synchronization')"
 					@update:model-value="reloadDebounced" />
 			</div>
 		</div>
 
-		<div v-if="selected.length" class="syncDeadLetters__bulk" data-testid="bulk-bar">
-			<span>{{ t('openconnector', '{count} selected', { count: selected.length }) }}</span>
+		<div
+			v-if="selected.length"
+			class="syncDeadLetters__bulk"
+			data-testid="bulk-bar">
+			<span>{{
+				t('openconnector', '{count} selected', { count: selected.length })
+			}}</span>
 			<template v-if="bulkConfirm">
-				<span>{{ bulkConfirm === 'replay'
-					? t('openconnector', 'Replay {count} items now?', { count: selected.length })
-					: t('openconnector', 'Discard {count} items?', { count: selected.length }) }}</span>
+				<span>{{
+					bulkConfirm === 'replay'
+						? t('openconnector', 'Replay {count} items now?', {
+								count: selected.length,
+							})
+						: t('openconnector', 'Discard {count} items?', {
+								count: selected.length,
+							})
+				}}</span>
 				<NcButton type="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
@@ -49,7 +62,10 @@
 				</NcButton>
 			</template>
 			<template v-else>
-				<NcButton type="primary" :disabled="busy" @click="bulkConfirm = 'replay'">
+				<NcButton
+					type="primary"
+					:disabled="busy"
+					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
@@ -60,11 +76,17 @@
 
 		<NcLoadingIcon v-if="loading" :size="32" class="syncDeadLetters__loading" />
 
-		<p v-else-if="!rows.length" class="syncDeadLetters__empty" data-testid="empty-state">
+		<p
+			v-else-if="!rows.length"
+			class="syncDeadLetters__empty"
+			data-testid="empty-state">
 			{{ t('openconnector', 'No dead-lettered sync items') }}
 		</p>
 
-		<table v-else class="syncDeadLetters__table" data-testid="dead-letters-table">
+		<table
+			v-else
+			class="syncDeadLetters__table"
+			data-testid="dead-letters-table">
 			<thead>
 				<tr>
 					<th />
@@ -80,14 +102,21 @@
 			<tbody>
 				<tr v-for="row in rows" :key="row.uuid || row.id">
 					<td>
-						<NcCheckboxRadioSwitch :model-value="isSelected(row)"
-							:aria-label="t('openconnector', 'Select dead letter {id}', { id: row.uuid || row.id })"
+						<NcCheckboxRadioSwitch
+							:model-value="isSelected(row)"
+							:aria-label="
+								t('openconnector', 'Select dead letter {id}', {
+									id: row.uuid || row.id,
+								})
+							"
 							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ row.synchronization }}</td>
 					<td>{{ row.originId || '—' }}</td>
 					<td>
-						<span class="syncDeadLetters__badge" :class="`syncDeadLetters__badge--${row.status}`">
+						<span
+							class="syncDeadLetters__badge"
+							:class="`syncDeadLetters__badge--${row.status}`">
 							{{ row.status }}
 						</span>
 					</td>
@@ -105,7 +134,8 @@
 			</tbody>
 		</table>
 
-		<SyncDeadLetterDetailModal :open="detail.open"
+		<SyncDeadLetterDetailModal
+			:open="detail.open"
 			:entry="detail.entry"
 			@close="closeDetail"
 			@changed="reload" />
@@ -210,7 +240,10 @@ export default {
 				if (this.synchronizationFilter) {
 					params.synchronizationId = this.synchronizationFilter
 				}
-				const res = await axios.get(generateUrl('/apps/openconnector/api/sync-dead-letter'), { params })
+				const res = await axios.get(
+					generateUrl('/apps/openconnector/api/sync-dead-letter'),
+					{ params },
+				)
 				this.rows = res.data?.results || []
 			} catch (err) {
 				showError(t('openconnector', 'Failed to load sync dead letters'))
@@ -238,14 +271,22 @@ export default {
 				const ok = Object.values(results).filter((r) => r === 'ok').length
 				const failed = Object.keys(results).length - ok
 				if (failed > 0) {
-					showError(t('openconnector', '{ok} processed, {failed} failed', { ok, failed }))
+					showError(
+						t('openconnector', '{ok} processed, {failed} failed', {
+							ok,
+							failed,
+						}),
+					)
 				} else {
 					showSuccess(t('openconnector', '{ok} items processed', { ok }))
 				}
 				await this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Bulk action failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Bulk action failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 				this.bulkConfirm = null

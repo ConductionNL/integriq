@@ -64,9 +64,10 @@ export default {
 			// CnAppNav's permission filter is an array-includes check; Nextcloud
 			// does not put the boolean admin flag into the permissions array, so
 			// we inject it here for manifest entries gated on permission: "admin".
-			const isAdmin = typeof window.OC?.isUserAdmin === 'function'
-				? window.OC.isUserAdmin()
-				: false
+			const isAdmin =
+				typeof window.OC?.isUserAdmin === 'function'
+					? window.OC.isUserAdmin()
+					: false
 			return isAdmin ? [...base, 'admin'] : base
 		},
 	},

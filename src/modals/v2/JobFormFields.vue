@@ -59,47 +59,79 @@
 			     field stays a direct child of the outer flex column and inherits
 			     its gap. That lets one widget switch serve grouped and ungrouped
 			     runs alike instead of duplicating it per branch. -->
-			<div :class="['cn-job-form-fields__run', { 'cn-job-form-fields__run--grid': run.group }]">
+			<div
+				:class="[
+					'cn-job-form-fields__run',
+					{ 'cn-job-form-fields__run--grid': run.group },
+				]">
 				<div
 					v-for="field in run.fields"
 					:key="field.key"
 					class="cn-job-form-fields__field">
 					<NcTextField
-						v-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url'"
+						v-if="
+							field.widget === 'text'
+							|| field.widget === 'email'
+							|| field.widget === 'url'
+						"
 						:label="field.label + (field.required ? ' *' : '')"
-						:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+						:model-value="
+							formData[field.key] != null
+								? String(formData[field.key])
+								: ''
+						"
 						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						:type="textFieldType(field)"
 						:disabled="field.readOnly"
-						@update:model-value="(value) => updateField(field.key, value)" />
+						@update:model-value="
+							(value) => updateField(field.key, value)
+						" />
 
 					<NcTextField
 						v-else-if="field.widget === 'number'"
 						:label="field.label + (field.required ? ' *' : '')"
-						:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+						:model-value="
+							formData[field.key] != null
+								? String(formData[field.key])
+								: ''
+						"
 						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						type="number"
 						:disabled="field.readOnly"
-						@update:model-value="(value) => updateField(field.key, coerceNumber(value))" />
+						@update:model-value="
+							(value) => updateField(field.key, coerceNumber(value))
+						" />
 
 					<!-- Date/date-time. NcTextField's type validator rejects
 					     'date'/'datetime-local', so this must be the native
 					     picker; the value is serialised with an offset because
 					     ajv-formats' `date-time` requires one. -->
-					<div v-else-if="field.widget === 'date' || field.widget === 'datetime'" class="cn-job-form-fields__stack">
-						<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
+					<div
+						v-else-if="
+							field.widget === 'date' || field.widget === 'datetime'
+						"
+						class="cn-job-form-fields__stack">
+						<label
+							:for="'cn-job-form-' + field.key"
+							class="cn-job-form-fields__label">
 							{{ field.label }}{{ field.required ? ' *' : '' }}
 						</label>
 						<NcDateTimePickerNative
 							:id="'cn-job-form-' + field.key"
-							:type="field.widget === 'datetime' ? 'datetime-local' : 'date'"
+							:type="
+								field.widget === 'datetime'
+									? 'datetime-local'
+									: 'date'
+							"
 							:label="field.label"
 							:hide-label="true"
 							:model-value="dateValueFor(field)"
 							:disabled="field.readOnly"
-							@update:model-value="(date) => onDateFieldInput(field, date)" />
+							@update:model-value="
+								(date) => onDateFieldInput(field, date)
+							" />
 						<CnFieldHelper
 							:text="field.description"
 							:more="field.descriptionLong"
@@ -109,8 +141,12 @@
 					<!-- Select. Driven by `field.enum` (manifest) with labels
 					     resolved through t(), so the option list stays
 					     declarative while the text stays translatable. -->
-					<div v-else-if="field.widget === 'select'" class="cn-job-form-fields__stack">
-						<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
+					<div
+						v-else-if="field.widget === 'select'"
+						class="cn-job-form-fields__stack">
+						<label
+							:for="'cn-job-form-' + field.key"
+							class="cn-job-form-fields__label">
 							{{ field.label }}{{ field.required ? ' *' : '' }}
 						</label>
 						<NcSelect
@@ -120,15 +156,22 @@
 							:options="enumOptions(field)"
 							:clearable="!field.required"
 							:disabled="field.readOnly"
-							@update:model-value="(option) => updateField(field.key, option ? option.id : null)" />
+							@update:model-value="
+								(option) =>
+									updateField(field.key, option ? option.id : null)
+							" />
 						<CnFieldHelper
 							:text="field.description"
 							:more="field.descriptionLong"
 							:error="errors[field.key]" />
 					</div>
 
-					<div v-else-if="field.widget === 'textarea'" class="cn-job-form-fields__stack">
-						<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
+					<div
+						v-else-if="field.widget === 'textarea'"
+						class="cn-job-form-fields__stack">
+						<label
+							:for="'cn-job-form-' + field.key"
+							class="cn-job-form-fields__label">
 							{{ field.label }}{{ field.required ? ' *' : '' }}
 						</label>
 						<textarea
@@ -149,12 +192,18 @@
 						:model-value="!!formData[field.key]"
 						:disabled="field.readOnly"
 						type="switch"
-						@update:model-value="(value) => updateField(field.key, value)">
+						@update:model-value="
+							(value) => updateField(field.key, value)
+						">
 						{{ field.label }}{{ field.required ? ' *' : '' }}
 					</NcCheckboxRadioSwitch>
 
-					<div v-else-if="field.widget === 'json'" class="cn-job-form-fields__stack">
-						<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
+					<div
+						v-else-if="field.widget === 'json'"
+						class="cn-job-form-fields__stack">
+						<label
+							:for="'cn-job-form-' + field.key"
+							class="cn-job-form-fields__label">
 							{{ field.label }}{{ field.required ? ' *' : '' }}
 						</label>
 						<textarea
@@ -174,11 +223,17 @@
 					<NcTextField
 						v-else
 						:label="field.label + (field.required ? ' *' : '')"
-						:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+						:model-value="
+							formData[field.key] != null
+								? String(formData[field.key])
+								: ''
+						"
 						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						:disabled="field.readOnly"
-						@update:model-value="(value) => updateField(field.key, value)" />
+						@update:model-value="
+							(value) => updateField(field.key, value)
+						" />
 				</div>
 			</div>
 
@@ -193,7 +248,9 @@
 			<div
 				v-if="needsSynchronizationPicker && runHasJobClass(run)"
 				class="cn-job-form-fields__field cn-job-form-fields__stack">
-				<label for="cn-job-form-synchronization" class="cn-job-form-fields__label">
+				<label
+					for="cn-job-form-synchronization"
+					class="cn-job-form-fields__label">
 					{{ t('openconnector', 'Synchronization') }} *
 				</label>
 				<NcSelect
@@ -206,7 +263,12 @@
 					:placeholder="t('openconnector', 'Select a synchronization')"
 					@update:model-value="onSynchronizationPick" />
 				<CnFieldHelper
-					:text="t('openconnector', 'The synchronization this job will run. Written back as arguments.synchronizationId.')" />
+					:text="
+						t(
+							'openconnector',
+							'The synchronization this job will run. Written back as arguments.synchronizationId.',
+						)
+					" />
 			</div>
 		</template>
 	</div>
@@ -254,10 +316,19 @@ import {
  */
 function jobClassLabel(fqn) {
 	const labels = {
-		'OCA\\OpenConnector\\Action\\SynchronizationAction': t('openconnector', 'Run a synchronization'),
+		'OCA\\OpenConnector\\Action\\SynchronizationAction': t(
+			'openconnector',
+			'Run a synchronization',
+		),
 		'OCA\\OpenConnector\\Action\\FlowAction': t('openconnector', 'Run a flow'),
-		'OCA\\OpenConnector\\Action\\EventAction': t('openconnector', 'Dispatch an event'),
-		'OCA\\OpenConnector\\Action\\PingAction': t('openconnector', 'Ping a source'),
+		'OCA\\OpenConnector\\Action\\EventAction': t(
+			'openconnector',
+			'Dispatch an event',
+		),
+		'OCA\\OpenConnector\\Action\\PingAction': t(
+			'openconnector',
+			'Ping a source',
+		),
 	}
 	return labels[fqn] || fqn
 }
@@ -339,7 +410,12 @@ export default {
 		selectedSynchronization() {
 			const id = readSynchronizationId(this.formData?.arguments)
 			if (id === null) return null
-			return this.synchronizationOptions.find((option) => option.id === id) ?? { id, label: id }
+			return (
+				this.synchronizationOptions.find((option) => option.id === id) ?? {
+					id,
+					label: id,
+				}
+			)
 		},
 	},
 
@@ -392,8 +468,9 @@ export default {
 			if (cached !== undefined && cached.enum === field.enum) {
 				return cached.options
 			}
-			const options = (Array.isArray(field.enum) ? field.enum : [])
-				.map((value) => ({ id: value, label: this.optionLabel(field, value) }))
+			const options = (Array.isArray(field.enum) ? field.enum : []).map(
+				(value) => ({ id: value, label: this.optionLabel(field, value) }),
+			)
 			this._enumOptionCache[field.key] = { enum: field.enum, options }
 			return options
 		},
@@ -431,7 +508,9 @@ export default {
 		selectedEnumOption(field) {
 			const value = this.formData[field.key]
 			if (value === null || value === undefined || value === '') return null
-			const match = this.enumOptions(field).find((option) => option.id === value)
+			const match = this.enumOptions(field).find(
+				(option) => option.id === value,
+			)
 			return match ?? { id: value, label: this.optionLabel(field, value) }
 		},
 
@@ -510,7 +589,10 @@ export default {
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		onSynchronizationPick(option) {
-			this.updateField('arguments', writeSynchronizationId(this.formData?.arguments, option?.id ?? null))
+			this.updateField(
+				'arguments',
+				writeSynchronizationId(this.formData?.arguments, option?.id ?? null),
+			)
 		},
 
 		/**
@@ -524,7 +606,9 @@ export default {
 			this.synchronizationsLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/synchronization'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/synchronization',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
@@ -600,7 +684,11 @@ export default {
 				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.jsonErrors[field.key] = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.jsonErrors[field.key] = t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 	},

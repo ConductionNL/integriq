@@ -28,7 +28,10 @@ const APP_BASE = '/index.php/apps/openconnector'
 
 test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-manifest delta)', () => {
 	const manifest = JSON.parse(
-		fs.readFileSync(path.resolve(__dirname, '../../../src/manifest.json'), 'utf8'),
+		fs.readFileSync(
+			path.resolve(__dirname, '../../../src/manifest.json'),
+			'utf8',
+		),
 	)
 
 	// ADR-080 renamed this page Catalog -> Store: a "catalogue" is an
@@ -49,7 +52,9 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 
 	// @e2e openconnector-app-manifest::catalog-menu-entry-is-present-and-routes-to-the-catalog-page
 	test('Store menu entry routes to the Store page id', () => {
-		const flatten = (entries: Array<{ id: string, route?: string, children?: unknown[] }>): Array<{ id: string, route?: string }> =>
+		const flatten = (
+			entries: Array<{ id: string; route?: string; children?: unknown[] }>,
+		): Array<{ id: string; route?: string }> =>
 			entries.flatMap((e) => [e, ...flatten((e.children as never[]) || [])])
 		const entry = flatten(manifest.menu).find((e) => e.id === 'Store')
 		expect(entry, 'Store menu entry must exist').toBeTruthy()
@@ -58,13 +63,18 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 
 	// @e2e openconnector-app-manifest::catalog-page-does-not-require-a-new-manifest-page-type
 	test('Store page introduces no new page type value', () => {
-		const knownTypes = new Set(manifest.pages.map((p: { type: string }) => p.type))
+		const knownTypes = new Set(
+			manifest.pages.map((p: { type: string }) => p.type),
+		)
 		// "index" predates this change (Sources, Endpoints, …) — the Store
 		// page reuses it rather than minting a new enum value.
-		const catalogPage = manifest.pages.find((p: { id: string }) => p.id === 'Store')
+		const catalogPage = manifest.pages.find(
+			(p: { id: string }) => p.id === 'Store',
+		)
 		expect(catalogPage.type).toBe('index')
 		const preExistingIndexPages = manifest.pages.filter(
-			(p: { id: string, type: string }) => p.type === 'index' && p.id !== 'Store',
+			(p: { id: string; type: string }) =>
+				p.type === 'index' && p.id !== 'Store',
 		)
 		expect(preExistingIndexPages.length).toBeGreaterThan(0)
 		expect(knownTypes.has('index')).toBe(true)
@@ -95,7 +105,9 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 // the full re-enable checklist.)
 test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	// @e2e connector-catalog::catalog-lists-built-in-adapters-and-seeded-source-templates-by-category
-	test('catalog renders cards and the kind quick-filter narrows the grid', async ({ page }) => {
+	test('catalog renders cards and the kind quick-filter narrows the grid', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -106,22 +118,32 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const cards = page.getByTestId('catalog-item-card')
-		await expect(cards.first(), 'materialised catalog cards must render').toBeVisible({ timeout: 15_000 })
+		await expect(
+			cards.first(),
+			'materialised catalog cards must render',
+		).toBeVisible({ timeout: 15_000 })
 		const total = await cards.count()
 		expect(total).toBeGreaterThanOrEqual(3)
 
 		// BRP HaalCentraal (Government registers) is a real seeded entry.
-		await expect(page.getByText('BRP HaalCentraal', { exact: false }).first()).toBeVisible()
+		await expect(
+			page.getByText('BRP HaalCentraal', { exact: false }).first(),
+		).toBeVisible()
 
 		// Narrow via the "Source templates" kind quick-filter chip.
-		await page.getByRole('button', { name: /Source templates/i }).first().click()
+		await page
+			.getByRole('button', { name: /Source templates/i })
+			.first()
+			.click()
 		await expect(cards.first()).toBeVisible({ timeout: 10_000 })
 		const narrowed = await cards.count()
 		expect(narrowed).toBeLessThanOrEqual(total)
 	})
 
 	// @e2e connector-catalog::status-badge-reflects-a-flag-gated-dormant-item
-	test('PDOK card shows a dormant badge while pdok.feature_flag is off', async ({ page }) => {
+	test('PDOK card shows a dormant badge while pdok.feature_flag is off', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -131,13 +153,20 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// this navigation was never validated before.)
 		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
-		const pdokCard = page.getByTestId('catalog-item-card').filter({ hasText: 'PDOK' }).first()
+		const pdokCard = page
+			.getByTestId('catalog-item-card')
+			.filter({ hasText: 'PDOK' })
+			.first()
 		await expect(pdokCard).toBeVisible({ timeout: 15_000 })
-		await expect(pdokCard.getByTestId('catalog-status-badge')).toHaveText(/dormant/i)
+		await expect(pdokCard.getByTestId('catalog-status-badge')).toHaveText(
+			/dormant/i,
+		)
 	})
 
 	// @e2e connector-catalog::status-badge-reflects-a-mock-seeded-available-item
-	test('BRP HaalCentraal card shows available (mock mode is not dormant)', async ({ page }) => {
+	test('BRP HaalCentraal card shows available (mock mode is not dormant)', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -147,13 +176,20 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// this navigation was never validated before.)
 		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
-		const brpCard = page.getByTestId('catalog-item-card').filter({ hasText: 'BRP HaalCentraal' }).first()
+		const brpCard = page
+			.getByTestId('catalog-item-card')
+			.filter({ hasText: 'BRP HaalCentraal' })
+			.first()
 		await expect(brpCard).toBeVisible({ timeout: 15_000 })
-		await expect(brpCard.getByTestId('catalog-status-badge')).toHaveText(/available/i)
+		await expect(brpCard.getByTestId('catalog-status-badge')).toHaveText(
+			/available/i,
+		)
 	})
 
 	// @e2e connector-catalog::search-narrows-the-catalog-grid
-	test('typing "brp" into the search narrows the grid to matching items', async ({ page }) => {
+	test('typing "brp" into the search narrows the grid to matching items', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -167,14 +203,18 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 		const before = await cards.count()
 
-		const search = page.getByRole('searchbox').first()
+		const search = page
+			.getByRole('searchbox')
+			.first()
 			.or(page.getByPlaceholder(/search/i).first())
 		await search.fill('brp')
 		await page.waitForTimeout(1_000)
 
 		const after = await cards.count()
 		expect(after).toBeLessThan(before)
-		await expect(page.getByText('BRP HaalCentraal', { exact: false }).first()).toBeVisible()
+		await expect(
+			page.getByText('BRP HaalCentraal', { exact: false }).first(),
+		).toBeVisible()
 	})
 })
 
@@ -187,7 +227,9 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 // TRACKED IN #1187.
 test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', () => {
 	// @e2e connector-catalog::enable-action-flips-a-feature-flag-for-a-flag-gated-item
-	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({ page }) => {
+	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -197,7 +239,10 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		// this navigation was never validated before.)
 		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
-		const pdokCard = page.getByTestId('catalog-item-card').filter({ hasText: 'PDOK' }).first()
+		const pdokCard = page
+			.getByTestId('catalog-item-card')
+			.filter({ hasText: 'PDOK' })
+			.first()
 		await expect(pdokCard).toBeVisible({ timeout: 15_000 })
 		await pdokCard.click()
 
@@ -208,12 +253,19 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		await expect(action).toHaveText(/Enable/i, { timeout: 10_000 })
 		await action.click()
 
-		await expect(page.getByText(/Feature enabled/i).first()).toBeVisible({ timeout: 10_000 })
-		await expect(page.getByTestId('catalog-detail-status')).toHaveText(/available/i, { timeout: 10_000 })
+		await expect(page.getByText(/Feature enabled/i).first()).toBeVisible({
+			timeout: 10_000,
+		})
+		await expect(page.getByTestId('catalog-detail-status')).toHaveText(
+			/available/i,
+			{ timeout: 10_000 },
+		)
 	})
 
 	// @e2e connector-catalog::instantiate-action-creates-a-source-from-a-seeded-template
-	test('instantiating a dormant source-template creates the Source (visible on Sources page)', async ({ page }) => {
+	test('instantiating a dormant source-template creates the Source (visible on Sources page)', async ({
+		page,
+	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/openconnector/catalog` is ignored by the router and resolves
@@ -224,17 +276,24 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		// xWiki seeds with isEnabled:false → dormant → Instantiate offered.
-		const card = page.getByTestId('catalog-item-card').filter({ hasText: 'xWiki' }).first()
+		const card = page
+			.getByTestId('catalog-item-card')
+			.filter({ hasText: 'xWiki' })
+			.first()
 		await expect(card).toBeVisible({ timeout: 15_000 })
 		await card.click()
 
 		const action = page.getByTestId('catalog-detail-primary-action')
 		await expect(action).toHaveText(/Instantiate/i, { timeout: 10_000 })
 		await action.click()
-		await expect(page.getByText(/Source instantiated/i).first()).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(/Source instantiated/i).first()).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// The Source now appears in the Sources index.
 		await page.goto(`${APP_BASE}/#/sources`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('xWiki', { exact: false }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(page.getByText('xWiki', { exact: false }).first()).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 })

@@ -12,11 +12,19 @@
  * occurs.
  */
 import { test } from '@playwright/test'
-import { navTo, trackErrors, assertNoAppErrors, expectHeading, APP_BASE } from './_helpers'
+import {
+	navTo,
+	trackErrors,
+	assertNoAppErrors,
+	expectHeading,
+	APP_BASE,
+} from './_helpers'
 
 test.describe('Dashboard — index surface', () => {
 	// @e2e openconnector-comprehensive-tests::dashboard-page-mounts
-	test('Dashboard renders heading and KPI widgets via nav-click', async ({ page }) => {
+	test('Dashboard renders heading and KPI widgets via nav-click', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 		await navTo(page, 'Dashboard', '/apps/openconnector')
 		await expectHeading(page, /^Dashboard$/)
@@ -25,8 +33,17 @@ test.describe('Dashboard — index surface', () => {
 		// labelled "<Title> <count>" (e.g. "Sources 0", "Mappings 0"). They
 		// load asynchronously after the route settles, so wait for the first
 		// KPI link to paint before counting.
-		const firstKpi = page.locator('main').getByRole('link', { name: /Sources|Mappings|Synchronizations|Jobs|Endpoints/i }).first()
-		await test.expect(firstKpi, 'a KPI stat-block widget link should render in the dashboard')
+		const firstKpi = page
+			.locator('main')
+			.getByRole('link', {
+				name: /Sources|Mappings|Synchronizations|Jobs|Endpoints/i,
+			})
+			.first()
+		await test
+			.expect(
+				firstKpi,
+				'a KPI stat-block widget link should render in the dashboard',
+			)
 			.toBeVisible({ timeout: 20_000 })
 
 		assertNoAppErrors(sink)
@@ -40,8 +57,14 @@ test.describe('Dashboard — index surface', () => {
 		// then assert on the chart heading itself (the real signal).
 		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
 		// Chart widget headings from the dashboard manifest config.
-		const chart = page.getByRole('heading', { name: /Outgoing calls|Job executions|Synchronization runs/i }).first()
-		await test.expect(chart, 'a chart widget heading should be visible').toBeVisible({ timeout: 20_000 })
+		const chart = page
+			.getByRole('heading', {
+				name: /Outgoing calls|Job executions|Synchronization runs/i,
+			})
+			.first()
+		await test
+			.expect(chart, 'a chart widget heading should be visible')
+			.toBeVisible({ timeout: 20_000 })
 		assertNoAppErrors(sink)
 	})
 })

@@ -35,8 +35,11 @@
 			<label class="cn-mapping-result__label" :for="schemaInputId">
 				{{ t('openconnector', 'Validation schema (optional)') }}
 			</label>
-			<NcSelect v-model="selectedSchema"
-				:aria-label-combobox="t('openconnector', 'Validation schema (optional)')"
+			<NcSelect
+				v-model="selectedSchema"
+				:aria-label-combobox="
+					t('openconnector', 'Validation schema (optional)')
+				"
 				:options="schemaOptions"
 				:loading="schemasLoading"
 				:placeholder="t('openconnector', 'No validation')"
@@ -46,7 +49,9 @@
 
 		<!-- Run status -->
 		<div class="cn-mapping-result__status">
-			<span class="cn-mapping-result__label">{{ t('openconnector', 'Output') }}</span>
+			<span class="cn-mapping-result__label">{{
+				t('openconnector', 'Output')
+			}}</span>
 			<NcLoadingIcon v-if="running" :size="16" />
 		</div>
 
@@ -58,11 +63,21 @@
 		<template v-if="hasResult && selectedSchema">
 			<p v-if="isValid" class="cn-mapping-result__valid">
 				<CheckCircleIcon :size="18" />
-				{{ t('openconnector', 'Result is valid against the selected schema.') }}
+				{{
+					t(
+						'openconnector',
+						'Result is valid against the selected schema.',
+					)
+				}}
 			</p>
 			<p v-else class="cn-mapping-result__invalid">
 				<CloseCircleIcon :size="18" />
-				{{ t('openconnector', 'Result is not valid against the selected schema.') }}
+				{{
+					t(
+						'openconnector',
+						'Result is not valid against the selected schema.',
+					)
+				}}
 			</p>
 		</template>
 
@@ -79,7 +94,9 @@
 						<td>{{ row.field }}</td>
 						<td>
 							<ul>
-								<li v-for="(message, index) in row.messages" :key="index">
+								<li
+									v-for="(message, index) in row.messages"
+									:key="index">
 									{{ message }}
 								</li>
 							</ul>
@@ -102,7 +119,8 @@
 				{{ t('openconnector', 'Save result as object') }}
 			</h4>
 
-			<NcSelect v-model="selectedRegister"
+			<NcSelect
+				v-model="selectedRegister"
 				:aria-label-combobox="t('openconnector', 'Register')"
 				:options="registerOptions"
 				:loading="registersLoading"
@@ -114,7 +132,9 @@
 						<DatabaseOutlineIcon :size="22" />
 						<span>
 							<strong>{{ label }}</strong>
-							<small>{{ description || t('openconnector', 'No description') }}</small>
+							<small>{{
+								description || t('openconnector', 'No description')
+							}}</small>
 						</span>
 					</div>
 				</template>
@@ -123,13 +143,18 @@
 			<!-- Only once a register is picked: until then the disabled button
 			     is not something the user is reaching for, and the hint is
 			     just noise in the column. -->
-			<p v-if="selectedRegister && !selectedSchema" class="cn-mapping-result__hint">
-				{{ t('openconnector', 'Pick a validation schema above — the result is stored against that schema.') }}
+			<p
+				v-if="selectedRegister && !selectedSchema"
+				class="cn-mapping-result__hint">
+				{{
+					t(
+						'openconnector',
+						'Pick a validation schema above — the result is stored against that schema.',
+					)
+				}}
 			</p>
 
-			<NcButton type="primary"
-				:disabled="!canSaveResult"
-				@click="saveResult">
+			<NcButton type="primary" :disabled="!canSaveResult" @click="saveResult">
 				<template #icon>
 					<NcLoadingIcon v-if="savingResult" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
@@ -141,12 +166,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
 import CheckCircleIcon from 'vue-material-design-icons/CheckCircle.vue'
 import CloseCircleIcon from 'vue-material-design-icons/CloseCircle.vue'
 import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -275,7 +295,10 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		emptyText() {
 			return this.auto
-				? this.t('openconnector', 'Output appears here once an input object and rules produce a result.')
+				? this.t(
+						'openconnector',
+						'Output appears here once an input object and rules produce a result.',
+					)
 				: this.t('openconnector', 'Run the test to see the result here.')
 		},
 		/**
@@ -316,9 +339,11 @@ export default {
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		showSaveBlock() {
-			return this.allowSaveToRegister
+			return (
+				this.allowSaveToRegister
 				&& this.openRegisterAvailable
 				&& this.hasResult
+			)
 		},
 		/**
 		 * A register alone is not enough: `MappingsController::saveObject()`
@@ -331,7 +356,8 @@ export default {
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		canSaveResult() {
-			return !this.savingResult
+			return (
+				!this.savingResult
 				&& this.hasResult
 				&& this.isValid
 				&& !!this.selectedSchema?.id
@@ -341,6 +367,7 @@ export default {
 				// does not re-run, so without this the enabled button would save a
 				// payload against a schema it was never checked against.
 				&& this.validatedSchemaId === this.selectedSchema?.id
+			)
 		},
 		/**
 		 * Reactivity key for the automatic re-run. Recomputing it is what
@@ -422,11 +449,12 @@ export default {
 				this.$emit('input-error', '')
 				return parsed
 			} catch (parseErr) {
-				this.$emit('input-error', this.t(
-					'openconnector',
-					'Input is not valid JSON: {message}',
-					{ message: parseErr.message },
-				))
+				this.$emit(
+					'input-error',
+					this.t('openconnector', 'Input is not valid JSON: {message}', {
+						message: parseErr.message,
+					}),
+				)
 				return null
 			}
 		},
@@ -475,11 +503,13 @@ export default {
 			} catch (err) {
 				if (runId !== this.runSequence) return
 				const status = err?.response?.status
-				const message = err?.response?.data?.message
+				const message =
+					err?.response?.data?.message
 					|| err?.response?.data?.error
 					|| err?.message
 					|| ''
-				this.runError = this.t('openconnector', 'Mapping test failed')
+				this.runError =
+					this.t('openconnector', 'Mapping test failed')
 					+ (status ? ` (${status})` : '')
 					+ (message ? `: ${message}` : '')
 			} finally {
@@ -592,12 +622,15 @@ export default {
 				)
 				showSuccess(this.t('openconnector', 'Result saved as object'))
 			} catch (err) {
-				const message = err?.response?.data?.error
+				const message =
+					err?.response?.data?.error
 					|| err?.response?.data?.message
 					|| err?.message
 					|| ''
-				showError(this.t('openconnector', 'Failed to save result')
-					+ (message ? `: ${message}` : ''))
+				showError(
+					this.t('openconnector', 'Failed to save result')
+						+ (message ? `: ${message}` : ''),
+				)
 			} finally {
 				this.savingResult = false
 			}
