@@ -32,6 +32,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\Each;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use JWadhams\JsonLogic;
 use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
 use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
@@ -87,6 +88,13 @@ class SynchronizationService {
 	 * @var int|null
 	 */
 	private ?int $lastPageFromLink = null;
+
+	/**
+	 * Call logs for pages fetched ahead of the loop, keyed by page number.
+	 *
+	 * @var array<int, mixed>
+	 */
+	private array $pagePrefetch = [];
 
 	/**
 	 * The synchronizations currently on the chaining call stack.
@@ -4839,6 +4847,23 @@ class SynchronizationService {
 				break;
 			}
 
+			// Page one told us the total, so the rest can go out together instead
+			// of one round trip at a time. Fetching was 58% of a 374-record sync
+			// after the write-side work — 4 GitHub pages at ~2.5s each, latency
+			// the engine was paying serially for no reason.
+			//
+			// Only fans out when the count is KNOWN. A source paginating by
+			// `next` link or by "page until empty" cannot be fanned out — its
+			// page count is unknowable until the end — and falls through to the
+			// sequential path untouched.
+			$this->prefetchRemainingPages(
+				source: $source,
+				endpoint: $currentEndpoint,
+				config: $config,
+				synchronization: $synchronization,
+				fromPage: ($pageCount + 1)
+			);
+
 			// Determine the next page URL/config.
 			$nextInfo = $this->getNextPageInfo(
 				source: $source,
@@ -5011,6 +5036,54 @@ class SynchronizationService {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
+	private function prefetchRemainingPages(
+		array $source,
+		string $endpoint,
+		array $config,
+		array $synchronization,
+		int $fromPage
+	): void {
+		$last = $this->lastPageFromLink;
+		if ($last === null || $fromPage > $last || $this->pagePrefetch !== []) {
+			// No known count, nothing left, or a fan-out already ran for this
+			// synchronization — issuing a second one would double every request.
+			return;
+		}
+
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$promises = [];
+		for ($page = $fromPage; $page <= $last; $page++) {
+			$pageConfig = $this->getNextPage(config: $config, sourceConfig: $sourceConfig, currentPage: $page);
+			$promises[$page] = $this->callSourceObjectAsync(
+				source: $source,
+				endpoint: $endpoint,
+				config: $pageConfig
+			);
+		}
+
+		if ($promises === []) {
+			return;
+		}
+
+		// settle(), not all(): one page rejecting must not discard the pages that
+		// succeeded. A rejected page simply is not cached, so the loop fetches it
+		// serially and classifies the failure exactly as it always did — which is
+		// what keeps "a failed page is never the end of pagination" true.
+		$settled = Utils::settle($promises)->wait();
+		foreach ($settled as $page => $outcome) {
+			if (($outcome['state'] ?? '') === 'fulfilled' && isset($outcome['value']) === true) {
+				$this->pagePrefetch[$page] = $outcome['value'];
+			}
+		}
+	}//end prefetchRemainingPages()
+
+	/**
+	 * Read the total page count from an RFC 5988 `Link` header.
+	 *
+	 * @param array $headers The response headers.
+	 *
+	 * @return int|null The last page number, or null when not advertised.
+	 */
 	private function parseLastPageFromLinkHeader(array $headers): ?int {
 		// Header names are case-insensitive and Guzzle preserves the server's
 		// casing, so match on a lowercased key rather than assuming `Link`.
@@ -5047,9 +5120,21 @@ class SynchronizationService {
 	 * @return array The page's objects and raw result.
 	 */
 	private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array {
-		// Make the API call (CallService is OpenRegister-native; callSourceObject
-		// resolves the source's OpenRegister object before invoking it).
-		$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config);
+		// A page already fetched by the concurrent prefetch is consumed from
+		// there. Deliberately a cache of CALL LOGS rather than of parsed pages:
+		// everything below — rate-limit handling, status classification, format
+		// sniffing, results position — then runs identically whether the page
+		// arrived serially or in the fan-out, so concurrency cannot change how a
+		// page is interpreted. That matters for REQ-009 in particular.
+		$page = (int)($config['pagination']['page'] ?? 0);
+		if ($page > 0 && array_key_exists($page, $this->pagePrefetch) === true) {
+			$callLog = $this->pagePrefetch[$page];
+			unset($this->pagePrefetch[$page]);
+		} else {
+			// Make the API call (CallService is OpenRegister-native;
+			// callSourceObject resolves the source's OpenRegister object first).
+			$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config);
+		}
 		$response = $this->callLogResponse(callLog: $callLog);
 
 		// Check for rate limiting.
