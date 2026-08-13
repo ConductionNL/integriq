@@ -165,12 +165,23 @@ class SynchronizationService
             $serializedObject = $object->jsonSerialize();
         }
 
+		$targetConfig = $synchronization->getTargetConfig();
+
+        // Optionally resolve extend_input (e.g. a related object like "zaaktype") before conditions
+        // are evaluated, so conditions can inspect properties of the extended/related object.
+        // The result is reused below (instead of resolving it again) so the object isn't fetched twice.
+        $extendedInput = null;
+        if ($synchronization->getConditions() !== []
+            && isset($targetConfig['extend_input']) === true
+            && $this->shouldExtendInputBeforeConditions($targetConfig) === true
+        ) {
+            $extendedInput = $this->processExtendInputRule($this->buildExtendInputConfig($targetConfig), $serializedObject);
+            $serializedObject = array_merge($serializedObject, $extendedInput);
+        }
 
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $serializedObject)) {
 			return null;
 		}
-
-		$targetConfig = $synchronization->getTargetConfig();
 
 		$originId = null;
 		if (is_array($object) === true && isset($object['@self']['id']) === true) {
@@ -185,23 +196,11 @@ class SynchronizationService
 		}
 
 		if (isset($targetConfig['extend_input']) === true) {
-            $fetchObject = false;
-
-            // If we allow the object to be fetched again, fetch including extends (so we hook into the existing extend functionality).
-            if (isset($targetConfig['extend_input_fetch_object']) === true) {
-                switch($targetConfig['extend_input_fetch_object']) {
-                    case 0:
-                    case true:
-                    case 'true':
-                        $fetchObject = true;
-                        break;
-                    default:
-                        $fetchObject = false;
-                        break;
-                }
-            }
-
-			$object = array_merge($object, $this->processExtendInputRule(['extend_input' => ['properties' => $targetConfig['extend_input'], 'fetchObject' => $fetchObject]], $object));
+			if ($extendedInput !== null) {
+				$object = array_merge($object, $extendedInput);
+			} else {
+				$object = array_merge($object, $this->processExtendInputRule($this->buildExtendInputConfig($targetConfig), $object));
+			}
 		}
 
 		// If the source configuration contains a dot notation for the id position, we need to extract the id from the source object
@@ -2407,7 +2406,7 @@ class SynchronizationService
 
         // If we can fetch the object to extend again, use OpenRegister to fetch the extended object.
         if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true && ($config['extend_input']['fetchObject'] === true || $config['extend_input']['fetchObject'] === 'true')) {
-            $object = $this->objectService->getOpenRegisters()->find(id: $id, extend: $config['extend_input']['properties']);
+            $object = $this->objectService->getOpenRegisters()->find(id: $id, _extend: $config['extend_input']['properties']);
             return $object->jsonSerialize();
         }
 
@@ -2429,6 +2428,48 @@ class SynchronizationService
         }
 
         return array_merge($data, $extendedParameters->all());
+    }
+
+    /**
+     * Builds the config array expected by processExtendInputRule() from a synchronization's target config.
+     *
+     * @param array $targetConfig The target config of the synchronization.
+     *
+     * @return array The config array for processExtendInputRule().
+     */
+    private function buildExtendInputConfig(array $targetConfig): array
+    {
+        $fetchObject = false;
+
+        // If we allow the object to be fetched again, fetch including extends (so we hook into the existing extend functionality).
+        if (isset($targetConfig['extend_input_fetch_object']) === true) {
+            switch ($targetConfig['extend_input_fetch_object']) {
+                case 0:
+                case true:
+                case 'true':
+                    $fetchObject = true;
+                    break;
+                default:
+                    $fetchObject = false;
+                    break;
+            }
+        }
+
+        return ['extend_input' => ['properties' => $targetConfig['extend_input'], 'fetchObject' => $fetchObject]];
+    }
+
+    /**
+     * Checks whether extend_input should be resolved before conditions are evaluated, based on the
+     * `extend_input_before_conditions` target config flag.
+     *
+     * @param array $targetConfig The target config of the synchronization.
+     *
+     * @return bool True if extend_input should be applied before conditions are checked.
+     */
+    private function shouldExtendInputBeforeConditions(array $targetConfig): bool
+    {
+        return isset($targetConfig['extend_input_before_conditions']) === true
+            && ($targetConfig['extend_input_before_conditions'] === true || $targetConfig['extend_input_before_conditions'] === 'true');
     }
 
 	/**
