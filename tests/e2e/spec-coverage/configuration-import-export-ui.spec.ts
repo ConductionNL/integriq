@@ -30,7 +30,9 @@ async function gotoCatalog(page: Page): Promise<void> {
 	// Hash-routed SPA (createWebHashHistory): deep-link via the hash fragment,
 	// else a bare `/catalog` path resolves to the default Dashboard route.
 	await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
-	await expect(page.getByTestId('catalog-item-card').first()).toBeVisible({ timeout: 15_000 })
+	await expect(page.getByTestId('catalog-item-card').first()).toBeVisible({
+		timeout: 15_000,
+	})
 }
 
 // SKIPPED (unvalidated feature specs, not a Vue-3 migration regression): as the
@@ -48,10 +50,15 @@ async function gotoCatalog(page: Page): Promise<void> {
 // skipped blocks in this suite.)
 test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 	// @e2e configuration-export-import::exporting-a-configuration-from-the-ui-produces-a-redacted-downloadable-file
-	test('export dialog downloads a JSON file with no credential fields', async ({ page }) => {
+	test('export dialog downloads a JSON file with no credential fields', async ({
+		page,
+	}) => {
 		await gotoCatalog(page)
 
-		await page.getByRole('button', { name: /Export configuration/i }).first().click()
+		await page
+			.getByRole('button', { name: /Export configuration/i })
+			.first()
+			.click()
 		const dialog = page.getByTestId('export-configuration-dialog')
 		await expect(dialog).toBeVisible({ timeout: 10_000 })
 
@@ -71,7 +78,13 @@ test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 
 		expect(document).toHaveProperty('components')
 		// REQ-005 redaction: no credential field may survive the export.
-		for (const field of ['"apikey"', '"secret"', '"password"', '"jwt"', '"authorizationHeader"']) {
+		for (const field of [
+			'"apikey"',
+			'"secret"',
+			'"password"',
+			'"jwt"',
+			'"authorizationHeader"',
+		]) {
 			expect(body).not.toContain(field)
 		}
 	})
@@ -83,52 +96,80 @@ test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 // TRACKED IN #1187.
 test.describe.skip('REQ-007/REQ-008: Import preview + confirmation', () => {
 	// @e2e configuration-export-import::preview-classifies-creates-updates-and-collisions
-	test('uploading a document shows the creates/updates preview without writing', async ({ page }) => {
+	test('uploading a document shows the creates/updates preview without writing', async ({
+		page,
+	}) => {
 		await gotoCatalog(page)
 
-		await page.getByRole('button', { name: /Import configuration/i }).first().click()
+		await page
+			.getByRole('button', { name: /Import configuration/i })
+			.first()
+			.click()
 		const dialog = page.getByTestId('import-preview-dialog')
 		await expect(dialog).toBeVisible({ timeout: 10_000 })
 
 		await page.getByTestId('import-file-input').setInputFiles({
 			name: 'import.json',
 			mimeType: 'application/json',
-			buffer: Buffer.from(JSON.stringify({
-				components: {
-					sources: {
-						'e2e-new-source': { slug: 'e2e-new-source', name: 'E2E new source', type: 'api' },
+			buffer: Buffer.from(
+				JSON.stringify({
+					components: {
+						sources: {
+							'e2e-new-source': {
+								slug: 'e2e-new-source',
+								name: 'E2E new source',
+								type: 'api',
+							},
+						},
 					},
-				},
-			})),
+				}),
+			),
 		})
 
-		await expect(page.getByTestId('preview-creates')).toBeVisible({ timeout: 10_000 })
-		await expect(page.getByTestId('preview-creates')).toContainText('e2e-new-source')
+		await expect(page.getByTestId('preview-creates')).toBeVisible({
+			timeout: 10_000,
+		})
+		await expect(page.getByTestId('preview-creates')).toContainText(
+			'e2e-new-source',
+		)
 		await expect(page.getByTestId('preview-updates')).toBeVisible()
 	})
 
 	// @e2e configuration-export-import::preview-surfaces-an-unresolvable-slug-reference-as-a-blocking-warning
-	test('an unresolvable slug reference blocks confirmation until acknowledged', async ({ page }) => {
+	test('an unresolvable slug reference blocks confirmation until acknowledged', async ({
+		page,
+	}) => {
 		await gotoCatalog(page)
 
-		await page.getByRole('button', { name: /Import configuration/i }).first().click()
+		await page
+			.getByRole('button', { name: /Import configuration/i })
+			.first()
+			.click()
 		await page.getByTestId('import-file-input').setInputFiles({
 			name: 'import-dangling.json',
 			mimeType: 'application/json',
-			buffer: Buffer.from(JSON.stringify({
-				components: {
-					rules: {
-						'e2e-dangling-rule': {
-							slug: 'e2e-dangling-rule',
-							configuration: { sourceId: 'this-slug-does-not-exist-anywhere' },
+			buffer: Buffer.from(
+				JSON.stringify({
+					components: {
+						rules: {
+							'e2e-dangling-rule': {
+								slug: 'e2e-dangling-rule',
+								configuration: {
+									sourceId: 'this-slug-does-not-exist-anywhere',
+								},
+							},
 						},
 					},
-				},
-			})),
+				}),
+			),
 		})
 
-		await expect(page.getByTestId('preview-unresolved')).toBeVisible({ timeout: 10_000 })
-		await expect(page.getByTestId('preview-unresolved')).toContainText('this-slug-does-not-exist-anywhere')
+		await expect(page.getByTestId('preview-unresolved')).toBeVisible({
+			timeout: 10_000,
+		})
+		await expect(page.getByTestId('preview-unresolved')).toContainText(
+			'this-slug-does-not-exist-anywhere',
+		)
 
 		// Blocking: confirm is disabled until the operator acknowledges.
 		const confirm = page.getByTestId('confirm-import')
@@ -139,38 +180,57 @@ test.describe.skip('REQ-007/REQ-008: Import preview + confirmation', () => {
 
 	// @e2e configuration-export-import::confirmed-import-proceeds-and-reuses-the-existing-import-pipeline-unchanged
 	// @e2e configuration-export-import::a-newly-created-source-from-import-is-flagged-for-credential-re-entry
-	test('confirming the import writes the entities and flags credential re-entry', async ({ page }) => {
+	test('confirming the import writes the entities and flags credential re-entry', async ({
+		page,
+	}) => {
 		await gotoCatalog(page)
 
-		await page.getByRole('button', { name: /Import configuration/i }).first().click()
+		await page
+			.getByRole('button', { name: /Import configuration/i })
+			.first()
+			.click()
 		await page.getByTestId('import-file-input').setInputFiles({
 			name: 'import-confirm.json',
 			mimeType: 'application/json',
-			buffer: Buffer.from(JSON.stringify({
-				components: {
-					sources: {
-						'e2e-import-source': {
-							slug: 'e2e-import-source',
-							name: 'E2E imported source (credentials stripped)',
-							type: 'api',
+			buffer: Buffer.from(
+				JSON.stringify({
+					components: {
+						sources: {
+							'e2e-import-source': {
+								slug: 'e2e-import-source',
+								name: 'E2E imported source (credentials stripped)',
+								type: 'api',
+							},
 						},
 					},
-				},
-			})),
+				}),
+			),
 		})
 
-		await expect(page.getByTestId('preview-creates')).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByTestId('preview-creates')).toBeVisible({
+			timeout: 10_000,
+		})
 		// REQ-009 preview-side flag.
-		await expect(page.getByTestId('preview-credentials')).toContainText('e2e-import-source')
+		await expect(page.getByTestId('preview-credentials')).toContainText(
+			'e2e-import-source',
+		)
 
 		await page.getByTestId('confirm-import').click()
-		await expect(page.getByTestId('import-success')).toBeVisible({ timeout: 15_000 })
+		await expect(page.getByTestId('import-success')).toBeVisible({
+			timeout: 15_000,
+		})
 		// REQ-009 post-import summary names the source + missing fields.
-		await expect(page.getByTestId('import-credentials-summary')).toContainText('e2e-import-source')
-		await expect(page.getByTestId('import-credentials-summary')).toContainText('apikey')
+		await expect(page.getByTestId('import-credentials-summary')).toContainText(
+			'e2e-import-source',
+		)
+		await expect(page.getByTestId('import-credentials-summary')).toContainText(
+			'apikey',
+		)
 
 		// The imported source appears on the Sources index (REQ-008 written-check).
 		await page.goto(`${APP_BASE}/#/sources`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('E2E imported source', { exact: false }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByText('E2E imported source', { exact: false }).first(),
+		).toBeVisible({ timeout: 15_000 })
 	})
 })

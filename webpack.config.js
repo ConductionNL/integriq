@@ -90,15 +90,24 @@ webpackConfig.resolve = {
 		// function`, `Cannot destructure 'href'`). One ABSOLUTE file so the app +
 		// any aliased lib source share ONE Vue copy (dual-copy = two
 		// currentRenderingInstance states → CnAppRoot null crash).
-		'vue$': path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
-		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
+		vue$: path.resolve(
+			__dirname,
+			'node_modules/vue/dist/vue.runtime.esm-bundler.js',
+		),
+		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
 		// Dedupe vue-router to ONE copy (absolute file): a per-importer resolve
 		// gives @nextcloud/vue's RouterLink a different router instance than
 		// app.use(router) provided → NcAppNavigationItem's <router-link> crash.
-		'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
+		'vue-router$': path.resolve(
+			__dirname,
+			'node_modules/vue-router/dist/vue-router.mjs',
+		),
 		// v9 is ESM-only: exports maps '.' -> ./dist/index.mjs with no main/module,
 		// so a directory alias can't resolve it. Point at the explicit entry file.
-		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
+		'@nextcloud/vue$': path.resolve(
+			__dirname,
+			'node_modules/@nextcloud/vue/dist/index.mjs',
+		),
 		// Force @nextcloud/dialogs and @nextcloud/axios to resolve from this
 		// app's node_modules, preventing the nextcloud-vue submodule's nested
 		// deps from leaking in.
@@ -109,9 +118,18 @@ webpackConfig.resolve = {
 		// had a main, so the directory alias worked and nobody noticed a Vue 2
 		// package was being bundled into a Vue 3 app. Point at the explicit
 		// entry file, and alias the one subpath the library imports.
-		'@nextcloud/dialogs$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs'),
-		'@nextcloud/dialogs/style.css$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css'),
-		'@nextcloud/axios$': path.resolve(__dirname, 'node_modules/@nextcloud/axios'),
+		'@nextcloud/dialogs$': path.resolve(
+			__dirname,
+			'node_modules/@nextcloud/dialogs/dist/index.mjs',
+		),
+		'@nextcloud/dialogs/style.css$': path.resolve(
+			__dirname,
+			'node_modules/@nextcloud/dialogs/dist/style.css',
+		),
+		'@nextcloud/axios$': path.resolve(
+			__dirname,
+			'node_modules/@nextcloud/axios',
+		),
 	},
 }
 
@@ -153,7 +171,9 @@ webpackConfig.module = {
 webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
-	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	new webpack.DefinePlugin({
+		appVersion: JSON.stringify(process.env.npm_package_version),
+	}),
 	// Vue 3 (ADR-066): the app has ~70 script-context bare `t(...)` / `n(...)`
 	// calls (computeds, methods, data — NOT `this.t`, NOT imported). Under Vue 2
 	// these free identifiers resolved to Nextcloud's global `window.t` / `window.n`

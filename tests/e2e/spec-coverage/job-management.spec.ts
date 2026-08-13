@@ -47,12 +47,20 @@ test.describe('REQ-JOB-UI-001: Add Job modal', () => {
 	test('Add Item button on Jobs page opens modal/dialog', async ({ page }) => {
 		await page.goto(`${APP_BASE}/jobs`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Job)/i })
-		await expect(addBtn, 'Add Item button must be visible on Jobs page').toBeVisible({ timeout: 20_000 })
+		await expect(
+			addBtn,
+			'Add Item button must be visible on Jobs page',
+		).toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
 		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Item on Jobs').toBeVisible({ timeout: 10_000 })
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Item on Jobs',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -74,7 +82,9 @@ test.describe('REQ-JOB-UI-001: Job logs sub-page', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Jobs OR API — list', () => {
-	test('OR returns job objects for the openconnector register', async ({ request }) => {
+	test('OR returns job objects for the openconnector register', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/job?_limit=10`, {
 			failOnStatusCode: false,
 		})

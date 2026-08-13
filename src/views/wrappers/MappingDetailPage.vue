@@ -73,13 +73,19 @@
 					<dd>{{ mapping.description || '-' }}</dd>
 					<dt>{{ t('openconnector', 'Pass through') }}</dt>
 					<dd>
-						<NcCheckboxRadioSwitch :model-value="!!mapping.passThrough"
+						<NcCheckboxRadioSwitch
+							:model-value="!!mapping.passThrough"
 							:disabled="saving"
 							@update:model-value="onTogglePassThrough">
 							{{ passThroughLabel }}
 						</NcCheckboxRadioSwitch>
 						<p class="cn-mapping-detail__hint">
-							{{ t('openconnector', 'When enabled, fields from the input object are copied through unless explicitly unset.') }}
+							{{
+								t(
+									'openconnector',
+									'When enabled, fields from the input object are copied through unless explicitly unset.',
+								)
+							}}
 						</p>
 					</dd>
 				</dl>
@@ -115,13 +121,21 @@
 						</NcButton>
 					</div>
 					<p class="cn-mapping-detail__hint">
-						{{ t('openconnector', 'Edit the sample input below; the output re-renders as you type and on every rule change.') }}
+						{{
+							t(
+								'openconnector',
+								'Edit the sample input below; the output re-renders as you type and on every rule change.',
+							)
+						}}
 					</p>
 
-					<label for="cn-mapping-detail__sample-input" class="cn-mapping-detail__field-label">
+					<label
+						for="cn-mapping-detail__sample-input"
+						class="cn-mapping-detail__field-label">
 						{{ t('openconnector', 'Sample input (JSON)') }}
 					</label>
-					<textarea id="cn-mapping-detail__sample-input"
+					<textarea
+						id="cn-mapping-detail__sample-input"
 						v-model="sampleInput"
 						class="cn-mapping-detail__textarea"
 						rows="8"
@@ -131,7 +145,8 @@
 						{{ sampleParseError }}
 					</p>
 
-					<MappingResultPanel ref="result"
+					<MappingResultPanel
+						ref="result"
 						:mapping="mapping"
 						:input-object="sampleInput"
 						@input-error="sampleParseError = $event" />
@@ -145,10 +160,7 @@
 import { CnDetailPage } from '@conduction/nextcloud-vue'
 import { useObjectStore } from '../../store/objectStore.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
@@ -245,8 +257,7 @@ export default {
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
-			return err.message
-				|| this.t('openconnector', 'Failed to load mapping')
+			return err.message || this.t('openconnector', 'Failed to load mapping')
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		title() {
@@ -363,7 +374,8 @@ export default {
 				const merged = { ...this.mapping, ...patch }
 				const result = await this.store.saveObject(this.objectType, merged)
 				if (!result) {
-					const message = this.store.errors?.[this.objectType]?.message
+					const message =
+						this.store.errors?.[this.objectType]?.message
 						|| this.t('openconnector', 'Failed to save mapping')
 					showError(message)
 					return
@@ -543,5 +555,4 @@ export default {
 	font-size: 12px;
 	margin: 4px 0 0 0;
 }
-
 </style>

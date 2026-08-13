@@ -21,7 +21,8 @@
 		<div class="approvals__header">
 			<h2>{{ t('openconnector', 'Approvals') }}</h2>
 			<div class="approvals__filters">
-				<NcSelect v-model="statusFilter"
+				<NcSelect
+					v-model="statusFilter"
 					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
 					@update:model-value="reload" />
@@ -30,10 +31,16 @@
 
 		<NcLoadingIcon v-if="loading" :size="32" class="approvals__loading" />
 
-		<NcEmptyContent v-else-if="!rows.length"
+		<NcEmptyContent
+			v-else-if="!rows.length"
 			data-testid="empty-state"
 			:name="t('openconnector', 'No approval requests')"
-			:description="t('openconnector', 'There are no approval requests matching this filter.')">
+			:description="
+				t(
+					'openconnector',
+					'There are no approval requests matching this filter.',
+				)
+			">
 			<template #icon>
 				<CheckboxMarkedCircleOutline :size="48" />
 			</template>
@@ -53,7 +60,9 @@
 			<tbody>
 				<tr v-for="row in rows" :key="row.id">
 					<td>
-						<span class="approvals__badge" :class="`approvals__badge--${row.status}`">
+						<span
+							class="approvals__badge"
+							:class="`approvals__badge--${row.status}`">
 							{{ row.status }}
 						</span>
 					</td>
@@ -77,12 +86,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
 
 export default {
@@ -101,7 +105,13 @@ export default {
 			rows: [],
 			loading: false,
 			statusFilter: 'pending',
-			statusOptions: ['pending', 'approved', 'rejected', 'expired', 'dead_letter'],
+			statusOptions: [
+				'pending',
+				'approved',
+				'rejected',
+				'expired',
+				'dead_letter',
+			],
 		}
 	},
 
@@ -130,7 +140,10 @@ export default {
 				if (this.statusFilter) {
 					params.status = this.statusFilter
 				}
-				const res = await axios.get(generateUrl('/apps/openconnector/api/approvals'), { params })
+				const res = await axios.get(
+					generateUrl('/apps/openconnector/api/approvals'),
+					{ params },
+				)
 				this.rows = res.data?.results || []
 			} catch (err) {
 				showError(t('openconnector', 'Failed to load approval requests'))

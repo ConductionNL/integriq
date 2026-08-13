@@ -7,7 +7,12 @@
 	<div class="openconnector-admin__section" data-testid="admin-dso-pki-section">
 		<h3>{{ t('openconnector', 'DSO STAM webhook signature verification') }}</h3>
 		<p class="openconnector-admin__hint">
-			{{ t('openconnector', 'Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).') }}
+			{{
+				t(
+					'openconnector',
+					'Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).',
+				)
+			}}
 		</p>
 
 		<div v-if="error" class="openconnector-admin__action-error" role="alert">
@@ -23,35 +28,56 @@
 				v-model="mode"
 				:input-label="t('openconnector', 'Signing mode')"
 				:options="modeOptions"
-				:reduce="option => option.value"
+				:reduce="(option) => option.value"
 				:clearable="false"
 				data-testid="admin-dso-pki-mode" />
 
 			<template v-if="mode === 'hmac'">
-				<label for="dso-pki-hmac-secret">{{ t('openconnector', 'HMAC shared secret') }}</label>
+				<label for="dso-pki-hmac-secret">{{
+					t('openconnector', 'HMAC shared secret')
+				}}</label>
 				<NcPasswordField
 					id="dso-pki-hmac-secret"
 					v-model="hmacSecret"
-					:placeholder="hmacSecretConfigured ? t('openconnector', 'Configured (leave blank to keep unchanged)') : t('openconnector', 'Not configured')"
+					:placeholder="
+						hmacSecretConfigured
+							? t(
+									'openconnector',
+									'Configured (leave blank to keep unchanged)',
+								)
+							: t('openconnector', 'Not configured')
+					"
 					data-testid="admin-dso-pki-hmac-secret" />
 			</template>
 
 			<template v-else>
-				<label for="dso-pki-signing-cert">{{ t('openconnector', 'Signing certificate (PEM)') }}</label>
+				<label for="dso-pki-signing-cert">{{
+					t('openconnector', 'Signing certificate (PEM)')
+				}}</label>
 				<textarea
 					id="dso-pki-signing-cert"
 					v-model="signingCertificate"
 					class="openconnector-admin__dso-pki-textarea"
 					data-testid="admin-dso-pki-signing-cert" />
 
-				<label for="dso-pki-intermediate-chain">{{ t('openconnector', 'Intermediate certificate chain (PEM, optional)') }}</label>
+				<label for="dso-pki-intermediate-chain">{{
+					t(
+						'openconnector',
+						'Intermediate certificate chain (PEM, optional)',
+					)
+				}}</label>
 				<textarea
 					id="dso-pki-intermediate-chain"
 					v-model="intermediateChain"
 					class="openconnector-admin__dso-pki-textarea"
 					data-testid="admin-dso-pki-intermediate-chain" />
 
-				<label for="dso-pki-root-ca">{{ t('openconnector', 'Trusted root CA (PKIoverheid Private Root CA, PEM)') }}</label>
+				<label for="dso-pki-root-ca">{{
+					t(
+						'openconnector',
+						'Trusted root CA (PKIoverheid Private Root CA, PEM)',
+					)
+				}}</label>
 				<textarea
 					id="dso-pki-root-ca"
 					v-model="rootCa"
@@ -66,7 +92,11 @@
 				data-testid="admin-dso-pki-save"
 				:disabled="loading || saving"
 				@click="save">
-				{{ saving ? t('openconnector', 'Saving…') : t('openconnector', 'Save DSO signature configuration') }}
+				{{
+					saving
+						? t('openconnector', 'Saving…')
+						: t('openconnector', 'Save DSO signature configuration')
+				}}
 			</NcButton>
 		</div>
 	</div>
@@ -105,8 +135,20 @@ export default {
 			intermediateChain: '',
 			rootCa: '',
 			modeOptions: [
-				{ label: this.t('openconnector', 'HMAC shared secret (pre-production)'), value: 'hmac' },
-				{ label: this.t('openconnector', 'PKIoverheid certificate chain (production)'), value: 'rsa' },
+				{
+					label: this.t(
+						'openconnector',
+						'HMAC shared secret (pre-production)',
+					),
+					value: 'hmac',
+				},
+				{
+					label: this.t(
+						'openconnector',
+						'PKIoverheid certificate chain (production)',
+					),
+					value: 'rsa',
+				},
 			],
 		}
 	},
@@ -122,7 +164,9 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openconnector/api/admin/dso-pki-config'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openconnector/api/admin/dso-pki-config'),
+				)
 				this.mode = data.mode === 'rsa' ? 'rsa' : 'hmac'
 				this.hmacSecretConfigured = data.hmacSecretConfigured === true
 				this.signingCertificate = data.signingCertificate || ''
@@ -130,7 +174,10 @@ export default {
 				this.rootCa = data.rootCa || ''
 			} catch (e) {
 				console.error('Failed to load DSO PKI configuration', e)
-				this.error = this.t('openconnector', 'Failed to load the DSO signature configuration.')
+				this.error = this.t(
+					'openconnector',
+					'Failed to load the DSO signature configuration.',
+				)
 			} finally {
 				this.loading = false
 			}
@@ -153,13 +200,23 @@ export default {
 				)
 				this.hmacSecret = ''
 				await this.load()
-				showSuccess(this.t('openconnector', 'DSO signature configuration saved.'))
+				showSuccess(
+					this.t('openconnector', 'DSO signature configuration saved.'),
+				)
 			} catch (e) {
 				console.error('Failed to save DSO PKI configuration', e)
-				const errors = e.response && e.response.data && Array.isArray(e.response.data.errors)
-					? e.response.data.errors.join(' ')
-					: null
-				this.error = errors || this.t('openconnector', 'Failed to save the DSO signature configuration.')
+				const errors =
+					e.response
+					&& e.response.data
+					&& Array.isArray(e.response.data.errors)
+						? e.response.data.errors.join(' ')
+						: null
+				this.error =
+					errors
+					|| this.t(
+						'openconnector',
+						'Failed to save the DSO signature configuration.',
+					)
 				showError(this.error)
 			} finally {
 				this.saving = false

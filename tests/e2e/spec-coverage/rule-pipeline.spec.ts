@@ -42,12 +42,18 @@ test.describe('REQ-RULE-UI-001: Add Rule modal', () => {
 	test('Add Rule button opens modal/dialog', async ({ page }) => {
 		await page.goto(`${APP_BASE}/rules`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: 'Add Rule' })
-		await expect(addBtn, 'Add Rule button must be visible').toBeVisible({ timeout: 20_000 })
+		await expect(addBtn, 'Add Rule button must be visible').toBeVisible({
+			timeout: 20_000,
+		})
 		await addBtn.click()
 		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Rule').toBeVisible({ timeout: 10_000 })
+		await expect(dialog, 'Modal must open after clicking Add Rule').toBeVisible({
+			timeout: 10_000,
+		})
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -58,9 +64,13 @@ test.describe('REQ-RULE-UI-001: Add Rule modal', () => {
 
 test.describe('REQ-RULE-UI-001: Rule detail page', () => {
 	// @e2e rule-pipeline::rule-detail-page-renders-for-an-existing-rule
-	test('Rule detail URL renders app-content without crashing', async ({ page }) => {
+	test('Rule detail URL renders app-content without crashing', async ({
+		page,
+	}) => {
 		// Navigate directly to a detail-style URL; SPA gracefully handles nonexistent IDs
-		await page.goto(`${APP_BASE}/rules/__nonexistent__`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/rules/__nonexistent__`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)

@@ -13,15 +13,18 @@
   Closes #835.
 -->
 <template>
-	<NcModal v-if="open"
-		label-id="testMappingModal"
-		size="large"
-		@close="onClose">
+	<NcModal v-if="open" label-id="testMappingModal" size="large" @close="onClose">
 		<div class="cn-test-mapping-modal">
 			<h2>{{ t('openconnector', 'Test mapping') }}</h2>
 
 			<NcNoteCard v-if="mappingName" type="info">
-				<p>{{ t('openconnector', 'Testing mapping: {name}', { name: mappingName }) }}</p>
+				<p>
+					{{
+						t('openconnector', 'Testing mapping: {name}', {
+							name: mappingName,
+						})
+					}}
+				</p>
 			</NcNoteCard>
 
 			<div class="cn-test-mapping-modal__panes">
@@ -31,7 +34,8 @@
 					<label for="cn-test-mapping-input">
 						{{ t('openconnector', 'Input object (JSON)') }}
 					</label>
-					<textarea id="cn-test-mapping-input"
+					<textarea
+						id="cn-test-mapping-input"
 						v-model="inputJson"
 						class="cn-test-mapping-modal__textarea"
 						rows="14"
@@ -45,7 +49,8 @@
 						<NcButton @click="onClose">
 							{{ t('openconnector', 'Close') }}
 						</NcButton>
-						<NcButton type="primary"
+						<NcButton
+							type="primary"
 							:disabled="!canRun"
 							@click="runTest">
 							<template #icon>
@@ -59,7 +64,8 @@
 				<!-- Right: result -->
 				<section class="cn-test-mapping-modal__pane">
 					<h3>{{ t('openconnector', 'Result') }}</h3>
-					<MappingResultPanel ref="result"
+					<MappingResultPanel
+						ref="result"
 						:mapping="mapping"
 						:input-object="inputJson"
 						:auto="false"
@@ -71,11 +77,7 @@
 </template>
 
 <script>
-import {
-	NcModal,
-	NcButton,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcModal, NcButton, NcNoteCard } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'

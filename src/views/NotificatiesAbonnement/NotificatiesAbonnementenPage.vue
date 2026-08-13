@@ -20,7 +20,8 @@
 	<div class="notificatiesAbonnementen">
 		<div class="notificatiesAbonnementen__header">
 			<h2>{{ t('openconnector', 'Abonnementen') }}</h2>
-			<NcButton type="primary"
+			<NcButton
+				type="primary"
 				data-testid="add-abonnement"
 				@click="openCreate">
 				{{ t('openconnector', 'Add Item') }}
@@ -28,21 +29,38 @@
 		</div>
 
 		<p class="notificatiesAbonnementen__intro">
-			{{ t('openconnector', 'Manage this app\'s subscriber registrations against remote ZGW Notificaties API kanalen (Logius/VNG API Notificatiestandaard voor ZGW APIs).') }}
+			{{
+				t(
+					'openconnector',
+					"Manage this app's subscriber registrations against remote ZGW Notificaties API kanalen (Logius/VNG API Notificatiestandaard voor ZGW APIs).",
+				)
+			}}
 		</p>
 
-		<NcLoadingIcon v-if="loading" :size="32" class="notificatiesAbonnementen__loading" />
+		<NcLoadingIcon
+			v-if="loading"
+			:size="32"
+			class="notificatiesAbonnementen__loading" />
 
-		<NcEmptyContent v-else-if="!rows.length"
+		<NcEmptyContent
+			v-else-if="!rows.length"
 			data-testid="empty-state"
 			:name="t('openconnector', 'No abonnementen yet')"
-			:description="t('openconnector', 'Register an abonnement to subscribe to a Notificaties API kanaal.')">
+			:description="
+				t(
+					'openconnector',
+					'Register an abonnement to subscribe to a Notificaties API kanaal.',
+				)
+			">
 			<template #icon>
 				<BellRingOutline :size="48" />
 			</template>
 		</NcEmptyContent>
 
-		<table v-else class="notificatiesAbonnementen__table" data-testid="abonnementen-table">
+		<table
+			v-else
+			class="notificatiesAbonnementen__table"
+			data-testid="abonnementen-table">
 			<thead>
 				<tr>
 					<th scope="col">{{ t('openconnector', 'Name') }}</th>
@@ -57,11 +75,15 @@
 					<td>{{ row.name || '—' }}</td>
 					<td>{{ kanaalNames(row) }}</td>
 					<td>
-						<span class="notificatiesAbonnementen__badge" :class="`notificatiesAbonnementen__badge--${row.status}`">
+						<span
+							class="notificatiesAbonnementen__badge"
+							:class="`notificatiesAbonnementen__badge--${row.status}`">
 							{{ row.status }}
 						</span>
 					</td>
-					<td>{{ row.status === 'error' ? (row.lastError || '—') : '—' }}</td>
+					<td>
+						{{ row.status === 'error' ? row.lastError || '—' : '—' }}
+					</td>
 					<td class="notificatiesAbonnementen__actions">
 						<NcButton type="tertiary" @click="openEdit(row)">
 							{{ t('openconnector', 'Edit') }}
@@ -74,7 +96,8 @@
 			</tbody>
 		</table>
 
-		<NotificatiesAbonnementForm :open="form.open"
+		<NotificatiesAbonnementForm
+			:open="form.open"
 			:abonnement="form.abonnement"
 			@close="form.open = false"
 			@saved="onSaved" />
@@ -86,11 +109,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import BellRingOutline from 'vue-material-design-icons/BellRingOutline.vue'
 import NotificatiesAbonnementForm from '../../modals/NotificatiesAbonnement/NotificatiesAbonnementForm.vue'
 
@@ -129,7 +148,9 @@ export default {
 		async reload() {
 			this.loading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openconnector/api/notificaties/abonnementen'))
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/notificaties/abonnementen'),
+				)
 				this.rows = response.data?.results || []
 			} catch (err) {
 				showError(t('openconnector', 'Failed to load abonnementen'))
@@ -146,7 +167,12 @@ export default {
 		 */
 		kanaalNames(row) {
 			const kanalen = Array.isArray(row.kanalen) ? row.kanalen : []
-			return kanalen.map((k) => k.naam).filter(Boolean).join(', ') || '—'
+			return (
+				kanalen
+					.map((k) => k.naam)
+					.filter(Boolean)
+					.join(', ') || '—'
+			)
 		},
 
 		/**
@@ -193,12 +219,19 @@ export default {
 			}
 
 			try {
-				await axios.delete(generateUrl(`/apps/openconnector/api/notificaties/abonnementen/${id}`))
+				await axios.delete(
+					generateUrl(
+						`/apps/openconnector/api/notificaties/abonnementen/${id}`,
+					),
+				)
 				showSuccess(t('openconnector', 'Abonnement deleted'))
 				this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Failed to delete abonnement') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Failed to delete abonnement')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			}
 		},
 

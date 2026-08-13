@@ -24,7 +24,8 @@
     4. POST /api/promotions with confirmed:true
 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		label-id="promotePreviewModal"
 		size="large"
 		data-testid="promote-preview-modal"
@@ -34,7 +35,8 @@
 
 			<!-- Step 1: pick configuration group + target environment -->
 			<div v-if="step === 'select'" class="oc-promote-modal__step">
-				<NcSelect :model-value="selectedConfig"
+				<NcSelect
+					:model-value="selectedConfig"
 					:options="configOptions"
 					:loading="loadingConfigs"
 					:input-label="t('openconnector', 'Configuration group')"
@@ -43,7 +45,8 @@
 					data-testid="promote-configuration-select"
 					@update:model-value="onSelectConfig" />
 
-				<NcSelect :model-value="selectedEnvironment"
+				<NcSelect
+					:model-value="selectedEnvironment"
 					:options="environmentOptions"
 					:loading="loadingEnvironments"
 					:input-label="t('openconnector', 'Target environment')"
@@ -60,7 +63,8 @@
 					<NcButton type="tertiary" @click="close">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
-					<NcButton type="primary"
+					<NcButton
+						type="primary"
 						:disabled="!canPreview || previewing"
 						data-testid="promote-run-preview"
 						@click="runPreview">
@@ -75,50 +79,104 @@
 			<!-- Step 2: preview + credential rebind + confirm -->
 			<div v-else class="oc-promote-modal__step">
 				<p>
-					{{ t('openconnector', 'Promoting {config} to {environment}.', { config: selectedConfig.label, environment: selectedEnvironment.label }) }}
+					{{
+						t('openconnector', 'Promoting {config} to {environment}.', {
+							config: selectedConfig.label,
+							environment: selectedEnvironment.label,
+						})
+					}}
 				</p>
 
 				<div class="oc-promote-modal__buckets">
-					<div class="oc-promote-modal__bucket" data-testid="promote-preview-creates">
-						<h5>{{ t('openconnector', 'Will be created') }} ({{ preview.creates.length }})</h5>
+					<div
+						class="oc-promote-modal__bucket"
+						data-testid="promote-preview-creates">
+						<h5>
+							{{ t('openconnector', 'Will be created') }} ({{
+								preview.creates.length
+							}})
+						</h5>
 						<ul>
-							<li v-for="entry in preview.creates" :key="`c-${entry.type}-${entry.slug}`">
+							<li
+								v-for="entry in preview.creates"
+								:key="`c-${entry.type}-${entry.slug}`">
 								<code>{{ entry.type }}</code> {{ entry.slug }}
 							</li>
 						</ul>
 					</div>
-					<div class="oc-promote-modal__bucket" data-testid="promote-preview-updates">
-						<h5>{{ t('openconnector', 'Will be updated') }} ({{ preview.updates.length }})</h5>
+					<div
+						class="oc-promote-modal__bucket"
+						data-testid="promote-preview-updates">
+						<h5>
+							{{ t('openconnector', 'Will be updated') }} ({{
+								preview.updates.length
+							}})
+						</h5>
 						<ul>
-							<li v-for="entry in preview.updates" :key="`u-${entry.type}-${entry.slug}`">
+							<li
+								v-for="entry in preview.updates"
+								:key="`u-${entry.type}-${entry.slug}`">
 								<code>{{ entry.type }}</code> {{ entry.slug }}
 							</li>
 						</ul>
 					</div>
-					<div class="oc-promote-modal__bucket" data-testid="promote-preview-collisions">
-						<h5>{{ t('openconnector', 'Collisions') }} ({{ preview.collisions.length }})</h5>
+					<div
+						class="oc-promote-modal__bucket"
+						data-testid="promote-preview-collisions">
+						<h5>
+							{{ t('openconnector', 'Collisions') }} ({{
+								preview.collisions.length
+							}})
+						</h5>
 						<ul>
-							<li v-for="entry in preview.collisions" :key="`co-${entry.type}-${entry.slug}`">
+							<li
+								v-for="entry in preview.collisions"
+								:key="`co-${entry.type}-${entry.slug}`">
 								<code>{{ entry.type }}</code> {{ entry.slug }}
 							</li>
 						</ul>
 					</div>
 				</div>
 
-				<div v-if="preview.credentialRefsNeedingRebind.length" class="oc-promote-modal__rebind" data-testid="promote-preview-rebind">
-					<h5>{{ t('openconnector', 'Credentials needing a target-environment rebind') }} ({{ preview.credentialRefsNeedingRebind.length }})</h5>
-					<p>{{ t('openconnector', 'These Sources authenticate via a credential reference from THIS environment. Supply the equivalent credential name valid on the target — the reference is rewritten, never a secret.') }}</p>
-					<div v-for="entry in preview.credentialRefsNeedingRebind"
+				<div
+					v-if="preview.credentialRefsNeedingRebind.length"
+					class="oc-promote-modal__rebind"
+					data-testid="promote-preview-rebind">
+					<h5>
+						{{
+							t(
+								'openconnector',
+								'Credentials needing a target-environment rebind',
+							)
+						}}
+						({{ preview.credentialRefsNeedingRebind.length }})
+					</h5>
+					<p>
+						{{
+							t(
+								'openconnector',
+								'These Sources authenticate via a credential reference from THIS environment. Supply the equivalent credential name valid on the target — the reference is rewritten, never a secret.',
+							)
+						}}
+					</p>
+					<div
+						v-for="entry in preview.credentialRefsNeedingRebind"
 						:key="`rb-${entry.slug}-${entry.field}`"
 						class="oc-promote-modal__rebind-row">
 						<label :for="`rebind-${entry.slug}`">
 							{{ entry.slug }} <code>{{ entry.field }}</code>
 						</label>
-						<input :id="`rebind-${entry.slug}`"
+						<input
+							:id="`rebind-${entry.slug}`"
 							v-model="credentialBindings[bindingKey(entry)]"
 							type="text"
-							:placeholder="t('openconnector', 'Target credential name (optional — leave blank to send as-is)')"
-							:data-testid="`promote-rebind-input-${entry.slug}`">
+							:placeholder="
+								t(
+									'openconnector',
+									'Target credential name (optional — leave blank to send as-is)',
+								)
+							"
+							:data-testid="`promote-rebind-input-${entry.slug}`" />
 					</div>
 				</div>
 
@@ -130,7 +188,8 @@
 					<NcButton type="tertiary" @click="backToSelect">
 						{{ t('openconnector', 'Back') }}
 					</NcButton>
-					<NcButton type="primary"
+					<NcButton
+						type="primary"
 						:disabled="confirming"
 						data-testid="promote-confirm"
 						@click="confirmPromotion">
@@ -149,7 +208,13 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess } from '@nextcloud/dialogs'
-import { NcModal, NcButton, NcSelect, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import {
+	NcModal,
+	NcButton,
+	NcSelect,
+	NcLoadingIcon,
+	NcNoteCard,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'PromotePreviewModal',
@@ -238,7 +303,9 @@ export default {
 		async fetchConfigurations() {
 			this.loadingConfigs = true
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openregister/api/configurations'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openregister/api/configurations'),
+				)
 				const rows = data?.results || []
 				this.configOptions = rows.map((row) => ({
 					id: row.uuid || row.id,
@@ -246,7 +313,9 @@ export default {
 				}))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Could not load configuration groups') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Could not load configuration groups')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loadingConfigs = false
 			}
@@ -261,7 +330,9 @@ export default {
 		async fetchEnvironments() {
 			this.loadingEnvironments = true
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openconnector/api/environments'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openconnector/api/environments'),
+				)
 				const rows = data?.results || []
 				this.environmentOptions = rows.map((row) => ({
 					id: row.slug,
@@ -269,7 +340,9 @@ export default {
 				}))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Could not load environments') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Could not load environments')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loadingEnvironments = false
 			}
@@ -320,16 +393,25 @@ export default {
 		 * @spec openspec/specs/environments-and-promotion/spec.md#scenario-an-operator-supplied-rebinding-replaces-the-reference-before-the-target-ever-sees-the-original
 		 */
 		buildCredentialBindings() {
-			if (!this.preview || !Array.isArray(this.preview.credentialRefsNeedingRebind)) {
+			if (
+				!this.preview
+				|| !Array.isArray(this.preview.credentialRefsNeedingRebind)
+			) {
 				return []
 			}
 			return this.preview.credentialRefsNeedingRebind
 				.map((entry) => {
-					const value = (this.credentialBindings[this.bindingKey(entry)] || '').trim()
+					const value = (
+						this.credentialBindings[this.bindingKey(entry)] || ''
+					).trim()
 					if (!value) {
 						return null
 					}
-					return { sourceSlug: entry.slug, field: entry.field, credentialName: value }
+					return {
+						sourceSlug: entry.slug,
+						field: entry.field,
+						credentialName: value,
+					}
 				})
 				.filter(Boolean)
 		},
@@ -362,12 +444,15 @@ export default {
 					creates: data.creates || [],
 					updates: data.updates || [],
 					collisions: data.collisions || [],
-					credentialRefsNeedingRebind: data.credentialRefsNeedingRebind || [],
+					credentialRefsNeedingRebind:
+						data.credentialRefsNeedingRebind || [],
 				}
 				this.step = 'preview'
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Preview failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Preview failed')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.previewing = false
 			}
@@ -394,11 +479,17 @@ export default {
 					credentialBindings: this.buildCredentialBindings(),
 					confirmed: true,
 				})
-				showSuccess(t('openconnector', 'Configuration promoted to {environment}.', { environment: this.selectedEnvironment.label }))
+				showSuccess(
+					t('openconnector', 'Configuration promoted to {environment}.', {
+						environment: this.selectedEnvironment.label,
+					}),
+				)
 				this.close()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Promotion failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Promotion failed')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.confirming = false
 			}

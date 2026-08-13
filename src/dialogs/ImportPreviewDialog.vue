@@ -17,7 +17,8 @@
        to the Sources page for re-entry (REQ-009)
 -->
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		:name="t('openconnector', 'Import configuration')"
 		size="large"
 		data-testid="import-preview-dialog"
@@ -25,13 +26,21 @@
 		<div class="oc-import-dialog">
 			<!-- Step 1: file pick -->
 			<div v-if="step === 'pick'" class="oc-import-dialog__step">
-				<p>{{ t('openconnector', 'Select an exported configuration document (JSON). The import is previewed first — nothing is written until you confirm.') }}</p>
-				<input ref="fileInput"
+				<p>
+					{{
+						t(
+							'openconnector',
+							'Select an exported configuration document (JSON). The import is previewed first — nothing is written until you confirm.',
+						)
+					}}
+				</p>
+				<input
+					ref="fileInput"
 					type="file"
 					accept="application/json,.json"
 					:aria-label="t('openconnector', 'Configuration document')"
 					data-testid="import-file-input"
-					@change="onFileChosen">
+					@change="onFileChosen" />
 				<NcNoteCard v-if="errorMessage" type="error">
 					{{ errorMessage }}
 				</NcNoteCard>
@@ -42,50 +51,101 @@
 				<h4>{{ t('openconnector', 'Import preview') }}</h4>
 
 				<div class="oc-import-dialog__buckets">
-					<div class="oc-import-dialog__bucket" data-testid="preview-creates">
-						<h5>{{ t('openconnector', 'Will be created') }} ({{ preview.creates.length }})</h5>
+					<div
+						class="oc-import-dialog__bucket"
+						data-testid="preview-creates">
+						<h5>
+							{{ t('openconnector', 'Will be created') }} ({{
+								preview.creates.length
+							}})
+						</h5>
 						<ul>
-							<li v-for="entry in preview.creates" :key="`c-${entry.type}-${entry.slug}`">
+							<li
+								v-for="entry in preview.creates"
+								:key="`c-${entry.type}-${entry.slug}`">
 								<code>{{ entry.type }}</code> {{ entry.slug }}
 							</li>
 						</ul>
 					</div>
-					<div class="oc-import-dialog__bucket" data-testid="preview-updates">
-						<h5>{{ t('openconnector', 'Will be updated') }} ({{ preview.updates.length }})</h5>
+					<div
+						class="oc-import-dialog__bucket"
+						data-testid="preview-updates">
+						<h5>
+							{{ t('openconnector', 'Will be updated') }} ({{
+								preview.updates.length
+							}})
+						</h5>
 						<ul>
-							<li v-for="entry in preview.updates" :key="`u-${entry.type}-${entry.slug}`">
+							<li
+								v-for="entry in preview.updates"
+								:key="`u-${entry.type}-${entry.slug}`">
 								<code>{{ entry.type }}</code> {{ entry.slug }}
 							</li>
 						</ul>
 					</div>
 				</div>
 
-				<NcNoteCard v-if="preview.collisions.length > 0" type="warning" data-testid="preview-collisions">
+				<NcNoteCard
+					v-if="preview.collisions.length > 0"
+					type="warning"
+					data-testid="preview-collisions">
 					<strong>{{ t('openconnector', 'Slug collisions') }}</strong>
 					<ul>
-						<li v-for="entry in preview.collisions" :key="`x-${entry.type}-${entry.slug}`">
-							<code>{{ entry.type }}</code> {{ entry.slug }} — {{ entry.reason }}
+						<li
+							v-for="entry in preview.collisions"
+							:key="`x-${entry.type}-${entry.slug}`">
+							<code>{{ entry.type }}</code> {{ entry.slug }} —
+							{{ entry.reason }}
 						</li>
 					</ul>
 				</NcNoteCard>
 
-				<NcNoteCard v-if="preview.unresolvedReferences.length > 0" type="error" data-testid="preview-unresolved">
-					<strong>{{ t('openconnector', 'Unresolved references') }}</strong>
-					<p>{{ t('openconnector', 'These slug references do not resolve in this environment and will be imported verbatim — the referencing entity will be broken until fixed manually.') }}</p>
+				<NcNoteCard
+					v-if="preview.unresolvedReferences.length > 0"
+					type="error"
+					data-testid="preview-unresolved">
+					<strong>{{
+						t('openconnector', 'Unresolved references')
+					}}</strong>
+					<p>
+						{{
+							t(
+								'openconnector',
+								'These slug references do not resolve in this environment and will be imported verbatim — the referencing entity will be broken until fixed manually.',
+							)
+						}}
+					</p>
 					<ul>
-						<li v-for="(entry, idx) in preview.unresolvedReferences" :key="`r-${idx}`">
-							<code>{{ entry.type }}</code> {{ entry.slug }} → {{ entry.field }} = "{{ entry.value }}"
+						<li
+							v-for="(entry, idx) in preview.unresolvedReferences"
+							:key="`r-${idx}`">
+							<code>{{ entry.type }}</code> {{ entry.slug }} →
+							{{ entry.field }} = "{{ entry.value }}"
 						</li>
 					</ul>
-					<NcCheckboxRadioSwitch v-model="unresolvedAcknowledged" data-testid="unresolved-ack">
-						{{ t('openconnector', 'I understand these references will stay dangling and want to import anyway') }}
+					<NcCheckboxRadioSwitch
+						v-model="unresolvedAcknowledged"
+						data-testid="unresolved-ack">
+						{{
+							t(
+								'openconnector',
+								'I understand these references will stay dangling and want to import anyway',
+							)
+						}}
 					</NcCheckboxRadioSwitch>
 				</NcNoteCard>
 
-				<NcNoteCard v-if="preview.credentialsNeedingReentry.length > 0" type="info" data-testid="preview-credentials">
-					<strong>{{ t('openconnector', 'Credentials need re-entry after import') }}</strong>
+				<NcNoteCard
+					v-if="preview.credentialsNeedingReentry.length > 0"
+					type="info"
+					data-testid="preview-credentials">
+					<strong>{{
+						t('openconnector', 'Credentials need re-entry after import')
+					}}</strong>
 					<ul>
-						<li v-for="entry in preview.credentialsNeedingReentry" :key="`k-${entry.slug}`">
+						<li
+							v-for="entry in preview.credentialsNeedingReentry"
+							:key="`k-${entry.slug}`">
 							{{ entry.slug }}: {{ entry.fields.join(', ') }}
 						</li>
 					</ul>
@@ -101,11 +161,25 @@
 				<NcNoteCard type="success" data-testid="import-success">
 					{{ t('openconnector', 'Import completed') }}
 				</NcNoteCard>
-				<NcNoteCard v-if="preview.credentialsNeedingReentry.length > 0" type="warning" data-testid="import-credentials-summary">
-					<strong>{{ t('openconnector', 'Re-enter credentials for these sources') }}</strong>
-					<p>{{ t('openconnector', 'Exports always strip credentials — open each imported source and re-enter them.') }}</p>
+				<NcNoteCard
+					v-if="preview.credentialsNeedingReentry.length > 0"
+					type="warning"
+					data-testid="import-credentials-summary">
+					<strong>{{
+						t('openconnector', 'Re-enter credentials for these sources')
+					}}</strong>
+					<p>
+						{{
+							t(
+								'openconnector',
+								'Exports always strip credentials — open each imported source and re-enter them.',
+							)
+						}}
+					</p>
 					<ul>
-						<li v-for="entry in preview.credentialsNeedingReentry" :key="`d-${entry.slug}`">
+						<li
+							v-for="entry in preview.credentialsNeedingReentry"
+							:key="`d-${entry.slug}`">
 							{{ entry.slug }}: {{ entry.fields.join(', ') }}
 						</li>
 					</ul>
@@ -117,9 +191,14 @@
 
 			<div class="oc-import-dialog__actions">
 				<NcButton type="tertiary" @click="close">
-					{{ step === 'done' ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
+					{{
+						step === 'done'
+							? t('openconnector', 'Close')
+							: t('openconnector', 'Cancel')
+					}}
 				</NcButton>
-				<NcButton v-if="step === 'preview'"
+				<NcButton
+					v-if="step === 'preview'"
 					type="primary"
 					:disabled="importRunning || confirmBlocked"
 					data-testid="confirm-import"
@@ -134,7 +213,12 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcNoteCard } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcNoteCard,
+} from '@nextcloud/vue'
 import { getRouter } from '../handlers/routerRef.js'
 
 const EMPTY_PREVIEW = {
@@ -182,7 +266,10 @@ export default {
 		 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-surfaces-an-unresolvable-slug-reference-as-a-blocking-warning
 		 */
 		confirmBlocked() {
-			return this.preview.unresolvedReferences.length > 0 && !this.unresolvedAcknowledged
+			return (
+				this.preview.unresolvedReferences.length > 0
+				&& !this.unresolvedAcknowledged
+			)
 		},
 	},
 
@@ -237,19 +324,26 @@ export default {
 			try {
 				parsed = JSON.parse(await file.text())
 			} catch (err) {
-				this.errorMessage = t('openconnector', 'The selected file is not valid JSON')
+				this.errorMessage = t(
+					'openconnector',
+					'The selected file is not valid JSON',
+				)
 				return
 			}
 			this.document = parsed
 			try {
-				const url = generateUrl('/apps/openconnector/api/configurations/import/preview')
+				const url = generateUrl(
+					'/apps/openconnector/api/configurations/import/preview',
+				)
 				const { data } = await axios.post(url, { document: parsed })
 				this.preview = { ...EMPTY_PREVIEW, ...data }
 				this.unresolvedAcknowledged = false
 				this.step = 'preview'
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Preview failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Preview failed')
+					+ (detail ? `: ${detail}` : '')
 			}
 		},
 
@@ -267,13 +361,20 @@ export default {
 			this.importRunning = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openconnector/api/configurations/import')
-				const { data } = await axios.post(url, { document: this.document, confirmed: true })
+				const url = generateUrl(
+					'/apps/openconnector/api/configurations/import',
+				)
+				const { data } = await axios.post(url, {
+					document: this.document,
+					confirmed: true,
+				})
 				this.preview = { ...EMPTY_PREVIEW, ...data }
 				this.step = 'done'
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Import failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Import failed')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.importRunning = false
 			}

@@ -10,7 +10,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Signature scheme') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Signature scheme')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Signature scheme')"
 			:model-value="selectedSchemeOption"
@@ -32,9 +34,16 @@
 			:label="t('openconnector', 'Timestamp tolerance (seconds)')"
 			:model-value="String(value.toleranceSeconds || 300)"
 			placeholder="300"
-			@update:model-value="(next) => patch('toleranceSeconds', Number(next) || 300)" />
+			@update:model-value="
+				(next) => patch('toleranceSeconds', Number(next) || 300)
+			" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'The signature is verified over the raw request body before any other rule runs. For scheme "github" the timestamp tolerance is ignored.') }}
+			{{
+				t(
+					'openconnector',
+					'The signature is verified over the raw request body before any other rule runs. For scheme "github" the timestamp tolerance is ignored.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -56,11 +65,18 @@ export default {
 	computed: {
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		schemeOptions() {
-			return SCHEMES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
+			return SCHEMES.map((row) => ({
+				id: row.id,
+				label: this.t('openconnector', row.label),
+			}))
 		},
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		selectedSchemeOption() {
-			return this.schemeOptions.find((opt) => opt.id === (this.value.scheme || 'openconnector')) || null
+			return (
+				this.schemeOptions.find(
+					(opt) => opt.id === (this.value.scheme || 'openconnector'),
+				) || null
+			)
 		},
 	},
 	methods: {
@@ -80,9 +96,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

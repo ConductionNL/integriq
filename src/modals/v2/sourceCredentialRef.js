@@ -57,7 +57,7 @@ export function readCredentialRef(formData) {
 	const authentication = configuration.authentication
 	if (!authentication || typeof authentication !== 'object') return null
 	const ref = authentication.credentialRef
-	return (ref && typeof ref === 'object') ? ref : null
+	return ref && typeof ref === 'object' ? ref : null
 }
 
 /**
@@ -80,7 +80,7 @@ export function readCredentialId(formData) {
 	const ref = readCredentialRef(formData)
 	if (!ref) return null
 	const id = ref.credentialId
-	return (typeof id === 'string' && id.length > 0) ? id : null
+	return typeof id === 'string' && id.length > 0 ? id : null
 }
 
 /**
@@ -94,9 +94,12 @@ export function readCredentialId(formData) {
  * @return {object} The next `configuration` object.
  */
 export function writeCredentialRef(configuration, credentialId) {
-	const base = (configuration && typeof configuration === 'object' && !Array.isArray(configuration))
-		? { ...configuration }
-		: {}
+	const base =
+		configuration
+		&& typeof configuration === 'object'
+		&& !Array.isArray(configuration)
+			? { ...configuration }
+			: {}
 	base.authentication = { credentialRef: { credentialId } }
 	return base
 }
@@ -110,7 +113,11 @@ export function writeCredentialRef(configuration, credentialId) {
  * @return {object} The next `configuration` object.
  */
 export function clearCredentialRef(configuration) {
-	if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)) {
+	if (
+		!configuration
+		|| typeof configuration !== 'object'
+		|| Array.isArray(configuration)
+	) {
 		return {}
 	}
 	const base = { ...configuration }
@@ -154,13 +161,19 @@ export function mapCredentialOptions(results) {
 	return results
 		.map((row) => {
 			if (!row || typeof row !== 'object') return null
-			const self = (row['@self'] && typeof row['@self'] === 'object') ? row['@self'] : {}
+			const self =
+				row['@self'] && typeof row['@self'] === 'object' ? row['@self'] : {}
 			const id = row.id || row.uuid || self.id || self.uuid || null
 			if (!id) return null
 			const name = row.name || self.title || String(id)
 			const provider = row.provider || ''
 			const label = provider ? `${name} (${provider})` : String(name)
-			return { id: String(id), label, name: String(name), provider: String(provider) }
+			return {
+				id: String(id),
+				label,
+				name: String(name),
+				provider: String(provider),
+			}
 		})
 		.filter((option) => option !== null)
 }

@@ -47,7 +47,9 @@
 					:options="configRefOptions"
 					:loading="configRefLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Pick a {type}', { type: configRefLabel })"
+					:placeholder="
+						t('openconnector', 'Pick a {type}', { type: configRefLabel })
+					"
 					@update:model-value="onConfigRefPick" />
 			</div>
 
@@ -80,7 +82,10 @@
 						<ArrowDown :size="18" />
 					</template>
 				</NcButton>
-				<NcButton :aria-label="t('openconnector', 'Remove step')" type="tertiary" @click="$emit('remove')">
+				<NcButton
+					:aria-label="t('openconnector', 'Remove step')"
+					type="tertiary"
+					@click="$emit('remove')">
 					<template #icon>
 						<Delete :size="18" />
 					</template>
@@ -90,62 +95,117 @@
 
 		<!-- call: endpoint/method -->
 		<div v-if="step.type === 'call'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'Endpoint path')" :model-value="step.config.endpoint || ''" @update:model-value="(value) => updateConfig('endpoint', value)" />
-			<NcTextField :label="t('openconnector', 'HTTP method')" :model-value="step.config.method || 'GET'" @update:model-value="(value) => updateConfig('method', value)" />
+			<NcTextField
+				:label="t('openconnector', 'Endpoint path')"
+				:model-value="step.config.endpoint || ''"
+				@update:model-value="(value) => updateConfig('endpoint', value)" />
+			<NcTextField
+				:label="t('openconnector', 'HTTP method')"
+				:model-value="step.config.method || 'GET'"
+				@update:model-value="(value) => updateConfig('method', value)" />
 		</div>
 
 		<!-- event: type/source/subject -->
 		<div v-else-if="step.type === 'event'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'CloudEvent type') + '*'" :model-value="step.config.type || ''" @update:model-value="(value) => updateConfig('type', value)" />
-			<NcTextField :label="t('openconnector', 'CloudEvent source') + '*'" :model-value="step.config.source || ''" @update:model-value="(value) => updateConfig('source', value)" />
-			<NcTextField :label="t('openconnector', 'CloudEvent subject')" :model-value="step.config.subject || ''" @update:model-value="(value) => updateConfig('subject', value)" />
+			<NcTextField
+				:label="t('openconnector', 'CloudEvent type') + '*'"
+				:model-value="step.config.type || ''"
+				@update:model-value="(value) => updateConfig('type', value)" />
+			<NcTextField
+				:label="t('openconnector', 'CloudEvent source') + '*'"
+				:model-value="step.config.source || ''"
+				@update:model-value="(value) => updateConfig('source', value)" />
+			<NcTextField
+				:label="t('openconnector', 'CloudEvent subject')"
+				:model-value="step.config.subject || ''"
+				@update:model-value="(value) => updateConfig('subject', value)" />
 		</div>
 
 		<!-- approval: approverGroup/onReject/onTimeout/ttlSeconds -->
 		<div v-else-if="step.type === 'approval'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'Approver group') + '*'" :model-value="step.config.approverGroup || ''" @update:model-value="(value) => updateConfig('approverGroup', value)" />
+			<NcTextField
+				:label="t('openconnector', 'Approver group') + '*'"
+				:model-value="step.config.approverGroup || ''"
+				@update:model-value="
+					(value) => updateConfig('approverGroup', value)
+				" />
 			<div class="flow-step-row__field">
 				<NcSelect
 					:input-id="'flow-step-on-reject-' + uid"
 					:input-label="t('openconnector', 'On reject')"
-					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onReject || 'error')"
+					:model-value="
+						resolveEnumOption(
+							ON_REJECT_OPTIONS,
+							step.config.onReject || 'error',
+						)
+					"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@update:model-value="(option) => updateConfig('onReject', option?.id || 'error')" />
+					@update:model-value="
+						(option) => updateConfig('onReject', option?.id || 'error')
+					" />
 			</div>
 			<div class="flow-step-row__field">
 				<NcSelect
 					:input-id="'flow-step-on-timeout-' + uid"
 					:input-label="t('openconnector', 'On timeout')"
-					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onTimeout || 'error')"
+					:model-value="
+						resolveEnumOption(
+							ON_REJECT_OPTIONS,
+							step.config.onTimeout || 'error',
+						)
+					"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@update:model-value="(option) => updateConfig('onTimeout', option?.id || 'error')" />
+					@update:model-value="
+						(option) => updateConfig('onTimeout', option?.id || 'error')
+					" />
 			</div>
 			<NcTextField
 				:label="t('openconnector', 'TTL (seconds)')"
 				type="number"
 				:model-value="String(step.config.ttlSeconds || 86400)"
-				@update:model-value="(value) => updateConfig('ttlSeconds', parseInt(value, 10) || 86400)" />
+				@update:model-value="
+					(value) =>
+						updateConfig('ttlSeconds', parseInt(value, 10) || 86400)
+				" />
 		</div>
 
 		<!-- branch: branches[] + defaultNextStepOrder -->
 		<div v-else-if="step.type === 'branch'" class="flow-step-row__branches">
 			<p class="flow-step-row__hint">
-				{{ t('openconnector', 'Evaluated in order; the first matching condition selects the next step.') }}
+				{{
+					t(
+						'openconnector',
+						'Evaluated in order; the first matching condition selects the next step.',
+					)
+				}}
 			</p>
-			<div v-for="(branch, branchIndex) in step.branches" :key="branchIndex" class="flow-step-row__branch">
-				<RuleConditionGroup :node="branchConditionGroup(branch)" :removable="false" @update="(value) => updateBranchCondition(branchIndex, value)" />
+			<div
+				v-for="(branch, branchIndex) in step.branches"
+				:key="branchIndex"
+				class="flow-step-row__branch">
+				<RuleConditionGroup
+					:node="branchConditionGroup(branch)"
+					:removable="false"
+					@update="(value) => updateBranchCondition(branchIndex, value)" />
 				<div class="flow-step-row__field">
 					<NcSelect
-						:input-id="'flow-step-branch-target-' + uid + '-' + branchIndex"
+						:input-id="
+							'flow-step-branch-target-' + uid + '-' + branchIndex
+						"
 						:input-label="t('openconnector', 'Then go to step')"
 						:model-value="resolveOrderOption(branch.nextStepOrder)"
 						:options="orderOptions"
 						:clearable="false"
-						@update:model-value="(option) => updateBranchTarget(branchIndex, option?.id)" />
+						@update:model-value="
+							(option) => updateBranchTarget(branchIndex, option?.id)
+						" />
 				</div>
-				<NcButton type="tertiary" :aria-label="t('openconnector', 'Remove branch')" @click="removeBranch(branchIndex)">
+				<NcButton
+					type="tertiary"
+					:aria-label="t('openconnector', 'Remove branch')"
+					@click="removeBranch(branchIndex)">
 					<template #icon>
 						<Delete :size="18" />
 					</template>
@@ -164,14 +224,28 @@
 					:model-value="resolveOrderOption(step.defaultNextStepOrder)"
 					:options="orderOptions"
 					:clearable="true"
-					@update:model-value="(option) => $emit('update', { ...step, defaultNextStepOrder: option?.id ?? null })" />
+					@update:model-value="
+						(option) =>
+							$emit('update', {
+								...step,
+								defaultNextStepOrder: option?.id ?? null,
+							})
+					" />
 			</div>
 		</div>
 
 		<!-- Condition editor: every step type except branch (branch has its own per-branch conditions above). -->
 		<div v-if="step.type !== 'branch'" class="flow-step-row__condition">
-			<span class="flow-step-row__label">{{ t('openconnector', 'Run-if condition (optional — always runs when empty)') }}</span>
-			<RuleConditionGroup :node="conditionGroup" :removable="false" @update="onConditionUpdate" />
+			<span class="flow-step-row__label">{{
+				t(
+					'openconnector',
+					'Run-if condition (optional — always runs when empty)',
+				)
+			}}</span>
+			<RuleConditionGroup
+				:node="conditionGroup"
+				:removable="false"
+				@update="onConditionUpdate" />
 		</div>
 	</div>
 </template>
@@ -227,7 +301,10 @@ export default {
 			typeOptions: [
 				{ id: 'call', label: t('openconnector', 'Call') },
 				{ id: 'mapping', label: t('openconnector', 'Mapping') },
-				{ id: 'synchronization', label: t('openconnector', 'Synchronization') },
+				{
+					id: 'synchronization',
+					label: t('openconnector', 'Synchronization'),
+				},
 				{ id: 'event', label: t('openconnector', 'Event') },
 				{ id: 'approval', label: t('openconnector', 'Approval') },
 				{ id: 'branch', label: t('openconnector', 'Branch') },
@@ -247,7 +324,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		selectedType() {
-			return this.typeOptions.find((opt) => opt.id === this.step.type) || this.typeOptions[1]
+			return (
+				this.typeOptions.find((opt) => opt.id === this.step.type)
+				|| this.typeOptions[1]
+			)
 		},
 		/**
 		 * The `NcSelect` model for the step's `onError` policy.
@@ -255,7 +335,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-per-step-onerror-policy-governs-failure-handling-req-006
 		 */
 		selectedOnError() {
-			return this.onErrorOptions.find((opt) => opt.id === this.step.onError) || this.onErrorOptions[0]
+			return (
+				this.onErrorOptions.find((opt) => opt.id === this.step.onError)
+				|| this.onErrorOptions[0]
+			)
 		},
 		/**
 		 * Whether this step type references a configured entity at all —
@@ -264,7 +347,11 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		showConfigRefPicker() {
-			return this.step.type === 'call' || this.step.type === 'mapping' || this.step.type === 'synchronization'
+			return (
+				this.step.type === 'call'
+				|| this.step.type === 'mapping'
+				|| this.step.type === 'synchronization'
+			)
 		},
 		/**
 		 * The picker's `inputLabel`, named for the entity the step actually
@@ -276,7 +363,8 @@ export default {
 		 */
 		configRefLabel() {
 			if (this.step.type === 'call') return t('openconnector', 'Source')
-			if (this.step.type === 'synchronization') return t('openconnector', 'Synchronization')
+			if (this.step.type === 'synchronization')
+				return t('openconnector', 'Synchronization')
 			return t('openconnector', 'Mapping')
 		},
 		/**
@@ -288,7 +376,8 @@ export default {
 		 */
 		configRefOptions() {
 			if (this.step.type === 'call') return this.sourceOptions
-			if (this.step.type === 'synchronization') return this.synchronizationOptions
+			if (this.step.type === 'synchronization')
+				return this.synchronizationOptions
 			return this.mappingOptions
 		},
 		/**
@@ -299,7 +388,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		selectedConfigRef() {
-			return this.configRefOptions.find((opt) => opt.id === this.step.configRef) || null
+			return (
+				this.configRefOptions.find((opt) => opt.id === this.step.configRef)
+				|| null
+			)
 		},
 		/**
 		 * Branch-target options: every other step's `order`, excluding this
@@ -368,7 +460,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		updateConfig(key, value) {
-			this.$emit('update', { ...this.step, config: { ...(this.step.config || {}), [key]: value } })
+			this.$emit('update', {
+				...this.step,
+				config: { ...(this.step.config || {}), [key]: value },
+			})
 		},
 		/**
 		 * Resolves a stored enum id to its option, falling back to the first so
@@ -392,7 +487,12 @@ export default {
 		 */
 		resolveOrderOption(order) {
 			if (order === null || order === undefined) return null
-			return this.orderOptions.find((opt) => opt.id === order) || { id: order, label: '#' + order + ' (missing)' }
+			return (
+				this.orderOptions.find((opt) => opt.id === order) || {
+					id: order,
+					label: '#' + order + ' (missing)',
+				}
+			)
 		},
 		/**
 		 * Appends a branch with an empty condition and no target yet.
@@ -400,7 +500,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		addBranch() {
-			const branches = [...(this.step.branches || []), { condition: { ...EMPTY_ROOT_GROUP }, nextStepOrder: null }]
+			const branches = [
+				...(this.step.branches || []),
+				{ condition: { ...EMPTY_ROOT_GROUP }, nextStepOrder: null },
+			]
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
@@ -423,7 +526,9 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		updateBranchTarget(index, order) {
-			const branches = (this.step.branches || []).map((b, i) => (i === index ? { ...b, nextStepOrder: order ?? null } : b))
+			const branches = (this.step.branches || []).map((b, i) =>
+				i === index ? { ...b, nextStepOrder: order ?? null } : b,
+			)
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
@@ -434,7 +539,9 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
 		updateBranchCondition(index, condition) {
-			const branches = (this.step.branches || []).map((b, i) => (i === index ? { ...b, condition } : b))
+			const branches = (this.step.branches || []).map((b, i) =>
+				i === index ? { ...b, condition } : b,
+			)
 			this.$emit('update', { ...this.step, branches })
 		},
 		/**
@@ -456,7 +563,8 @@ export default {
 			// An empty group means "no condition" (always run) — store null
 			// rather than an empty {and:[]} so REQ-003's "absent/empty"
 			// wording round-trips literally.
-			const isEmpty = value && Array.isArray(value.and) && value.and.length === 0
+			const isEmpty =
+				value && Array.isArray(value.and) && value.and.length === 0
 			this.$emit('update', { ...this.step, condition: isEmpty ? null : value })
 		},
 		/**
@@ -474,7 +582,11 @@ export default {
 			if (raw === null || raw === undefined) return { ...EMPTY_ROOT_GROUP }
 			if (typeof raw === 'object' && !Array.isArray(raw)) {
 				const keys = Object.keys(raw)
-				if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
+				if (
+					keys.length === 1
+					&& (keys[0] === 'and' || keys[0] === 'or')
+					&& Array.isArray(raw[keys[0]])
+				) {
 					return raw
 				}
 				if (keys.length === 0) return { ...EMPTY_ROOT_GROUP }

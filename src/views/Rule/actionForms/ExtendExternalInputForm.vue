@@ -14,7 +14,9 @@
 			{{ t('openconnector', 'Validate fetched object against schema') }}
 		</NcCheckboxRadioSwitch>
 
-		<label class="action-form__label">{{ t('openconnector', 'Properties to fetch') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Properties to fetch')
+		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
@@ -57,7 +59,9 @@ export default {
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
-			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
+			const props = Array.isArray(this.value?.properties)
+				? this.value.properties
+				: []
 			return props.map((entry) => ({
 				property: String(entry?.property || ''),
 				schema: String(entry?.schema || ''),
@@ -76,7 +80,10 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		emitRows(rows) {
-			const next = { ...(this.value || {}), properties: rows.filter((row) => row.property) }
+			const next = {
+				...(this.value || {}),
+				properties: rows.filter((row) => row.property),
+			}
 			this.$emit('update:value', next)
 		},
 		/**
@@ -88,7 +95,10 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		onValidateToggle(checked) {
-			this.$emit('update:value', { ...(this.value || {}), validate: !!checked })
+			this.$emit('update:value', {
+				...(this.value || {}),
+				validate: !!checked,
+			})
 		},
 		/**
 		 * Update the dot-path of one row as the user types.
@@ -139,10 +149,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
-@media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
+.action-form__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr auto;
+	gap: 8px;
+	align-items: end;
+}
+@media (max-width: 720px) {
+	.action-form__row {
+		grid-template-columns: 1fr;
+	}
+}
 </style>

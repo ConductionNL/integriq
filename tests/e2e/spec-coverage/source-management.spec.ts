@@ -48,12 +48,20 @@ test.describe('REQ-SRC-UI-001: Add Source modal', () => {
 	test('Add Item button on Sources page opens modal/dialog', async ({ page }) => {
 		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Source)/i })
-		await expect(addBtn, 'Add Item button must be visible on Sources page').toBeVisible({ timeout: 20_000 })
+		await expect(
+			addBtn,
+			'Add Item button must be visible on Sources page',
+		).toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
 		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Item on Sources').toBeVisible({ timeout: 10_000 })
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Item on Sources',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -65,7 +73,9 @@ test.describe('REQ-SRC-UI-001: Add Source modal', () => {
 test.describe('REQ-SRC-UI-001: Source logs sub-page', () => {
 	// @e2e source-management::source-logs-sub-page-mounts
 	test('Source logs page mounts and shows main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/sources/logs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/sources/logs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })
@@ -75,7 +85,9 @@ test.describe('REQ-SRC-UI-001: Source logs sub-page', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Sources OR API — list', () => {
-	test('OR returns source objects for the openconnector register', async ({ request }) => {
+	test('OR returns source objects for the openconnector register', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/source?_limit=10`, {
 			failOnStatusCode: false,
 		})

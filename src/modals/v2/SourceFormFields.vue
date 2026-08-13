@@ -36,9 +36,14 @@
 			class="cn-source-form-fields__field">
 			<!-- Source `type` select (enum). Precedes the widget branches so a
 			     schema-declared widget='text' cannot short-circuit it. -->
-			<div v-if="field.key === 'type'" class="cn-source-form-fields__select-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
-					{{ field.label || t('openconnector', 'Type') }}{{ field.required ? ' *' : '' }}
+			<div
+				v-if="field.key === 'type'"
+				class="cn-source-form-fields__select-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
+					{{ field.label || t('openconnector', 'Type')
+					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
 					:input-id="'cn-source-form-' + field.key"
@@ -49,14 +54,31 @@
 					:placeholder="t('openconnector', 'Pick a source type')"
 					@update:model-value="onTypePick" />
 				<CnFieldHelper
-					:text="field.description || t('openconnector', 'The transport used to reach this source.')"
+					:text="
+						field.description
+						|| t(
+							'openconnector',
+							'The transport used to reach this source.',
+						)
+					"
 					:more="field.descriptionLong" />
 			</div>
 
-			<template v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'">
+			<template
+				v-else-if="
+					field.widget === 'text'
+					|| field.widget === 'email'
+					|| field.widget === 'url'
+					|| field.widget === 'date'
+					|| field.widget === 'datetime'
+				">
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
 					:error="!!errors[field.key]"
 					:type="textFieldType(field)"
 					:disabled="field.readOnly"
@@ -71,20 +93,34 @@
 			<template v-else-if="field.widget === 'number'">
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
 					:error="!!errors[field.key]"
 					type="number"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+					@update:model-value="
+						(value) =>
+							updateField(
+								field.key,
+								value !== '' ? Number(value) : null,
+							)
+					" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
 					:error="errors[field.key]" />
 			</template>
 
-			<div v-else-if="field.widget === 'textarea'" class="cn-source-form-fields__textarea-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
+			<div
+				v-else-if="field.widget === 'textarea'"
+				class="cn-source-form-fields__textarea-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -110,8 +146,12 @@
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
-			<div v-else-if="field.widget === 'json'" class="cn-source-form-fields__textarea-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
+			<div
+				v-else-if="field.widget === 'json'"
+				class="cn-source-form-fields__textarea-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -131,7 +171,11 @@
 			<template v-else>
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
@@ -152,32 +196,62 @@
 				{{ t('openconnector', 'Brokered credential (OpenRegister)') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-source-form-fields__helper">
-				{{ t('openconnector', 'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.') }}
+				{{
+					t(
+						'openconnector',
+						'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.',
+					)
+				}}
 			</span>
 
 			<template v-if="brokeredEnabled">
-				<div v-if="brokerUnavailable" class="cn-source-form-fields__note cn-source-form-fields__note--warn">
-					{{ t('openconnector', 'The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.') }}
+				<div
+					v-if="brokerUnavailable"
+					class="cn-source-form-fields__note cn-source-form-fields__note--warn">
+					{{
+						t(
+							'openconnector',
+							'The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.',
+						)
+					}}
 				</div>
 				<template v-else>
-					<label for="cn-source-form-credentialref" class="cn-source-form-fields__label">
+					<label
+						for="cn-source-form-credentialref"
+						class="cn-source-form-fields__label">
 						{{ t('openconnector', 'Credential') }}
 					</label>
 					<NcSelect
 						input-id="cn-source-form-credentialref"
 						:input-label="t('openconnector', 'Brokered credential')"
-						:aria-label-combobox="t('openconnector', 'Brokered credential')"
+						:aria-label-combobox="
+							t('openconnector', 'Brokered credential')
+						"
 						:model-value="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
-						:placeholder="t('openconnector', 'Select a brokered credential')"
+						:placeholder="
+							t('openconnector', 'Select a brokered credential')
+						"
 						@update:model-value="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
-						{{ t('openconnector', 'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.') }}
+						{{
+							t(
+								'openconnector',
+								'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.',
+							)
+						}}
 					</span>
-					<div v-if="!credentialsLoading && credentialOptions.length === 0" class="cn-source-form-fields__note">
-						{{ t('openconnector', 'You have no brokered credentials yet. Create one in OpenRegister first.') }}
+					<div
+						v-if="!credentialsLoading && credentialOptions.length === 0"
+						class="cn-source-form-fields__note">
+						{{
+							t(
+								'openconnector',
+								'You have no brokered credentials yet. Create one in OpenRegister first.',
+							)
+						}}
 					</div>
 				</template>
 			</template>
@@ -186,11 +260,7 @@
 </template>
 
 <script>
-import {
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -266,7 +336,9 @@ export default {
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			if (!this.brokeredEnabled) return this.fields
-			return this.fields.filter((field) => !EMBEDDED_SECRET_FIELDS.includes(field.key))
+			return this.fields.filter(
+				(field) => !EMBEDDED_SECRET_FIELDS.includes(field.key),
+			)
 		},
 
 		/**
@@ -288,7 +360,12 @@ export default {
 		selectedTypeOption() {
 			const current = this.formData?.type
 			if (!current) return null
-			return this.typeOptions.find((option) => option.id === current) ?? { id: current, label: current }
+			return (
+				this.typeOptions.find((option) => option.id === current) ?? {
+					id: current,
+					label: current,
+				}
+			)
 		},
 
 		/**
@@ -300,7 +377,14 @@ export default {
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
 			if (!id) return null
-			return this.credentialOptions.find((option) => option.id === id) ?? { id, label: id, name: id, provider: '' }
+			return (
+				this.credentialOptions.find((option) => option.id === id) ?? {
+					id,
+					label: id,
+					name: id,
+					provider: '',
+				}
+			)
 		},
 	},
 
@@ -367,7 +451,10 @@ export default {
 		onToggleBrokered(value) {
 			this.brokeredEnabled = value
 			if (!value) {
-				this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+				this.updateField(
+					'configuration',
+					clearCredentialRef(this.formData?.configuration),
+				)
 				return
 			}
 			if (this.credentialOptions.length === 0 && !this.brokerUnavailable) {
@@ -385,9 +472,18 @@ export default {
 		 */
 		onCredentialPick(option) {
 			if (option?.id) {
-				this.updateField('configuration', writeCredentialRef(this.formData?.configuration, String(option.id)))
+				this.updateField(
+					'configuration',
+					writeCredentialRef(
+						this.formData?.configuration,
+						String(option.id),
+					),
+				)
 			} else {
-				this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+				this.updateField(
+					'configuration',
+					clearCredentialRef(this.formData?.configuration),
+				)
 			}
 		},
 
@@ -402,8 +498,12 @@ export default {
 			this.credentialsLoading = true
 			this.brokerUnavailable = false
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/credentials'))
-				this.credentialOptions = mapCredentialOptions(extractCredentialResults(response.data))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/credentials'),
+				)
+				this.credentialOptions = mapCredentialOptions(
+					extractCredentialResults(response.data),
+				)
 			} catch (err) {
 				// 404 → the broker (or the whole openregister app) isn't there;
 				// any other error also degrades to the soft-fail note rather than
@@ -411,7 +511,10 @@ export default {
 				this.brokerUnavailable = true
 				this.credentialOptions = []
 				// eslint-disable-next-line no-console
-				console.warn('[SourceFormFields] brokered-credential fetch failed', err)
+				console.warn(
+					'[SourceFormFields] brokered-credential fetch failed',
+					err,
+				)
 			} finally {
 				this.credentialsLoading = false
 			}
@@ -459,7 +562,11 @@ export default {
 				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.jsonErrors[field.key] = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.jsonErrors[field.key] = t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 	},

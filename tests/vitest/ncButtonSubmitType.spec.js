@@ -47,9 +47,16 @@ async function mountFormWithButton(buttonProps) {
 			},
 		},
 		render() {
-			return h('form', { onSubmit: (e) => { e.preventDefault(); this.onSubmit() } }, [
-				h(NcButton, buttonProps, { default: () => 'Go' }),
-			])
+			return h(
+				'form',
+				{
+					onSubmit: (e) => {
+						e.preventDefault()
+						this.onSubmit()
+					},
+				},
+				[h(NcButton, buttonProps, { default: () => 'Go' })],
+			)
 		},
 	})
 
@@ -68,9 +75,16 @@ describe('NcButton submit wiring on @nextcloud/vue 9', () => {
 		const submitted = []
 		const Plain = defineComponent({
 			render() {
-				return h('form', { onSubmit: (e) => { e.preventDefault(); submitted.push(1) } }, [
-					h('button', { type: 'submit' }, 'Go'),
-				])
+				return h(
+					'form',
+					{
+						onSubmit: (e) => {
+							e.preventDefault()
+							submitted.push(1)
+						},
+					},
+					[h('button', { type: 'submit' }, 'Go')],
+				)
 			},
 		})
 		const wrapper = mount(Plain, { attachTo: document.body })
@@ -94,7 +108,9 @@ describe('NcButton submit wiring on @nextcloud/vue 9', () => {
 	})
 
 	it('NEGATIVE CONTROL: the v8 spelling native-type="submit" leaves type=button and fires NOTHING', async () => {
-		const { button, submits } = await mountFormWithButton({ nativeType: 'submit' })
+		const { button, submits } = await mountFormWithButton({
+			nativeType: 'submit',
+		})
 
 		// v9 ignores nativeType; the `type` prop defaults to "button".
 		expect(button.attributes('type')).toBe('button')
@@ -119,7 +135,10 @@ describe('NcButton submit wiring on @nextcloud/vue 9', () => {
 		// form DOES still submit here. The visible damage is cosmetic: the
 		// value is consumed as the native type, so `variant` keeps its
 		// "secondary" default and the button renders unstyled.
-		const { button, submits } = await mountFormWithButton({ type: 'primary', nativeType: 'submit' })
+		const { button, submits } = await mountFormWithButton({
+			type: 'primary',
+			nativeType: 'submit',
+		})
 
 		expect(button.classes().join(' ')).toContain('secondary')
 		expect(button.classes().join(' ')).not.toContain('button-vue--primary')
@@ -129,7 +148,10 @@ describe('NcButton submit wiring on @nextcloud/vue 9', () => {
 	})
 
 	it('variant is the v9 visual prop: variant="primary" styles without touching the button type', async () => {
-		const { button } = await mountFormWithButton({ variant: 'primary', type: 'submit' })
+		const { button } = await mountFormWithButton({
+			variant: 'primary',
+			type: 'submit',
+		})
 
 		expect(button.attributes('type')).toBe('submit')
 		expect(button.classes().join(' ')).toContain('primary')

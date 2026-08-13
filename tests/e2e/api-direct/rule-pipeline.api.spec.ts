@@ -35,10 +35,15 @@ test.describe('Rules OR API — list', () => {
 })
 
 test.describe('Rule pipeline dispatch — no-match', () => {
-	test('Endpoint dispatch with non-matching path is routable (pipeline not reached)', async ({ request }) => {
-		const resp = await request.get(`${API_BASE}/endpoint/pw-rule-no-endpoint-${Date.now()}`, {
-			failOnStatusCode: false,
-		})
+	test('Endpoint dispatch with non-matching path is routable (pipeline not reached)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			`${API_BASE}/endpoint/pw-rule-no-endpoint-${Date.now()}`,
+			{
+				failOnStatusCode: false,
+			},
+		)
 		// The dispatch pipeline is healthy: a no-match returns a clean 404.
 		expect(resp.status()).not.toBe(500)
 		expect([404]).toContain(resp.status())

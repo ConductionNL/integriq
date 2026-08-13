@@ -82,10 +82,20 @@ export function testSourceHandler({ item }) {
  */
 export async function runFlowHandler({ item }) {
 	try {
-		const response = await axios.post(generateUrl(`/apps/openconnector/api/flows/${rowId(item)}/run`))
+		const response = await axios.post(
+			generateUrl(`/apps/openconnector/api/flows/${rowId(item)}/run`),
+		)
 		const status = response.data?.status || 'completed'
-		if (status === 'failed' || status === 'stopped' || status === 'dead_letter') {
-			showError(t('openconnector', 'Flow run ended with status: {status}', { status }))
+		if (
+			status === 'failed'
+			|| status === 'stopped'
+			|| status === 'dead_letter'
+		) {
+			showError(
+				t('openconnector', 'Flow run ended with status: {status}', {
+					status,
+				}),
+			)
 			return
 		}
 		showSuccess(t('openconnector', 'Flow run triggered'))
@@ -112,7 +122,11 @@ export async function runFlowHandler({ item }) {
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function runSynchronizationHandler({ item }) {
-	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'synchronization', mode: 'run', item })
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, {
+		target: 'synchronization',
+		mode: 'run',
+		item,
+	})
 }
 
 /**
@@ -121,7 +135,11 @@ export function runSynchronizationHandler({ item }) {
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function testSynchronizationHandler({ item }) {
-	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'synchronization', mode: 'test', item })
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, {
+		target: 'synchronization',
+		mode: 'test',
+		item,
+	})
 }
 
 /**
@@ -247,24 +265,33 @@ export function viewLogsHandler({ actionId, item }) {
 	const target = VIEW_LOGS_TARGETS[actionId]
 	if (!target) {
 		// eslint-disable-next-line no-console
-		console.warn(`[openconnector] viewLogsHandler: unknown actionId "${actionId}"`)
+		console.warn(
+			`[openconnector] viewLogsHandler: unknown actionId "${actionId}"`,
+		)
 		return
 	}
 	const router = getRouter()
 	if (!router) {
 		// eslint-disable-next-line no-console
-		console.warn('[openconnector] viewLogsHandler: router not set; cannot navigate')
+		console.warn(
+			'[openconnector] viewLogsHandler: router not set; cannot navigate',
+		)
 		return
 	}
-	router.push({
-		name: target.route,
-		query: { [target.queryParam]: rowId(item) },
-	}).catch((err) => {
-		// vue-router throws NavigationDuplicated when pushing the same
-		// route twice; swallow that specific case, surface anything else.
-		if (err && err.name !== 'NavigationDuplicated') {
-			// eslint-disable-next-line no-console
-			console.warn('[openconnector] viewLogsHandler navigation failed', err)
-		}
-	})
+	router
+		.push({
+			name: target.route,
+			query: { [target.queryParam]: rowId(item) },
+		})
+		.catch((err) => {
+			// vue-router throws NavigationDuplicated when pushing the same
+			// route twice; swallow that specific case, surface anything else.
+			if (err && err.name !== 'NavigationDuplicated') {
+				// eslint-disable-next-line no-console
+				console.warn(
+					'[openconnector] viewLogsHandler navigation failed',
+					err,
+				)
+			}
+		})
 }

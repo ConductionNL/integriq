@@ -56,7 +56,8 @@
   @spec openspec/specs/mapping-editor-ui/spec.md
 -->
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="dialogTitle"
 		size="large"
 		class="cn-mapping-editor-modal"
@@ -72,14 +73,16 @@
 			     stacked and capped short of the modal width: they are not the
 			     work, and stacking sidesteps the input/textarea height gap. -->
 			<div class="cn-mapping-editor__identity">
-				<NcTextField v-model="draft.name"
+				<NcTextField
+					v-model="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
 					:helper-text="nameError"
 					:disabled="saving"
 					required
 					@blur="nameTouched = true" />
-				<NcTextArea v-model="draft.description"
+				<NcTextArea
+					v-model="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="1"
@@ -91,7 +94,8 @@
 			     reading without a band of empty space restating the headers. -->
 			<div class="cn-mapping-editor__columns">
 				<!-- ── Input ───────────────────────────────────────────── -->
-				<section class="cn-mapping-editor__column cn-mapping-editor__column--input">
+				<section
+					class="cn-mapping-editor__column cn-mapping-editor__column--input">
 					<header class="cn-mapping-editor__column-header">
 						<DatabaseArrowRightOutlineIcon :size="20" />
 						<h3>{{ t('openconnector', 'Input') }}</h3>
@@ -100,10 +104,13 @@
 						</span>
 					</header>
 					<div class="cn-mapping-editor__column-body">
-						<label class="cn-mapping-editor__label" for="cn-mapping-editor-input">
+						<label
+							class="cn-mapping-editor__label"
+							for="cn-mapping-editor-input">
 							{{ t('openconnector', 'Test input (JSON)') }}
 						</label>
-						<textarea id="cn-mapping-editor-input"
+						<textarea
+							id="cn-mapping-editor-input"
 							v-model="inputJson"
 							class="cn-mapping-editor__textarea"
 							rows="8"
@@ -115,16 +122,21 @@
 					</div>
 				</section>
 
-				<ArrowRightIcon class="cn-mapping-editor__arrow" :size="20" aria-hidden="true" />
+				<ArrowRightIcon
+					class="cn-mapping-editor__arrow"
+					:size="20"
+					aria-hidden="true" />
 
 				<!-- ── Transform ───────────────────────────────────────── -->
-				<section class="cn-mapping-editor__column cn-mapping-editor__column--transform">
+				<section
+					class="cn-mapping-editor__column cn-mapping-editor__column--transform">
 					<header class="cn-mapping-editor__column-header">
 						<SwapHorizontalIcon :size="20" />
 						<h3>{{ t('openconnector', 'Transform') }}</h3>
 					</header>
 					<div class="cn-mapping-editor__column-body">
-						<MappingRulesEditor :mapping-rules="draft.mapping"
+						<MappingRulesEditor
+							:mapping-rules="draft.mapping"
 							:cast-rules="draft.cast"
 							:unset-rules="draft.unset"
 							:pass-through="draft.passThrough"
@@ -137,10 +149,14 @@
 					</div>
 				</section>
 
-				<ArrowRightIcon class="cn-mapping-editor__arrow" :size="20" aria-hidden="true" />
+				<ArrowRightIcon
+					class="cn-mapping-editor__arrow"
+					:size="20"
+					aria-hidden="true" />
 
 				<!-- ── Output ──────────────────────────────────────────── -->
-				<section class="cn-mapping-editor__column cn-mapping-editor__column--output">
+				<section
+					class="cn-mapping-editor__column cn-mapping-editor__column--output">
 					<header class="cn-mapping-editor__column-header">
 						<DatabaseArrowLeftOutlineIcon :size="20" />
 						<h3>{{ t('openconnector', 'Output') }}</h3>
@@ -149,7 +165,8 @@
 						</span>
 					</header>
 					<div class="cn-mapping-editor__column-body">
-						<MappingResultPanel ref="result"
+						<MappingResultPanel
+							ref="result"
 							:mapping="testableMapping"
 							:input-object="inputJson"
 							@input-error="inputError = $event" />
@@ -174,7 +191,11 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{ isCreate ? t('openconnector', 'Create') : t('openconnector', 'Save') }}
+				{{
+					isCreate
+						? t('openconnector', 'Create')
+						: t('openconnector', 'Save')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -313,17 +334,22 @@ export default {
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
-				: this.t('openconnector', 'Name must contain at least one letter or number')
+				: this.t(
+						'openconnector',
+						'Name must contain at least one letter or number',
+					)
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canSave() {
-			return !this.saving
+			return (
+				!this.saving
 				&& !!this.draft.name
 				&& !this.nameError
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through — better a disabled button
 				// than a click that silently does nothing.
 				&& typeof this.confirm === 'function'
+			)
 		},
 		/**
 		 * The draft merged over the persisted record, which is what the test
@@ -438,13 +464,15 @@ export default {
 			this.saveError = ''
 			try {
 				await this.confirm({ ...(this.item || {}), ...this.draft })
-				showSuccess(this.isCreate
-					? this.t('openconnector', 'Mapping created')
-					: this.t('openconnector', 'Mapping saved'))
+				showSuccess(
+					this.isCreate
+						? this.t('openconnector', 'Mapping created')
+						: this.t('openconnector', 'Mapping saved'),
+				)
 				this.close?.()
 			} catch (err) {
-				this.saveError = err?.message
-					|| this.t('openconnector', 'Failed to save mapping')
+				this.saveError =
+					err?.message || this.t('openconnector', 'Failed to save mapping')
 			} finally {
 				this.saving = false
 			}
@@ -545,7 +573,8 @@ export default {
 	gap: 10px;
 	padding: 12px;
 	border-bottom: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large, 8px) var(--border-radius-large, 8px) 0 0;
+	border-radius: var(--border-radius-large, 8px) var(--border-radius-large, 8px) 0
+		0;
 	background: var(--color-background-hover);
 }
 

@@ -17,15 +17,18 @@
     On a failed call the controller returns { error: "<message>" } instead.
 -->
 <template>
-	<NcModal v-if="open"
-		label-id="testSourceModal"
-		size="large"
-		@close="onClose">
+	<NcModal v-if="open" label-id="testSourceModal" size="large" @close="onClose">
 		<div class="cn-test-source-modal">
 			<h2>{{ t('openconnector', 'Test connection') }}</h2>
 
 			<NcNoteCard v-if="sourceName" type="info">
-				<p>{{ t('openconnector', 'Testing source: {name}', { name: sourceName }) }}</p>
+				<p>
+					{{
+						t('openconnector', 'Testing source: {name}', {
+							name: sourceName,
+						})
+					}}
+				</p>
 			</NcNoteCard>
 
 			<div class="cn-test-source-modal__panes">
@@ -34,13 +37,15 @@
 					<h3>{{ t('openconnector', 'Request') }}</h3>
 
 					<div class="cn-test-source-modal__row">
-						<NcSelect id="cn-test-source-method"
+						<NcSelect
+							id="cn-test-source-method"
 							v-model="method"
 							:options="methodOptions"
 							:aria-label-combobox="t('openconnector', 'Method')"
 							:clearable="false"
 							input-id="cn-test-source-method" />
-						<NcSelect id="cn-test-source-type"
+						<NcSelect
+							id="cn-test-source-type"
 							v-model="type"
 							:options="typeOptions"
 							:aria-label-combobox="t('openconnector', 'Body type')"
@@ -49,9 +54,15 @@
 					</div>
 
 					<label for="cn-test-source-endpoint">
-						{{ t('openconnector', 'Endpoint (path appended to the source location)') }}
+						{{
+							t(
+								'openconnector',
+								'Endpoint (path appended to the source location)',
+							)
+						}}
 					</label>
-					<NcTextField id="cn-test-source-endpoint"
+					<NcTextField
+						id="cn-test-source-endpoint"
 						v-model="endpoint"
 						:label="t('openconnector', 'Endpoint')"
 						placeholder="/health" />
@@ -59,18 +70,22 @@
 					<label for="cn-test-source-body">
 						{{ t('openconnector', 'Body (optional)') }}
 					</label>
-					<textarea id="cn-test-source-body"
+					<textarea
+						id="cn-test-source-body"
 						v-model="body"
 						class="cn-test-source-modal__textarea"
 						rows="8"
 						spellcheck="false"
-						:placeholder="t('openconnector', 'Request body for POST/PUT')" />
+						:placeholder="
+							t('openconnector', 'Request body for POST/PUT')
+						" />
 
 					<div class="cn-test-source-modal__actions">
 						<NcButton @click="onClose">
 							{{ t('openconnector', 'Close') }}
 						</NcButton>
-						<NcButton type="primary"
+						<NcButton
+							type="primary"
 							:disabled="running || !canRun"
 							@click="runTest">
 							<template #icon>
@@ -86,8 +101,15 @@
 				<section class="cn-test-source-modal__pane">
 					<h3>{{ t('openconnector', 'Response') }}</h3>
 
-					<div v-if="!hasResult && !runError" class="cn-test-source-modal__empty">
-						{{ t('openconnector', 'Run the test to see the response here.') }}
+					<div
+						v-if="!hasResult && !runError"
+						class="cn-test-source-modal__empty">
+						{{
+							t(
+								'openconnector',
+								'Run the test to see the response here.',
+							)
+						}}
 					</div>
 
 					<NcNoteCard v-if="runError" type="error">
@@ -96,19 +118,39 @@
 
 					<template v-if="hasResult">
 						<NcNoteCard v-if="isSuccess" type="success">
-							<p>{{ t('openconnector', 'The connection to the source was successful.') }}</p>
+							<p>
+								{{
+									t(
+										'openconnector',
+										'The connection to the source was successful.',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-else type="warning">
-							<p>{{ t('openconnector', 'The source responded with a non-2xx status.') }}</p>
+							<p>
+								{{
+									t(
+										'openconnector',
+										'The source responded with a non-2xx status.',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 
 						<dl class="cn-test-source-modal__meta">
 							<dt>{{ t('openconnector', 'Status') }}</dt>
-							<dd>{{ response.statusMessage }} ({{ response.statusCode }})</dd>
+							<dd>
+								{{ response.statusMessage }} ({{
+									response.statusCode
+								}})
+							</dd>
 							<dt>{{ t('openconnector', 'Response time') }}</dt>
 							<dd>{{ formatMs(response.responseTime) }}</dd>
 							<dt>{{ t('openconnector', 'Size') }}</dt>
-							<dd>{{ response.size }} {{ t('openconnector', 'bytes') }}</dd>
+							<dd>
+								{{ response.size }} {{ t('openconnector', 'bytes') }}
+							</dd>
 							<dt v-if="response.remoteIp">
 								{{ t('openconnector', 'Remote IP') }}
 							</dt>
@@ -118,10 +160,14 @@
 						</dl>
 
 						<label>{{ t('openconnector', 'Headers') }}</label>
-						<pre class="cn-test-source-modal__pre">{{ prettify(response.headers) }}</pre>
+						<pre class="cn-test-source-modal__pre">{{
+							prettify(response.headers)
+						}}</pre>
 
 						<label>{{ t('openconnector', 'Body') }}</label>
-						<pre class="cn-test-source-modal__pre">{{ prettify(response.body) }}</pre>
+						<pre class="cn-test-source-modal__pre">{{
+							prettify(response.body)
+						}}</pre>
 					</template>
 				</section>
 			</div>
@@ -180,10 +226,12 @@ export default {
 	computed: {
 		/** @spec openspec/specs/http-call-engine/spec.md */
 		sourceId() {
-			return this.source?.id
+			return (
+				this.source?.id
 				|| this.source?.uuid
 				|| this.source?.['@self']?.id
 				|| null
+			)
 		},
 		/** @spec openspec/specs/http-call-engine/spec.md */
 		sourceName() {
@@ -245,7 +293,9 @@ export default {
 					payload.body = this.body
 				}
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/sources/test/${this.sourceId}`),
+					generateUrl(
+						`/apps/openconnector/api/sources/test/${this.sourceId}`,
+					),
 					payload,
 				)
 				// The controller returns the CallLog object; the live request/response
@@ -258,15 +308,20 @@ export default {
 					this.runError = data.error
 					showError(this.runError)
 				} else {
-					this.runError = t('openconnector', 'The source test returned no response data.')
+					this.runError = t(
+						'openconnector',
+						'The source test returned no response data.',
+					)
 					showError(this.runError)
 				}
 			} catch (err) {
-				const message = err?.response?.data?.error
+				const message =
+					err?.response?.data?.error
 					|| err?.response?.data?.message
 					|| err?.message
 					|| ''
-				this.runError = t('openconnector', 'Source test failed')
+				this.runError =
+					t('openconnector', 'Source test failed')
 					+ (message ? `: ${message}` : '')
 				showError(this.runError)
 			} finally {

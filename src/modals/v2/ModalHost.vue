@@ -54,9 +54,7 @@
 		<ExportConfigurationDialog
 			:open="configurationExport.open"
 			@close="closeConfigurationExport" />
-		<PromotePreviewModal
-			:open="promotion.open"
-			@close="closePromotion" />
+		<PromotePreviewModal :open="promotion.open" @close="closePromotion" />
 	</div>
 </template>
 
@@ -157,7 +155,10 @@ export default {
 		},
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openAddEndpointRule(payload) {
-			this.addEndpointRule = { open: true, endpoint: payload?.endpoint ?? null }
+			this.addEndpointRule = {
+				open: true,
+				endpoint: payload?.endpoint ?? null,
+			}
 		},
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeAddEndpointRule() {
@@ -167,9 +168,9 @@ export default {
 		openRunAction(payload) {
 			this.runAction = {
 				open: true,
-				target: (payload?.target ?? ''),
-				mode: (payload?.mode ?? ''),
-				item: (payload?.item ?? null),
+				target: payload?.target ?? '',
+				mode: payload?.mode ?? '',
+				item: payload?.item ?? null,
 			}
 		},
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
@@ -178,7 +179,10 @@ export default {
 		},
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		openSubscriptionSigning(payload) {
-			this.subscriptionSigning = { open: true, subscription: payload?.subscription ?? null }
+			this.subscriptionSigning = {
+				open: true,
+				subscription: payload?.subscription ?? null,
+			}
 		},
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		closeSubscriptionSigning() {

@@ -31,7 +31,9 @@
 			placeholder="86400"
 			@update:model-value="onTtlInput" />
 
-		<label class="action-form__label" :for="'rule-action-approval-reject-' + uid">
+		<label
+			class="action-form__label"
+			:for="'rule-action-approval-reject-' + uid">
 			{{ t('openconnector', 'On reject') }}
 		</label>
 		<NcSelect
@@ -42,7 +44,9 @@
 			:clearable="false"
 			@update:model-value="(opt) => onOutcomePick('onReject', opt)" />
 
-		<label class="action-form__label" :for="'rule-action-approval-timeout-' + uid">
+		<label
+			class="action-form__label"
+			:for="'rule-action-approval-timeout-' + uid">
 			{{ t('openconnector', 'On timeout') }}
 		</label>
 		<NcSelect
@@ -54,7 +58,12 @@
 			@update:model-value="(opt) => onOutcomePick('onTimeout', opt)" />
 
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Approval rules only run in the "before" phase — they suspend the request until a member of the approver group approves or rejects it. Configure the rule timing to "before".') }}
+			{{
+				t(
+					'openconnector',
+					'Approval rules only run in the "before" phase — they suspend the request until a member of the approver group approves or rejects it. Configure the rule timing to "before".',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -93,11 +102,19 @@ export default {
 		selectedGroup() {
 			const gid = this.value.approverGroup
 			if (!gid) return null
-			return this.groupOptions.find((opt) => opt.id === gid) || { id: gid, label: gid }
+			return (
+				this.groupOptions.find((opt) => opt.id === gid) || {
+					id: gid,
+					label: gid,
+				}
+			)
 		},
 		/** @spec openspec/specs/approval-workflow/spec.md */
 		outcomeOptions() {
-			return OUTCOMES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
+			return OUTCOMES.map((row) => ({
+				id: row.id,
+				label: this.t('openconnector', row.label),
+			}))
 		},
 	},
 	mounted() {
@@ -112,7 +129,9 @@ export default {
 		async loadGroups() {
 			this.loadingGroups = true
 			try {
-				const res = await axios.get(generateOcsUrl('cloud/groups'), { params: { format: 'json' } })
+				const res = await axios.get(generateOcsUrl('cloud/groups'), {
+					params: { format: 'json' },
+				})
 				this.groups = res.data?.ocs?.data?.groups || []
 			} catch (err) {
 				// eslint-disable-next-line no-console
@@ -183,9 +202,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

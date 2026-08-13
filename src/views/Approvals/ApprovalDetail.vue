@@ -27,7 +27,9 @@
 		<div v-else-if="request" class="approvalDetail__body">
 			<div class="approvalDetail__meta">
 				<h2>{{ t('openconnector', 'Approval request') }}</h2>
-				<span class="approvalDetail__badge" :class="`approvalDetail__badge--${request.status}`">
+				<span
+					class="approvalDetail__badge"
+					:class="`approvalDetail__badge--${request.status}`">
 					{{ request.status }}
 				</span>
 			</div>
@@ -47,30 +49,51 @@
 				<dd>{{ request.onTimeout || '—' }}</dd>
 				<template v-if="request.snapshotPreview">
 					<dt>{{ t('openconnector', 'Request') }}</dt>
-					<dd>{{ request.snapshotPreview.method || '—' }} {{ request.snapshotPreview.path || '' }}</dd>
+					<dd>
+						{{ request.snapshotPreview.method || '—' }}
+						{{ request.snapshotPreview.path || '' }}
+					</dd>
 				</template>
 			</dl>
 
 			<!-- Audit trail (visible for resolved requests) -->
-			<div v-if="request.approverUserId || request.comment" class="approvalDetail__audit" data-testid="audit-trail">
+			<div
+				v-if="request.approverUserId || request.comment"
+				class="approvalDetail__audit"
+				data-testid="audit-trail">
 				<h3>{{ t('openconnector', 'Audit') }}</h3>
 				<p v-if="request.approverUserId">
-					{{ t('openconnector', 'Resolved by {who}', { who: request.approverUserId }) }}
+					{{
+						t('openconnector', 'Resolved by {who}', {
+							who: request.approverUserId,
+						})
+					}}
 					<span v-if="request.approvedAt">— {{ request.approvedAt }}</span>
-					<span v-else-if="request.rejectedAt">— {{ request.rejectedAt }}</span>
+					<span v-else-if="request.rejectedAt"
+						>— {{ request.rejectedAt }}</span
+					>
 				</p>
 				<p v-if="request.comment">
-					<strong>{{ t('openconnector', 'Comment') }}:</strong> {{ request.comment }}
+					<strong>{{ t('openconnector', 'Comment') }}:</strong>
+					{{ request.comment }}
 				</p>
 				<p v-if="request.resumeResult">
-					<strong>{{ t('openconnector', 'Resume result') }}:</strong> {{ request.resumeResult }}
+					<strong>{{ t('openconnector', 'Resume result') }}:</strong>
+					{{ request.resumeResult }}
 				</p>
 			</div>
 
 			<!-- Actions (only while pending) -->
 			<div v-if="request.status === 'pending'" class="approvalDetail__actions">
-				<label class="approvalDetail__commentLabel" :for="'approval-comment-' + uid">
-					{{ t('openconnector', 'Comment (required to reject, optional to approve)') }}
+				<label
+					class="approvalDetail__commentLabel"
+					:for="'approval-comment-' + uid">
+					{{
+						t(
+							'openconnector',
+							'Comment (required to reject, optional to approve)',
+						)
+					}}
 				</label>
 				<textarea
 					:id="'approval-comment-' + uid"
@@ -82,7 +105,8 @@
 					<NcButton type="primary" :disabled="busy" @click="approve">
 						{{ t('openconnector', 'Approve') }}
 					</NcButton>
-					<NcButton type="error"
+					<NcButton
+						type="error"
 						:disabled="busy || !comment.trim()"
 						data-testid="reject-button"
 						@click="reject">
@@ -92,9 +116,15 @@
 			</div>
 		</div>
 
-		<NcEmptyContent v-else
+		<NcEmptyContent
+			v-else
 			:name="t('openconnector', 'Approval request not found')"
-			:description="t('openconnector', 'It may have been removed or you are not authorized to view it.')">
+			:description="
+				t(
+					'openconnector',
+					'It may have been removed or you are not authorized to view it.',
+				)
+			">
 			<template #icon>
 				<AlertCircleOutline :size="48" />
 			</template>
@@ -107,11 +137,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 
 let uidCounter = 0
@@ -163,7 +189,11 @@ export default {
 		async load() {
 			this.loading = true
 			try {
-				const res = await axios.get(generateUrl(`/apps/openconnector/api/approvals/${this.requestId}`))
+				const res = await axios.get(
+					generateUrl(
+						`/apps/openconnector/api/approvals/${this.requestId}`,
+					),
+				)
 				this.request = res.data
 			} catch (err) {
 				this.request = null
@@ -179,14 +209,19 @@ export default {
 			this.busy = true
 			try {
 				await axios.post(
-					generateUrl(`/apps/openconnector/api/approvals/${this.requestId}/approve`),
+					generateUrl(
+						`/apps/openconnector/api/approvals/${this.requestId}/approve`,
+					),
 					{ comment: this.comment },
 				)
 				showSuccess(t('openconnector', 'Approved'))
 				await this.load()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Approve failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Approve failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}
@@ -202,14 +237,19 @@ export default {
 			this.busy = true
 			try {
 				await axios.post(
-					generateUrl(`/apps/openconnector/api/approvals/${this.requestId}/reject`),
+					generateUrl(
+						`/apps/openconnector/api/approvals/${this.requestId}/reject`,
+					),
 					{ comment: this.comment },
 				)
 				showSuccess(t('openconnector', 'Rejected'))
 				await this.load()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Reject failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Reject failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}

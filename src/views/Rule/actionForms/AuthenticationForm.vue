@@ -12,7 +12,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Authentication type') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Authentication type')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Authentication type')"
 			:model-value="selectedTypeOption"
@@ -45,10 +47,20 @@
 				@update:model-value="(next) => patch('groups', toArray(next))" />
 		</template>
 		<span v-if="value.type === 'nc-session'" class="action-form__helper">
-			{{ t('openconnector', 'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.') }}
+			{{
+				t(
+					'openconnector',
+					'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.',
+				)
+			}}
 		</span>
 		<span v-else class="action-form__helper">
-			{{ t('openconnector', 'For JWT / JWT-ZGW the rule only checks the signed bearer; no extra fields are required.') }}
+			{{
+				t(
+					'openconnector',
+					'For JWT / JWT-ZGW the rule only checks the signed bearer; no extra fields are required.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -75,7 +87,10 @@ export default {
 	computed: {
 		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		typeOptions() {
-			return AUTH_TYPES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
+			return AUTH_TYPES.map((row) => ({
+				id: row.id,
+				label: this.t('openconnector', row.label),
+			}))
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedTypeOption() {
@@ -107,7 +122,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
 		 */
 		csv(value) {
-			return Array.isArray(value) ? value.join(',') : (value || '')
+			return Array.isArray(value) ? value.join(',') : value || ''
 		},
 		/**
 		 * Parse comma-separated user input back into the array shape the
@@ -117,16 +132,28 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
 		 */
 		toArray(text) {
-			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
+			return (text || '')
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter(Boolean)
 		},
 	},
 }
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

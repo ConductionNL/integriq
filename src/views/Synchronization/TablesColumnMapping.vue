@@ -26,7 +26,12 @@
 				{{ t('openconnector', 'Column mapping') }}
 			</h4>
 			<span class="tables-column-mapping__hint">
-				{{ t('openconnector', 'Map each table column to a source field or Twig expression. Leave blank to skip a column.') }}
+				{{
+					t(
+						'openconnector',
+						'Map each table column to a source field or Twig expression. Leave blank to skip a column.',
+					)
+				}}
 			</span>
 		</header>
 
@@ -48,15 +53,28 @@
 			<div class="tables-column-mapping__col-meta">
 				<span class="tables-column-mapping__col-title">
 					{{ column.title }}
-					<span v-if="column.mandatory" class="tables-column-mapping__required" :title="t('openconnector', 'Required column')">*</span>
+					<span
+						v-if="column.mandatory"
+						class="tables-column-mapping__required"
+						:title="t('openconnector', 'Required column')"
+						>*</span
+					>
 				</span>
-				<span class="tables-column-mapping__col-type">{{ typeHint(column) }}</span>
+				<span class="tables-column-mapping__col-type">{{
+					typeHint(column)
+				}}</span>
 			</div>
 			<NcTextField
-				:label="t('openconnector', 'Value for {column}', { column: column.title })"
+				:label="
+					t('openconnector', 'Value for {column}', {
+						column: column.title,
+					})
+				"
 				:model-value="mappedValue(column.title)"
 				:placeholder="t('openconnector', 'Source field or expression')"
-				@update:model-value="(value) => onMappingUpdate(column.title, value)" />
+				@update:model-value="
+					(value) => onMappingUpdate(column.title, value)
+				" />
 		</div>
 	</div>
 </template>
@@ -150,7 +168,10 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
 		 */
 		onMappingUpdate(columnTitle, value) {
-			this.$emit('update:config', upsertColumnMapping(this.config, columnTitle, value))
+			this.$emit(
+				'update:config',
+				upsertColumnMapping(this.config, columnTitle, value),
+			)
 		},
 		/**
 		 * Fetch the table's columns via the tables-bridge discovery endpoint.
@@ -168,13 +189,17 @@ export default {
 			this.columnsError = ''
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/tables-bridge/tables/{tableId}/columns', { tableId: this.tableId }),
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/tables-bridge/tables/{tableId}/columns',
+						{ tableId: this.tableId },
+					),
 					{ params: { sourceId: this.sourceId } },
 				)
 				this.columns = mapColumnDescriptors(extractResults(response.data))
 			} catch (err) {
 				this.columns = []
-				this.columnsError = err?.response?.data?.error
+				this.columnsError =
+					err?.response?.data?.error
 					|| t('openconnector', 'Could not load columns for this table.')
 				// eslint-disable-next-line no-console
 				console.warn('[TablesColumnMapping] columns fetch failed', err)

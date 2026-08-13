@@ -61,22 +61,36 @@ describe('mapFormOptions', () => {
 		expect(mapFormOptions([{ id: 7 }])).toEqual([{ id: 7, label: '7' }])
 	})
 	it('drops entries with no id and tolerates non-arrays', () => {
-		expect(mapFormOptions([{ title: 'x' }, null, { id: 3, title: 'y' }])).toEqual([{ id: 3, label: 'y' }])
+		expect(
+			mapFormOptions([{ title: 'x' }, null, { id: 3, title: 'y' }]),
+		).toEqual([{ id: 3, label: 'y' }])
 		expect(mapFormOptions(undefined)).toEqual([])
 	})
 })
 
 describe('normaliseQuestion / mapQuestionDescriptors', () => {
 	it('normalises a full question', () => {
-		const q = normaliseQuestion({ id: 7, text: 'Company name', name: 'company_name', type: 'short' })
-		expect(q).toEqual({ id: 7, text: 'Company name', name: 'company_name', type: 'short' })
+		const q = normaliseQuestion({
+			id: 7,
+			text: 'Company name',
+			name: 'company_name',
+			type: 'short',
+		})
+		expect(q).toEqual({
+			id: 7,
+			text: 'Company name',
+			name: 'company_name',
+			type: 'short',
+		})
 	})
 	it('tolerates missing fields', () => {
 		const q = normaliseQuestion({})
 		expect(q).toEqual({ id: 0, text: '', name: '', type: '' })
 	})
 	it('maps a list', () => {
-		expect(mapQuestionDescriptors([{ id: 1, text: 'A', type: 'short' }])).toHaveLength(1)
+		expect(
+			mapQuestionDescriptors([{ id: 1, text: 'A', type: 'short' }]),
+		).toHaveLength(1)
 		expect(mapQuestionDescriptors(null)).toEqual([])
 	})
 })
@@ -110,7 +124,12 @@ describe('ambiguousQuestionTexts', () => {
 		expect(ambiguousQuestionTexts(questions).size).toBe(0)
 	})
 	it('ignores empty-text questions and tolerates a non-array', () => {
-		expect(ambiguousQuestionTexts([{ id: 1, text: '' }, { id: 2, text: '' }]).size).toBe(0)
+		expect(
+			ambiguousQuestionTexts([
+				{ id: 1, text: '' },
+				{ id: 2, text: '' },
+			]).size,
+		).toBe(0)
 		expect(ambiguousQuestionTexts(undefined).size).toBe(0)
 	})
 })

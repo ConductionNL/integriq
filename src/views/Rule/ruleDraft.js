@@ -194,12 +194,21 @@ export function normaliseConditions(raw) {
 		return emptyRootGroup()
 	}
 	if (typeof raw === 'string') {
-		try { return normaliseConditions(JSON.parse(raw)) } catch (_e) { return emptyRootGroup() }
+		try {
+			return normaliseConditions(JSON.parse(raw))
+		} catch (_e) {
+			return emptyRootGroup()
+		}
 	}
 	if (Array.isArray(raw)) {
 		if (raw.length === 0) return emptyRootGroup()
 		// Single-item array wrapping a group → unwrap and recurse.
-		if (raw.length === 1 && raw[0] && typeof raw[0] === 'object' && !Array.isArray(raw[0])) {
+		if (
+			raw.length === 1
+			&& raw[0]
+			&& typeof raw[0] === 'object'
+			&& !Array.isArray(raw[0])
+		) {
 			return normaliseConditions(raw[0])
 		}
 		// Multi-item array of leaves → wrap with AND.
@@ -207,7 +216,11 @@ export function normaliseConditions(raw) {
 	}
 	if (typeof raw === 'object') {
 		const keys = Object.keys(raw)
-		if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
+		if (
+			keys.length === 1
+			&& (keys[0] === 'and' || keys[0] === 'or')
+			&& Array.isArray(raw[keys[0]])
+		) {
 			return raw
 		}
 		return { and: [raw] }

@@ -27,27 +27,39 @@ const API_BASE = '/index.php/apps/openconnector/api'
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 
 test.describe('Endpoint dispatch HTTP surface — no-match', () => {
-	test('GET /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({ request }) => {
-		const resp = await request.get(`${API_BASE}/endpoint/pw-e2e-no-match-${Date.now()}`, {
-			failOnStatusCode: false,
-		})
+	test('GET /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			`${API_BASE}/endpoint/pw-e2e-no-match-${Date.now()}`,
+			{
+				failOnStatusCode: false,
+			},
+		)
 		// The dispatch pipeline is healthy: a no-match returns a clean 404.
 		expect(resp.status()).not.toBe(500)
 		expect([404]).toContain(resp.status())
 	})
 
-	test('PUT /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({ request }) => {
-		const resp = await request.put(`${API_BASE}/endpoint/pw-e2e-no-match-put-${Date.now()}`, {
-			data: {},
-			failOnStatusCode: false,
-		})
+	test('PUT /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({
+		request,
+	}) => {
+		const resp = await request.put(
+			`${API_BASE}/endpoint/pw-e2e-no-match-put-${Date.now()}`,
+			{
+				data: {},
+				failOnStatusCode: false,
+			},
+		)
 		expect(resp.status()).not.toBe(500)
 		expect([404]).toContain(resp.status())
 	})
 })
 
 test.describe('Endpoints OR API — list', () => {
-	test('OR returns endpoint objects for the openconnector register', async ({ request }) => {
+	test('OR returns endpoint objects for the openconnector register', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/endpoint?_limit=10`, {
 			failOnStatusCode: false,
 		})

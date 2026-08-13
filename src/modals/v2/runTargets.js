@@ -55,7 +55,9 @@ function countUuids(list) {
 		return 0
 	}
 
-	return list.filter((entry) => entry !== null && entry !== undefined && entry !== '').length
+	return list.filter(
+		(entry) => entry !== null && entry !== undefined && entry !== '',
+	).length
 }
 
 /**
@@ -97,15 +99,15 @@ function yesNo(value) {
  * @return {Array<{label: string, value: number}>} Counter cells.
  */
 function objectCounters(objects) {
-	const counts = (objects || {})
+	const counts = objects || {}
 
 	return [
-		{ label: t('openconnector', 'Found'), value: (counts.found ?? 0) },
-		{ label: t('openconnector', 'Skipped'), value: (counts.skipped ?? 0) },
-		{ label: t('openconnector', 'Created'), value: (counts.created ?? 0) },
-		{ label: t('openconnector', 'Updated'), value: (counts.updated ?? 0) },
-		{ label: t('openconnector', 'Deleted'), value: (counts.deleted ?? 0) },
-		{ label: t('openconnector', 'Invalid'), value: (counts.invalid ?? 0) },
+		{ label: t('openconnector', 'Found'), value: counts.found ?? 0 },
+		{ label: t('openconnector', 'Skipped'), value: counts.skipped ?? 0 },
+		{ label: t('openconnector', 'Created'), value: counts.created ?? 0 },
+		{ label: t('openconnector', 'Updated'), value: counts.updated ?? 0 },
+		{ label: t('openconnector', 'Deleted'), value: counts.deleted ?? 0 },
+		{ label: t('openconnector', 'Invalid'), value: counts.invalid ?? 0 },
 	]
 }
 
@@ -118,7 +120,10 @@ function forceOption() {
 	return {
 		key: 'force',
 		label: t('openconnector', 'Force'),
-		note: t('openconnector', 'Update the contract even when the engine detects no change. Useful after editing a mapping, when the source data itself is unchanged.'),
+		note: t(
+			'openconnector',
+			'Update the contract even when the engine detects no change. Useful after editing a mapping, when the source data itself is unchanged.',
+		),
 		noteType: 'info',
 	}
 }
@@ -142,12 +147,15 @@ function synchronizationStatus(payload) {
 		}
 	}
 
-	const message = (payload.message || '')
+	const message = payload.message || ''
 
 	if (message === 'pending_approval') {
 		return {
 			type: 'warning',
-			text: t('openconnector', 'The run is waiting for approval and made no changes. Approve the request to let it continue.'),
+			text: t(
+				'openconnector',
+				'The run is waiting for approval and made no changes. Approve the request to let it continue.',
+			),
 		}
 	}
 
@@ -160,7 +168,7 @@ function synchronizationStatus(payload) {
 
 	return {
 		type: 'error',
-		text: (message || t('openconnector', 'The synchronization did not complete.')),
+		text: message || t('openconnector', 'The synchronization did not complete.'),
 	}
 }
 
@@ -181,14 +189,20 @@ function deletionGuardNote(guard) {
 
 	if (guard.reason === 'incremental_mode') {
 		return {
-			text: t('openconnector', 'No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.'),
+			text: t(
+				'openconnector',
+				'No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.',
+			),
 			rows: [],
 		}
 	}
 
 	if (guard.reason === 'fetch_incomplete') {
 		return {
-			text: t('openconnector', 'No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.'),
+			text: t(
+				'openconnector',
+				'No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.',
+			),
 			rows: [],
 		}
 	}
@@ -215,13 +229,19 @@ function deletionGuardNote(guard) {
 		}
 
 		return {
-			text: t('openconnector', 'No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.'),
+			text: t(
+				'openconnector',
+				'No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.',
+			),
 			rows,
 		}
 	}
 
 	return {
-		text: t('openconnector', 'No objects were deleted: a guard stopped the cleanup pass.'),
+		text: t(
+			'openconnector',
+			'No objects were deleted: a guard stopped the cleanup pass.',
+		),
 		rows: [],
 	}
 }
@@ -237,7 +257,7 @@ function synchronizationSections(payload) {
 		return []
 	}
 
-	const result = (payload.result || {})
+	const result = payload.result || {}
 	const guard = deletionGuardNote(result.objects?.deletionGuard)
 	const sections = []
 
@@ -266,12 +286,30 @@ function synchronizationSections(payload) {
 			title: t('openconnector', 'Run'),
 			kind: 'meta',
 			value: [
-				{ label: t('openconnector', 'Execution time'), value: formatMs(payload.executionTime) },
-				{ label: t('openconnector', 'Direction'), value: (result.type || '—') },
-				{ label: t('openconnector', 'Test mode'), value: yesNo(payload.test === true) },
-				{ label: t('openconnector', 'Forced'), value: yesNo(payload.force === true) },
-				{ label: t('openconnector', 'Contracts'), value: String(countUuids(result.contracts)) },
-				{ label: t('openconnector', 'Contract logs'), value: String(countUuids(result.logs)) },
+				{
+					label: t('openconnector', 'Execution time'),
+					value: formatMs(payload.executionTime),
+				},
+				{
+					label: t('openconnector', 'Direction'),
+					value: result.type || '—',
+				},
+				{
+					label: t('openconnector', 'Test mode'),
+					value: yesNo(payload.test === true),
+				},
+				{
+					label: t('openconnector', 'Forced'),
+					value: yesNo(payload.force === true),
+				},
+				{
+					label: t('openconnector', 'Contracts'),
+					value: String(countUuids(result.contracts)),
+				},
+				{
+					label: t('openconnector', 'Contract logs'),
+					value: String(countUuids(result.logs)),
+				},
 			],
 		},
 	])
@@ -308,7 +346,10 @@ function jobStatus(payload) {
 	if (payload === null || payload === undefined) {
 		return {
 			type: 'warning',
-			text: t('openconnector', 'Nothing was executed: the job is not due to run yet and force run was off.'),
+			text: t(
+				'openconnector',
+				'Nothing was executed: the job is not due to run yet and force run was off.',
+			),
 		}
 	}
 
@@ -317,20 +358,22 @@ function jobStatus(payload) {
 	if (level === 'ERROR') {
 		return {
 			type: 'error',
-			text: (payload.message || t('openconnector', 'The job failed.')),
+			text: payload.message || t('openconnector', 'The job failed.'),
 		}
 	}
 
 	if (level === 'WARNING') {
 		return {
 			type: 'warning',
-			text: (payload.message || t('openconnector', 'The job finished with a warning.')),
+			text:
+				payload.message
+				|| t('openconnector', 'The job finished with a warning.'),
 		}
 	}
 
 	return {
 		type: 'success',
-		text: (payload.message || t('openconnector', 'The job ran successfully.')),
+		text: payload.message || t('openconnector', 'The job ran successfully.'),
 	}
 }
 
@@ -356,11 +399,23 @@ function jobSections(payload) {
 			title: t('openconnector', 'Run'),
 			kind: 'meta',
 			value: [
-				{ label: t('openconnector', 'Level'), value: (payload.level || '—') },
-				{ label: t('openconnector', 'Execution time'), value: formatMs(payload.executionTime) },
-				{ label: t('openconnector', 'Job class'), value: (payload.jobClass || '—') },
-				{ label: t('openconnector', 'Last run'), value: (payload.lastRun || '—') },
-				{ label: t('openconnector', 'Next run'), value: (payload.nextRun || '—') },
+				{ label: t('openconnector', 'Level'), value: payload.level || '—' },
+				{
+					label: t('openconnector', 'Execution time'),
+					value: formatMs(payload.executionTime),
+				},
+				{
+					label: t('openconnector', 'Job class'),
+					value: payload.jobClass || '—',
+				},
+				{
+					label: t('openconnector', 'Last run'),
+					value: payload.lastRun || '—',
+				},
+				{
+					label: t('openconnector', 'Next run'),
+					value: payload.nextRun || '—',
+				},
 			],
 		},
 	]
@@ -407,24 +462,33 @@ function buildDescriptors() {
 				{
 					key: 'test',
 					label: t('openconnector', 'Test mode'),
-					note: t('openconnector', 'Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.'),
+					note: t(
+						'openconnector',
+						'Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.',
+					),
 					noteType: 'info',
 				},
 				forceOption(),
 				{
 					key: 'forceDeletion',
 					label: t('openconnector', 'Force deletion'),
-					note: t('openconnector', 'Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.'),
+					note: t(
+						'openconnector',
+						'Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.',
+					),
 					noteType: 'warning',
 					// REQ-018 hard-blocks deletion while syncMode is 'incremental', and
 					// forceDeletion explicitly cannot override that check — it only
 					// overrides the ratio guard. Absent syncMode means 'full' (the
 					// engine's own default), so only an explicit 'incremental' disables.
-					disabledWhen: (item) => (item?.syncMode === 'incremental'),
-					disabledNote: t('openconnector', 'Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.'),
+					disabledWhen: (item) => item?.syncMode === 'incremental',
+					disabledNote: t(
+						'openconnector',
+						'Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.',
+					),
 					// Run-only: the controller documents forceDeletion as not applicable
 					// to test runs, which make no deletions to guard in the first place.
-					hiddenWhen: (values) => (values?.test === true),
+					hiddenWhen: (values) => values?.test === true,
 				},
 			],
 			request: (item, values) => {
@@ -434,7 +498,7 @@ function buildDescriptors() {
 				if (values.test === true) {
 					return {
 						url: `/apps/openconnector/api/synchronizations/${id}/test`,
-						body: { force: (values.force === true) },
+						body: { force: values.force === true },
 					}
 				}
 
@@ -442,8 +506,8 @@ function buildDescriptors() {
 					url: `/apps/openconnector/api/synchronizations/${id}/run`,
 					body: {
 						test: false,
-						force: (values.force === true),
-						forceDeletion: (values.forceDeletion === true),
+						force: values.force === true,
+						forceDeletion: values.forceDeletion === true,
 					},
 				}
 			},
@@ -455,8 +519,11 @@ function buildDescriptors() {
 			// rather than making the user work out that `forceDeletion` is
 			// what the guard message is referring to.
 			retry: (payload) => {
-				const guard = (payload?.result?.objects?.deletionGuard || null)
-				if (guard?.guarded !== true || guard.reason !== 'ratio_threshold_exceeded') {
+				const guard = payload?.result?.objects?.deletionGuard || null
+				if (
+					guard?.guarded !== true
+					|| guard.reason !== 'ratio_threshold_exceeded'
+				) {
 					return null
 				}
 
@@ -470,11 +537,14 @@ function buildDescriptors() {
 		'synchronization/test': {
 			title: t('openconnector', 'Test synchronization (dry run)'),
 			runLabel: t('openconnector', 'Run test'),
-			intro: t('openconnector', 'A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.'),
+			intro: t(
+				'openconnector',
+				'A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.',
+			),
 			options: [forceOption()],
 			request: (item, values) => ({
 				url: `/apps/openconnector/api/synchronizations/${rowId(item)}/test`,
-				body: { force: (values.force === true) },
+				body: { force: values.force === true },
 			}),
 			status: synchronizationStatus,
 			sections: synchronizationSections,
@@ -488,13 +558,16 @@ function buildDescriptors() {
 				{
 					key: 'forceRun',
 					label: t('openconnector', 'Force run'),
-					note: t('openconnector', 'Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.'),
+					note: t(
+						'openconnector',
+						'Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.',
+					),
 					noteType: 'info',
 				},
 			],
 			request: (item, values) => ({
 				url: `/apps/openconnector/api/jobs/run/${rowId(item)}`,
-				body: { forceRun: (values.forceRun === true) },
+				body: { forceRun: values.forceRun === true },
 			}),
 			status: jobStatus,
 			sections: jobSections,
@@ -509,12 +582,18 @@ function buildDescriptors() {
 		'job/test': {
 			title: t('openconnector', 'Force run job'),
 			runLabel: t('openconnector', 'Force run'),
-			intro: t('openconnector', 'This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.'),
+			intro: t(
+				'openconnector',
+				'This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.',
+			),
 			options: [
 				{
 					key: 'forceRun',
 					label: t('openconnector', 'Force run'),
-					note: t('openconnector', 'Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.'),
+					note: t(
+						'openconnector',
+						'Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.',
+					),
 					noteType: 'info',
 					locked: true,
 				},
@@ -538,7 +617,7 @@ function buildDescriptors() {
  * @return {object|null} The descriptor, or null when the pair is unknown.
  */
 export function getRunDescriptor(target, mode) {
-	return (buildDescriptors()[`${target}/${mode}`] || null)
+	return buildDescriptors()[`${target}/${mode}`] || null
 }
 
 /**
@@ -551,8 +630,8 @@ export function getRunDescriptor(target, mode) {
 export function initialOptionValues(descriptor) {
 	const values = {}
 
-	for (const option of (descriptor?.options || [])) {
-		values[option.key] = (option.locked === true)
+	for (const option of descriptor?.options || []) {
+		values[option.key] = option.locked === true
 	}
 
 	return values

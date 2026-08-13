@@ -37,9 +37,16 @@
 				:options="mappingOptions"
 				:loading="loading"
 				:placeholder="t('openconnector', 'Pick a mapping')"
-				@update:model-value="(option) => $emit('update:value', option?.id || '')" />
+				@update:model-value="
+					(option) => $emit('update:value', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Transforms each source record into the target shape.') }}
+				{{
+					t(
+						'openconnector',
+						'Transforms each source record into the target shape.',
+					)
+				}}
 			</span>
 			<SyncMappingPreview :mapping-id="value" />
 		</div>
@@ -55,10 +62,19 @@
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
-				:placeholder="t('openconnector', 'Optional — for bidirectional sync')"
-				@update:model-value="(option) => $emit('update:targetSourceValue', option?.id || '')" />
+				:placeholder="
+					t('openconnector', 'Optional — for bidirectional sync')
+				"
+				@update:model-value="
+					(option) => $emit('update:targetSourceValue', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Only needed when changes flow back from target to source.') }}
+				{{
+					t(
+						'openconnector',
+						'Only needed when changes flow back from target to source.',
+					)
+				}}
 			</span>
 		</div>
 
@@ -74,9 +90,16 @@
 				:loading="loading"
 				:clearable="true"
 				:placeholder="t('openconnector', 'Optional — change detection')"
-				@update:model-value="(option) => $emit('update:hashValue', option?.id || '')" />
+				@update:model-value="
+					(option) => $emit('update:hashValue', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Mapping used to compute the source-side hash for change detection.') }}
+				{{
+					t(
+						'openconnector',
+						'Mapping used to compute the source-side hash for change detection.',
+					)
+				}}
 			</span>
 		</div>
 	</div>
@@ -119,11 +142,17 @@ export default {
 
 	computed: {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		primaryId() { return `sync-mapping-${this.pickerUid}-primary` },
+		primaryId() {
+			return `sync-mapping-${this.pickerUid}-primary`
+		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		reverseId() { return `sync-mapping-${this.pickerUid}-reverse` },
+		reverseId() {
+			return `sync-mapping-${this.pickerUid}-reverse`
+		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		hashId() { return `sync-mapping-${this.pickerUid}-hash` },
+		hashId() {
+			return `sync-mapping-${this.pickerUid}-hash`
+		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedPrimary() {
 			return this.resolveOption(this.value)
@@ -155,24 +184,32 @@ export default {
 		 */
 		resolveOption(id) {
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
-				id: String(id),
-				label: String(id),
-			}
+			return (
+				this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
+					id: String(id),
+					label: String(id),
+				}
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchMappings() {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/mapping'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/mapping',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.mappingOptions = list.map((row) => ({
 					// Mappings are referenced by slug in the synchronization
 					// record (per the register schema description). Fall back

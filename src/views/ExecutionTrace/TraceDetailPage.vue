@@ -26,7 +26,9 @@
 		<div v-else-if="trace" class="traceDetail__body">
 			<div class="traceDetail__meta">
 				<h2>{{ t('openconnector', 'Execution trace') }}</h2>
-				<span class="traceDetail__badge" :class="`traceDetail__badge--${trace.status}`">
+				<span
+					class="traceDetail__badge"
+					:class="`traceDetail__badge--${trace.status}`">
 					{{ trace.status }}
 				</span>
 			</div>
@@ -48,8 +50,12 @@
 				</dd>
 			</dl>
 
-			<div v-if="trace.error" class="traceDetail__error" data-testid="trace-error">
-				<strong>{{ t('openconnector', 'Error') }}:</strong> {{ trace.error.message }}
+			<div
+				v-if="trace.error"
+				class="traceDetail__error"
+				data-testid="trace-error">
+				<strong>{{ t('openconnector', 'Error') }}:</strong>
+				{{ trace.error.message }}
 			</div>
 
 			<h3>{{ t('openconnector', 'Steps') }}</h3>
@@ -58,7 +64,8 @@
 			<div class="traceDetail__replay">
 				<h3>{{ t('openconnector', 'Replay') }}</h3>
 
-				<NcButton v-if="!preview"
+				<NcButton
+					v-if="!preview"
 					type="secondary"
 					:disabled="busy"
 					@click="runDryRun">
@@ -67,32 +74,53 @@
 
 				<template v-else>
 					<p data-testid="replay-preview-notice">
-						{{ t('openconnector', 'Dry-run preview complete — no writes were performed.') }}
+						{{
+							t(
+								'openconnector',
+								'Dry-run preview complete — no writes were performed.',
+							)
+						}}
 					</p>
 					<TraceTimelineWidget :steps="preview.steps || []" />
 
 					<template v-if="!confirmingForce">
 						<div class="traceDetail__replayButtons">
-							<NcButton type="secondary" :disabled="busy" @click="runDryRun">
+							<NcButton
+								type="secondary"
+								:disabled="busy"
+								@click="runDryRun">
 								{{ t('openconnector', 'Re-run preview') }}
 							</NcButton>
-							<NcButton type="error" :disabled="busy" @click="confirmingForce = true">
+							<NcButton
+								type="error"
+								:disabled="busy"
+								@click="confirmingForce = true">
 								{{ t('openconnector', 'Force replay (real write)') }}
 							</NcButton>
 						</div>
 					</template>
 					<template v-else>
-						<p class="traceDetail__forceWarning" data-testid="force-confirm-notice">
-							{{ t('openconnector', 'This will perform a REAL write, reusing the original entry point\'s dispatch path. Are you sure?') }}
+						<p
+							class="traceDetail__forceWarning"
+							data-testid="force-confirm-notice">
+							{{
+								t(
+									'openconnector',
+									"This will perform a REAL write, reusing the original entry point's dispatch path. Are you sure?",
+								)
+							}}
 						</p>
 						<div class="traceDetail__replayButtons">
-							<NcButton type="error"
+							<NcButton
+								type="error"
 								:disabled="busy"
 								data-testid="confirm-force-replay"
 								@click="runForced">
 								{{ t('openconnector', 'Confirm forced replay') }}
 							</NcButton>
-							<NcButton :disabled="busy" @click="confirmingForce = false">
+							<NcButton
+								:disabled="busy"
+								@click="confirmingForce = false">
 								{{ t('openconnector', 'Cancel') }}
 							</NcButton>
 						</div>
@@ -101,9 +129,15 @@
 			</div>
 		</div>
 
-		<NcEmptyContent v-else
+		<NcEmptyContent
+			v-else
 			:name="t('openconnector', 'Trace not found')"
-			:description="t('openconnector', 'It may have expired or you are not authorized to view it.')">
+			:description="
+				t(
+					'openconnector',
+					'It may have expired or you are not authorized to view it.',
+				)
+			">
 			<template #icon>
 				<AlertCircleOutline :size="48" />
 			</template>
@@ -116,11 +150,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import TraceTimelineWidget from './TraceTimelineWidget.vue'
 
@@ -172,7 +202,11 @@ export default {
 		async load() {
 			this.loading = true
 			try {
-				const res = await axios.get(generateUrl(`/apps/openconnector/api/execution-traces/${this.traceId}`))
+				const res = await axios.get(
+					generateUrl(
+						`/apps/openconnector/api/execution-traces/${this.traceId}`,
+					),
+				)
 				this.trace = res.data
 			} catch (err) {
 				this.trace = null
@@ -189,14 +223,19 @@ export default {
 			this.confirmingForce = false
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/execution-traces/${this.traceId}/replay`),
+					generateUrl(
+						`/apps/openconnector/api/execution-traces/${this.traceId}/replay`,
+					),
 					{ force: false },
 				)
 				this.preview = res.data
 				showSuccess(t('openconnector', 'Dry-run preview complete'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Dry-run preview failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Dry-run preview failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}
@@ -210,7 +249,9 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/execution-traces/${this.traceId}/replay`),
+					generateUrl(
+						`/apps/openconnector/api/execution-traces/${this.traceId}/replay`,
+					),
 					{ force: true },
 				)
 				this.preview = res.data
@@ -218,7 +259,10 @@ export default {
 				showSuccess(t('openconnector', 'Forced replay complete'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Forced replay failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Forced replay failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}
