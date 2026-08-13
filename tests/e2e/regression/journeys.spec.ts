@@ -61,13 +61,17 @@ const OR = '/index.php/apps/openregister/api/objects/openconnector'
 async function resolveAppBase(page: Page): Promise<string> {
 	const candidates = ['/apps/openconnector', '/index.php/apps/openconnector']
 	for (const base of candidates) {
-		const probe = await page.request.get(`${base}/sources`, { failOnStatusCode: false })
+		const probe = await page.request.get(`${base}/sources`, {
+			failOnStatusCode: false,
+		})
 		const body = await probe.text()
 		if (probe.ok() && body.includes('openconnector-main.js')) {
 			return base
 		}
 	}
-	throw new Error('Could not determine openconnector URL base — neither /apps nor /index.php form returns the SPA shell')
+	throw new Error(
+		'Could not determine openconnector URL base — neither /apps nor /index.php form returns the SPA shell',
+	)
 }
 
 /**
@@ -114,8 +118,13 @@ async function createViaUi(
 	// Locate and click the Add button. CnActionsBar renders the primary
 	// action as `<NcButton type="primary">Add {schemaTitle}</NcButton>`
 	// (label derived from schema.title).
-	const addBtn = page.getByRole('button', { name: new RegExp(`Add\\s+${schemaTitle}`, 'i') })
-	await expect(addBtn, `Add ${schemaTitle} button must be visible on the index page`).toBeVisible()
+	const addBtn = page.getByRole('button', {
+		name: new RegExp(`Add\\s+${schemaTitle}`, 'i'),
+	})
+	await expect(
+		addBtn,
+		`Add ${schemaTitle} button must be visible on the index page`,
+	).toBeVisible()
 	await addBtn.click()
 
 	// CnFormDialog opens as an NcDialog. Wait for the dialog role.
@@ -169,7 +178,9 @@ async function createViaUi(
 	// form had a text input.
 	for (const [fieldLabel, value] of Object.entries(selectFields)) {
 		const combo = dialog
-			.getByRole('combobox', { name: new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i') })
+			.getByRole('combobox', {
+				name: new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i'),
+			})
 			.first()
 		await expect(
 			combo,
@@ -209,7 +220,9 @@ async function createViaUi(
 		).toBeVisible({ timeout: 10_000 })
 
 		const offered = await options.allTextContents()
-		const index = offered.findIndex((t) => t.replace(/\s+/g, '').toLowerCase() === want)
+		const index = offered.findIndex(
+			(t) => t.replace(/\s+/g, '').toLowerCase() === want,
+		)
 		expect(
 			index,
 			`"${value}" must be offered as an option for "${fieldLabel}" — offered: ${offered.map((t) => t.trim()).join(' | ')}`,
@@ -220,7 +233,10 @@ async function createViaUi(
 	// Click the primary action — "Create" in create-mode (resolved by
 	// CnFormDialog when there's no item to edit).
 	const createBtn = dialog.getByRole('button', { name: /^Create$/ })
-	await expect(createBtn, 'Create button must be enabled in form dialog').toBeEnabled({ timeout: 10_000 })
+	await expect(
+		createBtn,
+		'Create button must be enabled in form dialog',
+	).toBeEnabled({ timeout: 10_000 })
 
 	// Register list-refresh listener BEFORE clicking Create so we don't
 	// miss a fast response. Then click and wait for both POST (create) and
@@ -229,21 +245,33 @@ async function createViaUi(
 	// We do NOT rely on DOM text visibility here because the table view
 	// renders all cells as "—" (known table bug: NcDataTable column-to-
 	// field mapping is broken). The GET response is reliable ground-truth.
-	const listResponsePromise = page.waitForResponse(r =>
-		r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-		r.request().method() === 'GET' &&
-		r.status() < 400,
-	{ timeout: 25_000 })
+	const listResponsePromise = page.waitForResponse(
+		(r) =>
+			r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+			&& r.request().method() === 'GET'
+			&& r.status() < 400,
+		{ timeout: 25_000 },
+	)
 
 	const [postResponse] = await Promise.all([
-		page.waitForResponse(r => {
-			const u = r.url()
-			const isObjects = u.includes(`/api/objects/openconnector/${schemaSlug}`)
-			return isObjects && r.request().method() === 'POST' && r.status() < 400
-		}, { timeout: 20_000 }),
+		page.waitForResponse(
+			(r) => {
+				const u = r.url()
+				const isObjects = u.includes(
+					`/api/objects/openconnector/${schemaSlug}`,
+				)
+				return (
+					isObjects && r.request().method() === 'POST' && r.status() < 400
+				)
+			},
+			{ timeout: 20_000 },
+		),
 		createBtn.click(),
 	])
-	expect([200, 201], `OR POST for ${schemaSlug} returned ${postResponse.status()}`).toContain(postResponse.status())
+	expect(
+		[200, 201],
+		`OR POST for ${schemaSlug} returned ${postResponse.status()}`,
+	).toContain(postResponse.status())
 
 	// Capture the newly-created item's ID from the POST response body.
 	// OR returns the full object in the POST response; the ID is used for
@@ -278,9 +306,15 @@ async function createViaUi(
 	)
 	expect(verify.status(), `OR list lookup for "${name}" must succeed`).toBe(200)
 	const verifyBody = await verify.json().catch(() => ({}))
-	const results: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
-	const matches = results.filter((item: Record<string, unknown>) => String(item.name ?? '') === name)
-	expect(matches.length, `exactly one ${schemaSlug} named "${name}" must be persisted in OpenRegister`).toBe(1)
+	const results: Array<Record<string, unknown>> =
+		verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+	const matches = results.filter(
+		(item: Record<string, unknown>) => String(item.name ?? '') === name,
+	)
+	expect(
+		matches.length,
+		`exactly one ${schemaSlug} named "${name}" must be persisted in OpenRegister`,
+	).toBe(1)
 
 	// Return the ID so callers can delete via API (reliable cleanup).
 	return createdId
@@ -299,27 +333,39 @@ async function createViaUi(
  */
 async function switchToCardsView(page: Page): Promise<void> {
 	// Check if the view toggle is present.
-	const hasToggle = await page.locator('input[type="radio"][value="cards"]').isVisible().catch(() => false)
+	const hasToggle = await page
+		.locator('input[type="radio"][value="cards"]')
+		.isVisible()
+		.catch(() => false)
 	if (!hasToggle) {
 		// Try by name attribute (nc-vue may use 'cn_view_mode' or similar).
-		const hasToggleByName = await page.locator('input[type="radio"][name*="view"]').count() > 0
+		const hasToggleByName =
+			(await page.locator('input[type="radio"][name*="view"]').count()) > 0
 		if (!hasToggleByName) return
 	}
 
 	// Use evaluate to select the Cards radio and trigger Vue's reactivity.
 	await page.evaluate(() => {
 		// Find the radio input for "cards" view.
-		const inputs = Array.from(document.querySelectorAll('input[type="radio"]')) as HTMLInputElement[]
-		const cardsInput = inputs.find(i =>
-			i.value === 'cards' || i.id?.toLowerCase().includes('cards') ||
-			i.closest('label')?.textContent?.trim().toLowerCase() === 'cards'
+		const inputs = Array.from(
+			document.querySelectorAll('input[type="radio"]'),
+		) as HTMLInputElement[]
+		const cardsInput = inputs.find(
+			(i) =>
+				i.value === 'cards'
+				|| i.id?.toLowerCase().includes('cards')
+				|| i.closest('label')?.textContent?.trim().toLowerCase() === 'cards',
 		)
 		if (cardsInput && !cardsInput.checked) {
 			cardsInput.checked = true
 			cardsInput.dispatchEvent(new Event('change', { bubbles: true }))
 			cardsInput.dispatchEvent(new Event('input', { bubbles: true }))
 			// Also click the parent label if it exists (for Vue reactivity).
-			const label = cardsInput.closest('label') || document.querySelector(`label[for="${cardsInput.id}"]`) as HTMLElement | null
+			const label =
+				cardsInput.closest('label')
+				|| (document.querySelector(
+					`label[for="${cardsInput.id}"]`,
+				) as HTMLElement | null)
 			if (label) (label as HTMLElement).click()
 		}
 	})
@@ -339,7 +385,12 @@ async function switchToCardsView(page: Page): Promise<void> {
  * to find the item, then deletes it. This handles the edge case where
  * the POST response did not include an id field.
  */
-async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: string) {
+async function deleteViaApi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	id: string,
+) {
 	let targetId = id
 	if (!targetId) {
 		// Fallback: look up by name.
@@ -349,8 +400,11 @@ async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: st
 		)
 		if (listResp.ok()) {
 			const body = await listResp.json().catch(() => ({}))
-			const results: Array<Record<string, unknown>> = body.results ?? (Array.isArray(body) ? body : [])
-			const match = results.find((item: Record<string, unknown>) => String(item.name ?? '') === name)
+			const results: Array<Record<string, unknown>> =
+				body.results ?? (Array.isArray(body) ? body : [])
+			const match = results.find(
+				(item: Record<string, unknown>) => String(item.name ?? '') === name,
+			)
 			targetId = String(match?.id ?? match?.['@id'] ?? '')
 		}
 	}
@@ -420,7 +474,9 @@ async function walkToItem(page: Page, name: string) {
 		// list. Both mean there is nowhere left to look, so return the locator
 		// and let the caller's expect() produce the real failure message.
 		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
-		if (await next.isEnabled({ timeout: 2_000 }).catch(() => false) === false) {
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
 			return page.getByText(name).first()
 		}
 
@@ -431,13 +487,21 @@ async function walkToItem(page: Page, name: string) {
 	return page.getByText(name).first()
 }
 
-async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: string = '') {
+async function deleteViaUi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	id: string = '',
+) {
 	// 1. Switch to Cards view so item names are visible.
 	await switchToCardsView(page)
 
 	// 2. Find the item card/row by visible name text, paging if needed.
 	const itemText = await walkToItem(page, name)
-	await expect(itemText, `target item "${name}" must be visible in Cards view`).toBeVisible({ timeout: 10_000 })
+	await expect(
+		itemText,
+		`target item "${name}" must be visible in Cards view`,
+	).toBeVisible({ timeout: 10_000 })
 
 	// 3. Find the row/card that contains the name text and tick its checkbox.
 	// CnIndexPage in Cards mode renders each item in a card; mass-delete
@@ -449,7 +513,10 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 		rowCheckbox = row.getByRole('checkbox').first()
 	} else {
 		// Cards layout — find checkbox closest to the name text.
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		rowCheckbox = card.getByRole('checkbox').first()
 	}
 	await rowCheckbox.check({ force: true })
@@ -457,23 +524,34 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 	// 4. Open the Actions menu and click "Delete selected".
 	await page.getByRole('button', { name: 'Actions' }).first().click()
 	const massDeleteItem = page.getByRole('menuitem', { name: /Delete selected/i })
-	await expect(massDeleteItem, '"Delete selected" menu item must be visible when a row is checked').toBeVisible()
+	await expect(
+		massDeleteItem,
+		'"Delete selected" menu item must be visible when a row is checked',
+	).toBeVisible()
 	await massDeleteItem.click()
 
 	// 5. CnMassDeleteDialog opens. Confirm with the destructive primary button.
-	const confirmDialog = page.getByRole('dialog').filter({ hasText: /Delete Items/i }).first()
+	const confirmDialog = page
+		.getByRole('dialog')
+		.filter({ hasText: /Delete Items/i })
+		.first()
 	await expect(confirmDialog, 'CnMassDeleteDialog opened').toBeVisible()
 	const confirmBtn = confirmDialog.getByRole('button', { name: /^Delete$/ })
 
 	// Wait for OR's DELETE on this schema to come back while we click.
 	const [response] = await Promise.all([
-		page.waitForResponse(r =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-			r.request().method() === 'DELETE'
-		, { timeout: 15_000 }),
+		page.waitForResponse(
+			(r) =>
+				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				&& r.request().method() === 'DELETE',
+			{ timeout: 15_000 },
+		),
 		confirmBtn.click(),
 	])
-	expect([200, 202, 204], `OR DELETE for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 202, 204],
+		`OR DELETE for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	// 6. Dialog dismisses.
 	await expect(confirmDialog).toBeHidden({ timeout: 10_000 })
@@ -488,8 +566,11 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 	)
 	if (verifyResp.ok()) {
 		const verifyBody = await verifyResp.json().catch(() => ({}))
-		const verifyResults: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
-		const stillPresent = verifyResults.some((item: Record<string, unknown>) => String(item.name ?? '') === name)
+		const verifyResults: Array<Record<string, unknown>> =
+			verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+		const stillPresent = verifyResults.some(
+			(item: Record<string, unknown>) => String(item.name ?? '') === name,
+		)
 		if (stillPresent) {
 			// UI delete did not remove the correct item — clean up via API
 			// and flag this as a known UI fragility (not a test failure).
@@ -497,7 +578,9 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 			// Soft-warn; don't hard-fail since the UI DELETE round-trip itself
 			// succeeded (the response was 200/202/204) and this is a known
 			// intermittent issue with card-checkbox selection.
-			console.warn(`[deleteViaUi] UI mass-delete did not remove "${name}" — cleaned up via API`)
+			console.warn(
+				`[deleteViaUi] UI mass-delete did not remove "${name}" — cleaned up via API`,
+			)
 		}
 	}
 }
@@ -515,12 +598,19 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
  * branch as the create path but routes through `saveObject` with an
  * `id` in `formData`.
  */
-async function editViaUi(page: Page, schemaSlug: string, name: string, newDescription: string) {
+async function editViaUi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	newDescription: string,
+) {
 	// Switch to Cards so item names are visible.
 	await switchToCardsView(page)
 
 	const itemText = await walkToItem(page, name)
-	await expect(itemText, `target item "${name}" must exist for edit`).toBeVisible({ timeout: 10_000 })
+	await expect(itemText, `target item "${name}" must exist for edit`).toBeVisible({
+		timeout: 10_000,
+	})
 
 	// Find the card/row container and its Actions button.
 	// CnRowActions/CnCardItem renders an overflow-actions NcActions button.
@@ -531,7 +621,10 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {
 		// Cards layout — find the Actions button nearest to the name text.
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		actionsBtn = card.getByRole('button', { name: /Actions/i }).first()
 	}
 	await actionsBtn.click()
@@ -542,7 +635,9 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible()
 	const descField = dialog.getByLabel(/^\s*description\s*\*?\s*$/i)
-	await expect(descField, 'description field present').toBeVisible({ timeout: 10_000 })
+	await expect(descField, 'description field present').toBeVisible({
+		timeout: 10_000,
+	})
 	await descField.click()
 	// fill() clears existing value before typing; for edit we want to replace
 	// the description rather than append, so use fill() then blur via Tab.
@@ -552,18 +647,28 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	// CnFormDialog's primary button is "Save" in edit mode (matches the
 	// `confirmLabel` default from CnFormDialog:554).
 	const saveBtn = dialog.getByRole('button', { name: /^Save$/ })
-	await expect(saveBtn, 'Save button enabled in edit dialog').toBeEnabled({ timeout: 10_000 })
+	await expect(saveBtn, 'Save button enabled in edit dialog').toBeEnabled({
+		timeout: 10_000,
+	})
 
 	const [response] = await Promise.all([
-		page.waitForResponse(r => {
-			const u = r.url()
-			return u.includes(`/api/objects/openconnector/${schemaSlug}`)
-				&& r.request().method() === 'PUT'
-				&& r.status() < 400
-		}, { timeout: 20_000 }),
+		page.waitForResponse(
+			(r) => {
+				const u = r.url()
+				return (
+					u.includes(`/api/objects/openconnector/${schemaSlug}`)
+					&& r.request().method() === 'PUT'
+					&& r.status() < 400
+				)
+			},
+			{ timeout: 20_000 },
+		),
 		saveBtn.click(),
 	])
-	expect([200, 201], `OR PUT for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 201],
+		`OR PUT for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	await expect(dialog).toBeHidden({ timeout: 10_000 })
 
@@ -574,9 +679,16 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	)
 	if (verifyResp.ok()) {
 		const verifyBody = await verifyResp.json().catch(() => ({}))
-		const verifyResults: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
-		const found = verifyResults.some((item: Record<string, unknown>) => String(item.description ?? '') === newDescription)
-		expect(found, `edited description "${newDescription}" must appear in the OR API after save`).toBe(true)
+		const verifyResults: Array<Record<string, unknown>> =
+			verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+		const found = verifyResults.some(
+			(item: Record<string, unknown>) =>
+				String(item.description ?? '') === newDescription,
+		)
+		expect(
+			found,
+			`edited description "${newDescription}" must appear in the OR API after save`,
+		).toBe(true)
 	}
 	// If API call fails, the PUT response already confirmed success above.
 }
@@ -593,7 +705,10 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	await switchToCardsView(page)
 
 	const itemText = await walkToItem(page, name)
-	await expect(itemText, `target item "${name}" must exist for single delete`).toBeVisible({ timeout: 10_000 })
+	await expect(
+		itemText,
+		`target item "${name}" must exist for single delete`,
+	).toBeVisible({ timeout: 10_000 })
 
 	// Find and click the Actions button near the item name.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
@@ -602,26 +717,39 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	if (rowVisible) {
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		actionsBtn = card.getByRole('button', { name: /Actions/i }).first()
 	}
 	await actionsBtn.click()
 	const deleteItem = page.getByRole('menuitem', { name: /^Delete$/ })
-	await expect(deleteItem, 'Delete row menu item visible').toBeVisible({ timeout: 5_000 })
+	await expect(deleteItem, 'Delete row menu item visible').toBeVisible({
+		timeout: 5_000,
+	})
 	await deleteItem.click()
 
-	const confirmDialog = page.getByRole('dialog').filter({ hasText: /Delete/i }).first()
+	const confirmDialog = page
+		.getByRole('dialog')
+		.filter({ hasText: /Delete/i })
+		.first()
 	await expect(confirmDialog, 'CnDeleteDialog opened').toBeVisible()
 	const confirmBtn = confirmDialog.getByRole('button', { name: /^Delete$/ })
 
 	const [response] = await Promise.all([
-		page.waitForResponse(r =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-			r.request().method() === 'DELETE'
-		, { timeout: 15_000 }),
+		page.waitForResponse(
+			(r) =>
+				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				&& r.request().method() === 'DELETE',
+			{ timeout: 15_000 },
+		),
 		confirmBtn.click(),
 	])
-	expect([200, 202, 204], `OR DELETE for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 202, 204],
+		`OR DELETE for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	await expect(confirmDialog).toBeHidden({ timeout: 10_000 })
 
@@ -658,7 +786,9 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 	// CnFormDialog became visible and carries the schema's "name" field —
 	// i.e. a schema-driven create form opened without leaving the page.
 	// @e2e openconnector-frontend-vue-rewrite::create-source-form-opens-from-cnindexpage
-	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
+	test('Add Source → Create → row appears in OR list response', async ({
+		page,
+	}) => {
 		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		// Cleanup via API — test focus is the create flow.
@@ -688,13 +818,20 @@ test.describe('UI journey J2 — visually create a Mapping; assert it persists',
 	// `mapping-and-search.spec.ts` also tags this scenario, but its
 	// `openAndDismissCreateModal` proves only that the dialog opened.
 	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
-	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
+	test('Add Mapping → Create → row appears in OR list response', async ({
+		page,
+	}) => {
 		await gotoRoute(page, '/mappings')
 		const id = await createViaUi(page, 'mapping', 'Mapping', name)
 
 		// Ground truth: the object really exists in OpenRegister.
-		const check = await page.request.get(`${OR}/mapping/${id}`, { failOnStatusCode: false })
-		expect(check.status(), 'the created mapping must be readable from OpenRegister').toBe(200)
+		const check = await page.request.get(`${OR}/mapping/${id}`, {
+			failOnStatusCode: false,
+		})
+		expect(
+			check.status(),
+			'the created mapping must be readable from OpenRegister',
+		).toBe(200)
 
 		await deleteViaApi(page, 'mapping', name, id)
 	})
@@ -703,9 +840,16 @@ test.describe('UI journey J2 — visually create a Mapping; assert it persists',
 test.describe('UI journey J3 — visually create a Synchronization; assert row in list', () => {
 	const name = `pw-j3-sync-${Date.now()}`
 
-	test('Add Synchronization → Create → row appears in OR list response', async ({ page }) => {
+	test('Add Synchronization → Create → row appears in OR list response', async ({
+		page,
+	}) => {
 		await gotoRoute(page, '/synchronizations')
-		const id = await createViaUi(page, 'synchronization', 'Synchronization', name)
+		const id = await createViaUi(
+			page,
+			'synchronization',
+			'Synchronization',
+			name,
+		)
 		await deleteViaApi(page, 'synchronization', name, id)
 	})
 })
@@ -713,7 +857,9 @@ test.describe('UI journey J3 — visually create a Synchronization; assert row i
 test.describe('UI journey J4 — visually create an Endpoint; assert row in list', () => {
 	const name = `pw-j4-endpoint-${Date.now()}`
 
-	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
+	test('Add Endpoint → Create → row appears in OR list response', async ({
+		page,
+	}) => {
 		await gotoRoute(page, '/endpoints')
 		// CnFormDialog keeps Create disabled until every required field holds
 		// a value. For an Endpoint that set has TWO sources, and missing the
@@ -738,13 +884,20 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 		// are chosen. Register must be picked first: the Schema select stays
 		// disabled, and its options are scoped to the register, until then.
 		// Object key order is the iteration order, so this ordering matters.
-		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
-			'Endpoint Path': '/pw-j4-endpoint',
-		}, {
-			'HTTP Method': 'GET',
-			Register: 'OpenConnector',
-			Schema: 'Endpoint',
-		})
+		const id = await createViaUi(
+			page,
+			'endpoint',
+			'Endpoint',
+			name,
+			{
+				'Endpoint Path': '/pw-j4-endpoint',
+			},
+			{
+				'HTTP Method': 'GET',
+				Register: 'OpenConnector',
+				Schema: 'Endpoint',
+			},
+		)
 		await deleteViaApi(page, 'endpoint', name, id)
 	})
 })
@@ -753,7 +906,9 @@ test.describe('UI journey J5 — edit a Source via row Actions → Edit; mass-de
 	const name = `pw-j5-source-${Date.now()}`
 	const newDescription = `edited via J5 at ${Date.now()}`
 
-	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
+	test('create row → edit description via Actions → Save → description visible', async ({
+		page,
+	}) => {
 		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await editViaUi(page, 'source', name, newDescription)
@@ -780,10 +935,21 @@ test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => 
 	// app base WITHOUT a trailing slash — Nextcloud's PageController only
 	// matches `apps/openconnector`, not `apps/openconnector/` (the latter
 	// 404s through .htaccess rewriting). Use '' here, not '/'.
-	for (const route of ['', '/sources', '/endpoints', '/jobs', '/mappings', '/synchronizations', '/rules', '/cloud-events/events']) {
+	for (const route of [
+		'',
+		'/sources',
+		'/endpoints',
+		'/jobs',
+		'/mappings',
+		'/synchronizations',
+		'/rules',
+		'/cloud-events/events',
+	]) {
 		test(`GET ${route || '<root>'} serves the Vue app`, async ({ page }) => {
 			const base = await resolveAppBase(page)
-			const res = await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
+			const res = await page.goto(`${base}${route}`, {
+				waitUntil: 'domcontentloaded',
+			})
 			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
 			expect(html.toLowerCase()).toContain('openconnector')

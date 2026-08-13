@@ -28,7 +28,9 @@
 <template>
 	<div class="rule-action-config">
 		<div class="rule-action-config__row">
-			<label class="rule-action-config__label" :for="'rule-action-type-' + uid">
+			<label
+				class="rule-action-config__label"
+				:for="'rule-action-type-' + uid">
 				{{ t('openconnector', 'Action type') }}
 			</label>
 			<NcSelect
@@ -40,7 +42,12 @@
 				:placeholder="t('openconnector', 'Pick an action type')"
 				@update:model-value="onTypePick" />
 			<p class="rule-action-config__hint">
-				{{ t('openconnector', 'Selecting an action type changes which configuration fields are required below. The rule engine matches on this value at evaluation time.') }}
+				{{
+					t(
+						'openconnector',
+						'Selecting an action type changes which configuration fields are required below. The rule engine matches on this value at evaluation time.',
+					)
+				}}
 			</p>
 		</div>
 
@@ -52,9 +59,15 @@
 				:id="configuration.mapping || ''"
 				@update:id="onMappingIdUpdate" />
 		</div>
-		<div v-else-if="actionType === 'javascript'" class="rule-action-config__params">
+		<div
+			v-else-if="actionType === 'javascript'"
+			class="rule-action-config__params">
 			<JavascriptForm
-				:code="typeof configuration.javascript === 'string' ? configuration.javascript : ''"
+				:code="
+					typeof configuration.javascript === 'string'
+						? configuration.javascript
+						: ''
+				"
 				@update:code="onJavascriptCodeUpdate" />
 		</div>
 		<div v-else-if="formComponent" class="rule-action-config__params">
@@ -81,7 +94,14 @@
 			<span
 				class="rule-action-config__helper"
 				:class="{ 'rule-action-config__helper--error': rawError }">
-				{{ rawError || t('openconnector', 'No bespoke form yet for this action type. Edit the raw JSON for now — it is written back as configuration.{type}.', { type: actionType }) }}
+				{{
+					rawError
+					|| t(
+						'openconnector',
+						'No bespoke form yet for this action type. Edit the raw JSON for now — it is written back as configuration.{type}.',
+						{ type: actionType },
+					)
+				}}
 			</span>
 		</div>
 	</div>
@@ -219,11 +239,17 @@ export default {
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		typeOptions() {
-			return ACTION_TYPES.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return ACTION_TYPES.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTypeOption() {
-			return this.typeOptions.find((option) => option.id === this.actionType) || null
+			return (
+				this.typeOptions.find((option) => option.id === this.actionType)
+				|| null
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formComponent() {
@@ -241,11 +267,17 @@ export default {
 			const raw = this.configuration?.[this.actionType]
 			if (raw === undefined || raw === null) return ''
 			if (typeof raw === 'string') return raw
-			try { return JSON.stringify(raw, null, 2) } catch (_e) { return String(raw) }
+			try {
+				return JSON.stringify(raw, null, 2)
+			} catch (_e) {
+				return String(raw)
+			}
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawEditorLabel() {
-			return this.t('openconnector', 'Raw configuration for {type}', { type: this.actionType })
+			return this.t('openconnector', 'Raw configuration for {type}', {
+				type: this.actionType,
+			})
 		},
 	},
 
@@ -343,10 +375,15 @@ export default {
 			try {
 				const parsed = JSON.parse(trimmed)
 				this.rawError = ''
-				const next = { ...(this.configuration || {}), [this.actionType]: parsed }
+				const next = {
+					...(this.configuration || {}),
+					[this.actionType]: parsed,
+				}
 				this.$emit('update', next)
 			} catch (parseErr) {
-				this.rawError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.rawError = this.t('openconnector', 'Invalid JSON: {message}', {
+					message: parseErr.message,
+				})
 			}
 		},
 	},

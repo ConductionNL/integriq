@@ -85,7 +85,8 @@
   @spec openspec/specs/rule-editor-ui/spec.md
 -->
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="dialogTitle"
 		size="large"
 		class="cn-rule-editor-modal"
@@ -100,19 +101,23 @@
 			     when/then sections rather than inside one, stacked and capped
 			     short of the modal width. -->
 			<div class="cn-rule-editor__identity">
-				<NcTextField :model-value="draft.name"
+				<NcTextField
+					:model-value="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
 					:helper-text="nameError"
 					:disabled="saving"
 					@update:model-value="(value) => updateDraft('name', value)"
 					@blur="nameTouched = true" />
-				<NcTextArea :model-value="draft.description"
+				<NcTextArea
+					:model-value="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="1"
 					resize="vertical"
-					@update:model-value="(value) => updateDraft('description', value)" />
+					@update:model-value="
+						(value) => updateDraft('description', value)
+					" />
 			</div>
 
 			<!-- ── When: conditions ────────────────────────────────────── -->
@@ -120,20 +125,28 @@
 				<header class="cn-rule-editor__section-header">
 					<FilterOutlineIcon :size="20" />
 					<h3>{{ t('openconnector', 'When (conditions)') }}</h3>
-					<NcButton type="tertiary"
+					<NcButton
+						type="tertiary"
 						:disabled="saving"
-						:aria-label="rawConditions
-							? t('openconnector', 'Switch back to visual builder')
-							: t('openconnector', 'Edit conditions as raw JSON')"
+						:aria-label="
+							rawConditions
+								? t('openconnector', 'Switch back to visual builder')
+								: t('openconnector', 'Edit conditions as raw JSON')
+						"
 						@click="rawConditions = !rawConditions">
 						<template #icon>
 							<CodeJsonIcon :size="18" />
 						</template>
-						{{ rawConditions ? t('openconnector', 'Visual builder') : t('openconnector', 'Raw JSON') }}
+						{{
+							rawConditions
+								? t('openconnector', 'Visual builder')
+								: t('openconnector', 'Raw JSON')
+						}}
 					</NcButton>
 				</header>
 
-				<RuleConditionGroup v-if="!rawConditions"
+				<RuleConditionGroup
+					v-if="!rawConditions"
 					:node="rootConditionGroup"
 					:removable="false"
 					@update="onConditionsUpdate" />
@@ -149,13 +162,28 @@
 						:aria-label="t('openconnector', 'Conditions as JSON Logic')"
 						@input="onRawConditionsInput($event.target.value)" />
 					<div class="cn-rule-editor__raw-footer">
-						<span class="cn-rule-editor__helper"
-							:class="{ 'cn-rule-editor__helper--error': !!rawConditionsError }">
-							{{ rawConditionsError || t('openconnector', 'JSON Logic, evaluated against the incoming request data. Leave empty to always match.') }}
+						<span
+							class="cn-rule-editor__helper"
+							:class="{
+								'cn-rule-editor__helper--error':
+									!!rawConditionsError,
+							}">
+							{{
+								rawConditionsError
+								|| t(
+									'openconnector',
+									'JSON Logic, evaluated against the incoming request data. Leave empty to always match.',
+								)
+							}}
 						</span>
-						<NcButton type="secondary"
+						<NcButton
+							type="secondary"
 							size="small"
-							:disabled="saving || !!rawConditionsError || !rawConditionsDraft.trim()"
+							:disabled="
+								saving
+								|| !!rawConditionsError
+								|| !rawConditionsDraft.trim()
+							"
 							@click="formatRawConditions">
 							{{ t('openconnector', 'Format JSON') }}
 						</NcButton>
@@ -172,54 +200,84 @@
 
 				<div class="cn-rule-editor__grid">
 					<div class="cn-rule-editor__field">
-						<label for="cn-rule-editor-timing" class="cn-rule-editor__label">
+						<label
+							for="cn-rule-editor-timing"
+							class="cn-rule-editor__label">
 							{{ t('openconnector', 'Timing') }}
 						</label>
-						<NcSelect input-id="cn-rule-editor-timing"
+						<NcSelect
+							input-id="cn-rule-editor-timing"
 							:model-value="selectedTiming"
 							:options="timingOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Timing')"
-							@update:model-value="(option) => updateDraft('timing', option?.id || 'before')" />
+							@update:model-value="
+								(option) =>
+									updateDraft('timing', option?.id || 'before')
+							" />
 						<span class="cn-rule-editor__helper">
-							{{ t('openconnector', 'Whether the rule runs before or after the endpoint handles the request.') }}
+							{{
+								t(
+									'openconnector',
+									'Whether the rule runs before or after the endpoint handles the request.',
+								)
+							}}
 						</span>
 					</div>
 
 					<div class="cn-rule-editor__field">
-						<NcInputField :model-value="orderText"
+						<NcInputField
+							:model-value="orderText"
 							type="number"
 							:label="t('openconnector', 'Order')"
 							:disabled="saving"
 							placeholder="100"
 							@update:model-value="onOrderInput" />
 						<span class="cn-rule-editor__helper">
-							{{ t('openconnector', 'Execution order within the timing slot — lower runs first.') }}
+							{{
+								t(
+									'openconnector',
+									'Execution order within the timing slot — lower runs first.',
+								)
+							}}
 						</span>
 					</div>
 
 					<div class="cn-rule-editor__field">
-						<label for="cn-rule-editor-action" class="cn-rule-editor__label">
+						<label
+							for="cn-rule-editor-action"
+							class="cn-rule-editor__label">
 							{{ t('openconnector', 'Action') }} *
 						</label>
-						<NcSelect input-id="cn-rule-editor-action"
+						<NcSelect
+							input-id="cn-rule-editor-action"
 							:model-value="selectedAction"
 							:options="actionOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Action')"
-							@update:model-value="(option) => updateDraft('action', option?.id || '')" />
+							@update:model-value="
+								(option) => updateDraft('action', option?.id || '')
+							" />
 						<span class="cn-rule-editor__helper">
-							{{ t('openconnector', 'The request method this rule applies to.') }}
+							{{
+								t(
+									'openconnector',
+									'The request method this rule applies to.',
+								)
+							}}
 						</span>
 					</div>
 
 					<div class="cn-rule-editor__field">
-						<label for="cn-rule-editor-type" class="cn-rule-editor__label">
+						<label
+							for="cn-rule-editor-type"
+							class="cn-rule-editor__label">
 							{{ t('openconnector', 'Type') }} *
 						</label>
-						<NcSelect input-id="cn-rule-editor-type"
+						<NcSelect
+							input-id="cn-rule-editor-type"
 							:model-value="selectedType"
 							:options="typeOptions"
 							:clearable="false"
@@ -227,9 +285,17 @@
 							:aria-label-combobox="t('openconnector', 'Type')"
 							@update:model-value="onTypePick" />
 						<span class="cn-rule-editor__helper">
-							{{ isErrorType
-								? t('openconnector', 'The error response is configured below.')
-								: t('openconnector', 'Configure this type with the Open full editor row action.') }}
+							{{
+								isErrorType
+									? t(
+											'openconnector',
+											'The error response is configured below.',
+										)
+									: t(
+											'openconnector',
+											'Configure this type with the Open full editor row action.',
+										)
+							}}
 						</span>
 					</div>
 				</div>
@@ -244,7 +310,8 @@
 
 				<div class="cn-rule-editor__grid">
 					<div class="cn-rule-editor__field">
-						<NcInputField :model-value="errorCodeText"
+						<NcInputField
+							:model-value="errorCodeText"
 							type="number"
 							:min="100"
 							:max="999"
@@ -255,29 +322,45 @@
 					</div>
 
 					<div class="cn-rule-editor__field">
-						<NcTextField :model-value="errorConfig.name"
+						<NcTextField
+							:model-value="errorConfig.name"
 							:label="t('openconnector', 'Error Title')"
 							maxlength="255"
 							:disabled="saving"
 							:placeholder="t('openconnector', 'Something went wrong')"
-							@update:model-value="(value) => updateErrorField('name', value)" />
+							@update:model-value="
+								(value) => updateErrorField('name', value)
+							" />
 					</div>
 				</div>
 
-				<NcTextArea :model-value="errorConfig.message"
+				<NcTextArea
+					:model-value="errorConfig.message"
 					:label="t('openconnector', 'Error Message')"
 					maxlength="2550"
 					resize="vertical"
 					rows="3"
 					:disabled="saving"
-					:placeholder="t('openconnector', 'We encountered an unexpected problem')"
-					@update:model-value="(value) => updateErrorField('message', value)" />
+					:placeholder="
+						t('openconnector', 'We encountered an unexpected problem')
+					"
+					@update:model-value="
+						(value) => updateErrorField('message', value)
+					" />
 
-				<NcCheckboxRadioSwitch type="checkbox"
+				<NcCheckboxRadioSwitch
+					type="checkbox"
 					:model-value="!!errorConfig.includeJsonLogicResult"
 					:disabled="saving"
-					@update:model-value="(value) => updateErrorField('includeJsonLogicResult', value)">
-					{{ t('openconnector', 'Include JSON Logic results in errors array') }}
+					@update:model-value="
+						(value) => updateErrorField('includeJsonLogicResult', value)
+					">
+					{{
+						t(
+							'openconnector',
+							'Include JSON Logic results in errors array',
+						)
+					}}
 				</NcCheckboxRadioSwitch>
 			</section>
 		</div>
@@ -292,7 +375,11 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{ isCreate ? t('openconnector', 'Create') : t('openconnector', 'Save') }}
+				{{
+					isCreate
+						? t('openconnector', 'Create')
+						: t('openconnector', 'Save')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -338,7 +425,8 @@ const NAME_PATTERN = /[\p{L}\p{N}]/u
  * `t()` — it is a code-shaped example, not prose, and a dynamic `t(variable)`
  * would not be picked up by string extraction anyway.
  */
-const CONDITIONS_PLACEHOLDER = '{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
+const CONDITIONS_PLACEHOLDER =
+	'{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
 
 export default {
 	name: 'RuleEditorModal',
@@ -454,7 +542,10 @@ export default {
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
-				: this.t('openconnector', 'Name must contain at least one letter or number')
+				: this.t(
+						'openconnector',
+						'Name must contain at least one letter or number',
+					)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dirty() {
@@ -471,7 +562,8 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		canSave() {
-			return !this.saving
+			return (
+				!this.saving
 				&& !!this.draft.name
 				&& !this.nameError
 				&& !!this.draft.action
@@ -480,6 +572,7 @@ export default {
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through.
 				&& typeof this.confirm === 'function'
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rootConditionGroup() {
@@ -487,23 +580,38 @@ export default {
 		},
 		/** @spec exclude static option list — presentation only */
 		timingOptions() {
-			return TIMING_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return TIMING_OPTIONS.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec exclude static option list — presentation only */
 		actionOptions() {
-			return ACTION_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return ACTION_OPTIONS.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec exclude static option list — presentation only */
 		typeOptions() {
-			return ACTION_TYPES.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return ACTION_TYPES.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTiming() {
-			return this.timingOptions.find((option) => option.id === this.draft?.timing) || this.timingOptions[0]
+			return (
+				this.timingOptions.find((option) => option.id === this.draft?.timing)
+				|| this.timingOptions[0]
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
-			return this.actionOptions.find((option) => option.id === this.draft?.action) || null
+			return (
+				this.actionOptions.find((option) => option.id === this.draft?.action)
+				|| null
+			)
 		},
 		/**
 		 * The Type select's value. A rule carrying one of the eight types the
@@ -519,8 +627,12 @@ export default {
 		selectedType() {
 			const current = this.draft?.type
 			if (!current) return null
-			return this.typeOptions.find((option) => option.id === current)
-				|| { id: current, label: current }
+			return (
+				this.typeOptions.find((option) => option.id === current) || {
+					id: current,
+					label: current,
+				}
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isErrorType() {
@@ -535,7 +647,10 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		errorConfig() {
-			return { ...DEFAULT_ERROR_CONFIG, ...(this.draft?.configuration?.error || {}) }
+			return {
+				...DEFAULT_ERROR_CONFIG,
+				...(this.draft?.configuration?.error || {}),
+			}
 		},
 		/**
 		 * @return {string} `order` as input text; empty when unset.
@@ -582,7 +697,11 @@ export default {
 			if (!value) return
 			this.rawConditionsError = ''
 			try {
-				this.rawConditionsDraft = JSON.stringify(this.rootConditionGroup, null, 2)
+				this.rawConditionsDraft = JSON.stringify(
+					this.rootConditionGroup,
+					null,
+					2,
+				)
 			} catch (_e) {
 				this.rawConditionsDraft = ''
 			}
@@ -620,7 +739,10 @@ export default {
 			if (base.type === 'error') {
 				base.configuration = {
 					...base.configuration,
-					error: { ...DEFAULT_ERROR_CONFIG, ...(base.configuration.error || {}) },
+					error: {
+						...DEFAULT_ERROR_CONFIG,
+						...(base.configuration.error || {}),
+					},
 				}
 			}
 
@@ -662,11 +784,17 @@ export default {
 		 */
 		onTypePick(option) {
 			if (!option) return
-			const configuration = { ...(this.draft.configuration || {}), type: option.id }
+			const configuration = {
+				...(this.draft.configuration || {}),
+				type: option.id,
+			}
 			// Materialise the error defaults on first arrival at the error type,
 			// so the block below renders filled rather than blank.
 			if (option.id === 'error') {
-				configuration.error = { ...DEFAULT_ERROR_CONFIG, ...(configuration.error || {}) }
+				configuration.error = {
+					...DEFAULT_ERROR_CONFIG,
+					...(configuration.error || {}),
+				}
 			}
 			this.draft = { ...this.draft, type: option.id, configuration }
 		},
@@ -747,7 +875,11 @@ export default {
 				this.rawConditionsError = ''
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
-				this.rawConditionsError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.rawConditionsError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 
@@ -760,10 +892,18 @@ export default {
 		 */
 		formatRawConditions() {
 			try {
-				this.rawConditionsDraft = JSON.stringify(JSON.parse(this.rawConditionsDraft), null, 2)
+				this.rawConditionsDraft = JSON.stringify(
+					JSON.parse(this.rawConditionsDraft),
+					null,
+					2,
+				)
 				this.rawConditionsError = ''
 			} catch (parseErr) {
-				this.rawConditionsError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.rawConditionsError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 
@@ -793,13 +933,15 @@ export default {
 					...this.draft,
 					conditions: serializeRuleConditions(this.draft.conditions),
 				})
-				showSuccess(this.isCreate
-					? this.t('openconnector', 'Rule created')
-					: this.t('openconnector', 'Rule saved'))
+				showSuccess(
+					this.isCreate
+						? this.t('openconnector', 'Rule created')
+						: this.t('openconnector', 'Rule saved'),
+				)
 				this.close?.()
 			} catch (err) {
-				this.saveError = err?.message
-					|| this.t('openconnector', 'Failed to save rule')
+				this.saveError =
+					err?.message || this.t('openconnector', 'Failed to save rule')
 			} finally {
 				this.saving = false
 			}

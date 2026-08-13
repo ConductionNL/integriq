@@ -55,7 +55,15 @@ import { dismissFirstVisitOverlays } from '@conduction/nextcloud-vue/testing/pla
 import * as path from 'path'
 import * as fs from 'fs'
 
-const SHOT_ROOT = path.resolve(__dirname, '..', '..', 'docusaurus', 'static', 'screenshots', 'tutorials')
+const SHOT_ROOT = path.resolve(
+	__dirname,
+	'..',
+	'..',
+	'docusaurus',
+	'static',
+	'screenshots',
+	'tutorials',
+)
 // Note the explicit `/index.php/...` prefix. OpenConnector's Vue
 // router is configured with `base: '/index.php/apps/openconnector/'`
 // (see `src/router/index.js`), so dropping `/index.php/` makes
@@ -69,12 +77,20 @@ const APP = '/index.php/apps/openconnector'
  * the build root — markdown image refs use `/screenshots/...`
  * (root-absolute).
  */
-async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise<void> {
+async function shoot(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+): Promise<void> {
 	const dir = path.join(SHOT_ROOT, track)
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir, { recursive: true })
 	}
-	await page.screenshot({ path: path.join(dir, file), fullPage: false, type: 'png' })
+	await page.screenshot({
+		path: path.join(dir, file),
+		fullPage: false,
+		type: 'png',
+	})
 }
 
 // The local `dismissOverlays` that used to live here is gone in favour of
@@ -90,8 +106,15 @@ async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise
 
 /** Navigate to an OpenConnector (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
-	const url = route.startsWith('/index.php/') || route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route}`
-	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => { /* tolerate a 404 — caller decides */ })
+	const url =
+		route.startsWith('/index.php/')
+		|| route.startsWith('/apps/')
+		|| route.startsWith('/settings/')
+			? route
+			: `${APP}${route}`
+	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => {
+		/* tolerate a 404 — caller decides */
+	})
 	// ADR-074 rule 4: idle never fires on Nextcloud, so waiting for it only
 	// burned a timeout. The 900ms settle below is what actually let the SPA
 	// paint before a screenshot.
@@ -104,14 +127,21 @@ async function go(page: Page, route: string): Promise<void> {
  * "Add Mapping", …) if the button is present, screenshot it, and close
  * it again. Returns whether the dialog appeared.
  */
-async function captureCreateDialog(page: Page, track: 'user' | 'admin', file: string, label: RegExp): Promise<boolean> {
+async function captureCreateDialog(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+	label: RegExp,
+): Promise<boolean> {
 	const addBtn = page.getByRole('button', { name: label }).first()
 	if (!(await addBtn.isVisible().catch(() => false))) {
 		return false
 	}
 	await addBtn.click().catch(() => {})
 	const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
-	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { /* no dialog */ })
+	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+		/* no dialog */
+	})
 	await page.waitForTimeout(400)
 	await shoot(page, track, file)
 	const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
@@ -162,7 +192,12 @@ test.describe('docs: user track', () => {
 		// docs/tutorials/user/02-add-source.md
 		await go(page, '/sources')
 		await shoot(page, 'user', '02-add-source-01.png')
-		const had = await captureCreateDialog(page, 'user', '02-add-source-02.png', /Add Source|Add source|Add/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'02-add-source-02.png',
+			/Add Source|Add source|Add/i,
+		)
 		if (!had) {
 			await shoot(page, 'user', '02-add-source-02.png')
 		}
@@ -179,7 +214,12 @@ test.describe('docs: user track', () => {
 		// docs/tutorials/user/03-create-mapping.md
 		await go(page, '/mappings')
 		await shoot(page, 'user', '03-create-mapping-01.png')
-		const had = await captureCreateDialog(page, 'user', '03-create-mapping-02.png', /Add Mapping|Add mapping|Add/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'03-create-mapping-02.png',
+			/Add Mapping|Add mapping|Add/i,
+		)
 		if (!had) {
 			await shoot(page, 'user', '03-create-mapping-02.png')
 		}
@@ -195,7 +235,12 @@ test.describe('docs: user track', () => {
 		// docs/tutorials/user/04-run-synchronization.md
 		await go(page, '/synchronizations')
 		await shoot(page, 'user', '04-run-synchronization-01.png')
-		const had = await captureCreateDialog(page, 'user', '04-run-synchronization-02.png', /Add Synchroniz|Add sync|Add/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'04-run-synchronization-02.png',
+			/Add Synchroniz|Add sync|Add/i,
+		)
 		if (!had) {
 			await shoot(page, 'user', '04-run-synchronization-02.png')
 		}
@@ -210,7 +255,12 @@ test.describe('docs: user track', () => {
 		// docs/tutorials/user/05-expose-endpoint.md
 		await go(page, '/endpoints')
 		await shoot(page, 'user', '05-expose-endpoint-01.png')
-		const had = await captureCreateDialog(page, 'user', '05-expose-endpoint-02.png', /Add Endpoint|Add endpoint|Add/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'05-expose-endpoint-02.png',
+			/Add Endpoint|Add endpoint|Add/i,
+		)
 		if (!had) {
 			await shoot(page, 'user', '05-expose-endpoint-02.png')
 		}
@@ -243,7 +293,12 @@ test.describe('docs: admin track', () => {
 		// docs/tutorials/admin/02-schedule-job.md
 		await go(page, '/jobs')
 		await shoot(page, 'admin', '02-schedule-job-01.png')
-		const had = await captureCreateDialog(page, 'admin', '02-schedule-job-02.png', /Add Job|Add job|Add/i)
+		const had = await captureCreateDialog(
+			page,
+			'admin',
+			'02-schedule-job-02.png',
+			/Add Job|Add job|Add/i,
+		)
 		if (!had) {
 			await shoot(page, 'admin', '02-schedule-job-02.png')
 		}

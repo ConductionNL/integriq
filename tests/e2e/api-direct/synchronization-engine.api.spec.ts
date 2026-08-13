@@ -24,7 +24,9 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 const API_BASE = '/index.php/apps/openconnector/api'
 
 test.describe('Synchronizations OR API — list', () => {
-	test('GET synchronizations list from OR returns synchronization objects', async ({ request }) => {
+	test('GET synchronizations list from OR returns synchronization objects', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/synchronization?_limit=20`, {
 			failOnStatusCode: false,
 		})
@@ -34,7 +36,9 @@ test.describe('Synchronizations OR API — list', () => {
 		expect(Array.isArray(body.results)).toBe(true)
 	})
 
-	test('POST run on a non-existent sync UUID returns a clean 404 (no 500)', async ({ request }) => {
+	test('POST run on a non-existent sync UUID returns a clean 404 (no 500)', async ({
+		request,
+	}) => {
 		const resp = await request.post(
 			`${API_BASE}/synchronizations/00000000-0000-0000-0000-000000000000/run`,
 			{ failOnStatusCode: false },

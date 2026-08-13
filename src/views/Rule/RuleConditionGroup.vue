@@ -60,7 +60,12 @@
 			<NcEmptyContent
 				v-if="children.length === 0"
 				:name="t('openconnector', 'No conditions yet')"
-				:description="t('openconnector', 'Add a condition or sub-group to start matching incoming data.')">
+				:description="
+					t(
+						'openconnector',
+						'Add a condition or sub-group to start matching incoming data.',
+					)
+				">
 				<template #icon>
 					<FilterVariant :size="32" />
 				</template>
@@ -153,8 +158,11 @@ export default {
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
-			return this.operatorOptions.find((option) => option.id === this.currentOperator)
-				?? this.operatorOptions[0]
+			return (
+				this.operatorOptions.find(
+					(option) => option.id === this.currentOperator,
+				) ?? this.operatorOptions[0]
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorHint() {
@@ -178,9 +186,14 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		isGroup(child) {
-			if (!child || typeof child !== 'object' || Array.isArray(child)) return false
+			if (!child || typeof child !== 'object' || Array.isArray(child))
+				return false
 			const keys = Object.keys(child)
-			return keys.length === 1 && GROUP_OPERATORS.includes(keys[0]) && Array.isArray(child[keys[0]])
+			return (
+				keys.length === 1
+				&& GROUP_OPERATORS.includes(keys[0])
+				&& Array.isArray(child[keys[0]])
+			)
 		},
 		/**
 		 * Re-key the group under the newly picked boolean operator, carrying the

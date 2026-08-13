@@ -17,11 +17,18 @@
 		<NcTextField
 			:label="t('openconnector', 'File ID position in URL path (legacy)')"
 			type="number"
-			:model-value="value.fileIdPosition != null ? String(value.fileIdPosition) : ''"
+			:model-value="
+				value.fileIdPosition != null ? String(value.fileIdPosition) : ''
+			"
 			placeholder="2"
 			@update:model-value="onFileIdInput" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.') }}
+			{{
+				t(
+					'openconnector',
+					'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -59,7 +66,14 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

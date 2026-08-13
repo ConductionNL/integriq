@@ -266,10 +266,16 @@ export default {
 // registry, so only they are listed here.
 export const registry = {
 	ApiProductDetail: { kind: 'page', component: ApiProductDetail },
-	NotificatiesAbonnementenPage: { kind: 'page', component: NotificatiesAbonnementenPage },
+	NotificatiesAbonnementenPage: {
+		kind: 'page',
+		component: NotificatiesAbonnementenPage,
+	},
 	MappingDetailPage: { kind: 'page', component: MappingDetailPage },
 	RuleDetailPage: { kind: 'page', component: RuleDetailPage },
-	SynchronizationDetailPage: { kind: 'page', component: SynchronizationDetailPage },
+	SynchronizationDetailPage: {
+		kind: 'page',
+		component: SynchronizationDetailPage,
+	},
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },

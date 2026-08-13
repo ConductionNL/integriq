@@ -25,14 +25,17 @@
 		<div class="eventDeliveries__header">
 			<h2>{{ t('openconnector', 'Event deliveries') }}</h2>
 			<div class="eventDeliveries__filters">
-				<NcSelect v-model="statusFilter"
+				<NcSelect
+					v-model="statusFilter"
 					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
 					@update:model-value="reload" />
-				<NcTextField v-model="subscriptionFilter"
+				<NcTextField
+					v-model="subscriptionFilter"
 					:label="t('openconnector', 'Subscription')"
 					@update:model-value="reloadDebounced" />
-				<NcCheckboxRadioSwitch :model-value="nextcloudOnly"
+				<NcCheckboxRadioSwitch
+					:model-value="nextcloudOnly"
 					type="switch"
 					data-testid="nextcloud-event-filter"
 					@update:model-value="(value) => (nextcloudOnly = value)">
@@ -41,12 +44,23 @@
 			</div>
 		</div>
 
-		<div v-if="selected.length" class="eventDeliveries__bulk" data-testid="bulk-bar">
-			<span>{{ t('openconnector', '{count} selected', { count: selected.length }) }}</span>
+		<div
+			v-if="selected.length"
+			class="eventDeliveries__bulk"
+			data-testid="bulk-bar">
+			<span>{{
+				t('openconnector', '{count} selected', { count: selected.length })
+			}}</span>
 			<template v-if="bulkConfirm">
-				<span>{{ bulkConfirm === 'replay'
-					? t('openconnector', 'Replay {count} messages now?', { count: selected.length })
-					: t('openconnector', 'Discard {count} messages?', { count: selected.length }) }}</span>
+				<span>{{
+					bulkConfirm === 'replay'
+						? t('openconnector', 'Replay {count} messages now?', {
+								count: selected.length,
+							})
+						: t('openconnector', 'Discard {count} messages?', {
+								count: selected.length,
+							})
+				}}</span>
 				<NcButton type="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
@@ -55,7 +69,10 @@
 				</NcButton>
 			</template>
 			<template v-else>
-				<NcButton type="primary" :disabled="busy" @click="bulkConfirm = 'replay'">
+				<NcButton
+					type="primary"
+					:disabled="busy"
+					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
@@ -66,7 +83,10 @@
 
 		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
 
-		<p v-else-if="!filteredRows.length" class="eventDeliveries__empty" data-testid="empty-state">
+		<p
+			v-else-if="!filteredRows.length"
+			class="eventDeliveries__empty"
+			data-testid="empty-state">
 			{{ t('openconnector', 'No dead-lettered event deliveries') }}
 		</p>
 
@@ -86,19 +106,28 @@
 			<tbody>
 				<tr v-for="row in filteredRows" :key="row.uuid || row.id">
 					<td>
-						<NcCheckboxRadioSwitch :model-value="isSelected(row)"
-							:aria-label="t('openconnector', 'Select delivery {id}', { id: row.uuid || row.id })"
+						<NcCheckboxRadioSwitch
+							:model-value="isSelected(row)"
+							:aria-label="
+								t('openconnector', 'Select delivery {id}', {
+									id: row.uuid || row.id,
+								})
+							"
 							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
 					<td>{{ row.subscription }}</td>
 					<td>
-						<span class="eventDeliveries__actionBadge" data-testid="action-kind-badge">
+						<span
+							class="eventDeliveries__actionBadge"
+							data-testid="action-kind-badge">
 							{{ row.actionKind || 'webhook' }}
 						</span>
 					</td>
 					<td>
-						<span class="eventDeliveries__badge" :class="`eventDeliveries__badge--${row.status}`">
+						<span
+							class="eventDeliveries__badge"
+							:class="`eventDeliveries__badge--${row.status}`">
 							{{ row.status }}
 						</span>
 					</td>
@@ -113,7 +142,8 @@
 			</tbody>
 		</table>
 
-		<EventDeliveryDetailModal :open="detail.open"
+		<EventDeliveryDetailModal
+			:open="detail.open"
 			:message="detail.message"
 			@close="closeDetail"
 			@changed="reload" />
@@ -247,7 +277,10 @@ export default {
 				if (this.subscriptionFilter) {
 					params.subscriptionId = this.subscriptionFilter
 				}
-				const res = await axios.get(generateUrl('/apps/openconnector/api/events/dead-letter'), { params })
+				const res = await axios.get(
+					generateUrl('/apps/openconnector/api/events/dead-letter'),
+					{ params },
+				)
 				this.rows = res.data?.results || []
 			} catch (err) {
 				showError(t('openconnector', 'Failed to load event deliveries'))
@@ -268,21 +301,33 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/events/dead-letter/${verb}`),
+					generateUrl(
+						`/apps/openconnector/api/events/dead-letter/${verb}`,
+					),
 					{ ids: this.selected },
 				)
 				const results = res.data?.results || {}
 				const ok = Object.values(results).filter((r) => r === 'ok').length
 				const failed = Object.keys(results).length - ok
 				if (failed > 0) {
-					showError(t('openconnector', '{ok} processed, {failed} failed', { ok, failed }))
+					showError(
+						t('openconnector', '{ok} processed, {failed} failed', {
+							ok,
+							failed,
+						}),
+					)
 				} else {
-					showSuccess(t('openconnector', '{ok} messages processed', { ok }))
+					showSuccess(
+						t('openconnector', '{ok} messages processed', { ok }),
+					)
 				}
 				await this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Bulk action failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Bulk action failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 				this.bulkConfirm = null

@@ -35,19 +35,35 @@
 			v-for="field in fields"
 			:key="field.key"
 			class="cn-subscription-action-fields__field">
-			<div v-if="field.key === 'types'" class="cn-subscription-action-fields__textarea-wrapper">
-				<label :for="'cn-subscription-form-' + field.key" class="cn-subscription-action-fields__label">
-					{{ field.label || t('openconnector', 'Event types') }}{{ field.required ? ' *' : '' }}
+			<div
+				v-if="field.key === 'types'"
+				class="cn-subscription-action-fields__textarea-wrapper">
+				<label
+					:for="'cn-subscription-form-' + field.key"
+					class="cn-subscription-action-fields__label">
+					{{ field.label || t('openconnector', 'Event types')
+					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
 					:id="'cn-subscription-form-' + field.key"
 					class="cn-subscription-action-fields__textarea"
 					:value="typesText"
 					rows="3"
-					:placeholder="t('openconnector', 'One CloudEvents type per line, e.g. com.nextcloud.files.node.created')"
+					:placeholder="
+						t(
+							'openconnector',
+							'One CloudEvents type per line, e.g. com.nextcloud.files.node.created',
+						)
+					"
 					@input="onTypesInput($event.target.value)" />
 				<span class="cn-subscription-action-fields__helper">
-					{{ field.description || t('openconnector', 'CloudEvents type filters this subscription matches (any-of). Leave empty to match every type.') }}
+					{{
+						field.description
+						|| t(
+							'openconnector',
+							'CloudEvents type filters this subscription matches (any-of). Leave empty to match every type.',
+						)
+					}}
 				</span>
 			</div>
 
@@ -63,7 +79,9 @@
 			<NcTextField
 				v-else
 				:label="field.label + (field.required ? ' *' : '')"
-				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+				:model-value="
+					formData[field.key] != null ? String(formData[field.key]) : ''
+				"
 				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				:disabled="field.readOnly"
@@ -72,8 +90,11 @@
 		</div>
 
 		<!-- Delivery action block (REQ-008). -->
-		<div class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
-			<label for="cn-subscription-action-kind" class="cn-subscription-action-fields__label">
+		<div
+			class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
+			<label
+				for="cn-subscription-action-kind"
+				class="cn-subscription-action-fields__label">
 				{{ t('openconnector', 'Delivery action') }}
 			</label>
 			<NcSelect
@@ -85,11 +106,18 @@
 				:clearable="false"
 				@update:model-value="onKindPick" />
 			<span class="cn-subscription-action-fields__helper">
-				{{ t('openconnector', 'A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.') }}
+				{{
+					t(
+						'openconnector',
+						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.',
+					)
+				}}
 			</span>
 
 			<template v-if="actionKind === 'synchronization'">
-				<label for="cn-subscription-action-target" class="cn-subscription-action-fields__label">
+				<label
+					for="cn-subscription-action-target"
+					class="cn-subscription-action-fields__label">
 					{{ t('openconnector', 'Synchronization') }}
 				</label>
 				<NcSelect
@@ -105,7 +133,9 @@
 			</template>
 
 			<template v-else-if="actionKind === 'job'">
-				<label for="cn-subscription-action-target" class="cn-subscription-action-fields__label">
+				<label
+					for="cn-subscription-action-target"
+					class="cn-subscription-action-fields__label">
 					{{ t('openconnector', 'Job') }}
 				</label>
 				<NcSelect
@@ -122,7 +152,8 @@
 		</div>
 
 		<!-- Retry policy block (REQ-009) — optional, independently overridable. -->
-		<div class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
+		<div
+			class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
 			<NcCheckboxRadioSwitch
 				:model-value="retryPolicyEnabled"
 				type="switch"
@@ -130,7 +161,12 @@
 				{{ t('openconnector', 'Custom retry policy') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-subscription-action-fields__helper">
-				{{ t('openconnector', 'Overrides the default backoff (60s, x4, 6h cap, 5 retries). Any field left blank falls back to the default.') }}
+				{{
+					t(
+						'openconnector',
+						'Overrides the default backoff (60s, x4, 6h cap, 5 retries). Any field left blank falls back to the default.',
+					)
+				}}
 			</span>
 
 			<template v-if="retryPolicyEnabled">
@@ -139,22 +175,30 @@
 						:label="t('openconnector', 'Base seconds')"
 						:model-value="retryPolicyValue('baseSeconds')"
 						type="number"
-						@update:model-value="(value) => onRetryPolicyField('baseSeconds', value)" />
+						@update:model-value="
+							(value) => onRetryPolicyField('baseSeconds', value)
+						" />
 					<NcTextField
 						:label="t('openconnector', 'Factor')"
 						:model-value="retryPolicyValue('factor')"
 						type="number"
-						@update:model-value="(value) => onRetryPolicyField('factor', value)" />
+						@update:model-value="
+							(value) => onRetryPolicyField('factor', value)
+						" />
 					<NcTextField
 						:label="t('openconnector', 'Cap seconds')"
 						:model-value="retryPolicyValue('capSeconds')"
 						type="number"
-						@update:model-value="(value) => onRetryPolicyField('capSeconds', value)" />
+						@update:model-value="
+							(value) => onRetryPolicyField('capSeconds', value)
+						" />
 					<NcTextField
 						:label="t('openconnector', 'Max retries')"
 						:model-value="retryPolicyValue('maxRetries')"
 						type="number"
-						@update:model-value="(value) => onRetryPolicyField('maxRetries', value)" />
+						@update:model-value="
+							(value) => onRetryPolicyField('maxRetries', value)
+						" />
 				</div>
 			</template>
 		</div>
@@ -165,11 +209,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 
 const KIND_OPTIONS = [
 	{ id: 'webhook', label: 'Webhook' },
@@ -248,7 +288,10 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
 		selectedKindOption() {
-			return KIND_OPTIONS.find((option) => option.id === this.actionKind) || KIND_OPTIONS[0]
+			return (
+				KIND_OPTIONS.find((option) => option.id === this.actionKind)
+				|| KIND_OPTIONS[0]
+			)
 		},
 
 		/**
@@ -264,7 +307,12 @@ export default {
 		selectedSynchronization() {
 			const id = this.formData?.action?.synchronizationId
 			if (!id) return null
-			return this.synchronizationOptions.find((option) => option.id === id) || { id, label: id }
+			return (
+				this.synchronizationOptions.find((option) => option.id === id) || {
+					id,
+					label: id,
+				}
+			)
 		},
 
 		/**
@@ -276,7 +324,12 @@ export default {
 		selectedJob() {
 			const id = this.formData?.action?.jobId
 			if (!id) return null
-			return this.jobOptions.find((option) => option.id === id) || { id, label: id }
+			return (
+				this.jobOptions.find((option) => option.id === id) || {
+					id,
+					label: id,
+				}
+			)
 		},
 
 		/**
@@ -285,7 +338,10 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
 		 */
 		retryPolicyEnabled() {
-			return this.formData?.retryPolicy != null && typeof this.formData.retryPolicy === 'object'
+			return (
+				this.formData?.retryPolicy != null
+				&& typeof this.formData.retryPolicy === 'object'
+			)
 		},
 	},
 
@@ -301,7 +357,10 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
 		actionKind(value) {
-			if (value === 'synchronization' && this.synchronizationOptions.length === 0) {
+			if (
+				value === 'synchronization'
+				&& this.synchronizationOptions.length === 0
+			) {
 				this.fetchSynchronizations()
 			} else if (value === 'job' && this.jobOptions.length === 0) {
 				this.fetchJobs()
@@ -357,7 +416,10 @@ export default {
 				this.updateField('action', { kind })
 				return
 			}
-			const current = (this.formData?.action && typeof this.formData.action === 'object') ? this.formData.action : {}
+			const current =
+				this.formData?.action && typeof this.formData.action === 'object'
+					? this.formData.action
+					: {}
 			this.updateField('action', { ...current, kind })
 		},
 
@@ -368,7 +430,10 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
 		onSynchronizationPick(option) {
-			this.updateField('action', { kind: 'synchronization', synchronizationId: option?.id ? String(option.id) : null })
+			this.updateField('action', {
+				kind: 'synchronization',
+				synchronizationId: option?.id ? String(option.id) : null,
+			})
 		},
 
 		/**
@@ -378,7 +443,10 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
 		onJobPick(option) {
-			this.updateField('action', { kind: 'job', jobId: option?.id ? String(option.id) : null })
+			this.updateField('action', {
+				kind: 'job',
+				jobId: option?.id ? String(option.id) : null,
+			})
 		},
 
 		/**
@@ -412,7 +480,11 @@ export default {
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
 		 */
 		onRetryPolicyField(key, raw) {
-			const current = (this.formData?.retryPolicy && typeof this.formData.retryPolicy === 'object') ? { ...this.formData.retryPolicy } : {}
+			const current =
+				this.formData?.retryPolicy
+				&& typeof this.formData.retryPolicy === 'object'
+					? { ...this.formData.retryPolicy }
+					: {}
 			if (raw === '' || raw === null || raw === undefined) {
 				delete current[key]
 			} else {
@@ -431,20 +503,29 @@ export default {
 			this.synchronizationsLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/synchronization'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/synchronization',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
-				const list = Array.isArray(response.data?.results) ? response.data.results : (Array.isArray(response.data) ? response.data : [])
+				const list = Array.isArray(response.data?.results)
+					? response.data.results
+					: Array.isArray(response.data)
+						? response.data
+						: []
 				this.synchronizationOptions = list.map((item) => ({
 					id: String(item.id || item.uuid),
 					label: item.name || item.title || item.id,
 				}))
 			} catch (err) {
 				// eslint-disable-next-line no-console
-				console.warn('[SubscriptionActionFields] synchronization fetch failed', err)
+				console.warn(
+					'[SubscriptionActionFields] synchronization fetch failed',
+					err,
+				)
 				this.synchronizationOptions = []
 			} finally {
 				this.synchronizationsLoading = false
@@ -466,7 +547,11 @@ export default {
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
-				const list = Array.isArray(response.data?.results) ? response.data.results : (Array.isArray(response.data) ? response.data : [])
+				const list = Array.isArray(response.data?.results)
+					? response.data.results
+					: Array.isArray(response.data)
+						? response.data
+						: []
 				this.jobOptions = list.map((item) => ({
 					id: String(item.id || item.uuid),
 					label: item.name || item.title || item.id,

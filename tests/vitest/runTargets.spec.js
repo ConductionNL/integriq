@@ -47,13 +47,19 @@ describe('synchronization/run — request routing', () => {
 	const descriptor = getRunDescriptor('synchronization', 'run')
 
 	it('posts to /run with the force flags when test mode is off', () => {
-		const { url, body } = descriptor.request({ id: 9 }, { test: false, force: true, forceDeletion: true })
+		const { url, body } = descriptor.request(
+			{ id: 9 },
+			{ test: false, force: true, forceDeletion: true },
+		)
 		expect(url).toBe('/apps/openconnector/api/synchronizations/9/run')
 		expect(body).toEqual({ test: false, force: true, forceDeletion: true })
 	})
 
 	it('re-routes to /test when test mode is on, so the test permission applies', () => {
-		const { url, body } = descriptor.request({ id: 9 }, { test: true, force: true })
+		const { url, body } = descriptor.request(
+			{ id: 9 },
+			{ test: true, force: true },
+		)
 		expect(url).toBe('/apps/openconnector/api/synchronizations/9/test')
 		// forceDeletion is not carried over — it is run-only.
 		expect(body).toEqual({ force: true })
@@ -72,7 +78,9 @@ describe('synchronization/run — request routing', () => {
 
 describe('synchronization/run — the force-deletion switch', () => {
 	const descriptor = getRunDescriptor('synchronization', 'run')
-	const forceDeletion = descriptor.options.find((option) => option.key === 'forceDeletion')
+	const forceDeletion = descriptor.options.find(
+		(option) => option.key === 'forceDeletion',
+	)
 
 	it('is disabled on an incremental synchronization, where it provably does nothing', () => {
 		// REQ-018 hard-blocks deletion while syncMode is incremental and
@@ -86,15 +94,22 @@ describe('synchronization/run — the force-deletion switch', () => {
 	})
 
 	it('is hidden entirely once test mode is on', () => {
-		const keys = visibleOptions(descriptor, { test: true }).map((option) => option.key)
+		const keys = visibleOptions(descriptor, { test: true }).map(
+			(option) => option.key,
+		)
 		expect(keys).not.toContain('forceDeletion')
-		expect(visibleOptions(descriptor, { test: false }).map((o) => o.key)).toContain('forceDeletion')
+		expect(
+			visibleOptions(descriptor, { test: false }).map((o) => o.key),
+		).toContain('forceDeletion')
 	})
 })
 
 describe('job descriptors — request routing and locked force', () => {
 	it('job/run passes forceRun through', () => {
-		const { url, body } = getRunDescriptor('job', 'run').request({ id: 3 }, { forceRun: true })
+		const { url, body } = getRunDescriptor('job', 'run').request(
+			{ id: 3 },
+			{ forceRun: true },
+		)
 		expect(url).toBe('/apps/openconnector/api/jobs/run/3')
 		expect(body).toEqual({ forceRun: true })
 	})
@@ -105,11 +120,15 @@ describe('job descriptors — request routing and locked force', () => {
 	})
 
 	it('job/test seeds its locked force switch on', () => {
-		expect(initialOptionValues(getRunDescriptor('job', 'test'))).toEqual({ forceRun: true })
+		expect(initialOptionValues(getRunDescriptor('job', 'test'))).toEqual({
+			forceRun: true,
+		})
 	})
 
 	it('job/run seeds its force switch off', () => {
-		expect(initialOptionValues(getRunDescriptor('job', 'run'))).toEqual({ forceRun: false })
+		expect(initialOptionValues(getRunDescriptor('job', 'run'))).toEqual({
+			forceRun: false,
+		})
 	})
 })
 
@@ -132,7 +151,10 @@ describe('job status classification', () => {
 	})
 
 	it('treats an absent level as success and prefers the log message', () => {
-		expect(status({ message: 'Job finished' })).toEqual({ type: 'success', text: 'Job finished' })
+		expect(status({ message: 'Job finished' })).toEqual({
+			type: 'success',
+			text: 'Job finished',
+		})
 	})
 })
 
@@ -162,14 +184,29 @@ describe('synchronization sections', () => {
 	it('renders the six object counters in engine order', () => {
 		const payload = {
 			message: 'Success',
-			result: { objects: { found: 120, skipped: 105, created: 4, updated: 11, deleted: 0, invalid: 2 } },
+			result: {
+				objects: {
+					found: 120,
+					skipped: 105,
+					created: 4,
+					updated: 11,
+					deleted: 0,
+					invalid: 2,
+				},
+			},
 		}
-		const counters = sections(payload).find((section) => section.id === 'objects')
-		expect(counters.value.map((cell) => cell.value)).toEqual([120, 105, 4, 11, 0, 2])
+		const counters = sections(payload).find(
+			(section) => section.id === 'objects',
+		)
+		expect(counters.value.map((cell) => cell.value)).toEqual([
+			120, 105, 4, 11, 0, 2,
+		])
 	})
 
 	it('defaults missing counters to zero rather than rendering undefined', () => {
-		const counters = sections({ result: {} }).find((section) => section.id === 'objects')
+		const counters = sections({ result: {} }).find(
+			(section) => section.id === 'objects',
+		)
 		expect(counters.value.every((cell) => cell.value === 0)).toBe(true)
 	})
 
@@ -188,42 +225,57 @@ describe('deletion guard reporting', () => {
 	 * @return {object} A run log.
 	 */
 	function withGuard(guard) {
-		return { message: 'Success', result: { objects: { found: 100, deleted: 0, deletionGuard: guard } } }
+		return {
+			message: 'Success',
+			result: { objects: { found: 100, deleted: 0, deletionGuard: guard } },
+		}
 	}
 
 	it('says nothing when the cleanup pass ran unimpeded', () => {
-		const ids = descriptor.sections(withGuard({ guarded: false, reason: null })).map((s) => s.id)
+		const ids = descriptor
+			.sections(withGuard({ guarded: false, reason: null }))
+			.map((s) => s.id)
 		expect(ids).not.toContain('deletionGuard')
 	})
 
 	it('says nothing when the cleanup pass never ran at all', () => {
 		// A dry run skips deletion entirely, so the guard is null rather than
 		// `guarded: false` — neither is something to warn about.
-		expect(descriptor.sections(withGuard(null)).map((s) => s.id)).not.toContain('deletionGuard')
+		expect(descriptor.sections(withGuard(null)).map((s) => s.id)).not.toContain(
+			'deletionGuard',
+		)
 	})
 
 	it('explains a tripped ratio guard ahead of the counters, with its figures', () => {
-		const sections = descriptor.sections(withGuard({
-			guarded: true,
-			reason: 'ratio_threshold_exceeded',
-			ratio: 0.15,
-			threshold: 0.1,
-			candidateCount: 15,
-			totalContracts: 100,
-		}))
+		const sections = descriptor.sections(
+			withGuard({
+				guarded: true,
+				reason: 'ratio_threshold_exceeded',
+				ratio: 0.15,
+				threshold: 0.1,
+				candidateCount: 15,
+				totalContracts: 100,
+			}),
+		)
 
 		// First, because `deleted: 0` beside a large `found` otherwise reads as
 		// a clean no-op.
 		expect(sections[0].id).toBe('deletionGuard')
 		expect(sections[0].noteType).toBe('warning')
-		expect(sections[0].rows.map((r) => r.value)).toEqual(['15 / 100', '15%', '10%'])
+		expect(sections[0].rows.map((r) => r.value)).toEqual([
+			'15 / 100',
+			'15%',
+			'10%',
+		])
 	})
 
 	it.each([
 		['incremental_mode', /incremental mode/],
 		['fetch_incomplete', /did not complete/],
 	])('explains the %s guard in its own terms', (reason, matcher) => {
-		const section = descriptor.sections(withGuard({ guarded: true, reason })).find((s) => s.id === 'deletionGuard')
+		const section = descriptor
+			.sections(withGuard({ guarded: true, reason }))
+			.find((s) => s.id === 'deletionGuard')
 		expect(section.value).toMatch(matcher)
 		expect(section.rows).toEqual([])
 	})
@@ -234,7 +286,14 @@ describe('deletion guard retry hint', () => {
 
 	it('offers a force-deletion re-run when the ratio guard tripped', () => {
 		const retry = descriptor.retry({
-			result: { objects: { deletionGuard: { guarded: true, reason: 'ratio_threshold_exceeded' } } },
+			result: {
+				objects: {
+					deletionGuard: {
+						guarded: true,
+						reason: 'ratio_threshold_exceeded',
+					},
+				},
+			},
 		})
 		expect(retry.values).toEqual({ forceDeletion: true })
 	})
@@ -243,11 +302,18 @@ describe('deletion guard retry hint', () => {
 		// forceDeletion cannot override either of these, so offering it would lie.
 		['incremental_mode'],
 		['fetch_incomplete'],
-	])('offers nothing for the %s guard, which forceDeletion cannot override', (reason) => {
-		expect(descriptor.retry({
-			result: { objects: { deletionGuard: { guarded: true, reason } } },
-		})).toBeNull()
-	})
+	])(
+		'offers nothing for the %s guard, which forceDeletion cannot override',
+		(reason) => {
+			expect(
+				descriptor.retry({
+					result: {
+						objects: { deletionGuard: { guarded: true, reason } },
+					},
+				}),
+			).toBeNull()
+		},
+	)
 
 	it('offers nothing for an unguarded or absent run', () => {
 		expect(descriptor.retry({ result: { objects: {} } })).toBeNull()
@@ -287,10 +353,13 @@ describe('job sections', () => {
 
 describe('logsLink', () => {
 	it('matches the route + query pair the "View logs" row action uses', () => {
-		expect(getRunDescriptor('synchronization', 'test').logsLink({ id: 9 }))
-			.toEqual({ name: 'SynchronizationLogs', query: { synchronizationId: 9 } })
-		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 }))
-			.toEqual({ name: 'JobLogs', query: { jobId: 3 } })
+		expect(
+			getRunDescriptor('synchronization', 'test').logsLink({ id: 9 }),
+		).toEqual({ name: 'SynchronizationLogs', query: { synchronizationId: 9 } })
+		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 })).toEqual({
+			name: 'JobLogs',
+			query: { jobId: 3 },
+		})
 	})
 
 	it('returns null for a row with no id, so the modal hides the link', () => {

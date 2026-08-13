@@ -31,12 +31,20 @@
 		<div v-else-if="product" class="apiProductDetail__body">
 			<div class="apiProductDetail__meta">
 				<h2>{{ product.name }}</h2>
-				<span class="apiProductDetail__badge" :class="`apiProductDetail__badge--${product.status}`">
+				<span
+					class="apiProductDetail__badge"
+					:class="`apiProductDetail__badge--${product.status}`">
 					{{ product.status }}
 				</span>
 			</div>
-			<p v-if="product.status === 'deprecated'" class="apiProductDetail__sunsetNotice">
-				{{ t('openconnector', 'Deprecated — sunset {date}', { date: product.sunsetDate || '—' }) }}
+			<p
+				v-if="product.status === 'deprecated'"
+				class="apiProductDetail__sunsetNotice">
+				{{
+					t('openconnector', 'Deprecated — sunset {date}', {
+						date: product.sunsetDate || '—',
+					})
+				}}
 			</p>
 
 			<!-- Endpoint picker -->
@@ -45,11 +53,16 @@
 				<ul class="apiProductDetail__list">
 					<li v-for="id in productEndpoints" :key="id">
 						{{ endpointLabel(id) }}
-						<NcButton type="tertiary" :aria-label="t('openconnector', 'Remove endpoint')" @click="removeEndpoint(id)">
+						<NcButton
+							type="tertiary"
+							:aria-label="t('openconnector', 'Remove endpoint')"
+							@click="removeEndpoint(id)">
 							{{ t('openconnector', 'Remove') }}
 						</NcButton>
 					</li>
-					<li v-if="productEndpoints.length === 0" class="apiProductDetail__empty">
+					<li
+						v-if="productEndpoints.length === 0"
+						class="apiProductDetail__empty">
 						{{ t('openconnector', 'No endpoints attached yet.') }}
 					</li>
 				</ul>
@@ -66,8 +79,13 @@
 					:loading="loadingEndpoints"
 					:multiple="true"
 					:clearable="true"
-					:placeholder="t('openconnector', 'Pick one or more endpoints')" />
-				<NcButton type="primary" :disabled="selectedEndpoints.length === 0 || saving" @click="addSelectedEndpoints">
+					:placeholder="
+						t('openconnector', 'Pick one or more endpoints')
+					" />
+				<NcButton
+					type="primary"
+					:disabled="selectedEndpoints.length === 0 || saving"
+					@click="addSelectedEndpoints">
 					{{ t('openconnector', 'Add') }}
 				</NcButton>
 			</section>
@@ -79,22 +97,50 @@
 					<thead>
 						<tr>
 							<th scope="col">{{ t('openconnector', 'Name') }}</th>
-							<th scope="col">{{ t('openconnector', 'Requests / window') }}</th>
-							<th scope="col">{{ t('openconnector', 'Window (s)') }}</th>
-							<th scope="col">{{ t('openconnector', 'Requires approval') }}</th>
-							<th scope="col">{{ t('openconnector', 'Approver group') }}</th>
+							<th scope="col">
+								{{ t('openconnector', 'Requests / window') }}
+							</th>
+							<th scope="col">
+								{{ t('openconnector', 'Window (s)') }}
+							</th>
+							<th scope="col">
+								{{ t('openconnector', 'Requires approval') }}
+							</th>
+							<th scope="col">
+								{{ t('openconnector', 'Approver group') }}
+							</th>
 							<th />
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="(tier, name) in productTiers" :key="name">
 							<td>{{ name }}</td>
-							<td>{{ tier.rateLimit && tier.rateLimit.requestsPerWindow || '—' }}</td>
-							<td>{{ tier.rateLimit && tier.rateLimit.windowSeconds || '—' }}</td>
-							<td>{{ tier.requiresApproval ? t('openconnector', 'Yes') : t('openconnector', 'No') }}</td>
+							<td>
+								{{
+									(tier.rateLimit
+										&& tier.rateLimit.requestsPerWindow)
+									|| '—'
+								}}
+							</td>
+							<td>
+								{{
+									(tier.rateLimit && tier.rateLimit.windowSeconds)
+									|| '—'
+								}}
+							</td>
+							<td>
+								{{
+									tier.requiresApproval
+										? t('openconnector', 'Yes')
+										: t('openconnector', 'No')
+								}}
+							</td>
 							<td>{{ tier.approverGroup || '—' }}</td>
 							<td>
-								<NcButton type="tertiary" :aria-label="t('openconnector', 'Remove tier')" @click="removeTier(name)">
+								<NcButton
+									type="tertiary"
+									:aria-label="t('openconnector', 'Remove tier')"
+									@click="removeTier(name)">
 									{{ t('openconnector', 'Remove') }}
 								</NcButton>
 							</td>
@@ -103,30 +149,52 @@
 				</table>
 
 				<form class="apiProductDetail__tierForm" @submit.prevent="addTier">
-					<label :for="'apiProductDetail-tier-name-' + uid">{{ t('openconnector', 'Tier name') }}</label>
-					<input :id="'apiProductDetail-tier-name-' + uid" v-model="newTier.name" type="text">
+					<label :for="'apiProductDetail-tier-name-' + uid">{{
+						t('openconnector', 'Tier name')
+					}}</label>
+					<input
+						:id="'apiProductDetail-tier-name-' + uid"
+						v-model="newTier.name"
+						type="text" />
 
-					<label :for="'apiProductDetail-tier-rpw-' + uid">{{ t('openconnector', 'Requests / window') }}</label>
-					<input :id="'apiProductDetail-tier-rpw-' + uid"
+					<label :for="'apiProductDetail-tier-rpw-' + uid">{{
+						t('openconnector', 'Requests / window')
+					}}</label>
+					<input
+						:id="'apiProductDetail-tier-rpw-' + uid"
 						v-model.number="newTier.requestsPerWindow"
 						type="number"
-						min="1">
+						min="1" />
 
-					<label :for="'apiProductDetail-tier-window-' + uid">{{ t('openconnector', 'Window (seconds)') }}</label>
-					<input :id="'apiProductDetail-tier-window-' + uid"
+					<label :for="'apiProductDetail-tier-window-' + uid">{{
+						t('openconnector', 'Window (seconds)')
+					}}</label>
+					<input
+						:id="'apiProductDetail-tier-window-' + uid"
 						v-model.number="newTier.windowSeconds"
 						type="number"
-						min="1">
+						min="1" />
 
 					<label :for="'apiProductDetail-tier-approval-' + uid">
-						<input :id="'apiProductDetail-tier-approval-' + uid" v-model="newTier.requiresApproval" type="checkbox">
+						<input
+							:id="'apiProductDetail-tier-approval-' + uid"
+							v-model="newTier.requiresApproval"
+							type="checkbox" />
 						{{ t('openconnector', 'Requires approval') }}
 					</label>
 
-					<label :for="'apiProductDetail-tier-group-' + uid">{{ t('openconnector', 'Approver group') }}</label>
-					<input :id="'apiProductDetail-tier-group-' + uid" v-model="newTier.approverGroup" type="text">
+					<label :for="'apiProductDetail-tier-group-' + uid">{{
+						t('openconnector', 'Approver group')
+					}}</label>
+					<input
+						:id="'apiProductDetail-tier-group-' + uid"
+						v-model="newTier.approverGroup"
+						type="text" />
 
-					<NcButton variant="primary" type="submit" :disabled="!newTier.name || saving">
+					<NcButton
+						variant="primary"
+						type="submit"
+						:disabled="!newTier.name || saving">
 						{{ t('openconnector', 'Add tier') }}
 					</NcButton>
 				</form>
@@ -136,17 +204,26 @@
 			<section class="apiProductDetail__section">
 				<h3>{{ t('openconnector', 'Analytics') }}</h3>
 				<NcLoadingIcon v-if="loadingAnalytics" :size="24" />
-				<dl v-else-if="analytics" class="apiProductDetail__fields" data-testid="analytics-summary">
+				<dl
+					v-else-if="analytics"
+					class="apiProductDetail__fields"
+					data-testid="analytics-summary">
 					<dt>{{ t('openconnector', 'Requests') }}</dt>
 					<dd>{{ analytics.requestCount }}</dd>
 					<dt>{{ t('openconnector', 'Error rate') }}</dt>
 					<dd>{{ formatPercent(analytics.errorRate) }}</dd>
 					<dt>{{ t('openconnector', 'p50 latency') }}</dt>
-					<dd>{{ formatMs(analytics.latency && analytics.latency.p50) }}</dd>
+					<dd>
+						{{ formatMs(analytics.latency && analytics.latency.p50) }}
+					</dd>
 					<dt>{{ t('openconnector', 'p95 latency') }}</dt>
-					<dd>{{ formatMs(analytics.latency && analytics.latency.p95) }}</dd>
+					<dd>
+						{{ formatMs(analytics.latency && analytics.latency.p95) }}
+					</dd>
 					<dt>{{ t('openconnector', 'p99 latency') }}</dt>
-					<dd>{{ formatMs(analytics.latency && analytics.latency.p99) }}</dd>
+					<dd>
+						{{ formatMs(analytics.latency && analytics.latency.p99) }}
+					</dd>
 				</dl>
 			</section>
 
@@ -157,22 +234,31 @@
 					<li v-for="sub in subscriptions" :key="sub.id || sub.uuid">
 						{{ sub.consumer }} — {{ sub.tier }} — {{ sub.status }}
 						<template v-if="sub.status === 'pending_approval'">
-							<NcButton type="primary" :disabled="busy" @click="approveSubscription(sub)">
+							<NcButton
+								type="primary"
+								:disabled="busy"
+								@click="approveSubscription(sub)">
 								{{ t('openconnector', 'Approve') }}
 							</NcButton>
-							<NcButton type="error" :disabled="busy" @click="rejectSubscription(sub)">
+							<NcButton
+								type="error"
+								:disabled="busy"
+								@click="rejectSubscription(sub)">
 								{{ t('openconnector', 'Reject') }}
 							</NcButton>
 						</template>
 					</li>
-					<li v-if="subscriptions.length === 0" class="apiProductDetail__empty">
+					<li
+						v-if="subscriptions.length === 0"
+						class="apiProductDetail__empty">
 						{{ t('openconnector', 'No subscriptions yet.') }}
 					</li>
 				</ul>
 			</section>
 		</div>
 
-		<NcEmptyContent v-else
+		<NcEmptyContent
+			v-else
 			:name="t('openconnector', 'API product not found')"
 			:description="t('openconnector', 'It may have been removed.')">
 			<template #icon>
@@ -187,12 +273,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 
 let uidCounter = 0
@@ -238,18 +319,25 @@ export default {
 		},
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
 		productEndpoints() {
-			return Array.isArray(this.product?.endpoints) ? this.product.endpoints : []
+			return Array.isArray(this.product?.endpoints)
+				? this.product.endpoints
+				: []
 		},
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
 		productTiers() {
-			return this.product?.tiers && typeof this.product.tiers === 'object' ? this.product.tiers : {}
+			return this.product?.tiers && typeof this.product.tiers === 'object'
+				? this.product.tiers
+				: {}
 		},
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		availableEndpointOptions() {
 			const attached = new Set(this.productEndpoints)
 			return this.endpoints
 				.filter((e) => !attached.has(String(e.id || e.uuid)))
-				.map((e) => ({ id: String(e.id || e.uuid), label: e.name || e.endpoint || e.id }))
+				.map((e) => ({
+					id: String(e.id || e.uuid),
+					label: e.name || e.endpoint || e.id,
+				}))
 		},
 	},
 
@@ -283,8 +371,10 @@ export default {
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		endpointLabel(id) {
-			const match = this.endpoints.find((e) => String(e.id || e.uuid) === String(id))
-			return match ? (match.name || match.endpoint || id) : id
+			const match = this.endpoints.find(
+				(e) => String(e.id || e.uuid) === String(id),
+			)
+			return match ? match.name || match.endpoint || id : id
 		},
 		/**
 		 * Render an analytics ratio as a percentage.
@@ -315,7 +405,9 @@ export default {
 			this.loading = true
 			try {
 				const res = await axios.get(
-					generateUrl(`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`),
+					generateUrl(
+						`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`,
+					),
 				)
 				this.product = res.data
 			} catch (err) {
@@ -329,14 +421,20 @@ export default {
 			this.loadingEndpoints = true
 			try {
 				const res = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/endpoint'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/endpoint',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
 				const data = res.data
-				this.endpoints = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.endpoints = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (err) {
 				this.endpoints = []
 			} finally {
@@ -348,7 +446,9 @@ export default {
 			this.loadingAnalytics = true
 			try {
 				const res = await axios.get(
-					generateUrl(`/apps/openconnector/api/products/${this.productId}/analytics`),
+					generateUrl(
+						`/apps/openconnector/api/products/${this.productId}/analytics`,
+					),
 				)
 				this.analytics = res.data
 			} catch (err) {
@@ -361,7 +461,9 @@ export default {
 		async loadSubscriptions() {
 			try {
 				const res = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/api_product_subscription'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/api_product_subscription',
+					),
 					// `product` IS meant to be a property filter; `_limit` is a
 					// CONTROL param and needs the underscore. Written as `limit`
 					// it became a second property filter and this list was
@@ -369,7 +471,11 @@ export default {
 					{ params: { product: this.productId, _limit: 100 } },
 				)
 				const data = res.data
-				this.subscriptions = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.subscriptions = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (err) {
 				this.subscriptions = []
 			}
@@ -389,23 +495,30 @@ export default {
 			this.saving = true
 			try {
 				await axios.patch(
-					generateUrl(`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`),
+					generateUrl(
+						`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`,
+					),
 					{ [field]: value },
 				)
 				await this.load()
 			} catch (err) {
 				const detail = err?.response?.data?.message || err?.message || ''
-				showError(t('openconnector', 'Failed to update API product') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Failed to update API product')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.saving = false
 			}
 		},
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		async addSelectedEndpoints() {
-			const merged = Array.from(new Set([
-				...this.productEndpoints,
-				...this.selectedEndpoints.map((e) => e.id),
-			]))
+			const merged = Array.from(
+				new Set([
+					...this.productEndpoints,
+					...this.selectedEndpoints.map((e) => e.id),
+				]),
+			)
 			await this.saveProductField('endpoints', merged)
 			this.selectedEndpoints = []
 			showSuccess(t('openconnector', 'Endpoint(s) added'))
@@ -419,7 +532,9 @@ export default {
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		async removeEndpoint(id) {
-			const remaining = this.productEndpoints.filter((e) => String(e) !== String(id))
+			const remaining = this.productEndpoints.filter(
+				(e) => String(e) !== String(id),
+			)
 			await this.saveProductField('endpoints', remaining)
 		},
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
@@ -435,7 +550,13 @@ export default {
 				approverGroup: this.newTier.approverGroup || undefined,
 			}
 			await this.saveProductField('tiers', tiers)
-			this.newTier = { name: '', requestsPerWindow: null, windowSeconds: null, requiresApproval: false, approverGroup: '' }
+			this.newTier = {
+				name: '',
+				requestsPerWindow: null,
+				windowSeconds: null,
+				requiresApproval: false,
+				approverGroup: '',
+			}
 			showSuccess(t('openconnector', 'Tier added'))
 		},
 		/**
@@ -464,13 +585,18 @@ export default {
 			this.busy = true
 			try {
 				await axios.post(
-					generateUrl(`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/approve`),
+					generateUrl(
+						`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/approve`,
+					),
 				)
 				showSuccess(t('openconnector', 'Subscription approved'))
 				await this.loadSubscriptions()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Approve failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Approve failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}
@@ -488,14 +614,19 @@ export default {
 			this.busy = true
 			try {
 				await axios.post(
-					generateUrl(`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/reject`),
+					generateUrl(
+						`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/reject`,
+					),
 					{ comment: t('openconnector', 'Rejected from API Products UI') },
 				)
 				showSuccess(t('openconnector', 'Subscription rejected'))
 				await this.loadSubscriptions()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Reject failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Reject failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}

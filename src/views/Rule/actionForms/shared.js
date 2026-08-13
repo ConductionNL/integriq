@@ -26,7 +26,11 @@ import { generateUrl } from '@nextcloud/router'
  * @return {Promise<Array<{ id: string, label: string, raw: object }>>}
  *   Resolved options ready for NcSelect.
  */
-export async function fetchOpenRegisterCollection(schema, register = 'openconnector', limit = 500) {
+export async function fetchOpenRegisterCollection(
+	schema,
+	register = 'openconnector',
+	limit = 500,
+) {
 	try {
 		const response = await axios.get(
 			generateUrl(`/apps/openregister/api/objects/${register}/${schema}`),
@@ -79,7 +83,7 @@ export const valueProp = {
  */
 export function patchMethod() {
 	return function patch(key, next) {
-		const base = (this.value && typeof this.value === 'object') ? this.value : {}
+		const base = this.value && typeof this.value === 'object' ? this.value : {}
 		const merged = { ...base, [key]: next }
 		this.$emit('update:value', merged)
 	}

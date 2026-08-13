@@ -25,7 +25,13 @@ module.exports = {
 		environment: 'node',
 		globals: false,
 		include: ['tests/vitest/**/*.spec.{js,ts}'],
-		exclude: ['tests/e2e/**', 'tests/postman/**', 'tests/integration/**', 'src/**', 'node_modules/**'],
+		exclude: [
+			'tests/e2e/**',
+			'tests/postman/**',
+			'tests/integration/**',
+			'src/**',
+			'node_modules/**',
+		],
 		// @nextcloud/vue ships CSS side-effect imports next to its components.
 		// Node's ESM loader cannot resolve a ".css" specifier, so the package
 		// must be transformed by Vite rather than externalised, otherwise any
@@ -41,11 +47,17 @@ module.exports = {
 			{ find: '@', replacement: path.resolve(__dirname, 'src') },
 			{
 				find: /^@nextcloud\/l10n$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/nextcloud-l10n.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/nextcloud-l10n.js',
+				),
 			},
 			{
 				find: /^@nextcloud\/router$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/nextcloud-router.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/nextcloud-router.js',
+				),
 			},
 		],
 	},

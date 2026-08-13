@@ -20,9 +20,7 @@
   touch the parent's data here — pure form-state.
 -->
 <template>
-	<NcModal :name="dialogTitle"
-		size="normal"
-		@close="$emit('cancel')">
+	<NcModal :name="dialogTitle" size="normal" @close="$emit('cancel')">
 		<div class="cn-rule-dialog">
 			<h2 class="cn-rule-dialog__title">
 				{{ dialogTitle }}
@@ -31,7 +29,8 @@
 			<form class="cn-rule-dialog__form" @submit.prevent="onSubmit">
 				<label class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">{{ propertyLabel }}</span>
-					<NcTextField v-model="propertyDraft"
+					<NcTextField
+						v-model="propertyDraft"
 						:placeholder="propertyPlaceholder"
 						:error="!!propertyError"
 						:helper-text="propertyError"
@@ -42,7 +41,8 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Twig template') }}
 					</span>
-					<textarea v-model="valueDraft"
+					<textarea
+						v-model="valueDraft"
 						class="cn-rule-dialog__textarea"
 						rows="6"
 						spellcheck="false"
@@ -56,7 +56,8 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Cast type') }}
 					</span>
-					<NcSelect :model-value="castSelectValue"
+					<NcSelect
+						:model-value="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
 						:aria-label-combobox="t('openconnector', 'Cast type')"
@@ -68,7 +69,10 @@
 					<NcButton type="tertiary" @click="$emit('cancel')">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
-					<NcButton type="primary" :disabled="!canSubmit" @click="onSubmit">
+					<NcButton
+						type="primary"
+						:disabled="!canSubmit"
+						@click="onSubmit">
 						{{ submitLabel }}
 					</NcButton>
 				</div>
@@ -78,12 +82,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcModal,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
 
 /**
  * Cast type vocabulary, mirrored from the legacy
@@ -148,14 +147,17 @@ export default {
 
 	data() {
 		return {
-			propertyDraft: this.kind === 'unset'
-				? (this.property ?? (typeof this.value === 'string' ? this.value : ''))
-				: (this.property ?? ''),
-			valueDraft: typeof this.value === 'string'
-				? this.value
-				: this.value != null
-					? String(this.value)
-					: '',
+			propertyDraft:
+				this.kind === 'unset'
+					? (this.property
+						?? (typeof this.value === 'string' ? this.value : ''))
+					: (this.property ?? ''),
+			valueDraft:
+				typeof this.value === 'string'
+					? this.value
+					: this.value != null
+						? String(this.value)
+						: '',
 		}
 	},
 
@@ -186,8 +188,10 @@ export default {
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castSelectValue() {
-			return this.castTypeOptions.find((option) => option.id === this.valueDraft)
+			return (
+				this.castTypeOptions.find((option) => option.id === this.valueDraft)
 				|| this.castTypeOptions[0]
+			)
 		},
 		isNew() {
 			return this.property == null
@@ -216,7 +220,8 @@ export default {
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
-			if (this.kind === 'mapping') return this.t('openconnector', 'Target property')
+			if (this.kind === 'mapping')
+				return this.t('openconnector', 'Target property')
 			return this.t('openconnector', 'Property')
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -231,7 +236,10 @@ export default {
 			const trimmed = this.propertyDraft.trim()
 			if (!trimmed) return ''
 			if (this.existingKeys.includes(trimmed)) {
-				return this.t('openconnector', 'Another rule already targets this property.')
+				return this.t(
+					'openconnector',
+					'Another rule already targets this property.',
+				)
 			}
 			return ''
 		},
@@ -243,7 +251,9 @@ export default {
 				return this.valueDraft.length > 0
 			}
 			if (this.kind === 'cast') {
-				return this.castTypeOptions.some((option) => option.id === this.valueDraft)
+				return this.castTypeOptions.some(
+					(option) => option.id === this.valueDraft,
+				)
 			}
 			return true
 		},

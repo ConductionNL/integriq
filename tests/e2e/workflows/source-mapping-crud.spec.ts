@@ -46,8 +46,14 @@
 import { test, expect, type Page } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
 import {
-	makeApiClient, makeRunId, find, findAll, deleteObject, cleanupByPrefix,
-	idOf, type ApiClient,
+	makeApiClient,
+	makeRunId,
+	find,
+	findAll,
+	deleteObject,
+	cleanupByPrefix,
+	idOf,
+	type ApiClient,
 } from './_fixture'
 
 let api: ApiClient
@@ -84,7 +90,9 @@ async function gotoIndex(page: Page, route: string): Promise<void> {
 	//     no index.php inside and 404s outright (measured). The pretty form
 	//     only resolves behind Apache + `.htaccess`; the `/index.php/` form
 	//     works in both.
-	await page.goto(`/index.php/apps/openconnector/#/${route}`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`/index.php/apps/openconnector/#/${route}`, {
+		waitUntil: 'domcontentloaded',
+	})
 	// ADR-074 rule 4: networkidle never settles on Nextcloud — this only ever
 	// burned its own timeout and swallowed it. The goto above already waits
 	// for domcontentloaded; the settle is the explicit pause below.
@@ -124,7 +132,9 @@ async function walkToRow(page: Page, name: string): Promise<boolean> {
 		// disabled) and the call throws when there is no pager at all —
 		// a single-page list. Both mean "nowhere left to look".
 		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
-		if (await next.isEnabled({ timeout: 2_000 }).catch(() => false) === false) {
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
 			return false
 		}
 
@@ -139,7 +149,9 @@ async function walkToRow(page: Page, name: string): Promise<boolean> {
 async function openRowMenu(page: Page, name: string): Promise<void> {
 	await walkToRow(page, name)
 	const row = page.locator('tr', { hasText: name }).first()
-	await expect(row, `row "${name}" must be present in the list`).toBeVisible({ timeout: 20_000 })
+	await expect(row, `row "${name}" must be present in the list`).toBeVisible({
+		timeout: 20_000,
+	})
 	await row.getByRole('button').last().click()
 	await page.waitForTimeout(400)
 }
@@ -168,20 +180,36 @@ async function crudCycle(
 	const dialog = appDialog(page)
 	await expect(dialog, 'create modal must open').toBeVisible({ timeout: 10_000 })
 	await dialog.getByLabel(/name/i).first().fill(name)
-	await dialog.getByLabel(/description/i).first().fill(desc).catch(() => { /* description optional */ })
-	await dialog.getByRole('button', { name: /create|save/i }).first().click()
+	await dialog
+		.getByLabel(/description/i)
+		.first()
+		.fill(desc)
+		.catch(() => {
+			/* description optional */
+		})
+	await dialog
+		.getByRole('button', { name: /create|save/i })
+		.first()
+		.click()
 	await page.waitForTimeout(2_500)
 
 	// ---- ASSERT the ROW appears (not empty-state) -------------------------
 	await gotoIndex(page, route)
 	await walkToRow(page, name)
 	const createdRow = page.locator('tr', { hasText: name }).first()
-	await expect(createdRow, 'newly-created row must appear in the list').toBeVisible({ timeout: 15_000 })
+	await expect(
+		createdRow,
+		'newly-created row must appear in the list',
+	).toBeVisible({ timeout: 15_000 })
 
 	// Persistence cross-check via OR: exactly one object with this name exists.
-	const persisted = (await findAll(api, schema, { _search: name }))
-		.filter((o: Record<string, unknown>) => o.name === name)
-	expect(persisted.length, `${schema} "${name}" must be persisted in OpenRegister`).toBe(1)
+	const persisted = (await findAll(api, schema, { _search: name })).filter(
+		(o: Record<string, unknown>) => o.name === name,
+	)
+	expect(
+		persisted.length,
+		`${schema} "${name}" must be persisted in OpenRegister`,
+	).toBe(1)
 	const id = idOf(persisted[0])
 	expect(id).toBeTruthy()
 
@@ -199,19 +227,30 @@ async function crudCycle(
 	const editDlg = appDialog(page)
 	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 10_000 })
 	const newDesc = `${RUN}-EDITED`
-	await editDlg.getByLabel(/description/i).first().fill(newDesc)
-	await editDlg.getByRole('button', { name: /save|update|create/i }).first().click()
+	await editDlg
+		.getByLabel(/description/i)
+		.first()
+		.fill(newDesc)
+	await editDlg
+		.getByRole('button', { name: /save|update|create/i })
+		.first()
+		.click()
 	await page.waitForTimeout(2_500)
 
 	const afterEdit = await find(api, schema, id)
-	expect(afterEdit.description, 'edited description must be persisted').toBe(newDesc)
+	expect(afterEdit.description, 'edited description must be persisted').toBe(
+		newDesc,
+	)
 
 	// ---- DELETE: row gone -------------------------------------------------
 	await gotoIndex(page, route)
 	await openRowMenu(page, name)
 	await page.getByRole('menuitem', { name: /^Delete$/ }).click()
 	await page.waitForTimeout(800)
-	const confirm = page.getByRole('dialog').getByRole('button', { name: /delete|confirm|yes/i }).first()
+	const confirm = page
+		.getByRole('dialog')
+		.getByRole('button', { name: /delete|confirm|yes/i })
+		.first()
 	if (await confirm.isVisible({ timeout: 2_000 }).catch(() => false)) {
 		await confirm.click()
 	}
@@ -223,16 +262,24 @@ async function crudCycle(
 	// toBeHidden() below fails, which is exactly what we want it to do.
 	await walkToRow(page, name)
 	const goneRow = page.locator('tr', { hasText: name }).first()
-	await expect(goneRow, 'deleted row must be gone from the list').toBeHidden({ timeout: 10_000 })
+	await expect(goneRow, 'deleted row must be gone from the list').toBeHidden({
+		timeout: 10_000,
+	})
 
 	// And gone from OR (find by id should 404 / not return it).
-	const remaining = (await findAll(api, schema, { _search: name }))
-		.filter((o: Record<string, unknown>) => o.name === name)
-	expect(remaining.length, `${schema} "${name}" must be removed from OpenRegister`).toBe(0)
+	const remaining = (await findAll(api, schema, { _search: name })).filter(
+		(o: Record<string, unknown>) => o.name === name,
+	)
+	expect(
+		remaining.length,
+		`${schema} "${name}" must be removed from OpenRegister`,
+	).toBe(0)
 }
 
 test.describe('Source — full CRUD with persistence', () => {
-	test('create → row appears → view → edit persists → delete', async ({ page }) => {
+	test('create → row appears → view → edit persists → delete', async ({
+		page,
+	}) => {
 		test.setTimeout(120_000)
 		await crudCycle(page, 'source', 'sources', /add source/i)
 	})
@@ -267,7 +314,9 @@ test.describe('Mapping — full CRUD with persistence', () => {
 	// unverified — the OR-persistence cross-checks in this file cover it, and
 	// the Newman collection creates and reads mappings through the object API.
 	test.fixme()
-	test('create → row appears → view → edit persists → delete', async ({ page }) => {
+	test('create → row appears → view → edit persists → delete', async ({
+		page,
+	}) => {
 		test.setTimeout(120_000)
 		await crudCycle(page, 'mapping', 'mappings', /add mapping/i)
 	})

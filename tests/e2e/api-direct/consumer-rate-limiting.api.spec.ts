@@ -30,10 +30,15 @@ const API_BASE = '/index.php/apps/openconnector/api'
 test.describe('Inbound consumer rate limiting — HTTP contract', () => {
 	// The gateway dispatch path stays healthy (never 500) regardless of
 	// rate-limit configuration — a smoke assertion that is safe on any instance.
-	test('endpoint dispatch remains routable (never 500) under rate-limit wiring', async ({ request }) => {
-		const resp = await request.get(`${API_BASE}/endpoint/pw-rl-smoke-${Date.now()}`, {
-			failOnStatusCode: false,
-		})
+	test('endpoint dispatch remains routable (never 500) under rate-limit wiring', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			`${API_BASE}/endpoint/pw-rl-smoke-${Date.now()}`,
+			{
+				failOnStatusCode: false,
+			},
+		)
 		expect(resp.status()).not.toBe(500)
 	})
 
@@ -46,5 +51,8 @@ test.describe('Inbound consumer rate limiting — HTTP contract', () => {
 	// AND call 3 returns HTTP 429 with a Retry-After header and reason "rate_limit".
 	// Rate limiting runs strictly AFTER authentication: an unauthenticated caller
 	// receives 401/403, never a 429 (REQ-CON-RL-002).
-	test.fixme(true, 'live provisioning of a JWT-authenticated rate-limited consumer required — see file header')
+	test.fixme(
+		true,
+		'live provisioning of a JWT-authenticated rate-limited consumer required — see file header',
+	)
 })

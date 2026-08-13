@@ -32,7 +32,12 @@
  * synced-from-leaf.spec.ts) rather than producing a false failure.
  */
 
-import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as pwRequest,
+	APIRequestContext,
+} from '@playwright/test'
 import { BASE_URL } from '../support/baseUrl'
 
 const NEXTCLOUD = BASE_URL
@@ -96,10 +101,13 @@ async function apiContext(): Promise<APIRequestContext> {
  * failure mode this function already had once.
  */
 async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
-	const url = '/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openconnector/storage_migrated'
-	const res = await ctx.get(url, {
-		headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-	}).catch(() => null)
+	const url =
+		'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openconnector/storage_migrated'
+	const res = await ctx
+		.get(url, {
+			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+		})
+		.catch(() => null)
 
 	if (res === null) {
 		// eslint-disable-next-line no-console
@@ -114,7 +122,7 @@ async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
 	// eslint-disable-next-line no-console
 	console.info(
 		`[migration-round-trip] storage_migrated probe: HTTP ${res.status()},`
-		+ ` ocs.meta.statuscode=${String(ocsStatus)}, value=${JSON.stringify(value)}`,
+			+ ` ocs.meta.statuscode=${String(ocsStatus)}, value=${JSON.stringify(value)}`,
 	)
 
 	if (res.status() !== 200 || ocsStatus !== 200) {
@@ -149,7 +157,6 @@ async function countSchema(ctx: APIRequestContext, schema: string): Promise<numb
 }
 
 test.describe('Migration round-trip — post chain-B invariants', () => {
-
 	let storageMigrated = false
 
 	test.beforeAll(async () => {
@@ -159,25 +166,37 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 	})
 
 	test('chain-B migration completed (storage_migrated === true)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
-		expect(storageMigrated, 'migration flag must be true after a clean migration').toBe(true)
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
+		expect(
+			storageMigrated,
+			'migration flag must be true after a clean migration',
+		).toBe(true)
 	})
 
 	test('every migrated schema is queryable without page regression', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
 		const ctx = await apiContext()
 		for (const schema of MIGRATED_SCHEMAS) {
 			const count = await countSchema(ctx, schema)
 			expect(
 				count,
-				`schema "${schema}" must return a 200 + array body (got sentinel -1 means error/non-array)`
+				`schema "${schema}" must return a 200 + array body (got sentinel -1 means error/non-array)`,
 			).toBeGreaterThanOrEqual(0)
 		}
 		await ctx.dispose()
 	})
 
 	test('object counts are stable across consecutive reads (round-trip invariant)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
 		const ctx = await apiContext()
 
 		const first: Record<string, number> = {}
@@ -191,11 +210,10 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 			const second = await countSchema(ctx, schema)
 			expect(
 				second,
-				`schema "${schema}" count must be stable across reads (was ${first[schema]}, now ${second})`
+				`schema "${schema}" count must be stable across reads (was ${first[schema]}, now ${second})`,
 			).toBe(first[schema])
 		}
 
 		await ctx.dispose()
 	})
-
 })

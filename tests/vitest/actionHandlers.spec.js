@@ -74,14 +74,18 @@ describe('POST action handlers — endpoint + success toast', () => {
 	it('runFlowHandler posts to /api/flows/{id}/run', async () => {
 		post.mockResolvedValueOnce({ data: { status: 'completed' } })
 		await runFlowHandler({ item: { id: 3 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/3/run')
+		expect(post).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/flows/3/run',
+		)
 		expect(showSuccess).toHaveBeenCalledTimes(1)
 	})
 
 	it('runFlowHandler falls back to uuid when id is absent', async () => {
 		post.mockResolvedValueOnce({ data: { status: 'completed' } })
 		await runFlowHandler({ item: { uuid: 'abc' } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/abc/run')
+		expect(post).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/flows/abc/run',
+		)
 	})
 })
 
@@ -119,8 +123,18 @@ describe('run/test handlers — open the shared run modal instead of posting', (
 	}
 
 	it.each([
-		['runSynchronizationHandler', runSynchronizationHandler, 'synchronization', 'run'],
-		['testSynchronizationHandler', testSynchronizationHandler, 'synchronization', 'test'],
+		[
+			'runSynchronizationHandler',
+			runSynchronizationHandler,
+			'synchronization',
+			'run',
+		],
+		[
+			'testSynchronizationHandler',
+			testSynchronizationHandler,
+			'synchronization',
+			'test',
+		],
 		['runJobHandler', runJobHandler, 'job', 'run'],
 		['testJobHandler', testJobHandler, 'job', 'test'],
 	])('%s emits open-run-action for %s/%s', (_name, handler, target, mode) => {
@@ -172,7 +186,10 @@ describe('viewLogsHandler — actionId → route + query', () => {
 		const push = vi.fn().mockResolvedValue()
 		setRouter({ push })
 		viewLogsHandler({ actionId: 'view-source-logs', item: { id: 42 } })
-		expect(push).toHaveBeenCalledWith({ name: 'SourceLogs', query: { source: 42 } })
+		expect(push).toHaveBeenCalledWith({
+			name: 'SourceLogs',
+			query: { source: 42 },
+		})
 	})
 
 	it('maps each filterable actionId to its destination route and field', () => {
@@ -229,6 +246,8 @@ describe('viewLogsHandler — actionId → route + query', () => {
 
 	it('no-ops (no throw) when the router was never set', () => {
 		setRouter(null)
-		expect(() => viewLogsHandler({ actionId: 'view-job-logs', item: { id: 1 } })).not.toThrow()
+		expect(() =>
+			viewLogsHandler({ actionId: 'view-job-logs', item: { id: 1 } }),
+		).not.toThrow()
 	})
 })

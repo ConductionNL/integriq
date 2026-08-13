@@ -21,7 +21,10 @@ const ME_URL = '/index.php/apps/openconnector/api/user/me'
 const LOGIN_URL = '/index.php/apps/openconnector/api/user/login'
 
 /** Make a raw HTTP POST with no Playwright cookies (avoids storageState bleed). */
-function rawPost(path: string, body: object): Promise<{ status: number; json: unknown }> {
+function rawPost(
+	path: string,
+	body: object,
+): Promise<{ status: number; json: unknown }> {
 	return new Promise((resolve, reject) => {
 		const payload = JSON.stringify(body)
 		const opts = {
@@ -35,22 +38,33 @@ function rawPost(path: string, body: object): Promise<{ status: number; json: un
 		}
 		const req = http.request(opts, (res) => {
 			let data = ''
-			res.on('data', (c) => { data += c })
+			res.on('data', (c) => {
+				data += c
+			})
 			res.on('end', () => {
 				let json: unknown = null
-				try { json = JSON.parse(data) } catch { /* ignore */ }
+				try {
+					json = JSON.parse(data)
+				} catch {
+					/* ignore */
+				}
 				resolve({ status: res.statusCode ?? 0, json })
 			})
 		})
 		req.on('error', reject)
-		req.setTimeout(15_000, () => { req.destroy(); reject(new Error('timeout')) })
+		req.setTimeout(15_000, () => {
+			req.destroy()
+			reject(new Error('timeout'))
+		})
 		req.write(payload)
 		req.end()
 	})
 }
 
 test.describe('REQ-001: Read authenticated user profile', () => {
-	test('GET /api/user/me returns 200 with uid and profile fields for an admin session', async ({ request }) => {
+	test('GET /api/user/me returns 200 with uid and profile fields for an admin session', async ({
+		request,
+	}) => {
 		// storageState from global-setup provides the admin session cookie.
 		const resp = await request.get(ME_URL, { failOnStatusCode: false })
 		expect(resp.status()).toBe(200)
@@ -69,17 +83,23 @@ test.describe('REQ-001: Read authenticated user profile', () => {
 				resolve(res.statusCode ?? 0)
 			})
 			req.on('error', reject)
-			req.setTimeout(10_000, () => { req.destroy(); reject(new Error('timeout')) })
+			req.setTimeout(10_000, () => {
+				req.destroy()
+				reject(new Error('timeout'))
+			})
 		})
 		// Spec: HTTP 401 when no session user and no valid Basic auth header
 		expect(status).toBe(401)
 	})
 
-	test('GET /api/user/me accepts HTTP Basic auth and returns 200', async ({ request }) => {
+	test('GET /api/user/me accepts HTTP Basic auth and returns 200', async ({
+		request,
+	}) => {
 		// The spec notes that me() falls back to inline HTTP Basic auth.
 		const resp = await request.get(`${BASE}${ME_URL}`, {
 			headers: {
-				Authorization: 'Basic ' + Buffer.from('admin:admin').toString('base64'),
+				Authorization:
+					'Basic ' + Buffer.from('admin:admin').toString('base64'),
 			},
 			failOnStatusCode: false,
 		})
@@ -100,7 +120,10 @@ test.describe('REQ-002: Login endpoint with brute-force protection', () => {
 		})
 		// Spec: on success returns the sanitised user payload.
 		// Accept 200 (success) or 429 (brute-force already triggered from prior runs).
-		expect([200, 429], `POST /api/user/login returned ${result.status}`).toContain(result.status)
+		expect(
+			[200, 429],
+			`POST /api/user/login returned ${result.status}`,
+		).toContain(result.status)
 	})
 
 	test('POST /api/user/login with invalid credentials is rejected (no enumeration)', async () => {
@@ -115,13 +138,19 @@ test.describe('REQ-002: Login endpoint with brute-force protection', () => {
 		// POST /user/login` test accepts [200, 204, 400, 401, 405] for the same
 		// surface. Any 4xx rejection (never a 2xx/5xx) satisfies the no-enumeration
 		// contract here.
-		expect([400, 401, 429], `POST /api/user/login returned ${result.status}`).toContain(result.status)
+		expect(
+			[400, 401, 429],
+			`POST /api/user/login returned ${result.status}`,
+		).toContain(result.status)
 	})
 
 	test('POST /api/user/login with missing credentials returns 400', async () => {
 		const result = await rawPost(LOGIN_URL, {})
 		// Spec: 400 on missing/short/invalid-character username.
 		// Also accept 401/429 in case the framework redirects or BF has kicked in.
-		expect([400, 401, 422, 429], `POST /api/user/login (empty creds) returned ${result.status}`).toContain(result.status)
+		expect(
+			[400, 401, 422, 429],
+			`POST /api/user/login (empty creds) returned ${result.status}`,
+		).toContain(result.status)
 	})
 })

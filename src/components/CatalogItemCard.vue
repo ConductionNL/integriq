@@ -15,17 +15,21 @@
 -->
 <template>
 	<div class="oc-catalog-card" data-testid="catalog-item-card">
-		<div class="oc-catalog-card__inner"
+		<div
+			class="oc-catalog-card__inner"
 			tabindex="0"
 			role="button"
-			:aria-label="t('openconnector', 'Open catalog item {name}', { name: displayName })"
+			:aria-label="
+				t('openconnector', 'Open catalog item {name}', { name: displayName })
+			"
 			@click="openDetail"
 			@keyup.enter="openDetail">
 			<div class="oc-catalog-card__head">
 				<h3 class="oc-catalog-card__title">
 					{{ displayName }}
 				</h3>
-				<span class="oc-catalog-card__badge"
+				<span
+					class="oc-catalog-card__badge"
 					:class="`oc-catalog-card__badge--${statusKey}`"
 					data-testid="catalog-status-badge">
 					{{ statusLabel }}
@@ -35,9 +39,14 @@
 				{{ catalogItem.description }}
 			</p>
 			<div class="oc-catalog-card__meta">
-				<span class="oc-catalog-card__chip oc-catalog-card__chip--kind">{{ kindLabel }}</span>
-				<span v-if="catalogItem.category" class="oc-catalog-card__chip">{{ catalogItem.category }}</span>
-				<span v-for="standard in standards"
+				<span class="oc-catalog-card__chip oc-catalog-card__chip--kind">{{
+					kindLabel
+				}}</span>
+				<span v-if="catalogItem.category" class="oc-catalog-card__chip">{{
+					catalogItem.category
+				}}</span>
+				<span
+					v-for="standard in standards"
 					:key="standard"
 					class="oc-catalog-card__chip oc-catalog-card__chip--muted">
 					{{ standard }}
@@ -78,7 +87,11 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-lists-adapters-seeded-source-templates-and-configuration-templates-with-category-filter-and-status-badges-req-001
 		 */
 		displayName() {
-			return this.catalogItem.name || this.catalogItem.slug || t('openconnector', 'Untitled catalog item')
+			return (
+				this.catalogItem.name
+				|| this.catalogItem.slug
+				|| t('openconnector', 'Untitled catalog item')
+			)
 		},
 
 		/**
@@ -112,14 +125,14 @@ export default {
 		 */
 		kindLabel() {
 			switch (this.catalogItem.kind) {
-			case 'adapter':
-				return t('openconnector', 'Adapter')
-			case 'source-template':
-				return t('openconnector', 'Source template')
-			case 'configuration-template':
-				return t('openconnector', 'Configuration template')
-			default:
-				return this.catalogItem.kind || ''
+				case 'adapter':
+					return t('openconnector', 'Adapter')
+				case 'source-template':
+					return t('openconnector', 'Source template')
+				case 'configuration-template':
+					return t('openconnector', 'Configuration template')
+				default:
+					return this.catalogItem.kind || ''
 			}
 		},
 
@@ -130,7 +143,9 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-lists-adapters-seeded-source-templates-and-configuration-templates-with-category-filter-and-status-badges-req-001
 		 */
 		standards() {
-			const list = Array.isArray(this.catalogItem.standards) ? this.catalogItem.standards : []
+			const list = Array.isArray(this.catalogItem.standards)
+				? this.catalogItem.standards
+				: []
 			return list.slice(0, 4)
 		},
 	},

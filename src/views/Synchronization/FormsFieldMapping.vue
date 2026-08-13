@@ -29,7 +29,12 @@
 				{{ t('openconnector', 'Form questions') }}
 			</h4>
 			<span class="forms-field-mapping__hint">
-				{{ t('openconnector', 'Reference a question by id or exact text in your Mapping or outbound action configuration.') }}
+				{{
+					t(
+						'openconnector',
+						'Reference a question by id or exact text in your Mapping or outbound action configuration.',
+					)
+				}}
 			</span>
 		</header>
 
@@ -48,13 +53,23 @@
 				v-for="question in questions"
 				:key="question.id"
 				class="forms-field-mapping__row">
-				<span class="forms-field-mapping__question-text">{{ question.text }}</span>
-				<span class="forms-field-mapping__question-id">#{{ question.id }}</span>
-				<span class="forms-field-mapping__question-type">{{ question.type }}</span>
-				<span v-if="isArrayValued(question)" class="forms-field-mapping__badge forms-field-mapping__badge--array">
+				<span class="forms-field-mapping__question-text">{{
+					question.text
+				}}</span>
+				<span class="forms-field-mapping__question-id"
+					>#{{ question.id }}</span
+				>
+				<span class="forms-field-mapping__question-type">{{
+					question.type
+				}}</span>
+				<span
+					v-if="isArrayValued(question)"
+					class="forms-field-mapping__badge forms-field-mapping__badge--array">
 					{{ t('openconnector', 'array') }}
 				</span>
-				<span v-if="isAmbiguous(question)" class="forms-field-mapping__badge forms-field-mapping__badge--ambiguous">
+				<span
+					v-if="isAmbiguous(question)"
+					class="forms-field-mapping__badge forms-field-mapping__badge--ambiguous">
 					{{ t('openconnector', 'ambiguous text — reference by id') }}
 				</span>
 			</li>
@@ -156,13 +171,19 @@ export default {
 			this.questionsError = ''
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/forms/{formId}/questions', { formId: this.formId }),
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/forms-bridge/forms/{formId}/questions',
+						{ formId: this.formId },
+					),
 					{ params: { sourceId: this.sourceId } },
 				)
-				this.questions = mapQuestionDescriptors(extractResults(response.data))
+				this.questions = mapQuestionDescriptors(
+					extractResults(response.data),
+				)
 			} catch (err) {
 				this.questions = []
-				this.questionsError = err?.response?.data?.error
+				this.questionsError =
+					err?.response?.data?.error
 					|| t('openconnector', 'Could not load questions for this form.')
 				// eslint-disable-next-line no-console
 				console.warn('[FormsFieldMapping] questions fetch failed', err)

@@ -31,10 +31,30 @@ vi.mock('@nextcloud/axios', () => ({
 import { useCatalogStore } from '../../src/store/catalog.js'
 
 const ITEMS = [
-	{ name: 'PDOK WMS', description: 'Dutch geo platform', category: 'Geo / Maps', status: 'dormant' },
-	{ name: 'BRP HaalCentraal', description: 'basisregistratie personen lookup', category: 'Government registers', status: 'available' },
-	{ name: 'KvK Handelsregister', description: 'chamber of commerce register', category: 'Government registers', status: 'dormant' },
-	{ name: 'S3 object storage', description: 'data infra adapter', category: 'Data infrastructure', status: 'available' },
+	{
+		name: 'PDOK WMS',
+		description: 'Dutch geo platform',
+		category: 'Geo / Maps',
+		status: 'dormant',
+	},
+	{
+		name: 'BRP HaalCentraal',
+		description: 'basisregistratie personen lookup',
+		category: 'Government registers',
+		status: 'available',
+	},
+	{
+		name: 'KvK Handelsregister',
+		description: 'chamber of commerce register',
+		category: 'Government registers',
+		status: 'dormant',
+	},
+	{
+		name: 'S3 object storage',
+		description: 'data infra adapter',
+		category: 'Data infrastructure',
+		status: 'available',
+	},
 ]
 
 describe('catalog store (connector-catalog-ui)', () => {
@@ -102,26 +122,40 @@ describe('catalog store (connector-catalog-ui)', () => {
 
 	// @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 	it('fetchStatus hits the live status endpoint and caches by id', async () => {
-		const status = { id: 'abc', status: 'available', mechanism: 'flag-gated', flagKey: 'pdok.feature_flag' }
+		const status = {
+			id: 'abc',
+			status: 'available',
+			mechanism: 'flag-gated',
+			flagKey: 'pdok.feature_flag',
+		}
 		get.mockResolvedValueOnce({ data: status })
 
 		const result = await store.fetchStatus('abc')
 
-		expect(get).toHaveBeenCalledWith('/index.php/apps/openconnector/api/catalog/items/abc/status')
+		expect(get).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/catalog/items/abc/status',
+		)
 		expect(result).toEqual(status)
 		expect(store.statusById.abc).toEqual(status)
 	})
 
 	// @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
 	it('instantiate POSTs to the instantiate endpoint and refreshes status', async () => {
-		post.mockResolvedValueOnce({ data: { created: true, type: 'source', id: 'uuid-1', action: 'enabled' } })
+		post.mockResolvedValueOnce({
+			data: { created: true, type: 'source', id: 'uuid-1', action: 'enabled' },
+		})
 		get.mockResolvedValueOnce({ data: { id: 'abc', status: 'available' } })
 
 		const result = await store.instantiate('abc')
 
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/catalog/items/abc/instantiate', {})
+		expect(post).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/catalog/items/abc/instantiate',
+			{},
+		)
 		expect(result.created).toBe(true)
-		expect(get).toHaveBeenCalledWith('/index.php/apps/openconnector/api/catalog/items/abc/status')
+		expect(get).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/catalog/items/abc/status',
+		)
 	})
 
 	// @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-lists-adapters-seeded-source-templates-and-configuration-templates-with-category-filter-and-status-badges-req-001

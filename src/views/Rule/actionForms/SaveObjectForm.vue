@@ -7,7 +7,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Register (required)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Register (required)')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-save-register"
 			:aria-label-combobox="t('openconnector', 'Register (required)')"
@@ -15,9 +17,13 @@
 			:options="registerOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a register')"
-			@update:model-value="(option) => patch('register', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) => patch('register', option?.id ? String(option.id) : '')
+			" />
 
-		<label class="action-form__label">{{ t('openconnector', 'Schema (required)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Schema (required)')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-save-schema"
 			:aria-label-combobox="t('openconnector', 'Schema (required)')"
@@ -25,16 +31,24 @@
 			:options="schemaOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@update:model-value="(option) => patch('schema', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) => patch('schema', option?.id ? String(option.id) : '')
+			" />
 
-		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Mapping (optional)')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
 			:model-value="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Pick a mapping to transform before save')"
-			@update:model-value="(option) => patch('mapping', option?.id ? String(option.id) : '')" />
+			:placeholder="
+				t('openconnector', 'Pick a mapping to transform before save')
+			"
+			@update:model-value="
+				(option) => patch('mapping', option?.id ? String(option.id) : '')
+			" />
 	</div>
 </template>
 
@@ -59,19 +73,28 @@ export default {
 		selectedRegister() {
 			const id = String(this.value?.register || '')
 			if (!id) return null
-			return this.registerOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.registerOptions.find((opt) => opt.id === id) ?? {
+					id,
+					label: id,
+				}
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
 			const id = String(this.value?.schema || '')
 			if (!id) return null
-			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mapping || '')
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -92,7 +115,13 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 </style>

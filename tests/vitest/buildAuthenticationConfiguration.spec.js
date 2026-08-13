@@ -31,7 +31,11 @@ describe('buildAuthenticationConfiguration', () => {
 	})
 
 	it('OMITS keys when apiKeys is entirely absent/undefined', () => {
-		const auth = buildAuthenticationConfiguration({ type: 'api-key', users: [], groups: [] })
+		const auth = buildAuthenticationConfiguration({
+			type: 'api-key',
+			users: [],
+			groups: [],
+		})
 		expect(Object.prototype.hasOwnProperty.call(auth, 'keys')).toBe(false)
 	})
 
@@ -60,10 +64,7 @@ describe('buildAuthenticationConfiguration', () => {
 			],
 		})
 
-		expect(auth.keys).toEqual([
-			{ sk_live_1: 'alice' },
-			{ sk_live_2: 'bob' },
-		])
+		expect(auth.keys).toEqual([{ sk_live_1: 'alice' }, { sk_live_2: 'bob' }])
 	})
 
 	it('carries type/users/groups through unchanged (they are NOT write-only)', () => {
@@ -73,6 +74,10 @@ describe('buildAuthenticationConfiguration', () => {
 			groups: ['admin'],
 			apiKeys: [],
 		})
-		expect(auth).toEqual({ type: 'basic', users: ['alice', 'bob'], groups: ['admin'] })
+		expect(auth).toEqual({
+			type: 'basic',
+			users: ['alice', 'bob'],
+			groups: ['admin'],
+		})
 	})
 })

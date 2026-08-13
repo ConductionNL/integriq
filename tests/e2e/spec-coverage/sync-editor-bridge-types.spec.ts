@@ -53,7 +53,7 @@ import {
 const runId = `sedt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 
 let api: ApiClient
-const created: Array<{ schema: string, id: string }> = []
+const created: Array<{ schema: string; id: string }> = []
 
 /** uuid of the plain sync (sourceType api / targetType register/schema). */
 let plainId = ''
@@ -97,11 +97,20 @@ const BASE_KINDS = ['API', 'Register/Schema', 'File'].map(optionKey)
  */
 async function optionLabels(page: Page, inputId: string): Promise<string[]> {
 	const input = page.locator(`#${inputId}`)
-	await expect(input, `the ${inputId} combobox must be present`).toBeVisible({ timeout: 20_000 })
+	await expect(input, `the ${inputId} combobox must be present`).toBeVisible({
+		timeout: 20_000,
+	})
 	await input.click()
-	const dropdown = page.locator('.vs__dropdown-menu').filter({ has: page.locator('.vs__dropdown-option') })
-	await expect(dropdown.first(), `${inputId} must open a non-empty option list`).toBeVisible({ timeout: 10_000 })
-	const labels = (await dropdown.first().locator('.vs__dropdown-option').allInnerTexts())
+	const dropdown = page
+		.locator('.vs__dropdown-menu')
+		.filter({ has: page.locator('.vs__dropdown-option') })
+	await expect(
+		dropdown.first(),
+		`${inputId} must open a non-empty option list`,
+	).toBeVisible({ timeout: 10_000 })
+	const labels = (
+		await dropdown.first().locator('.vs__dropdown-option').allInnerTexts()
+	)
 		.map(optionKey)
 		.filter(Boolean)
 	// Close it again so the next selector on the same page is clickable.
@@ -111,8 +120,13 @@ async function optionLabels(page: Page, inputId: string): Promise<string[]> {
 
 /** Open a synchronization's detail page and wait for the editor to mount. */
 async function openSync(page: Page, id: string): Promise<void> {
-	await page.goto(`${APP_BASE}/synchronizations/${id}`, { waitUntil: 'domcontentloaded' })
-	await expect(page.locator('#sync-source-type'), 'the sync editor must mount').toBeVisible({ timeout: 25_000 })
+	await page.goto(`${APP_BASE}/synchronizations/${id}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await expect(
+		page.locator('#sync-source-type'),
+		'the sync editor must mount',
+	).toBeVisible({ timeout: 25_000 })
 }
 
 test.beforeAll(async ({ browser, baseURL }) => {
@@ -127,19 +141,22 @@ test.beforeAll(async ({ browser, baseURL }) => {
 
 	plainId = await mk({
 		name: `${runId} plain`,
-		description: 'seeded by sync-editor-bridge-types.spec.ts — uses neither bridge kind',
+		description:
+			'seeded by sync-editor-bridge-types.spec.ts — uses neither bridge kind',
 		sourceType: 'api',
 		targetType: 'register/schema',
 	})
 	formSyncId = await mk({
 		name: `${runId} form-source`,
-		description: 'seeded by sync-editor-bridge-types.spec.ts — sourceType is already nextcloud-form',
+		description:
+			'seeded by sync-editor-bridge-types.spec.ts — sourceType is already nextcloud-form',
 		sourceType: 'nextcloud-form',
 		targetType: 'register/schema',
 	})
 	tableSyncId = await mk({
 		name: `${runId} table-target`,
-		description: 'seeded by sync-editor-bridge-types.spec.ts — targetType is already nextcloud-table',
+		description:
+			'seeded by sync-editor-bridge-types.spec.ts — targetType is already nextcloud-table',
 		sourceType: 'api',
 		targetType: 'nextcloud-table',
 	})
@@ -167,21 +184,35 @@ test.describe('Sync editor type selectors — companion-app gating', () => {
 			`/index.php/apps/openconnector/api/synchronizations/${bridge}-bridge/status`,
 			{ failOnStatusCode: false },
 		)
-		expect(res.status(), `${bridge}-bridge status endpoint must answer 200`).toBe(200)
+		expect(
+			res.status(),
+			`${bridge}-bridge status endpoint must answer 200`,
+		).toBe(200)
 		return Boolean((await res.json())?.enabled)
 	}
 
 	// @e2e tables-bridge::tables-app-absent-hides-the-type-in-the-editor
-	test('with Tables absent, "Nextcloud Table" is not offered — but still renders for a sync that uses it', async ({ page }) => {
+	test('with Tables absent, "Nextcloud Table" is not offered — but still renders for a sync that uses it', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
-		test.skip(await bridgeEnabled('tables'), 'Tables IS installed here — this scenario\'s GIVEN does not hold')
+		test.skip(
+			await bridgeEnabled('tables'),
+			"Tables IS installed here — this scenario's GIVEN does not hold",
+		)
 
 		// THE REQUIREMENT.
 		await openSync(page, plainId)
 		const plainSource = await optionLabels(page, 'sync-source-type')
 		const plainTarget = await optionLabels(page, 'sync-target-type')
-		expect(plainSource, 'source selector must not offer Nextcloud Table').not.toContain(optionKey('Nextcloud Table'))
-		expect(plainTarget, 'target selector must not offer Nextcloud Table').not.toContain(optionKey('Nextcloud Table'))
+		expect(
+			plainSource,
+			'source selector must not offer Nextcloud Table',
+		).not.toContain(optionKey('Nextcloud Table'))
+		expect(
+			plainTarget,
+			'target selector must not offer Nextcloud Table',
+		).not.toContain(optionKey('Nextcloud Table'))
 
 		// POSITIVE CONTROL #1 — the selectors are alive and DO list the
 		// unconditional kinds. Without this, both assertions above would pass on
@@ -203,13 +234,21 @@ test.describe('Sync editor type selectors — companion-app gating', () => {
 	})
 
 	// @e2e nextcloud-forms-connector::forms-app-absent-hides-the-source-type-in-the-editor
-	test('with Forms absent, "Nextcloud Form" is not offered as a source — but still renders for a sync that uses it', async ({ page }) => {
+	test('with Forms absent, "Nextcloud Form" is not offered as a source — but still renders for a sync that uses it', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
-		test.skip(await bridgeEnabled('forms'), 'Forms IS installed here — this scenario\'s GIVEN does not hold')
+		test.skip(
+			await bridgeEnabled('forms'),
+			"Forms IS installed here — this scenario's GIVEN does not hold",
+		)
 
 		await openSync(page, plainId)
 		const plainSource = await optionLabels(page, 'sync-source-type')
-		expect(plainSource, 'source selector must not offer Nextcloud Form').not.toContain(optionKey('Nextcloud Form'))
+		expect(
+			plainSource,
+			'source selector must not offer Nextcloud Form',
+		).not.toContain(optionKey('Nextcloud Form'))
 		// Positive control #1: the list is real.
 		expect(plainSource).toEqual(expect.arrayContaining(BASE_KINDS))
 
@@ -225,7 +264,9 @@ test.describe('Sync editor type selectors — companion-app gating', () => {
 	})
 
 	// @e2e nextcloud-forms-connector::nextcloud-form-is-never-selectable-as-a-target-type
-	test('"Nextcloud Form" is offered as a source and NOT as a target on the very same page', async ({ page }) => {
+	test('"Nextcloud Form" is offered as a source and NOT as a target on the very same page', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 
 		// This one deliberately does NOT skip on the Forms app's state. The
@@ -242,8 +283,14 @@ test.describe('Sync editor type selectors — companion-app gating', () => {
 		// The positive control and the requirement are the same two reads of the
 		// same page: the option demonstrably CAN be listed here, and it is not
 		// listed on the target.
-		expect(source, 'source selector must offer Nextcloud Form for a form-sourced sync').toContain(optionKey('Nextcloud Form'))
-		expect(target, 'nextcloud-form must NEVER be offered as a target kind').not.toContain(optionKey('Nextcloud Form'))
+		expect(
+			source,
+			'source selector must offer Nextcloud Form for a form-sourced sync',
+		).toContain(optionKey('Nextcloud Form'))
+		expect(
+			target,
+			'nextcloud-form must NEVER be offered as a target kind',
+		).not.toContain(optionKey('Nextcloud Form'))
 		// And the target list is otherwise the full set, so "not contain" is not
 		// standing in for "empty".
 		expect(target).toEqual(expect.arrayContaining(BASE_KINDS))

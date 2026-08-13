@@ -17,14 +17,22 @@
   @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		label-id="notificaties-abonnement-form"
 		data-testid="notificaties-abonnement-form-modal"
 		@close="$emit('close')">
 		<div class="abonnementForm">
-			<h2>{{ isEdit ? t('openconnector', 'Edit abonnement') : t('openconnector', 'Add abonnement') }}</h2>
+			<h2>
+				{{
+					isEdit
+						? t('openconnector', 'Edit abonnement')
+						: t('openconnector', 'Add abonnement')
+				}}
+			</h2>
 
-			<NcTextField :label="t('openconnector', 'Name') + ' *'"
+			<NcTextField
+				:label="t('openconnector', 'Name') + ' *'"
 				v-model="model.name"
 				:helper-text="errors.name"
 				:error="!!errors.name" />
@@ -33,17 +41,25 @@
 				<label for="notificaties-abonnement-source">
 					{{ t('openconnector', 'Source') }} *
 				</label>
-				<NcSelect input-id="notificaties-abonnement-source"
+				<NcSelect
+					input-id="notificaties-abonnement-source"
 					:input-label="t('openconnector', 'Source')"
 					:aria-label-combobox="t('openconnector', 'Source')"
 					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Select the Notificaties API source')"
+					:placeholder="
+						t('openconnector', 'Select the Notificaties API source')
+					"
 					@update:model-value="onSourcePick" />
 				<span class="abonnementForm__helper">
-					{{ t('openconnector', 'The openconnector Source describing the remote Notificaties API (location, auth).') }}
+					{{
+						t(
+							'openconnector',
+							'The openconnector Source describing the remote Notificaties API (location, auth).',
+						)
+					}}
 				</span>
 			</div>
 
@@ -51,7 +67,8 @@
 				<label for="notificaties-abonnement-kanalen">
 					{{ t('openconnector', 'Kanalen') }} *
 				</label>
-				<NcSelect input-id="notificaties-abonnement-kanalen"
+				<NcSelect
+					input-id="notificaties-abonnement-kanalen"
 					:input-label="t('openconnector', 'Kanalen')"
 					:aria-label-combobox="t('openconnector', 'Kanalen')"
 					:model-value="kanaalNames"
@@ -59,24 +76,43 @@
 					:taggable="true"
 					:multiple="true"
 					:clearable="true"
-					:placeholder="t('openconnector', 'Type a kanaal name and press enter (e.g. zaken)')"
+					:placeholder="
+						t(
+							'openconnector',
+							'Type a kanaal name and press enter (e.g. zaken)',
+						)
+					"
 					@update:model-value="onKanalenChange">
 					<template #no-options>
 						{{ t('openconnector', 'Type to add a kanaal name') }}
 					</template>
 				</NcSelect>
-				<span v-if="errors.kanalen" class="abonnementForm__helper abonnementForm__helper--error">
+				<span
+					v-if="errors.kanalen"
+					class="abonnementForm__helper abonnementForm__helper--error">
 					{{ errors.kanalen }}
 				</span>
 			</div>
 
-			<NcTextField :label="t('openconnector', 'Auth header name')"
+			<NcTextField
+				:label="t('openconnector', 'Auth header name')"
 				v-model="model.authHeaderName"
-				:helper-text="t('openconnector', 'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.')" />
+				:helper-text="
+					t(
+						'openconnector',
+						'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.',
+					)
+				" />
 
-			<NcTextField :label="t('openconnector', 'Auth scheme prefix')"
+			<NcTextField
+				:label="t('openconnector', 'Auth scheme prefix')"
 				v-model="model.authScheme"
-				:helper-text="t('openconnector', 'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.')" />
+				:helper-text="
+					t(
+						'openconnector',
+						'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.',
+					)
+				" />
 
 			<div class="abonnementForm__actions">
 				<NcButton type="primary" :disabled="busy" @click="save">
@@ -95,12 +131,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcModal,
-	NcButton,
-	NcTextField,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcModal, NcButton, NcTextField, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'NotificatiesAbonnementForm',
@@ -139,7 +170,10 @@ export default {
 
 	computed: {
 		isEdit() {
-			return !!(this.abonnement && (this.abonnement.id || this.abonnement.uuid))
+			return !!(
+				this.abonnement
+				&& (this.abonnement.id || this.abonnement.uuid)
+			)
 		},
 		/**
 		 * The `NcSelect` model for the Source. Falls back to a synthetic
@@ -156,7 +190,12 @@ export default {
 			if (!id) {
 				return null
 			}
-			return this.sourceOptions.find((option) => option.id === id) ?? { id, label: id }
+			return (
+				this.sourceOptions.find((option) => option.id === id) ?? {
+					id,
+					label: id,
+				}
+			)
 		},
 	},
 
@@ -216,10 +255,13 @@ export default {
 				this.model = {
 					name: this.abonnement.name || '',
 					sourceId: this.abonnement.sourceId || '',
-					authHeaderName: this.abonnement.authHeaderName || 'Authorization',
+					authHeaderName:
+						this.abonnement.authHeaderName || 'Authorization',
 					authScheme: this.abonnement.authScheme || '',
 				}
-				const kanalen = Array.isArray(this.abonnement.kanalen) ? this.abonnement.kanalen : []
+				const kanalen = Array.isArray(this.abonnement.kanalen)
+					? this.abonnement.kanalen
+					: []
 				this.kanaalNames = kanalen.map((k) => k.naam).filter(Boolean)
 			} else {
 				this.model = this.emptyModel()
@@ -241,14 +283,20 @@ export default {
 			this.sourcesLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/source'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/source',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.sourceOptions = list.map((source) => ({
 					id: String(source.id || source.uuid),
 					label: source.name || source.id,
@@ -295,10 +343,16 @@ export default {
 		async save() {
 			this.errors = {}
 			if (!this.model.name) {
-				this.errors = { ...this.errors, name: t('openconnector', 'Name is required') }
+				this.errors = {
+					...this.errors,
+					name: t('openconnector', 'Name is required'),
+				}
 			}
 			if (this.kanaalNames.length === 0) {
-				this.errors = { ...this.errors, kanalen: t('openconnector', 'At least one kanaal is required') }
+				this.errors = {
+					...this.errors,
+					kanalen: t('openconnector', 'At least one kanaal is required'),
+				}
 			}
 			if (Object.keys(this.errors).length > 0) {
 				return
@@ -316,16 +370,29 @@ export default {
 			try {
 				if (this.isEdit) {
 					const id = this.abonnement.id || this.abonnement.uuid
-					await axios.put(generateUrl(`/apps/openconnector/api/notificaties/abonnementen/${id}`), payload)
+					await axios.put(
+						generateUrl(
+							`/apps/openconnector/api/notificaties/abonnementen/${id}`,
+						),
+						payload,
+					)
 					showSuccess(t('openconnector', 'Abonnement updated'))
 				} else {
-					await axios.post(generateUrl('/apps/openconnector/api/notificaties/abonnementen'), payload)
+					await axios.post(
+						generateUrl(
+							'/apps/openconnector/api/notificaties/abonnementen',
+						),
+						payload,
+					)
 					showSuccess(t('openconnector', 'Abonnement created'))
 				}
 				this.$emit('saved')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Failed to save abonnement') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Failed to save abonnement')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}

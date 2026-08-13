@@ -47,7 +47,9 @@ export default {
 	name: 'ErrorForm',
 	components: { NcCheckboxRadioSwitch, NcTextField },
 	props: { ...valueProp },
-	data() { return { uid: ++uidCounter } },
+	data() {
+		return { uid: ++uidCounter }
+	},
 	methods: {
 		patch: patchMethod(),
 		/**
@@ -73,13 +75,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
 .action-form__textarea {
-	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
-	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
-	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
+	width: 100%;
+	padding: 8px;
+	font-family: var(--font-face, sans-serif);
+	font-size: 14px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	resize: vertical;
 }
 </style>

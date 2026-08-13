@@ -45,22 +45,22 @@ const CANDIDATES = [
 	'NC_BASE_URL',
 ] as const
 
-const RAW = CANDIDATES
-	.map(name => process.env[name]?.trim())
-	.find(value => value !== undefined && value !== '')
-	?? ''
+const RAW =
+	CANDIDATES.map((name) => process.env[name]?.trim()).find(
+		(value) => value !== undefined && value !== '',
+	) ?? ''
 
 if (!RAW) {
 	throw new Error(
 		`None of ${CANDIDATES.join(', ')} is set.\n\n`
-		+ 'The e2e suite deliberately has no default: it used to fall back to\n'
-		+ 'http://localhost:8080, which is the SHARED dev container, and tests\n'
-		+ 'then wrote fixtures into an environment other sessions were using.\n\n'
-		+ 'Point it at your own isolated instance, e.g.\n'
-		+ '  PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e\n\n'
-		+ 'In CI the shared quality workflow exports BASE_URL, NEXTCLOUD_URL and\n'
-		+ 'NC_BASE_URL, all of which are accepted; if you are seeing this in CI,\n'
-		+ 'those exports are missing.\n',
+			+ 'The e2e suite deliberately has no default: it used to fall back to\n'
+			+ 'http://localhost:8080, which is the SHARED dev container, and tests\n'
+			+ 'then wrote fixtures into an environment other sessions were using.\n\n'
+			+ 'Point it at your own isolated instance, e.g.\n'
+			+ '  PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e\n\n'
+			+ 'In CI the shared quality workflow exports BASE_URL, NEXTCLOUD_URL and\n'
+			+ 'NC_BASE_URL, all of which are accepted; if you are seeing this in CI,\n'
+			+ 'those exports are missing.\n',
 	)
 }
 
@@ -99,7 +99,11 @@ export function absoluteUrl(pathname: string): string {
  * @return `{ protocol, hostname, port }` for the instance under test, with the
  *   port defaulted from the protocol when the URL omits it.
  */
-export function baseUrlParts(): { protocol: string, hostname: string, port: number } {
+export function baseUrlParts(): {
+	protocol: string
+	hostname: string
+	port: number
+} {
 	const url = new URL(BASE_URL)
 	return {
 		protocol: url.protocol,

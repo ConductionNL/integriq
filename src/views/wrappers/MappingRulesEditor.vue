@@ -48,25 +48,41 @@
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
 						{{ t('openconnector', 'Mapping') }}
-						<span class="cn-rules-editor__tab-count">{{ mappingRowList.length }}</span>
+						<span class="cn-rules-editor__tab-count">{{
+							mappingRowList.length
+						}}</span>
 					</span>
 				</template>
 				<div class="cn-rules-editor__panel">
 					<p class="cn-rules-editor__help">
-						{{ t('openconnector', 'Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.') }}
+						{{
+							t(
+								'openconnector',
+								'Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.',
+							)
+						}}
 					</p>
-					<table v-if="mappingRowList.length" class="cn-rules-editor__table">
+					<table
+						v-if="mappingRowList.length"
+						class="cn-rules-editor__table">
 						<thead>
 							<tr>
-								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th scope="col">{{ t('openconnector', 'Target property') }}</th>
-								<th scope="col">{{ t('openconnector', 'Template') }}</th>
+								<th
+									class="cn-rules-editor__col-handle"
+									aria-hidden="true" />
+								<th scope="col">
+									{{ t('openconnector', 'Target property') }}
+								</th>
+								<th scope="col">
+									{{ t('openconnector', 'Template') }}
+								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
-						<VueDraggable v-model="mappingDraft"
+						<VueDraggable
+							v-model="mappingDraft"
 							tag="tbody"
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
@@ -74,16 +90,20 @@
 							ghost-class="cn-rules-editor__row--ghost"
 							drag-class="cn-rules-editor__row--dragging"
 							@end="onMappingReorder">
-							<tr v-for="(row, index) in mappingDraft"
+							<tr
+								v-for="(row, index) in mappingDraft"
 								:key="row.key"
 								tabindex="0"
 								class="cn-rules-editor__row"
 								@keydown.up.prevent="moveRow('mapping', index, -1)"
 								@keydown.down.prevent="moveRow('mapping', index, 1)">
 								<td class="cn-rules-editor__col-handle">
-									<button type="button"
+									<button
+										type="button"
 										class="cn-rules-editor__drag-handle"
-										:aria-label="t('openconnector', 'Drag to reorder')"
+										:aria-label="
+											t('openconnector', 'Drag to reorder')
+										"
 										:disabled="saving"
 										tabindex="-1">
 										<DragVerticalIcon :size="18" />
@@ -96,7 +116,8 @@
 									<code>{{ formatTemplate(row.value) }}</code>
 								</td>
 								<td class="cn-rules-editor__col-actions">
-									<NcButton type="tertiary"
+									<NcButton
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('mapping', row.key)">
@@ -104,8 +125,11 @@
 											<PencilIcon :size="18" />
 										</template>
 									</NcButton>
-									<NcButton type="tertiary"
-										:aria-label="t('openconnector', 'Delete rule')"
+									<NcButton
+										type="tertiary"
+										:aria-label="
+											t('openconnector', 'Delete rule')
+										"
 										:disabled="saving"
 										@click="deleteRule('mapping', row.key)">
 										<template #icon>
@@ -117,10 +141,18 @@
 						</VueDraggable>
 					</table>
 					<p v-else class="cn-rules-editor__empty">
-						{{ t('openconnector', 'No mapping rules yet. Add one to start shaping the output.') }}
+						{{
+							t(
+								'openconnector',
+								'No mapping rules yet. Add one to start shaping the output.',
+							)
+						}}
 					</p>
 					<div class="cn-rules-editor__footer">
-						<NcButton type="primary" :disabled="saving" @click="openCreate('mapping')">
+						<NcButton
+							type="primary"
+							:disabled="saving"
+							@click="openCreate('mapping')">
 							<template #icon>
 								<PlusIcon :size="20" />
 							</template>
@@ -135,25 +167,39 @@
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
 						{{ t('openconnector', 'Cast') }}
-						<span class="cn-rules-editor__tab-count">{{ castRowList.length }}</span>
+						<span class="cn-rules-editor__tab-count">{{
+							castRowList.length
+						}}</span>
 					</span>
 				</template>
 				<div class="cn-rules-editor__panel">
 					<p class="cn-rules-editor__help">
-						{{ t('openconnector', 'Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.') }}
+						{{
+							t(
+								'openconnector',
+								'Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.',
+							)
+						}}
 					</p>
 					<table v-if="castRowList.length" class="cn-rules-editor__table">
 						<thead>
 							<tr>
-								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th scope="col">{{ t('openconnector', 'Property') }}</th>
-								<th scope="col">{{ t('openconnector', 'Cast type') }}</th>
+								<th
+									class="cn-rules-editor__col-handle"
+									aria-hidden="true" />
+								<th scope="col">
+									{{ t('openconnector', 'Property') }}
+								</th>
+								<th scope="col">
+									{{ t('openconnector', 'Cast type') }}
+								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
-						<VueDraggable v-model="castDraft"
+						<VueDraggable
+							v-model="castDraft"
 							tag="tbody"
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
@@ -161,16 +207,20 @@
 							ghost-class="cn-rules-editor__row--ghost"
 							drag-class="cn-rules-editor__row--dragging"
 							@end="onCastReorder">
-							<tr v-for="(row, index) in castDraft"
+							<tr
+								v-for="(row, index) in castDraft"
 								:key="row.key"
 								tabindex="0"
 								class="cn-rules-editor__row"
 								@keydown.up.prevent="moveRow('cast', index, -1)"
 								@keydown.down.prevent="moveRow('cast', index, 1)">
 								<td class="cn-rules-editor__col-handle">
-									<button type="button"
+									<button
+										type="button"
 										class="cn-rules-editor__drag-handle"
-										:aria-label="t('openconnector', 'Drag to reorder')"
+										:aria-label="
+											t('openconnector', 'Drag to reorder')
+										"
 										:disabled="saving"
 										tabindex="-1">
 										<DragVerticalIcon :size="18" />
@@ -183,7 +233,8 @@
 									{{ row.value }}
 								</td>
 								<td class="cn-rules-editor__col-actions">
-									<NcButton type="tertiary"
+									<NcButton
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('cast', row.key)">
@@ -191,8 +242,11 @@
 											<PencilIcon :size="18" />
 										</template>
 									</NcButton>
-									<NcButton type="tertiary"
-										:aria-label="t('openconnector', 'Delete rule')"
+									<NcButton
+										type="tertiary"
+										:aria-label="
+											t('openconnector', 'Delete rule')
+										"
 										:disabled="saving"
 										@click="deleteRule('cast', row.key)">
 										<template #icon>
@@ -207,7 +261,10 @@
 						{{ t('openconnector', 'No cast rules yet.') }}
 					</p>
 					<div class="cn-rules-editor__footer">
-						<NcButton type="primary" :disabled="saving" @click="openCreate('cast')">
+						<NcButton
+							type="primary"
+							:disabled="saving"
+							@click="openCreate('cast')">
 							<template #icon>
 								<PlusIcon :size="20" />
 							</template>
@@ -222,24 +279,36 @@
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
 						{{ t('openconnector', 'Unset') }}
-						<span class="cn-rules-editor__tab-count">{{ unsetRules.length }}</span>
+						<span class="cn-rules-editor__tab-count">{{
+							unsetRules.length
+						}}</span>
 					</span>
 				</template>
 				<div class="cn-rules-editor__panel">
 					<p class="cn-rules-editor__help">
-						{{ t('openconnector', 'Unset rules remove a property from the output object. They only apply when pass-through is enabled.') }}
+						{{
+							t(
+								'openconnector',
+								'Unset rules remove a property from the output object. They only apply when pass-through is enabled.',
+							)
+						}}
 					</p>
 					<table v-if="unsetDraft.length" class="cn-rules-editor__table">
 						<thead>
 							<tr>
-								<th class="cn-rules-editor__col-handle" aria-hidden="true" />
-								<th scope="col">{{ t('openconnector', 'Property') }}</th>
+								<th
+									class="cn-rules-editor__col-handle"
+									aria-hidden="true" />
+								<th scope="col">
+									{{ t('openconnector', 'Property') }}
+								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
 									{{ t('openconnector', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
-						<VueDraggable v-model="unsetDraft"
+						<VueDraggable
+							v-model="unsetDraft"
 							tag="tbody"
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
@@ -247,16 +316,20 @@
 							ghost-class="cn-rules-editor__row--ghost"
 							drag-class="cn-rules-editor__row--dragging"
 							@end="onUnsetReorder">
-							<tr v-for="(property, index) in unsetDraft"
+							<tr
+								v-for="(property, index) in unsetDraft"
 								:key="property + '-' + index"
 								tabindex="0"
 								class="cn-rules-editor__row"
 								@keydown.up.prevent="moveRow('unset', index, -1)"
 								@keydown.down.prevent="moveRow('unset', index, 1)">
 								<td class="cn-rules-editor__col-handle">
-									<button type="button"
+									<button
+										type="button"
 										class="cn-rules-editor__drag-handle"
-										:aria-label="t('openconnector', 'Drag to reorder')"
+										:aria-label="
+											t('openconnector', 'Drag to reorder')
+										"
 										:disabled="saving"
 										tabindex="-1">
 										<DragVerticalIcon :size="18" />
@@ -266,7 +339,8 @@
 									{{ property }}
 								</td>
 								<td class="cn-rules-editor__col-actions">
-									<NcButton type="tertiary"
+									<NcButton
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEditUnset(property)">
@@ -274,8 +348,11 @@
 											<PencilIcon :size="18" />
 										</template>
 									</NcButton>
-									<NcButton type="tertiary"
-										:aria-label="t('openconnector', 'Delete rule')"
+									<NcButton
+										type="tertiary"
+										:aria-label="
+											t('openconnector', 'Delete rule')
+										"
 										:disabled="saving"
 										@click="deleteUnset(property)">
 										<template #icon>
@@ -290,7 +367,8 @@
 						{{ t('openconnector', 'No unset rules yet.') }}
 					</p>
 					<div class="cn-rules-editor__footer">
-						<NcButton type="primary"
+						<NcButton
+							type="primary"
 							:disabled="saving || !passThrough"
 							@click="openCreate('unset')">
 							<template #icon>
@@ -309,23 +387,35 @@
 			<CnTab v-if="showOptionsTab" :title="t('openconnector', 'Options')">
 				<div class="cn-rules-editor__panel">
 					<p class="cn-rules-editor__help">
-						{{ t('openconnector', 'Options change how the mapping treats properties it has no rule for.') }}
+						{{
+							t(
+								'openconnector',
+								'Options change how the mapping treats properties it has no rule for.',
+							)
+						}}
 					</p>
-					<NcCheckboxRadioSwitch :model-value="passThrough"
+					<NcCheckboxRadioSwitch
+						:model-value="passThrough"
 						:disabled="saving"
 						type="switch"
 						@update:model-value="$emit('update-pass-through', $event)">
 						{{ t('openconnector', 'Pass through') }}
 					</NcCheckboxRadioSwitch>
 					<p class="cn-rules-editor__help">
-						{{ t('openconnector', 'When enabled, properties from the input object are copied into the output unless an unset rule removes them. When disabled, the output contains only what the mapping rules produce.') }}
+						{{
+							t(
+								'openconnector',
+								'When enabled, properties from the input object are copied into the output unless an unset rule removes them. When disabled, the output contains only what the mapping rules produce.',
+							)
+						}}
 					</p>
 				</div>
 			</CnTab>
 		</CnTabs>
 
 		<!-- Edit/Create dialog -->
-		<EditMappingRuleDialog v-if="editing"
+		<EditMappingRuleDialog
+			v-if="editing"
 			:kind="editing.kind"
 			:property="editing.property"
 			:value="editing.value"
@@ -469,8 +559,14 @@ export default {
 		 */
 		passThroughHint() {
 			return this.showOptionsTab
-				? this.t('openconnector', 'Enable pass-through in the Options tab to add unset rules.')
-				: this.t('openconnector', 'Enable pass-through above to add unset rules.')
+				? this.t(
+						'openconnector',
+						'Enable pass-through in the Options tab to add unset rules.',
+					)
+				: this.t(
+						'openconnector',
+						'Enable pass-through above to add unset rules.',
+					)
 		},
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRowList() {
@@ -856,7 +952,9 @@ export default {
 }
 
 .cn-rules-editor__row {
-	transition: background-color 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		background-color 0.1s ease,
+		box-shadow 0.1s ease;
 	outline: none;
 }
 

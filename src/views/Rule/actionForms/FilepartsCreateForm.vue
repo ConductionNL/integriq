@@ -20,7 +20,9 @@
 			:options="schemaOptions"
 			:loading="schemasLoading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@update:model-value="(option) => patch('schemaId', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) => patch('schemaId', option?.id ? String(option.id) : '')
+			" />
 		<NcTextField
 			:label="t('openconnector', 'Filename location (default: filename)')"
 			:model-value="value.filenameLocation || ''"
@@ -31,14 +33,18 @@
 			:model-value="value.filePartLocation || ''"
 			placeholder="fileParts"
 			@update:model-value="(next) => patch('filePartLocation', next)" />
-		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Mapping (optional)')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
 			:model-value="selectedMapping"
 			:options="mappingOptions"
 			:loading="mappingsLoading"
 			:placeholder="t('openconnector', 'Pick a mapping')"
-			@update:model-value="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) => patch('mappingId', option?.id ? String(option.id) : '')
+			" />
 	</div>
 </template>
 
@@ -63,13 +69,17 @@ export default {
 		selectedSchema() {
 			const id = String(this.value?.schemaId || '')
 			if (!id) return null
-			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mappingId || '')
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -90,7 +100,13 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 </style>

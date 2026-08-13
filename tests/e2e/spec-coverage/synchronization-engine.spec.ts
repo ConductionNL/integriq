@@ -26,15 +26,18 @@ import { appDialog } from '../support/dialogs'
 // that string that was missing the prefix.
 import { APP_BASE } from './_helpers'
 
-
 // ---------------------------------------------------------------------------
 // REQ-UI-001: Synchronization Management UI
 // ---------------------------------------------------------------------------
 
 test.describe('REQ-UI-001: Synchronizations list page mounts', () => {
 	// @e2e synchronization-engine::synchronizations-list-page-mounts-and-shows-content
-	test('Synchronizations index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'domcontentloaded' })
+	test('Synchronizations index page renders inside main content area', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/synchronizations`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -44,14 +47,24 @@ test.describe('REQ-UI-001: Synchronizations list page mounts', () => {
 test.describe('REQ-UI-001: Add Synchronization modal', () => {
 	// @e2e synchronization-engine::add-synchronization-button-opens-the-creation-modal
 	test('Add Synchronization button opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/synchronizations`, {
+			waitUntil: 'domcontentloaded',
+		})
 		const addBtn = page.getByRole('button', { name: 'Add Synchronization' })
-		await expect(addBtn, 'Add Synchronization button must be visible').toBeVisible({ timeout: 20_000 })
+		await expect(
+			addBtn,
+			'Add Synchronization button must be visible',
+		).toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
 		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Synchronization').toBeVisible({ timeout: 10_000 })
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Synchronization',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -62,16 +75,24 @@ test.describe('REQ-UI-001: Add Synchronization modal', () => {
 
 test.describe('REQ-UI-001: Synchronization contracts sub-page', () => {
 	// @e2e synchronization-engine::synchronization-contracts-sub-page-mounts
-	test('Synchronization contracts page mounts and shows main content', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations/contracts`, { waitUntil: 'domcontentloaded' })
+	test('Synchronization contracts page mounts and shows main content', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/synchronizations/contracts`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })
 
 test.describe('REQ-UI-001: Synchronization logs sub-page', () => {
 	// @e2e synchronization-engine::synchronization-logs-sub-page-mounts
-	test('Synchronization logs page mounts and shows main content', async ({ page }) => {
-		await page.goto(`${APP_BASE}/synchronizations/logs`, { waitUntil: 'domcontentloaded' })
+	test('Synchronization logs page mounts and shows main content', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/synchronizations/logs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	})
 })

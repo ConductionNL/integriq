@@ -28,7 +28,12 @@
 			{{ t('openconnector', 'Auto-share written files') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
-			{{ t('openconnector', 'The dot path under the rule data tells the engine where to find the file bytes; the filename path supplies the name.') }}
+			{{
+				t(
+					'openconnector',
+					'The dot path under the rule data tells the engine where to find the file bytes; the filename path supplies the name.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -52,7 +57,7 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		csv(value) {
-			return Array.isArray(value) ? value.join(',') : (value || '')
+			return Array.isArray(value) ? value.join(',') : value || ''
 		},
 		/**
 		 * Parse comma-separated tag input back into the array shape the backend
@@ -62,14 +67,24 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		toArray(text) {
-			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
+			return (text || '')
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter(Boolean)
 		},
 	},
 }
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

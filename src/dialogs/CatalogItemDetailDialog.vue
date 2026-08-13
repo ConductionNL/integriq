@@ -15,14 +15,16 @@
   data-layer admin lock — a 403/409 surfaces here as an error note.
 -->
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		:name="dialogTitle"
 		size="normal"
 		data-testid="catalog-item-detail-dialog"
 		@update:open="onOpenChanged">
 		<div class="oc-catalog-detail">
 			<div class="oc-catalog-detail__status-row">
-				<span class="oc-catalog-detail__badge"
+				<span
+					class="oc-catalog-detail__badge"
 					:class="`oc-catalog-detail__badge--${liveStatusKey}`"
 					data-testid="catalog-detail-status">
 					{{ liveStatusLabel }}
@@ -30,7 +32,9 @@
 				<span v-if="statusLoading" class="oc-catalog-detail__checking">
 					{{ t('openconnector', 'Checking live status…') }}
 				</span>
-				<span v-else-if="mechanismLabel" class="oc-catalog-detail__mechanism">
+				<span
+					v-else-if="mechanismLabel"
+					class="oc-catalog-detail__mechanism">
 					{{ mechanismLabel }}
 				</span>
 			</div>
@@ -42,7 +46,10 @@
 			<div v-if="standards.length > 0" class="oc-catalog-detail__section">
 				<h4>{{ t('openconnector', 'Standards') }}</h4>
 				<div class="oc-catalog-detail__chips">
-					<span v-for="standard in standards" :key="standard" class="oc-catalog-detail__chip">
+					<span
+						v-for="standard in standards"
+						:key="standard"
+						class="oc-catalog-detail__chip">
 						{{ standard }}
 					</span>
 				</div>
@@ -59,7 +66,8 @@
 				<NcButton type="tertiary" @click="close">
 					{{ t('openconnector', 'Close') }}
 				</NcButton>
-				<NcButton v-if="showPrimaryAction"
+				<NcButton
+					v-if="showPrimaryAction"
 					type="primary"
 					:disabled="actionRunning || statusLoading"
 					data-testid="catalog-detail-primary-action"
@@ -129,7 +137,11 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		dialogTitle() {
-			return this.catalogItem.name || this.catalogItem.slug || t('openconnector', 'Catalog item')
+			return (
+				this.catalogItem.name
+				|| this.catalogItem.slug
+				|| t('openconnector', 'Catalog item')
+			)
 		},
 
 		/**
@@ -175,7 +187,11 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		mechanism() {
-			return this.liveStatus?.mechanism || this.catalogItem.mechanism || 'always-available'
+			return (
+				this.liveStatus?.mechanism
+				|| this.catalogItem.mechanism
+				|| 'always-available'
+			)
 		},
 
 		/**
@@ -186,12 +202,15 @@ export default {
 		 */
 		mechanismLabel() {
 			switch (this.mechanism) {
-			case 'flag-gated':
-				return t('openconnector', 'Gated behind a feature flag')
-			case 'mock-seeded':
-				return t('openconnector', 'Seeded source (mock mode until credentials are configured)')
-			default:
-				return ''
+				case 'flag-gated':
+					return t('openconnector', 'Gated behind a feature flag')
+				case 'mock-seeded':
+					return t(
+						'openconnector',
+						'Seeded source (mock mode until credentials are configured)',
+					)
+				default:
+					return ''
 			}
 		},
 
@@ -202,7 +221,9 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		standards() {
-			return Array.isArray(this.catalogItem.standards) ? this.catalogItem.standards : []
+			return Array.isArray(this.catalogItem.standards)
+				? this.catalogItem.standards
+				: []
 		},
 
 		/**
@@ -293,13 +314,20 @@ export default {
 			this.successMessage = ''
 			try {
 				const result = await this.catalogStore.instantiate(this.itemId)
-				this.liveStatus = this.catalogStore.statusById[this.itemId] || this.liveStatus
-				this.successMessage = result?.type === 'source'
-					? t('openconnector', 'Source instantiated — find it on the Sources page')
-					: t('openconnector', 'Feature enabled')
+				this.liveStatus =
+					this.catalogStore.statusById[this.itemId] || this.liveStatus
+				this.successMessage =
+					result?.type === 'source'
+						? t(
+								'openconnector',
+								'Source instantiated — find it on the Sources page',
+							)
+						: t('openconnector', 'Feature enabled')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage = t('openconnector', 'Action failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage =
+					t('openconnector', 'Action failed')
+					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.actionRunning = false
 			}

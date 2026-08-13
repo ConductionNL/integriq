@@ -51,13 +51,17 @@ let _root: string | null = null
 async function rootUrl(page: Page): Promise<string> {
 	if (_root) return _root
 	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, { failOnStatusCode: false })
+		const res = await page.request.get(`${candidate}/sources`, {
+			failOnStatusCode: false,
+		})
 		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
 			_root = candidate
 			return candidate
 		}
 	}
-	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
@@ -86,8 +90,9 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 }
 
 test.describe('dead-letter-replay — Event deliveries view', () => {
-
-	test('EventDeliveries page mounts at /cloud-events/deliveries', async ({ page }) => {
+	test('EventDeliveries page mounts at /cloud-events/deliveries', async ({
+		page,
+	}) => {
 		const { errors } = attachConsoleSpy(page)
 
 		const root = await rootUrl(page)
@@ -104,12 +109,17 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 
 		// SPA shell mounts inside #app-content.
 		await expect(
-			page.locator('#app-content, [data-cy=app-content], .app-content').first(),
+			page
+				.locator('#app-content, [data-cy=app-content], .app-content')
+				.first(),
 		).toBeVisible({ timeout: 10_000 })
 
 		// The custom EventDeliveriesPage resolved and rendered content beyond a
 		// bare spinner — either the dead-letter table/header or the empty state.
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
+		const rendered = await page
+			.locator('#app-content, .app-content')
+			.first()
+			.innerHTML()
 		expect(
 			rendered.length,
 			'EventDeliveries rendered no content inside app-content',
@@ -122,7 +132,9 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 		).toEqual([])
 	})
 
-	test('EventDeliveries view exposes the dead-letter operations surface', async ({ page }) => {
+	test('EventDeliveries view exposes the dead-letter operations surface', async ({
+		page,
+	}) => {
 		const root = await rootUrl(page)
 		// ⚠️ The `#` is required — the in-app router is hash-mode
 		// (`createWebHashHistory()`, src/main.js). Without it this URL serves
@@ -135,24 +147,27 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 			timeout: 30_000,
 		})
 		await expect(
-			page.locator('#app-content, [data-cy=app-content], .app-content').first(),
+			page
+				.locator('#app-content, [data-cy=app-content], .app-content')
+				.first(),
 		).toBeVisible({ timeout: 10_000 })
 
 		// The view renders either the dead-letter listing (table/rows with
 		// Replay/Discard affordances) or its empty state — both are acceptable
 		// on a cold-start instance with no failed/abandoned messages. We assert
 		// the operations vocabulary is present so the page isn't a blank shell.
-		const body = (await page.locator('#app-content, .app-content').first().innerText()).toLowerCase()
+		const body = (
+			await page.locator('#app-content, .app-content').first().innerText()
+		).toLowerCase()
 		const hasOperationsSurface =
-			body.includes('replay') ||
-			body.includes('discard') ||
-			body.includes('deliver') ||
-			body.includes('dead') ||
-			body.includes('no ') /* empty-state copy ("No failed messages…") */
+			body.includes('replay')
+			|| body.includes('discard')
+			|| body.includes('deliver')
+			|| body.includes('dead')
+			|| body.includes('no ') /* empty-state copy ("No failed messages…") */
 		expect(
 			hasOperationsSurface,
 			`EventDeliveries view rendered no dead-letter operations vocabulary; body was: ${body.slice(0, 300)}`,
 		).toBe(true)
 	})
-
 })

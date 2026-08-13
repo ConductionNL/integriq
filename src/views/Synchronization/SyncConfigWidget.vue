@@ -50,7 +50,12 @@
 					:placeholder="t('openconnector', 'Pick a configured source')"
 					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'The Source record that defines the API base URL + auth.') }}
+					{{
+						t(
+							'openconnector',
+							'The Source record that defines the API base URL + auth.',
+						)
+					}}
 				</span>
 			</div>
 
@@ -58,24 +63,39 @@
 				<NcTextField
 					:label="t('openconnector', 'Endpoint')"
 					:model-value="configValue('endpoint')"
-					:placeholder="t('openconnector', 'Path appended to the source URL')"
-					@update:model-value="(value) => onConfigUpdate('endpoint', value)" />
+					:placeholder="
+						t('openconnector', 'Path appended to the source URL')
+					"
+					@update:model-value="
+						(value) => onConfigUpdate('endpoint', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
 					:model-value="configValue('idPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the id field in the API response')"
-					@update:model-value="(value) => onConfigUpdate('idPosition', value)" />
+					:placeholder="
+						t(
+							'openconnector',
+							'Dot-path to the id field in the API response',
+						)
+					"
+					@update:model-value="
+						(value) => onConfigUpdate('idPosition', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Results position')"
 					:model-value="configValue('resultsPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the list of items')"
-					@update:model-value="(value) => onConfigUpdate('resultsPosition', value)" />
+					:placeholder="
+						t('openconnector', 'Dot-path to the list of items')
+					"
+					@update:model-value="
+						(value) => onConfigUpdate('resultsPosition', value)
+					" />
 			</div>
 		</template>
 
@@ -105,7 +125,9 @@
 					:model-value="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
-					:placeholder="t('openconnector', 'Pick a schema in the register')"
+					:placeholder="
+						t('openconnector', 'Pick a schema in the register')
+					"
 					@update:model-value="onSchemaPick" />
 			</div>
 
@@ -114,7 +136,9 @@
 					:label="t('openconnector', 'Object filter (optional)')"
 					:model-value="configValue('filter')"
 					:placeholder="t('openconnector', 'JSON-encoded OR query filter')"
-					@update:model-value="(value) => onConfigUpdate('filter', value)" />
+					@update:model-value="
+						(value) => onConfigUpdate('filter', value)
+					" />
 			</div>
 		</template>
 
@@ -130,7 +154,9 @@
 						class="sync-config__file-field"
 						:model-value="sourceIdValue"
 						:placeholder="'/example/path/*.json'"
-						@update:model-value="(value) => $emit('update:sourceId', value)" />
+						@update:model-value="
+							(value) => $emit('update:sourceId', value)
+						" />
 					<NcButton
 						type="secondary"
 						:aria-label="t('openconnector', 'Browse Files app')"
@@ -144,7 +170,12 @@
 					</NcButton>
 				</div>
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.') }}
+					{{
+						t(
+							'openconnector',
+							'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.',
+						)
+					}}
 				</span>
 				<span v-if="pickerError" class="sync-config__error">
 					{{ pickerError }}
@@ -156,15 +187,21 @@
 					:label="t('openconnector', 'File format')"
 					:model-value="configValue('format')"
 					:placeholder="'json | xml | csv'"
-					@update:model-value="(value) => onConfigUpdate('format', value)" />
+					@update:model-value="
+						(value) => onConfigUpdate('format', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
 					:model-value="configValue('idPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the id field in each record')"
-					@update:model-value="(value) => onConfigUpdate('idPosition', value)" />
+					:placeholder="
+						t('openconnector', 'Dot-path to the id field in each record')
+					"
+					@update:model-value="
+						(value) => onConfigUpdate('idPosition', value)
+					" />
 			</div>
 		</template>
 
@@ -172,11 +209,14 @@
 		<template v-else-if="type === 'nextcloud-table'">
 			<div class="sync-config__field">
 				<label :for="tableSourceId" class="sync-config__label">
-					{{ kindLabel }} {{ t('openconnector', 'source (Nextcloud instance)') }}
+					{{ kindLabel }}
+					{{ t('openconnector', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
 					:input-id="tableSourceId"
-					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
+					:aria-label-combobox="
+						t('openconnector', 'Source (Nextcloud instance)')
+					"
 					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
@@ -184,7 +224,12 @@
 					:placeholder="t('openconnector', 'Pick a configured source')"
 					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'The Source record whose base URL + credential reach the Tables API.') }}
+					{{
+						t(
+							'openconnector',
+							'The Source record whose base URL + credential reach the Tables API.',
+						)
+					}}
 				</span>
 			</div>
 
@@ -200,13 +245,20 @@
 					:loading="tablesLoading"
 					:disabled="!sourceIdValue"
 					:input-label="t('openconnector', 'Table')"
-					:placeholder="t('openconnector', 'Pick a table the source can access')"
+					:placeholder="
+						t('openconnector', 'Pick a table the source can access')
+					"
 					@update:model-value="onTablePick" />
 				<span v-if="tablesError" class="sync-config__error">
 					{{ tablesError }}
 				</span>
 				<span v-else class="sync-config__helper">
-					{{ t('openconnector', 'Rows are read from (source) or written to (target) this table.') }}
+					{{
+						t(
+							'openconnector',
+							'Rows are read from (source) or written to (target) this table.',
+						)
+					}}
 				</span>
 			</div>
 
@@ -223,11 +275,14 @@
 		<template v-else-if="type === 'nextcloud-form'">
 			<div class="sync-config__field">
 				<label :for="formSourceId" class="sync-config__label">
-					{{ kindLabel }} {{ t('openconnector', 'source (Nextcloud instance)') }}
+					{{ kindLabel }}
+					{{ t('openconnector', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
 					:input-id="formSourceId"
-					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
+					:aria-label-combobox="
+						t('openconnector', 'Source (Nextcloud instance)')
+					"
 					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
@@ -235,7 +290,12 @@
 					:placeholder="t('openconnector', 'Pick a configured source')"
 					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'The Source record whose base URL + credential reach the Forms API.') }}
+					{{
+						t(
+							'openconnector',
+							'The Source record whose base URL + credential reach the Forms API.',
+						)
+					}}
 				</span>
 			</div>
 
@@ -251,13 +311,20 @@
 					:loading="formsLoading"
 					:disabled="!sourceIdValue"
 					:input-label="t('openconnector', 'Form')"
-					:placeholder="t('openconnector', 'Pick a form the source can access')"
+					:placeholder="
+						t('openconnector', 'Pick a form the source can access')
+					"
 					@update:model-value="onFormPick" />
 				<span v-if="formsError" class="sync-config__error">
 					{{ formsError }}
 				</span>
 				<span v-else class="sync-config__helper">
-					{{ t('openconnector', 'Submissions are read from this form (nextcloud-form is a source-only type).') }}
+					{{
+						t(
+							'openconnector',
+							'Submissions are read from this form (nextcloud-form is a source-only type).',
+						)
+					}}
 				</span>
 			</div>
 
@@ -270,7 +337,11 @@
 
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
-			{{ t('openconnector', 'Pick a {kind} type above to configure it.', { kind: kind }) }}
+			{{
+				t('openconnector', 'Pick a {kind} type above to configure it.', {
+					kind: kind,
+				})
+			}}
 		</div>
 	</div>
 </template>
@@ -401,16 +472,22 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
-			return this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
-				id: this.sourceIdValue,
-				label: this.sourceIdValue,
-			}
+			return (
+				this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
+					id: this.sourceIdValue,
+					label: this.sourceIdValue,
+				}
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
 			if (!registerId) return null
-			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
+			return (
+				this.registerOptions.find(
+					(opt) => String(opt.id) === String(registerId),
+				) ?? null
+			)
 		},
 		/**
 		 * Schema options for the selected register.
@@ -431,9 +508,11 @@ export default {
 			const schemas = Array.isArray(reg.schemas) ? reg.schemas : []
 			return schemas.map((schema) => {
 				const isRecord = schema !== null && typeof schema === 'object'
-				const id = String(isRecord ? (schema.id ?? schema.slug ?? '') : schema)
+				const id = String(
+					isRecord ? (schema.id ?? schema.slug ?? '') : schema,
+				)
 				const inlineLabel = isRecord
-					? (schema.title || schema.name || schema.slug || '')
+					? schema.title || schema.name || schema.slug || ''
 					: ''
 				return {
 					id,
@@ -449,7 +528,10 @@ export default {
 			const parts = this.sourceIdValue.split('/')
 			if (parts.length < 2) return null
 			const schemaId = parts[1]
-			return this.schemaOptions.find((opt) => String(opt.id) === String(schemaId)) ?? null
+			return (
+				this.schemaOptions.find((opt) => String(opt.id) === String(schemaId))
+				?? null
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		tableSourceId() {
@@ -463,10 +545,14 @@ export default {
 		selectedTable() {
 			const tableId = this.configValue('tableId')
 			if (!tableId) return null
-			return this.tableOptions.find((opt) => String(opt.id) === String(tableId)) ?? {
-				id: Number(tableId),
-				label: String(tableId),
-			}
+			return (
+				this.tableOptions.find(
+					(opt) => String(opt.id) === String(tableId),
+				) ?? {
+					id: Number(tableId),
+					label: String(tableId),
+				}
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		formSourceId() {
@@ -480,10 +566,14 @@ export default {
 		selectedForm() {
 			const formId = this.configValue('formId')
 			if (!formId) return null
-			return this.formOptions.find((opt) => String(opt.id) === String(formId)) ?? {
-				id: Number(formId),
-				label: String(formId),
-			}
+			return (
+				this.formOptions.find(
+					(opt) => String(opt.id) === String(formId),
+				) ?? {
+					id: Number(formId),
+					label: String(formId),
+				}
+			)
 		},
 	},
 
@@ -578,9 +668,12 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		onConfigUpdate(key, value) {
-			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
-				? { ...this.config }
-				: {}
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
 			if (value === '' || value == null) {
 				delete next[key]
 			} else {
@@ -615,9 +708,12 @@ export default {
 		onTablePick(option) {
 			// Store the numeric table id in the config blob; clear any stale
 			// column mapping since it referenced the previous table's columns.
-			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
-				? { ...this.config }
-				: {}
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
 			if (option?.id) {
 				next.tableId = Number(option.id)
 			} else {
@@ -642,13 +738,16 @@ export default {
 			this.tablesError = ''
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/tables-bridge/tables'),
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/tables-bridge/tables',
+					),
 					{ params: { sourceId: this.sourceIdValue } },
 				)
 				this.tableOptions = mapTableOptions(extractResults(response.data))
 			} catch (err) {
 				this.tableOptions = []
-				this.tablesError = err?.response?.data?.error
+				this.tablesError =
+					err?.response?.data?.error
 					|| t('openconnector', 'Could not load tables for this source.')
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] tables fetch failed', err)
@@ -670,9 +769,12 @@ export default {
 			// Store the numeric form id in the config blob; clear no other
 			// keys — unlike nextcloud-table there is no columnMapping stored
 			// here (FormsFieldMapping is read-only labelling, no write payload).
-			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
-				? { ...this.config }
-				: {}
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
 			if (option?.id) {
 				next.formId = Number(option.id)
 			} else {
@@ -696,13 +798,16 @@ export default {
 			this.formsError = ''
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/forms'),
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/forms-bridge/forms',
+					),
 					{ params: { sourceId: this.sourceIdValue } },
 				)
 				this.formOptions = mapFormOptions(extractResults(response.data))
 			} catch (err) {
 				this.formOptions = []
-				this.formsError = err?.response?.data?.error
+				this.formsError =
+					err?.response?.data?.error
 					|| t('openconnector', 'Could not load forms for this source.')
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] forms fetch failed', err)
@@ -759,14 +864,20 @@ export default {
 			this.sourcesLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/source'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/source',
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.sourceOptions = list.map((row) => ({
 					id: String(row.id || row.uuid),
 					label: row.name || row.title || row.id,
@@ -836,14 +947,21 @@ export default {
 		 */
 		async fetchSchemaLabels() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas'),
+				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				const labels = {}
 				for (const schema of list) {
 					const id = schema?.id ?? schema?.uuid
 					if (id === undefined || id === null) continue
-					labels[String(id)] = schema.title || schema.name || schema.slug || String(id)
+					labels[String(id)] =
+						schema.title || schema.name || schema.slug || String(id)
 				}
 				this.schemaLabelsById = labels
 			} catch (err) {
@@ -856,9 +974,15 @@ export default {
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/registers'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/registers'),
+				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.registerOptions = list.map((reg) => ({
 					id: String(reg.id),
 					label: reg.title || reg.name || reg.slug || String(reg.id),
@@ -869,7 +993,10 @@ export default {
 				// options ready without a second round-trip.
 				const [regId] = this.sourceIdValue.split('/')
 				if (regId) {
-					this.selectedRegisterRecord = this.registerOptions.find((opt) => String(opt.id) === String(regId)) || null
+					this.selectedRegisterRecord =
+						this.registerOptions.find(
+							(opt) => String(opt.id) === String(regId),
+						) || null
 				}
 			} catch (err) {
 				// eslint-disable-next-line no-console
