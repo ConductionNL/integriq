@@ -2405,8 +2405,10 @@ class SynchronizationService
         }
 
         // If we can fetch the object to extend again, use OpenRegister to fetch the extended object.
+        // Note: called positionally (not with named args) because OpenRegister has renamed this
+        // parameter across versions (extend -> _extend); position and defaults have stayed stable.
         if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true && ($config['extend_input']['fetchObject'] === true || $config['extend_input']['fetchObject'] === 'true')) {
-            $object = $this->objectService->getOpenRegisters()->find(id: $id, _extend: $config['extend_input']['properties']);
+            $object = $this->objectService->getOpenRegisters()->find($id, $config['extend_input']['properties']);
             return $object->jsonSerialize();
         }
 
