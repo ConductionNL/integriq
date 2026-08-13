@@ -370,10 +370,18 @@ class EventServiceTest extends TestCase {
 			'sub-uuid'
 		);
 
-		// PHPUnit hands a willReturnCallback the arguments that were actually
-		// SUPPLIED, compacted into a positional list — the `name:` bindings of a
-		// named-argument call site are not preserved. So the call is asserted as
-		// the exact argument contract it is, rather than by parameter name.
+		// PHPUnit hands a willReturnCallback a POSITIONAL list — the `name:`
+		// bindings of a named-argument call site are not preserved — and it pads
+		// that list with the DEFAULTS of every declared parameter, not only the
+		// ones the caller supplied. This comment used to say the opposite, and
+		// the assertion below pinned the whole list on the strength of it: when
+		// the stub gained `$_audit` and `$_extend`, the captured list grew two
+		// entries and this test failed while the property it protects was
+		// untouched.
+		//
+		// So the SLOTS are asserted rather than the arity. The guarantee is
+		// about which flags are false, and that is what is checked; a parameter
+		// appended to the far end of the signature is not this test's business.
 		$capturedArgs = null;
 		$this->objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$capturedArgs, $subscription) {
@@ -386,7 +394,7 @@ class EventServiceTest extends TestCase {
 
 		$this->assertSame(
 			['sub-uuid', 'openconnector', 'event_subscription', false, false, false],
-			$capturedArgs,
+			array_slice(($capturedArgs ?? []), 0, 6),
 			'deliverMessage must read the subscription RAW — the trailing false is _render: false. '
 			. '_rbac: false alone is NOT enough (ocon#215, openregister#389): the writeOnly strip is no '
 			. 'longer rbac-gated, so a rendered read loses protocolSettings and every push goes out UNSIGNED.'

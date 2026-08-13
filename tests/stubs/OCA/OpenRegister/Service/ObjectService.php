@@ -67,12 +67,45 @@ class ObjectService {
 	 * so it is reachable by name without disturbing any existing positional
 	 * callback.
 	 *
+	 * ─────────────────────────────────────────────────────────────────────────
+	 * WHY THIS DRIFT IS NOT FREE — IT BROKE 20 TESTS ON 2026-08-13
+	 * ─────────────────────────────────────────────────────────────────────────
+	 * The note above tolerates the missing `$_extend` and `$files` on the
+	 * grounds that ORDER is not load-bearing for named callers. True — but it
+	 * reads the risk one step short. A named argument does not need the right
+	 * POSITION; it needs the parameter to EXIST. So the moment openregister
+	 * added `$_audit` and openconnector started passing `_audit: false`, PHP
+	 * raised `Error: Unknown named parameter $_audit` at the call site and 20
+	 * tests across five suites went red at once — every one of them reporting a
+	 * type or exception mismatch that named nothing about a stub.
+	 *
+	 * 🔑 THE FAILURE DOES NOT LOOK LIKE A STUB PROBLEM. It surfaces as
+	 * `Failed asserting that exception of type "Error" matches expected
+	 * exception "DoesNotExistException"` — a message about the test's subject,
+	 * pointing at production line numbers, with the actual cause four frames
+	 * down in a file under tests/stubs/. That is why it sat red across at least
+	 * three CI runs while being read as "the sync tests are flaky".
+	 *
+	 * So parameters are APPENDED LAST as they are needed — the same technique
+	 * `$_render` used — which keeps every positional `willReturnCallback`
+	 * closure working while making the name resolvable. What is added is driven
+	 * by what openconnector's lib/ actually passes BY NAME, not by mirroring the
+	 * whole signature: `_audit` (3 call sites), `_extend` (2), and on
+	 * saveObject() `silent` (2) and `_validation` (2).
+	 *
+	 * ⚠️ This will happen again on the next parameter openregister adds, and
+	 * nothing here will warn anyone. A stub of a peer app's API is a copy that
+	 * drifts silently, and the only thing that would catch it is a check that
+	 * compares this file against the real signature. Filed as ocon#1241.
+	 *
 	 * @param string|int $id
 	 * @param string|null $register
 	 * @param string|null $schema
 	 * @param bool $_rbac Apply RBAC filters when true.
 	 * @param bool $_multitenancy Apply multitenancy filters when true.
 	 * @param bool $_render Render before returning; false yields the RAW entity (secrets intact).
+	 * @param bool $_audit Record an audit-trail row for the read; false for machine-to-machine reads.
+	 * @param array|null $_extend Properties to expand on the returned object.
 	 * @return ObjectEntity|null
 	 *
 	 * @throws DoesNotExistException When the object is not found.
@@ -84,6 +117,8 @@ class ObjectService {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_render = true,
+		bool $_audit = true,
+		?array $_extend = [],
 	): ?ObjectEntity {
 		return new ObjectEntity();
 	}
@@ -154,8 +189,51 @@ class ObjectService {
 		?string $uuid = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		bool $silent = false,
+		bool $_validation = true,
 	): ObjectEntity {
 		return new ObjectEntity();
+	}
+
+	/**
+	 * Bulk-save objects in one round trip.
+	 *
+	 * Added because `perf(sync)` moved the sync engine off one `saveObject()`
+	 * per record and onto this, and the stub did not have it — so two
+	 * EndoflifeDateSyncTest cases died on
+	 * `Call to undefined method MockObject_ObjectService::saveObjects()`.
+	 *
+	 * Returns an empty array rather than a fabricated result set: every caller
+	 * that cares stubs the return with `->willReturn(...)`, and inventing rows
+	 * here would let a test that forgot to stub it assert against data this file
+	 * made up.
+	 *
+	 * @param array $objects The objects to save.
+	 * @param string|null $register The register.
+	 * @param string|null $schema The schema.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @param bool $validation Validate each object against its schema.
+	 * @param bool $events Dispatch object events.
+	 * @param bool $deduplicateIds Drop duplicate ids within the batch.
+	 * @param bool $enrich Enrich the saved objects before returning them.
+	 * @param bool $_audit Record audit-trail rows for the batch.
+	 *
+	 * @return array The saved objects.
+	 */
+	public function saveObjects(
+		array $objects,
+		?string $register = null,
+		?string $schema = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $validation = false,
+		bool $events = false,
+		bool $deduplicateIds = true,
+		bool $enrich = true,
+		bool $_audit = true,
+	): array {
+		return [];
 	}
 
 	/**
