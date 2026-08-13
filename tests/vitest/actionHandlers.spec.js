@@ -202,6 +202,24 @@ describe('viewLogsHandler — actionId → route + query', () => {
 		expect(push).toHaveBeenCalledWith({ name: 'CloudEventLogs' })
 	})
 
+	it('reaches the unfiltered page even from a row that carries no id', () => {
+		// An unfiltered target never reads the id, so requiring one gated the
+		// navigation on a value it had no use for.
+		const push = vi.fn().mockResolvedValue()
+		setRouter({ push })
+		viewLogsHandler({ actionId: 'view-cloud-event-logs', item: {} })
+		expect(push).toHaveBeenCalledWith({ name: 'CloudEventLogs' })
+	})
+
+	it('still no-ops on a SCOPED target when the row carries no id', () => {
+		// The missing-id guard has to survive being moved past the unfiltered
+		// branch — a scoped target with no id would filter on `undefined`.
+		const push = vi.fn()
+		setRouter({ push })
+		viewLogsHandler({ actionId: 'view-job-logs', item: {} })
+		expect(push).not.toHaveBeenCalled()
+	})
+
 	it('no-ops on an unknown actionId', () => {
 		const push = vi.fn()
 		setRouter({ push })

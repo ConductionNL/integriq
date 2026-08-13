@@ -71,7 +71,8 @@ module, one new SFC, one new test suite.
   every response.
 
 - **`src/modals/v2/consumerDraft.js`** (new) — `AUTHORIZATION_TYPES`,
-  `CREDENTIAL_AUTHORIZATION_TYPES`, `QUOTA_PERIODS`, `emptyConsumerDraft`,
+  `CREDENTIALLESS_AUTHORIZATION_TYPES`, `carriesCredential` (a deny-list, and that
+  direction is load-bearing — see the constant's docblock), `QUOTA_PERIODS`, `emptyConsumerDraft`,
   `consumerDraftFromItem`, `normaliseList`, `positiveIntOrNull`, `buildRateLimit`,
   `buildQuota`, `buildConsumerPayload`. The last one carries the three omission rules that
   are the point of the change (defect 5 above, plus write-only preservation and explicit-null

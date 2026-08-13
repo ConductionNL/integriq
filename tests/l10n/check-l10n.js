@@ -76,6 +76,7 @@ const {
 	walk,
 	extractTranslationCalls,
 	makeLineResolver,
+	SRC_EXTS,
 } = require('../../scripts/lib/l10n.js')
 
 const ROOT = process.cwd()
@@ -99,9 +100,10 @@ const { app: registeredApp, translations, pluralForm } = loadJsTranslations(enFi
 // every t() call in src/ invisible to this scan.
 const appId = process.env.L10N_APP_ID || registeredApp
 
-// Extensions worth scanning. Broader than the shared lib's default so this keeps
-// covering the same tree the previous implementation did.
-const SRC_EXTS = ['.vue', '.js', '.ts', '.mjs', '.jsx', '.tsx']
+// Extensions worth scanning, from the shared lib so this gate and
+// clean-l10n.js --apply cannot disagree about which files count as source — a
+// file type only the gate scanned would have its keys deleted from all 37
+// locales while CI stayed green. See SRC_EXTS there.
 const files = walk(srcDir, SRC_EXTS)
 
 // key -> Set of "file:line". Only REAL catalogue keys land here: a t() key, or

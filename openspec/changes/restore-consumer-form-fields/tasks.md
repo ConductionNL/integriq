@@ -39,7 +39,8 @@ only ever render as a permanently empty row.
 
 ## 3. Helper module — DONE
 
-`src/modals/v2/consumerDraft.js`: `AUTHORIZATION_TYPES`, `CREDENTIAL_AUTHORIZATION_TYPES`,
+`src/modals/v2/consumerDraft.js`: `AUTHORIZATION_TYPES`,
+`CREDENTIALLESS_AUTHORIZATION_TYPES`, `carriesCredential()`,
 `QUOTA_PERIODS`, `emptyConsumerDraft()`, `consumerDraftFromItem()`, `normaliseList()`,
 `positiveIntOrNull()`, `buildRateLimit()`, `buildQuota()`, `buildConsumerPayload()`. No Vue,
 axios or DOM access, so it is directly unit-testable.

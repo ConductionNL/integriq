@@ -258,7 +258,8 @@ export function viewLogsHandler({ actionId, item }) {
 	}
 	const location = logsLocation(actionId, rowId(item))
 	if (!location) {
-		// Only reachable for a row with no id at all.
+		// Only reachable for a row with no id at all, and only on a SCOPED target
+		// — an unfiltered one builds a location without reading the id.
 		// eslint-disable-next-line no-console
 		console.warn(`[openconnector] viewLogsHandler: no id on row for "${actionId}"`)
 		return

@@ -29,11 +29,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import {
 	AUTHORIZATION_TYPES,
-	CREDENTIAL_AUTHORIZATION_TYPES,
+	CREDENTIALLESS_AUTHORIZATION_TYPES,
 	QUOTA_PERIODS,
 	buildConsumerPayload,
 	buildQuota,
 	buildRateLimit,
+	carriesCredential,
 	consumerDraftFromItem,
 	emptyConsumerDraft,
 	normaliseList,
@@ -224,6 +225,63 @@ describe('buildConsumerPayload — write-only credential (openconnector#245)', (
 		const payload = buildConsumerPayload({ id: 7 }, namedDraft({ authorizationType: 'none' }), { apiKey: 'typed' })
 		expect(payload.authorizationConfiguration).toBeNull()
 	})
+
+	it('KEEPS the credential of a lowercase `apikey` consumer edited elsewhere', () => {
+		// The regression the deny-list exists for. `resolveConsumerByApiKey()`
+		// matches case-insensitively, so `apikey` authenticates; the old
+		// allow-list membership test did not, so it hid the credential editor AND
+		// nulled the property — silently retiring a working key when the operator
+		// had only touched, say, the description.
+		const item = { id: 7, authorizationType: 'apikey', description: 'old' }
+		const draft = namedDraft({ authorizationType: 'apikey', description: 'new' })
+		const payload = buildConsumerPayload(item, draft, undefined)
+		expect('authorizationConfiguration' in payload).toBe(false)
+		expect(payload.authorizationType).toBe('apikey')
+	})
+
+	it('KEEPS the credential of a consumer whose type is not on the offered list', () => {
+		// Not only a casing problem: `findIssuer()` filters on the consumer's name
+		// alone and reads `authorizationConfiguration.publicKey` whatever the type
+		// says, so an off-list value can sit on a working JWT issuer. An
+		// unrecognised type must fail safe.
+		const payload = buildConsumerPayload({ id: 7, authorizationType: 'Jwt' }, namedDraft({ authorizationType: 'Jwt' }), undefined)
+		expect('authorizationConfiguration' in payload).toBe(false)
+	})
+
+	it('still clears a lowercase `apikey` credential on an explicit request', () => {
+		// Failing safe must not cost the operator the Clear button — which now
+		// renders for these consumers, since `carriesCredential` is the same
+		// predicate the nulling rule uses.
+		const payload = buildConsumerPayload({ id: 7, authorizationType: 'apikey' }, namedDraft({ authorizationType: 'apikey' }), null)
+		expect(payload.authorizationConfiguration).toBeNull()
+	})
+})
+
+describe('carriesCredential', () => {
+	it('classifies casing variants by the same rule the engine uses', () => {
+		for (const type of ['apiKey', 'apikey', 'APIKEY', 'Jwt', 'basic', 'saml']) {
+			expect(carriesCredential(type), type).toBe(true)
+		}
+	})
+
+	it('treats only `none` and an absent type as credential-free', () => {
+		for (const type of ['none', 'None', 'NONE', ' none ', '', null, undefined]) {
+			expect(carriesCredential(type), String(type)).toBe(false)
+		}
+	})
+
+	it('gates the editor on exactly the types whose credential a save nulls', () => {
+		// The two used to be separate lists, and the drift between them was
+		// invisible BECAUSE the hidden editor was what hid it. Pin them together:
+		// anything the editor hides, the payload may null; anything it shows, it
+		// may not.
+		for (const type of [...AUTHORIZATION_TYPES, 'apikey', 'Jwt', 'saml', '']) {
+			const payload = buildConsumerPayload({ id: 7 }, namedDraft({ authorizationType: type }), undefined)
+			const nulled = payload.authorizationConfiguration === null
+			expect(nulled, `${type || '(empty)'} — editor hidden must equal credential nulled`)
+				.toBe(!carriesCredential(payload.authorizationType))
+		}
+	})
 })
 
 describe('buildConsumerPayload — limits and identity', () => {
@@ -368,8 +426,10 @@ describe('Consumer form configuration consistency', () => {
 	})
 
 	it('offers no authorizationType enum on the schema', () => {
-		// An enum is enforced on save; the seeded consumers and any legitimate
-		// casing variant would become unsaveable. The list is presentational.
+		// An enum is enforced on save, so a legitimate casing variant would become
+		// unsaveable while still authenticating. The list is presentational. (Not
+		// the seeded consumers: they declare no authorizationType, and validation
+		// runs before the absent property is null-filled.)
 		expect(baseProps.authorizationType.enum).toBeUndefined()
 		expect(fragmentProps.authorizationType.enum).toBeUndefined()
 	})
@@ -380,10 +440,16 @@ describe('Consumer form configuration consistency', () => {
 		// selectable or the picker cannot round-trip app-created rows.
 		expect(AUTHORIZATION_TYPES).toContain('apiKey')
 		expect(AUTHORIZATION_TYPES).toContain('none')
-		expect(CREDENTIAL_AUTHORIZATION_TYPES).not.toContain('none')
-		for (const type of CREDENTIAL_AUTHORIZATION_TYPES) {
-			expect(AUTHORIZATION_TYPES).toContain(type)
+	})
+
+	it('treats every offered type but `none` as credential-bearing', () => {
+		// The deny-list and the offered list have to agree on the types they both
+		// know about; they are only allowed to differ on the ones neither lists.
+		for (const type of AUTHORIZATION_TYPES) {
+			expect(carriesCredential(type), `${type} classification`)
+				.toBe(type !== 'none')
 		}
+		expect(CREDENTIALLESS_AUTHORIZATION_TYPES).toContain('none')
 	})
 
 	it('has a translated label for every offered type and period', () => {

@@ -50,10 +50,18 @@
  * permanently untranslatable).
  *
  * Deliberately NOT an `enum` on the `consumer` schema: an enum is enforced on
- * save, which would make the three seeded consumers unsaveable and would reject
- * legitimate casing variants — `AuthorizationService::resolveConsumerByApiKey()`
- * compares `strtolower($data['authorizationType']) !== 'apikey'`, so stored data
- * may hold `apiKey` or `apikey` and both work.
+ * save, and it would reject legitimate casing variants —
+ * `AuthorizationService::resolveConsumerByApiKey()` compares
+ * `strtolower($data['authorizationType']) !== 'apikey'`, so stored data may hold
+ * `apiKey` or `apikey` and both authenticate. An enum would make the second one
+ * unsaveable while leaving it working, which is the worst of both.
+ *
+ * NOT because of the three seeded consumers, which an earlier version of this
+ * comment claimed: they declare no `authorizationType` at all
+ * (`openconnector_seed_data.json`), and `SaveObjects` validates the submitted
+ * row before `SaveObject::fillMissingSchemaPropertiesWithNull()` materialises
+ * the absent property, so an enum never sees them. The casing argument carries
+ * this on its own.
  *
  * `apiKey` is the canonical casing: it is what the deleted `EditConsumer.vue`
  * offered and what `NotificatiesSubscriberService::provisionConsumer()` writes.
@@ -64,15 +72,51 @@
 export const AUTHORIZATION_TYPES = ['none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt']
 
 /**
- * Authorization types that carry a credential, and therefore reveal the
- * Authorization Configuration editor.
+ * Authorization types that carry NO credential — the only ones for which the
+ * editor stays hidden and `buildConsumerPayload()` retires a stored credential.
  *
- * `none` is excluded because there is nothing to configure, and the absent
- * `null` of a freshly-opened create dialog is excluded by construction — an
- * allow-list rather than a deny-list, so an unset type keeps the credential
- * editor hidden rather than showing it before a type is even chosen.
+ * A DENY-list, deliberately, and this is the one place the direction matters.
+ * The obvious shape is an allow-list of the five credential-bearing types, and
+ * that is what this was — but `AUTHORIZATION_TYPES` above documents why stored
+ * data may hold a value that is not on any list of ours (no schema `enum`,
+ * `resolveConsumerByApiKey()` matching case-insensitively), and
+ * `consumerDraftFromItem()` deliberately keeps such a value verbatim. Under an
+ * allow-list those two decisions combined into a silent credential wipe: a
+ * consumer stored as `apikey` failed the membership test, so the editor and its
+ * Clear button never rendered, and rule 3 below then sent
+ * `authorizationConfiguration: null` on any unrelated edit — retiring a working
+ * key from a form that never showed it. Exactly the class of silent destruction
+ * this module exists to prevent, arrived at from the other direction.
+ *
+ * Inverting it makes an unrecognised type fail SAFE: it reveals the editor
+ * (harmless — leaving it blank still omits the key) and never nulls. That
+ * matters beyond casing, because the JWT issuer path does not gate on the type
+ * at all — `findIssuer()` filters on the consumer's name alone and reads
+ * `authorizationConfiguration.publicKey` whatever the type says — so an
+ * off-list value on a working issuer was destroyable too.
+ *
+ * `''` is listed alongside `'none'` so the absent type of a freshly-opened
+ * create dialog still keeps the editor hidden rather than showing it before a
+ * type is even chosen — the one property the allow-list had that was worth
+ * keeping. Compared lower-cased, so `None` reads as `none`.
  */
-export const CREDENTIAL_AUTHORIZATION_TYPES = ['basic', 'bearer', 'apiKey', 'oauth2', 'jwt']
+export const CREDENTIALLESS_AUTHORIZATION_TYPES = ['', 'none']
+
+/**
+ * Whether an authorization type carries a credential.
+ *
+ * Drives both the editor's visibility and rule 3 of `buildConsumerPayload()`,
+ * from one definition — they disagreed once, and the disagreement was invisible
+ * precisely because the hidden editor was the thing that hid it.
+ *
+ * @param {string|null|undefined} authorizationType The stored or drafted type.
+ *
+ * @return {boolean} True when the type carries a credential.
+ */
+export function carriesCredential(authorizationType) {
+	const type = String(authorizationType ?? '').trim().toLowerCase()
+	return !CREDENTIALLESS_AUTHORIZATION_TYPES.includes(type)
+}
 
 /**
  * Quota reset periods. Mirrors the `enum` on `consumer.quota.period` in
@@ -310,7 +354,12 @@ export function buildConsumerPayload(item, draft, authConfig) {
 	// retires its stored key instead of leaving an unreachable credential at
 	// rest — the generic dialog's conditional-visibility path deletes the key,
 	// which the preserve rule then restores.
-	if (!CREDENTIAL_AUTHORIZATION_TYPES.includes(payload.authorizationType)) {
+	//
+	// `carriesCredential()` and not a membership test against the offered list:
+	// only `none` (and the empty type that normalises to it above) may reach
+	// this, never merely an unrecognised value. See that function for the wipe an
+	// allow-list caused here.
+	if (!carriesCredential(payload.authorizationType)) {
 		payload.authorizationConfiguration = null
 	}
 

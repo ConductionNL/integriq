@@ -68,18 +68,27 @@ export const VIEW_LOGS_TARGETS = {
  * log rows carry no field to scope by, and filtering on a missing one would
  * land the user on an empty table (see `VIEW_LOGS_TARGETS`).
  *
+ * `id` is therefore required only by the scoped targets, and the unknown-action
+ * and missing-id guards are separate for that reason: an unfiltered target needs
+ * no id to build a location, so folding the two checks together made a row
+ * without one fail to reach a page that never wanted it.
+ *
  * @param {string} actionId The `VIEW_LOGS_TARGETS` key.
- * @param {string|number|null} id The parent row's id.
- * @return {object|null} A router location, or null when the action is unknown or the id is missing.
+ * @param {string|number|null} id The parent row's id. Unused by an unfiltered target.
+ * @return {object|null} A router location, or null when the action is unknown, or the id is missing on a scoped target.
  */
 export function logsLocation(actionId, id) {
 	const target = VIEW_LOGS_TARGETS[actionId]
-	if (!target || id === null || id === undefined) {
+	if (!target) {
 		return null
 	}
 
 	if (target.queryParam === null) {
 		return { name: target.route }
+	}
+
+	if (id === null || id === undefined) {
+		return null
 	}
 
 	return { name: target.route, query: { [target.queryParam]: id } }

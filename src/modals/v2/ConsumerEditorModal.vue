@@ -329,9 +329,10 @@ import { t } from '@nextcloud/l10n'
 
 import {
 	AUTHORIZATION_TYPES,
-	CREDENTIAL_AUTHORIZATION_TYPES,
 	QUOTA_PERIODS,
 	buildConsumerPayload,
+	// Aliased: the computed below keeps the bare name for the template's sake.
+	carriesCredential as typeCarriesCredential,
 	consumerDraftFromItem,
 	emptyConsumerDraft,
 	normaliseList,
@@ -512,12 +513,18 @@ export default {
 		},
 
 		/**
+		 * Shares its definition with `buildConsumerPayload()`'s nulling rule, so
+		 * the editor is visible for exactly the types whose credential a save can
+		 * retire. A stored type this picker does not offer — a casing variant, or
+		 * anything else written through the API — therefore reveals the editor
+		 * rather than hiding a credential the save would then destroy.
+		 *
 		 * @return {boolean} True when the chosen type carries a credential.
 		 *
 		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		carriesCredential() {
-			return CREDENTIAL_AUTHORIZATION_TYPES.includes(this.draft.authorizationType)
+			return typeCarriesCredential(this.draft.authorizationType)
 		},
 
 		/**

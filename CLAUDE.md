@@ -33,17 +33,28 @@ There is **no scanner for the backend set**. Auditing `en.json` would mean
 walking `lib/` for PHP `$l->t()` calls, not `src/`. Until that exists, `en.json`
 is maintained by hand.
 
-## Current state (measured 2026-08-12)
+## Current state
 
-`en.js` holds 572 keys; `src/` uses 846. So **709 used keys are missing** and
-**432 of the keys present are unused** — only 140 of the 572 are live. The
-frontend English catalogue has drifted in both directions.
+Re-measure before trusting any of this — run `npm run check:l10n`, which prints
+all of it. The numbers below are a snapshot, not a fact about the repo.
 
-This is invisible at runtime: a missing key makes `OC.L10N` fall back to the
-English source string, which renders correctly. That is exactly why it rotted.
+**As of 2026-08-13**: `en.js` holds 1281 keys and `src/` uses 846, all 846
+present. The missing-key half of the drift is closed and `npm run test:l10n`
+passes; **432 of the keys present are unused**, so the unused half is not.
+
+That direction is the one with a trap in it, not just untidiness — see
+`clean:l10n` under Gotchas. Some of those 432 are live UI prose nobody has
+wrapped in `t()` yet, so they are not dead, merely invisible to the scanner.
+
+The missing half was invisible at runtime, which is exactly why it rotted: a
+missing key makes `OC.L10N` fall back to the English source string, which
+renders correctly.
 
 Of the 37 locales, `nl` is the only substantially complete one (674 keys, 647
-translated); most others sit near 510 keys and predate the current UI.
+translated); most others sit near 510 keys and predate the current UI. Those
+counts are against the old 572-key catalogue, so every locale is now further
+behind `en.js` than its own numbers suggest — `npm run test:l10n:parity` reports
+roughly 430 missing keys per locale.
 
 ## Commands
 

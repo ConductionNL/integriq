@@ -201,8 +201,14 @@ function readStringLiteral(text, start) {
  *
  * Returns { calls, unanalyzable }:
  *   calls        [{ fn, keys, index }] -- `keys` holds 1 entry for t(), and 2
- *                for n() (singular AND plural; both are real catalogue keys and
- *                both must count as "used").
+ *                for n() (singular AND plural).
+ *
+ * Only the SINGULAR of an n() is a catalogue key -- its value is the forms array,
+ * and the plural source never gets an entry of its own. The plural is reported
+ * here anyway so it counts as "used": that keeps clean-l10n.js from deleting a
+ * key that happens to be some other call's singular, and makes findKeyReferences
+ * block a removal the plural argument still mentions. Over-counting in the "used"
+ * direction is safe; the reverse would delete live keys.
  *   unanalyzable [{ index }] -- calls whose key argument is not a static string
  *                literal (template literal, concatenation, variable).
  *
@@ -242,13 +248,29 @@ function extractTranslationCalls(text, app) {
 }
 
 /**
+ * Source extensions every "is this key used?" scan walks.
+ *
+ * ONE list, exported, because the two directions this feeds are not symmetric in
+ * consequence. check-l10n.js (the CI gate) asserts en.js COVERS what src/ uses;
+ * clean-l10n.js --apply DELETES from all 37 locales what src/ does not. A file
+ * type the gate scans but the cleaner does not is a silent data-loss path: the
+ * gate stays green while --apply drops that file's keys from every locale. The
+ * gate's list was the broader of the two, so this takes it wholesale rather than
+ * narrowing to the intersection.
+ *
+ * `.mjs`/`.jsx`/`.tsx` match nothing in src/ today. They are here for the day one
+ * appears, which is exactly the day the divergence would have cost something.
+ */
+const SRC_EXTS = ['.vue', '.js', '.ts', '.mjs', '.jsx', '.tsx']
+
+/**
  * Scan src/ for translation calls and return the set of literal keys
  * referenced. Shared by check-l10n.js, clean-l10n.js and l10n-ai.js so
  * "is this key still in use?" answers stay consistent across all three.
  */
 function collectUsedKeys(srcDir, app) {
 	const used = new Set()
-	for (const file of walk(srcDir, ['.vue', '.js', '.ts'])) {
+	for (const file of walk(srcDir, SRC_EXTS)) {
 		const { calls } = extractTranslationCalls(fs.readFileSync(file, 'utf8'), app)
 		for (const c of calls) for (const k of c.keys) used.add(k)
 	}
@@ -279,7 +301,7 @@ function makeLineResolver(text) {
  */
 function findKeyReferences(srcDir, app, key) {
 	const hits = []
-	for (const file of walk(srcDir, ['.vue', '.js', '.ts'])) {
+	for (const file of walk(srcDir, SRC_EXTS)) {
 		const text = fs.readFileSync(file, 'utf8')
 		const { calls } = extractTranslationCalls(text, app)
 		if (!calls.length) continue
@@ -372,6 +394,7 @@ module.exports = {
 	makeLineResolver,
 	collectUsedKeys,
 	findKeyReferences,
+	SRC_EXTS,
 	listJsLocaleFiles,
 	localeNameOf,
 	DYNAMIC_KEYS,
