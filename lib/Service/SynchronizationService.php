@@ -133,6 +133,28 @@ class SynchronizationService {
 	private const TARGET_UUID_NAMESPACE = '6f9a1f8e-4a2b-5c3d-9e7f-1b2c3d4e5f60';
 
 	/**
+	 * How many source pages may be in flight, and therefore held in memory, at once.
+	 *
+	 * The fan-out originally issued a promise for EVERY remaining page in one go.
+	 * On the four-page benchmark it was written against that is three requests;
+	 * on the large syncs it exists for it is not. A five-hundred-page source
+	 * would have opened 499 concurrent connections and buffered every response
+	 * body simultaneously — around 275 MB at GitHub's ~550 KB per page — which
+	 * is a rate-limit, a connection-exhaustion and an out-of-memory failure at
+	 * the same time, and only on the inputs the feature was for.
+	 *
+	 * Bounded, the fan-out fetches a window, the loop consumes it, and the next
+	 * window goes out when the buffer empties. Concurrency and peak memory are
+	 * then a function of this constant rather than of the source's size.
+	 *
+	 * Overridable per synchronization via `sourceConfig.prefetchConcurrency`,
+	 * because the right number depends on what the source tolerates.
+	 *
+	 * @var int
+	 */
+	private const PREFETCH_WINDOW = 10;
+
+	/**
 	 * Whether target/contract writes are being buffered for a bulk flush.
 	 *
 	 * Only the batch loop in synchronizeExternToIntern() turns this on, and it
@@ -5394,6 +5416,19 @@ class SynchronizationService {
 		$complete = true;
 		$failureReason = null;
 
+		// Both of these are per-fetch state on a SHARED service instance, which
+		// re-enters itself through `synchronization` rules and `followUps`, so
+		// they have to start empty for every paginated fetch.
+		//
+		// Leaving them was not merely untidy. A stale `lastPageFromLink` from a
+		// previous synchronization would stop THIS one early — silently dropping
+		// pages, which is the failure REQ-009 exists to prevent — and a
+		// `pagePrefetch` left populated by an aborted run would both block this
+		// run's fan-out (it refuses to issue a second one) and serve it another
+		// synchronization's cached pages.
+		$this->lastPageFromLink = null;
+		$this->pagePrefetch = [];
+
 		for ($i = 0; $i < $maxPages; $i++) {
 			// Fetch the current page.
 			$pageData = $this->fetchSinglePageData(
@@ -5624,6 +5659,8 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
+	 * @see self::PREFETCH_WINDOW for why this fetches a window rather than the whole remainder.
+	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
 	private function prefetchRemainingPages(
@@ -5635,14 +5672,24 @@ class SynchronizationService {
 	): void {
 		$last = $this->lastPageFromLink;
 		if ($last === null || $fromPage > $last || $this->pagePrefetch !== []) {
-			// No known count, nothing left, or a fan-out already ran for this
-			// synchronization — issuing a second one would double every request.
+			// No known count, nothing left, or pages are still in hand — the
+			// buffer emptying is what asks for the next window, so re-running
+			// while it holds anything would double those requests.
 			return;
 		}
 
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+		// Only a WINDOW of pages, never the whole remainder — see PREFETCH_WINDOW.
+		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
+		if ($window < 1) {
+			$window = 1;
+		}
+
+		$until = min($last, ($fromPage + $window - 1));
+
 		$promises = [];
-		for ($page = $fromPage; $page <= $last; $page++) {
+		for ($page = $fromPage; $page <= $until; $page++) {
 			$pageConfig = $this->getNextPage(config: $config, sourceConfig: $sourceConfig, currentPage: $page);
 			$promises[$page] = $this->callSourceObjectAsync(
 				source: $source,
@@ -5767,9 +5814,23 @@ class SynchronizationService {
 		// came back empty. That costs one whole extra request per synchronization,
 		// and it is also the fact a parallel fetch needs: you cannot fan out pages
 		// without knowing how many there are.
-		$this->lastPageFromLink = $this->parseLastPageFromLinkHeader(
+		//
+		// Recorded only when a count was actually found, NEVER overwritten with
+		// null. A paginated source stops advertising `rel="last"` on the last
+		// page — there is no page after it, so the link is absent — and this used
+		// to assign that null straight over the answer page one had given. The
+		// count therefore vanished on exactly the page the "stop, this was the
+		// last one" check consults, and the loop went on to request one more page
+		// and conclude from its empty body what the header had already said.
+		// Measured on 374 GitHub repos: 5 requests for 4 pages of data, the whole
+		// saving this header was read for.
+		$parsedLastPage = $this->parseLastPageFromLinkHeader(
 			headers: ($response['headers'] ?? [])
 		);
+
+		if ($parsedLastPage !== null) {
+			$this->lastPageFromLink = $parsedLastPage;
+		}
 
 		// #97: .tar.gz bulk archives are NOT supported — gzip decompression
 		// alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
