@@ -87,7 +87,8 @@
   @spec openspec/specs/consumer-management/spec.md
 -->
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="dialogTitle"
 		size="normal"
 		class="cn-consumer-editor-modal"
@@ -100,7 +101,8 @@
 
 			<!-- Identity — the consumer's own metadata, above the policy sections. -->
 			<div class="cn-consumer-editor__identity">
-				<NcTextField :model-value="draft.name"
+				<NcTextField
+					:model-value="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
 					:helper-text="nameError"
@@ -108,12 +110,15 @@
 					:disabled="saving"
 					@update:model-value="(value) => updateDraft('name', value)"
 					@blur="nameTouched = true" />
-				<NcTextArea :model-value="draft.description"
+				<NcTextArea
+					:model-value="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="2"
 					resize="vertical"
-					@update:model-value="(value) => updateDraft('description', value)" />
+					@update:model-value="
+						(value) => updateDraft('description', value)
+					" />
 			</div>
 
 			<!-- ── Allowed sources ─────────────────────────────────────── -->
@@ -125,10 +130,13 @@
 
 				<div class="cn-consumer-editor__grid">
 					<div class="cn-consumer-editor__field">
-						<label for="cn-consumer-editor-domains" class="cn-consumer-editor__label">
+						<label
+							for="cn-consumer-editor-domains"
+							class="cn-consumer-editor__label">
 							{{ t('openconnector', 'Allowed domains') }}
 						</label>
-						<NcSelect input-id="cn-consumer-editor-domains"
+						<NcSelect
+							input-id="cn-consumer-editor-domains"
 							:model-value="draft.domains"
 							:options="[]"
 							:multiple="true"
@@ -136,19 +144,31 @@
 							:keep-open="true"
 							:clearable="true"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Allowed domains')"
+							:aria-label-combobox="
+								t('openconnector', 'Allowed domains')
+							"
 							:placeholder="domainPlaceholder"
-							@update:model-value="(value) => updateDraft('domains', value)" />
+							@update:model-value="
+								(value) => updateDraft('domains', value)
+							" />
 						<span class="cn-consumer-editor__helper">
-							{{ t('openconnector', 'Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller\'s verified reverse DNS, never against a header.') }}
+							{{
+								t(
+									'openconnector',
+									"Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller's verified reverse DNS, never against a header.",
+								)
+							}}
 						</span>
 					</div>
 
 					<div class="cn-consumer-editor__field">
-						<label for="cn-consumer-editor-ips" class="cn-consumer-editor__label">
+						<label
+							for="cn-consumer-editor-ips"
+							class="cn-consumer-editor__label">
 							{{ t('openconnector', 'Allowed IPs') }}
 						</label>
-						<NcSelect input-id="cn-consumer-editor-ips"
+						<NcSelect
+							input-id="cn-consumer-editor-ips"
 							:model-value="draft.ips"
 							:options="[]"
 							:multiple="true"
@@ -158,19 +178,36 @@
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Allowed IPs')"
 							:placeholder="ipPlaceholder"
-							@update:model-value="(value) => updateDraft('ips', value)" />
+							@update:model-value="
+								(value) => updateDraft('ips', value)
+							" />
 						<span class="cn-consumer-editor__helper">
-							{{ t('openconnector', 'Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.') }}
+							{{
+								t(
+									'openconnector',
+									'Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.',
+								)
+							}}
 						</span>
 					</div>
 				</div>
 
 				<NcNoteCard :type="hasAllowlist ? 'info' : 'warning'">
 					<p v-if="hasAllowlist">
-						{{ t('openconnector', 'The two lists combine as a union — a caller is admitted when it matches an entry in either one, and rejected with HTTP 403 otherwise.') }}
+						{{
+							t(
+								'openconnector',
+								'The two lists combine as a union — a caller is admitted when it matches an entry in either one, and rejected with HTTP 403 otherwise.',
+							)
+						}}
 					</p>
 					<p v-else>
-						{{ t('openconnector', 'Both lists are empty, so this consumer may call from any source. Add an entry to restrict it.') }}
+						{{
+							t(
+								'openconnector',
+								'Both lists are empty, so this consumer may call from any source. Add an entry to restrict it.',
+							)
+						}}
 					</p>
 				</NcNoteCard>
 			</section>
@@ -182,16 +219,22 @@
 					<h3>{{ t('openconnector', 'Authentication') }}</h3>
 				</header>
 
-				<div class="cn-consumer-editor__field cn-consumer-editor__field--narrow">
-					<label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">
+				<div
+					class="cn-consumer-editor__field cn-consumer-editor__field--narrow">
+					<label
+						for="cn-consumer-editor-auth-type"
+						class="cn-consumer-editor__label">
 						{{ t('openconnector', 'Authorization type') }}
 					</label>
-					<NcSelect input-id="cn-consumer-editor-auth-type"
+					<NcSelect
+						input-id="cn-consumer-editor-auth-type"
 						:model-value="selectedAuthorizationType"
 						:options="authorizationTypeOptions"
 						:clearable="false"
 						:disabled="saving"
-						:aria-label-combobox="t('openconnector', 'Authorization type')"
+						:aria-label-combobox="
+							t('openconnector', 'Authorization type')
+						"
 						@update:model-value="onAuthorizationTypePick" />
 					<span class="cn-consumer-editor__helper">
 						{{ authorizationTypeHelper }}
@@ -216,13 +259,15 @@
 						{{ authConfigHelper }}
 					</span>
 					<div class="cn-consumer-editor__helper-actions">
-						<NcButton type="tertiary"
+						<NcButton
+							type="tertiary"
 							size="small"
 							:disabled="saving || !authConfigPlaceholder"
 							@click="insertAuthConfigTemplate">
 							{{ t('openconnector', 'Insert example') }}
 						</NcButton>
-						<NcButton v-if="!isCreate"
+						<NcButton
+							v-if="!isCreate"
 							type="tertiary"
 							size="small"
 							:disabled="saving || authConfigCleared"
@@ -231,7 +276,14 @@
 						</NcButton>
 					</div>
 					<NcNoteCard v-if="authConfigCleared" type="warning">
-						<p>{{ t('openconnector', 'The stored credential will be removed when you save.') }}</p>
+						<p>
+							{{
+								t(
+									'openconnector',
+									'The stored credential will be removed when you save.',
+								)
+							}}
+						</p>
 					</NcNoteCard>
 				</div>
 			</section>
@@ -245,48 +297,72 @@
 
 				<div class="cn-consumer-editor__grid">
 					<div class="cn-consumer-editor__field">
-						<NcInputField :model-value="numberText(draft.rateLimitRequestsPerWindow)"
+						<NcInputField
+							:model-value="
+								numberText(draft.rateLimitRequestsPerWindow)
+							"
 							type="number"
 							min="1"
 							:label="t('openconnector', 'Requests per window')"
 							:disabled="saving"
 							placeholder="60"
-							@update:model-value="(value) => updateNumber('rateLimitRequestsPerWindow', value)" />
+							@update:model-value="
+								(value) =>
+									updateNumber('rateLimitRequestsPerWindow', value)
+							" />
 					</div>
 					<div class="cn-consumer-editor__field">
-						<NcInputField :model-value="numberText(draft.rateLimitWindowSeconds)"
+						<NcInputField
+							:model-value="numberText(draft.rateLimitWindowSeconds)"
 							type="number"
 							min="1"
 							:label="t('openconnector', 'Window (seconds)')"
 							:disabled="saving"
 							placeholder="60"
-							@update:model-value="(value) => updateNumber('rateLimitWindowSeconds', value)" />
+							@update:model-value="
+								(value) =>
+									updateNumber('rateLimitWindowSeconds', value)
+							" />
 					</div>
 					<div class="cn-consumer-editor__field">
-						<NcInputField :model-value="numberText(draft.quotaLimit)"
+						<NcInputField
+							:model-value="numberText(draft.quotaLimit)"
 							type="number"
 							min="1"
 							:label="t('openconnector', 'Quota limit')"
 							:disabled="saving"
 							placeholder="10000"
-							@update:model-value="(value) => updateNumber('quotaLimit', value)" />
+							@update:model-value="
+								(value) => updateNumber('quotaLimit', value)
+							" />
 					</div>
 					<div class="cn-consumer-editor__field">
-						<label for="cn-consumer-editor-quota-period" class="cn-consumer-editor__label">
+						<label
+							for="cn-consumer-editor-quota-period"
+							class="cn-consumer-editor__label">
 							{{ t('openconnector', 'Quota period') }}
 						</label>
-						<NcSelect input-id="cn-consumer-editor-quota-period"
+						<NcSelect
+							input-id="cn-consumer-editor-quota-period"
 							:model-value="selectedQuotaPeriod"
 							:options="quotaPeriodOptions"
 							:clearable="true"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Quota period')"
-							@update:model-value="(option) => updateDraft('quotaPeriod', option?.id ?? null)" />
+							@update:model-value="
+								(option) =>
+									updateDraft('quotaPeriod', option?.id ?? null)
+							" />
 					</div>
 				</div>
 
 				<span class="cn-consumer-editor__helper">
-					{{ t('openconnector', 'Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.') }}
+					{{
+						t(
+							'openconnector',
+							'Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.',
+						)
+					}}
 				</span>
 			</section>
 		</div>
@@ -301,7 +377,11 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{ isCreate ? t('openconnector', 'Create') : t('openconnector', 'Save') }}
+				{{
+					isCreate
+						? t('openconnector', 'Create')
+						: t('openconnector', 'Save')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -508,8 +588,10 @@ export default {
 		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		hasAllowlist() {
-			return normaliseList(this.draft.domains).length > 0
+			return (
+				normaliseList(this.draft.domains).length > 0
 				|| normaliseList(this.draft.ips).length > 0
+			)
 		},
 
 		/**
@@ -557,8 +639,11 @@ export default {
 		selectedAuthorizationType() {
 			const current = this.draft.authorizationType
 			if (!current) return null
-			return this.authorizationTypeOptions.find((option) => option.id === current)
-				?? { id: current, label: current }
+			return (
+				this.authorizationTypeOptions.find(
+					(option) => option.id === current,
+				) ?? { id: current, label: current }
+			)
 		},
 
 		/**
@@ -568,15 +653,27 @@ export default {
 		 */
 		authorizationTypeHelper() {
 			if (this.draft.authorizationType === 'apiKey') {
-				return t('openconnector', 'Inbound callers present a key, matched against the key below under a constant-time comparison.')
+				return t(
+					'openconnector',
+					'Inbound callers present a key, matched against the key below under a constant-time comparison.',
+				)
 			}
 			if (this.draft.authorizationType === 'jwt') {
-				return t('openconnector', 'Inbound callers present a JWT whose issuer matches this consumer\'s name, verified with the public key below.')
+				return t(
+					'openconnector',
+					"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.",
+				)
 			}
 			if (this.draft.authorizationType === 'none') {
-				return t('openconnector', 'No credential is checked. Restrict access with the allowed sources above instead.')
+				return t(
+					'openconnector',
+					'No credential is checked. Restrict access with the allowed sources above instead.',
+				)
 			}
-			return t('openconnector', 'The credential this consumer presents is verified against the configuration below.')
+			return t(
+				'openconnector',
+				'The credential this consumer presents is verified against the configuration below.',
+			)
 		},
 
 		/**
@@ -595,9 +692,15 @@ export default {
 		 */
 		authConfigHelper() {
 			if (this.isCreate) {
-				return t('openconnector', 'Stored write-only: it is accepted on save but never returned by any API read.')
+				return t(
+					'openconnector',
+					'Stored write-only: it is accepted on save but never returned by any API read.',
+				)
 			}
-			return t('openconnector', 'Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.')
+			return t(
+				'openconnector',
+				'Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.',
+			)
 		},
 
 		/**
@@ -622,7 +725,10 @@ export default {
 		selectedQuotaPeriod() {
 			const current = this.draft.quotaPeriod
 			if (!current) return null
-			return this.quotaPeriodOptions.find((option) => option.id === current) ?? null
+			return (
+				this.quotaPeriodOptions.find((option) => option.id === current)
+				?? null
+			)
 		},
 
 		/**
@@ -650,10 +756,12 @@ export default {
 		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		canSave() {
-			return !this.saving
+			return (
+				!this.saving
 				&& typeof this.confirm === 'function'
 				&& NAME_PATTERN.test(this.draft.name || '')
 				&& !this.authConfigError
+			)
 		},
 	},
 
@@ -773,11 +881,18 @@ export default {
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.authConfigError = (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed))
-					? t('openconnector', 'The authorization configuration must be a JSON object.')
-					: ''
+				this.authConfigError =
+					parsed === null
+					|| typeof parsed !== 'object'
+					|| Array.isArray(parsed)
+						? t(
+								'openconnector',
+								'The authorization configuration must be a JSON object.',
+							)
+						: ''
 			} catch (err) {
-				this.authConfigError = err?.message || t('openconnector', 'Invalid JSON.')
+				this.authConfigError =
+					err?.message || t('openconnector', 'Invalid JSON.')
 			}
 		},
 
@@ -819,14 +934,22 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
-				await this.confirm(buildConsumerPayload(this.item, this.draft, this.authConfigForPayload))
-				showSuccess(this.isCreate
-					? t('openconnector', 'Consumer created')
-					: t('openconnector', 'Consumer saved'))
+				await this.confirm(
+					buildConsumerPayload(
+						this.item,
+						this.draft,
+						this.authConfigForPayload,
+					),
+				)
+				showSuccess(
+					this.isCreate
+						? t('openconnector', 'Consumer created')
+						: t('openconnector', 'Consumer saved'),
+				)
 				this.close?.()
 			} catch (err) {
-				this.saveError = err?.message
-					|| t('openconnector', 'Failed to save consumer')
+				this.saveError =
+					err?.message || t('openconnector', 'Failed to save consumer')
 			} finally {
 				this.saving = false
 			}

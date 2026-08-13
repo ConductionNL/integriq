@@ -15,3 +15,8 @@ docs/
 # prettier own it would make the formatter and the translation sync rewrite the
 # same 37 files in opposite directions on every run.
 l10n/
+
+# Build-time tooling, not app code. Vendored from openregister and kept in sync
+# by hand, so reformatting diverges the copies line for line. eslint skips this
+# tree too — see the matching `ignores` entry in eslint.config.js.
+scripts/

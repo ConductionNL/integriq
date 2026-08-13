@@ -69,7 +69,14 @@
  * `bearer` carries no engine path — nothing reads it — and is offered only for
  * parity with the list the pre-cutover modal had. See the change's Non-goals.
  */
-export const AUTHORIZATION_TYPES = ['none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt']
+export const AUTHORIZATION_TYPES = [
+	'none',
+	'basic',
+	'bearer',
+	'apiKey',
+	'oauth2',
+	'jwt',
+]
 
 /**
  * Authorization types that carry NO credential — the only ones for which the
@@ -114,7 +121,9 @@ export const CREDENTIALLESS_AUTHORIZATION_TYPES = ['', 'none']
  * @return {boolean} True when the type carries a credential.
  */
 export function carriesCredential(authorizationType) {
-	const type = String(authorizationType ?? '').trim().toLowerCase()
+	const type = String(authorizationType ?? '')
+		.trim()
+		.toLowerCase()
 	return !CREDENTIALLESS_AUTHORIZATION_TYPES.includes(type)
 }
 
@@ -168,9 +177,7 @@ export function emptyConsumerDraft() {
  */
 export function normaliseList(value) {
 	if (Array.isArray(value)) {
-		return value
-			.map((entry) => String(entry ?? '').trim())
-			.filter(Boolean)
+		return value.map((entry) => String(entry ?? '').trim()).filter(Boolean)
 	}
 	if (typeof value === 'string') {
 		return value
@@ -220,8 +227,9 @@ export function consumerDraftFromItem(item) {
 	const draft = emptyConsumerDraft()
 	if (!item || typeof item !== 'object') return draft
 
-	const rateLimit = (item.rateLimit && typeof item.rateLimit === 'object') ? item.rateLimit : {}
-	const quota = (item.quota && typeof item.quota === 'object') ? item.quota : {}
+	const rateLimit =
+		item.rateLimit && typeof item.rateLimit === 'object' ? item.rateLimit : {}
+	const quota = item.quota && typeof item.quota === 'object' ? item.quota : {}
 
 	return {
 		...draft,
@@ -323,7 +331,10 @@ export function buildConsumerPayload(item, draft, authConfig) {
 		name: String(draft.name ?? '').trim(),
 		description: String(draft.description ?? '').trim(),
 		authorizationType: draft.authorizationType || 'none',
-		rateLimit: buildRateLimit(draft.rateLimitRequestsPerWindow, draft.rateLimitWindowSeconds),
+		rateLimit: buildRateLimit(
+			draft.rateLimitRequestsPerWindow,
+			draft.rateLimitWindowSeconds,
+		),
 		quota: buildQuota(draft.quotaLimit, draft.quotaPeriod),
 	}
 

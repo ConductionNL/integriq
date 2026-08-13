@@ -50,14 +50,21 @@ function namedDraft(overrides = {}) {
 
 describe('normaliseList', () => {
 	it('trims entries and drops the empty ones', () => {
-		expect(normaliseList([' example.com ', '', '  ', 'example.org'])).toEqual(['example.com', 'example.org'])
+		expect(normaliseList([' example.com ', '', '  ', 'example.org'])).toEqual([
+			'example.com',
+			'example.org',
+		])
 	})
 
 	it('splits a legacy comma-joined string', () => {
 		// Rows written by the pre-cutover EditConsumer.vue persisted a textarea
 		// verbatim. Those values never matched anything (isAllowed reads arrays
 		// only), so splitting them here repairs the row on next save.
-		expect(normaliseList('example.com, *.example.org ,10.0.0.1')).toEqual(['example.com', '*.example.org', '10.0.0.1'])
+		expect(normaliseList('example.com, *.example.org ,10.0.0.1')).toEqual([
+			'example.com',
+			'*.example.org',
+			'10.0.0.1',
+		])
 	})
 
 	it('treats null, undefined and non-list scalars as empty', () => {
@@ -101,7 +108,10 @@ describe('positiveIntOrNull', () => {
 
 describe('buildRateLimit / buildQuota', () => {
 	it('builds a block when both halves are present', () => {
-		expect(buildRateLimit(60, 60)).toEqual({ requestsPerWindow: 60, windowSeconds: 60 })
+		expect(buildRateLimit(60, 60)).toEqual({
+			requestsPerWindow: 60,
+			windowSeconds: 60,
+		})
 		expect(buildQuota(10000, 'day')).toEqual({ limit: 10000, period: 'day' })
 	})
 
@@ -142,24 +152,37 @@ describe('consumerDraftFromItem', () => {
 		// (`$authType === 'none' || $authType === ''`), so a blank stored value
 		// is shown as what it behaves like rather than as an unset picker.
 		expect(consumerDraftFromItem({ name: 'x' }).authorizationType).toBe('none')
-		expect(consumerDraftFromItem({ name: 'x', authorizationType: '' }).authorizationType).toBe('none')
+		expect(
+			consumerDraftFromItem({ name: 'x', authorizationType: '' })
+				.authorizationType,
+		).toBe('none')
 	})
 
 	it('keeps an off-list authorizationType verbatim', () => {
 		// Saving an unrelated field must never silently rewrite a stored value
 		// the picker does not happen to offer.
-		expect(consumerDraftFromItem({ name: 'x', authorizationType: 'mtls' }).authorizationType).toBe('mtls')
+		expect(
+			consumerDraftFromItem({ name: 'x', authorizationType: 'mtls' })
+				.authorizationType,
+		).toBe('mtls')
 	})
 
 	it('never seeds the write-only credential', () => {
 		// It is not in the response to seed from, and reading one would mean the
 		// writeOnly render boundary had been breached.
-		const draft = consumerDraftFromItem({ name: 'x', authorizationConfiguration: { apiKey: 'leaked' } })
+		const draft = consumerDraftFromItem({
+			name: 'x',
+			authorizationConfiguration: { apiKey: 'leaked' },
+		})
 		expect(draft.authorizationConfiguration).toBeUndefined()
 	})
 
 	it('ignores a non-object rateLimit or quota instead of throwing', () => {
-		const draft = consumerDraftFromItem({ name: 'x', rateLimit: 'nonsense', quota: null })
+		const draft = consumerDraftFromItem({
+			name: 'x',
+			rateLimit: 'nonsense',
+			quota: null,
+		})
 		expect(draft.rateLimitRequestsPerWindow).toBeNull()
 		expect(draft.quotaLimit).toBeNull()
 	})
@@ -176,7 +199,11 @@ describe('buildConsumerPayload — allowlist omission (REQ-CON-SCOPE-001)', () =
 	})
 
 	it('omits an allowlist whose entries are all blank', () => {
-		const payload = buildConsumerPayload(null, namedDraft({ domains: ['', '  '] }), undefined)
+		const payload = buildConsumerPayload(
+			null,
+			namedDraft({ domains: ['', '  '] }),
+			undefined,
+		)
 		expect('domains' in payload).toBe(false)
 	})
 
@@ -204,17 +231,29 @@ describe('buildConsumerPayload — write-only credential (openconnector#245)', (
 	it('OMITS the credential when it was not touched', () => {
 		// undefined = "the operator typed nothing". OpenRegister's
 		// collectOmittedWriteOnlyPaths() then carries the stored value forward.
-		const payload = buildConsumerPayload({ id: 7, authorizationType: 'apiKey' }, namedDraft({ authorizationType: 'apiKey' }), undefined)
+		const payload = buildConsumerPayload(
+			{ id: 7, authorizationType: 'apiKey' },
+			namedDraft({ authorizationType: 'apiKey' }),
+			undefined,
+		)
 		expect('authorizationConfiguration' in payload).toBe(false)
 	})
 
 	it('sends an explicit null to clear the credential', () => {
-		const payload = buildConsumerPayload({ id: 7 }, namedDraft({ authorizationType: 'apiKey' }), null)
+		const payload = buildConsumerPayload(
+			{ id: 7 },
+			namedDraft({ authorizationType: 'apiKey' }),
+			null,
+		)
 		expect(payload.authorizationConfiguration).toBeNull()
 	})
 
 	it('sends a typed credential through unchanged', () => {
-		const payload = buildConsumerPayload(null, namedDraft({ authorizationType: 'apiKey' }), { apiKey: 's3cr3t' })
+		const payload = buildConsumerPayload(
+			null,
+			namedDraft({ authorizationType: 'apiKey' }),
+			{ apiKey: 's3cr3t' },
+		)
 		expect(payload.authorizationConfiguration).toEqual({ apiKey: 's3cr3t' })
 	})
 
@@ -222,7 +261,11 @@ describe('buildConsumerPayload — write-only credential (openconnector#245)', (
 		// Switching to `none` must actually retire the key. The generic dialog's
 		// conditional-visibility path DELETES the form key instead, which the
 		// preserve rule then restores — leaving an unreachable credential at rest.
-		const payload = buildConsumerPayload({ id: 7 }, namedDraft({ authorizationType: 'none' }), { apiKey: 'typed' })
+		const payload = buildConsumerPayload(
+			{ id: 7 },
+			namedDraft({ authorizationType: 'none' }),
+			{ apiKey: 'typed' },
+		)
 		expect(payload.authorizationConfiguration).toBeNull()
 	})
 
@@ -244,7 +287,11 @@ describe('buildConsumerPayload — write-only credential (openconnector#245)', (
 		// alone and reads `authorizationConfiguration.publicKey` whatever the type
 		// says, so an off-list value can sit on a working JWT issuer. An
 		// unrecognised type must fail safe.
-		const payload = buildConsumerPayload({ id: 7, authorizationType: 'Jwt' }, namedDraft({ authorizationType: 'Jwt' }), undefined)
+		const payload = buildConsumerPayload(
+			{ id: 7, authorizationType: 'Jwt' },
+			namedDraft({ authorizationType: 'Jwt' }),
+			undefined,
+		)
 		expect('authorizationConfiguration' in payload).toBe(false)
 	})
 
@@ -252,7 +299,11 @@ describe('buildConsumerPayload — write-only credential (openconnector#245)', (
 		// Failing safe must not cost the operator the Clear button — which now
 		// renders for these consumers, since `carriesCredential` is the same
 		// predicate the nulling rule uses.
-		const payload = buildConsumerPayload({ id: 7, authorizationType: 'apikey' }, namedDraft({ authorizationType: 'apikey' }), null)
+		const payload = buildConsumerPayload(
+			{ id: 7, authorizationType: 'apikey' },
+			namedDraft({ authorizationType: 'apikey' }),
+			null,
+		)
 		expect(payload.authorizationConfiguration).toBeNull()
 	})
 })
@@ -276,10 +327,16 @@ describe('carriesCredential', () => {
 		// anything the editor hides, the payload may null; anything it shows, it
 		// may not.
 		for (const type of [...AUTHORIZATION_TYPES, 'apikey', 'Jwt', 'saml', '']) {
-			const payload = buildConsumerPayload({ id: 7 }, namedDraft({ authorizationType: type }), undefined)
+			const payload = buildConsumerPayload(
+				{ id: 7 },
+				namedDraft({ authorizationType: type }),
+				undefined,
+			)
 			const nulled = payload.authorizationConfiguration === null
-			expect(nulled, `${type || '(empty)'} — editor hidden must equal credential nulled`)
-				.toBe(!carriesCredential(payload.authorizationType))
+			expect(
+				nulled,
+				`${type || '(empty)'} — editor hidden must equal credential nulled`,
+			).toBe(!carriesCredential(payload.authorizationType))
 		}
 	})
 })
@@ -292,25 +349,41 @@ describe('buildConsumerPayload — limits and identity', () => {
 	})
 
 	it('reassembles both limit blocks from the draft scalars', () => {
-		const payload = buildConsumerPayload(null, namedDraft({
-			rateLimitRequestsPerWindow: 2,
-			rateLimitWindowSeconds: 60,
-			quotaLimit: 100,
-			quotaPeriod: 'day',
-		}), undefined)
-		expect(payload.rateLimit).toEqual({ requestsPerWindow: 2, windowSeconds: 60 })
+		const payload = buildConsumerPayload(
+			null,
+			namedDraft({
+				rateLimitRequestsPerWindow: 2,
+				rateLimitWindowSeconds: 60,
+				quotaLimit: 100,
+				quotaPeriod: 'day',
+			}),
+			undefined,
+		)
+		expect(payload.rateLimit).toEqual({
+			requestsPerWindow: 2,
+			windowSeconds: 60,
+		})
 		expect(payload.quota).toEqual({ limit: 100, period: 'day' })
 	})
 
 	it('trims name and description', () => {
-		const payload = buildConsumerPayload(null, namedDraft({ name: '  Partner  ', description: ' notes ' }), undefined)
+		const payload = buildConsumerPayload(
+			null,
+			namedDraft({ name: '  Partner  ', description: ' notes ' }),
+			undefined,
+		)
 		expect(payload.name).toBe('Partner')
 		expect(payload.description).toBe('notes')
 	})
 
 	it('preserves server-managed keys from the edited row', () => {
 		// `id` in particular is what makes the store choose PUT over POST.
-		const item = { id: 7, uuid: 'abc', created: '2026-01-01T00:00:00+00:00', userId: 'admin' }
+		const item = {
+			id: 7,
+			uuid: 'abc',
+			created: '2026-01-01T00:00:00+00:00',
+			userId: 'admin',
+		}
 		const payload = buildConsumerPayload(item, namedDraft(), undefined)
 		expect(payload.id).toBe(7)
 		expect(payload.uuid).toBe('abc')
@@ -321,25 +394,54 @@ describe('buildConsumerPayload — limits and identity', () => {
 	it('does not leak the flattened draft scalars into the payload', () => {
 		// They are form state, not schema properties — OpenRegister would store
 		// them as unknown keys on the object.
-		const payload = buildConsumerPayload(null, namedDraft({ rateLimitRequestsPerWindow: 2, rateLimitWindowSeconds: 60 }), undefined)
-		for (const key of ['rateLimitRequestsPerWindow', 'rateLimitWindowSeconds', 'quotaLimit', 'quotaPeriod']) {
+		const payload = buildConsumerPayload(
+			null,
+			namedDraft({
+				rateLimitRequestsPerWindow: 2,
+				rateLimitWindowSeconds: 60,
+			}),
+			undefined,
+		)
+		for (const key of [
+			'rateLimitRequestsPerWindow',
+			'rateLimitWindowSeconds',
+			'quotaLimit',
+			'quotaPeriod',
+		]) {
 			expect(key in payload).toBe(false)
 		}
 	})
 })
 
 describe('Consumer form configuration consistency', () => {
-	const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'src/manifest.json'), 'utf8'))
+	const manifest = JSON.parse(
+		fs.readFileSync(path.join(REPO_ROOT, 'src/manifest.json'), 'utf8'),
+	)
 	const consumersPage = manifest.pages.find((page) => page.id === 'Consumers')
 	const detailPage = manifest.pages.find((page) => page.id === 'ConsumerDetail')
 	const register = JSON.parse(
-		fs.readFileSync(path.join(REPO_ROOT, 'lib/Settings/openconnector_register.json'), 'utf8'),
+		fs.readFileSync(
+			path.join(REPO_ROOT, 'lib/Settings/openconnector_register.json'),
+			'utf8',
+		),
 	)
 	const fragment = JSON.parse(
-		fs.readFileSync(path.join(REPO_ROOT, 'lib/Settings/register.d/consumer-form-fields.json'), 'utf8'),
+		fs.readFileSync(
+			path.join(
+				REPO_ROOT,
+				'lib/Settings/register.d/consumer-form-fields.json',
+			),
+			'utf8',
+		),
 	)
 	const writeOnlyFragment = JSON.parse(
-		fs.readFileSync(path.join(REPO_ROOT, 'lib/Settings/register.d/99-consumer-secrets-writeonly.json'), 'utf8'),
+		fs.readFileSync(
+			path.join(
+				REPO_ROOT,
+				'lib/Settings/register.d/99-consumer-secrets-writeonly.json',
+			),
+			'utf8',
+		),
 	)
 	const baseProps = register.components.schemas.consumer.properties
 	const fragmentProps = fragment.components.schemas.consumer.properties
@@ -351,8 +453,13 @@ describe('Consumer form configuration consistency', () => {
 	it('registers that component name in the custom-component registry', () => {
 		// CnPageRenderer resolves slot values against registry.js; a name that is
 		// not exported there renders nothing at all, with no error.
-		const registry = fs.readFileSync(path.join(REPO_ROOT, 'src/registry.js'), 'utf8')
-		expect(registry).toContain("import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'")
+		const registry = fs.readFileSync(
+			path.join(REPO_ROOT, 'src/registry.js'),
+			'utf8',
+		)
+		expect(registry).toContain(
+			"import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'",
+		)
 		expect(registry).toMatch(/^\tConsumerEditorModal,$/m)
 	})
 
@@ -366,10 +473,25 @@ describe('Consumer form configuration consistency', () => {
 	})
 
 	it('declares an order for every property the editor authors', () => {
-		const authored = ['name', 'description', 'domains', 'ips', 'authorizationType', 'authorizationConfiguration', 'rateLimit', 'quota']
+		const authored = [
+			'name',
+			'description',
+			'domains',
+			'ips',
+			'authorizationType',
+			'authorizationConfiguration',
+			'rateLimit',
+			'quota',
+		]
 		for (const key of authored) {
-			expect(baseProps, `${key} must exist on the consumer schema`).toHaveProperty(key)
-			expect(typeof fragmentProps[key]?.order, `${key} must declare a numeric order`).toBe('number')
+			expect(
+				baseProps,
+				`${key} must exist on the consumer schema`,
+			).toHaveProperty(key)
+			expect(
+				typeof fragmentProps[key]?.order,
+				`${key} must declare a numeric order`,
+			).toBe('number')
 		}
 	})
 
@@ -380,7 +502,10 @@ describe('Consumer form configuration consistency', () => {
 		// assertion whose absence left the Jobs page's `arguments` override inert.
 		for (const [key, prop] of Object.entries(baseProps)) {
 			if (prop.type !== 'object') continue
-			expect(fragmentProps[key]?.widget, `${key} is type: object and needs a widget`).toBe('json')
+			expect(
+				fragmentProps[key]?.widget,
+				`${key} is type: object and needs a widget`,
+			).toBe('json')
 		}
 	})
 
@@ -394,8 +519,14 @@ describe('Consumer form configuration consistency', () => {
 			.sort(([, a], [, b]) => a.order - b.order)
 			.map(([key]) => key)
 		expect(byOrder).toEqual([
-			'name', 'description', 'domains', 'ips',
-			'authorizationType', 'authorizationConfiguration', 'rateLimit', 'quota',
+			'name',
+			'description',
+			'domains',
+			'ips',
+			'authorizationType',
+			'authorizationConfiguration',
+			'rateLimit',
+			'quota',
 		])
 	})
 
@@ -412,17 +543,24 @@ describe('Consumer form configuration consistency', () => {
 		// `writeOnly` rather than replacing the property. If this fragment ever
 		// declared writeOnly itself, or the merge order flipped, the credential
 		// would start being returned in cleartext.
-		expect(writeOnlyFragment.components.schemas.consumer.properties.authorizationConfiguration.writeOnly).toBe(true)
+		expect(
+			writeOnlyFragment.components.schemas.consumer.properties
+				.authorizationConfiguration.writeOnly,
+		).toBe(true)
 		expect('writeOnly' in fragmentProps.authorizationConfiguration).toBe(false)
-		const fragmentNames = fs.readdirSync(path.join(REPO_ROOT, 'lib/Settings/register.d'))
+		const fragmentNames = fs
+			.readdirSync(path.join(REPO_ROOT, 'lib/Settings/register.d'))
 			.filter((file) => file.endsWith('.json'))
 			.sort()
-		expect(fragmentNames.indexOf('consumer-form-fields.json'))
-			.toBeGreaterThan(fragmentNames.indexOf('99-consumer-secrets-writeonly.json'))
+		expect(fragmentNames.indexOf('consumer-form-fields.json')).toBeGreaterThan(
+			fragmentNames.indexOf('99-consumer-secrets-writeonly.json'),
+		)
 	})
 
 	it('keeps the quota periods in step with the schema enum', () => {
-		expect([...QUOTA_PERIODS].sort()).toEqual([...baseProps.quota.properties.period.enum].sort())
+		expect([...QUOTA_PERIODS].sort()).toEqual(
+			[...baseProps.quota.properties.period.enum].sort(),
+		)
 	})
 
 	it('offers no authorizationType enum on the schema', () => {
@@ -446,8 +584,9 @@ describe('Consumer form configuration consistency', () => {
 		// The deny-list and the offered list have to agree on the types they both
 		// know about; they are only allowed to differ on the ones neither lists.
 		for (const type of AUTHORIZATION_TYPES) {
-			expect(carriesCredential(type), `${type} classification`)
-				.toBe(type !== 'none')
+			expect(carriesCredential(type), `${type} classification`).toBe(
+				type !== 'none',
+			)
 		}
 		expect(CREDENTIALLESS_AUTHORIZATION_TYPES).toContain('none')
 	})
@@ -456,7 +595,10 @@ describe('Consumer form configuration consistency', () => {
 		// The label maps live in the SFC (not the manifest) so the strings stay
 		// extractable by tests/l10n/check-l10n.js. The SFC is read as text
 		// because vitest runs without the Vue SFC plugin.
-		const sfc = fs.readFileSync(path.join(REPO_ROOT, 'src/modals/v2/ConsumerEditorModal.vue'), 'utf8')
+		const sfc = fs.readFileSync(
+			path.join(REPO_ROOT, 'src/modals/v2/ConsumerEditorModal.vue'),
+			'utf8',
+		)
 		for (const id of [...AUTHORIZATION_TYPES, ...QUOTA_PERIODS]) {
 			expect(sfc, `${id} needs a t() label`).toContain(`${id}: t(`)
 		}
@@ -466,7 +608,9 @@ describe('Consumer form configuration consistency', () => {
 		// rateLimit and quota SHOULD show there — the panel confirms the access
 		// policy. authorizationConfiguration is stripped from every response, so
 		// it could only ever be a permanently empty row.
-		const dataWidget = detailPage.config.widgets.find((widget) => widget.id === 'con-data')
+		const dataWidget = detailPage.config.widgets.find(
+			(widget) => widget.id === 'con-data',
+		)
 		expect(dataWidget.content.exclude).toEqual(['authorizationConfiguration'])
 	})
 })

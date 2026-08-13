@@ -200,7 +200,11 @@ describe('viewLogsHandler — actionId → route + query', () => {
 			// applies a filter that matches nothing and renders empty.
 			['view-endpoint-logs', 'EndpointLogs', 'endpoint'],
 			['view-job-logs', 'JobLogs', 'jobId'],
-			['view-synchronization-logs', 'SynchronizationLogs', 'synchronizationId'],
+			[
+				'view-synchronization-logs',
+				'SynchronizationLogs',
+				'synchronizationId',
+			],
 		]
 		for (const [actionId, route, param] of cases) {
 			const push = vi.fn().mockResolvedValue()
