@@ -2431,8 +2431,17 @@ class SynchronizationService {
 		$startTime = microtime(true);
 
 		// Prepare initial log array.
+		//
+		// `id` first, `uuid` as the fallback. This read `uuid` alone, and the
+		// hydrated synchronization does not carry that key — every other use in
+		// this service reads `id` (the contract lookups, the contract's own
+		// synchronizationId). So every run log was written with an EMPTY
+		// synchronization id, and filtering logs by synchronization returned
+		// nothing at all: the rows were there, just unattributable. Measured by
+		// trying it — a filtered query came back empty for a run that had just
+		// written 374 objects, which reads exactly like "the sync did nothing".
 		$log = [
-			'synchronizationId' => ($synchronization['uuid'] ?? null),
+			'synchronizationId' => (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
 			'result' => [
 				'objects' => [
 					'found' => 0,
