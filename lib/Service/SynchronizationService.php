@@ -71,6 +71,8 @@ class SynchronizationService
     const MERGE_EXTRA_DATA_OBJECT_LOCATION      = 'mergeExtraData';
     const UNSET_CONFIG_KEY_LOCATION             = 'unsetConfigKey';
     const EXTRA_DATA_BEFORE_CONDITIONS_LOCATION = 'fetchExtraDataBeforeConditions';
+    const EXTEND_BEFORE_CONDITIONS_LOCATION     = 'extendInputBeforeConditions';
+    const EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT = 'extendInputFetchObjectBeforeConditions';
     const FILE_TAG_TYPE                         = 'files';
     const VALID_MUTATION_TYPES                  = ['create', 'update', 'delete'];
     const DEFAULT_MAX_PAGES                     = 50; // Safety limit to prevent infinite page requesting loop
@@ -138,6 +140,204 @@ class SynchronizationService
 		return $this->synchronizationMapper->findAll(limit: null, offset: null, filters: ['source_id' => $sourceId]);
 	}
 
+    /**
+     * Handle synchronization for object create/update/delete events.
+     *
+     * This centralizes event listener behavior:
+     * - run direct source synchronizations for the object's register/schema
+     * - run related-object trigger synchronizations
+     *
+     * @param ObjectEntity $object The object from the event.
+     * @param string $eventMutationType The triggering mutation: create|update|delete
+     *
+     * @return void
+     */
+    public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
+    {
+        if (in_array($eventMutationType, self::VALID_MUTATION_TYPES, true) === false) {
+            return;
+        }
+
+        $register = $object->getRegister();
+        $schema = $object->getSchema();
+        if ($register === null || $schema === null) {
+            return;
+        }
+
+        $objectArray = $object->jsonSerialize();
+        $processedSynchronizationIds = [];
+
+        $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
+        foreach ($directSynchronizations as $synchronization) {
+            try {
+                if ($eventMutationType === 'delete') {
+                    $this->synchronize(
+                        synchronization: $synchronization,
+                        force: true,
+                        object: $object,
+                        mutationType: 'delete'
+                    );
+                } else {
+                    $this->synchronize(
+                        synchronization: $synchronization,
+                        force: true,
+                        object: $objectArray
+                    );
+                }
+
+                $processedSynchronizationIds[] = $synchronization->getId();
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to process object event: ' . $e->getMessage() . ' for synchronization ' . $synchronization->getId(), [
+                    'exception' => $e,
+                    'eventMutationType' => $eventMutationType,
+                    'register' => $register,
+                    'schema' => $schema,
+                ]);
+            }
+        }
+
+        $triggeredSynchronizations = $this->synchronizationMapper->findAllByRelatedObjectTrigger(
+            register: $register,
+            schema: $schema,
+            mutationType: $eventMutationType
+        );
+
+        foreach ($triggeredSynchronizations as $synchronization) {
+            if (in_array($synchronization->getId(), $processedSynchronizationIds, true) === true) {
+                continue;
+            }
+
+            try {
+                $parentObjectArray = $this->resolveParentObjectForRelatedObjectTrigger(
+                    synchronization: $synchronization,
+                    triggerObject: $objectArray,
+                    triggerRegister: $register,
+                    triggerSchema: $schema,
+                    mutationType: $eventMutationType
+                );
+
+                if ($parentObjectArray === null) {
+                    continue;
+                }
+
+                $this->synchronize(
+                    synchronization: $synchronization,
+                    force: true,
+                    object: $parentObjectArray
+                );
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to process related-object trigger: ' . $e->getMessage() . ' for synchronization ' . $synchronization->getId(), [
+                    'exception' => $e,
+                    'eventMutationType' => $eventMutationType,
+                    'register' => $register,
+                    'schema' => $schema,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Resolve and fetch the parent object for a related-object trigger.
+     *
+     * @param Synchronization $synchronization The synchronization that should run.
+     * @param array $triggerObject The related object payload from the event.
+     * @param string|int $triggerRegister The register of the related object source.
+     * @param string|int $triggerSchema The schema of the related object source.
+     *
+     * @return array|null The fetched parent object as array, or null when it cannot be resolved.
+     */
+    public function resolveParentObjectForRelatedObjectTrigger(
+        Synchronization $synchronization,
+        array $triggerObject,
+        string|int $triggerRegister,
+        string|int $triggerSchema,
+        ?string $mutationType = null
+    ): ?array {
+        if ($synchronization->getSourceType() !== 'register/schema') {
+            return null;
+        }
+
+        $sourceId = $synchronization->getSourceId();
+        if (empty($sourceId) === true || str_contains($sourceId, '/') === false) {
+            return null;
+        }
+
+        $triggerSourceId = "$triggerRegister/$triggerSchema";
+        $sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig());
+        $triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
+
+        $relationKeys = [];
+        if (isset($triggerConfig[$triggerSourceId]) === true && is_array($triggerConfig[$triggerSourceId]) === true) {
+            $relationConfig = $triggerConfig[$triggerSourceId];
+            $firstRelationKey = array_key_first($relationConfig);
+            if (is_string($firstRelationKey) === true && trim($firstRelationKey) !== '') {
+                $relationKeys[] = trim($firstRelationKey);
+            }
+        }
+
+        if ($relationKeys === []) {
+            return null;
+        }
+
+        $triggerObjectDot = new Dot($triggerObject);
+        $relationReference = null;
+        foreach ($relationKeys as $relationKey) {
+            $candidateReference = $triggerObjectDot->get($relationKey);
+            if (is_string($candidateReference) === true && trim($candidateReference) !== '') {
+                $relationReference = trim($candidateReference);
+                break;
+            }
+        }
+
+        if ($relationReference === null) {
+            return null;
+        }
+
+        $parentObjectId = null;
+        if (Uuid::isValid($relationReference) === true) {
+            $parentObjectId = $relationReference;
+        } elseif (filter_var($relationReference, FILTER_VALIDATE_URL) !== false) {
+            $path = trim((string) parse_url($relationReference, PHP_URL_PATH), '/');
+            $segments = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
+            $lastSegment = end($segments) ?: null;
+            if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
+                $parentObjectId = $lastSegment;
+            }
+        }
+
+        if ($parentObjectId === null) {
+            return null;
+        }
+
+        [$parentRegister, $parentSchema] = explode('/', $sourceId, 2);
+        $openRegisters = $this->objectService->getOpenRegisters();
+        if ($openRegisters === null) {
+            return null;
+        }
+
+        try {
+            $parentObject = $openRegisters->find(
+                id: $parentObjectId,
+                register: $parentRegister,
+                schema: $parentSchema
+            );
+
+            return $parentObject?->jsonSerialize();
+        } catch (\Throwable $e) {
+            $this->logger->debug('Failed resolving related parent object via configured relation key', [
+                'synchronizationId' => $synchronization->getId(),
+                'sourceId' => $sourceId,
+                'triggerSourceId' => $triggerSourceId,
+                'relationKeys' => $relationKeys,
+                'relationReference' => $relationReference,
+                'parentObjectId' => $parentObjectId,
+                'error' => $e->getMessage()
+            ]);
+
+            return null;
+        }
+    }
+
 	/**
 	 * Synchronizes internal data to external sources based on synchronization rules.
 	 *
@@ -179,8 +379,38 @@ class SynchronizationService
             $serializedObject = array_merge($serializedObject, $extendedInput);
         }
 
+        // Optionally resolve extend_input configured via sourceConfig instead of targetConfig
+        // (sourceConfig.extendInputBeforeConditions / extendInputFetchObjectBeforeConditions),
+        // before conditions are evaluated, so conditions can inspect the extended/related object.
+        $sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig());
+        if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION]) === true) {
+            $fetchObject = false;
+            if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT]) === true) {
+                $fetchObject = filter_var(
+                    $sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT],
+                    FILTER_VALIDATE_BOOLEAN
+                ) === true;
+            }
+
+            $serializedObject = $this->processExtendInputRule(
+                config: [
+                    'extend_input' => [
+                        'properties' => $sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION],
+                        'fetchObject' => $fetchObject,
+                    ]
+                ],
+                data: $serializedObject
+            );
+        }
+
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $serializedObject)) {
 			return null;
+		}
+
+		// Keep the working object in sync with pre-condition enrichment so mapping
+		// and target payload generation use the same extended data.
+		if (is_array($serializedObject) === true) {
+			$object = $serializedObject;
 		}
 
 		$originId = null;
@@ -2236,8 +2466,8 @@ class SynchronizationService
             } else if (isset($body['id']) === true) {
 				$targetId = $body['id'];
 			} else {
-				throw new Exception('Could not determine an id from target synchronization');
-			}
+					throw new Exception('Could not determine an id from target synchronization');
+				}
 
 			$contract->setTargetId($targetId);
 			return $contract;
@@ -2265,8 +2495,13 @@ class SynchronizationService
 		$this->applyFileUploadToTargetConfig($targetConfig, $contract);
 		$response = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)->getResponse();
 
-		$body = array_merge(json_decode($response['body'], true), ['targetId' => $targetId]);
-        $targetObject = $body;
+            $decodedResponseBody = json_decode($response['body'] ?? '', true);
+            if (is_array($decodedResponseBody) === false) {
+                $decodedResponseBody = [];
+            }
+
+			$body = array_merge($decodedResponseBody, ['targetId' => $targetId]);
+	        $targetObject = $body;
 
 		return $contract;
 	}
@@ -3635,6 +3870,7 @@ class SynchronizationService
 
 		// Check if object adheres to conditions.
 		// Take note, JsonLogic::apply() returns a range of return types, so checking it with '=== false' or '!== true' does not work properly.
+		
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $conditionsObject)) {
 			// Increment skipped count in log since object doesn't meet conditions
 			$result['objects']['skipped']++;

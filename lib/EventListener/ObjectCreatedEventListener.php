@@ -6,14 +6,12 @@ use OCA\OpenConnector\Service\SynchronizationService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use Psr\Log\LoggerInterface;
 
 class ObjectCreatedEventListener implements IEventListener
 {
 
 	public function __construct(
 		private readonly SynchronizationService $synchronizationService,
-        private readonly LoggerInterface $logger,
 	)
 	{
 	}
@@ -32,23 +30,13 @@ class ObjectCreatedEventListener implements IEventListener
         }
 
         $object = $event->getObject();
-        $register = $object->getRegister();
-        $schema = $object->getSchema();
-        if ($object === null || $register === null || $schema === null) {
+        if ($object === null) {
             return;
         }
 
-        $synchronizations = $this->synchronizationService->findAllBySourceId(register: $register, schema: $schema);
-        foreach ($synchronizations as $synchronization) {
-            try {
-                $objectArray = $object->jsonSerialize();
-                $this->synchronizationService->synchronize(synchronization: $synchronization, force: true, object: $objectArray, mutationType: 'create');
-            } catch (\Exception $e) {
-                $this->logger->error('Failed to process object event: ' . $e->getMessage() . ' for synchronization ' . $synchronization->getId(), [
-                    'exception' => $e,
-                    'event' => get_class($event)
-                ]);
-            }
-        }
+        $this->synchronizationService->handleObjectEventSynchronization(
+            object: $object,
+            eventMutationType: 'create'
+        );
     }
 }

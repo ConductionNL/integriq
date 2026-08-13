@@ -144,6 +144,124 @@ class SynchronizationMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+    /**
+     * Find synchronizations that are configured to trigger on related-object mutations.
+     *
+     * sourceConfig shape:
+     * - triggerFromRelatedObjects: {"<register/schema>": {"<relationKey>": ["create","update","delete"]}}
+     *
+     * @param string|int $register Related object register
+     * @param string|int $schema Related object schema
+     * @param string $mutationType create|update|delete
+     *
+     * @return array<Synchronization>
+     */
+    public function findAllByRelatedObjectTrigger(string|int $register, string|int $schema, string $mutationType): array
+    {
+        $allowedMutationTypes = ['create', 'update', 'delete'];
+        if (in_array($mutationType, $allowedMutationTypes, true) === false) {
+            return [];
+        }
+
+        $relatedSourceId = "$register/$schema";
+        $synchronizations = $this->findAll(limit: null, offset: null, filters: ['source_type' => 'register/schema']);
+
+        return array_values(array_filter($synchronizations, function (Synchronization $synchronization) use ($relatedSourceId, $mutationType): bool {
+            $sourceConfig = $synchronization->getSourceConfig();
+
+            $triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
+
+            if (is_array($triggerConfig) === false || isset($triggerConfig[$relatedSourceId]) === false) {
+                return false;
+            }
+
+            return $this->isRelatedTriggerConfigAllowed($triggerConfig[$relatedSourceId], $mutationType);
+        }));
+    }
+
+    /**
+     * Validates trigger configuration for one related source entry.
+     *
+     * Expected shape:
+     * {"<relationKey>": ["create","update","delete"]}
+     *
+     * @param mixed $triggerSourceConfig Config value for one register/schema key.
+     * @param string $mutationType Current mutation type to validate.
+     *
+     * @return bool True when the config allows the given mutation type.
+     */
+    private function isRelatedTriggerConfigAllowed(mixed $triggerSourceConfig, string $mutationType): bool
+    {
+        if (is_array($triggerSourceConfig) === false) {
+            return false;
+        }
+
+        // Required shape: {"<relationKey>": ["create", "update", "delete"]}
+        if ($this->isAssociativeArray($triggerSourceConfig) === true) {
+            $firstRelationKey = array_key_first($triggerSourceConfig);
+            if (is_string($firstRelationKey) === false || trim($firstRelationKey) === '') {
+                return false;
+            }
+
+            return $this->isRelatedObjectMutationAllowed(
+                $triggerSourceConfig[$firstRelationKey] ?? [],
+                $mutationType
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a mutation list allows the given mutation type.
+     *
+     * @param mixed $mutationConfig Array of allowed mutations.
+     * @param string $mutationType Current mutation type.
+     *
+     * @return bool True when allowed (or "all" is present), false otherwise.
+     */
+    private function isRelatedObjectMutationAllowed(mixed $mutationConfig, string $mutationType): bool
+    {
+        if (is_array($mutationConfig) === false) {
+            return false;
+        }
+
+        $normalizedMutations = array_map(
+            static fn (mixed $mutation): string => strtolower((string) $mutation),
+            $mutationConfig
+        );
+
+        if (in_array('all', $normalizedMutations, true) === true) {
+            return true;
+        }
+
+        $normalizedMutationType = strtolower($mutationType);
+
+        // Create and update are treated as one "upsert" group for trigger checks.
+        if ($normalizedMutationType === 'create' || $normalizedMutationType === 'update') {
+            return in_array('create', $normalizedMutations, true) || in_array('update', $normalizedMutations, true);
+        }
+
+        // Delete remains strict and must be explicitly configured.
+        return $normalizedMutationType === 'delete' && in_array('delete', $normalizedMutations, true);
+    }
+
+    /**
+     * Determines whether an array has associative keys.
+     *
+     * @param array $array The array to inspect.
+     *
+     * @return bool True when associative, false when list-like.
+     */
+    private function isAssociativeArray(array $array): bool
+    {
+        if ($array === []) {
+            return false;
+        }
+
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
+
 	public function createFromArray(array $object): Synchronization
 	{
 		$obj = new Synchronization();
