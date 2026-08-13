@@ -155,6 +155,37 @@ class SynchronizationService {
 	private const PREFETCH_WINDOW = 10;
 
 	/**
+	 * Query-string keys a source might use to express its page size.
+	 *
+	 * Needed to turn "how many objects do we expect" into "how many pages is
+	 * that". There is no standard spelling, so the common ones are recognised
+	 * and `sourceConfig.pageSize` overrides all of them. An unrecognised source
+	 * simply yields no prediction and keeps the previous behaviour.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PAGE_SIZE_KEYS = [
+		'per_page',
+		'perPage',
+		'pageSize',
+		'page_size',
+		'limit',
+		'count',
+		'top',
+		'$top',
+	];
+
+	/**
+	 * Pages this run expects to fetch, predicted before the first request.
+	 *
+	 * Null when nothing could be predicted, in which case the engine falls back
+	 * to learning the count from page one's `Link` header as before.
+	 *
+	 * @var int|null
+	 */
+	private ?int $predictedLastPage = null;
+
+	/**
 	 * Whether target/contract writes are being buffered for a bulk flush.
 	 *
 	 * Only the batch loop in synchronizeExternToIntern() turns this on, and it
@@ -5428,6 +5459,48 @@ class SynchronizationService {
 		// synchronization's cached pages.
 		$this->lastPageFromLink = null;
 		$this->pagePrefetch = [];
+		$this->predictedLastPage = null;
+
+		// Predict the page count from the last run's contracts so page ONE can
+		// go out concurrently with the rest instead of being fetched alone to
+		// discover how many pages there are. Skipped for a `next`-link source,
+		// whose pages are only reachable one at a time by construction.
+		if ($usesNextEndpoint !== true) {
+			$dotSourceConfig = $this->callService->applyConfigDot($sourceConfig);
+			$this->predictedLastPage = $this->predictLastPage(
+				synchronization: $synchronization,
+				sourceConfig: $dotSourceConfig
+			);
+
+			// `$currentPage >= 1` because a prefetched page is matched by the page
+			// number in the request config, and page 0 is that lookup's "no
+			// pagination info" sentinel. A source numbering from zero would fetch
+			// its first page twice, so it keeps the sequential path instead.
+			if ($this->predictedLastPage !== null && $this->predictedLastPage > 1 && $currentPage >= 1) {
+				// Page one's request has to be built the SAME way the fan-out
+				// builds pages two onward, or the two will not agree on the cache
+				// key and page one gets fetched a second time. This is the only
+				// behaviour change: the first request now carries an explicit
+				// page number where it previously relied on the source's default.
+				// For any source that paginates at all these are the same page —
+				// and only a synchronization that has already run successfully
+				// reaches this branch, so the shape is one the source has served
+				// before.
+				$config = $this->getNextPage(
+					config: $config,
+					sourceConfig: $sourceConfig,
+					currentPage: $currentPage
+				);
+
+				$this->prefetchRemainingPages(
+					source: $source,
+					endpoint: $endpoint,
+					config: $config,
+					synchronization: $synchronization,
+					fromPage: $currentPage
+				);
+			}
+		}
 
 		for ($i = 0; $i < $maxPages; $i++) {
 			// Fetch the current page.
@@ -5660,6 +5733,7 @@ class SynchronizationService {
 	 * @return void
 	 *
 	 * @see self::PREFETCH_WINDOW for why this fetches a window rather than the whole remainder.
+	 * @see self::predictLastPage() for where the count comes from before any page has been fetched.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
@@ -5670,7 +5744,14 @@ class SynchronizationService {
 		array $synchronization,
 		int $fromPage
 	): void {
-		$last = $this->lastPageFromLink;
+		// The header's count when we have it, otherwise the prediction. The
+		// header is authoritative and replaces the prediction as soon as page
+		// one answers; the prediction only ever decides how far to read AHEAD,
+		// never when to stop — that stays with `rel="last"`, the empty-page rule
+		// and the failure check, so an over- or under-estimate costs requests
+		// rather than correctness.
+		$last = ($this->lastPageFromLink ?? $this->predictedLastPage);
+
 		if ($last === null || $fromPage > $last || $this->pagePrefetch !== []) {
 			// No known count, nothing left, or pages are still in hand — the
 			// buffer emptying is what asks for the next window, so re-running
@@ -5713,6 +5794,102 @@ class SynchronizationService {
 			}
 		}
 	}//end prefetchRemainingPages()
+
+	/**
+	 * Predict how many pages this run will need, before fetching anything.
+	 *
+	 * The point is to stop paying for a serial first request. Today the engine
+	 * fetches page one, reads `rel="last"` off it, and only then fans out — so
+	 * the first page is always sequential, and on a four-page source that is
+	 * 40% of the fetch. If the page count is known UP FRONT, page one goes out
+	 * with all the others.
+	 *
+	 * The count is free when the synchronization has run before: it wrote one
+	 * contract per source record, so the number of contracts IS last run's
+	 * object count. A source does not usually change size dramatically between
+	 * runs, and being wrong is cheap in both directions — too low and the
+	 * existing top-up fetches the rest, too high and a few requests come back
+	 * empty. Neither can truncate the run, because none of the stop conditions
+	 * consult this number.
+	 *
+	 * Returns null when there is no prior run, when the page size cannot be
+	 * determined, or when the synchronization does not paginate — all of which
+	 * leave the previous "fetch page one, then fan out" behaviour untouched.
+	 *
+	 * @param array $synchronization The synchronization about to run.
+	 * @param array $sourceConfig The dot-expanded source config.
+	 *
+	 * @return int|null The expected last page, or null when it cannot be predicted.
+	 */
+	private function predictLastPage(array $synchronization, array $sourceConfig): ?int {
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($pageSize === null || $pageSize < 1) {
+			return null;
+		}
+
+		$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
+		if ($synchronizationId === '') {
+			return null;
+		}
+
+		try {
+			$knownObjects = $this->orObjectService->count(
+				config: [
+					'filters' => [
+						'register' => 'openconnector',
+						'schema' => 'synchronization_contract',
+						'synchronizationId' => $synchronizationId,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// A prediction is an optimisation; failing to make one must never
+			// fail the run that would have gone ahead without it.
+			$this->logger->debug(
+				'Could not predict the page count from existing contracts: '.$e->getMessage()
+			);
+			return null;
+		}
+
+		if ($knownObjects < 1) {
+			return null;
+		}
+
+		return (int)ceil($knownObjects / $pageSize);
+	}//end predictLastPage()
+
+	/**
+	 * Work out how many records a page of this source holds.
+	 *
+	 * `sourceConfig.pageSize` wins when set. Otherwise the request's own query
+	 * string is inspected for one of the conventional spellings — there is no
+	 * standard, so this recognises the common ones and gives up cleanly rather
+	 * than guessing.
+	 *
+	 * @param array $sourceConfig The dot-expanded source config.
+	 *
+	 * @return int|null The page size, or null when it cannot be determined.
+	 */
+	private function resolvePageSize(array $sourceConfig): ?int {
+		$explicit = ($sourceConfig['pageSize'] ?? null);
+		if ($explicit !== null && (int)$explicit > 0) {
+			return (int)$explicit;
+		}
+
+		$query = ($sourceConfig['query'] ?? []);
+		if (is_array($query) === false) {
+			return null;
+		}
+
+		foreach (self::PAGE_SIZE_KEYS as $key) {
+			$value = ($query[$key] ?? null);
+			if ($value !== null && is_numeric($value) === true && (int)$value > 0) {
+				return (int)$value;
+			}
+		}
+
+		return null;
+	}//end resolvePageSize()
 
 	/**
 	 * Read the total page count from an RFC 5988 `Link` header.
