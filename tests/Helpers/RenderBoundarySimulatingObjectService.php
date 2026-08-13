@@ -84,6 +84,8 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_render = true,
+		bool $_audit = true,
+		?array $_extend = [],
 	): ?ObjectEntity {
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
 

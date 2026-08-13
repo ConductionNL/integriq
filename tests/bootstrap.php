@@ -126,6 +126,15 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}
 
+		// A stub file that nothing requires is a stub that does not exist.
+		// `SynchronizationContractService::persist()` calls
+		// `SystemOperationContext::run()` unguarded, so without this line three
+		// tests error with `Class not found` — pointing at production code and
+		// naming nothing about a missing stub.
+		if (class_exists('OCA\\OpenRegister\\Service\\SystemOperationContext') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
 		}
