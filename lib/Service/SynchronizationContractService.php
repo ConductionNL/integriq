@@ -271,6 +271,53 @@ class SynchronizationContractService {
 	}//end persist()
 
 	/**
+	 * Persist a batch of contract payloads in one bulk write.
+	 *
+	 * Same semantics as {@see persist()} — uuid-keyed upsert, no audit row, no
+	 * lifecycle event, no re-validation — applied to a whole page of contracts
+	 * at once. A synchronization writes exactly one contract per source record,
+	 * so on a large run this is the single most repeated write in the engine:
+	 * one round trip each, all of them identical in shape.
+	 *
+	 * OpenRegister's bulk path takes each row's identity from `id`, where the
+	 * single-object path takes it from the `uuid` parameter. The legacy int `id`
+	 * a contract payload may carry is not an OpenRegister identifier, so it is
+	 * overwritten with the uuid rather than merely dropped.
+	 *
+	 * @param array<int, array> $contracts The contract payload arrays to persist.
+	 *
+	 * @return array The OpenRegister bulk-save result, or an empty array for an empty batch.
+	 */
+	public function persistBulk(array $contracts): array {
+		$rows = [];
+		foreach ($contracts as $contract) {
+			$object = $contract;
+
+			if (empty($object['uuid']) === true) {
+				$object['uuid'] = (string)Uuid::v4();
+			}
+
+			$object['id'] = (string)$object['uuid'];
+			$rows[] = $object;
+		}
+
+		if ($rows === []) {
+			return [];
+		}
+
+		return \OCA\OpenRegister\Service\SystemOperationContext::run(
+			fn (): array => $this->orObjectService->saveObjects(
+				objects: $rows,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				validation: false,
+				events: false,
+				_audit: false
+			)
+		);
+	}//end persistBulk()
+
+	/**
 	 * Persist a contract from array data, auto-filling uuid + version.
 	 *
 	 * Replaces the legacy `SynchronizationContractMapper::createFromArray()`.

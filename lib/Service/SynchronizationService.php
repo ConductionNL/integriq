@@ -97,6 +97,102 @@ class SynchronizationService {
 	private array $pagePrefetch = [];
 
 	/**
+	 * Number of buffered target rows that forces an intermediate flush.
+	 *
+	 * A run's whole object list is processed in one loop, so without a ceiling
+	 * the buffer would hold every mapped object of a several-hundred-thousand
+	 * row sync in memory before the first write. Flushing at this size bounds
+	 * peak memory while keeping batches large enough for the bulk path to be
+	 * worth taking.
+	 *
+	 * @var int
+	 */
+	private const WRITE_BUFFER_FLUSH_SIZE = 500;
+
+	/**
+	 * Namespace for deriving a target object's uuid from its source identity.
+	 *
+	 * A buffered write has to know the target uuid BEFORE the row is written, so
+	 * the contract can be built against it. Deriving that uuid deterministically
+	 * from (synchronization, originId) rather than drawing a random one makes the
+	 * write idempotent, which is what closes the only window this batching opens.
+	 *
+	 * Without it, a run interrupted between the object flush and the contract
+	 * flush leaves objects written with no mapping — the state that makes the
+	 * next run treat those source records as new and create a SECOND copy of
+	 * each. Per-record writes had the same hole but only ever one record wide;
+	 * batching would have widened it to a whole flush.
+	 *
+	 * With a derived uuid there is no hole at all: the next run computes the same
+	 * uuid for the same source record, and OpenRegister's uuid-keyed upsert
+	 * updates the row that is already there. That is strictly better than the
+	 * per-record behaviour it replaces, not merely as good.
+	 *
+	 * @var string
+	 */
+	private const TARGET_UUID_NAMESPACE = '6f9a1f8e-4a2b-5c3d-9e7f-1b2c3d4e5f60';
+
+	/**
+	 * Whether target/contract writes are being buffered for a bulk flush.
+	 *
+	 * Only the batch loop in synchronizeExternToIntern() turns this on, and it
+	 * always turns it off again in a `finally`. Every other entry point —
+	 * a standalone updateTarget() call, the single-object and delete paths —
+	 * writes inline exactly as before, because there is no loop after which a
+	 * buffer would be flushed and a buffered write would simply be lost.
+	 *
+	 * @var bool
+	 */
+	private bool $bufferWrites = false;
+
+	/**
+	 * Mapped target rows awaiting a bulk write, grouped by "register/schema".
+	 *
+	 * Each group is `['register' => ?, 'schema' => ?, 'validation' => bool,
+	 * 'events' => bool, 'audit' => bool, 'rows' => array<string, array>]`, with
+	 * rows keyed by the target uuid so a source that yields the same object
+	 * twice in one run collapses to one write rather than racing itself.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private array $targetWriteBuffer = [];
+
+	/**
+	 * Contract payloads awaiting persistence, in the order they were produced.
+	 *
+	 * Flushed AFTER the target buffer — see flushWriteBuffers() for why that
+	 * ordering is the whole point of buffering both sides together.
+	 *
+	 * @var array<int, array>
+	 */
+	private array $contractWriteBuffer = [];
+
+	/**
+	 * Whether the most recent updateTarget() call buffered its write.
+	 *
+	 * Set by updateTargetOpenRegister() and read by synchronizeContract()
+	 * immediately afterwards, so the contract for a buffered target is buffered
+	 * too. A contract may only be deferred when its object is also deferred:
+	 * persisting it while the object is still in the buffer would leave a
+	 * mapping pointing at a row that does not exist yet.
+	 *
+	 * @var bool
+	 */
+	private bool $lastTargetWriteBuffered = false;
+
+	/**
+	 * Milliseconds spent inside flushWriteBuffers() during the current run.
+	 *
+	 * Reported alongside `process_objects` so the stage separates the engine's
+	 * per-record work from the database writes it batches. Without the split, a
+	 * stage timing cannot say whether the next optimisation belongs in the
+	 * mapping path or in the storage layer.
+	 *
+	 * @var float
+	 */
+	private float $writeFlushMs = 0.0;
+
+	/**
 	 * The synchronizations currently on the chaining call stack.
 	 *
 	 * OpenConnector chains synchronizations two ways — a `synchronization` rule
@@ -1832,10 +1928,14 @@ class SynchronizationService {
 			$contractIndex = $this->indexContractsByOrigin(
 				synchronizationId: (string)($synchronization['id'] ?? ''),
 				originIds: array_map(
-					fn ($item): string => $this->getOriginId(
-						synchronization: $synchronization,
-						object: (is_array($item) === true ? $item : ['id' => $item])
-					),
+					function ($item) use ($synchronization): string {
+						$asArray = ['id' => $item];
+						if (is_array($item) === true) {
+							$asArray = $item;
+						}
+
+						return $this->getOriginId(synchronization: $synchronization, object: $asArray);
+					},
 					$objectList
 				),
 				justByOriginId: (
@@ -1844,98 +1944,133 @@ class SynchronizationService {
 				)
 			);
 
-			foreach ($objectList as $object) {
-				// Bare-scalar source item coercion (synchronization-engine
-				// spec REQ-002/REQ-008, change sync-engine-scalar-items):
-				// getOriginId() and processSynchronizationObject() are
-				// `array`-typed; PHP does not coerce a scalar across a
-				// strict type hint, so an uncoerced scalar (e.g. a source
-				// returning a bare array of strings) throws a TypeError at
-				// the call boundary before either method body — and before
-				// processSynchronizationObject()'s own defensive
-				// is_array() === false skip-check — ever runs. Wrap a bare
-				// scalar into a canonical ['value' => ...] shape here, the
-				// single earliest point common to every sourceType, so it
-				// flows through mapping/identity/write like any other item
-				// instead of dead-lettering with an opaque low-level type
-				// error. A synchronization whose source returns scalar
-				// items MUST set sourceConfig.idPosition to 'value' for
-				// getOriginId()'s default idPosition ('id') to be
-				// overridden and resolve identity on this coerced shape.
-				// Guarded by is_array() === false so every existing
-				// array-shaped item — the overwhelming common case — is
-				// returned completely untouched, with no behaviour change
-				// to identity-hash semantics for non-scalar sources.
-				if (is_array($object) === false) {
-					$object = ['value' => $object];
-				}
+			// Buffer target and contract writes for the duration of this loop so
+			// a page's objects reach the database as batched upserts instead of
+			// one round trip per record. See flushWriteBuffers() for why BOTH
+			// sides have to be deferred together, and why the flush order is
+			// load-bearing.
+			//
+			// A test run is excluded: REQ-011 guarantees a dry run makes no
+			// writes, and synchronizeContract() returns before reaching either
+			// write, so there would be nothing to flush anyway.
+			//
+			// The `finally` is not defensive tidying — it is what makes the mode
+			// flag safe. This service is a shared container instance that
+			// re-enters itself through `synchronization` rules and `followUps`,
+			// so a flag left true by a throw would make some later, unbuffered
+			// call path silently buffer writes that nothing ever flushes.
+			$this->targetWriteBuffer = [];
+			$this->contractWriteBuffer = [];
+			$this->writeFlushMs = 0.0;
+			$this->bufferWrites = ($isTest === false);
 
-				$objectStartTime = microtime(true);
+			try {
+				foreach ($objectList as $object) {
+					// Bare-scalar source item coercion (synchronization-engine
+					// spec REQ-002/REQ-008, change sync-engine-scalar-items):
+					// getOriginId() and processSynchronizationObject() are
+					// `array`-typed; PHP does not coerce a scalar across a
+					// strict type hint, so an uncoerced scalar (e.g. a source
+					// returning a bare array of strings) throws a TypeError at
+					// the call boundary before either method body — and before
+					// processSynchronizationObject()'s own defensive
+					// is_array() === false skip-check — ever runs. Wrap a bare
+					// scalar into a canonical ['value' => ...] shape here, the
+					// single earliest point common to every sourceType, so it
+					// flows through mapping/identity/write like any other item
+					// instead of dead-lettering with an opaque low-level type
+					// error. A synchronization whose source returns scalar
+					// items MUST set sourceConfig.idPosition to 'value' for
+					// getOriginId()'s default idPosition ('id') to be
+					// overridden and resolve identity on this coerced shape.
+					// Guarded by is_array() === false so every existing
+					// array-shaped item — the overwhelming common case — is
+					// returned completely untouched, with no behaviour change
+					// to identity-hash semantics for non-scalar sources.
+					if (is_array($object) === false) {
+						$object = ['value' => $object];
+					}
 
-				// Per-item isolation (synchronization-engine spec REQ-008,
-				// change retry-and-circuit-breaker-policies): a single
-				// object's mapping/write failure must not abort the rest of
-				// the pass — previously an uncaught exception here propagated
-				// through this un-guarded loop. On catch: capture a
-				// sync_item_dead_letter entry, count the item as invalid, and
-				// continue with the next object.
-				try {
-					$processResult = $this->processSynchronizationObject(
-						synchronization: $synchronization,
-						flowToken: $flowToken,
-						object: $object,
-						result: $result,
-						isTest: $isTest,
-						force: $force,
-						log: $log,
-						trace: $trace,
-						contractIndex: $contractIndex
-					);
-				} catch (\Throwable $itemException) {
-					$result['objects']['invalid']++;
+					$objectStartTime = microtime(true);
 
-					// Log the reason as well as dead-lettering it. Without this the
-					// run log carries only a bare `invalid: N` count and the cause
-					// is reachable ONLY by querying sync_item_dead_letter objects —
-					// so a whole sync failing looks indistinguishable from the
-					// target rejecting the objects on schema validation. Note that
-					// `invalid` conflates three unrelated conditions (this throw, a
-					// non-array source item, and an unrecognised resultAction), so
-					// the message states which one this is.
-					$this->logger->warning(
-						'Synchronization item counted as invalid: item processing threw',
-						[
-							'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-							'exception' => $itemException->getMessage(),
-							'exceptionClass' => get_class($itemException),
-							'file' => $itemException->getFile() . ':' . $itemException->getLine(),
-						]
-					);
+					// Per-item isolation (synchronization-engine spec REQ-008,
+					// change retry-and-circuit-breaker-policies): a single
+					// object's mapping/write failure must not abort the rest of
+					// the pass — previously an uncaught exception here propagated
+					// through this un-guarded loop. On catch: capture a
+					// sync_item_dead_letter entry, count the item as invalid, and
+					// continue with the next object.
+					try {
+						$processResult = $this->processSynchronizationObject(
+							synchronization: $synchronization,
+							flowToken: $flowToken,
+							object: $object,
+							result: $result,
+							isTest: $isTest,
+							force: $force,
+							log: $log,
+							trace: $trace,
+							contractIndex: $contractIndex
+						);
+					} catch (\Throwable $itemException) {
+						$result['objects']['invalid']++;
 
-					$this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
+						// Log the reason as well as dead-lettering it. Without this the
+						// run log carries only a bare `invalid: N` count and the cause
+						// is reachable ONLY by querying sync_item_dead_letter objects —
+						// so a whole sync failing looks indistinguishable from the
+						// target rejecting the objects on schema validation. Note that
+						// `invalid` conflates three unrelated conditions (this throw, a
+						// non-array source item, and an unrecognised resultAction), so
+						// the message states which one this is.
+						$this->logger->warning(
+							'Synchronization item counted as invalid: item processing threw',
+							[
+								'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+								'exception' => $itemException->getMessage(),
+								'exceptionClass' => get_class($itemException),
+								'file' => $itemException->getFile() . ':' . $itemException->getLine(),
+							]
+						);
 
-					$objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
-					continue;
-				}//end try
+						$this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
 
-				$objectProcessingTime = round((microtime(true) - $objectStartTime) * 1000, 2);
-				$objectProcessingTimes[] = $objectProcessingTime;
+						$objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
+						continue;
+					}//end try
 
-				$result = $processResult['result'];
+					$objectProcessingTime = round((microtime(true) - $objectStartTime) * 1000, 2);
+					$objectProcessingTimes[] = $objectProcessingTime;
 
-				// `_embed` is deliberately NOT built here. It used to be, on every
-				// object, over the WHOLE accumulated `contracts` list — so the list
-				// was re-read from the database end to end once per item. Measured
-				// on a TEN record sync: 27,455 single-object contract reads, which
-				// is the list length times the object count, and ~69 seconds of
-				// database time on its own. It is enrichment for the FINAL result
-				// and nothing inside this loop reads it, so it is built once after
-				// the loop instead.
+					$result = $processResult['result'];
 
-				if ($processResult['targetId'] !== null) {
-					$synchronizedTargetIds[] = $processResult['targetId'];
-				}
-			}//end foreach
+					// `_embed` is deliberately NOT built here. It used to be, on every
+					// object, over the WHOLE accumulated `contracts` list — so the list
+					// was re-read from the database end to end once per item. Measured
+					// on a TEN record sync: 27,455 single-object contract reads, which
+					// is the list length times the object count, and ~69 seconds of
+					// database time on its own. It is enrichment for the FINAL result
+					// and nothing inside this loop reads it, so it is built once after
+					// the loop instead.
+
+					if ($processResult['targetId'] !== null) {
+						$synchronizedTargetIds[] = $processResult['targetId'];
+					}
+
+					// Bound peak memory: this loop covers the run's WHOLE object
+					// list, not one page, so an unbounded buffer would hold every
+					// mapped row of a large sync before the first write. Flushing
+					// mid-loop keeps the objects-then-contracts order intact — each
+					// flush is self-contained, and every contract it writes maps an
+					// object written by that same flush or an earlier one.
+					if ($this->countBufferedTargetRows() >= self::WRITE_BUFFER_FLUSH_SIZE) {
+						$this->flushWriteBuffers();
+					}
+				}//end foreach
+			} finally {
+				$this->bufferWrites = false;
+				$this->flushWriteBuffers();
+			}
 
 			// Resolve the run's contracts for `_embed` ONCE, in one query.
 			//
@@ -1976,7 +2111,13 @@ class SynchronizationService {
 			}
 
 			$result['_embed']['contracts'] = array_map(
-				static fn ($contractId) => ($contractId === null ? null : ($resolved[(string) $contractId] ?? null)),
+				static function ($contractId) use ($resolved) {
+					if ($contractId === null) {
+						return null;
+					}
+
+					return ($resolved[(string)$contractId] ?? null);
+				},
 				($result['contracts'] ?? [])
 			);
 
@@ -1996,9 +2137,14 @@ class SynchronizationService {
 				$medianObjectMs = $this->calculateMedian(numbers: $objectProcessingTimes);
 			}
 
+			// Split the stage into the database writes and everything else, so a
+			// future measurement can tell whether the next win is in the mapping
+			// path or the storage layer instead of having to re-derive it.
 			$result['timing']['stages']['process_objects'] = [
 				'duration_ms' => $totalProcessingDuration,
 				'description' => 'Processing and synchronizing individual objects',
+				'bulk_write_ms' => round($this->writeFlushMs, 2),
+				'engine_ms' => round(($totalProcessingDuration - $this->writeFlushMs), 2),
 				'objects_processed' => count($objectList),
 				'average_per_object_ms' => $averagePerObjectMs,
 				'min_object_ms' => $minObjectMs,
@@ -3438,9 +3584,29 @@ class SynchronizationService {
 	): array|Exception {
 		$contractLog = null;
 
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+		// `logs: false` on the synchronization turns OFF the per-contract log
+		// object, not just the target object's audit row.
+		//
+		// This is the write that dominates a STEADY-STATE run — the nightly
+		// re-sync of a source that has not changed, which is the shape most
+		// synchronizations spend their life in. Every record writes a contract
+		// log here and updates it again a few lines below, so a run that creates
+		// nothing and updates nothing still costs two object writes per record:
+		// measured on 374 unchanged GitHub repos, 17.2 s to decide that there was
+		// nothing to do.
+		//
+		// The flag already existed and already meant "this synchronization does
+		// not need a paper trail", but it only ever reached the target object's
+		// audit row, so the engine's own logging carried on regardless. Defaults
+		// to on, so a synchronization that says nothing keeps every log it has
+		// today.
+		$contractLoggingEnabled = ((($sourceConfig['logs'] ?? true) !== false));
+
 		// We are doing something so lets log it.
 		$hasContractId = isset($synchronizationContract['id']) === true && $synchronizationContract['id'] !== null;
-		$hasLogService = $this->synchronizationContractLogService !== null;
+		$hasLogService = ($this->synchronizationContractLogService !== null && $contractLoggingEnabled === true);
 		if ($hasContractId === true && $hasLogService === true) {
 			$contractLog = $this->synchronizationContractLogService->createFromArray(
 				object: [
@@ -3459,8 +3625,6 @@ class SynchronizationService {
 		}
 
 		$flowToken->setSyncInputOriginal($object);
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// Check if extra data needs to be fetched.
 		// If not fetched before conditions, fetch now.
@@ -3610,7 +3774,8 @@ class SynchronizationService {
 			synchronizationContract: $synchronizationContract,
 			targetObject: $object,
 			mutationType: $mutationType,
-			trace: $trace
+			trace: $trace,
+			synchronization: $synchronization
 		);
 
 		// Ocon#109: persist the identity mapping BEFORE the `after` rules run.
@@ -3713,14 +3878,26 @@ class SynchronizationService {
 			}
 		}
 
-		if (empty($synchronizationContract['id'] ?? null) === false) {
-			$synchronizationContract = $this->persistContract(contract: $synchronizationContract);
-		} else {
-			if (($synchronizationContract['uuid'] ?? null) === null) {
-				$synchronizationContract['uuid'] = (string)Uuid::v4();
-			}
+		if (($synchronizationContract['uuid'] ?? null) === null) {
+			$synchronizationContract['uuid'] = (string)Uuid::v4();
+		}
 
-			$synchronizationContract = $this->persistContract(contract: $synchronizationContract, ensureUuid: true);
+		if ($this->lastTargetWriteBuffered === true) {
+			// The object this contract maps is still sitting in the write buffer,
+			// so the contract goes in behind it and both are written by the same
+			// flush — objects first. Persisting the mapping now would record that
+			// source object X lives at target A while A does not exist yet.
+			//
+			// The uuid was just assigned above, so callers that read
+			// `contract.uuid` off the return value (the run result's `contracts`
+			// list, and the `_embed` resolution that follows the batch loop) get
+			// the same value the flush will write under.
+			$this->contractWriteBuffer[] = $synchronizationContract;
+		} else {
+			$synchronizationContract = $this->persistContract(
+				contract: $synchronizationContract,
+				ensureUuid: true
+			);
 		}
 
 		$resultLog = [];
@@ -3765,6 +3942,16 @@ class SynchronizationService {
 		$objectService = $this->orObjectService;
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
+		// Every write starts unbuffered; the save branch below opts in.
+		$this->lastTargetWriteBuffered = false;
+
+		// Whether this contract already pointed at a target BEFORE this write.
+		// That, not the state after it, is what distinguishes a create from an
+		// update — the post-write check this used to do was always true, because
+		// `targetId` is assigned from the saved entity a few lines above it, so
+		// `targetLastAction` could never say 'create'.
+		$hadTargetId = (($synchronizationContract['targetId'] ?? null) !== null);
+
 		// If we already have an id, we need to get the object and update it.
 		if (isset($synchronizationContract['targetId']) === true && $synchronizationContract['targetId'] !== null) {
 			$targetObject['id'] = $synchronizationContract['targetId'];
@@ -3795,6 +3982,42 @@ class SynchronizationService {
 				}
 
 				$targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
+
+				// Bulk path: hand the row to the run's write buffer instead of
+				// writing it here, so a whole page of objects goes to the database
+				// as one batched upsert. Measured on a 374-record GitHub sync:
+				// 374 target writes at ~20-25ms each is 8.8s of a 16.1s run, and
+				// every one of them re-resolves the same register and schema.
+				//
+				// Three conditions have to hold, and each of them is a thing that
+				// reads the object back before the buffer would be flushed:
+				//
+				// - `$this->bufferWrites` — only the batch loop in
+				// synchronizeExternToIntern() sets it, and it always flushes
+				// afterwards. Anywhere else a buffered write has no flush to
+				// reach and would simply be dropped.
+				// - no `subObjects` — that branch calls renderEntity() on the
+				// returned entity a few lines below, which needs a real write.
+				// - no `actions` — the `after` rules in synchronizeContract() run
+				// against `targetId` and may fetch the object. This is the same
+				// condition that already gates the pre-rules contract persist, so
+				// a synchronization WITH rules keeps today's behaviour end to end
+				// rather than being half-buffered.
+				$canBufferWrite = ($this->bufferWrites === true
+					&& isset($sourceConfig['subObjects']) === false
+					&& empty($synchronization['actions'] ?? []) === true);
+
+				if ($canBufferWrite === true) {
+					return $this->bufferTargetSave(
+						synchronizationContract: $synchronizationContract,
+						synchronization: $synchronization,
+						targetObject: $targetObject,
+						sourceConfig: $sourceConfig,
+						register: $register,
+						schema: $schema,
+						hadTargetId: $hadTargetId
+					);
+				}
 
 				// `events: false` on the synchronization runs the write inside
 				// OpenRegister's SystemOperationContext, which is what actually
@@ -3851,7 +4074,14 @@ class SynchronizationService {
 				}
 
 				// Set target last action based on whether we're creating or updating.
-				if (empty($synchronizationContract['targetId'] ?? null) === false) {
+				// Keyed on the contract's targetId BEFORE the write: the check
+				// used to run afterwards, against a field assigned from the saved
+				// entity a dozen lines up, so it was true for every record and the
+				// 'create' branch was unreachable. Every synchronization on this
+				// instance reported `targetLastAction: update`, including the ones
+				// that had just created the object — which is what the flow node's
+				// `outcome` and the contract provider both read.
+				if ($hadTargetId === true) {
 					$synchronizationContract['targetLastAction'] = 'update';
 				} else {
 					$synchronizationContract['targetLastAction'] = 'create';
@@ -3869,6 +4099,344 @@ class SynchronizationService {
 
 		return $synchronizationContract;
 	}//end updateTargetOpenRegister()
+
+	/**
+	 * Queue a mapped target row for the run's bulk write instead of writing it now.
+	 *
+	 * The uuid is assigned HERE rather than read back from the write, which is
+	 * what makes deferring the write possible at all: `targetId` has to be known
+	 * before the row lands so the contract can be built against it. OpenRegister
+	 * honours a client-supplied id on both the single and the bulk path.
+	 *
+	 * @param array $synchronizationContract The contract being updated.
+	 * @param array $synchronization The synchronization being run.
+	 * @param array $targetObject The mapped object to write.
+	 * @param array $sourceConfig The dot-expanded source config.
+	 * @param string $register The target register id.
+	 * @param string $schema The target schema id.
+	 * @param bool $hadTargetId Whether the contract already pointed at a target BEFORE this write.
+	 *
+	 * @return array The contract, with `targetId` and `targetLastAction` set.
+	 */
+	private function bufferTargetSave(
+		array $synchronizationContract,
+		array $synchronization,
+		array $targetObject,
+		array $sourceConfig,
+		string $register,
+		string $schema,
+		bool $hadTargetId,
+	): array {
+		$targetUuid = ($synchronizationContract['targetId'] ?? null);
+		if ($targetUuid === null || $targetUuid === '') {
+			$targetUuid = $this->deriveTargetUuid(
+				synchronization: $synchronization,
+				synchronizationContract: $synchronizationContract
+			);
+		}
+
+		$targetObject['id'] = (string)$targetUuid;
+		$synchronizationContract['targetId'] = (string)$targetUuid;
+
+		$this->bufferTargetWrite(
+			register: $register,
+			schema: $schema,
+			uuid: (string)$targetUuid,
+			row: $targetObject,
+			sourceConfig: $sourceConfig
+		);
+
+		$this->lastTargetWriteBuffered = true;
+
+		$synchronizationContract['targetLastAction'] = 'create';
+		if ($hadTargetId === true) {
+			$synchronizationContract['targetLastAction'] = 'update';
+		}
+
+		return $synchronizationContract;
+	}//end bufferTargetSave()
+
+	/**
+	 * Derive a target object's uuid from the source record it maps.
+	 *
+	 * Same synchronization + same originId always yields the same uuid, so a
+	 * re-sync of a record whose contract was lost updates the row that exists
+	 * instead of creating a duplicate of it. See
+	 * {@see self::TARGET_UUID_NAMESPACE} for why that matters here.
+	 *
+	 * Falls back to a random uuid when there is no origin id to derive from —
+	 * without one there is nothing stable to key on, and a shared derived uuid
+	 * would be far worse than a random one: every such record would collapse
+	 * onto the same target row.
+	 *
+	 * @param array $synchronization The synchronization being run.
+	 * @param array $synchronizationContract The contract carrying the origin id.
+	 *
+	 * @return string The uuid to write the target object under.
+	 */
+	private function deriveTargetUuid(array $synchronization, array $synchronizationContract): string {
+		$originId = (string)($synchronizationContract['originId'] ?? '');
+		$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
+
+		if ($originId === '' || $synchronizationId === '') {
+			return (string)Uuid::v4();
+		}
+
+		return (string)Uuid::v5(
+			Uuid::fromString(self::TARGET_UUID_NAMESPACE),
+			$synchronizationId.'|'.$originId
+		);
+	}//end deriveTargetUuid()
+
+	/**
+	 * Add a mapped target row to the pending bulk write, grouped by register/schema.
+	 *
+	 * Rows are keyed by target uuid so a source that yields the same object twice
+	 * within one flush window collapses to a single write, with the later copy
+	 * winning — the same outcome as two sequential saves, without the first one.
+	 *
+	 * The per-synchronization `validation` / `events` / `logs` switches are stored
+	 * on the group rather than consulted at flush time, because a flush is not
+	 * given the synchronization and a single run could in principle buffer rows
+	 * for more than one target.
+	 *
+	 * @param string $register The target register id.
+	 * @param string $schema The target schema id.
+	 * @param string $uuid The pre-assigned uuid of the target object.
+	 * @param array $row The mapped object to write.
+	 * @param array $sourceConfig The synchronization's dot-expanded source config.
+	 *
+	 * @return void
+	 */
+	private function bufferTargetWrite(
+		string $register,
+		string $schema,
+		string $uuid,
+		array $row,
+		array $sourceConfig,
+	): void {
+		$groupKey = $register.'/'.$schema;
+
+		if (isset($this->targetWriteBuffer[$groupKey]) === false) {
+			$this->targetWriteBuffer[$groupKey] = [
+				'register' => $register,
+				'schema' => $schema,
+				'validation' => (($sourceConfig['validation'] ?? true) !== false),
+				'events' => (($sourceConfig['events'] ?? true) !== false),
+				'audit' => (($sourceConfig['logs'] ?? true) !== false),
+				'rows' => [],
+			];
+		}
+
+		$this->targetWriteBuffer[$groupKey]['rows'][$uuid] = $row;
+	}//end bufferTargetWrite()
+
+	/**
+	 * Count the target rows currently held across all buffered groups.
+	 *
+	 * @return int The number of buffered target rows.
+	 */
+	private function countBufferedTargetRows(): int {
+		$count = 0;
+		foreach ($this->targetWriteBuffer as $group) {
+			$count += count(($group['rows'] ?? []));
+		}
+
+		return $count;
+	}//end countBufferedTargetRows()
+
+	/**
+	 * Write every buffered target object, then every buffered contract.
+	 *
+	 * THAT ORDER IS THE ENTIRE REASON both sides are buffered together, and it is
+	 * the one thing in here that must not be rearranged.
+	 *
+	 * A synchronization contract records only that source object X maps to target
+	 * object A, so that a re-run writes X's changes to A instead of creating a
+	 * second A. Buffering just ONE of the two writes breaks that in one direction
+	 * or the other:
+	 *
+	 * - buffer the targets and persist contracts inline, and a contract points at
+	 * an object that has not been written yet
+	 * - buffer the contracts and write targets inline, and a run that dies
+	 * mid-loop leaves objects written with no mapping. That IS the duplicate bug
+	 * the pre-rules persist exists to prevent: the next run finds no contract for
+	 * the originId, treats the row as new, and creates a copy. Every re-run adds
+	 * another one.
+	 *
+	 * Flushing objects first and their contracts second is strictly SAFER than
+	 * writing both inline, which is what today's per-record path does: there, a
+	 * crash between a single record's two writes leaves exactly the inconsistency
+	 * above. Here the worst interruption leaves objects written and their
+	 * contracts missing, which the next run repairs by re-syncing onto the same
+	 * uuids — the objects carry the ids the contracts would have referenced.
+	 *
+	 * @return void
+	 */
+	private function flushWriteBuffers(): void {
+		$flushStart = microtime(true);
+		try {
+			$this->writeBufferedRows();
+		} finally {
+			$this->writeFlushMs += ((microtime(true) - $flushStart) * 1000);
+		}
+	}//end flushWriteBuffers()
+
+	/**
+	 * Write the buffered target objects and then the buffered contracts.
+	 *
+	 * The body of {@see flushWriteBuffers()}, split out only so the timing
+	 * wrapper does not have to thread an accumulator through this method's
+	 * several early returns.
+	 *
+	 * @return void
+	 */
+	private function writeBufferedRows(): void {
+		$groups = $this->targetWriteBuffer;
+		$contracts = $this->contractWriteBuffer;
+
+		// Cleared BEFORE the writes, not after: a throw from either loop must not
+		// leave the buffer populated for a later flush to write a second time.
+		$this->targetWriteBuffer = [];
+		$this->contractWriteBuffer = [];
+
+		foreach ($groups as $group) {
+			$this->writeTargetGroup(group: $group);
+		}
+
+		$this->writeContractBatch(contracts: $contracts);
+	}//end writeBufferedRows()
+
+	/**
+	 * Bulk-write one register+schema group of buffered target rows.
+	 *
+	 * @param array $group A buffer group as built by {@see bufferTargetWrite()}.
+	 *
+	 * @return void
+	 */
+	private function writeTargetGroup(array $group): void {
+		$rows = array_values(($group['rows'] ?? []));
+		if ($rows === []) {
+			return;
+		}
+
+		// `events: false` runs the batch inside OpenRegister's
+		// SystemOperationContext for the same reason the single-object path
+		// does: the bulk dispatcher checks that context, and MagicMapper's own
+		// dispatch — a layer below the flag — checks nothing else.
+		$writeBatch = fn (): array => $this->orObjectService->saveObjects(
+			objects: $rows,
+			register: $group['register'],
+			schema: $group['schema'],
+			validation: $group['validation'],
+			events: $group['events'],
+			_audit: $group['audit']
+		);
+
+		if ($group['events'] === false) {
+			$bulkResult = \OCA\OpenRegister\Service\SystemOperationContext::run($writeBatch);
+		} else {
+			$bulkResult = $writeBatch();
+		}
+
+		// A bulk save reports per-row rejections in its result instead of
+		// throwing, so a batch can come back "successful" having written
+		// nothing. Surface that: the alternative is a run whose log says it
+		// created N objects that are not in the database.
+		$invalidCount = (int)(($bulkResult['statistics']['invalid'] ?? 0));
+		$errorCount = (int)(($bulkResult['statistics']['errors'] ?? 0));
+		if ($invalidCount === 0 && $errorCount === 0) {
+			return;
+		}
+
+		$this->logger->warning(
+			'Bulk target write rejected rows during a synchronization flush',
+			[
+				'target' => $group['register'].'/'.$group['schema'],
+				'requested' => count($rows),
+				'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
+				'updated' => (int)(($bulkResult['statistics']['updated'] ?? 0)),
+				'invalid' => $invalidCount,
+				'errors' => $errorCount,
+				'firstError' => (($bulkResult['errors'][0] ?? null) ?? ($bulkResult['invalid'][0]['error'] ?? null)),
+			]
+		);
+	}//end writeTargetGroup()
+
+	/**
+	 * Persist the buffered contracts, batched when possible.
+	 *
+	 * Called only after every buffered target has been written — see
+	 * {@see writeBufferedRows()} for why that order is not negotiable.
+	 *
+	 * @param array<int, array> $contracts The buffered contract payloads.
+	 *
+	 * @return void
+	 */
+	private function writeContractBatch(array $contracts): void {
+		if ($contracts === []) {
+			return;
+		}
+
+		// One contract per source record makes this the engine's most repeated
+		// write, and every row of it has the same shape, so the batch is worth
+		// taking whenever the extracted service is wired.
+		if ($this->synchronizationContractService !== null) {
+			try {
+				$bulkResult = $this->synchronizationContractService->persistBulk(contracts: $contracts);
+
+				$invalidCount = (int)(($bulkResult['statistics']['invalid'] ?? 0));
+				$errorCount = (int)(($bulkResult['statistics']['errors'] ?? 0));
+				if ($invalidCount > 0 || $errorCount > 0) {
+					// A contract that was not written is an object that will be
+					// re-created on the next run, so this is never just noise.
+					$this->logger->error(
+						'Bulk contract write rejected rows during a synchronization flush; '
+						.'the objects they map may be re-created on the next run.',
+						[
+							'requested' => count($contracts),
+							'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
+							'updated' => (int)(($bulkResult['statistics']['updated'] ?? 0)),
+							'invalid' => $invalidCount,
+							'errors' => $errorCount,
+							'firstError' => (($bulkResult['errors'][0] ?? null) ?? ($bulkResult['invalid'][0]['error'] ?? null)),
+						]
+					);
+				}
+
+				return;
+			} catch (\Throwable $bulkException) {
+				// Fall through to the per-contract loop: a batch that threw wrote
+				// an unknown subset, and re-writing a contract that already landed
+				// is harmless (it is a uuid-keyed upsert), while leaving one out is
+				// not.
+				$this->logger->warning(
+					'Bulk contract write threw; falling back to one write per contract.',
+					['count' => count($contracts), 'exception' => $bulkException->getMessage()]
+				);
+			}//end try
+		}//end if
+
+		foreach ($contracts as $contract) {
+			try {
+				$this->persistContract(contract: $contract, ensureUuid: true);
+			} catch (\Throwable $contractException) {
+				// One unpersistable contract must not abandon the rest of the
+				// batch — the objects are already written, and every contract
+				// still in this list maps a DIFFERENT object. Losing them all
+				// because of one would re-create all of those objects next run.
+				$this->logger->error(
+					'Could not persist a buffered synchronization contract; '
+					.'the object it maps may be re-created on the next run.',
+					[
+						'originId' => ($contract['originId'] ?? null),
+						'targetId' => ($contract['targetId'] ?? null),
+						'exception' => $contractException->getMessage(),
+					]
+				);
+			}
+		}
+	}//end writeContractBatch()
 
 	/**
 	 * Recursively replaces 'originId' values with corresponding target IDs in the given object,
@@ -4184,6 +4752,10 @@ class SynchronizationService {
 	 *                                  sources.
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, threaded through to the
 	 *                                          outbound `api`-target dispatch (execution-trace REQ-001).
+	 * @param array|null $synchronization The synchronization being run. Optional: resolved from
+	 *                                    the contract when omitted, so standalone callers keep
+	 *                                    working. Batch callers pass the array they already hold
+	 *                                    rather than making this re-read it once per record.
 	 *
 	 * @return array
 	 *
@@ -4205,11 +4777,29 @@ class SynchronizationService {
 		?string $action = 'save',
 		?string $mutationType = null,
 		?ExecutionTraceContext $trace = null,
+		?array $synchronization = null,
 	): array {
-		// The function can be called standalone so resolve the synchronization from the contract.
-		$synchronization = $this->findSynchronization(id: ((string)($synchronizationContract['synchronizationId'] ?? '')));
+		// The function can be called standalone, so it still resolves the
+		// synchronization from the contract when the caller does not supply it.
+		//
+		// The batch path DOES supply it, because it is holding the very same
+		// array: without this parameter every record of a run re-read the whole
+		// synchronization object back out of OpenRegister, once per item, for a
+		// value that cannot change during the run. On 374 records that is 374
+		// object reads whose only purpose was to reconstruct something the caller
+		// already had on the stack.
+		if ($synchronization === null) {
+			$synchronization = $this->findSynchronization(id: ((string)($synchronizationContract['synchronizationId'] ?? '')));
+		}
 
 		$type = ($synchronization['targetType'] ?? null);
+
+		// Reset here, not only in updateTargetOpenRegister(): the `api`,
+		// `database` and `nextcloud-table` branches never reach that method, so
+		// without this the flag would still hold the previous record's answer and
+		// a contract for an inline write could be deferred behind a buffer that
+		// contains no object for it.
+		$this->lastTargetWriteBuffered = false;
 
 		if ($mutationType === 'delete') {
 			$action = 'delete';
@@ -5007,33 +5597,33 @@ class SynchronizationService {
 	}//end fetchSinglePage()
 
 	/**
-	 * Fetches and parses a single page.
+	 * Issue the remaining pages concurrently once the total count is known.
 	 *
-	 * Bulk-file sources (oc#97) MAY serve a gzip-compressed body (a genuine
-	 * `.gz` file, not transport `Content-Encoding: gzip` — Guzzle already
-	 * transparently unwraps the latter) and/or line-delimited JSON (JSONL,
-	 * one record per line, no wrapping array/object). Both are detected and
-	 * handled BEFORE the existing JSON/XML parse attempts, which are
-	 * otherwise unchanged — a source with neither signal takes the exact
-	 * pre-existing code path.
+	 * Page one is always fetched serially, because its `Link: …rel="last"`
+	 * header is what reveals how many pages there are. With that number in
+	 * hand, pages `$fromPage`..last are issued together and cached for
+	 * {@see fetchSinglePageData()} to consume, turning N sequential network
+	 * round trips into one.
 	 *
-	 * Keyless catalog/standards sources with no JSON/XML API at all (oc#107
-	 * — awesome_selfhosted, openalternative, don_oss_register,
-	 * wikipedia_comparisons) MAY instead declare `Source.configuration.
-	 * format` as `"markdown"` or `"html"`. Detected and handled in the same
-	 * place, also BEFORE the JSON/XML parse attempts — a source with none
-	 * of these signals is unaffected.
+	 * Caches CALL LOGS, not parsed pages, so every downstream step — rate-limit
+	 * handling, status classification, format sniffing, results position — runs
+	 * identically whether a page arrived serially or in the fan-out. Concurrency
+	 * therefore cannot change how a page is interpreted, which is what keeps
+	 * REQ-009 ("a failed page is never the end of pagination") true: the page
+	 * count comes from the header rather than from inferring exhaustion, so a
+	 * failure is unambiguously a failure.
 	 *
-	 * @param array $source The data source configuration
-	 * @param string $endpoint The page endpoint to fetch
-	 * @param array $config The request configuration
-	 * @param array $synchronization The synchronization context
+	 * Does nothing when the count is unknown, when nothing is left to fetch, or
+	 * when a fan-out already ran for this synchronization.
 	 *
-	 * @return array{objects: array, result: array, failed?: bool, statusCode?: int|null}
-	 * @throws TooManyRequestsHttpException When rate limit is exceeded
+	 * @param array $source The data source configuration.
+	 * @param string $endpoint The page endpoint to fetch.
+	 * @param array $config The request configuration.
+	 * @param array $synchronization The synchronization context.
+	 * @param int $fromPage The first page to fetch ahead; pages below it are already in hand.
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+	 * @return void
+	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
 	private function prefetchRemainingPages(
@@ -5065,7 +5655,7 @@ class SynchronizationService {
 			return;
 		}
 
-		// settle(), not all(): one page rejecting must not discard the pages that
+		// Settle(), not all(): one page rejecting must not discard the pages that
 		// succeeded. A rejected page simply is not cached, so the loop fetches it
 		// serially and classifies the failure exactly as it always did — which is
 		// what keeps "a failed page is never the end of pagination" true.
@@ -5090,7 +5680,11 @@ class SynchronizationService {
 		$link = null;
 		foreach ($headers as $name => $value) {
 			if (strtolower((string)$name) === 'link') {
-				$link = is_array($value) === true ? implode(', ', $value) : (string)$value;
+				$link = (string)$value;
+				if (is_array($value) === true) {
+					$link = implode(', ', $value);
+				}
+
 				break;
 			}
 		}
@@ -5105,8 +5699,11 @@ class SynchronizationService {
 		}
 
 		$last = (int)$m[2];
+		if ($last > 0) {
+			return $last;
+		}
 
-		return $last > 0 ? $last : null;
+		return null;
 	}//end parseLastPageFromLinkHeader()
 
 	/**
@@ -7905,6 +8502,9 @@ class SynchronizationService {
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, when this item is processed
 	 *                                          from within a traced execution (execution-trace
 	 *                                          REQ-001/REQ-002).
+	 * @param array|null $contractIndex Contracts pre-read for the whole page, keyed by origin id.
+	 *                                  When supplied, a missing key is a MISS rather than a reason
+	 *                                  to fall back to a per-item query.
 	 *
 	 * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null].
 	 *
@@ -7972,19 +8572,30 @@ class SynchronizationService {
 			$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
 		}
 
-		$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
+		// Built only when there is something to evaluate against it. Both halves
+		// are per-record work over the whole payload — encodeArrayKeys() walks
+		// the object recursively, and __serialize() serialises the entire flow
+		// token — and a synchronization WITHOUT conditions used to pay for both
+		// on every single record and then discard the result, because the
+		// `conditions !== []` test came after they were built rather than before.
+		$conditions = ($synchronization['conditions'] ?? []);
+		$conditionsMet = true;
 
-		// Add flow token to conditions object if it exists.
-		if ($flowToken !== null) {
-			$conditionsObject['flowToken'] = $flowToken->__serialize();
+		if ($conditions !== []) {
+			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
+
+			// Add flow token to conditions object if it exists.
+			if ($flowToken !== null) {
+				$conditionsObject['flowToken'] = $flowToken->__serialize();
+			}
+
+			// Take note, JsonLogic::apply() returns a range of return types, so
+			// checking it with '=== false' or '!== true' does not work properly.
+			$conditionsMet = (JsonLogic::apply($conditions, $conditionsObject) !== false);
 		}
 
 		// Check if object adheres to conditions.
-		// Take note, JsonLogic::apply() returns a range of return types, so checking it
-		// with '=== false' or '!== true' does not work properly.
-		if (($synchronization['conditions'] ?? []) !== []
-			&& JsonLogic::apply(($synchronization['conditions'] ?? []), $conditionsObject) === false
-		) {
+		if ($conditionsMet === false) {
 			// Increment skipped count in log since object doesn't meet conditions.
 			$result['objects']['skipped']++;
 			if ($trace !== null) {
