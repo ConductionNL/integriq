@@ -3804,11 +3804,20 @@ class SynchronizationService {
 				//
 				// Defaults to events ON, so a sync whose objects must trigger
 				// downstream flows is untouched.
+				// `logs: false` skips the object's audit row; `validation: false`
+				// skips re-validating a row against its schema. Both default to
+				// today's behaviour and are per-synchronization, because the
+				// trade-off is per-synchronization: a bulk backfill of rows a
+				// source has already validated is a different proposition from a
+				// user-facing write, and only the author of the sync knows which
+				// one this is.
 				$writeTarget = fn (): mixed => $objectService->saveObject(
 					register: $register,
 					schema: $schema,
 					object: $targetObject,
-					uuid: ($synchronizationContract['targetId'] ?? null)
+					uuid: ($synchronizationContract['targetId'] ?? null),
+					silent: (($sourceConfig['logs'] ?? true) === false),
+					_validation: (($sourceConfig['validation'] ?? true) !== false)
 				);
 
 				if (($sourceConfig['events'] ?? true) === false) {
