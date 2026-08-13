@@ -394,9 +394,6 @@
 
 .filesListDragDropNoticeTitle {
 	margin: 12px 0;
-}
-
-.filesListDragDropNoticeTitle {
 	margin-left: 16px;
 	color: inherit;
 }
@@ -613,6 +610,12 @@
 .viewLoading {
 	text-align: center;
 	padding: 50px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 200px;
+	gap: 16px;
 }
 
 .viewLoading p {
@@ -806,15 +809,6 @@
 :deep(.deleteAction:hover) {
 	background-color: var(--color-error) !important;
 	color: var(--color-main-background) !important;
-}
-
-.viewLoading {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-height: 200px;
-	gap: 16px;
 }
 
 .eventInfo {
