@@ -43,66 +43,64 @@ use Throwable;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class ApprovalTimeoutSweepJob extends TimedJob
-{
+class ApprovalTimeoutSweepJob extends TimedJob {
 
-    /**
-     * Sweep interval in seconds (5 minutes) — matches EventRetryJob's cadence.
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 300;
+	/**
+	 * Sweep interval in seconds (5 minutes) — matches EventRetryJob's cadence.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 300;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory    $time            Time factory for job scheduling.
-     * @param ApprovalService $approvalService The approval state-machine service.
-     * @param LoggerInterface $logger          Logger for sweep outcomes.
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ApprovalService $approvalService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param ApprovalService $approvalService The approval state-machine service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ApprovalService $approvalService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
-        $this->setAllowParallelRuns(allow: false);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the expiry sweep.
-     *
-     * A single poisoned row must never wedge the cron pipeline, so any
-     * exception is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $result = $this->approvalService->sweepExpired();
-            $this->logger->info('ApprovalTimeoutSweepJob: sweep complete', $result);
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'ApprovalTimeoutSweepJob: sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the expiry sweep.
+	 *
+	 * A single poisoned row must never wedge the cron pipeline, so any
+	 * exception is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$result = $this->approvalService->sweepExpired();
+			$this->logger->info('ApprovalTimeoutSweepJob: sweep complete', $result);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'ApprovalTimeoutSweepJob: sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

@@ -34,17 +34,15 @@ use Exception;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
-class TablesConfigException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message    Human-readable, secret-free message.
-     * @param int    $statusCode The status code callers should map this to (default 400).
-     */
-    public function __construct(string $message, int $statusCode=400)
-    {
-        parent::__construct(message: $message, code: $statusCode);
+class TablesConfigException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable, secret-free message.
+	 * @param int $statusCode The status code callers should map this to (default 400).
+	 */
+	public function __construct(string $message, int $statusCode = 400) {
+		parent::__construct(message: $message, code: $statusCode);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

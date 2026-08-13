@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Authentication Twig Runtime.
  *
@@ -27,85 +28,81 @@ use Twig\Extension\RuntimeExtensionInterface;
 /**
  * Authentication runtime that fetches tokens for a given source configuration.
  */
-class AuthenticationRuntime implements RuntimeExtensionInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param AuthenticationService $authService Service that performs the token fetches.
-     */
-    public function __construct(
-        private readonly AuthenticationService $authService,
-    ) {
+class AuthenticationRuntime implements RuntimeExtensionInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param AuthenticationService $authService Service that performs the token fetches.
+	 */
+	public function __construct(
+		private readonly AuthenticationService $authService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Add an oauth token to the configuration.
-     *
-     * @param array $source The source data array (from ObjectEntity::getObject()).
-     *
-     * @return string
-     *
-     * @throws GuzzleException
-     *
-     * @spec openspec/specs/authentication-twig/spec.md
-     */
-    public function oauthToken(array $source): string
-    {
-        $configuration = new Dot($source['configuration'] ?? [], true);
+	/**
+	 * Add an oauth token to the configuration.
+	 *
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
+	 * @return string
+	 *
+	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
+	 */
+	public function oauthToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
-        $authConfig = $configuration->get('authentication');
+		$authConfig = $configuration->get('authentication');
 
-        return $this->authService->fetchOAuthTokens(
-            configuration: $authConfig
-        );
+		return $this->authService->fetchOAuthTokens(
+			configuration: $authConfig
+		);
 
-    }//end oauthToken()
+	}//end oauthToken()
 
-    /**
-     * Add a decos non-oauth token to the configuration.
-     *
-     * @param array $source The source data array (from ObjectEntity::getObject()).
-     *
-     * @return string
-     *
-     * @throws GuzzleException
-     *
-     * @spec openspec/specs/authentication-twig/spec.md
-     */
-    public function decosToken(array $source): string
-    {
-        $configuration = new Dot($source['configuration'] ?? [], true);
+	/**
+	 * Add a decos non-oauth token to the configuration.
+	 *
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
+	 * @return string
+	 *
+	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
+	 */
+	public function decosToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
-        $authConfig = $configuration->get('authentication');
+		$authConfig = $configuration->get('authentication');
 
-        return $this->authService->fetchDecosToken(
-            configuration: $authConfig
-        );
+		return $this->authService->fetchDecosToken(
+			configuration: $authConfig
+		);
 
-    }//end decosToken()
+	}//end decosToken()
 
-    /**
-     * Add a jwt token to the configuration.
-     *
-     * @param array $source The source data array (from ObjectEntity::getObject()).
-     *
-     * @return string
-     *
-     * @throws GuzzleException
-     *
-     * @spec openspec/specs/authentication-twig/spec.md
-     */
-    public function jwtToken(array $source): string
-    {
-        $configuration = new Dot($source['configuration'] ?? [], true);
+	/**
+	 * Add a jwt token to the configuration.
+	 *
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
+	 * @return string
+	 *
+	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
+	 */
+	public function jwtToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
-        $authConfig = $configuration->get('authentication');
+		$authConfig = $configuration->get('authentication');
 
-        return $this->authService->fetchJWTToken(
-            configuration: $authConfig
-        );
+		return $this->authService->fetchJWTToken(
+			configuration: $authConfig
+		);
 
-    }//end jwtToken()
+	}//end jwtToken()
 }//end class

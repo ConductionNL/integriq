@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for KissPullJob.
  *
@@ -30,90 +31,84 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
  */
-class KissPullJobTest extends TestCase
-{
+class KissPullJobTest extends TestCase {
 
-    /**
-     * @var KissSyncService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $syncService;
+	/**
+	 * @var KissSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $syncService;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var KissPullJob
-     */
-    private KissPullJob $job;
+	/**
+	 * @var KissPullJob
+	 */
+	private KissPullJob $job;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $timeFactory       = $this->createMock(ITimeFactory::class);
-        $this->syncService = $this->createMock(KissSyncService::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->syncService = $this->createMock(KissSyncService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->job = new KissPullJob($timeFactory, $this->syncService, $this->logger);
+		$this->job = new KissPullJob($timeFactory, $this->syncService, $this->logger);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * The job wires its dependencies and constructs without error.
-     *
-     * @return void
-     */
-    public function testConstructs(): void
-    {
-        $this->assertInstanceOf(KissPullJob::class, $this->job);
+	/**
+	 * The job wires its dependencies and constructs without error.
+	 *
+	 * @return void
+	 */
+	public function testConstructs(): void {
+		$this->assertInstanceOf(KissPullJob::class, $this->job);
 
-    }//end testConstructs()
+	}//end testConstructs()
 
-    /**
-     * Running the job invokes one pullAll sweep.
-     *
-     * @return void
-     */
-    public function testRunInvokesPullAll(): void
-    {
-        $this->syncService->expects($this->once())->method('pullAll')->willReturn(3);
+	/**
+	 * Running the job invokes one pullAll sweep.
+	 *
+	 * @return void
+	 */
+	public function testRunInvokesPullAll(): void {
+		$this->syncService->expects($this->once())->method('pullAll')->willReturn(3);
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunInvokesPullAll()
+	}//end testRunInvokesPullAll()
 
-    /**
-     * With no KISS source configured, pullAll() no-ops (returns 0) and the job does not error.
-     *
-     * @return void
-     */
-    public function testRunWithNoSourceConfiguredNoOps(): void
-    {
-        $this->syncService->method('pullAll')->willReturn(0);
-        $this->logger->expects($this->never())->method('error');
+	/**
+	 * With no KISS source configured, pullAll() no-ops (returns 0) and the job does not error.
+	 *
+	 * @return void
+	 */
+	public function testRunWithNoSourceConfiguredNoOps(): void {
+		$this->syncService->method('pullAll')->willReturn(0);
+		$this->logger->expects($this->never())->method('error');
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunWithNoSourceConfiguredNoOps()
+	}//end testRunWithNoSourceConfiguredNoOps()
 
-    /**
-     * A sweep-level exception is contained and logged — the cron pipeline never wedges.
-     *
-     * @return void
-     */
-    public function testRunContainsSweepException(): void
-    {
-        $this->syncService->method('pullAll')->willThrowException(new \RuntimeException('boom'));
-        $this->logger->expects($this->once())->method('error');
+	/**
+	 * A sweep-level exception is contained and logged — the cron pipeline never wedges.
+	 *
+	 * @return void
+	 */
+	public function testRunContainsSweepException(): void {
+		$this->syncService->method('pullAll')->willThrowException(new \RuntimeException('boom'));
+		$this->logger->expects($this->once())->method('error');
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunContainsSweepException()
+	}//end testRunContainsSweepException()
 }//end class

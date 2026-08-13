@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector WorkflowEngine RegisterOperationsListener.
  *
@@ -44,41 +45,39 @@ use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
  *
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
-class RegisterOperationsListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param RunSynchronizationOperation $runSynchronizationOperation The "Run synchronization" operation.
-     * @param CallEndpointOperation       $callEndpointOperation       The "Call endpoint" operation.
-     * @param FireCloudEventOperation     $fireCloudEventOperation     The "Fire CloudEvent" operation.
-     */
-    public function __construct(
-        private readonly RunSynchronizationOperation $runSynchronizationOperation,
-        private readonly CallEndpointOperation $callEndpointOperation,
-        private readonly FireCloudEventOperation $fireCloudEventOperation,
-    ) {
+class RegisterOperationsListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param RunSynchronizationOperation $runSynchronizationOperation The "Run synchronization" operation.
+	 * @param CallEndpointOperation $callEndpointOperation The "Call endpoint" operation.
+	 * @param FireCloudEventOperation $fireCloudEventOperation The "Fire CloudEvent" operation.
+	 */
+	public function __construct(
+		private readonly RunSynchronizationOperation $runSynchronizationOperation,
+		private readonly CallEndpointOperation $callEndpointOperation,
+		private readonly FireCloudEventOperation $fireCloudEventOperation,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Register all three operations when a `RegisterOperationsEvent` fires.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof RegisterOperationsEvent === false) {
-            return;
-        }
+	/**
+	 * Register all three operations when a `RegisterOperationsEvent` fires.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof RegisterOperationsEvent === false) {
+			return;
+		}
 
-        $event->registerOperation($this->runSynchronizationOperation);
-        $event->registerOperation($this->callEndpointOperation);
-        $event->registerOperation($this->fireCloudEventOperation);
+		$event->registerOperation($this->runSynchronizationOperation);
+		$event->registerOperation($this->callEndpointOperation);
+		$event->registerOperation($this->fireCloudEventOperation);
 
-    }//end handle()
+	}//end handle()
 }//end class

@@ -45,155 +45,147 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 /**
  * Reproduces OpenRegister's nested dot-path write-only render boundary.
  */
-class NestedWriteOnlyRenderBoundaryObjectService extends OrObjectService
-{
+class NestedWriteOnlyRenderBoundaryObjectService extends OrObjectService {
 
-    /**
-     * Every read this double served: the arguments that decide the outcome.
-     *
-     * @var array<int, array{uuid: string, register: ?string, schema: ?string, _render: bool, _rbac: bool, _multitenancy: bool}>
-     */
-    public array $reads = [];
+	/**
+	 * Every read this double served: the arguments that decide the outcome.
+	 *
+	 * @var array<int, array{uuid: string, register: ?string, schema: ?string, _render: bool, _rbac: bool, _multitenancy: bool}>
+	 */
+	public array $reads = [];
 
-    /**
-     * The raw stored objects, keyed by uuid.
-     *
-     * @var array<string, array<string, mixed>>
-     */
-    public array $stored = [];
+	/**
+	 * The raw stored objects, keyed by uuid.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	public array $stored = [];
 
-    /**
-     * The dot-paths stripped on a rendered read (the `source` declaration under test).
-     *
-     * @var array<int, string>
-     */
-    public array $writeOnlyPaths = [];
+	/**
+	 * The dot-paths stripped on a rendered read (the `source` declaration under test).
+	 *
+	 * @var array<int, string>
+	 */
+	public array $writeOnlyPaths = [];
 
-    /**
-     * Constructor — deliberately does not call the parent's.
-     *
-     * @param array<int, string> $writeOnlyPaths The dot-paths the schema declares write-only.
-     */
-    public function __construct(array $writeOnlyPaths=[])
-    {
-        $this->writeOnlyPaths = $writeOnlyPaths;
+	/**
+	 * Constructor — deliberately does not call the parent's.
+	 *
+	 * @param array<int, string> $writeOnlyPaths The dot-paths the schema declares write-only.
+	 */
+	public function __construct(array $writeOnlyPaths = []) {
+		$this->writeOnlyPaths = $writeOnlyPaths;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Reproduce ObjectService::find(), including the nested render boundary.
-     *
-     * @param string|int  $id            The object uuid.
-     * @param string|null $register      The register slug.
-     * @param string|null $schema        The schema slug.
-     * @param bool        $_rbac         Recorded; deliberately does NOT affect the strip.
-     * @param bool        $_multitenancy Recorded; deliberately does NOT affect the strip.
-     * @param bool        $_render       When true, strip the declared dot-paths.
-     *
-     * @return ObjectEntity|null The entity, or null when unknown.
-     */
-    public function find(
-        $id,
-        ?string $register=null,
-        ?string $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_render=true
-    ): ?ObjectEntity {
-        $this->reads[] = [
-            'uuid'          => (string) $id,
-            'register'      => $register,
-            'schema'        => $schema,
-            '_render'       => $_render,
-            '_rbac'         => $_rbac,
-            '_multitenancy' => $_multitenancy,
-        ];
+	/**
+	 * Reproduce ObjectService::find(), including the nested render boundary.
+	 *
+	 * @param string|int $id The object uuid.
+	 * @param string|null $register The register slug.
+	 * @param string|null $schema The schema slug.
+	 * @param bool $_rbac Recorded; deliberately does NOT affect the strip.
+	 * @param bool $_multitenancy Recorded; deliberately does NOT affect the strip.
+	 * @param bool $_render When true, strip the declared dot-paths.
+	 *
+	 * @return ObjectEntity|null The entity, or null when unknown.
+	 */
+	public function find(
+		$id,
+		?string $register = null,
+		?string $schema = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $_render = true,
+	): ?ObjectEntity {
+		$this->reads[] = [
+			'uuid' => (string)$id,
+			'register' => $register,
+			'schema' => $schema,
+			'_render' => $_render,
+			'_rbac' => $_rbac,
+			'_multitenancy' => $_multitenancy,
+		];
 
-        $data = ($this->stored[(string) $id] ?? null);
-        if ($data === null) {
-            return null;
-        }
+		$data = ($this->stored[(string)$id] ?? null);
+		if ($data === null) {
+			return null;
+		}
 
-        if ($_render === true) {
-            // The strip is SCHEMA-gated, NOT rbac-gated: $_rbac is ignored here on
-            // purpose. That is the ocon#212/#226 lesson encoded as a fake.
-            $data = $this->stripWriteOnlyPaths($data);
-        }
+		if ($_render === true) {
+			// The strip is SCHEMA-gated, NOT rbac-gated: $_rbac is ignored here on
+			// purpose. That is the ocon#212/#226 lesson encoded as a fake.
+			$data = $this->stripWriteOnlyPaths($data);
+		}
 
-        return $this->entity((string) $id, $data);
+		return $this->entity((string)$id, $data);
+	}//end find()
 
-    }//end find()
+	/**
+	 * Reproduce ObjectService::findAll() — ALWAYS rendered (it has no `_render`).
+	 *
+	 * @param array<string, mixed> $config The find config (filters/limit).
+	 * @param bool $_rbac Unused by the strip.
+	 * @param bool $_multitenancy Unused by the strip.
+	 *
+	 * @return array{results: array<int, ObjectEntity>, total: int}
+	 */
+	public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array {
+		$results = [];
+		foreach ($this->stored as $uuid => $data) {
+			$results[] = $this->entity((string)$uuid, $this->stripWriteOnlyPaths($data));
+		}
 
-    /**
-     * Reproduce ObjectService::findAll() — ALWAYS rendered (it has no `_render`).
-     *
-     * @param array<string, mixed> $config        The find config (filters/limit).
-     * @param bool                 $_rbac         Unused by the strip.
-     * @param bool                 $_multitenancy Unused by the strip.
-     *
-     * @return array{results: array<int, ObjectEntity>, total: int}
-     */
-    public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
-    {
-        $results = [];
-        foreach ($this->stored as $uuid => $data) {
-            $results[] = $this->entity((string) $uuid, $this->stripWriteOnlyPaths($data));
-        }
+		return [
+			'results' => $results,
+			'total' => count($results),
+		];
 
-        return [
-            'results' => $results,
-            'total'   => count($results),
-        ];
+	}//end findAll()
 
-    }//end findAll()
+	/**
+	 * Remove each declared dot-path AND its whole sub-tree.
+	 *
+	 * @param array<string, mixed> $data The raw object data.
+	 *
+	 * @return array<string, mixed> The rendered (stripped) object data.
+	 */
+	private function stripWriteOnlyPaths(array $data): array {
+		foreach ($this->writeOnlyPaths as $path) {
+			$segments = explode('.', $path);
+			$cursor = &$data;
+			$depth = count($segments);
 
-    /**
-     * Remove each declared dot-path AND its whole sub-tree.
-     *
-     * @param array<string, mixed> $data The raw object data.
-     *
-     * @return array<string, mixed> The rendered (stripped) object data.
-     */
-    private function stripWriteOnlyPaths(array $data): array
-    {
-        foreach ($this->writeOnlyPaths as $path) {
-            $segments = explode('.', $path);
-            $cursor   = &$data;
-            $depth    = count($segments);
+			for ($i = 0; $i < ($depth - 1); $i++) {
+				if (is_array($cursor) === false || array_key_exists($segments[$i], $cursor) === false) {
+					continue 2;
+				}
 
-            for ($i = 0; $i < ($depth - 1); $i++) {
-                if (is_array($cursor) === false || array_key_exists($segments[$i], $cursor) === false) {
-                    continue 2;
-                }
+				$cursor = &$cursor[$segments[$i]];
+			}
 
-                $cursor = &$cursor[$segments[$i]];
-            }
+			if (is_array($cursor) === true) {
+				unset($cursor[$segments[($depth - 1)]]);
+			}
 
-            if (is_array($cursor) === true) {
-                unset($cursor[$segments[($depth - 1)]]);
-            }
+			unset($cursor);
+		}
 
-            unset($cursor);
-        }
+		return $data;
+	}//end stripWriteOnlyPaths()
 
-        return $data;
-
-    }//end stripWriteOnlyPaths()
-
-    /**
-     * Build an ObjectEntity for a uuid + payload.
-     *
-     * @param string               $uuid The uuid.
-     * @param array<string, mixed> $data The object payload.
-     *
-     * @return ObjectEntity The entity.
-     */
-    private function entity(string $uuid, array $data): ObjectEntity
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid($uuid);
-        $entity->setObject($data);
-        return $entity;
-
-    }//end entity()
+	/**
+	 * Build an ObjectEntity for a uuid + payload.
+	 *
+	 * @param string $uuid The uuid.
+	 * @param array<string, mixed> $data The object payload.
+	 *
+	 * @return ObjectEntity The entity.
+	 */
+	private function entity(string $uuid, array $data): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid($uuid);
+		$entity->setObject($data);
+		return $entity;
+	}//end entity()
 }//end class

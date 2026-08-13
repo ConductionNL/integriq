@@ -33,6 +33,5 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
-class ZgwUnknownVersionException extends ZgwVersionTranslationException
-{
+class ZgwUnknownVersionException extends ZgwVersionTranslationException {
 }//end class

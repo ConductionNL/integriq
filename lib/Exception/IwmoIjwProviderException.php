@@ -36,6 +36,5 @@ use Exception;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
-class IwmoIjwProviderException extends Exception
-{
+class IwmoIjwProviderException extends Exception {
 }//end class

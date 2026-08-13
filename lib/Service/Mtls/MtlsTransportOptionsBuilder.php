@@ -49,111 +49,104 @@ namespace OCA\OpenConnector\Service\Mtls;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
  */
-class MtlsTransportOptionsBuilder
-{
-    /**
-     * Write the bundle's PEM material to `0600` temp files.
-     *
-     * @param MtlsCertificateBundle $bundle The validated, decrypted certificate material.
-     *
-     * @return MtlsMaterializedFiles The on-disk paths, tracked for cleanup.
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
-     */
-    public function materialize(MtlsCertificateBundle $bundle): MtlsMaterializedFiles
-    {
-        $certificatePath = $this->writeSecureTempFile(baseFileName: 'mtls_certificate', contents: $bundle->certificatePem);
-        $privateKeyPath  = $this->writeSecureTempFile(baseFileName: 'mtls_privateKey', contents: $bundle->privateKeyPem);
+class MtlsTransportOptionsBuilder {
+	/**
+	 * Write the bundle's PEM material to `0600` temp files.
+	 *
+	 * @param MtlsCertificateBundle $bundle The validated, decrypted certificate material.
+	 *
+	 * @return MtlsMaterializedFiles The on-disk paths, tracked for cleanup.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
+	 */
+	public function materialize(MtlsCertificateBundle $bundle): MtlsMaterializedFiles {
+		$certificatePath = $this->writeSecureTempFile(baseFileName: 'mtls_certificate', contents: $bundle->certificatePem);
+		$privateKeyPath = $this->writeSecureTempFile(baseFileName: 'mtls_privateKey', contents: $bundle->privateKeyPem);
 
-        $caBundlePath = null;
-        if ($bundle->caBundlePem !== null && $bundle->caBundlePem !== '') {
-            $caBundlePath = $this->writeSecureTempFile(baseFileName: 'mtls_caBundle', contents: $bundle->caBundlePem);
-        }
+		$caBundlePath = null;
+		if ($bundle->caBundlePem !== null && $bundle->caBundlePem !== '') {
+			$caBundlePath = $this->writeSecureTempFile(baseFileName: 'mtls_caBundle', contents: $bundle->caBundlePem);
+		}
 
-        return new MtlsMaterializedFiles(
-            certificatePath: $certificatePath,
-            privateKeyPath: $privateKeyPath,
-            caBundlePath: $caBundlePath
-        );
+		return new MtlsMaterializedFiles(
+			certificatePath: $certificatePath,
+			privateKeyPath: $privateKeyPath,
+			caBundlePath: $caBundlePath
+		);
 
-    }//end materialize()
+	}//end materialize()
 
-    /**
-     * Build the Guzzle request-options fragment (`cert`/`ssl_key`/`verify`)
-     * for a set of materialized files.
-     *
-     * @param MtlsMaterializedFiles $files      The materialized temp-file paths.
-     * @param string|null           $passphrase The private key passphrase, or null when unprotected.
-     *
-     * @return array<string, mixed> Guzzle request-options fragment to merge into the outbound call.
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
-     */
-    public function toGuzzleOptions(MtlsMaterializedFiles $files, ?string $passphrase): array
-    {
-        $options = [
-            'cert'    => $files->certificatePath,
-            'ssl_key' => $files->privateKeyPath,
-        ];
+	/**
+	 * Build the Guzzle request-options fragment (`cert`/`ssl_key`/`verify`)
+	 * for a set of materialized files.
+	 *
+	 * @param MtlsMaterializedFiles $files The materialized temp-file paths.
+	 * @param string|null $passphrase The private key passphrase, or null when unprotected.
+	 *
+	 * @return array<string, mixed> Guzzle request-options fragment to merge into the outbound call.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
+	 */
+	public function toGuzzleOptions(MtlsMaterializedFiles $files, ?string $passphrase): array {
+		$options = [
+			'cert' => $files->certificatePath,
+			'ssl_key' => $files->privateKeyPath,
+		];
 
-        if ($passphrase !== null && $passphrase !== '') {
-            $options['ssl_key'] = [$files->privateKeyPath, $passphrase];
-        }
+		if ($passphrase !== null && $passphrase !== '') {
+			$options['ssl_key'] = [$files->privateKeyPath, $passphrase];
+		}
 
-        if ($files->caBundlePath !== null) {
-            $options['verify'] = $files->caBundlePath;
-        }
+		if ($files->caBundlePath !== null) {
+			$options['verify'] = $files->caBundlePath;
+		}
 
-        return $options;
+		return $options;
+	}//end toGuzzleOptions()
 
-    }//end toGuzzleOptions()
+	/**
+	 * Remove every temp file this instance materialized. Silenced — cleanup
+	 * must never raise, mirrors `CallService::removeFile()`'s hygiene.
+	 *
+	 * @param MtlsMaterializedFiles $files The materialized temp-file paths to remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-temp-files-are-removed-even-when-the-dispatch-throws
+	 */
+	public function cleanup(MtlsMaterializedFiles $files): void {
+		foreach ($files->allPaths() as $path) {
+			if ($path !== null && $path !== '' && file_exists($path) === true) {
+				@unlink($path);
+			}
+		}
 
-    /**
-     * Remove every temp file this instance materialized. Silenced — cleanup
-     * must never raise, mirrors `CallService::removeFile()`'s hygiene.
-     *
-     * @param MtlsMaterializedFiles $files The materialized temp-file paths to remove.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-temp-files-are-removed-even-when-the-dispatch-throws
-     */
-    public function cleanup(MtlsMaterializedFiles $files): void
-    {
-        foreach ($files->allPaths() as $path) {
-            if ($path !== null && $path !== '' && file_exists($path) === true) {
-                @unlink($path);
-            }
-        }
+	}//end cleanup()
 
-    }//end cleanup()
+	/**
+	 * Write one temp file with `0600` permissions.
+	 *
+	 * @param string $baseFileName The base filename used as filename prefix.
+	 * @param string $contents File contents to write.
+	 *
+	 * @return string File location on disk.
+	 */
+	private function writeSecureTempFile(string $baseFileName, string $contents): string {
+		$prefix = 'oc_' . $baseFileName . '_';
+		$tempDir = sys_get_temp_dir();
+		$tempLocation = tempnam($tempDir, $prefix);
+		if ($tempLocation === false) {
+			$stamp = (microtime() . getmypid());
+			$tempLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $baseFileName . '-' . $stamp;
+		}
 
-    /**
-     * Write one temp file with `0600` permissions.
-     *
-     * @param string $baseFileName The base filename used as filename prefix.
-     * @param string $contents     File contents to write.
-     *
-     * @return string File location on disk.
-     */
-    private function writeSecureTempFile(string $baseFileName, string $contents): string
-    {
-        $prefix       = 'oc_'.$baseFileName.'_';
-        $tempDir      = sys_get_temp_dir();
-        $tempLocation = tempnam($tempDir, $prefix);
-        if ($tempLocation === false) {
-            $stamp        = (microtime().getmypid());
-            $tempLocation = sys_get_temp_dir().DIRECTORY_SEPARATOR.$baseFileName.'-'.$stamp;
-        }
+		// Chmod BEFORE the contents land so the create→chmod race window is
+		// empty (tempnam creates with 0600 on Linux but we re-assert), then
+		// again after the write for good measure.
+		@chmod($tempLocation, 0600);
+		file_put_contents($tempLocation, $contents);
+		@chmod($tempLocation, 0600);
 
-        // Chmod BEFORE the contents land so the create→chmod race window is
-        // empty (tempnam creates with 0600 on Linux but we re-assert), then
-        // again after the write for good measure.
-        @chmod($tempLocation, 0600);
-        file_put_contents($tempLocation, $contents);
-        @chmod($tempLocation, 0600);
-
-        return $tempLocation;
-
-    }//end writeSecureTempFile()
+		return $tempLocation;
+	}//end writeSecureTempFile()
 }//end class

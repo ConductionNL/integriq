@@ -41,47 +41,46 @@ use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-interface ZgwResourceTranslatorInterface
-{
-    /**
-     * Stable ZGW resource slug this translator handles (e.g. `zaak`).
-     *
-     * Selected at runtime by {@see \OCA\OpenConnector\Service\ZgwVersionTranslationService}
-     * via the caller's declared `resource` field.
-     *
-     * @return string The resource slug.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function getResource(): string;
+interface ZgwResourceTranslatorInterface {
+	/**
+	 * Stable ZGW resource slug this translator handles (e.g. `zaak`).
+	 *
+	 * Selected at runtime by {@see \OCA\OpenConnector\Service\ZgwVersionTranslationService}
+	 * via the caller's declared `resource` field.
+	 *
+	 * @return string The resource slug.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function getResource(): string;
 
-    /**
-     * Translate a `1.0`-shaped payload to `1.6`.
-     *
-     * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.6`-shaped payload.
-     *
-     * @throws ZgwLiteralLeakException When a required field is missing, an enum
-     *                                 value falls outside its documented set, or
-     *                                 an array-required field carries a bare scalar.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV16(array $payload): array;
+	/**
+	 * Translate a `1.0`-shaped payload to `1.6`.
+	 *
+	 * @param array<string, mixed> $payload The `1.0`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.6`-shaped payload.
+	 *
+	 * @throws ZgwLiteralLeakException When a required field is missing, an enum
+	 *                                 value falls outside its documented set, or
+	 *                                 an array-required field carries a bare scalar.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV16(array $payload): array;
 
-    /**
-     * Translate a `1.6`-shaped payload to `1.0`.
-     *
-     * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
-     *
-     * @return array<string, mixed> The `1.0`-shaped payload.
-     *
-     * @throws ZgwLiteralLeakException When a required field is missing, an enum
-     *                                 value falls outside its documented set, or
-     *                                 an array-required field carries a bare scalar.
-     *
-     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
-     */
-    public function translateToV1x(array $payload): array;
+	/**
+	 * Translate a `1.6`-shaped payload to `1.0`.
+	 *
+	 * @param array<string, mixed> $payload The `1.6`-shaped resource payload.
+	 *
+	 * @return array<string, mixed> The `1.0`-shaped payload.
+	 *
+	 * @throws ZgwLiteralLeakException When a required field is missing, an enum
+	 *                                 value falls outside its documented set, or
+	 *                                 an array-required field carries a bare scalar.
+	 *
+	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+	 */
+	public function translateToV1x(array $payload): array;
 }//end interface

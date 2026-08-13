@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for IwmoIjwRetryJob.
  *
@@ -31,91 +32,85 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
  */
-class IwmoIjwRetryJobTest extends TestCase
-{
+class IwmoIjwRetryJobTest extends TestCase {
 
-    /**
-     * @var IwmoIjwSyncService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $syncService;
+	/**
+	 * @var IwmoIjwSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $syncService;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var IwmoIjwRetryJob
-     */
-    private IwmoIjwRetryJob $job;
+	/**
+	 * @var IwmoIjwRetryJob
+	 */
+	private IwmoIjwRetryJob $job;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $timeFactory       = $this->createMock(ITimeFactory::class);
-        $this->syncService = $this->createMock(IwmoIjwSyncService::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->syncService = $this->createMock(IwmoIjwSyncService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->job = new IwmoIjwRetryJob($timeFactory, $this->syncService, $this->logger);
+		$this->job = new IwmoIjwRetryJob($timeFactory, $this->syncService, $this->logger);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * The job wires its dependencies and constructs without error.
-     *
-     * @return void
-     */
-    public function testConstructs(): void
-    {
-        $this->assertInstanceOf(IwmoIjwRetryJob::class, $this->job);
+	/**
+	 * The job wires its dependencies and constructs without error.
+	 *
+	 * @return void
+	 */
+	public function testConstructs(): void {
+		$this->assertInstanceOf(IwmoIjwRetryJob::class, $this->job);
 
-    }//end testConstructs()
+	}//end testConstructs()
 
-    /**
-     * Running the job invokes one retryFailed() sweep — proves invocation, not
-     * just declaration (the orphaned-capability rule).
-     *
-     * @return void
-     */
-    public function testRunInvokesRetryFailed(): void
-    {
-        $this->syncService->expects($this->once())->method('retryFailed')->willReturn(2);
+	/**
+	 * Running the job invokes one retryFailed() sweep — proves invocation, not
+	 * just declaration (the orphaned-capability rule).
+	 *
+	 * @return void
+	 */
+	public function testRunInvokesRetryFailed(): void {
+		$this->syncService->expects($this->once())->method('retryFailed')->willReturn(2);
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunInvokesRetryFailed()
+	}//end testRunInvokesRetryFailed()
 
-    /**
-     * With no eligible rows, retryFailed() no-ops (returns 0) and the job does not error.
-     *
-     * @return void
-     */
-    public function testRunWithNoEligibleRowsNoOps(): void
-    {
-        $this->syncService->method('retryFailed')->willReturn(0);
-        $this->logger->expects($this->never())->method('error');
+	/**
+	 * With no eligible rows, retryFailed() no-ops (returns 0) and the job does not error.
+	 *
+	 * @return void
+	 */
+	public function testRunWithNoEligibleRowsNoOps(): void {
+		$this->syncService->method('retryFailed')->willReturn(0);
+		$this->logger->expects($this->never())->method('error');
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunWithNoEligibleRowsNoOps()
+	}//end testRunWithNoEligibleRowsNoOps()
 
-    /**
-     * A sweep-level exception is contained and logged — the cron pipeline never wedges.
-     *
-     * @return void
-     */
-    public function testRunContainsSweepException(): void
-    {
-        $this->syncService->method('retryFailed')->willThrowException(new \RuntimeException('boom'));
-        $this->logger->expects($this->once())->method('error');
+	/**
+	 * A sweep-level exception is contained and logged — the cron pipeline never wedges.
+	 *
+	 * @return void
+	 */
+	public function testRunContainsSweepException(): void {
+		$this->syncService->method('retryFailed')->willThrowException(new \RuntimeException('boom'));
+		$this->logger->expects($this->once())->method('error');
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunContainsSweepException()
+	}//end testRunContainsSweepException()
 }//end class

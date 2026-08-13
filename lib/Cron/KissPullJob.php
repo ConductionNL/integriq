@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector KISS Pull Job.
  *
@@ -43,74 +44,72 @@ use Throwable;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KissPullJob extends TimedJob
-{
+class KissPullJob extends TimedJob {
 
-    /**
-     * Default sweep interval in seconds (1 hour).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 3600;
+	/**
+	 * Default sweep interval in seconds (1 hour).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 3600;
 
-    /**
-     * KissPullJob constructor.
-     *
-     * @param ITimeFactory    $time        Time factory for job scheduling.
-     * @param KissSyncService $syncService The KISS sync service.
-     * @param LoggerInterface $logger      Logger for sweep outcomes and containment.
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly KissSyncService $syncService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * KissPullJob constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param KissSyncService $syncService The KISS sync service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly KissSyncService $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-        // Klantcontact pulls are not strictly time-sensitive.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Klantcontact pulls are not strictly time-sensitive.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only one sweep at a time to avoid double-pulling a cursor window.
-        $this->setAllowParallelRuns(allow: false);
+		// Only one sweep at a time to avoid double-pulling a cursor window.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the KISS pull sweep.
-     *
-     * A single failing source must never wedge the cron pipeline — the
-     * service already contains per-source and per-record failures, and any
-     * sweep-level exception is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/kiss-kcc-bridge/spec.md
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $processed = $this->syncService->pullAll();
-            $this->logger->info(
-                'KissPullJob: pull sweep complete',
-                ['processed' => $processed]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'KissPullJob: pull sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the KISS pull sweep.
+	 *
+	 * A single failing source must never wedge the cron pipeline — the
+	 * service already contains per-source and per-record failures, and any
+	 * sweep-level exception is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$processed = $this->syncService->pullAll();
+			$this->logger->info(
+				'KissPullJob: pull sweep complete',
+				['processed' => $processed]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'KissPullJob: pull sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

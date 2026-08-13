@@ -41,184 +41,175 @@ use OCP\IUserSession;
 /**
  * PDOK Locatieserver proxy controller.
  */
-class PdokController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string            $appName       App identifier ("openconnector").
-     * @param IRequest          $request       Current request.
-     * @param PdokConnector     $pdokConnector Connector providing PDOK access.
-     * @param IUserSession      $userSession   The user session.
-     * @param ActionAuthService $actionAuth    The action authorization service.
-     * @param IL10N             $l             The localization service.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly PdokConnector $pdokConnector,
-        private readonly IUserSession $userSession,
-        private readonly ActionAuthService $actionAuth,
-        private readonly IL10N $l,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class PdokController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App identifier ("openconnector").
+	 * @param IRequest $request Current request.
+	 * @param PdokConnector $pdokConnector Connector providing PDOK access.
+	 * @param IUserSession $userSession The user session.
+	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param IL10N $l The localization service.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly PdokConnector $pdokConnector,
+		private readonly IUserSession $userSession,
+		private readonly ActionAuthService $actionAuth,
+		private readonly IL10N $l,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Address autocomplete (PDOK Locatieserver `/suggest`).
-     *
-     * @param string $q Partial address text (min 1 char).
-     *
-     * @return JSONResponse Normalised suggestion documents or a 400 / 503 error envelope.
-     *
-     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function suggestAction(string $q=''): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+	/**
+	 * Address autocomplete (PDOK Locatieserver `/suggest`).
+	 *
+	 * @param string $q Partial address text (min 1 char).
+	 *
+	 * @return JSONResponse Normalised suggestion documents or a 400 / 503 error envelope.
+	 *
+	 * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function suggestAction(string $q = ''): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        $this->actionAuth->requireAction(user: $user, action: 'pdok.suggest');
+		$this->actionAuth->requireAction(user: $user, action: 'pdok.suggest');
 
-        if (trim($q) === '') {
-            return new JSONResponse(
-                ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+		if (trim($q) === '') {
+			return new JSONResponse(
+				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse($this->pdokConnector->suggest($q));
+		return new JSONResponse($this->pdokConnector->suggest($q));
+	}//end suggestAction()
 
-    }//end suggestAction()
+	/**
+	 * Look up a PDOK document by id.
+	 *
+	 * @param string $id PDOK identifier.
+	 *
+	 * @return JSONResponse Normalised lookup payload, or 400 / 404 / 503.
+	 *
+	 * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function lookupAction(string $id = ''): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-    /**
-     * Look up a PDOK document by id.
-     *
-     * @param string $id PDOK identifier.
-     *
-     * @return JSONResponse Normalised lookup payload, or 400 / 404 / 503.
-     *
-     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function lookupAction(string $id=''): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+		$this->actionAuth->requireAction(user: $user, action: 'pdok.lookup');
 
-        $this->actionAuth->requireAction(user: $user, action: 'pdok.lookup');
+		if (trim($id) === '') {
+			return new JSONResponse(
+				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        if (trim($id) === '') {
-            return new JSONResponse(
-                ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+		$payload = $this->pdokConnector->lookup($id);
+		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
+			return new JSONResponse(
+				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}
 
-        $payload = $this->pdokConnector->lookup($id);
-        if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
-            return new JSONResponse(
-                ['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
-                Http::STATUS_SERVICE_UNAVAILABLE
-            );
-        }
+		if ($payload['numFound'] === 0) {
+			return new JSONResponse(
+				['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
 
-        if ($payload['numFound'] === 0) {
-            return new JSONResponse(
-                ['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
-                Http::STATUS_NOT_FOUND
-            );
-        }
+		return new JSONResponse($payload);
+	}//end lookupAction()
 
-        return new JSONResponse($payload);
+	/**
+	 * Free-text search.
+	 *
+	 * @param string $q Search query.
+	 * @param int $rows Page size.
+	 * @param int $start Page offset.
+	 *
+	 * @return JSONResponse Normalised results or 400 / 503.
+	 *
+	 * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function freeAction(string $q = '', int $rows = 10, int $start = 0): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-    }//end lookupAction()
+		$this->actionAuth->requireAction(user: $user, action: 'pdok.free');
 
-    /**
-     * Free-text search.
-     *
-     * @param string $q     Search query.
-     * @param int    $rows  Page size.
-     * @param int    $start Page offset.
-     *
-     * @return JSONResponse Normalised results or 400 / 503.
-     *
-     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function freeAction(string $q='', int $rows=10, int $start=0): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+		if (trim($q) === '') {
+			return new JSONResponse(
+				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        $this->actionAuth->requireAction(user: $user, action: 'pdok.free');
+		return new JSONResponse($this->pdokConnector->free($q, $rows, $start));
+	}//end freeAction()
 
-        if (trim($q) === '') {
-            return new JSONResponse(
-                ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+	/**
+	 * Reverse geocode coordinates.
+	 *
+	 * @param float|null $lat Latitude (WGS84).
+	 * @param float|null $lng Longitude (WGS84).
+	 *
+	 * @return JSONResponse Normalised address or 400 / 503.
+	 *
+	 * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function reverseAction(?float $lat = null, ?float $lng = null): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        return new JSONResponse($this->pdokConnector->free($q, $rows, $start));
+		$this->actionAuth->requireAction(user: $user, action: 'pdok.reverse');
 
-    }//end freeAction()
+		if ($lat === null || $lng === null) {
+			return new JSONResponse(
+				['error' => 'missing_coordinates', 'message_key' => 'pdok.error.missing_coordinates'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-    /**
-     * Reverse geocode coordinates.
-     *
-     * @param float|null $lat Latitude (WGS84).
-     * @param float|null $lng Longitude (WGS84).
-     *
-     * @return JSONResponse Normalised address or 400 / 503.
-     *
-     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function reverseAction(?float $lat=null, ?float $lng=null): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-        }
+		$payload = $this->pdokConnector->reverse($lat, $lng);
+		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
+			return new JSONResponse(
+				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}
 
-        $this->actionAuth->requireAction(user: $user, action: 'pdok.reverse');
+		if ($payload['numFound'] === 0) {
+			return new JSONResponse(
+				['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
 
-        if ($lat === null || $lng === null) {
-            return new JSONResponse(
-                ['error' => 'missing_coordinates', 'message_key' => 'pdok.error.missing_coordinates'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
-
-        $payload = $this->pdokConnector->reverse($lat, $lng);
-        if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
-            return new JSONResponse(
-                ['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
-                Http::STATUS_SERVICE_UNAVAILABLE
-            );
-        }
-
-        if ($payload['numFound'] === 0) {
-            return new JSONResponse(
-                ['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
-                Http::STATUS_NOT_FOUND
-            );
-        }
-
-        return new JSONResponse($payload);
-
-    }//end reverseAction()
+		return new JSONResponse($payload);
+	}//end reverseAction()
 }//end class

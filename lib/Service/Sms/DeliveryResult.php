@@ -34,45 +34,43 @@ namespace OCA\OpenConnector\Service\Sms;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
-final class DeliveryResult
-{
+final class DeliveryResult {
 
-    /**
-     * Recognised normalised lifecycle statuses (mirrors `sms_message.status`).
-     *
-     * @var string[]
-     */
-    public const STATUSES = ['queued', 'sent', 'delivered', 'failed'];
+	/**
+	 * Recognised normalised lifecycle statuses (mirrors `sms_message.status`).
+	 *
+	 * @var string[]
+	 */
+	public const STATUSES = ['queued', 'sent', 'delivered', 'failed'];
 
-    /**
-     * Constructor.
-     *
-     * @param string      $providerMessageId The provider-assigned message id (never empty on success).
-     * @param string      $status            One of {@see self::STATUSES}.
-     * @param string|null $detail            Optional human-readable detail (provider status text, error message).
-     */
-    public function __construct(
-        public readonly string $providerMessageId,
-        public readonly string $status,
-        public readonly ?string $detail=null,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $providerMessageId The provider-assigned message id (never empty on success).
+	 * @param string $status One of {@see self::STATUSES}.
+	 * @param string|null $detail Optional human-readable detail (provider status text, error message).
+	 */
+	public function __construct(
+		public readonly string $providerMessageId,
+		public readonly string $status,
+		public readonly ?string $detail = null,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Serialise to the plain array shape persisted on an `sms_message` object.
-     *
-     * @return array{providerMessageId: string, status: string, detail: string|null} The array shape.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
-     */
-    public function toArray(): array
-    {
-        return [
-            'providerMessageId' => $this->providerMessageId,
-            'status'            => $this->status,
-            'detail'            => $this->detail,
-        ];
+	/**
+	 * Serialise to the plain array shape persisted on an `sms_message` object.
+	 *
+	 * @return array{providerMessageId: string, status: string, detail: string|null} The array shape.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
+	 */
+	public function toArray(): array {
+		return [
+			'providerMessageId' => $this->providerMessageId,
+			'status' => $this->status,
+			'detail' => $this->detail,
+		];
 
-    }//end toArray()
+	}//end toArray()
 }//end class

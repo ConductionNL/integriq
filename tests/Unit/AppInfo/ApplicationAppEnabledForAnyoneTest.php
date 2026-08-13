@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit test for Application::appEnabledForAnyone() — version-safe optional-app
  * feature detection (#1103).
@@ -44,140 +45,128 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenConnector\AppInfo\Application
  */
-class ApplicationAppEnabledForAnyoneTest extends TestCase
-{
+class ApplicationAppEnabledForAnyoneTest extends TestCase {
 
+	/**
+	 * Invoke the private appEnabledForAnyone() helper.
+	 *
+	 * The instance is created without the parent `App` constructor, which would
+	 * require a live Nextcloud server container — same technique as the sibling
+	 * Application tests. appEnabledForAnyone() touches no container state, so an
+	 * unconstructed instance is sufficient.
+	 *
+	 * @param IAppManager $appManager The app manager double.
+	 * @param string $appId The app id to test.
+	 *
+	 * @return boolean
+	 */
+	private function invokeAppEnabledForAnyone(IAppManager $appManager, string $appId): bool {
+		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
+		$method = (new ReflectionClass(Application::class))->getMethod('appEnabledForAnyone');
+		$method->setAccessible(true);
 
-    /**
-     * Invoke the private appEnabledForAnyone() helper.
-     *
-     * The instance is created without the parent `App` constructor, which would
-     * require a live Nextcloud server container — same technique as the sibling
-     * Application tests. appEnabledForAnyone() touches no container state, so an
-     * unconstructed instance is sufficient.
-     *
-     * @param IAppManager $appManager The app manager double.
-     * @param string      $appId      The app id to test.
-     *
-     * @return boolean
-     */
-    private function invokeAppEnabledForAnyone(IAppManager $appManager, string $appId): bool
-    {
-        $app    = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-        $method = (new ReflectionClass(Application::class))->getMethod('appEnabledForAnyone');
-        $method->setAccessible(true);
+		return $method->invoke($app, $appManager, $appId);
+	}//end invokeAppEnabledForAnyone()
 
-        return $method->invoke($app, $appManager, $appId);
+	/**
+	 * GUARD (#1174): `isEnabledForAnyone()` must be REAL interface API here.
+	 *
+	 * This assertion is the reason the two behavioural tests below can be plain
+	 * `createMock()` calls. They used to branch on
+	 * `method_exists(IAppManager::class, 'isEnabledForAnyone')` and fall back to
+	 * PHPUnit's `addMethods()`, because `nextcloud/ocp` was pinned to
+	 * `dev-stable29` and that interface snapshot — three majors below the
+	 * `min-version="32"` this app declares — genuinely did not have the method.
+	 * A mock built with `addMethods()` fabricates the API it is verifying, which
+	 * is the exact failure this whole test class was written to close (#1103).
+	 *
+	 * With `nextcloud/ocp ^32.0` the method is declared, `onlyMethods` semantics
+	 * apply, and any future removal fails HERE with a clear message instead of
+	 * silently downgrading every mock below to a fabricated one.
+	 *
+	 * @return void
+	 */
+	public function testIsEnabledForAnyoneIsRealInterfaceApi(): void {
+		$this->assertTrue(
+			method_exists(IAppManager::class, 'isEnabledForAnyone'),
+			'isEnabledForAnyone() is @since 32.0.0 and this app declares min-version="32"; '
+			. 'if it is missing, nextcloud/ocp is pinned below the declared floor again (#1174)'
+		);
 
-    }//end invokeAppEnabledForAnyone()
+	}//end testIsEnabledForAnyoneIsRealInterfaceApi()
 
+	/**
+	 * GIVEN a disabled optional app WHEN it is feature-detected
+	 * THEN the helper reports false.
+	 *
+	 * @return void
+	 */
+	public function testReportsFalseWhenTheAppIsNotEnabled(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('forms')->willReturn(false);
 
-    /**
-     * GUARD (#1174): `isEnabledForAnyone()` must be REAL interface API here.
-     *
-     * This assertion is the reason the two behavioural tests below can be plain
-     * `createMock()` calls. They used to branch on
-     * `method_exists(IAppManager::class, 'isEnabledForAnyone')` and fall back to
-     * PHPUnit's `addMethods()`, because `nextcloud/ocp` was pinned to
-     * `dev-stable29` and that interface snapshot — three majors below the
-     * `min-version="32"` this app declares — genuinely did not have the method.
-     * A mock built with `addMethods()` fabricates the API it is verifying, which
-     * is the exact failure this whole test class was written to close (#1103).
-     *
-     * With `nextcloud/ocp ^32.0` the method is declared, `onlyMethods` semantics
-     * apply, and any future removal fails HERE with a clear message instead of
-     * silently downgrading every mock below to a fabricated one.
-     *
-     * @return void
-     */
-    public function testIsEnabledForAnyoneIsRealInterfaceApi(): void
-    {
-        $this->assertTrue(
-            method_exists(IAppManager::class, 'isEnabledForAnyone'),
-            'isEnabledForAnyone() is @since 32.0.0 and this app declares min-version="32"; '
-            .'if it is missing, nextcloud/ocp is pinned below the declared floor again (#1174)'
-        );
+		$this->assertFalse($this->invokeAppEnabledForAnyone($appManager, 'forms'));
 
-    }//end testIsEnabledForAnyoneIsRealInterfaceApi()
+	}//end testReportsFalseWhenTheAppIsNotEnabled()
 
+	/**
+	 * GIVEN an enabled optional app
+	 * WHEN it is feature-detected
+	 * THEN `isEnabledForAnyone()` answers and `isInstalled()` (deprecated 32.0.0)
+	 * is NOT called.
+	 *
+	 * @return void
+	 */
+	public function testPrefersIsEnabledForAnyoneWhenTheServerHasIt(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->expects($this->once())
+			->method('isEnabledForAnyone')
+			->with('workflowengine')
+			->willReturn(true);
+		$appManager->expects($this->never())->method('isInstalled');
 
-    /**
-     * GIVEN a disabled optional app WHEN it is feature-detected
-     * THEN the helper reports false.
-     *
-     * @return void
-     */
-    public function testReportsFalseWhenTheAppIsNotEnabled(): void
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForAnyone')->with('forms')->willReturn(false);
+		$this->assertTrue($this->invokeAppEnabledForAnyone($appManager, 'workflowengine'));
 
-        $this->assertFalse($this->invokeAppEnabledForAnyone($appManager, 'forms'));
+	}//end testPrefersIsEnabledForAnyoneWhenTheServerHasIt()
 
-    }//end testReportsFalseWhenTheAppIsNotEnabled()
+	/**
+	 * REGRESSION GUARD (#1103): no production source may call
+	 * `isEnabledForAnyUser()`, because no Nextcloud version provides it.
+	 *
+	 * A behavioural test cannot catch a reintroduction of this defect: the call
+	 * sites swallow `\Throwable` and only log, so a wrong method name degrades to
+	 * "feature quietly absent" rather than a failing assertion. Asserting on the
+	 * source is therefore the only guard that actually holds — and it also
+	 * documents the name to never reach for again.
+	 *
+	 * @return void
+	 */
+	public function testNoProductionCodeCallsTheNonExistentIsEnabledForAnyUser(): void {
+		$this->assertFalse(
+			method_exists(IAppManager::class, 'isEnabledForAnyUser'),
+			'isEnabledForAnyUser() is not IAppManager API on any supported Nextcloud version'
+		);
 
+		$libDir = dirname(__DIR__, 3) . '/lib';
+		$offenders = [];
 
-    /**
-     * GIVEN an enabled optional app
-     * WHEN it is feature-detected
-     * THEN `isEnabledForAnyone()` answers and `isInstalled()` (deprecated 32.0.0)
-     * is NOT called.
-     *
-     * @return void
-     */
-    public function testPrefersIsEnabledForAnyoneWhenTheServerHasIt(): void
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->expects($this->once())
-            ->method('isEnabledForAnyone')
-            ->with('workflowengine')
-            ->willReturn(true);
-        $appManager->expects($this->never())->method('isInstalled');
+		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($libDir));
+		foreach ($files as $file) {
+			if ($file->isFile() === false || $file->getExtension() !== 'php') {
+				continue;
+			}
 
-        $this->assertTrue($this->invokeAppEnabledForAnyone($appManager, 'workflowengine'));
+			$contents = (string)file_get_contents($file->getPathname());
+			if (str_contains($contents, '->isEnabledForAnyUser(') === true) {
+				$offenders[] = $file->getPathname();
+			}
+		}
 
-    }//end testPrefersIsEnabledForAnyoneWhenTheServerHasIt()
+		$this->assertSame(
+			[],
+			$offenders,
+			'these files call a method Nextcloud does not have; use Application::appEnabledForAnyone() instead'
+		);
 
-
-    /**
-     * REGRESSION GUARD (#1103): no production source may call
-     * `isEnabledForAnyUser()`, because no Nextcloud version provides it.
-     *
-     * A behavioural test cannot catch a reintroduction of this defect: the call
-     * sites swallow `\Throwable` and only log, so a wrong method name degrades to
-     * "feature quietly absent" rather than a failing assertion. Asserting on the
-     * source is therefore the only guard that actually holds — and it also
-     * documents the name to never reach for again.
-     *
-     * @return void
-     */
-    public function testNoProductionCodeCallsTheNonExistentIsEnabledForAnyUser(): void
-    {
-        $this->assertFalse(
-            method_exists(IAppManager::class, 'isEnabledForAnyUser'),
-            'isEnabledForAnyUser() is not IAppManager API on any supported Nextcloud version'
-        );
-
-        $libDir   = dirname(__DIR__, 3).'/lib';
-        $offenders = [];
-
-        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($libDir));
-        foreach ($files as $file) {
-            if ($file->isFile() === false || $file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $contents = (string) file_get_contents($file->getPathname());
-            if (str_contains($contents, '->isEnabledForAnyUser(') === true) {
-                $offenders[] = $file->getPathname();
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $offenders,
-            'these files call a method Nextcloud does not have; use Application::appEnabledForAnyone() instead'
-        );
-
-    }//end testNoProductionCodeCallsTheNonExistentIsEnabledForAnyUser()
+	}//end testNoProductionCodeCallsTheNonExistentIsEnabledForAnyUser()
 }//end class

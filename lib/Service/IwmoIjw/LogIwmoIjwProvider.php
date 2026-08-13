@@ -32,61 +32,54 @@ namespace OCA\OpenConnector\Service\IwmoIjw;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogIwmoIjwProvider implements IwmoIjwProviderInterface
-{
+class LogIwmoIjwProvider implements IwmoIjwProviderInterface {
 
-    /**
-     * Per-process counter for synthetic references (`MOCK-IWMO-<n>`).
-     *
-     * A per-process, in-memory counter is sufficient for a sandbox binding —
-     * refs only need to be locally unique for the duration of one
-     * request/job run (mirrors LogKlantinteractiesProvider::$counter).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic references (`MOCK-IWMO-<n>`).
+	 *
+	 * A per-process, in-memory counter is sufficient for a sandbox binding —
+	 * refs only need to be locally unique for the duration of one
+	 * request/job run (mirrors LogKlantinteractiesProvider::$counter).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
+	 *
+	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array {
+		return ['type' => 'object', 'properties' => []];
+	}//end getConfigSchema()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> An empty schema — the log provider needs no configuration.
-     *
-     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array
-    {
-        return ['type' => 'object', 'properties' => []];
-
-    }//end getConfigSchema()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param string $berichttype         Unused.
-     * @param string $envelopeXml         Unused.
-     *
-     * @return string The synthetic `MOCK-IWMO-<n>` reference.
-     *
-     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
-     */
-    public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string
-    {
-        self::$counter++;
-        return 'MOCK-IWMO-'.self::$counter;
-
-    }//end send()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param string $berichttype Unused.
+	 * @param string $envelopeXml Unused.
+	 *
+	 * @return string The synthetic `MOCK-IWMO-<n>` reference.
+	 *
+	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 */
+	public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string {
+		self::$counter++;
+		return 'MOCK-IWMO-' . self::$counter;
+	}//end send()
 }//end class

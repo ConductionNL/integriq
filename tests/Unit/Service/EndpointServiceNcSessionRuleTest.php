@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for the `nc-session` branch of
  * EndpointService::processAuthenticationRule() (ocon#1068).
@@ -31,184 +32,166 @@ use ReflectionClass;
  * precisely because it tracks that constructor, and a fix for #1068 must not
  * inherit that fragility.
  */
-class EndpointServiceNcSessionRuleTest extends TestCase
-{
+class EndpointServiceNcSessionRuleTest extends TestCase {
 
-    /**
-     * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $authorizationService;
+	/**
+	 * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $authorizationService;
 
-    /**
-     * @var EndpointService
-     */
-    private EndpointService $service;
+	/**
+	 * @var EndpointService
+	 */
+	private EndpointService $service;
 
+	/**
+	 * Build an EndpointService with only `authorizationService` populated.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Build an EndpointService with only `authorizationService` populated.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->authorizationService = $this->createMock(AuthorizationService::class);
 
-        $this->authorizationService = $this->createMock(AuthorizationService::class);
+		$reflection = new ReflectionClass(EndpointService::class);
+		$this->service = $reflection->newInstanceWithoutConstructor();
 
-        $reflection    = new ReflectionClass(EndpointService::class);
-        $this->service = $reflection->newInstanceWithoutConstructor();
+		// No setAccessible() call: it is a no-op since PHP 8.1 and deprecated
+		// in 8.5, which the suite reports.
+		$reflection->getProperty('authorizationService')->setValue($this->service, $this->authorizationService);
 
-        // No setAccessible() call: it is a no-op since PHP 8.1 and deprecated
-        // in 8.5, which the suite reports.
-        $reflection->getProperty('authorizationService')->setValue($this->service, $this->authorizationService);
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Invoke the private rule processor.
+	 *
+	 * @param array $authentication The rule's `configuration.authentication` block.
+	 * @param array $data The pipeline data.
+	 *
+	 * @return array|JSONResponse The rule's verdict.
+	 */
+	private function process(array $authentication, array $data = []) {
+		$rule = new ObjectEntity();
+		$rule->setObject(['configuration' => ['authentication' => $authentication]]);
 
+		$method = (new ReflectionClass(EndpointService::class))->getMethod('processAuthenticationRule');
 
-    /**
-     * Invoke the private rule processor.
-     *
-     * @param array $authentication The rule's `configuration.authentication` block.
-     * @param array $data           The pipeline data.
-     *
-     * @return array|JSONResponse The rule's verdict.
-     */
-    private function process(array $authentication, array $data=[])
-    {
-        $rule = new ObjectEntity();
-        $rule->setObject(['configuration' => ['authentication' => $authentication]]);
+		return $method->invoke($this->service, $rule, $data);
+	}//end process()
 
-        $method = (new ReflectionClass(EndpointService::class))->getMethod('processAuthenticationRule');
+	/**
+	 * Skip when the harness has no `OC\AppFramework\Http`.
+	 *
+	 * `EndpointService` imports the INTERNAL `OC\AppFramework\Http` for its
+	 * status constants, and the unit bootstrap stubs only `OCP\*` plus a
+	 * handful of `OC\Hooks` classes — so every pre-existing branch that
+	 * returns one of those constants is unreachable in this suite. That is a
+	 * harness gap, not a defect in the code under test, and it predates
+	 * #1068: the `nc-session` branch itself uses no such constant, which is
+	 * why the tests that cover it run unconditionally.
+	 *
+	 * @return void
+	 */
+	private function requireInternalHttpClass(): void {
+		if (class_exists('OC\AppFramework\Http') === false) {
+			$this->markTestSkipped(
+				'Requires the internal OC\AppFramework\Http class, which the unit bootstrap does not stub.'
+			);
+		}
 
-        return $method->invoke($this->service, $rule, $data);
+	}//end requireInternalHttpClass()
 
-    }//end process()
+	/**
+	 * The whole point of #1068: a request carrying NO Authorization header is
+	 * still evaluated, because `nc-session` is dispatched before the
+	 * header-presence guard that used to 403 it unconditionally.
+	 *
+	 * @return void
+	 */
+	public function testSessionRuleIsEvaluatedWithoutAnAuthorizationHeader(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeNcSession')
+			->with([], []);
 
+		$result = $this->process(['type' => 'nc-session'], ['headers' => []]);
 
-    /**
-     * Skip when the harness has no `OC\AppFramework\Http`.
-     *
-     * `EndpointService` imports the INTERNAL `OC\AppFramework\Http` for its
-     * status constants, and the unit bootstrap stubs only `OCP\*` plus a
-     * handful of `OC\Hooks` classes — so every pre-existing branch that
-     * returns one of those constants is unreachable in this suite. That is a
-     * harness gap, not a defect in the code under test, and it predates
-     * #1068: the `nc-session` branch itself uses no such constant, which is
-     * why the tests that cover it run unconditionally.
-     *
-     * @return void
-     */
-    private function requireInternalHttpClass(): void
-    {
-        if (class_exists('OC\AppFramework\Http') === false) {
-            $this->markTestSkipped(
-                'Requires the internal OC\AppFramework\Http class, which the unit bootstrap does not stub.'
-            );
-        }
+		$this->assertIsArray($result);
 
-    }//end requireInternalHttpClass()
+	}//end testSessionRuleIsEvaluatedWithoutAnAuthorizationHeader()
 
+	/**
+	 * A refusal from the authorization service becomes a 401, never a pass.
+	 *
+	 * @return void
+	 */
+	public function testRefusalBecomesA401(): void {
+		$this->authorizationService->method('authorizeNcSession')
+			->willThrowException(new AuthenticationException('Not authorized', ['reason' => 'no session']));
 
-    /**
-     * The whole point of #1068: a request carrying NO Authorization header is
-     * still evaluated, because `nc-session` is dispatched before the
-     * header-presence guard that used to 403 it unconditionally.
-     *
-     * @return void
-     */
-    public function testSessionRuleIsEvaluatedWithoutAnAuthorizationHeader(): void
-    {
-        $this->authorizationService->expects($this->once())
-            ->method('authorizeNcSession')
-            ->with([], []);
+		$result = $this->process(['type' => 'nc-session'], ['headers' => []]);
 
-        $result = $this->process(['type' => 'nc-session'], ['headers' => []]);
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(401, $result->getStatus());
 
-        $this->assertIsArray($result);
+	}//end testRefusalBecomesA401()
 
-    }//end testSessionRuleIsEvaluatedWithoutAnAuthorizationHeader()
+	/**
+	 * The configured users/groups allow-lists reach the authorization service
+	 * unchanged — the same config shape the `basic` rule uses.
+	 *
+	 * @return void
+	 */
+	public function testAllowListsAreForwarded(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeNcSession')
+			->with(['alice'], ['admin']);
 
+		$this->process(
+			[
+				'type' => 'nc-session',
+				'users' => ['alice'],
+				'groups' => ['admin'],
+			],
+			['headers' => []]
+		);
 
-    /**
-     * A refusal from the authorization service becomes a 401, never a pass.
-     *
-     * @return void
-     */
-    public function testRefusalBecomesA401(): void
-    {
-        $this->authorizationService->method('authorizeNcSession')
-            ->willThrowException(new AuthenticationException('Not authorized', ['reason' => 'no session']));
+	}//end testAllowListsAreForwarded()
 
-        $result = $this->process(['type' => 'nc-session'], ['headers' => []]);
+	/**
+	 * A header-bearing type is untouched by the new branch: with no
+	 * Authorization header it still short-circuits with the pre-existing 403.
+	 *
+	 * @return void
+	 */
+	public function testHeaderTypesKeepTheirExisting403(): void {
+		$this->requireInternalHttpClass();
 
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(401, $result->getStatus());
+		$this->authorizationService->expects($this->never())->method('authorizeNcSession');
 
-    }//end testRefusalBecomesA401()
+		$result = $this->process(['type' => 'basic'], ['headers' => []]);
 
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(403, $result->getStatus());
 
-    /**
-     * The configured users/groups allow-lists reach the authorization service
-     * unchanged — the same config shape the `basic` rule uses.
-     *
-     * @return void
-     */
-    public function testAllowListsAreForwarded(): void
-    {
-        $this->authorizationService->expects($this->once())
-            ->method('authorizeNcSession')
-            ->with(['alice'], ['admin']);
+	}//end testHeaderTypesKeepTheirExisting403()
 
-        $this->process(
-            [
-                'type'   => 'nc-session',
-                'users'  => ['alice'],
-                'groups' => ['admin'],
-            ],
-            ['headers' => []]
-        );
+	/**
+	 * An unknown type is still a 501 — the new branch did not swallow the
+	 * default arm of the dispatch.
+	 *
+	 * @return void
+	 */
+	public function testUnknownTypeStillReturns501(): void {
+		$this->requireInternalHttpClass();
 
-    }//end testAllowListsAreForwarded()
+		$result = $this->process(
+			['type' => 'not-a-real-type'],
+			['headers' => ['Authorization' => 'Bearer x']]
+		);
 
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(501, $result->getStatus());
 
-    /**
-     * A header-bearing type is untouched by the new branch: with no
-     * Authorization header it still short-circuits with the pre-existing 403.
-     *
-     * @return void
-     */
-    public function testHeaderTypesKeepTheirExisting403(): void
-    {
-        $this->requireInternalHttpClass();
-
-        $this->authorizationService->expects($this->never())->method('authorizeNcSession');
-
-        $result = $this->process(['type' => 'basic'], ['headers' => []]);
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(403, $result->getStatus());
-
-    }//end testHeaderTypesKeepTheirExisting403()
-
-
-    /**
-     * An unknown type is still a 501 — the new branch did not swallow the
-     * default arm of the dispatch.
-     *
-     * @return void
-     */
-    public function testUnknownTypeStillReturns501(): void
-    {
-        $this->requireInternalHttpClass();
-
-        $result = $this->process(
-            ['type' => 'not-a-real-type'],
-            ['headers' => ['Authorization' => 'Bearer x']]
-        );
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(501, $result->getStatus());
-
-    }//end testUnknownTypeStillReturns501()
+	}//end testUnknownTypeStillReturns501()
 }//end class

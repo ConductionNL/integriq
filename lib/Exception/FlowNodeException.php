@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Flow Node Exception.
  *
@@ -49,47 +50,43 @@ use Throwable;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
-class FlowNodeException extends RuntimeException
-{
+class FlowNodeException extends RuntimeException {
 
-    /**
-     * Structured, secret-free detail about the failure.
-     *
-     * Carried on the exception rather than parsed back out of the message,
-     * because a step running under `onError: continue` must place the HTTP
-     * status, the Source and the endpoint onto the failed item as DATA a
-     * downstream step can branch on — and reconstructing that from a
-     * translated sentence would be guesswork.
-     *
-     * @var array<string, mixed>
-     */
-    private array $details;
+	/**
+	 * Structured, secret-free detail about the failure.
+	 *
+	 * Carried on the exception rather than parsed back out of the message,
+	 * because a step running under `onError: continue` must place the HTTP
+	 * status, the Source and the endpoint onto the failed item as DATA a
+	 * downstream step can branch on — and reconstructing that from a
+	 * translated sentence would be guesswork.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $details;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $message  The human-readable, secret-free message.
-     * @param array          $details  Structured detail (status, source, endpoint, ...).
-     * @param Throwable|null $previous The underlying failure, when there was one.
-     */
-    public function __construct(string $message, array $details=[], ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message The human-readable, secret-free message.
+	 * @param array $details Structured detail (status, source, endpoint, ...).
+	 * @param Throwable|null $previous The underlying failure, when there was one.
+	 */
+	public function __construct(string $message, array $details = [], ?Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
 
-        $this->details = $details;
+		$this->details = $details;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The structured detail carried with this failure.
-     *
-     * @return array<string, mixed> The detail.
-     *
-     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function getDetails(): array
-    {
-        return $this->details;
-
-    }//end getDetails()
+	/**
+	 * The structured detail carried with this failure.
+	 *
+	 * @return array<string, mixed> The detail.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function getDetails(): array {
+		return $this->details;
+	}//end getDetails()
 }//end class

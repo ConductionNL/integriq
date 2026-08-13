@@ -36,6 +36,5 @@ use Exception;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KissProviderException extends Exception
-{
+class KissProviderException extends Exception {
 }//end class

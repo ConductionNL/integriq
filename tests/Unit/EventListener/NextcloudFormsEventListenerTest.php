@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for NextcloudFormsEventListener.
  *
@@ -34,77 +35,70 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
  */
-class NextcloudFormsEventListenerTest extends TestCase
-{
+class NextcloudFormsEventListenerTest extends TestCase {
 
+	/**
+	 * TC-7: a FormSubmittedEvent produces a matching
+	 * `com.nextcloud.forms.submission.created` CloudEvent carrying `formId`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
+	 */
+	public function testFormSubmittedEventProducesMatchingCloudEvent(): void {
+		$form = new Form(id: 12, title: 'Feedback');
+		$submission = new Submission(id: 99, formId: 12, userId: 'bob');
 
-    /**
-     * TC-7: a FormSubmittedEvent produces a matching
-     * `com.nextcloud.forms.submission.created` CloudEvent carrying `formId`.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
-     */
-    public function testFormSubmittedEventProducesMatchingCloudEvent(): void
-    {
-        $form       = new Form(id: 12, title: 'Feedback');
-        $submission = new Submission(id: 99, formId: 12, userId: 'bob');
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->expects($this->once())
+			->method('handleNextcloudEvent')
+			->with(
+				'com.nextcloud.forms.submission.created',
+				$this->callback(function (array $payload) {
+					return $payload['source'] === '/nextcloud/forms'
+						&& $payload['subject'] === '12'
+						&& $payload['data']['formId'] === '12'
+						&& $payload['data']['formTitle'] === 'Feedback'
+						&& ($payload['data']['submission']['id'] ?? null) === 99;
+				})
+			);
 
-        $eventService = $this->createMock(EventService::class);
-        $eventService->method('hasActiveSubscriptions')->willReturn(true);
-        $eventService->expects($this->once())
-            ->method('handleNextcloudEvent')
-            ->with(
-                'com.nextcloud.forms.submission.created',
-                $this->callback(function (array $payload) {
-                    return $payload['source'] === '/nextcloud/forms'
-                        && $payload['subject'] === '12'
-                        && $payload['data']['formId'] === '12'
-                        && $payload['data']['formTitle'] === 'Feedback'
-                        && ($payload['data']['submission']['id'] ?? null) === 99;
-                })
-            );
+		$listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new FormSubmittedEvent($form, $submission));
+	}//end testFormSubmittedEventProducesMatchingCloudEvent()
 
-        $listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new FormSubmittedEvent($form, $submission));
-    }//end testFormSubmittedEventProducesMatchingCloudEvent()
+	/**
+	 * TC-5-style: an unrelated event type is ignored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
+	 */
+	public function testUnrelatedEventIsIgnored(): void {
+		$eventService = $this->createMock(EventService::class);
+		$eventService->expects($this->never())->method('handleNextcloudEvent');
 
+		$listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new Event());
+	}//end testUnrelatedEventIsIgnored()
 
-    /**
-     * TC-5-style: an unrelated event type is ignored.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
-     */
-    public function testUnrelatedEventIsIgnored(): void
-    {
-        $eventService = $this->createMock(EventService::class);
-        $eventService->expects($this->never())->method('handleNextcloudEvent');
+	/**
+	 * The firehose gate mirrors every other nextcloud-event-hub listener.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
+	 */
+	public function testSkipsWhenNoActiveSubscriptions(): void {
+		$form = new Form(id: 1);
+		$submission = new Submission(id: 1, formId: 1);
 
-        $listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new Event());
-    }//end testUnrelatedEventIsIgnored()
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(false);
+		$eventService->expects($this->never())->method('handleNextcloudEvent');
 
-
-    /**
-     * The firehose gate mirrors every other nextcloud-event-hub listener.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
-     */
-    public function testSkipsWhenNoActiveSubscriptions(): void
-    {
-        $form       = new Form(id: 1);
-        $submission = new Submission(id: 1, formId: 1);
-
-        $eventService = $this->createMock(EventService::class);
-        $eventService->method('hasActiveSubscriptions')->willReturn(false);
-        $eventService->expects($this->never())->method('handleNextcloudEvent');
-
-        $listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new FormSubmittedEvent($form, $submission));
-    }//end testSkipsWhenNoActiveSubscriptions()
+		$listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new FormSubmittedEvent($form, $submission));
+	}//end testSkipsWhenNoActiveSubscriptions()
 }//end class

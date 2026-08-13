@@ -17,7 +17,6 @@ namespace OCA\Tables\Event;
 /**
  * Minimal stub for OCA\Tables\Event\RowAddedEvent.
  */
-final class RowAddedEvent extends AbstractRowEvent
-{
+final class RowAddedEvent extends AbstractRowEvent {
 
 }//end class

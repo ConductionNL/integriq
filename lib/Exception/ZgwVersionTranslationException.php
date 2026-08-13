@@ -34,6 +34,5 @@ use Exception;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md
  */
-class ZgwVersionTranslationException extends Exception
-{
+class ZgwVersionTranslationException extends Exception {
 }//end class

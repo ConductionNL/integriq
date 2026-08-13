@@ -28,81 +28,75 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
  */
-class LogKlantinteractiesProviderTest extends TestCase
-{
+class LogKlantinteractiesProviderTest extends TestCase {
 
-    /**
-     * @var LogKlantinteractiesProvider
-     */
-    private LogKlantinteractiesProvider $provider;
+	/**
+	 * @var LogKlantinteractiesProvider
+	 */
+	private LogKlantinteractiesProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->provider = new LogKlantinteractiesProvider();
+		$this->provider = new LogKlantinteractiesProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * listKlantcontacten() always returns an empty page with a null cursor.
-     *
-     * @return void
-     */
-    public function testListReturnsEmptyPage(): void
-    {
-        $result = $this->provider->listKlantcontacten(sourceConfiguration: [], since: '2026-01-01T00:00:00+00:00', pageSize: 10);
+	/**
+	 * listKlantcontacten() always returns an empty page with a null cursor.
+	 *
+	 * @return void
+	 */
+	public function testListReturnsEmptyPage(): void {
+		$result = $this->provider->listKlantcontacten(sourceConfiguration: [], since: '2026-01-01T00:00:00+00:00', pageSize: 10);
 
-        $this->assertSame([], $result['items']);
-        $this->assertNull($result['nextCursor']);
+		$this->assertSame([], $result['items']);
+		$this->assertNull($result['nextCursor']);
 
-    }//end testListReturnsEmptyPage()
+	}//end testListReturnsEmptyPage()
 
-    /**
-     * createKlantcontact() returns a synthetic MOCK-KISS-<n> id.
-     *
-     * @return void
-     */
-    public function testCreateKlantcontactReturnsSyntheticId(): void
-    {
-        $id = $this->provider->createKlantcontact(sourceConfiguration: [], payload: ['onderwerp' => 'x']);
+	/**
+	 * createKlantcontact() returns a synthetic MOCK-KISS-<n> id.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactReturnsSyntheticId(): void {
+		$id = $this->provider->createKlantcontact(sourceConfiguration: [], payload: ['onderwerp' => 'x']);
 
-        $this->assertStringStartsWith('MOCK-KISS-', $id);
+		$this->assertStringStartsWith('MOCK-KISS-', $id);
 
-    }//end testCreateKlantcontactReturnsSyntheticId()
+	}//end testCreateKlantcontactReturnsSyntheticId()
 
-    /**
-     * linkOnderwerpobject() returns a synthetic MOCK-KISS-<n> id.
-     *
-     * @return void
-     */
-    public function testLinkOnderwerpobjectReturnsSyntheticId(): void
-    {
-        $id = $this->provider->linkOnderwerpobject(
-            sourceConfiguration: [],
-            klantcontactId: 'kc-1',
-            caseReference: 'zaak-1',
-            caseObjectType: 'zaak'
-        );
+	/**
+	 * linkOnderwerpobject() returns a synthetic MOCK-KISS-<n> id.
+	 *
+	 * @return void
+	 */
+	public function testLinkOnderwerpobjectReturnsSyntheticId(): void {
+		$id = $this->provider->linkOnderwerpobject(
+			sourceConfiguration: [],
+			klantcontactId: 'kc-1',
+			caseReference: 'zaak-1',
+			caseObjectType: 'zaak'
+		);
 
-        $this->assertStringStartsWith('MOCK-KISS-', $id);
+		$this->assertStringStartsWith('MOCK-KISS-', $id);
 
-    }//end testLinkOnderwerpobjectReturnsSyntheticId()
+	}//end testLinkOnderwerpobjectReturnsSyntheticId()
 
-    /**
-     * getProviderId()/getConfigSchema() expose the `log` identity and an empty schema.
-     *
-     * @return void
-     */
-    public function testProviderIdentity(): void
-    {
-        $this->assertSame('log', $this->provider->getProviderId());
-        $this->assertSame(['type' => 'object', 'properties' => []], $this->provider->getConfigSchema());
+	/**
+	 * getProviderId()/getConfigSchema() expose the `log` identity and an empty schema.
+	 *
+	 * @return void
+	 */
+	public function testProviderIdentity(): void {
+		$this->assertSame('log', $this->provider->getProviderId());
+		$this->assertSame(['type' => 'object', 'properties' => []], $this->provider->getConfigSchema());
 
-    }//end testProviderIdentity()
+	}//end testProviderIdentity()
 }//end class

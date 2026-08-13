@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Nextcloud Forms Submission EventListener.
  *
@@ -52,88 +53,86 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
  */
-class NextcloudFormsEventListener implements IEventListener
-{
+class NextcloudFormsEventListener implements IEventListener {
 
-    /**
-     * The CloudEvents `source` this producer stamps on every event.
-     *
-     * @var string
-     */
-    private const SOURCE = '/nextcloud/forms';
+	/**
+	 * The CloudEvents `source` this producer stamps on every event.
+	 *
+	 * @var string
+	 */
+	private const SOURCE = '/nextcloud/forms';
 
-    /**
-     * Constructor.
-     *
-     * @param EventService    $eventService Service for managing CloudEvents.
-     * @param LoggerInterface $logger       Logger instance.
-     */
-    public function __construct(
-        private readonly EventService $eventService,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param LoggerInterface $logger Logger instance.
+	 */
+	public function __construct(
+		private readonly EventService $eventService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired Forms submission event by normalizing and forwarding it.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof FormSubmittedEvent === false || method_exists($event, 'getForm') === false) {
-            return;
-        }
+	/**
+	 * Handle a fired Forms submission event by normalizing and forwarding it.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof FormSubmittedEvent === false || method_exists($event, 'getForm') === false) {
+			return;
+		}
 
-        try {
-            // Firehose gate: no configured subscriptions anywhere on this
-            // instance means the outbound-webhooks capability is unused — do
-            // not pay a persistence cost for every form submission fleet-wide.
-            if ($this->eventService->hasActiveSubscriptions() === false) {
-                return;
-            }
+		try {
+			// Firehose gate: no configured subscriptions anywhere on this
+			// instance means the outbound-webhooks capability is unused — do
+			// not pay a persistence cost for every form submission fleet-wide.
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return;
+			}
 
-            $form   = $event->getForm();
-            $formId = (string) $form->getId();
+			$form = $event->getForm();
+			$formId = (string)$form->getId();
 
-            $submission = null;
-            if (method_exists($event, 'getWebhookSerializable') === true) {
-                $submission = ($event->getWebhookSerializable()['submission'] ?? null);
-            }
+			$submission = null;
+			if (method_exists($event, 'getWebhookSerializable') === true) {
+				$submission = ($event->getWebhookSerializable()['submission'] ?? null);
+			}
 
-            $formTitle = null;
-            if (method_exists($form, 'getTitle') === true) {
-                $formTitle = $form->getTitle();
-            }
+			$formTitle = null;
+			if (method_exists($form, 'getTitle') === true) {
+				$formTitle = $form->getTitle();
+			}
 
-            $this->eventService->handleNextcloudEvent(
-                type: 'com.nextcloud.forms.submission.created',
-                payload: [
-                    'source'  => self::SOURCE,
-                    'subject' => $formId,
-                    'data'    => [
-                        'formId'     => $formId,
-                        'formTitle'  => $formTitle,
-                        'submission' => $submission,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            // Broad catch is deliberate: this listener runs synchronously
-            // inside the Forms submission operation that triggered it.
-            $this->logger->error(
-                    'Failed to process Nextcloud Forms submission event: '.$e->getMessage(),
-                    [
-                        'exception' => $e,
-                        'event'     => get_class($event),
-                    ]
-                    );
-        }//end try
+			$this->eventService->handleNextcloudEvent(
+				type: 'com.nextcloud.forms.submission.created',
+				payload: [
+					'source' => self::SOURCE,
+					'subject' => $formId,
+					'data' => [
+						'formId' => $formId,
+						'formTitle' => $formTitle,
+						'submission' => $submission,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// Broad catch is deliberate: this listener runs synchronously
+			// inside the Forms submission operation that triggered it.
+			$this->logger->error(
+				'Failed to process Nextcloud Forms submission event: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'event' => get_class($event),
+				]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 }//end class

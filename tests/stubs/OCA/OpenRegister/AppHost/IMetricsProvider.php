@@ -21,14 +21,13 @@ namespace OCA\OpenRegister\AppHost;
 /**
  * Minimal stub for OCA\OpenRegister\AppHost\IMetricsProvider.
  */
-interface IMetricsProvider
-{
+interface IMetricsProvider {
 
-    /**
-     * Produce the provider's metric samples.
-     *
-     * @return \OCA\OpenRegister\AppHost\Observability\MetricSample[] The provider's samples.
-     */
-    public function metrics(): array;
+	/**
+	 * Produce the provider's metric samples.
+	 *
+	 * @return \OCA\OpenRegister\AppHost\Observability\MetricSample[] The provider's samples.
+	 */
+	public function metrics(): array;
 
 }//end interface

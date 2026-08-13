@@ -37,149 +37,138 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
  */
-class SourcesControllerTest extends TestCase
-{
+class SourcesControllerTest extends TestCase {
 
-    /**
-     * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $orObjectService;
+	/**
+	 * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $orObjectService;
 
-    /**
-     * @var CallService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $callService;
+	/**
+	 * @var CallService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $callService;
 
-    /**
-     * @var SourcesController
-     */
-    private SourcesController $controller;
+	/**
+	 * @var SourcesController
+	 */
+	private SourcesController $controller;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->orObjectService = $this->createMock(OrObjectService::class);
+		$this->callService = $this->createMock(CallService::class);
 
-        $this->orObjectService = $this->createMock(OrObjectService::class);
-        $this->callService     = $this->createMock(CallService::class);
+		$l = $this->createMock(IL10N::class);
+		$l->method('t')->willReturnArgument(0);
 
-        $l = $this->createMock(IL10N::class);
-        $l->method('t')->willReturnArgument(0);
+		$userSession = $this->createMock(IUserSession::class);
+		$actionAuth = $this->createMock(ActionAuthService::class);
 
-        $userSession = $this->createMock(IUserSession::class);
-        $actionAuth  = $this->createMock(ActionAuthService::class);
+		$this->controller = new SourcesController(
+			'openconnector',
+			$this->createMock(IRequest::class),
+			$this->orObjectService,
+			$l,
+			$userSession,
+			$actionAuth,
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end setUp()
 
-        $this->controller = new SourcesController(
-            'openconnector',
-            $this->createMock(IRequest::class),
-            $this->orObjectService,
-            $l,
-            $userSession,
-            $actionAuth,
-            $this->createMock(LoggerInterface::class)
-        );
-    }//end setUp()
+	/**
+	 * REQ-009 — tripping a known source's breaker returns the open state.
+	 *
+	 * @return void
+	 */
+	public function testTripCircuitBreakerReturnsOpenState(): void {
+		$source = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'flaky-source'], 'source-1');
+		$this->orObjectService->method('find')->willReturn($source);
 
+		$tripped = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'circuitBreakerState' => 'open',
+				'circuitBreakerOpenedAt' => 1234567,
+			],
+			'source-1'
+		);
+		$this->callService->expects($this->once())
+			->method('tripCircuitBreaker')
+			->with($source)
+			->willReturn($tripped);
 
-    /**
-     * REQ-009 — tripping a known source's breaker returns the open state.
-     *
-     * @return void
-     */
-    public function testTripCircuitBreakerReturnsOpenState(): void
-    {
-        $source = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'flaky-source'], 'source-1');
-        $this->orObjectService->method('find')->willReturn($source);
+		$response = $this->controller->tripCircuitBreaker($this->callService, 'source-1');
+		$data = $response->getData();
 
-        $tripped = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'circuitBreakerState'    => 'open',
-                'circuitBreakerOpenedAt' => 1234567,
-            ],
-            'source-1'
-        );
-        $this->callService->expects($this->once())
-            ->method('tripCircuitBreaker')
-            ->with($source)
-            ->willReturn($tripped);
+		$this->assertSame('open', $data['circuitBreakerState']);
+		$this->assertSame(1234567, $data['circuitBreakerOpenedAt']);
+		$this->assertSame('source-1', $data['uuid']);
+	}//end testTripCircuitBreakerReturnsOpenState()
 
-        $response = $this->controller->tripCircuitBreaker($this->callService, 'source-1');
-        $data     = $response->getData();
+	/**
+	 * REQ-009 — resetting a known source's breaker returns the closed state.
+	 *
+	 * @return void
+	 */
+	public function testResetCircuitBreakerReturnsClosedState(): void {
+		$source = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'recovered-source'], 'source-2');
+		$this->orObjectService->method('find')->willReturn($source);
 
-        $this->assertSame('open', $data['circuitBreakerState']);
-        $this->assertSame(1234567, $data['circuitBreakerOpenedAt']);
-        $this->assertSame('source-1', $data['uuid']);
-    }//end testTripCircuitBreakerReturnsOpenState()
+		$reset = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'circuitBreakerState' => 'closed',
+				'circuitBreakerFailureCount' => 0,
+			],
+			'source-2'
+		);
+		$this->callService->expects($this->once())
+			->method('resetCircuitBreaker')
+			->with($source)
+			->willReturn($reset);
 
+		$response = $this->controller->resetCircuitBreaker($this->callService, 'source-2');
+		$data = $response->getData();
 
-    /**
-     * REQ-009 — resetting a known source's breaker returns the closed state.
-     *
-     * @return void
-     */
-    public function testResetCircuitBreakerReturnsClosedState(): void
-    {
-        $source = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'recovered-source'], 'source-2');
-        $this->orObjectService->method('find')->willReturn($source);
+		$this->assertSame('closed', $data['circuitBreakerState']);
+		$this->assertSame(0, $data['circuitBreakerFailureCount']);
+	}//end testResetCircuitBreakerReturnsClosedState()
 
-        $reset = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'circuitBreakerState'        => 'closed',
-                'circuitBreakerFailureCount' => 0,
-            ],
-            'source-2'
-        );
-        $this->callService->expects($this->once())
-            ->method('resetCircuitBreaker')
-            ->with($source)
-            ->willReturn($reset);
+	/**
+	 * REQ-009 — an unknown source id returns 404 from trip, without ever
+	 * calling into CallService.
+	 *
+	 * @return void
+	 */
+	public function testTripCircuitBreakerReturns404OnUnknownSource(): void {
+		$this->orObjectService->method('find')->willThrowException(new DoesNotExistException('not found'));
+		$this->callService->expects($this->never())->method('tripCircuitBreaker');
 
-        $response = $this->controller->resetCircuitBreaker($this->callService, 'source-2');
-        $data     = $response->getData();
+		$response = $this->controller->tripCircuitBreaker($this->callService, 'missing');
 
-        $this->assertSame('closed', $data['circuitBreakerState']);
-        $this->assertSame(0, $data['circuitBreakerFailureCount']);
-    }//end testResetCircuitBreakerReturnsClosedState()
+		$this->assertSame(404, $response->getStatus());
+	}//end testTripCircuitBreakerReturns404OnUnknownSource()
 
+	/**
+	 * REQ-009 — an unknown source id returns 404 from reset, without ever
+	 * calling into CallService.
+	 *
+	 * @return void
+	 */
+	public function testResetCircuitBreakerReturns404OnUnknownSource(): void {
+		$this->orObjectService->method('find')->willThrowException(new DoesNotExistException('not found'));
+		$this->callService->expects($this->never())->method('resetCircuitBreaker');
 
-    /**
-     * REQ-009 — an unknown source id returns 404 from trip, without ever
-     * calling into CallService.
-     *
-     * @return void
-     */
-    public function testTripCircuitBreakerReturns404OnUnknownSource(): void
-    {
-        $this->orObjectService->method('find')->willThrowException(new DoesNotExistException('not found'));
-        $this->callService->expects($this->never())->method('tripCircuitBreaker');
+		$response = $this->controller->resetCircuitBreaker($this->callService, 'missing');
 
-        $response = $this->controller->tripCircuitBreaker($this->callService, 'missing');
-
-        $this->assertSame(404, $response->getStatus());
-    }//end testTripCircuitBreakerReturns404OnUnknownSource()
-
-
-    /**
-     * REQ-009 — an unknown source id returns 404 from reset, without ever
-     * calling into CallService.
-     *
-     * @return void
-     */
-    public function testResetCircuitBreakerReturns404OnUnknownSource(): void
-    {
-        $this->orObjectService->method('find')->willThrowException(new DoesNotExistException('not found'));
-        $this->callService->expects($this->never())->method('resetCircuitBreaker');
-
-        $response = $this->controller->resetCircuitBreaker($this->callService, 'missing');
-
-        $this->assertSame(404, $response->getStatus());
-    }//end testResetCircuitBreakerReturns404OnUnknownSource()
+		$this->assertSame(404, $response->getStatus());
+	}//end testResetCircuitBreakerReturns404OnUnknownSource()
 
 }//end class

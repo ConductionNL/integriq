@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test stub for OCA\OpenRegister\AppHost\Service\GenericActionAuthService.
  *
@@ -30,50 +31,47 @@ use OCP\IGroupManager;
 /**
  * Minimal stand-in mirroring the engine's generic action-authorization service.
  */
-class GenericActionAuthService
-{
-    private const CONFIG_KEY = 'actions';
+class GenericActionAuthService {
+	private const CONFIG_KEY = 'actions';
 
-    /**
-     * Constructor.
-     *
-     * @param string        $appId        The calling (leaf) app id.
-     * @param IAppConfig    $appConfig    App config store for the matrix.
-     * @param IGroupManager $groupManager Group manager.
-     */
-    public function __construct(
-        private readonly string $appId,
-        private readonly IAppConfig $appConfig,
-        private readonly IGroupManager $groupManager
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appId The calling (leaf) app id.
+	 * @param IAppConfig $appConfig App config store for the matrix.
+	 * @param IGroupManager $groupManager Group manager.
+	 */
+	public function __construct(
+		private readonly string $appId,
+		private readonly IAppConfig $appConfig,
+		private readonly IGroupManager $groupManager,
+	) {
+	}//end __construct()
 
-    /**
-     * The full action-to-groups matrix.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public function getMatrix(): array
-    {
-        $json = $this->appConfig->getValueString($this->appId, self::CONFIG_KEY, '{}');
+	/**
+	 * The full action-to-groups matrix.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public function getMatrix(): array {
+		$json = $this->appConfig->getValueString($this->appId, self::CONFIG_KEY, '{}');
 
-        $decoded = json_decode($json, true);
-        if (is_array($decoded) === false) {
-            return [];
-        }
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
 
-        return $decoded;
-    }//end getMatrix()
+		return $decoded;
+	}//end getMatrix()
 
-    /**
-     * Write the full matrix.
-     *
-     * @param array<string, array<int, string>> $matrix The new matrix.
-     *
-     * @return void
-     */
-    public function setMatrix(array $matrix): void
-    {
-        $this->appConfig->setValueString($this->appId, self::CONFIG_KEY, json_encode($matrix));
-    }//end setMatrix()
+	/**
+	 * Write the full matrix.
+	 *
+	 * @param array<string, array<int, string>> $matrix The new matrix.
+	 *
+	 * @return void
+	 */
+	public function setMatrix(array $matrix): void {
+		$this->appConfig->setValueString($this->appId, self::CONFIG_KEY, json_encode($matrix));
+	}//end setMatrix()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for the `jsonlogic` filter dialect in EventService::evaluateFilters.
  *
@@ -38,196 +39,185 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
  */
-class JsonLogicFilterDialectTest extends TestCase
-{
+class JsonLogicFilterDialectTest extends TestCase {
 
-    /**
-     * @var EventService
-     */
-    private EventService $service;
+	/**
+	 * @var EventService
+	 */
+	private EventService $service;
 
-    /**
-     * @var ObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $objectService;
+	/**
+	 * @var ObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $objectService;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->objectService = ObjectServiceMockBuilder::make($this);
+		$logger = $this->createMock(LoggerInterface::class);
+		$clientService = $this->createMock(IClientService::class);
 
-        $this->objectService = ObjectServiceMockBuilder::make($this);
-        $logger              = $this->createMock(LoggerInterface::class);
-        $clientService       = $this->createMock(IClientService::class);
+		$this->service = new EventService(
+			$this->objectService,
+			$clientService,
+			$logger,
+			new WebhookSignatureService($logger),
+			$this->createMock(SynchronizationService::class),
+			$this->createMock(JobService::class),
+			$this->createMock(CallService::class),
+			$this->createMock(FlowRunnerService::class),
+		);
+	}//end setUp()
 
-        $this->service = new EventService(
-            $this->objectService,
-            $clientService,
-            $logger,
-            new WebhookSignatureService($logger),
-            $this->createMock(SynchronizationService::class),
-            $this->createMock(JobService::class),
-            $this->createMock(CallService::class),
-            $this->createMock(FlowRunnerService::class),
-        );
-    }//end setUp()
+	/**
+	 * A subscription's `jsonlogic` filter evaluating `true` (via
+	 * `JsonLogic::apply`) produces a matching `event_message` — a PULL
+	 * subscription is used so no HTTP delivery is attempted, isolating the
+	 * filter-match assertion from delivery machinery.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
+	 */
+	public function testJsonLogicFilterMatchesWhenConditionTrue(): void {
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'status' => 'active',
+				'style' => 'pull',
+				'filters' => [['jsonlogic' => ['in' => ['invoice', ['var' => 'data.attributes.tags']]]]],
+			],
+			'sub-uuid'
+		);
+		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
+		$savedMessages = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ...$rest) use (&$savedMessages) {
+				$savedMessages[] = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
+			}
+		);
 
-    /**
-     * A subscription's `jsonlogic` filter evaluating `true` (via
-     * `JsonLogic::apply`) produces a matching `event_message` — a PULL
-     * subscription is used so no HTTP delivery is attempted, isolating the
-     * filter-match assertion from delivery machinery.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
-     */
-    public function testJsonLogicFilterMatchesWhenConditionTrue(): void
-    {
-        $subscription = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'status'  => 'active',
-                'style'   => 'pull',
-                'filters' => [['jsonlogic' => ['in' => ['invoice', ['var' => 'data.attributes.tags']]]]],
-            ],
-            'sub-uuid'
-        );
-        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
+		$event = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'type' => 'com.nextcloud.files.node.tagged',
+				'data' => ['attributes' => ['tags' => ['invoice', 'urgent']]],
+			],
+			'event-uuid'
+		);
 
-        $savedMessages = [];
-        $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object, ...$rest) use (&$savedMessages) {
-                $savedMessages[] = $object;
-                return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
-            }
-        );
+		$messages = $this->service->processEvent($event);
 
-        $event = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'type' => 'com.nextcloud.files.node.tagged',
-                'data' => ['attributes' => ['tags' => ['invoice', 'urgent']]],
-            ],
-            'event-uuid'
-        );
+		$this->assertCount(1, $messages);
+	}//end testJsonLogicFilterMatchesWhenConditionTrue()
 
-        $messages = $this->service->processEvent($event);
+	/**
+	 * A subscription's `jsonlogic` filter evaluating `false` produces no
+	 * matching `event_message`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
+	 */
+	public function testJsonLogicFilterRejectsWhenConditionFalse(): void {
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'status' => 'active',
+				'style' => 'pull',
+				'filters' => [['jsonlogic' => ['in' => ['invoice', ['var' => 'data.attributes.tags']]]]],
+			],
+			'sub-uuid'
+		);
+		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
-        $this->assertCount(1, $messages);
-    }//end testJsonLogicFilterMatchesWhenConditionTrue()
+		$event = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'type' => 'com.nextcloud.files.node.tagged',
+				'data' => ['attributes' => ['tags' => ['personal']]],
+			],
+			'event-uuid'
+		);
 
+		$messages = $this->service->processEvent($event);
 
-    /**
-     * A subscription's `jsonlogic` filter evaluating `false` produces no
-     * matching `event_message`.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
-     */
-    public function testJsonLogicFilterRejectsWhenConditionFalse(): void
-    {
-        $subscription = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'status'  => 'active',
-                'style'   => 'pull',
-                'filters' => [['jsonlogic' => ['in' => ['invoice', ['var' => 'data.attributes.tags']]]]],
-            ],
-            'sub-uuid'
-        );
-        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
+		$this->assertCount(0, $messages);
+	}//end testJsonLogicFilterRejectsWhenConditionFalse()
 
-        $event = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'type' => 'com.nextcloud.files.node.tagged',
-                'data' => ['attributes' => ['tags' => ['personal']]],
-            ],
-            'event-uuid'
-        );
+	/**
+	 * Regression: the pre-existing `exact`/`prefix`/`suffix`/`expression`
+	 * dialects are unaffected by adding `jsonlogic` as a new case in the
+	 * same switch.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+	 */
+	public function testPreExistingDialectsStillMatch(): void {
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'status' => 'active',
+				'style' => 'pull',
+				'filters' => [
+					['exact' => ['type' => 'com.example.created']],
+					['prefix' => ['type' => 'com.example.']],
+					['suffix' => ['type' => '.created']],
+					['expression' => "type == 'com.example.created'"],
+				],
+			],
+			'sub-uuid'
+		);
+		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
-        $messages = $this->service->processEvent($event);
+		$event = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['type' => 'com.example.created'],
+			'event-uuid'
+		);
 
-        $this->assertCount(0, $messages);
-    }//end testJsonLogicFilterRejectsWhenConditionFalse()
+		$messages = $this->service->processEvent($event);
 
+		$this->assertCount(1, $messages);
+	}//end testPreExistingDialectsStillMatch()
 
-    /**
-     * Regression: the pre-existing `exact`/`prefix`/`suffix`/`expression`
-     * dialects are unaffected by adding `jsonlogic` as a new case in the
-     * same switch.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
-     */
-    public function testPreExistingDialectsStillMatch(): void
-    {
-        $subscription = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'status'  => 'active',
-                'style'   => 'pull',
-                'filters' => [
-                    ['exact' => ['type' => 'com.example.created']],
-                    ['prefix' => ['type' => 'com.example.']],
-                    ['suffix' => ['type' => '.created']],
-                    ['expression' => "type == 'com.example.created'"],
-                ],
-            ],
-            'sub-uuid'
-        );
-        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
+	/**
+	 * Regression: a failing pre-existing dialect still rejects the event
+	 * (short-circuit unaffected by the new `jsonlogic` case).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+	 */
+	public function testPreExistingDialectStillRejects(): void {
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'status' => 'active',
+				'style' => 'pull',
+				'filters' => [['exact' => ['type' => 'com.example.other']]],
+			],
+			'sub-uuid'
+		);
+		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
-        $event = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['type' => 'com.example.created'],
-            'event-uuid'
-        );
+		$event = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['type' => 'com.example.created'],
+			'event-uuid'
+		);
 
-        $messages = $this->service->processEvent($event);
+		$messages = $this->service->processEvent($event);
 
-        $this->assertCount(1, $messages);
-    }//end testPreExistingDialectsStillMatch()
-
-
-    /**
-     * Regression: a failing pre-existing dialect still rejects the event
-     * (short-circuit unaffected by the new `jsonlogic` case).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
-     */
-    public function testPreExistingDialectStillRejects(): void
-    {
-        $subscription = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'status'  => 'active',
-                'style'   => 'pull',
-                'filters' => [['exact' => ['type' => 'com.example.other']]],
-            ],
-            'sub-uuid'
-        );
-        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-
-        $event = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['type' => 'com.example.created'],
-            'event-uuid'
-        );
-
-        $messages = $this->service->processEvent($event);
-
-        $this->assertCount(0, $messages);
-    }//end testPreExistingDialectStillRejects()
+		$this->assertCount(0, $messages);
+	}//end testPreExistingDialectStillRejects()
 }//end class

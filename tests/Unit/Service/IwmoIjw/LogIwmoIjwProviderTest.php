@@ -28,74 +28,68 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogIwmoIjwProviderTest extends TestCase
-{
+class LogIwmoIjwProviderTest extends TestCase {
 
-    /**
-     * @var LogIwmoIjwProvider
-     */
-    private LogIwmoIjwProvider $provider;
+	/**
+	 * @var LogIwmoIjwProvider
+	 */
+	private LogIwmoIjwProvider $provider;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->provider = new LogIwmoIjwProvider();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->provider = new LogIwmoIjwProvider();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * getProviderId() returns "log".
-     *
-     * @return void
-     */
-    public function testGetProviderId(): void
-    {
-        $this->assertSame('log', $this->provider->getProviderId());
+	/**
+	 * getProviderId() returns "log".
+	 *
+	 * @return void
+	 */
+	public function testGetProviderId(): void {
+		$this->assertSame('log', $this->provider->getProviderId());
 
-    }//end testGetProviderId()
+	}//end testGetProviderId()
 
-    /**
-     * getConfigSchema() needs no configuration.
-     *
-     * @return void
-     */
-    public function testGetConfigSchemaIsEmpty(): void
-    {
-        $schema = $this->provider->getConfigSchema();
-        $this->assertSame('object', $schema['type']);
-        $this->assertSame([], $schema['properties']);
+	/**
+	 * getConfigSchema() needs no configuration.
+	 *
+	 * @return void
+	 */
+	public function testGetConfigSchemaIsEmpty(): void {
+		$schema = $this->provider->getConfigSchema();
+		$this->assertSame('object', $schema['type']);
+		$this->assertSame([], $schema['properties']);
 
-    }//end testGetConfigSchemaIsEmpty()
+	}//end testGetConfigSchemaIsEmpty()
 
-    /**
-     * send() returns a synthetic MOCK-IWMO-<n> ref with no configuration needed.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
-     */
-    public function testSendReturnsSyntheticRef(): void
-    {
-        $ref = $this->provider->send([], 'Wmo303', '<Bericht/>');
-        $this->assertStringStartsWith('MOCK-IWMO-', $ref);
+	/**
+	 * send() returns a synthetic MOCK-IWMO-<n> ref with no configuration needed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 */
+	public function testSendReturnsSyntheticRef(): void {
+		$ref = $this->provider->send([], 'Wmo303', '<Bericht/>');
+		$this->assertStringStartsWith('MOCK-IWMO-', $ref);
 
-    }//end testSendReturnsSyntheticRef()
+	}//end testSendReturnsSyntheticRef()
 
-    /**
-     * Successive send() calls return distinct synthetic refs.
-     *
-     * @return void
-     */
-    public function testSendReturnsDistinctRefsAcrossCalls(): void
-    {
-        $first  = $this->provider->send([], 'Wmo303', '<Bericht/>');
-        $second = $this->provider->send([], 'Wmo321', '<Bericht/>');
-        $this->assertNotSame($first, $second);
+	/**
+	 * Successive send() calls return distinct synthetic refs.
+	 *
+	 * @return void
+	 */
+	public function testSendReturnsDistinctRefsAcrossCalls(): void {
+		$first = $this->provider->send([], 'Wmo303', '<Bericht/>');
+		$second = $this->provider->send([], 'Wmo321', '<Bericht/>');
+		$this->assertNotSame($first, $second);
 
-    }//end testSendReturnsDistinctRefsAcrossCalls()
+	}//end testSendReturnsDistinctRefsAcrossCalls()
 }//end class

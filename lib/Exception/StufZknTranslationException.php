@@ -37,6 +37,5 @@ use Exception;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
-class StufZknTranslationException extends Exception
-{
+class StufZknTranslationException extends Exception {
 }//end class

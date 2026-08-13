@@ -35,44 +35,43 @@ use OCA\OpenConnector\Exception\PaymentProviderException;
  *
  * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
-interface PaymentProviderInterface
-{
-    /**
-     * Create a payment against the configured provider.
-     *
-     * @param array $sourceConfiguration The payment source's `configuration` object
-     *                                   (`provider`, `baseUrl`, `authentication.credentialRef`).
-     * @param array $payload             The create-payment envelope — `amount{value,currency}`,
-     *                                   `description`, `redirectUrl`, `webhookUrl`, optional
-     *                                   `method` (`ideal`|`creditcard`|`bancontact`|`sepadirectdebit`),
-     *                                   optional `metadata` (opaque passthrough object).
-     *
-     * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array}
-     *         The dispatch outcome.
-     *
-     * @throws PaymentProviderException When the provider is unreachable, errors, or cannot be
-     *                                  configured (e.g. missing credential).
-     *
-     * @spec openspec/specs/live-payment-providers/spec.md
-     */
-    public function createPayment(array $sourceConfiguration, array $payload): array;
+interface PaymentProviderInterface {
+	/**
+	 * Create a payment against the configured provider.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object
+	 *                                   (`provider`, `baseUrl`, `authentication.credentialRef`).
+	 * @param array $payload The create-payment envelope — `amount{value,currency}`,
+	 *                       `description`, `redirectUrl`, `webhookUrl`, optional
+	 *                       `method` (`ideal`|`creditcard`|`bancontact`|`sepadirectdebit`),
+	 *                       optional `metadata` (opaque passthrough object).
+	 *
+	 * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array}
+	 *                                                                                                     The dispatch outcome.
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable, errors, or cannot be
+	 *                                  configured (e.g. missing credential).
+	 *
+	 * @spec openspec/specs/live-payment-providers/spec.md
+	 */
+	public function createPayment(array $sourceConfiguration, array $payload): array;
 
-    /**
-     * Fetch the current authoritative status of a previously created payment.
-     *
-     * Called on every verified inbound webhook (REQ-LPP-003) — the connector
-     * never trusts a status claimed in the webhook body; it always re-derives
-     * status via this method.
-     *
-     * @param array  $sourceConfiguration The payment source's `configuration` object.
-     * @param string $providerPaymentId   The provider-assigned payment id returned by `createPayment()`.
-     *
-     * @return array{providerPaymentId: string, paymentStatus: string} The current provider-native status.
-     *
-     * @throws PaymentProviderException When the provider is unreachable, errors, or the payment
-     *                                  id is unknown to the provider.
-     *
-     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
-     */
-    public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array;
+	/**
+	 * Fetch the current authoritative status of a previously created payment.
+	 *
+	 * Called on every verified inbound webhook (REQ-LPP-003) — the connector
+	 * never trusts a status claimed in the webhook body; it always re-derives
+	 * status via this method.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object.
+	 * @param string $providerPaymentId The provider-assigned payment id returned by `createPayment()`.
+	 *
+	 * @return array{providerPaymentId: string, paymentStatus: string} The current provider-native status.
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable, errors, or the payment
+	 *                                  id is unknown to the provider.
+	 *
+	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+	 */
+	public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array;
 }//end interface

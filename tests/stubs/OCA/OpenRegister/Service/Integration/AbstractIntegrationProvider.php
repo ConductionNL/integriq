@@ -19,12 +19,11 @@ namespace OCA\OpenRegister\Service\Integration;
 /**
  * Minimal stub for OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider.
  */
-abstract class AbstractIntegrationProvider
-{
-    /**
-     * Return the identifier of this integration provider.
-     *
-     * @return string
-     */
-    abstract public function getId(): string;
+abstract class AbstractIntegrationProvider {
+	/**
+	 * Return the identifier of this integration provider.
+	 *
+	 * @return string
+	 */
+	abstract public function getId(): string;
 }

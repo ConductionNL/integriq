@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for FlowNodeListener.
  *
@@ -39,132 +40,122 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the flow node registration listener.
  */
-class FlowNodeListenerTest extends TestCase
-{
+class FlowNodeListenerTest extends TestCase {
 
-    /**
-     * The listener under test.
-     *
-     * @var FlowNodeListener
-     */
-    private FlowNodeListener $listener;
+	/**
+	 * The listener under test.
+	 *
+	 * @var FlowNodeListener
+	 */
+	private FlowNodeListener $listener;
 
-    /**
-     * The source-call node.
-     *
-     * @var SourceCallNode
-     */
-    private SourceCallNode $sourceCallNode;
+	/**
+	 * The source-call node.
+	 *
+	 * @var SourceCallNode
+	 */
+	private SourceCallNode $sourceCallNode;
 
+	/**
+	 * Build the listener over real node instances with doubled dependencies.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Build the listener over real node instances with doubled dependencies.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static function (string $text, $parameters = []): string {
+				if (is_array($parameters) === false || $parameters === []) {
+					return $text;
+				}
 
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnCallback(
-            static function (string $text, $parameters=[]): string {
-                if (is_array($parameters) === false || $parameters === []) {
-                    return $text;
-                }
+				return vsprintf($text, $parameters);
+			}
+		);
 
-                return vsprintf($text, $parameters);
-            }
-        );
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
 
-        $urlGenerator = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
+		$flowOwner = new FlowOwner(
+			userManager: $this->createMock(IUserManager::class),
+			userSession: $this->createMock(IUserSession::class),
+			l10n: $l10n
+		);
 
-        $flowOwner = new FlowOwner(
-            userManager: $this->createMock(IUserManager::class),
-            userSession: $this->createMock(IUserSession::class),
-            l10n: $l10n
-        );
+		$this->sourceCallNode = new SourceCallNode(
+			callService: $this->createMock(CallService::class),
+			concurrency: new FlowConcurrency(),
+			objectService: $this->createMock(OpenRegisterObjectService::class),
+			flowOwner: $flowOwner,
+			l10n: $l10n,
+			urlGenerator: $urlGenerator,
+			logger: $this->createMock(LoggerInterface::class)
+		);
 
-        $this->sourceCallNode = new SourceCallNode(
-            callService: $this->createMock(CallService::class),
-            concurrency: new FlowConcurrency(),
-            objectService: $this->createMock(OpenRegisterObjectService::class),
-            flowOwner: $flowOwner,
-            l10n: $l10n,
-            urlGenerator: $urlGenerator,
-            logger: $this->createMock(LoggerInterface::class)
-        );
+		$this->listener = new FlowNodeListener(
+			sourceCallNode: $this->sourceCallNode,
+			synchronizationRunNode: new SynchronizationRunNode(
+				synchronizationService: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			)
+		);
 
-        $this->listener = new FlowNodeListener(
-            sourceCallNode: $this->sourceCallNode,
-            synchronizationRunNode: new SynchronizationRunNode(
-                synchronizationService: $this->createMock(SynchronizationService::class),
-                flowOwner: $flowOwner,
-                l10n: $l10n,
-                urlGenerator: $urlGenerator,
-                logger: $this->createMock(LoggerInterface::class)
-            )
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Both nodes appear in the palette with non-empty metadata.
+	 *
+	 * @return void
+	 */
+	public function testBothNodesAppearInThePalette(): void {
+		$registry = new FlowNodeRegistry();
 
+		$this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-    /**
-     * Both nodes appear in the palette with non-empty metadata.
-     *
-     * @return void
-     */
-    public function testBothNodesAppearInThePalette(): void
-    {
-        $registry = new FlowNodeRegistry();
+		$nodes = $registry->all();
 
-        $this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
+		$this->assertArrayHasKey('openconnector.source-call', $nodes);
+		$this->assertArrayHasKey('openconnector.synchronization-run', $nodes);
 
-        $nodes = $registry->all();
+		foreach ($nodes as $node) {
+			$this->assertNotSame('', $node->getDisplayName());
+			$this->assertNotSame('', $node->getDescription());
+			$this->assertNotSame('', $node->getIcon());
+		}
 
-        $this->assertArrayHasKey('openconnector.source-call', $nodes);
-        $this->assertArrayHasKey('openconnector.synchronization-run', $nodes);
+	}//end testBothNodesAppearInThePalette()
 
-        foreach ($nodes as $node) {
-            $this->assertNotSame('', $node->getDisplayName());
-            $this->assertNotSame('', $node->getDescription());
-            $this->assertNotSame('', $node->getIcon());
-        }
+	/**
+	 * A colliding node id is refused, not silently displaced.
+	 *
+	 * @return void
+	 */
+	public function testCollidingNodeIdIsRefused(): void {
+		$registry = new FlowNodeRegistry();
+		$registry->register(node: $this->sourceCallNode);
 
-    }//end testBothNodesAppearInThePalette()
+		$this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
+		$this->assertSame(['openconnector.source-call'], $registry->refused);
+		$this->assertSame($this->sourceCallNode, $registry->all()['openconnector.source-call']);
 
-    /**
-     * A colliding node id is refused, not silently displaced.
-     *
-     * @return void
-     */
-    public function testCollidingNodeIdIsRefused(): void
-    {
-        $registry = new FlowNodeRegistry();
-        $registry->register(node: $this->sourceCallNode);
+	}//end testCollidingNodeIdIsRefused()
 
-        $this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
+	/**
+	 * An unrelated event is ignored.
+	 *
+	 * @return void
+	 */
+	public function testUnrelatedEventIsIgnored(): void {
+		$this->listener->handle(new Event());
 
-        $this->assertSame(['openconnector.source-call'], $registry->refused);
-        $this->assertSame($this->sourceCallNode, $registry->all()['openconnector.source-call']);
+		$this->addToAssertionCount(1);
 
-    }//end testCollidingNodeIdIsRefused()
-
-
-    /**
-     * An unrelated event is ignored.
-     *
-     * @return void
-     */
-    public function testUnrelatedEventIsIgnored(): void
-    {
-        $this->listener->handle(new Event());
-
-        $this->addToAssertionCount(1);
-
-    }//end testUnrelatedEventIsIgnored()
-
+	}//end testUnrelatedEventIsIgnored()
 
 }//end class

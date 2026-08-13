@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Nextcloud Tables Row EventListener.
  *
@@ -43,87 +44,85 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
  */
-class NextcloudTablesEventListener implements IEventListener
-{
+class NextcloudTablesEventListener implements IEventListener {
 
-    /**
-     * The CloudEvents `source` this producer stamps on every event.
-     *
-     * @var string
-     */
-    private const SOURCE = '/nextcloud/tables';
+	/**
+	 * The CloudEvents `source` this producer stamps on every event.
+	 *
+	 * @var string
+	 */
+	private const SOURCE = '/nextcloud/tables';
 
-    /**
-     * Constructor.
-     *
-     * @param EventService    $eventService Service for managing CloudEvents.
-     * @param LoggerInterface $logger       Logger instance.
-     */
-    public function __construct(
-        private readonly EventService $eventService,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param LoggerInterface $logger Logger instance.
+	 */
+	public function __construct(
+		private readonly EventService $eventService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired Tables row event by normalizing and forwarding it.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
-     */
-    public function handle(Event $event): void
-    {
-        $type = null;
-        if ($event instanceof RowAddedEvent) {
-            $type = 'com.nextcloud.tables.row.created';
-        } else if ($event instanceof RowUpdatedEvent) {
-            $type = 'com.nextcloud.tables.row.updated';
-        } else if ($event instanceof RowDeletedEvent) {
-            $type = 'com.nextcloud.tables.row.deleted';
-        }
+	/**
+	 * Handle a fired Tables row event by normalizing and forwarding it.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+	 */
+	public function handle(Event $event): void {
+		$type = null;
+		if ($event instanceof RowAddedEvent) {
+			$type = 'com.nextcloud.tables.row.created';
+		} elseif ($event instanceof RowUpdatedEvent) {
+			$type = 'com.nextcloud.tables.row.updated';
+		} elseif ($event instanceof RowDeletedEvent) {
+			$type = 'com.nextcloud.tables.row.deleted';
+		}
 
-        if ($type === null || method_exists($event, 'getRow') === false) {
-            return;
-        }
+		if ($type === null || method_exists($event, 'getRow') === false) {
+			return;
+		}
 
-        try {
-            // Firehose gate: no configured subscriptions anywhere on this
-            // instance means the outbound-webhooks capability is unused — do
-            // not pay a persistence cost for every row mutation fleet-wide.
-            if ($this->eventService->hasActiveSubscriptions() === false) {
-                return;
-            }
+		try {
+			// Firehose gate: no configured subscriptions anywhere on this
+			// instance means the outbound-webhooks capability is unused — do
+			// not pay a persistence cost for every row mutation fleet-wide.
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return;
+			}
 
-            $row = $event->getRow();
+			$row = $event->getRow();
 
-            $this->eventService->handleNextcloudEvent(
-                type: $type,
-                payload: [
-                    'source'  => self::SOURCE,
-                    'subject' => (string) $row->rowId,
-                    'data'    => [
-                        'tableId'        => $row->tableId,
-                        'rowId'          => $row->rowId,
-                        'values'         => $row->values,
-                        'previousValues' => $row->previousValues,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            // Broad catch is deliberate: this listener runs synchronously
-            // inside the Tables row operation that triggered it.
-            $this->logger->error(
-                    'Failed to process Nextcloud Tables row event: '.$e->getMessage(),
-                    [
-                        'exception' => $e,
-                        'event'     => get_class($event),
-                    ]
-                    );
-        }//end try
+			$this->eventService->handleNextcloudEvent(
+				type: $type,
+				payload: [
+					'source' => self::SOURCE,
+					'subject' => (string)$row->rowId,
+					'data' => [
+						'tableId' => $row->tableId,
+						'rowId' => $row->rowId,
+						'values' => $row->values,
+						'previousValues' => $row->previousValues,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// Broad catch is deliberate: this listener runs synchronously
+			// inside the Tables row operation that triggered it.
+			$this->logger->error(
+				'Failed to process Nextcloud Tables row event: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'event' => get_class($event),
+				]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 }//end class

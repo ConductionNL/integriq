@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Stub for OC\Hooks\Emitter — required by OCP\Files\IRootFolder in unit-test
  * environments where Nextcloud core is not fully bootstrapped.
@@ -34,26 +35,24 @@ namespace OC\Hooks;
  * Keeping the declaration byte-compatible with core makes the stub harmless
  * whichever of the two happens to load first.
  */
-interface Emitter
-{
+interface Emitter {
 
-    /**
-     * @param string   $scope    Hook scope.
-     * @param string   $method   Hook method.
-     * @param callable $callback Callback to invoke.
-     *
-     * @return void
-     */
-    public function listen($scope, $method, callable $callback);
+	/**
+	 * @param string $scope Hook scope.
+	 * @param string $method Hook method.
+	 * @param callable $callback Callback to invoke.
+	 *
+	 * @return void
+	 */
+	public function listen($scope, $method, callable $callback);
 
-
-    /**
-     * @param string        $scope    Hook scope.
-     * @param string        $method   Hook method.
-     * @param callable|null $callback Optional specific callback to remove.
-     *
-     * @return void
-     */
-    public function removeListener($scope=null, $method=null, ?callable $callback=null);
+	/**
+	 * @param string $scope Hook scope.
+	 * @param string $method Hook method.
+	 * @param callable|null $callback Optional specific callback to remove.
+	 *
+	 * @return void
+	 */
+	public function removeListener($scope = null, $method = null, ?callable $callback = null);
 
 }//end interface

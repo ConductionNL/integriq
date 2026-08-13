@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Brokered Call Configuration Exception.
  *
@@ -42,6 +43,5 @@ use Exception;
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
  */
-class BrokeredCallConfigurationException extends Exception
-{
+class BrokeredCallConfigurationException extends Exception {
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for StUFFieldMapper.
  *
@@ -20,196 +21,174 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the StUF field mapper service.
  */
-class StUFFieldMapperTest extends TestCase
-{
+class StUFFieldMapperTest extends TestCase {
 
-    /**
-     * @var StUFFieldMapper
-     */
-    private StUFFieldMapper $mapper;
+	/**
+	 * @var StUFFieldMapper
+	 */
+	private StUFFieldMapper $mapper;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->mapper = new StUFFieldMapper();
 
-        $this->mapper = new StUFFieldMapper();
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Test mapping a person to StUF-BG format.
+	 *
+	 * @return void
+	 */
+	public function testMapPersonToStUF(): void {
+		$person = [
+			'burgerservicenummer' => '999993653',
+			'geslachtsnaam' => 'Moulin',
+			'voornamen' => 'Suzanne',
+			'geboortedatum' => '1990-05-15',
+		];
 
+		$result = $this->mapper->mapPersonToStUF($person);
 
-    /**
-     * Test mapping a person to StUF-BG format.
-     *
-     * @return void
-     */
-    public function testMapPersonToStUF(): void
-    {
-        $person = [
-            'burgerservicenummer' => '999993653',
-            'geslachtsnaam'       => 'Moulin',
-            'voornamen'           => 'Suzanne',
-            'geboortedatum'       => '1990-05-15',
-        ];
+		$this->assertSame('999993653', $result['inp.bsn']);
+		$this->assertSame('Moulin', $result['geslachtsnaam']);
+		$this->assertSame('Suzanne', $result['voornamen']);
+		$this->assertSame('19900515', $result['geboortedatum']);
 
-        $result = $this->mapper->mapPersonToStUF($person);
+	}//end testMapPersonToStUF()
 
-        $this->assertSame('999993653', $result['inp.bsn']);
-        $this->assertSame('Moulin', $result['geslachtsnaam']);
-        $this->assertSame('Suzanne', $result['voornamen']);
-        $this->assertSame('19900515', $result['geboortedatum']);
+	/**
+	 * Test mapping StUF-BG data back to OpenRegister format.
+	 *
+	 * @return void
+	 */
+	public function testMapStUFToPerson(): void {
+		$stufData = [
+			'inp.bsn' => '999993653',
+			'geslachtsnaam' => 'Moulin',
+			'voornamen' => 'Suzanne',
+			'geboortedatum' => '19900515',
+		];
 
-    }//end testMapPersonToStUF()
+		$result = $this->mapper->mapStUFToPerson($stufData);
 
+		$this->assertSame('999993653', $result['burgerservicenummer']);
+		$this->assertSame('Moulin', $result['geslachtsnaam']);
+		$this->assertSame('1990-05-15', $result['geboortedatum']);
 
-    /**
-     * Test mapping StUF-BG data back to OpenRegister format.
-     *
-     * @return void
-     */
-    public function testMapStUFToPerson(): void
-    {
-        $stufData = [
-            'inp.bsn'        => '999993653',
-            'geslachtsnaam'  => 'Moulin',
-            'voornamen'      => 'Suzanne',
-            'geboortedatum'  => '19900515',
-        ];
+	}//end testMapStUFToPerson()
 
-        $result = $this->mapper->mapStUFToPerson($stufData);
+	/**
+	 * Test ISO date to StUF date conversion.
+	 *
+	 * @return void
+	 */
+	public function testIsoDateToStUF(): void {
+		$this->assertSame('19900515', $this->mapper->isoDateToStUF('1990-05-15'));
+		$this->assertSame('20240101', $this->mapper->isoDateToStUF('2024-01-01'));
 
-        $this->assertSame('999993653', $result['burgerservicenummer']);
-        $this->assertSame('Moulin', $result['geslachtsnaam']);
-        $this->assertSame('1990-05-15', $result['geboortedatum']);
+	}//end testIsoDateToStUF()
 
-    }//end testMapStUFToPerson()
+	/**
+	 * Test StUF date to ISO date conversion.
+	 *
+	 * @return void
+	 */
+	public function testStufDateToISO(): void {
+		$this->assertSame('1990-05-15', $this->mapper->stufDateToISO('19900515'));
+		$this->assertSame('2024-01-01', $this->mapper->stufDateToISO('20240101'));
 
+	}//end testStufDateToISO()
 
-    /**
-     * Test ISO date to StUF date conversion.
-     *
-     * @return void
-     */
-    public function testIsoDateToStUF(): void
-    {
-        $this->assertSame('19900515', $this->mapper->isoDateToStUF('1990-05-15'));
-        $this->assertSame('20240101', $this->mapper->isoDateToStUF('2024-01-01'));
+	/**
+	 * Test address mapping to StUF format.
+	 *
+	 * @return void
+	 */
+	public function testMapAddressToStUF(): void {
+		$address = [
+			'straatnaam' => 'Hoofdstraat',
+			'huisnummer' => '10',
+			'postcode' => '1234AB',
+			'woonplaats' => 'Utrecht',
+		];
 
-    }//end testIsoDateToStUF()
+		$result = $this->mapper->mapAddressToStUF($address);
 
+		$this->assertSame('Hoofdstraat', $result['gor.straatnaam']);
+		$this->assertSame('10', $result['aoa.huisnummer']);
+		$this->assertSame('1234AB', $result['aoa.postcode']);
+		$this->assertSame('Utrecht', $result['wpl.woonplaatsNaam']);
 
-    /**
-     * Test StUF date to ISO date conversion.
-     *
-     * @return void
-     */
-    public function testStufDateToISO(): void
-    {
-        $this->assertSame('1990-05-15', $this->mapper->stufDateToISO('19900515'));
-        $this->assertSame('2024-01-01', $this->mapper->stufDateToISO('20240101'));
+	}//end testMapAddressToStUF()
 
-    }//end testStufDateToISO()
+	/**
+	 * Test nested verblijfsadres mapping.
+	 *
+	 * @return void
+	 */
+	public function testMapPersonWithVerblijfsadres(): void {
+		$person = [
+			'burgerservicenummer' => '999993653',
+			'geslachtsnaam' => 'Moulin',
+			'verblijfsadres' => [
+				'straatnaam' => 'Hoofdstraat',
+				'huisnummer' => '10',
+				'postcode' => '1234AB',
+				'woonplaats' => 'Utrecht',
+			],
+		];
 
+		$result = $this->mapper->mapPersonToStUF($person);
 
-    /**
-     * Test address mapping to StUF format.
-     *
-     * @return void
-     */
-    public function testMapAddressToStUF(): void
-    {
-        $address = [
-            'straatnaam'  => 'Hoofdstraat',
-            'huisnummer'  => '10',
-            'postcode'    => '1234AB',
-            'woonplaats'  => 'Utrecht',
-        ];
+		$this->assertArrayHasKey('verblijfsadres', $result);
+		$this->assertSame('Hoofdstraat', $result['verblijfsadres']['gor.straatnaam']);
 
-        $result = $this->mapper->mapAddressToStUF($address);
+	}//end testMapPersonWithVerblijfsadres()
 
-        $this->assertSame('Hoofdstraat', $result['gor.straatnaam']);
-        $this->assertSame('10', $result['aoa.huisnummer']);
-        $this->assertSame('1234AB', $result['aoa.postcode']);
-        $this->assertSame('Utrecht', $result['wpl.woonplaatsNaam']);
+	/**
+	 * Test custom field mapping.
+	 *
+	 * @return void
+	 */
+	public function testCustomFieldMapping(): void {
+		$person = [
+			'achternaam' => 'Jansen',
+		];
 
-    }//end testMapAddressToStUF()
+		$customMapping = [
+			'achternaam' => 'geslachtsnaam',
+		];
 
+		$result = $this->mapper->mapPersonToStUF($person, $customMapping);
 
-    /**
-     * Test nested verblijfsadres mapping.
-     *
-     * @return void
-     */
-    public function testMapPersonWithVerblijfsadres(): void
-    {
-        $person = [
-            'burgerservicenummer' => '999993653',
-            'geslachtsnaam'       => 'Moulin',
-            'verblijfsadres'      => [
-                'straatnaam'  => 'Hoofdstraat',
-                'huisnummer'  => '10',
-                'postcode'    => '1234AB',
-                'woonplaats'  => 'Utrecht',
-            ],
-        ];
+		$this->assertSame('Jansen', $result['geslachtsnaam']);
 
-        $result = $this->mapper->mapPersonToStUF($person);
+	}//end testCustomFieldMapping()
 
-        $this->assertArrayHasKey('verblijfsadres', $result);
-        $this->assertSame('Hoofdstraat', $result['verblijfsadres']['gor.straatnaam']);
+	/**
+	 * Test invalid ISO date returns unchanged.
+	 *
+	 * @return void
+	 */
+	public function testInvalidIsoDateReturnsUnchanged(): void {
+		$this->assertSame('not-a-date', $this->mapper->isoDateToStUF('not-a-date'));
 
-    }//end testMapPersonWithVerblijfsadres()
+	}//end testInvalidIsoDateReturnsUnchanged()
 
+	/**
+	 * Test invalid StUF date returns unchanged.
+	 *
+	 * @return void
+	 */
+	public function testInvalidStUFDateReturnsUnchanged(): void {
+		$this->assertSame('notadate', $this->mapper->stufDateToISO('notadate'));
 
-    /**
-     * Test custom field mapping.
-     *
-     * @return void
-     */
-    public function testCustomFieldMapping(): void
-    {
-        $person = [
-            'achternaam' => 'Jansen',
-        ];
-
-        $customMapping = [
-            'achternaam' => 'geslachtsnaam',
-        ];
-
-        $result = $this->mapper->mapPersonToStUF($person, $customMapping);
-
-        $this->assertSame('Jansen', $result['geslachtsnaam']);
-
-    }//end testCustomFieldMapping()
-
-
-    /**
-     * Test invalid ISO date returns unchanged.
-     *
-     * @return void
-     */
-    public function testInvalidIsoDateReturnsUnchanged(): void
-    {
-        $this->assertSame('not-a-date', $this->mapper->isoDateToStUF('not-a-date'));
-
-    }//end testInvalidIsoDateReturnsUnchanged()
-
-
-    /**
-     * Test invalid StUF date returns unchanged.
-     *
-     * @return void
-     */
-    public function testInvalidStUFDateReturnsUnchanged(): void
-    {
-        $this->assertSame('notadate', $this->mapper->stufDateToISO('notadate'));
-
-    }//end testInvalidStUFDateReturnsUnchanged()
-
+	}//end testInvalidStUFDateReturnsUnchanged()
 
 }//end class

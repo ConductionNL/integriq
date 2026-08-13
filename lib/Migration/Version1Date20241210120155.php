@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Add current_page and message columns.
  *
@@ -31,84 +32,79 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the current_page and message columns to the synchronization tables.
  */
-class Version1Date20241210120155 extends SimpleMigrationStep
-{
-    /**
-     * Pre-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241210120155 extends SimpleMigrationStep {
+	/**
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Adds the current_page and message columns when missing.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Adds the current_page and message columns when missing.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Synchronizations table.
-        if ($schema->hasTable('openconnector_synchronizations') === true) {
-            $table = $schema->getTable('openconnector_synchronizations');
+		// Synchronizations table.
+		if ($schema->hasTable('openconnector_synchronizations') === true) {
+			$table = $schema->getTable('openconnector_synchronizations');
 
-            if ($table->hasColumn('current_page') === false) {
-                $table->addColumn(
-                    'current_page',
-                    Types::INTEGER,
-                    [
-                        'notnull' => false,
-                        'default' => 1,
-                    ]
-                );
-            }
-        }
+			if ($table->hasColumn('current_page') === false) {
+				$table->addColumn(
+					'current_page',
+					Types::INTEGER,
+					[
+						'notnull' => false,
+						'default' => 1,
+					]
+				);
+			}
+		}
 
-        // SynchronizationContractLogs table.
-        if ($schema->hasTable('openconnector_synchronization_contract_logs') === true) {
-            $table = $schema->getTable('openconnector_synchronization_contract_logs');
+		// SynchronizationContractLogs table.
+		if ($schema->hasTable('openconnector_synchronization_contract_logs') === true) {
+			$table = $schema->getTable('openconnector_synchronization_contract_logs');
 
-            if ($table->hasColumn('message') === false) {
-                $table->addColumn(
-                    'message',
-                    Types::STRING,
-                    [
-                        'length'  => 255,
-                        'notnull' => false,
-                    ]
-                )->setDefault(null);
-            }
-        }
+			if ($table->hasColumn('message') === false) {
+				$table->addColumn(
+					'message',
+					Types::STRING,
+					[
+						'length' => 255,
+						'notnull' => false,
+					]
+				)->setDefault(null);
+			}
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
-
-    /**
-     * Post-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

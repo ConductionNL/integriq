@@ -34,6 +34,5 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
  */
-class Psd2ConsentRevokedException extends Psd2ProviderException
-{
+class Psd2ConsentRevokedException extends Psd2ProviderException {
 }//end class

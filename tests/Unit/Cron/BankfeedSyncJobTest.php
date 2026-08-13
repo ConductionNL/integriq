@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for BankfeedSyncJob.
  *
@@ -30,76 +31,71 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
  */
-class BankfeedSyncJobTest extends TestCase
-{
+class BankfeedSyncJobTest extends TestCase {
 
-    /**
-     * @var BankfeedSyncService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $syncService;
+	/**
+	 * @var BankfeedSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $syncService;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var BankfeedSyncJob
-     */
-    private BankfeedSyncJob $job;
+	/**
+	 * @var BankfeedSyncJob
+	 */
+	private BankfeedSyncJob $job;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $timeFactory       = $this->createMock(ITimeFactory::class);
-        $this->syncService = $this->createMock(BankfeedSyncService::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->syncService = $this->createMock(BankfeedSyncService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->job = new BankfeedSyncJob($timeFactory, $this->syncService, $this->logger);
+		$this->job = new BankfeedSyncJob($timeFactory, $this->syncService, $this->logger);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * The job wires its dependencies and constructs without error.
-     *
-     * @return void
-     */
-    public function testConstructs(): void
-    {
-        $this->assertInstanceOf(BankfeedSyncJob::class, $this->job);
+	/**
+	 * The job wires its dependencies and constructs without error.
+	 *
+	 * @return void
+	 */
+	public function testConstructs(): void {
+		$this->assertInstanceOf(BankfeedSyncJob::class, $this->job);
 
-    }//end testConstructs()
+	}//end testConstructs()
 
-    /**
-     * Running the job invokes one syncAll sweep — REQ-004.
-     *
-     * @return void
-     */
-    public function testRunInvokesSyncAll(): void
-    {
-        $this->syncService->expects($this->once())->method('syncAll')->willReturn(2);
+	/**
+	 * Running the job invokes one syncAll sweep — REQ-004.
+	 *
+	 * @return void
+	 */
+	public function testRunInvokesSyncAll(): void {
+		$this->syncService->expects($this->once())->method('syncAll')->willReturn(2);
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunInvokesSyncAll()
+	}//end testRunInvokesSyncAll()
 
-    /**
-     * A sweep-level exception is contained and logged — the cron pipeline never wedges.
-     *
-     * @return void
-     */
-    public function testRunContainsSweepException(): void
-    {
-        $this->syncService->method('syncAll')->willThrowException(new \RuntimeException('boom'));
-        $this->logger->expects($this->once())->method('error');
+	/**
+	 * A sweep-level exception is contained and logged — the cron pipeline never wedges.
+	 *
+	 * @return void
+	 */
+	public function testRunContainsSweepException(): void {
+		$this->syncService->method('syncAll')->willThrowException(new \RuntimeException('boom'));
+		$this->logger->expects($this->once())->method('error');
 
-        $this->job->run(null);
+		$this->job->run(null);
 
-    }//end testRunContainsSweepException()
+	}//end testRunContainsSweepException()
 }//end class

@@ -1,27 +1,41 @@
-; Nextcloud core ships one of these; without it an editor falls back to
-; whatever the developer last configured, and the repo's own indentation
-; becomes a property of who opened it rather than of the project.
-;
-; Values follow what this repo already contains: tabs in PHP/JS/Vue, and the
-; two-space YAML/JSON that every tool here emits.
+# https://editorconfig.org
+
+# SPDX-FileCopyrightText: 2019 Nextcloud GmbH and Nextcloud contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 root = true
 
 [*]
 charset = utf-8
 end_of_line = lf
+indent_size = 4
+indent_style = tab
 insert_final_newline = true
 trim_trailing_whitespace = true
-indent_style = tab
-indent_size = 4
 
 [*.{yml,yaml,json,jsonc}]
-indent_style = space
 indent_size = 2
+indent_style = space
 
+# Trailing whitespace is a hard line break in Markdown, so trimming it changes
+# rendered output rather than tidying it.
 [*.md]
-; Trailing whitespace is a hard line break in Markdown, so trimming it changes
-; rendered output rather than tidying it.
 trim_trailing_whitespace = false
+
+[*.svg]
+insert_final_newline = false
+
+[package*.json]
+indent_size = 2
+indent_style = space
+
+[build/psalm-baseline.xml]
+indent_size = 2
+indent_style = space
+
+[config/*config.php]
+indent_size = 2
+indent_style = space
 
 [Makefile]
 indent_style = tab

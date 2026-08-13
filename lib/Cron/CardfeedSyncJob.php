@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Cardfeed Sync Job.
  *
@@ -46,74 +47,72 @@ use Throwable;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
  */
-class CardfeedSyncJob extends TimedJob
-{
+class CardfeedSyncJob extends TimedJob {
 
-    /**
-     * Default sweep interval in seconds (6 hours — 4x daily per REQ-003).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 21600;
+	/**
+	 * Default sweep interval in seconds (6 hours — 4x daily per REQ-003).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 21600;
 
-    /**
-     * CardfeedSyncJob constructor.
-     *
-     * @param ITimeFactory        $time        Time factory for job scheduling.
-     * @param CardfeedSyncService $syncService The cardfeed sync service.
-     * @param LoggerInterface     $logger      Logger for sweep outcomes and containment.
-     *
-     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly CardfeedSyncService $syncService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * CardfeedSyncJob constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param CardfeedSyncService $syncService The cardfeed sync service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly CardfeedSyncService $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-        // Card transaction pulls are not strictly time-sensitive.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Card transaction pulls are not strictly time-sensitive.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only one sweep at a time to avoid double-pulling a window.
-        $this->setAllowParallelRuns(allow: false);
+		// Only one sweep at a time to avoid double-pulling a window.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the cardfeed sync sweep.
-     *
-     * A single failing account must never wedge the cron pipeline — the service
-     * already contains per-account failures, and any sweep-level exception is
-     * caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $batches = $this->syncService->syncAll();
-            $this->logger->info(
-                'CardfeedSyncJob: sync sweep complete',
-                ['batches' => $batches]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'CardfeedSyncJob: sync sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the cardfeed sync sweep.
+	 *
+	 * A single failing account must never wedge the cron pipeline — the service
+	 * already contains per-account failures, and any sweep-level exception is
+	 * caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$batches = $this->syncService->syncAll();
+			$this->logger->info(
+				'CardfeedSyncJob: sync sweep complete',
+				['batches' => $batches]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'CardfeedSyncJob: sync sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

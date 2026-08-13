@@ -39,89 +39,85 @@ use Throwable;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md
  */
-class MtlsTransportException extends Exception
-{
+class MtlsTransportException extends Exception {
 
-    /**
-     * Certificate or private key material is missing from configuration.
-     *
-     * @var string
-     */
-    public const ERROR_MATERIAL_MISSING = 'MTLS_MATERIAL_MISSING';
+	/**
+	 * Certificate or private key material is missing from configuration.
+	 *
+	 * @var string
+	 */
+	public const ERROR_MATERIAL_MISSING = 'MTLS_MATERIAL_MISSING';
 
-    /**
-     * Stored (encrypted) material could not be decrypted.
-     *
-     * @var string
-     */
-    public const ERROR_DECRYPTION_FAILED = 'MTLS_DECRYPTION_FAILED';
+	/**
+	 * Stored (encrypted) material could not be decrypted.
+	 *
+	 * @var string
+	 */
+	public const ERROR_DECRYPTION_FAILED = 'MTLS_DECRYPTION_FAILED';
 
-    /**
-     * The certificate PEM is not well-formed.
-     *
-     * @var string
-     */
-    public const ERROR_INVALID_CERTIFICATE = 'MTLS_INVALID_CERTIFICATE';
+	/**
+	 * The certificate PEM is not well-formed.
+	 *
+	 * @var string
+	 */
+	public const ERROR_INVALID_CERTIFICATE = 'MTLS_INVALID_CERTIFICATE';
 
-    /**
-     * The private key PEM is not well-formed.
-     *
-     * @var string
-     */
-    public const ERROR_INVALID_PRIVATE_KEY = 'MTLS_INVALID_PRIVATE_KEY';
+	/**
+	 * The private key PEM is not well-formed.
+	 *
+	 * @var string
+	 */
+	public const ERROR_INVALID_PRIVATE_KEY = 'MTLS_INVALID_PRIVATE_KEY';
 
-    /**
-     * The certificate's validity end date is in the past.
-     *
-     * @var string
-     */
-    public const ERROR_CERTIFICATE_EXPIRED = 'MTLS_CERTIFICATE_EXPIRED';
+	/**
+	 * The certificate's validity end date is in the past.
+	 *
+	 * @var string
+	 */
+	public const ERROR_CERTIFICATE_EXPIRED = 'MTLS_CERTIFICATE_EXPIRED';
 
-    /**
-     * The configured passphrase does not unlock the private key.
-     *
-     * @var string
-     */
-    public const ERROR_PASSPHRASE_INVALID = 'MTLS_PASSPHRASE_INVALID';
+	/**
+	 * The configured passphrase does not unlock the private key.
+	 *
+	 * @var string
+	 */
+	public const ERROR_PASSPHRASE_INVALID = 'MTLS_PASSPHRASE_INVALID';
 
-    /**
-     * The TLS handshake or underlying HTTP dispatch failed.
-     *
-     * @var string
-     */
-    public const ERROR_HANDSHAKE_FAILED = 'MTLS_HANDSHAKE_FAILED';
+	/**
+	 * The TLS handshake or underlying HTTP dispatch failed.
+	 *
+	 * @var string
+	 */
+	public const ERROR_HANDSHAKE_FAILED = 'MTLS_HANDSHAKE_FAILED';
 
-    /**
-     * The stable machine-readable error code for this failure.
-     *
-     * @var string
-     */
-    private string $errorCode;
+	/**
+	 * The stable machine-readable error code for this failure.
+	 *
+	 * @var string
+	 */
+	private string $errorCode;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $message   The exception message (never includes secret material).
-     * @param string         $errorCode One of the `ERROR_*` constants above.
-     * @param Throwable|null $previous  The previous throwable, if any.
-     */
-    public function __construct(string $message, string $errorCode, ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, previous: $previous);
-        $this->errorCode = $errorCode;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message The exception message (never includes secret material).
+	 * @param string $errorCode One of the `ERROR_*` constants above.
+	 * @param Throwable|null $previous The previous throwable, if any.
+	 */
+	public function __construct(string $message, string $errorCode, ?Throwable $previous = null) {
+		parent::__construct(message: $message, previous: $previous);
+		$this->errorCode = $errorCode;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the stable machine-readable error code for this failure.
-     *
-     * @return string
-     *
-     * @spec openspec/specs/mtls-client-certificate-transport/spec.md
-     */
-    public function getErrorCode(): string
-    {
-        return $this->errorCode;
-
-    }//end getErrorCode()
+	/**
+	 * Get the stable machine-readable error code for this failure.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md
+	 */
+	public function getErrorCode(): string {
+		return $this->errorCode;
+	}//end getErrorCode()
 }//end class

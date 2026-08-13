@@ -42,134 +42,118 @@ use ReflectionMethod;
 /**
  * Brokered-source detection ahead of asynchronous dispatch.
  */
-class CallServiceBrokeredAsyncTest extends TestCase
-{
+class CallServiceBrokeredAsyncTest extends TestCase {
 
+	/**
+	 * A source whose own configuration carries the given authentication block.
+	 *
+	 * A REAL ObjectEntity: its accessors go through `Entity::__call`, and
+	 * PHPUnit refuses to stub magic methods.
+	 *
+	 * @param array $authentication The source's `configuration.authentication`.
+	 *
+	 * @return ObjectEntity The source.
+	 */
+	private function source(array $authentication): ObjectEntity {
+		$source = new ObjectEntity();
+		$source->setObject(
+			[
+				'name' => 'probe source',
+				'location' => 'https://api.example.test',
+				'configuration' => ['authentication' => $authentication],
+			]
+		);
 
-    /**
-     * A source whose own configuration carries the given authentication block.
-     *
-     * A REAL ObjectEntity: its accessors go through `Entity::__call`, and
-     * PHPUnit refuses to stub magic methods.
-     *
-     * @param array $authentication The source's `configuration.authentication`.
-     *
-     * @return ObjectEntity The source.
-     */
-    private function source(array $authentication): ObjectEntity
-    {
-        $source = new ObjectEntity();
-        $source->setObject(
-            [
-                'name'          => 'probe source',
-                'location'      => 'https://api.example.test',
-                'configuration' => ['authentication' => $authentication],
-            ]
-        );
+		return $source;
+	}//end source()
 
-        return $source;
+	/**
+	 * Ask the real detection helper about a source/config pair.
+	 *
+	 * Drives `CallService::dispatchesThroughBroker()` through reflection on an
+	 * UNCONSTRUCTED instance: the method reads only `$this->brokeredCallService`,
+	 * and building the full service would need its whole dependency graph to
+	 * answer a question about two arrays.
+	 *
+	 * @param ObjectEntity $source The source.
+	 * @param array $config The per-call configuration.
+	 *
+	 * @return boolean The helper's answer.
+	 */
+	private function dispatchesThroughBroker(ObjectEntity $source, array $config): bool {
+		$service = (new \ReflectionClass(\OCA\OpenConnector\Service\CallService::class))
+			->newInstanceWithoutConstructor();
 
-    }//end source()
+		$broker = new \ReflectionProperty(\OCA\OpenConnector\Service\CallService::class, 'brokeredCallService');
+		$broker->setAccessible(true);
+		$broker->setValue(
+			$service,
+			(new \ReflectionClass(BrokeredCallService::class))->newInstanceWithoutConstructor()
+		);
 
+		$method = new ReflectionMethod(\OCA\OpenConnector\Service\CallService::class, 'dispatchesThroughBroker');
+		$method->setAccessible(true);
 
-    /**
-     * Ask the real detection helper about a source/config pair.
-     *
-     * Drives `CallService::dispatchesThroughBroker()` through reflection on an
-     * UNCONSTRUCTED instance: the method reads only `$this->brokeredCallService`,
-     * and building the full service would need its whole dependency graph to
-     * answer a question about two arrays.
-     *
-     * @param ObjectEntity $source The source.
-     * @param array        $config The per-call configuration.
-     *
-     * @return boolean The helper's answer.
-     */
-    private function dispatchesThroughBroker(ObjectEntity $source, array $config): bool
-    {
-        $service = (new \ReflectionClass(\OCA\OpenConnector\Service\CallService::class))
-            ->newInstanceWithoutConstructor();
+		return (bool)$method->invoke($service, $source, $config);
+	}//end dispatchesThroughBroker()
 
-        $broker   = new \ReflectionProperty(\OCA\OpenConnector\Service\CallService::class, 'brokeredCallService');
-        $broker->setAccessible(true);
-        $broker->setValue(
-            $service,
-            (new \ReflectionClass(BrokeredCallService::class))->newInstanceWithoutConstructor()
-        );
+	/**
+	 * A credentialRef on the SOURCE is detected.
+	 *
+	 * This is hydra's shape: the forge source carries the reference, and the
+	 * flow node passes no authentication of its own.
+	 *
+	 * @return void
+	 */
+	public function testACredentialRefOnTheSourceIsDetected(): void {
+		$source = $this->source(['credentialRef' => ['credentialId' => 'abc']]);
 
-        $method = new ReflectionMethod(\OCA\OpenConnector\Service\CallService::class, 'dispatchesThroughBroker');
-        $method->setAccessible(true);
+		$this->assertTrue($this->dispatchesThroughBroker($source, []));
 
-        return (bool) $method->invoke($service, $source, $config);
+	}//end testACredentialRefOnTheSourceIsDetected()
 
-    }//end dispatchesThroughBroker()
+	/**
+	 * A credentialRef on the CALL config is detected.
+	 *
+	 * @return void
+	 */
+	public function testACredentialRefOnTheCallConfigIsDetected(): void {
+		$source = $this->source([]);
 
+		$this->assertTrue(
+			$this->dispatchesThroughBroker($source, ['authentication' => ['credentialRef' => ['credentialId' => 'abc']]])
+		);
 
-    /**
-     * A credentialRef on the SOURCE is detected.
-     *
-     * This is hydra's shape: the forge source carries the reference, and the
-     * flow node passes no authentication of its own.
-     *
-     * @return void
-     */
-    public function testACredentialRefOnTheSourceIsDetected(): void
-    {
-        $source = $this->source(['credentialRef' => ['credentialId' => 'abc']]);
+	}//end testACredentialRefOnTheCallConfigIsDetected()
 
-        $this->assertTrue($this->dispatchesThroughBroker($source, []));
+	/**
+	 * A source with no credentialRef is NOT diverted.
+	 *
+	 * The counterpart that keeps the fix honest: without it, the helper could
+	 * return true unconditionally, every test above would pass, and
+	 * concurrency would be silently removed from every unbrokered source in
+	 * the fleet.
+	 *
+	 * @return void
+	 */
+	public function testAnUnbrokeredSourceStillDispatchesAsynchronously(): void {
+		$source = $this->source(['apikey' => 'literal-not-a-reference']);
 
-    }//end testACredentialRefOnTheSourceIsDetected()
+		$this->assertFalse($this->dispatchesThroughBroker($source, []));
 
+	}//end testAnUnbrokeredSourceStillDispatchesAsynchronously()
 
-    /**
-     * A credentialRef on the CALL config is detected.
-     *
-     * @return void
-     */
-    public function testACredentialRefOnTheCallConfigIsDetected(): void
-    {
-        $source = $this->source([]);
+	/**
+	 * A source with no authentication block at all is not diverted.
+	 *
+	 * @return void
+	 */
+	public function testASourceWithoutAuthenticationIsNotDiverted(): void {
+		$source = new ObjectEntity();
+		$source->setObject(['name' => 'bare', 'location' => 'https://api.example.test']);
 
-        $this->assertTrue(
-            $this->dispatchesThroughBroker($source, ['authentication' => ['credentialRef' => ['credentialId' => 'abc']]])
-        );
+		$this->assertFalse($this->dispatchesThroughBroker($source, []));
 
-    }//end testACredentialRefOnTheCallConfigIsDetected()
-
-
-    /**
-     * A source with no credentialRef is NOT diverted.
-     *
-     * The counterpart that keeps the fix honest: without it, the helper could
-     * return true unconditionally, every test above would pass, and
-     * concurrency would be silently removed from every unbrokered source in
-     * the fleet.
-     *
-     * @return void
-     */
-    public function testAnUnbrokeredSourceStillDispatchesAsynchronously(): void
-    {
-        $source = $this->source(['apikey' => 'literal-not-a-reference']);
-
-        $this->assertFalse($this->dispatchesThroughBroker($source, []));
-
-    }//end testAnUnbrokeredSourceStillDispatchesAsynchronously()
-
-
-    /**
-     * A source with no authentication block at all is not diverted.
-     *
-     * @return void
-     */
-    public function testASourceWithoutAuthenticationIsNotDiverted(): void
-    {
-        $source = new ObjectEntity();
-        $source->setObject(['name' => 'bare', 'location' => 'https://api.example.test']);
-
-        $this->assertFalse($this->dispatchesThroughBroker($source, []));
-
-    }//end testASourceWithoutAuthenticationIsNotDiverted()
-
+	}//end testASourceWithoutAuthenticationIsNotDiverted()
 
 }//end class

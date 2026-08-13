@@ -34,159 +34,151 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests environment list/create auth gating and delegation to EnvironmentService.
  */
-class EnvironmentControllerTest extends TestCase
-{
-    /**
-     * @var EnvironmentService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $environmentService;
+class EnvironmentControllerTest extends TestCase {
+	/**
+	 * @var EnvironmentService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $environmentService;
 
-    /**
-     * Set up shared fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->environmentService = $this->createMock(EnvironmentService::class);
-    }//end setUp()
+	/**
+	 * Set up shared fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->environmentService = $this->createMock(EnvironmentService::class);
+	}//end setUp()
 
-    /**
-     * Build the controller under test.
-     *
-     * @param array<string,mixed> $requestParams Values the mocked IRequest returns per param name.
-     * @param bool                $isAdmin       Whether the session user passes the admin break-glass.
-     * @param bool                $authenticated Whether a session user exists at all.
-     *
-     * @return EnvironmentController
-     */
-    private function makeController(array $requestParams=[], bool $isAdmin=true, bool $authenticated=true): EnvironmentController
-    {
-        $user = null;
-        if ($authenticated === true) {
-            $user = $this->createMock(IUser::class);
-            $user->method('getUID')->willReturn('tester');
-        }
+	/**
+	 * Build the controller under test.
+	 *
+	 * @param array<string,mixed> $requestParams Values the mocked IRequest returns per param name.
+	 * @param bool $isAdmin Whether the session user passes the admin break-glass.
+	 * @param bool $authenticated Whether a session user exists at all.
+	 *
+	 * @return EnvironmentController
+	 */
+	private function makeController(array $requestParams = [], bool $isAdmin = true, bool $authenticated = true): EnvironmentController {
+		$user = null;
+		if ($authenticated === true) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn('tester');
+		}
 
-        $userSession = $this->createMock(IUserSession::class);
-        $userSession->method('getUser')->willReturn($user);
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
 
-        $authConfig = $this->createMock(IAppConfig::class);
-        $authConfig->method('getValueString')->willReturn('{}');
+		$authConfig = $this->createMock(IAppConfig::class);
+		$authConfig->method('getValueString')->willReturn('{}');
 
-        $groupManager = $this->createMock(IGroupManager::class);
-        $groupManager->method('isAdmin')->willReturn($isAdmin);
-        $groupManager->method('getUserGroupIds')->willReturn([]);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($isAdmin);
+		$groupManager->method('getUserGroupIds')->willReturn([]);
 
-        $actionAuth = new ActionAuthService($authConfig, $groupManager);
+		$actionAuth = new ActionAuthService($authConfig, $groupManager);
 
-        $request = $this->createMock(IRequest::class);
-        $request->method('getParam')->willReturnCallback(
-            static fn(string $key, $default=null) => ($requestParams[$key] ?? $default)
-        );
-        $request->method('getParams')->willReturn($requestParams);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($requestParams[$key] ?? $default)
+		);
+		$request->method('getParams')->willReturn($requestParams);
 
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnCallback(
-            static fn(string $text, array $params=[]) => vsprintf(str_replace('%s', '%s', $text), $params)
-        );
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $params = []) => vsprintf(str_replace('%s', '%s', $text), $params)
+		);
 
-        return new EnvironmentController(
-            'openconnector',
-            $request,
-            $this->environmentService,
-            $l10n,
-            $userSession,
-            $actionAuth
-        );
-    }//end makeController()
+		return new EnvironmentController(
+			'openconnector',
+			$request,
+			$this->environmentService,
+			$l10n,
+			$userSession,
+			$actionAuth
+		);
+	}//end makeController()
 
-    /**
-     * REQ-001: index() returns the service's list.
-     *
-     * @return void
-     */
-    public function testIndexReturnsEnvironmentList(): void
-    {
-        $environment = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'Acceptance', 'slug' => 'acceptance'],
-            'env-uuid'
-        );
-        $this->environmentService->method('list')->willReturn([$environment]);
+	/**
+	 * REQ-001: index() returns the service's list.
+	 *
+	 * @return void
+	 */
+	public function testIndexReturnsEnvironmentList(): void {
+		$environment = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['name' => 'Acceptance', 'slug' => 'acceptance'],
+			'env-uuid'
+		);
+		$this->environmentService->method('list')->willReturn([$environment]);
 
-        $response = $this->makeController()->index();
+		$response = $this->makeController()->index();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame(1, $data['total']);
-        $this->assertSame('acceptance', $data['results'][0]['slug']);
-    }//end testIndexReturnsEnvironmentList()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame(1, $data['total']);
+		$this->assertSame('acceptance', $data['results'][0]['slug']);
+	}//end testIndexReturnsEnvironmentList()
 
-    /**
-     * REQ-001 scenario 1: create() delegates to the service and returns 201.
-     *
-     * @return void
-     */
-    public function testCreateReturns201OnSuccess(): void
-    {
-        $created = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'Acceptance', 'slug' => 'acceptance', 'sourceRef' => 'source-uuid'],
-            'env-uuid'
-        );
-        $this->environmentService->expects($this->once())->method('create')->willReturn($created);
+	/**
+	 * REQ-001 scenario 1: create() delegates to the service and returns 201.
+	 *
+	 * @return void
+	 */
+	public function testCreateReturns201OnSuccess(): void {
+		$created = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['name' => 'Acceptance', 'slug' => 'acceptance', 'sourceRef' => 'source-uuid'],
+			'env-uuid'
+		);
+		$this->environmentService->expects($this->once())->method('create')->willReturn($created);
 
-        $controller = $this->makeController(['name' => 'Acceptance', 'slug' => 'acceptance', 'sourceRef' => 'source-uuid']);
-        $response   = $controller->create();
+		$controller = $this->makeController(['name' => 'Acceptance', 'slug' => 'acceptance', 'sourceRef' => 'source-uuid']);
+		$response = $controller->create();
 
-        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
-    }//end testCreateReturns201OnSuccess()
+		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+	}//end testCreateReturns201OnSuccess()
 
-    /**
-     * REQ-001 scenario 2: an invalid sourceRef surfaces as 400.
-     *
-     * @return void
-     */
-    public function testCreateReturns400OnInvalidSourceRef(): void
-    {
-        $this->environmentService->method('create')
-            ->willThrowException(new InvalidArgumentException("Environment sourceRef 'ghost' does not resolve to an existing Source object."));
+	/**
+	 * REQ-001 scenario 2: an invalid sourceRef surfaces as 400.
+	 *
+	 * @return void
+	 */
+	public function testCreateReturns400OnInvalidSourceRef(): void {
+		$this->environmentService->method('create')
+			->willThrowException(new InvalidArgumentException("Environment sourceRef 'ghost' does not resolve to an existing Source object."));
 
-        $controller = $this->makeController(['name' => 'Acceptance', 'sourceRef' => 'ghost']);
-        $response   = $controller->create();
+		$controller = $this->makeController(['name' => 'Acceptance', 'sourceRef' => 'ghost']);
+		$response = $controller->create();
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }//end testCreateReturns400OnInvalidSourceRef()
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testCreateReturns400OnInvalidSourceRef()
 
-    /**
-     * REQ-001: a non-admin without environment.manage is rejected with 403
-     * on both endpoints.
-     *
-     * @return void
-     */
-    public function testEnvironmentEndpointsDeniedForUnmappedNonAdmin(): void
-    {
-        $this->environmentService->expects($this->never())->method('list');
-        $this->environmentService->expects($this->never())->method('create');
+	/**
+	 * REQ-001: a non-admin without environment.manage is rejected with 403
+	 * on both endpoints.
+	 *
+	 * @return void
+	 */
+	public function testEnvironmentEndpointsDeniedForUnmappedNonAdmin(): void {
+		$this->environmentService->expects($this->never())->method('list');
+		$this->environmentService->expects($this->never())->method('create');
 
-        $controller = $this->makeController(isAdmin: false);
+		$controller = $this->makeController(isAdmin: false);
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $controller->index()->getStatus());
-        $this->assertSame(Http::STATUS_FORBIDDEN, $controller->create()->getStatus());
-    }//end testEnvironmentEndpointsDeniedForUnmappedNonAdmin()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->index()->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->create()->getStatus());
+	}//end testEnvironmentEndpointsDeniedForUnmappedNonAdmin()
 
-    /**
-     * Unauthenticated requests get 401 on both endpoints.
-     *
-     * @return void
-     */
-    public function testUnauthenticatedReturns401(): void
-    {
-        $controller = $this->makeController(authenticated: false);
+	/**
+	 * Unauthenticated requests get 401 on both endpoints.
+	 *
+	 * @return void
+	 */
+	public function testUnauthenticatedReturns401(): void {
+		$controller = $this->makeController(authenticated: false);
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->index()->getStatus());
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->create()->getStatus());
-    }//end testUnauthenticatedReturns401()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->index()->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->create()->getStatus());
+	}//end testUnauthenticatedReturns401()
 }//end class

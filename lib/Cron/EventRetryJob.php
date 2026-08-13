@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Event Retry Job.
  *
@@ -41,73 +42,71 @@ use Throwable;
  *
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
  */
-class EventRetryJob extends TimedJob
-{
+class EventRetryJob extends TimedJob {
 
-    /**
-     * Default sweep interval in seconds (5 minutes).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 300;
+	/**
+	 * Default sweep interval in seconds (5 minutes).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 300;
 
-    /**
-     * EventRetryJob constructor.
-     *
-     * @param ITimeFactory    $time         Time factory for job scheduling.
-     * @param EventService    $eventService The event delivery service.
-     * @param LoggerInterface $logger       Logger for sweep outcomes and containment.
-     *
-     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly EventService $eventService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * EventRetryJob constructor.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param EventService $eventService The event delivery service.
+	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
+	 *
+	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly EventService $eventService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-        // Delivery retries are not strictly time-sensitive.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Delivery retries are not strictly time-sensitive.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only one sweep at a time to avoid double-attempting a message.
-        $this->setAllowParallelRuns(allow: false);
+		// Only one sweep at a time to avoid double-attempting a message.
+		$this->setAllowParallelRuns(allow: false);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute the retry sweep.
-     *
-     * A single poisoned message must never wedge the cron pipeline, so any
-     * exception from the sweep is caught and logged rather than rethrown.
-     *
-     * @param mixed $argument Task arguments (not used).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
-     */
-    public function run(mixed $argument): void
-    {
-        try {
-            $delivered = $this->eventService->processRetries();
-            $this->logger->info(
-                'EventRetryJob: retry sweep complete',
-                ['delivered' => $delivered]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'EventRetryJob: retry sweep failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+	/**
+	 * Execute the retry sweep.
+	 *
+	 * A single poisoned message must never wedge the cron pipeline, so any
+	 * exception from the sweep is caught and logged rather than rethrown.
+	 *
+	 * @param mixed $argument Task arguments (not used).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
+	 */
+	public function run(mixed $argument): void {
+		try {
+			$delivered = $this->eventService->processRetries();
+			$this->logger->info(
+				'EventRetryJob: retry sweep complete',
+				['delivered' => $delivered]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'EventRetryJob: retry sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

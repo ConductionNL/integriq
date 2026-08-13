@@ -24,30 +24,26 @@ use OCP\EventDispatcher\Event;
 /**
  * Minimal stub for OCA\OpenRegister\Event\ObjectCreatedEvent.
  */
-class ObjectCreatedEvent extends Event
-{
+class ObjectCreatedEvent extends Event {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectEntity $object The object entity that was created.
+	 */
+	public function __construct(
+		private readonly ObjectEntity $object,
+	) {
+		parent::__construct();
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectEntity $object The object entity that was created.
-     */
-    public function __construct(private readonly ObjectEntity $object)
-    {
-        parent::__construct();
+	}//end __construct()
 
-    }//end __construct()
-
-
-    /**
-     * Get the created object entity.
-     *
-     * @return ObjectEntity
-     */
-    public function getObject(): ObjectEntity
-    {
-        return $this->object;
-
-    }//end getObject()
+	/**
+	 * Get the created object entity.
+	 *
+	 * @return ObjectEntity
+	 */
+	public function getObject(): ObjectEntity {
+		return $this->object;
+	}//end getObject()
 }//end class

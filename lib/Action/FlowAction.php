@@ -37,87 +37,84 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003
  */
-class FlowAction
-{
+class FlowAction {
 
-    /**
-     * Flow_run.status values that map to job_log level `ERROR`.
-     *
-     * @var array<int, string>
-     */
-    private const ERROR_STATUSES = ['failed', 'stopped'];
+	/**
+	 * Flow_run.status values that map to job_log level `ERROR`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ERROR_STATUSES = ['failed', 'stopped'];
 
-    /**
-     * Constructor.
-     *
-     * @param FlowRunnerService $flowRunnerService The service that executes a flow's steps.
-     */
-    public function __construct(
-        private FlowRunnerService $flowRunnerService,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowRunnerService $flowRunnerService The service that executes a flow's steps.
+	 */
+	public function __construct(
+		private FlowRunnerService $flowRunnerService,
+	) {
+	}//end __construct()
 
-    /**
-     * Execute the flow referenced by `$argument['flowId']`.
-     *
-     * `level` is derived from the resulting `flow_run.status`: `SUCCESS`
-     * for `completed`, `WARNING` for `dead_letter`/`suspended`, `ERROR` for
-     * `failed`/`stopped` — so `JobService::executeJob()`'s existing
-     * `job_log` persistence requires no changes to handle flow-backed jobs
-     * (job-management REQ-JOB-003).
-     *
-     * @param array $argument An array of arguments; MUST include `flowId`.
-     *
-     * @return array `{level, message, stackTrace}`, matching `SynchronizationAction::run()`'s return shape.
-     *
-     * @spec openspec/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003
-     */
-    public function run(array $argument=[]): array
-    {
-        $response = [];
+	/**
+	 * Execute the flow referenced by `$argument['flowId']`.
+	 *
+	 * `level` is derived from the resulting `flow_run.status`: `SUCCESS`
+	 * for `completed`, `WARNING` for `dead_letter`/`suspended`, `ERROR` for
+	 * `failed`/`stopped` — so `JobService::executeJob()`'s existing
+	 * `job_log` persistence requires no changes to handle flow-backed jobs
+	 * (job-management REQ-JOB-003).
+	 *
+	 * @param array $argument An array of arguments; MUST include `flowId`.
+	 *
+	 * @return array `{level, message, stackTrace}`, matching `SynchronizationAction::run()`'s return shape.
+	 *
+	 * @spec openspec/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003
+	 */
+	public function run(array $argument = []): array {
+		$response = [];
 
-        $response['message'] = $response['stackTrace'][] = 'Check for a valid flow ID';
-        if (isset($argument['flowId']) === false) {
-            $response['level']        = 'ERROR';
-            $response['stackTrace'][] = $response['message'] = 'No flow ID provided';
+		$response['message'] = $response['stackTrace'][] = 'Check for a valid flow ID';
+		if (isset($argument['flowId']) === false) {
+			$response['level'] = 'ERROR';
+			$response['stackTrace'][] = $response['message'] = 'No flow ID provided';
 
-            return $response;
-        }
+			return $response;
+		}
 
-        $flowId = (string) $argument['flowId'];
+		$flowId = (string)$argument['flowId'];
 
-        $response['stackTrace'][] = 'Getting flow: '.$flowId;
-        try {
-            $flow = $this->flowRunnerService->findFlow(id: $flowId);
-        } catch (DoesNotExistException $e) {
-            $response['level']        = 'WARNING';
-            $response['stackTrace'][] = $response['message'] = 'Flow not found: '.$flowId;
+		$response['stackTrace'][] = 'Getting flow: ' . $flowId;
+		try {
+			$flow = $this->flowRunnerService->findFlow(id: $flowId);
+		} catch (DoesNotExistException $e) {
+			$response['level'] = 'WARNING';
+			$response['stackTrace'][] = $response['message'] = 'Flow not found: ' . $flowId;
 
-            return $response;
-        }
+			return $response;
+		}
 
-        $response['stackTrace'][] = 'Running flow';
-        try {
-            $flowRun = $this->flowRunnerService->run(flow: $flow, triggerSource: 'cron');
-        } catch (Exception $e) {
-            $response['level']        = 'ERROR';
-            $response['stackTrace'][] = $response['message'] = 'Failed to run flow: '.$e->getMessage();
+		$response['stackTrace'][] = 'Running flow';
+		try {
+			$flowRun = $this->flowRunnerService->run(flow: $flow, triggerSource: 'cron');
+		} catch (Exception $e) {
+			$response['level'] = 'ERROR';
+			$response['stackTrace'][] = $response['message'] = 'Failed to run flow: ' . $e->getMessage();
 
-            return $response;
-        }
+			return $response;
+		}
 
-        $status = (string) ($flowRun->getObject()['status'] ?? '');
+		$status = (string)($flowRun->getObject()['status'] ?? '');
 
-        $response['level'] = 'SUCCESS';
-        if ($status === 'dead_letter' || $status === 'suspended') {
-            $response['level'] = 'WARNING';
-        } else if (in_array($status, self::ERROR_STATUSES, true) === true) {
-            $response['level'] = 'ERROR';
-        }
+		$response['level'] = 'SUCCESS';
+		if ($status === 'dead_letter' || $status === 'suspended') {
+			$response['level'] = 'WARNING';
+		} elseif (in_array($status, self::ERROR_STATUSES, true) === true) {
+			$response['level'] = 'ERROR';
+		}
 
-        $response['stackTrace'][] = $response['message'] = 'Flow run ended with status: '.$status;
+		$response['stackTrace'][] = $response['message'] = 'Flow run ended with status: ' . $status;
 
-        return $response;
-
-    }//end run()
+		return $response;
+	}//end run()
 }//end class

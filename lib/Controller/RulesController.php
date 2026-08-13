@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Rules Controller.
  *
@@ -30,19 +31,18 @@ use OCP\IRequest;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class RulesController extends Controller
-{
-    /**
-     * Constructor for the RuleController.
-     *
-     * @param string   $appName The name of the app.
-     * @param IRequest $request The request object.
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class RulesController extends Controller {
+	/**
+	 * Constructor for the RuleController.
+	 *
+	 * @param string $appName The name of the app.
+	 * @param IRequest $request The request object.
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

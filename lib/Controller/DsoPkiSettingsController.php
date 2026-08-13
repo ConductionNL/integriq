@@ -40,132 +40,128 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
  */
-class DsoPkiSettingsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param IRequest                    $request           The request.
-     * @param IAppConfig                  $appConfig         App config storage.
-     * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
-     */
-    public function __construct(
-        IRequest $request,
-        private readonly IAppConfig $appConfig,
-        private readonly DSOSignatureVerifierService $signatureVerifier,
-    ) {
-        parent::__construct(appName: Application::APP_ID, request: $request);
+class DsoPkiSettingsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The request.
+	 * @param IAppConfig $appConfig App config storage.
+	 * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly IAppConfig $appConfig,
+		private readonly DSOSignatureVerifierService $signatureVerifier,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the current DSO PKI signing configuration.
-     *
-     * The HMAC secret is never returned in full — only whether one is set —
-     * so the admin form cannot leak the shared secret back over the wire.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function getConfig(): JSONResponse
-    {
-        $hmacSecret = $this->appConfig->getValueString(
-            Application::APP_ID,
-            DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
-            ''
-        );
+	/**
+	 * Get the current DSO PKI signing configuration.
+	 *
+	 * The HMAC secret is never returned in full — only whether one is set —
+	 * so the admin form cannot leak the shared secret back over the wire.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function getConfig(): JSONResponse {
+		$hmacSecret = $this->appConfig->getValueString(
+			Application::APP_ID,
+			DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
+			''
+		);
 
-        return new JSONResponse(
-            [
-                'mode'                 => $this->signatureVerifier->getMode(),
-                'hmacSecretConfigured' => ($hmacSecret !== ''),
-                'signingCertificate'   => $this->appConfig->getValueString(
-                    Application::APP_ID,
-                    DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
-                    ''
-                ),
-                'intermediateChain'    => $this->appConfig->getValueString(
-                    Application::APP_ID,
-                    DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
-                    ''
-                ),
-                'rootCa'               => $this->appConfig->getValueString(
-                    Application::APP_ID,
-                    DSOSignatureVerifierService::CONFIG_ROOT_CA,
-                    ''
-                ),
-            ]
-        );
+		return new JSONResponse(
+			[
+				'mode' => $this->signatureVerifier->getMode(),
+				'hmacSecretConfigured' => ($hmacSecret !== ''),
+				'signingCertificate' => $this->appConfig->getValueString(
+					Application::APP_ID,
+					DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
+					''
+				),
+				'intermediateChain' => $this->appConfig->getValueString(
+					Application::APP_ID,
+					DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
+					''
+				),
+				'rootCa' => $this->appConfig->getValueString(
+					Application::APP_ID,
+					DSOSignatureVerifierService::CONFIG_ROOT_CA,
+					''
+				),
+			]
+		);
 
-    }//end getConfig()
+	}//end getConfig()
 
-    /**
-     * Persist the DSO PKI signing configuration.
-     *
-     * Validates the certificate chain (parseable X.509, not expired, chains
-     * to the configured root) before saving in `rsa` mode, surfacing a
-     * clear admin-facing error and refusing to save otherwise.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function setConfig(): JSONResponse
-    {
-        $mode = (string) $this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC);
-        if ($mode !== DSOSignatureVerifierService::MODE_RSA) {
-            $mode = DSOSignatureVerifierService::MODE_HMAC;
-        }
+	/**
+	 * Persist the DSO PKI signing configuration.
+	 *
+	 * Validates the certificate chain (parseable X.509, not expired, chains
+	 * to the configured root) before saving in `rsa` mode, surfacing a
+	 * clear admin-facing error and refusing to save otherwise.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function setConfig(): JSONResponse {
+		$mode = (string)$this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC);
+		if ($mode !== DSOSignatureVerifierService::MODE_RSA) {
+			$mode = DSOSignatureVerifierService::MODE_HMAC;
+		}
 
-        $hmacSecret         = (string) $this->request->getParam('hmacSecret', '');
-        $signingCertificate = (string) $this->request->getParam('signingCertificate', '');
-        $intermediateChain  = (string) $this->request->getParam('intermediateChain', '');
-        $rootCa = (string) $this->request->getParam('rootCa', '');
+		$hmacSecret = (string)$this->request->getParam('hmacSecret', '');
+		$signingCertificate = (string)$this->request->getParam('signingCertificate', '');
+		$intermediateChain = (string)$this->request->getParam('intermediateChain', '');
+		$rootCa = (string)$this->request->getParam('rootCa', '');
 
-        if ($mode === DSOSignatureVerifierService::MODE_RSA) {
-            $errors = $this->signatureVerifier->validateChainConfig(
-                certPem: $signingCertificate,
-                rootPem: $rootCa,
-                intermediatePem: $intermediateChain
-            );
+		if ($mode === DSOSignatureVerifierService::MODE_RSA) {
+			$errors = $this->signatureVerifier->validateChainConfig(
+				certPem: $signingCertificate,
+				rootPem: $rootCa,
+				intermediatePem: $intermediateChain
+			);
 
-            if (empty($errors) === false) {
-                return new JSONResponse(
-                    ['errors' => $errors],
-                    Http::STATUS_BAD_REQUEST
-                );
-            }
-        }
+			if (empty($errors) === false) {
+				return new JSONResponse(
+					['errors' => $errors],
+					Http::STATUS_BAD_REQUEST
+				);
+			}
+		}
 
-        $this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_MODE, $mode);
-        $this->appConfig->setValueString(
-            Application::APP_ID,
-            DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
-            $signingCertificate
-        );
-        $this->appConfig->setValueString(
-            Application::APP_ID,
-            DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
-            $intermediateChain
-        );
-        $this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_ROOT_CA, $rootCa);
+		$this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_MODE, $mode);
+		$this->appConfig->setValueString(
+			Application::APP_ID,
+			DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
+			$signingCertificate
+		);
+		$this->appConfig->setValueString(
+			Application::APP_ID,
+			DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
+			$intermediateChain
+		);
+		$this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_ROOT_CA, $rootCa);
 
-        // Only overwrite the HMAC secret when a non-empty value was submitted,
-        // so the admin form can save other fields without re-typing (and
-        // re-exposing) the secret every time.
-        if ($hmacSecret !== '') {
-            $this->appConfig->setValueString(
-                Application::APP_ID,
-                DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
-                $hmacSecret,
-                sensitive: true
-            );
-        }
+		// Only overwrite the HMAC secret when a non-empty value was submitted,
+		// so the admin form can save other fields without re-typing (and
+		// re-exposing) the secret every time.
+		if ($hmacSecret !== '') {
+			$this->appConfig->setValueString(
+				Application::APP_ID,
+				DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
+				$hmacSecret,
+				sensitive: true
+			);
+		}
 
-        return new JSONResponse(['mode' => $mode]);
-
-    }//end setConfig()
+		return new JSONResponse(['mode' => $mode]);
+	}//end setConfig()
 }//end class

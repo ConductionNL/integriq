@@ -32,6 +32,5 @@ namespace OCA\OpenConnector\Exception;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md
  */
-class MtlsHandshakeException extends MtlsTransportException
-{
+class MtlsHandshakeException extends MtlsTransportException {
 }//end class

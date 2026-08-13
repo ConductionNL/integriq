@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for MappingHandler export redaction (secret-hygiene).
  *
@@ -22,58 +23,53 @@ use PHPUnit\Framework\TestCase;
 /**
  * TC-5 — MappingHandler::export() redacts a client_secret configuration value.
  */
-class MappingHandlerTest extends TestCase
-{
+class MappingHandlerTest extends TestCase {
 
-    /**
-     * @var MappingHandler
-     */
-    private MappingHandler $handler;
+	/**
+	 * @var MappingHandler
+	 */
+	private MappingHandler $handler;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->handler = new MappingHandler(
+			ObjectServiceMockBuilder::make($this),
+			new SensitiveFieldRegistry(),
+		);
+	}//end setUp()
 
-        $this->handler = new MappingHandler(
-            ObjectServiceMockBuilder::make($this),
-            new SensitiveFieldRegistry(),
-        );
-    }//end setUp()
+	/**
+	 * TC-5 — `configuration.client_secret` is masked to ***REDACTED***.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function testExportRedactsClientSecretConfigurationValue(): void {
+		$mapping = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'my-mapping',
+				'name' => 'My Mapping',
+				'configuration' => [
+					'client_secret' => 'live-mapping-secret-123',
+					'format' => 'json',
+				],
+			],
+			'mapping-uuid-1'
+		);
 
+		$mappingIds = [];
+		$export = $this->handler->export($mapping, [], $mappingIds);
 
-    /**
-     * TC-5 — `configuration.client_secret` is masked to ***REDACTED***.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
-     */
-    public function testExportRedactsClientSecretConfigurationValue(): void
-    {
-        $mapping = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [
-                'slug'          => 'my-mapping',
-                'name'          => 'My Mapping',
-                'configuration' => [
-                    'client_secret' => 'live-mapping-secret-123',
-                    'format'        => 'json',
-                ],
-            ],
-            'mapping-uuid-1'
-        );
-
-        $mappingIds = [];
-        $export     = $this->handler->export($mapping, [], $mappingIds);
-
-        $this->assertSame('***REDACTED***', $export['configuration']['client_secret']);
-        $this->assertSame('json', $export['configuration']['format']);
-        $this->assertStringNotContainsString('live-mapping-secret-123', json_encode($export));
-    }//end testExportRedactsClientSecretConfigurationValue()
+		$this->assertSame('***REDACTED***', $export['configuration']['client_secret']);
+		$this->assertSame('json', $export['configuration']['format']);
+		$this->assertStringNotContainsString('live-mapping-secret-123', json_encode($export));
+	}//end testExportRedactsClientSecretConfigurationValue()
 }//end class

@@ -43,91 +43,87 @@ use Throwable;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
  */
-class PeppolOutboundConsumer implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param PeppolTransmissionService $transmissionService Drives the transmission lifecycle.
-     * @param LoggerInterface           $logger              Logger for non-fatal dispatch failures.
-     */
-    public function __construct(
-        private readonly PeppolTransmissionService $transmissionService,
-        private readonly LoggerInterface $logger,
-    ) {
+class PeppolOutboundConsumer implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param PeppolTransmissionService $transmissionService Drives the transmission lifecycle.
+	 * @param LoggerInterface $logger Logger for non-fatal dispatch failures.
+	 */
+	public function __construct(
+		private readonly PeppolTransmissionService $transmissionService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle an incoming NC event, reacting only to a matching outbound.requested CloudEvent.
-     *
-     * @param Event $event The incoming event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
-     */
-    public function handle(Event $event): void
-    {
-        $objectData = $this->extractOutboundRequestedPayload(event: $event);
-        if ($objectData === null) {
-            return;
-        }
+	/**
+	 * Handle an incoming NC event, reacting only to a matching outbound.requested CloudEvent.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
+	 */
+	public function handle(Event $event): void {
+		$objectData = $this->extractOutboundRequestedPayload(event: $event);
+		if ($objectData === null) {
+			return;
+		}
 
-        try {
-            $this->transmissionService->handleOutboundRequested(eventData: (array) ($objectData['data'] ?? []));
-        } catch (Throwable $exception) {
-            $this->logger->error(
-                '[PeppolOutboundConsumer] failed to process outbound.requested event: '.$exception->getMessage(),
-                ['exception' => $exception]
-            );
-        }
+		try {
+			$this->transmissionService->handleOutboundRequested(eventData: (array)($objectData['data'] ?? []));
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'[PeppolOutboundConsumer] failed to process outbound.requested event: ' . $exception->getMessage(),
+				['exception' => $exception]
+			);
+		}
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Extract the CloudEvent data array when, and only when, the incoming NC
-     * event is an `ObjectCreatedEvent` for a `nl.conduction.peppol.outbound.requested`
-     * event object (register `openconnector`, schema `event`).
-     *
-     * Split out of {@see handle()} to keep both methods under the cyclomatic/
-     * NPath complexity thresholds — each guard is a single early return.
-     *
-     * @param Event $event The incoming NC event.
-     *
-     * @return array|null The matched event object's data array, or null when the event does not match.
-     */
-    private function extractOutboundRequestedPayload(Event $event): ?array
-    {
-        if ($event instanceof ObjectCreatedEvent === false) {
-            return null;
-        }
+	/**
+	 * Extract the CloudEvent data array when, and only when, the incoming NC
+	 * event is an `ObjectCreatedEvent` for a `nl.conduction.peppol.outbound.requested`
+	 * event object (register `openconnector`, schema `event`).
+	 *
+	 * Split out of {@see handle()} to keep both methods under the cyclomatic/
+	 * NPath complexity thresholds — each guard is a single early return.
+	 *
+	 * @param Event $event The incoming NC event.
+	 *
+	 * @return array|null The matched event object's data array, or null when the event does not match.
+	 */
+	private function extractOutboundRequestedPayload(Event $event): ?array {
+		if ($event instanceof ObjectCreatedEvent === false) {
+			return null;
+		}
 
-        if (method_exists($event, 'getObject') === false) {
-            return null;
-        }
+		if (method_exists($event, 'getObject') === false) {
+			return null;
+		}
 
-        $object = $event->getObject();
-        if ($object === null) {
-            return null;
-        }
+		$object = $event->getObject();
+		if ($object === null) {
+			return null;
+		}
 
-        if (method_exists($object, 'getRegister') === true
-            && $object->getRegister() !== PeppolTransmissionService::REGISTER
-        ) {
-            return null;
-        }
+		if (method_exists($object, 'getRegister') === true
+			&& $object->getRegister() !== PeppolTransmissionService::REGISTER
+		) {
+			return null;
+		}
 
-        if (method_exists($object, 'getSchema') === true && $object->getSchema() !== 'event') {
-            return null;
-        }
+		if (method_exists($object, 'getSchema') === true && $object->getSchema() !== 'event') {
+			return null;
+		}
 
-        $objectData = $object->getObject();
-        if (($objectData['type'] ?? null) !== PeppolTransmissionService::EVENT_TYPE_OUTBOUND_REQUESTED) {
-            return null;
-        }
+		$objectData = $object->getObject();
+		if (($objectData['type'] ?? null) !== PeppolTransmissionService::EVENT_TYPE_OUTBOUND_REQUESTED) {
+			return null;
+		}
 
-        return $objectData;
-
-    }//end extractOutboundRequestedPayload()
+		return $objectData;
+	}//end extractOutboundRequestedPayload()
 }//end class

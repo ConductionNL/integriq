@@ -38,16 +38,14 @@ use Exception;
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
  */
-class TablesFeatureDisabledException extends Exception
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message Human-readable message naming the missing dependency.
-     */
-    public function __construct(string $message='The Tables app is not enabled')
-    {
-        parent::__construct(message: $message, code: 409);
+class TablesFeatureDisabledException extends Exception {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message naming the missing dependency.
+	 */
+	public function __construct(string $message = 'The Tables app is not enabled') {
+		parent::__construct(message: $message, code: 409);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

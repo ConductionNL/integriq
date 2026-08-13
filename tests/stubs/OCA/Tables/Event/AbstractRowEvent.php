@@ -24,38 +24,32 @@ use OCP\EventDispatcher\Event;
 /**
  * Minimal stub for OCA\Tables\Event\AbstractRowEvent.
  */
-abstract class AbstractRowEvent extends Event
-{
+abstract class AbstractRowEvent extends Event {
 
-    /**
-     * The affected row.
-     *
-     * @var Row
-     */
-    protected Row $row;
+	/**
+	 * The affected row.
+	 *
+	 * @var Row
+	 */
+	protected Row $row;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param Row $row The affected row.
+	 */
+	public function __construct(Row $row) {
+		parent::__construct();
+		$this->row = $row;
 
-    /**
-     * Constructor.
-     *
-     * @param Row $row The affected row.
-     */
-    public function __construct(Row $row)
-    {
-        parent::__construct();
-        $this->row = $row;
+	}//end __construct()
 
-    }//end __construct()
-
-
-    /**
-     * Get the affected row.
-     *
-     * @return Row
-     */
-    public function getRow(): Row
-    {
-        return $this->row;
-
-    }//end getRow()
+	/**
+	 * Get the affected row.
+	 *
+	 * @return Row
+	 */
+	public function getRow(): Row {
+		return $this->row;
+	}//end getRow()
 }//end class

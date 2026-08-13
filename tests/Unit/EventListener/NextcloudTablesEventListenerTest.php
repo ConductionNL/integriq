@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for NextcloudTablesEventListener.
  *
@@ -35,85 +36,78 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
  */
-class NextcloudTablesEventListenerTest extends TestCase
-{
+class NextcloudTablesEventListenerTest extends TestCase {
 
+	/**
+	 * TC-6: a RowUpdatedEvent produces a matching
+	 * `com.nextcloud.tables.row.updated` CloudEvent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+	 */
+	public function testRowUpdatedEventProducesMatchingCloudEvent(): void {
+		$row = new Row(tableId: 3, rowId: 17, previousValues: [1 => 'old'], values: [1 => 'new']);
 
-    /**
-     * TC-6: a RowUpdatedEvent produces a matching
-     * `com.nextcloud.tables.row.updated` CloudEvent.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
-     */
-    public function testRowUpdatedEventProducesMatchingCloudEvent(): void
-    {
-        $row = new Row(tableId: 3, rowId: 17, previousValues: [1 => 'old'], values: [1 => 'new']);
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->expects($this->once())
+			->method('handleNextcloudEvent')
+			->with(
+				'com.nextcloud.tables.row.updated',
+				$this->callback(function (array $payload) {
+					return $payload['source'] === '/nextcloud/tables'
+						&& $payload['subject'] === '17'
+						&& $payload['data']['tableId'] === 3
+						&& $payload['data']['rowId'] === 17
+						&& $payload['data']['values'] === [1 => 'new']
+						&& $payload['data']['previousValues'] === [1 => 'old'];
+				})
+			);
 
-        $eventService = $this->createMock(EventService::class);
-        $eventService->method('hasActiveSubscriptions')->willReturn(true);
-        $eventService->expects($this->once())
-            ->method('handleNextcloudEvent')
-            ->with(
-                'com.nextcloud.tables.row.updated',
-                $this->callback(function (array $payload) {
-                    return $payload['source'] === '/nextcloud/tables'
-                        && $payload['subject'] === '17'
-                        && $payload['data']['tableId'] === 3
-                        && $payload['data']['rowId'] === 17
-                        && $payload['data']['values'] === [1 => 'new']
-                        && $payload['data']['previousValues'] === [1 => 'old'];
-                })
-            );
+		$listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new RowUpdatedEvent($row));
+	}//end testRowUpdatedEventProducesMatchingCloudEvent()
 
-        $listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new RowUpdatedEvent($row));
-    }//end testRowUpdatedEventProducesMatchingCloudEvent()
+	/**
+	 * RowAddedEvent/RowDeletedEvent produce the expected distinct types.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+	 */
+	public function testAddedAndDeletedProduceDistinctTypes(): void {
+		$row = new Row(tableId: 3, rowId: 18, values: [1 => 'x']);
 
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$seen = [];
+		$eventService->method('handleNextcloudEvent')->willReturnCallback(
+			function (string $type, array $payload) use (&$seen) {
+				$seen[] = $type;
+				return [];
+			}
+		);
 
-    /**
-     * RowAddedEvent/RowDeletedEvent produce the expected distinct types.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
-     */
-    public function testAddedAndDeletedProduceDistinctTypes(): void
-    {
-        $row = new Row(tableId: 3, rowId: 18, values: [1 => 'x']);
+		$listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new RowAddedEvent($row));
+		$listener->handle(new RowDeletedEvent($row));
 
-        $eventService = $this->createMock(EventService::class);
-        $eventService->method('hasActiveSubscriptions')->willReturn(true);
-        $seen = [];
-        $eventService->method('handleNextcloudEvent')->willReturnCallback(
-            function (string $type, array $payload) use (&$seen) {
-                $seen[] = $type;
-                return [];
-            }
-        );
+		$this->assertSame(['com.nextcloud.tables.row.created', 'com.nextcloud.tables.row.deleted'], $seen);
+	}//end testAddedAndDeletedProduceDistinctTypes()
 
-        $listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new RowAddedEvent($row));
-        $listener->handle(new RowDeletedEvent($row));
+	/**
+	 * TC-5: an unrelated event type is ignored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+	 */
+	public function testUnrelatedEventIsIgnored(): void {
+		$eventService = $this->createMock(EventService::class);
+		$eventService->expects($this->never())->method('handleNextcloudEvent');
 
-        $this->assertSame(['com.nextcloud.tables.row.created', 'com.nextcloud.tables.row.deleted'], $seen);
-    }//end testAddedAndDeletedProduceDistinctTypes()
-
-
-    /**
-     * TC-5: an unrelated event type is ignored.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
-     */
-    public function testUnrelatedEventIsIgnored(): void
-    {
-        $eventService = $this->createMock(EventService::class);
-        $eventService->expects($this->never())->method('handleNextcloudEvent');
-
-        $listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
-        $listener->handle(new Event());
-    }//end testUnrelatedEventIsIgnored()
+		$listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new Event());
+	}//end testUnrelatedEventIsIgnored()
 }//end class

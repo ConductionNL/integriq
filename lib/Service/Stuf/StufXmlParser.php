@@ -47,52 +47,49 @@ use Throwable;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
-class StufXmlParser
-{
-    /**
-     * Parse raw XML, XXE-hardened.
-     *
-     * Namespaced documents (e.g. a StUF-ZKN SOAP envelope's `xmlns:StUF`/
-     * `xmlns:zkn` prefixes) parse fine through this method unchanged —
-     * callers use `SimpleXMLElement::children($ns)`/`->xpath()` with the
-     * relevant namespace URI on the returned element, same as any
-     * `simplexml_load_string()` result.
-     *
-     * @param string $xml The raw XML string, exactly as received on the wire.
-     *
-     * @return SimpleXMLElement|null The parsed root element, or null on empty input,
-     *                               malformed XML, or any libxml error.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
-     */
-    public function parse(string $xml): ?SimpleXMLElement
-    {
-        if (trim($xml) === '') {
-            return null;
-        }
+class StufXmlParser {
+	/**
+	 * Parse raw XML, XXE-hardened.
+	 *
+	 * Namespaced documents (e.g. a StUF-ZKN SOAP envelope's `xmlns:StUF`/
+	 * `xmlns:zkn` prefixes) parse fine through this method unchanged —
+	 * callers use `SimpleXMLElement::children($ns)`/`->xpath()` with the
+	 * relevant namespace URI on the returned element, same as any
+	 * `simplexml_load_string()` result.
+	 *
+	 * @param string $xml The raw XML string, exactly as received on the wire.
+	 *
+	 * @return SimpleXMLElement|null The parsed root element, or null on empty input,
+	 *                               malformed XML, or any libxml error.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+	 */
+	public function parse(string $xml): ?SimpleXMLElement {
+		if (trim($xml) === '') {
+			return null;
+		}
 
-        $previous = libxml_use_internal_errors(true);
-        try {
-            // LIBXML_NONET alone blocks network fetches but leaves whatever
-            // external-entity loader happens to be installed in place. SafeXmlParser
-            // pins it to null for the duration of the parse, which is the half of
-            // the defence this call site was missing.
-            $root = SafeXmlParser::parse($xml, SimpleXMLElement::class, LIBXML_NONET);
-        } catch (Throwable) {
-            libxml_clear_errors();
-            libxml_use_internal_errors($previous);
-            return null;
-        }
+		$previous = libxml_use_internal_errors(true);
+		try {
+			// LIBXML_NONET alone blocks network fetches but leaves whatever
+			// external-entity loader happens to be installed in place. SafeXmlParser
+			// pins it to null for the duration of the parse, which is the half of
+			// the defence this call site was missing.
+			$root = SafeXmlParser::parse($xml, SimpleXMLElement::class, LIBXML_NONET);
+		} catch (Throwable) {
+			libxml_clear_errors();
+			libxml_use_internal_errors($previous);
+			return null;
+		}
 
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
+		$errors = libxml_get_errors();
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
 
-        if ($root === false || $errors !== []) {
-            return null;
-        }
+		if ($root === false || $errors !== []) {
+			return null;
+		}
 
-        return $root;
-
-    }//end parse()
+		return $root;
+	}//end parse()
 }//end class

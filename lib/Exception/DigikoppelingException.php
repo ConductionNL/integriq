@@ -39,6 +39,5 @@ use Exception;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-class DigikoppelingException extends Exception
-{
+class DigikoppelingException extends Exception {
 }//end class

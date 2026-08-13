@@ -32,57 +32,50 @@ namespace OCA\OpenConnector\Service\StufZkn;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class LogStufZknProvider implements StufZknProviderInterface
-{
+class LogStufZknProvider implements StufZknProviderInterface {
 
-    /**
-     * Per-process counter for synthetic references (`MOCK-STUFZKN-<n>`).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic references (`MOCK-STUFZKN-<n>`).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+	 */
+	public function getConfigSchema(): array {
+		return ['type' => 'object', 'properties' => []];
+	}//end getConfigSchema()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> An empty schema — the log provider needs no configuration.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
-     */
-    public function getConfigSchema(): array
-    {
-        return ['type' => 'object', 'properties' => []];
-
-    }//end getConfigSchema()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused — the log provider needs no configuration.
-     * @param string $referentienummer    Unused.
-     * @param string $envelopeXml         Unused.
-     *
-     * @return string The synthetic `MOCK-STUFZKN-<n>` reference.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
-     */
-    public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string
-    {
-        self::$counter++;
-        return 'MOCK-STUFZKN-'.self::$counter;
-
-    }//end send()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
+	 * @param string $referentienummer Unused.
+	 * @param string $envelopeXml Unused.
+	 *
+	 * @return string The synthetic `MOCK-STUFZKN-<n>` reference.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 */
+	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string {
+		self::$counter++;
+		return 'MOCK-STUFZKN-' . self::$counter;
+	}//end send()
 }//end class

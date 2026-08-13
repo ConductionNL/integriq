@@ -46,206 +46,199 @@ use DOMElement;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
  */
-class StufZknAcknowledgementBuilder
-{
+class StufZknAcknowledgementBuilder {
 
-    /**
-     * Generic, secret-free fault catalogue — `$reason` key -> `[code, omschrijving]`.
-     * Never extend this with anything derived from a caught exception's own message.
-     *
-     * @var array<string, array{code: string, omschrijving: string}>
-     */
-    private const FAULT_CATALOGUE = [
-        'unrecognised_berichttype' => [
-            'code'         => 'StUF058',
-            'omschrijving' => 'Het berichttype wordt niet ondersteund.',
-        ],
-        'validation_failed'        => [
-            'code'         => 'StUF063',
-            'omschrijving' => 'Het bericht kon niet worden verwerkt: het bericht is onvolledig of onjuist.',
-        ],
-        'not_configured'           => [
-            'code'         => 'StUF055',
-            'omschrijving' => 'De ontvangende applicatie is momenteel niet beschikbaar.',
-        ],
-        'processing_failed'        => [
-            'code'         => 'StUF055',
-            'omschrijving' => 'Er is een fout opgetreden bij het verwerken van het bericht.',
-        ],
-    ];
+	/**
+	 * Generic, secret-free fault catalogue — `$reason` key -> `[code, omschrijving]`.
+	 * Never extend this with anything derived from a caught exception's own message.
+	 *
+	 * @var array<string, array{code: string, omschrijving: string}>
+	 */
+	private const FAULT_CATALOGUE = [
+		'unrecognised_berichttype' => [
+			'code' => 'StUF058',
+			'omschrijving' => 'Het berichttype wordt niet ondersteund.',
+		],
+		'validation_failed' => [
+			'code' => 'StUF063',
+			'omschrijving' => 'Het bericht kon niet worden verwerkt: het bericht is onvolledig of onjuist.',
+		],
+		'not_configured' => [
+			'code' => 'StUF055',
+			'omschrijving' => 'De ontvangende applicatie is momenteel niet beschikbaar.',
+		],
+		'processing_failed' => [
+			'code' => 'StUF055',
+			'omschrijving' => 'Er is een fout opgetreden bij het verwerken van het bericht.',
+		],
+	];
 
-    /**
-     * Build a `Bv03Bericht` (bevestiging) reply.
-     *
-     * @param string $crossRefnummer       The inbound message's `stuurgegevens.referentienummer`.
-     * @param string $zenderOrganisatie    This bridge's own organisatie code (reply `zender`).
-     * @param string $ontvangerOrganisatie The original sender's organisatie code (reply `ontvanger`).
-     *
-     * @return string The rendered `Bv03Bericht` SOAP envelope XML.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-successfully-processed-zaklk01-replies-with-a-bv03
-     */
-    public function buildBv03(string $crossRefnummer, string $zenderOrganisatie, string $ontvangerOrganisatie): string
-    {
-        [$document, $body] = $this->skeleton();
+	/**
+	 * Build a `Bv03Bericht` (bevestiging) reply.
+	 *
+	 * @param string $crossRefnummer The inbound message's `stuurgegevens.referentienummer`.
+	 * @param string $zenderOrganisatie This bridge's own organisatie code (reply `zender`).
+	 * @param string $ontvangerOrganisatie The original sender's organisatie code (reply `ontvanger`).
+	 *
+	 * @return string The rendered `Bv03Bericht` SOAP envelope XML.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-successfully-processed-zaklk01-replies-with-a-bv03
+	 */
+	public function buildBv03(string $crossRefnummer, string $zenderOrganisatie, string $ontvangerOrganisatie): string {
+		[$document, $body] = $this->skeleton();
 
-        $bericht = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Bv03Bericht');
-        $body->appendChild($bericht);
+		$bericht = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Bv03Bericht');
+		$body->appendChild($bericht);
 
-        $this->appendStuurgegevens(
-            document: $document,
-            parent: $bericht,
-            berichtcode: 'Bv03',
-            crossRefnummer: $crossRefnummer,
-            zenderOrganisatie: $zenderOrganisatie,
-            ontvangerOrganisatie: $ontvangerOrganisatie
-        );
+		$this->appendStuurgegevens(
+			document: $document,
+			parent: $bericht,
+			berichtcode: 'Bv03',
+			crossRefnummer: $crossRefnummer,
+			zenderOrganisatie: $zenderOrganisatie,
+			ontvangerOrganisatie: $ontvangerOrganisatie
+		);
 
-        return (string) $document->saveXML();
+		return (string)$document->saveXML();
+	}//end buildBv03()
 
-    }//end buildBv03()
+	/**
+	 * Build a `Fo03Bericht` (foutbericht) reply — never leaks internal exception detail.
+	 *
+	 * @param string $reason A stable key into {@see FAULT_CATALOGUE} (NEVER a raw
+	 *                       exception message). Falls back to `processing_failed`
+	 *                       when unrecognised.
+	 * @param string $crossRefnummer The inbound message's `stuurgegevens.referentienummer`,
+	 *                               or an empty string when the inbound envelope itself
+	 *                               could not be correlated (e.g. malformed XML).
+	 * @param string $zenderOrganisatie This bridge's own organisatie code (reply `zender`).
+	 * @param string $ontvangerOrganisatie The original sender's organisatie code, or an empty string
+	 *                                     when unknown.
+	 *
+	 * @return string The rendered `Fo03Bericht` SOAP envelope XML.
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-an-unprocessable-message-replies-with-a-fo03-and-leaks-no-internal-detail
+	 */
+	public function buildFo03(
+		string $reason,
+		string $crossRefnummer,
+		string $zenderOrganisatie,
+		string $ontvangerOrganisatie,
+	): string {
+		$fault = (self::FAULT_CATALOGUE[$reason] ?? self::FAULT_CATALOGUE['processing_failed']);
 
-    /**
-     * Build a `Fo03Bericht` (foutbericht) reply — never leaks internal exception detail.
-     *
-     * @param string $reason               A stable key into {@see FAULT_CATALOGUE} (NEVER a raw
-     *                                     exception message). Falls back to `processing_failed`
-     *                                     when unrecognised.
-     * @param string $crossRefnummer       The inbound message's `stuurgegevens.referentienummer`,
-     *                                     or an empty string when the inbound envelope itself
-     *                                     could not be correlated (e.g. malformed XML).
-     * @param string $zenderOrganisatie    This bridge's own organisatie code (reply `zender`).
-     * @param string $ontvangerOrganisatie The original sender's organisatie code, or an empty string
-     *                                     when unknown.
-     *
-     * @return string The rendered `Fo03Bericht` SOAP envelope XML.
-     *
-     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-an-unprocessable-message-replies-with-a-fo03-and-leaks-no-internal-detail
-     */
-    public function buildFo03(
-        string $reason,
-        string $crossRefnummer,
-        string $zenderOrganisatie,
-        string $ontvangerOrganisatie
-    ): string {
-        $fault = (self::FAULT_CATALOGUE[$reason] ?? self::FAULT_CATALOGUE['processing_failed']);
+		[$document, $body] = $this->skeleton();
 
-        [$document, $body] = $this->skeleton();
+		$bericht = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Fo03Bericht');
+		$body->appendChild($bericht);
 
-        $bericht = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Fo03Bericht');
-        $body->appendChild($bericht);
+		$this->appendStuurgegevens(
+			document: $document,
+			parent: $bericht,
+			berichtcode: 'Fo03',
+			crossRefnummer: $crossRefnummer,
+			zenderOrganisatie: $zenderOrganisatie,
+			ontvangerOrganisatie: $ontvangerOrganisatie
+		);
 
-        $this->appendStuurgegevens(
-            document: $document,
-            parent: $bericht,
-            berichtcode: 'Fo03',
-            crossRefnummer: $crossRefnummer,
-            zenderOrganisatie: $zenderOrganisatie,
-            ontvangerOrganisatie: $ontvangerOrganisatie
-        );
+		$faultBody = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:body');
+		$bericht->appendChild($faultBody);
+		$this->appendText(document: $document, parent: $faultBody, name: 'code', value: $fault['code']);
+		$this->appendText(document: $document, parent: $faultBody, name: 'plek', value: 'server');
+		$this->appendText(document: $document, parent: $faultBody, name: 'omschrijving', value: $fault['omschrijving']);
 
-        $faultBody = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:body');
-        $bericht->appendChild($faultBody);
-        $this->appendText(document: $document, parent: $faultBody, name: 'code', value: $fault['code']);
-        $this->appendText(document: $document, parent: $faultBody, name: 'plek', value: 'server');
-        $this->appendText(document: $document, parent: $faultBody, name: 'omschrijving', value: $fault['omschrijving']);
+		return (string)$document->saveXML();
+	}//end buildFo03()
 
-        return (string) $document->saveXML();
+	/**
+	 * Build the shared SOAP envelope/body skeleton.
+	 *
+	 * @return array{0: DOMDocument, 1: DOMElement} The document and body (the envelope root is
+	 *                                              already appended to the document; callers only ever need the body to append into).
+	 */
+	private function skeleton(): array {
+		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
+		$envelope = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Envelope');
+		$envelope->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:StUF', StufZknNamespaces::STUF);
+		$document->appendChild($envelope);
 
-    }//end buildFo03()
+		$body = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Body');
+		$envelope->appendChild($body);
 
-    /**
-     * Build the shared SOAP envelope/body skeleton.
-     *
-     * @return array{0: DOMDocument, 1: DOMElement} The document and body (the envelope root is
-     *         already appended to the document; callers only ever need the body to append into).
-     */
-    private function skeleton(): array
-    {
-        $document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-        $envelope = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Envelope');
-        $envelope->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:StUF', StufZknNamespaces::STUF);
-        $document->appendChild($envelope);
+		return [$document, $body];
+	}//end skeleton()
 
-        $body = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Body');
-        $envelope->appendChild($body);
+	/**
+	 * Append the reply `stuurgegevens` block, correlated via `crossRefnummer`.
+	 *
+	 * @param DOMDocument $document The owning document.
+	 * @param DOMElement $parent The `Bv03Bericht`/`Fo03Bericht` element.
+	 * @param string $berichtcode `Bv03` or `Fo03`.
+	 * @param string $crossRefnummer The inbound message's referentienummer (may be empty).
+	 * @param string $zenderOrganisatie This bridge's own organisatie code.
+	 * @param string $ontvangerOrganisatie The original sender's organisatie code (may be empty).
+	 *
+	 * @return void
+	 */
+	private function appendStuurgegevens(
+		DOMDocument $document,
+		DOMElement $parent,
+		string $berichtcode,
+		string $crossRefnummer,
+		string $zenderOrganisatie,
+		string $ontvangerOrganisatie,
+	): void {
+		$stuurgegevens = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:stuurgegevens');
+		$parent->appendChild($stuurgegevens);
 
-        return [$document, $body];
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $berichtcode);
 
-    }//end skeleton()
+		$zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
+		$stuurgegevens->appendChild($zender);
+		$this->appendText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisatie);
 
-    /**
-     * Append the reply `stuurgegevens` block, correlated via `crossRefnummer`.
-     *
-     * @param DOMDocument $document             The owning document.
-     * @param DOMElement  $parent               The `Bv03Bericht`/`Fo03Bericht` element.
-     * @param string      $berichtcode          `Bv03` or `Fo03`.
-     * @param string      $crossRefnummer       The inbound message's referentienummer (may be empty).
-     * @param string      $zenderOrganisatie    This bridge's own organisatie code.
-     * @param string      $ontvangerOrganisatie The original sender's organisatie code (may be empty).
-     *
-     * @return void
-     */
-    private function appendStuurgegevens(
-        DOMDocument $document,
-        DOMElement $parent,
-        string $berichtcode,
-        string $crossRefnummer,
-        string $zenderOrganisatie,
-        string $ontvangerOrganisatie
-    ): void {
-        $stuurgegevens = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:stuurgegevens');
-        $parent->appendChild($stuurgegevens);
+		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
+		$stuurgegevens->appendChild($ontvanger);
+		$this->appendText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisatie);
 
-        $this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $berichtcode);
+		$this->appendText(
+			document: $document,
+			parent: $stuurgegevens,
+			name: 'referentienummer',
+			value: strtoupper($berichtcode) . '-' . bin2hex(random_bytes(6))
+		);
+		$this->appendText(
+			document: $document,
+			parent: $stuurgegevens,
+			name: 'tijdstipBericht',
+			value: (new DateTime())->format('YmdHis')
+		);
 
-        $zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
-        $stuurgegevens->appendChild($zender);
-        $this->appendText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisatie);
+		if ($crossRefnummer !== '') {
+			$this->appendText(
+				document: $document,
+				parent: $stuurgegevens,
+				name: 'crossRefnummer',
+				value: $crossRefnummer
+			);
+		}
 
-        $ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
-        $stuurgegevens->appendChild($ontvanger);
-        $this->appendText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisatie);
+	}//end appendStuurgegevens()
 
-        $this->appendText(
-            document: $document,
-            parent: $stuurgegevens,
-            name: 'referentienummer',
-            value: strtoupper($berichtcode).'-'.bin2hex(random_bytes(6))
-        );
-        $this->appendText(
-            document: $document,
-            parent: $stuurgegevens,
-            name: 'tijdstipBericht',
-            value: (new DateTime())->format('YmdHis')
-        );
+	/**
+	 * Append a StUF-namespaced text-valued child element.
+	 *
+	 * @param DOMDocument $document The owning document.
+	 * @param DOMElement $parent The parent element.
+	 * @param string $name The child element local name.
+	 * @param string $value The text value.
+	 *
+	 * @return void
+	 */
+	private function appendText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
+		$parent->appendChild(
+			$document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES))
+		);
 
-        if ($crossRefnummer !== '') {
-            $this->appendText(
-                document: $document,
-                parent: $stuurgegevens,
-                name: 'crossRefnummer',
-                value: $crossRefnummer
-            );
-        }
-
-    }//end appendStuurgegevens()
-
-    /**
-     * Append a StUF-namespaced text-valued child element.
-     *
-     * @param DOMDocument $document The owning document.
-     * @param DOMElement  $parent   The parent element.
-     * @param string      $name     The child element local name.
-     * @param string      $value    The text value.
-     *
-     * @return void
-     */
-    private function appendText(DOMDocument $document, DOMElement $parent, string $name, string $value): void
-    {
-        $parent->appendChild(
-            $document->createElementNS(StufZknNamespaces::STUF, 'StUF:'.$name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES))
-        );
-
-    }//end appendText()
+	}//end appendText()
 }//end class

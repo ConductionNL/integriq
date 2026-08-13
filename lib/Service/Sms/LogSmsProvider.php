@@ -33,103 +33,95 @@ namespace OCA\OpenConnector\Service\Sms;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
  */
-class LogSmsProvider implements SmsProviderInterface
-{
+class LogSmsProvider implements SmsProviderInterface {
 
-    /**
-     * Per-process counter for synthetic message ids (`MOCK-SMS-<n>`).
-     *
-     * A per-process, in-memory counter is sufficient for a sandbox binding —
-     * ids only need to be locally unique for the duration of one request/job
-     * run (mirrors LogPeppolAccessPointProvider::$counter).
-     *
-     * @var integer
-     */
-    private static int $counter = 0;
+	/**
+	 * Per-process counter for synthetic message ids (`MOCK-SMS-<n>`).
+	 *
+	 * A per-process, in-memory counter is sufficient for a sandbox binding —
+	 * ids only need to be locally unique for the duration of one request/job
+	 * run (mirrors LogPeppolAccessPointProvider::$counter).
+	 *
+	 * @var integer
+	 */
+	private static int $counter = 0;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The stable `log` provider identifier.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
-     */
-    public function getProviderId(): string
-    {
-        return 'log';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The stable `log` provider identifier.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
 
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The provider display name.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+	 */
+	public function getProviderName(): string {
+		return 'Sandbox / log (no network call)';
+	}//end getProviderName()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The provider display name.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
-     */
-    public function getProviderName(): string
-    {
-        return 'Sandbox / log (no network call)';
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return array<string, mixed> An empty config schema — the log provider needs no configuration.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+	 */
+	public function getConfigSchema(): array {
+		return [
+			'type' => 'object',
+			'properties' => [],
+		];
 
-    }//end getProviderName()
+	}//end getConfigSchema()
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return array<string, mixed> An empty config schema — the log provider needs no configuration.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
-     */
-    public function getConfigSchema(): array
-    {
-        return [
-            'type'       => 'object',
-            'properties' => [],
-        ];
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused — the log provider needs no configuration or secret.
+	 * @param string $to The recipient in E.164 format.
+	 * @param string $body Free-text message body (logged only — no network call is made).
+	 * @param array $options Unused.
+	 *
+	 * @return DeliveryResult A synthetic `queued` result carrying a `MOCK-SMS-<n>` id.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
+	 */
+	public function send(array $sourceConfiguration, string $to, string $body, array $options = []): DeliveryResult {
+		self::$counter++;
 
-    }//end getConfigSchema()
+		return new DeliveryResult(
+			providerMessageId: 'MOCK-SMS-' . self::$counter,
+			status: 'queued',
+			detail: null
+		);
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused — the log provider needs no configuration or secret.
-     * @param string $to                  The recipient in E.164 format.
-     * @param string $body                Free-text message body (logged only — no network call is made).
-     * @param array  $options             Unused.
-     *
-     * @return DeliveryResult A synthetic `queued` result carrying a `MOCK-SMS-<n>` id.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
-     */
-    public function send(array $sourceConfiguration, string $to, string $body, array $options=[]): DeliveryResult
-    {
-        self::$counter++;
+	}//end send()
 
-        return new DeliveryResult(
-            providerMessageId: 'MOCK-SMS-'.self::$counter,
-            status: 'queued',
-            detail: null
-        );
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array $sourceConfiguration Unused.
+	 * @param string $providerMessageId The synthetic message id from {@see send()}.
+	 *
+	 * @return DeliveryResult A deterministic `delivered` result.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback-req-007
+	 */
+	public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult {
+		return new DeliveryResult(
+			providerMessageId: $providerMessageId,
+			status: 'delivered',
+			detail: 'Mock status: sandbox providers do not track real delivery'
+		);
 
-    }//end send()
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param array  $sourceConfiguration Unused.
-     * @param string $providerMessageId   The synthetic message id from {@see send()}.
-     *
-     * @return DeliveryResult A deterministic `delivered` result.
-     *
-     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback-req-007
-     */
-    public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult
-    {
-        return new DeliveryResult(
-            providerMessageId: $providerMessageId,
-            status: 'delivered',
-            detail: 'Mock status: sandbox providers do not track real delivery'
-        );
-
-    }//end fetchStatus()
+	}//end fetchStatus()
 }//end class
