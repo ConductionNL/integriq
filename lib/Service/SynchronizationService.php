@@ -110,6 +110,22 @@ class SynchronizationService {
 	private const WRITE_BUFFER_FLUSH_SIZE = 500;
 
 	/**
+	 * How many contracts a run will inline into `_embed.contracts`.
+	 *
+	 * `_embed` is a convenience for reading ONE run's contracts inline. Past a
+	 * few hundred it stops being convenient and starts being the most expensive
+	 * thing the synchronization does — every contract re-read, re-serialised,
+	 * held in memory twice and json-encoded onto the log row.
+	 *
+	 * Five hundred is comfortably above any run a person reads by hand and far
+	 * below the size where the cost matters. Overridable per source with
+	 * `maxEmbeddedContracts`; 0 disables the cap.
+	 *
+	 * @var int
+	 */
+	private const MAX_EMBEDDED_CONTRACTS = 500;
+
+	/**
 	 * Namespace for deriving a target object's uuid from its source identity.
 	 *
 	 * A buffered write has to know the target uuid BEFORE the row is written, so
@@ -2150,6 +2166,37 @@ class SynchronizationService {
                 )
 			);
 
+			// EMBEDDING IS BOUNDED, and the bound is the point. `_embed` exists so
+			// a caller reading ONE run can see its contracts inline; it was never
+			// meant to inline a whole corpus. Unbounded it resolves every contract
+			// the run touched, `jsonSerialize()`s each, holds them all in
+			// `$resolved`, copies them into `$result`, and then json-encodes the
+			// lot onto the log row.
+			//
+			// MEASURED 2026-08-14 on data.overheid.nl: a 19,822-object run wrote
+			// every object and every contract, then sat at 100% CPU with 1.2-1.4 GB
+			// resident and NO database activity for ten minutes doing this. The
+			// same sync at 2,000 objects finished in 24 s, which is why nothing
+			// smaller ever showed it. Bypassing the flow and skipping the deletion
+			// guard both reproduced it, so this is the sync's own cost.
+			//
+			// Past the cap the contract UUIDs are still returned in
+			// `$result['contracts']` — nothing is hidden, and a caller who wants a
+			// specific contract can fetch it.
+			$embedContracts = true;
+			$embedCap = (int)($sourceConfig['maxEmbeddedContracts'] ?? self::MAX_EMBEDDED_CONTRACTS);
+			if ($embedCap > 0 && count($contractIds) > $embedCap) {
+				$this->logger->info(
+					'Skipped _embed.contracts for {count} contracts (cap {cap}): inlining them would '
+					. 'cost more memory and CPU than the synchronization itself. The uuids remain in '
+					. '`contracts`.',
+					['count' => count($contractIds), 'cap' => $embedCap]
+				);
+
+				$contractIds = [];
+				$embedContracts = false;
+			}
+
 			$resolved = [];
 			if ($contractIds !== []) {
 				try {
@@ -2167,16 +2214,22 @@ class SynchronizationService {
 				}
 			}
 
-			$result['_embed']['contracts'] = array_map(
-				static function ($contractId) use ($resolved) {
-					if ($contractId === null) {
-						return null;
-					}
+			// Positionally aligned with `contracts` when embedding — but omitted
+			// entirely when capped, rather than filled with one null per contract.
+			// A list of 19,800 nulls carries no information and is the same size
+			// problem in a cheaper disguise.
+			if ($embedContracts === true) {
+				$result['_embed']['contracts'] = array_map(
+					static function ($contractId) use ($resolved) {
+						if ($contractId === null) {
+							return null;
+						}
 
-					return ($resolved[(string)$contractId] ?? null);
-				},
-				($result['contracts'] ?? [])
-			);
+						return ($resolved[(string)$contractId] ?? null);
+					},
+					($result['contracts'] ?? [])
+				);
+			}
 
 			$totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
 
@@ -2734,6 +2787,7 @@ class SynchronizationService {
 		$log->setExecutionTime($executionTime);
 		$log->setMessage('Success');
 		$log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
+
 		$log = $this->synchronizationLogService->update(log: $log);
 
 		if ($ownsTrace === true) {
@@ -3306,16 +3360,26 @@ class SynchronizationService {
 				// `openregister_objects` to scope by the target object's schema is
 				// replaced by an explicit per-target scope-check via find() below.
 				$contractObjects = $this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]);
+
+				// Only the TARGET IDS are needed to work out what disappeared from
+				// the source. The originId map and the full contract bodies are
+				// read solely for the contracts actually being deleted — normally
+				// a handful, and on a healthy sync none at all — so they are built
+				// below, once that set is known.
+				//
+				// Building all three up front cost a full `jsonSerialize()` per
+				// contract plus a retained copy of every one. MEASURED 2026-08-14
+				// on data.overheid.nl: after a run wrote 19,822 contracts, this
+				// method held 1.39 GB resident and burned ten minutes of CPU with
+				// no database activity and nothing left to write — for a source
+				// that had not deleted a single record. It scales with the size of
+				// the SYNCHRONIZATION, not with what changed, so a larger source
+				// does not slow down, it runs out of memory.
 				$allContractTargetIds = [];
-				$allContractSourceIds = [];
-				$contractsByTargetId = [];
 				foreach ($contractObjects as $contractObject) {
-					$contract = $contractObject->jsonSerialize();
-					$contractTargetId = ($contract['targetId'] ?? null);
+					$contractTargetId = ($contractObject->getObject()['targetId'] ?? null);
 					if ($contractTargetId !== null) {
 						$allContractTargetIds[] = $contractTargetId;
-						$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
-						$contractsByTargetId[$contractTargetId] = $contract;
 					}
 				}
 
@@ -3367,6 +3431,24 @@ class SynchronizationService {
 					$guardInfo['ratio'] = $ratio;
 					$guardInfo['threshold'] = $threshold;
 				}//end if
+
+				// The delete set is known and the ratio guard has had its say, so
+				// the expensive lookups can be built for THOSE contracts only.
+				// Past the guard this is normally empty or a handful; before this
+				// change it was every contract the synchronization has ever had.
+				$wantedTargetIds = array_flip($targetIdsToDelete);
+				$allContractSourceIds = [];
+				$contractsByTargetId = [];
+				foreach ($contractObjects as $contractObject) {
+					$contract = $contractObject->jsonSerialize();
+					$contractTargetId = ($contract['targetId'] ?? null);
+					if ($contractTargetId === null || isset($wantedTargetIds[$contractTargetId]) === false) {
+						continue;
+					}
+
+					$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
+					$contractsByTargetId[$contractTargetId] = $contract;
+				}
 
 				if ($deleteRestriction === true) {
 					$encodedData = json_encode($data);
