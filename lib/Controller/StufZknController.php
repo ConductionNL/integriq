@@ -47,6 +47,7 @@ use OCA\OpenConnector\Service\StufZknSyncService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -116,6 +117,7 @@ class StufZknController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): DataDisplayResponse|JSONResponse {
 		$rawBody = $this->getRawContent();
 

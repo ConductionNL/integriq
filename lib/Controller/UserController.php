@@ -26,6 +26,7 @@ use OCA\OpenConnector\Service\SecurityService;
 use OCA\OpenConnector\Service\UserService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -200,6 +201,7 @@ class UserController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 480, period: 60)]
 	public function preflightedCorsMe(): Response {
 		return $this->buildCorsPreflightResponse();
 	}//end preflightedCorsMe()
@@ -217,6 +219,7 @@ class UserController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 480, period: 60)]
 	public function preflightedCorsLogin(): Response {
 		return $this->buildCorsPreflightResponse();
 	}//end preflightedCorsLogin()
@@ -437,6 +440,17 @@ class UserController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// A LOGIN endpoint, so much tighter than anything else in this app: this
+	// is the one public surface here where the caller presents a credential a
+	// stranger could guess.
+	//
+	// A ceiling is not the whole answer for this one -- it caps volume but
+	// does nothing to make guessing expensive per source. #[BruteForceProtection]
+	// plus a registerAttempt() on the failed-credential path is the other half
+	// (ADR-082), and it needs the login failure path traced properly rather
+	// than bolted on; left as follow-up so this commit does not ship a
+	// half-wired counter, which is the exact anti-pattern ADR-082 documents.
+	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {
 			// MEMORY MONITORING: Check initial memory usage to prevent OOM.
@@ -671,6 +685,7 @@ class UserController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function logout(): JSONResponse {
 		$this->userSession->logout();
 

@@ -35,6 +35,7 @@ use OCA\OpenConnector\Service\IwmoIjwSyncService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -152,6 +153,8 @@ class IwmoIjwController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// iWmo/iJw receiver — same posture as every standards receiver here.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
