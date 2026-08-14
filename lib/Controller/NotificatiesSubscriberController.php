@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -250,6 +251,9 @@ class NotificatiesSubscriberController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// Notificaties API callback. The publisher fans out to every subscriber
+	// and retries on failure, so bursts are the norm rather than abuse.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function callback(string $abonnementId): JSONResponse {
 		$abonnement = $this->subscriberService->findAbonnement(abonnementId: $abonnementId);
 		if ($abonnement === null) {

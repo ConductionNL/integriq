@@ -42,6 +42,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -91,6 +92,8 @@ class HealthController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// Liveness probe — no credential, so a ceiling and no counter.
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
 			return new JSONResponse(

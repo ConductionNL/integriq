@@ -36,6 +36,7 @@ use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -151,6 +152,12 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// LTI 1.3 (IMS Global). These URLs are registered with the platform
+	// out-of-band, so they cannot move (ADR-081) and the platform drives the
+	// call rate: a class of students launching at the start of a lesson is a
+	// legitimate burst. Ceilings only — the platform authenticates with its
+	// own signed JWT, so there is no guessable secret to count failures on.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function login(string $deployment): Response {
 		$launchUrl = $this->request->getServerProtocol() . '://' . $this->request->getServerHost()
 			. '/index.php/apps/openconnector/api/lti/' . $deployment . '/launch';
@@ -184,6 +191,7 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function launch(string $deployment): Response {
 		$idToken = (string)$this->request->getParam('id_token', '');
 		$presentedState = $this->request->getParam('state');
@@ -231,6 +239,7 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function token(): JSONResponse {
 		$grantType = (string)$this->request->getParam('grant_type', '');
 		$assertionType = (string)$this->request->getParam('client_assertion_type', '');
@@ -277,6 +286,9 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// AGS score posting — one call per learner per graded item, so a class
+	// being marked is a legitimate burst.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function agsScore(string $deployment, string $lineItemId): JSONResponse {
 		$token = $this->extractBearerToken();
 		if ($token === null) {
@@ -312,6 +324,7 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function agsLineItem(string $deployment, string $lineItemId): JSONResponse {
 		$token = $this->extractBearerToken();
 		if ($token === null) {
@@ -346,6 +359,7 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function nrpsMembership(string $deployment): JSONResponse {
 		$token = $this->extractBearerToken();
 		if ($token === null) {
@@ -377,6 +391,10 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// The JWKS is a PUBLISHED key set — platforms fetch it to verify our
+	// signatures and re-fetch on key rotation. Publishing it is the point, so
+	// the ceiling is the loosest here.
+	#[AnonRateLimit(limit: 480, period: 60)]
 	public function jwks(string $registrationType, string $registrationUuid): JSONResponse {
 		try {
 			$jwks = $this->keyService->getPublishableJwks(registrationType: $registrationType, registrationUuid: $registrationUuid);

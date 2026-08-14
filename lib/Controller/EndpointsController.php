@@ -33,6 +33,7 @@ use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -134,6 +135,10 @@ class EndpointsController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// The dynamic endpoint router — every configured integration endpoint is
+	// served through here, so this is the busiest public path in the app and
+	// the ceiling has to accommodate all of them at once.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function handlePath(string $_path): Response {
 		try {
 			// Find matching endpoint for the given path and method (using cache).
@@ -199,6 +204,9 @@ class EndpointsController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// CORS preflight — the browser sends one before each cross-origin call,
+	// so it is looser than the call it precedes.
+	#[AnonRateLimit(limit: 480, period: 60)]
 	public function preflightedCors(): Response {
 		// Determine the origin.
 		$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');

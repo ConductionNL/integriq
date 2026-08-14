@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -122,6 +123,10 @@ class DSOController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// Standards receiver: the caller is the DSO, authenticating with its own
+	// credential and retrying on its own schedule. Generous ceiling — a tight
+	// one drops statutory submissions on the sender's side.
+	#[AnonRateLimit(limit: 300, period: 60)]
 	public function receiveRequest(): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$body = $this->request->getParams();
