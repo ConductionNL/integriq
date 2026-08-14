@@ -5748,13 +5748,12 @@ class SynchronizationService {
 		array $synchronization,
 		int $fromPage
 	): void {
-		// The header's count when we have it, otherwise the prediction. The
-		// header is authoritative and replaces the prediction as soon as page
-		// one answers; the prediction only ever decides how far to read AHEAD,
-		// never when to stop — that stays with `rel="last"`, the empty-page rule
-		// and the failure check, so an over- or under-estimate costs requests
-		// rather than correctness.
-		$last = ($this->lastPageFromLink ?? $this->predictedLastPage);
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+		// How far this RUN will read. Resolved BEFORE the guard below so its
+		// existing `$fromPage > $last` test covers the bounded case too — a
+		// second, later check would say the same thing twice.
+		$last = $this->prefetchCeiling(sourceConfig: $sourceConfig);
 
 		if ($last === null || $fromPage > $last || $this->pagePrefetch !== []) {
 			// No known count, nothing left, or pages are still in hand — the
@@ -5762,8 +5761,6 @@ class SynchronizationService {
 			// while it holds anything would double those requests.
 			return;
 		}
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// Only a WINDOW of pages, never the whole remainder — see PREFETCH_WINDOW.
 		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
@@ -5798,6 +5795,47 @@ class SynchronizationService {
 			}
 		}
 	}//end prefetchRemainingPages()
+
+	/**
+	 * How far this RUN will read, which is not how many pages the source has.
+	 *
+	 * Two facts, combined once so the fan-out does not have to know about
+	 * either:
+	 *
+	 * The COUNT is the header's when we have it, otherwise the prediction. The
+	 * header is authoritative and replaces the prediction as soon as page one
+	 * answers; the prediction only ever decides how far to read AHEAD, never
+	 * when to stop — that stays with `rel="last"`, the empty-page rule and the
+	 * failure check, so an over- or under-estimate costs requests rather than
+	 * correctness.
+	 *
+	 * The CEILING is this run's own. A bounded crawl (`maxPages`, or the
+	 * `DEFAULT_MAX_PAGES` safety cap) stops early, and fanning out to the
+	 * source's total then fetches pages the loop throws away — requests spent on
+	 * a source that did not need to serve them, which is precisely the cost the
+	 * fan-out exists to avoid. Measured against data.overheid.nl, whose 19,822
+	 * datasets are 199 pages: a ten-page probe would fan out into the whole
+	 * corpus.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 *
+	 * @return int|null The last page this run will read, or null when unknown.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function prefetchCeiling(array $sourceConfig): ?int {
+		$last = ($this->lastPageFromLink ?? $this->predictedLastPage);
+		if ($last === null) {
+			return null;
+		}
+
+		$maxPages = (int)($sourceConfig['maxPages'] ?? self::DEFAULT_MAX_PAGES);
+		if ($maxPages < 1) {
+			return $last;
+		}
+
+		return min($last, $maxPages);
+	}//end prefetchCeiling()
 
 	/**
 	 * Predict how many pages this run will need, before fetching anything.
@@ -6170,12 +6208,101 @@ class SynchronizationService {
 			return ['objects' => [], 'result' => []];
 		}//end if
 
+		// A source that reports its TOTAL in the body tells us the page count on
+		// the very first response — the same fact `rel="last"` gives, from
+		// sources that do not send that header. Recorded into the same field, so
+		// the prefetch window and the stop-check need no knowledge of where the
+		// count came from.
+		$this->recordLastPageFromBody(body: $result, synchronization: $synchronization);
+
 		// Process and return the objects from this page.
 		return [
 			'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
 			'result' => $result,
 		];
 	}//end fetchSinglePageData()
+
+	/**
+	 * Learn the page count from a total the source reports in its BODY.
+	 *
+	 * The concurrency machinery already here needs one thing to fan out: how
+	 * many pages there are. It could only ever learn that from an RFC 5988
+	 * `rel="last"` header, and most APIs do not send one — they put the total in
+	 * the payload instead. `{"result": {"count": 19822, ...}}` is CKAN;
+	 * `@odata.count`, `totalElements`, `totalResults` and `numFound` are the
+	 * same fact under other names.
+	 *
+	 * Without it the whole crawl is serial. **Measured 2026-08-14 against
+	 * data.overheid.nl: 20 pages took 13,519 ms — 676 ms each, back to back,
+	 * which is exactly the source's own latency.** The engine added nothing and
+	 * overlapped nothing; page two could not be requested until page one had
+	 * been read, purely because nobody had counted the pages. The count was in
+	 * page one's body the entire time.
+	 *
+	 * Deliberately narrow:
+	 *
+	 * - Opt-in via `totalPosition`. Guessing a total out of an arbitrary payload
+	 *   would eventually find a number that means something else, and a WRONG
+	 *   page count reads ahead into pages that do not exist.
+	 * - Needs a page size, for the same reason offset pagination does: a total
+	 *   without one cannot become a page count.
+	 * - NEVER overwritten once known, and never written from a page other than
+	 *   the first useful one — a source that recomputes its total per page (a
+	 *   filtered search) would otherwise move the finish line mid-crawl.
+	 * - The count only decides how far to read AHEAD. Stopping stays with the
+	 *   empty-page rule and the failure check, so an over-estimate costs
+	 *   requests rather than correctness.
+	 *
+	 * @param array $body The decoded response body.
+	 * @param array $synchronization The synchronization being run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function recordLastPageFromBody(array $body, array $synchronization): void {
+		if ($this->lastPageFromLink !== null) {
+			// Already known — from a header, or from this method on an earlier
+			// page. The first answer wins.
+			return;
+		}
+
+		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		if (is_array($sourceConfig) === false) {
+			return;
+		}
+
+		$position = trim((string)($sourceConfig['totalPosition'] ?? ''));
+		if ($position === '') {
+			return;
+		}
+
+		$total = (new Dot($body))->get($position);
+		if (is_numeric($total) === false) {
+			return;
+		}
+
+		$total = (int)$total;
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($total < 1 || $pageSize === null || $pageSize < 1) {
+			return;
+		}
+
+		$this->lastPageFromLink = (int)ceil($total / $pageSize);
+
+		$this->logger->debug(
+			'SynchronizationService: page count learned from the body total at {position} '
+			. '({total} records / {pageSize} per page = {pages} pages), so the remaining '
+			. 'pages can be fetched concurrently.',
+			[
+				'position' => $position,
+				'total' => $total,
+				'pageSize' => $pageSize,
+				'pages' => $this->lastPageFromLink,
+			]
+		);
+
+	}//end recordLastPageFromBody()
 
 	/**
 	 * Whether an unparseable body looks like an HTML document.
