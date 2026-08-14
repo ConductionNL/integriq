@@ -3048,8 +3048,13 @@ class SynchronizationService
 			}
 
 			if (empty($objectId) === false) {
+				// Look up via the mapper directly (register/schema-agnostic) rather than
+				// ObjectService::find(), which scopes the query to whatever register/schema was
+				// last set on that shared service instance elsewhere in this request - that would
+				// wrongly constrain the search when the file lives on an object in a different
+				// register/schema than the one that triggered this synchronization.
 				$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-				$objectEntity  = $objectService->find(id: $objectId);
+				$objectEntity  = $objectService->getMapper('objectEntity')->find(identifier: $objectId);
 
 				if (isset($fileUploadConfig['fileName']) === true) {
 					// Single specific file by name.
