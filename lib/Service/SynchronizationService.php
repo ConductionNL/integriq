@@ -173,6 +173,10 @@ class SynchronizationService {
 		'count',
 		'top',
 		'$top',
+		// CKAN (data.overheid.nl, and every other CKAN portal) names its page
+		// size `rows` and its cursor `start`. Both are offsets, not indexes —
+		// see self::paginationValueFor().
+		'rows',
 	];
 
 	/**
@@ -6815,11 +6819,57 @@ class SynchronizationService {
 		$config['pagination'] = [
 			'paginationQuery' => $sourceConfig['paginationQuery'] ?? 'page',
 			'paginationIn' => $sourceConfig['paginationIn'] ?? 'query',
-			'page' => $currentPage,
+			'page' => $this->paginationValueFor(sourceConfig: $sourceConfig, currentPage: $currentPage),
 		];
 
 		return $config;
 	}//end getNextPage()
+
+	/**
+	 * The value this source's cursor parameter actually takes for a given page.
+	 *
+	 * Two families of API count pages differently, and until now only one of
+	 * them worked. A page-INDEXED source (GitHub, most REST APIs) wants
+	 * `page=1,2,3`. An OFFSET source wants the number of records to skip:
+	 * CKAN's `start=0,100,200`, OData's `$skip`, Solr's `start`.
+	 *
+	 * Handing an offset source a page index does not fail — which is the
+	 * dangerous part. `start=1,2,3` against a 100-row page size returns three
+	 * windows overlapping by 99 rows, so the crawl reads almost the same
+	 * records over and over, terminates when the source runs out, and reports a
+	 * healthy-looking run that fetched a fraction of the corpus. Nothing errors.
+	 * Measured against data.overheid.nl's 19,822 datasets before this existed.
+	 *
+	 * Falls back to the page index whenever the offset cannot be computed —
+	 * an offset needs a page SIZE, and a source that declares `paginationMode:
+	 * offset` without one has told us how to count but not what to count in.
+	 * Guessing a size would be worse than the pre-existing behaviour.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 * @param int $currentPage The 1-based page the crawl is on.
+	 *
+	 * @return int The value to substitute for the cursor parameter.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function paginationValueFor(array $sourceConfig, int $currentPage): int {
+		$mode = strtolower(trim((string)($sourceConfig['paginationMode'] ?? 'page')));
+		if ($mode !== 'offset') {
+			return $currentPage;
+		}
+
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($pageSize === null || $pageSize < 1) {
+			return $currentPage;
+		}
+
+		// Which index the source calls its first page. Almost always 1, but an
+		// offset source that starts at 0 would otherwise skip a whole page's
+		// worth of records before it read anything.
+		$firstPage = (int)($sourceConfig['paginationFirstPage'] ?? 1);
+
+		return (max($currentPage, $firstPage) - $firstPage) * $pageSize;
+	}//end paginationValueFor()
 
 	/**
 	 * Extracts the next API endpoint for pagination from the response body.

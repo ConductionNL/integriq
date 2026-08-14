@@ -84,6 +84,7 @@ class ObjectService {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_render = true,
+		bool $_audit = true,
 	): ?ObjectEntity {
 		return new ObjectEntity();
 	}
@@ -154,8 +155,50 @@ class ObjectService {
 		?string $uuid = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		bool $silent = false,
+		bool $_validation = true,
 	): ObjectEntity {
 		return new ObjectEntity();
+	}
+
+	/**
+	 * Bulk-save objects (OpenRegister's `ultraFastBulkSave` path).
+	 *
+	 * Present here because openconnector calls it — `SynchronizationContractService`
+	 * flushes buffered contracts through it — and a stub that omits a method the
+	 * caller uses fails at the call with "Unknown named parameter", which reads
+	 * like a bug in the caller rather than a gap in the double.
+	 *
+	 * `_audit` in particular must be here. The bulk path always wrote audit rows
+	 * where the single path's `silent` skipped them, so it was added to let a
+	 * caller decline; a stub without it turns that correct call into an error.
+	 *
+	 * @param array $objects
+	 * @param string|null $register
+	 * @param string|null $schema
+	 * @param bool $_rbac
+	 * @param bool $_multitenancy
+	 * @param bool $validation
+	 * @param bool $events
+	 * @param bool $deduplicateIds
+	 * @param bool $enrich
+	 * @param bool $_audit
+	 *
+	 * @return array
+	 */
+	public function saveObjects(
+		array $objects,
+		?string $register = null,
+		?string $schema = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $validation = false,
+		bool $events = false,
+		bool $deduplicateIds = true,
+		bool $enrich = true,
+		bool $_audit = true,
+	): array {
+		return ['saved' => [], 'errors' => [], 'statistics' => []];
 	}
 
 	/**

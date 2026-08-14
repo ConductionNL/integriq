@@ -64,10 +64,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Flow;
 
+use DateTime;
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -95,6 +98,30 @@ class SynchronizationRunNode implements IFlowNode {
 	 * @var string
 	 */
 	private const DEFAULT_OUTPUT_KEY = 'syncResult';
+
+	/**
+	 * The shortest a rate-limit suspension may last, in seconds.
+	 *
+	 * A reset already in the past — a clock skew, a source that reports the
+	 * window it just closed — would make the run due immediately and spin
+	 * against a source still refusing it. The floor turns that into one wasted
+	 * minute rather than a hot loop.
+	 *
+	 * @var int
+	 */
+	private const MIN_RATE_LIMIT_WAIT_SECONDS = 60;
+
+	/**
+	 * The longest, in seconds.
+	 *
+	 * An epoch/milliseconds mix-up in a source's `X-RateLimit-Reset` reads as a
+	 * reset tens of thousands of years out, and parking a run on it would look
+	 * exactly like the run having quietly died. An hour is long enough for any
+	 * real window and short enough to be visibly a wait.
+	 *
+	 * @var int
+	 */
+	private const MAX_RATE_LIMIT_WAIT_SECONDS = 3600;
 
 	/**
 	 * The default fan-out ceiling.
@@ -400,6 +427,99 @@ class SynchronizationRunNode implements IFlowNode {
 	}//end resolveSynchronization()
 
 	/**
+	 * Turn a rate limit into a pause rather than the end of the run.
+	 *
+	 * WHAT WENT WRONG BEFORE, precisely — because the obvious diagnosis is the
+	 * wrong one. `checkRateLimit()` throws BEFORE the first request of a
+	 * synchronisation, so a shard that is refused never starts, and never has a
+	 * page to resume from. The engine's per-synchronisation `currentPage` is
+	 * therefore not what was missing.
+	 *
+	 * What was missing is that the run ENDED. Measured 2026-08-13 on a
+	 * twelve-shard publiccode crawl: the first three shards spent the whole
+	 * `code_search` budget (10 requests a minute), the remaining nine were
+	 * refused at entry, and the run finished reporting success. Re-running did
+	 * not catch up — the completed shards ran again from the start, spent the
+	 * budget again, and the same nine starved. Three runs 65 s apart each
+	 * returned the same 641 repositories. Waiting longer would never have
+	 * helped; the crawl was not slow, it was looping.
+	 *
+	 * Suspending fixes that at the root, and does so using machinery already
+	 * present: the engine does not advance the marking for a suspended step, so
+	 * on resume THIS node runs again while the shards that already completed do
+	 * not. Starvation stops being possible, rather than becoming less likely.
+	 *
+	 * The reset time comes from the source's own `X-RateLimit-Reset`, which
+	 * `CallService::sourceRateLimit()` already reads and stores. Waking earlier
+	 * than that would be refused again; waking on a fixed backoff would usually
+	 * wake far too late. A source that gives no usable reset gets a short
+	 * default, because suspending with no `resumeAt` at all would leave the run
+	 * waiting for a signal nothing sends.
+	 *
+	 * @param TooManyRequestsHttpException $exception The refusal, carrying the rate-limit headers.
+	 * @param string $reference The authored synchronization reference.
+	 *
+	 * @return FlowSuspension The suspension to throw.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 */
+	private function suspendUntilTheLimitLifts(
+		TooManyRequestsHttpException $exception,
+		string $reference,
+	): FlowSuspension {
+		$resumeAt = $this->resetTimeFrom(exception: $exception);
+
+		$this->logger->info(
+			'[openconnector.synchronization-run] Rate limited; suspending until the limit lifts.',
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'synchronization' => $reference,
+				'resumeAt' => $resumeAt->format('c'),
+			]
+		);
+
+		return new FlowSuspension(
+			resumeAt: $resumeAt,
+			reason: sprintf(
+				'rate limited by the source; waiting until %s to continue "%s"',
+				$resumeAt->format('c'),
+				$reference
+			)
+		);
+
+	}//end suspendUntilTheLimitLifts()
+
+	/**
+	 * When the source says its limit lifts.
+	 *
+	 * Clamped at both ends against a header we do not control. A reset already
+	 * in the past would make the run due immediately and spin against a source
+	 * that is still refusing it; an absurd one — a misconfigured source
+	 * returning a reset years out, which is what an epoch/milliseconds mix-up
+	 * looks like — would park the run effectively forever.
+	 *
+	 * @param TooManyRequestsHttpException $exception The refusal.
+	 *
+	 * @return DateTime When to try again.
+	 */
+	private function resetTimeFrom(TooManyRequestsHttpException $exception): DateTime {
+		$reset = (int)(($exception->getHeaders()['X-RateLimit-Reset'] ?? 0));
+		$now = time();
+
+		$seconds = ($reset - $now);
+		if ($reset <= 0 || $seconds < self::MIN_RATE_LIMIT_WAIT_SECONDS) {
+			$seconds = self::MIN_RATE_LIMIT_WAIT_SECONDS;
+		}
+
+		if ($seconds > self::MAX_RATE_LIMIT_WAIT_SECONDS) {
+			$seconds = self::MAX_RATE_LIMIT_WAIT_SECONDS;
+		}
+
+		return (new DateTime())->setTimestamp($now + $seconds);
+	}//end resetTimeFrom()
+
+	/**
 	 * Run the synchronisation, turning any failure into a raised node failure.
 	 *
 	 * @param ObjectEntity $synchronization The resolved synchronization object.
@@ -419,6 +539,13 @@ class SynchronizationRunNode implements IFlowNode {
 				isTest: false,
 				force: $force
 			);
+		} catch (TooManyRequestsHttpException $rateLimited) {
+			// Not a failure, and not something to retry immediately. Caught
+			// ahead of the generic handler so it never becomes a node failure:
+			// an `onError: continue` policy would otherwise skip past a rate
+			// limit, which reads as "this shard found nothing" rather than
+			// "this shard was not allowed to look".
+			throw $this->suspendUntilTheLimitLifts(exception: $rateLimited, reference: $reference);
 		} catch (Throwable $exception) {
 			throw new FlowNodeException(
 				message: $this->l10n->t(
