@@ -43,7 +43,7 @@ class DigikoppelingAdapterTest extends TestCase {
 		$this->assertSame('digikoppeling', $adapter->id());
 		$this->assertSame('Digikoppeling', $adapter->label());
 		$this->assertFalse($adapter->addsTopLevelMenu());
-		$this->assertFalse($adapter->addsBeheerRoute());
+		$this->assertFalse($adapter->addsManagementRoute());
 		$this->assertSame(['wus', 'ebms2'], $adapter->profiles());
 	}//end testIsCatalogueEntryNotMenu()
 

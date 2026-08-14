@@ -23,7 +23,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
@@ -110,7 +110,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$ruleService = $this->createMock(RuleService::class);
 		$signatureService = new WebhookSignatureService($logger);
 		$compositeFanoutRule = new CompositeFanoutRule($this->orObjectService, $logger);
-		$referentienummerRule = new ReferentienummerRule();
+		$referenceNumberRule = new ReferenceNumberRule();
 		$avgBsnPolicyRule = new AvgBsnPolicyRule();
 		$approvalService = $this->createMock(ApprovalService::class);
 		$requestId = $this->createMock(IRequestId::class);
@@ -138,7 +138,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 			$signatureService,
 			$this->rateLimitService,
 			$compositeFanoutRule,
-			$referentienummerRule,
+			$referenceNumberRule,
 			$avgBsnPolicyRule,
 			$approvalService,
 			$requestId,

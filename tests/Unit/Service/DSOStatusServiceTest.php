@@ -61,11 +61,11 @@ class DSOStatusServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapZaakStatusKnownStatuses(): void {
-		$this->assertSame('ontvangen', $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'ontvangen'));
-		$this->assertSame('in behandeling', $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'in_behandeling'));
-		$this->assertSame('besluit genomen', $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'besluit_genomen'));
-		$this->assertSame('afgerond', $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'afgerond'));
-		$this->assertSame('buiten behandeling', $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'buiten_behandeling'));
+		$this->assertSame('ontvangen', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'ontvangen'));
+		$this->assertSame('in behandeling', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'in_behandeling'));
+		$this->assertSame('besluit genomen', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'besluit_genomen'));
+		$this->assertSame('afgerond', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'afgerond'));
+		$this->assertSame('buiten behandeling', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'buiten_behandeling'));
 
 	}//end testMapZaakStatusKnownStatuses()
 
@@ -75,7 +75,7 @@ class DSOStatusServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapZaakStatusUnknownReturnsOnbekend(): void {
-		$result = $this->service->mapZaakStatusToDSOStatus(zaakStatus: 'some_unknown_status');
+		$result = $this->service->mapCaseStatusToDsoStatus(caseStatus: 'some_unknown_status');
 
 		$this->assertSame('onbekend', $result);
 
@@ -88,7 +88,7 @@ class DSOStatusServiceTest extends TestCase {
 	 */
 	public function testBuildStatusPayloadReturnsCorrectStructure(): void {
 		$payload = $this->service->buildStatusPayload(
-			verzoekId: 'dso-12345',
+			requestId: 'dso-12345',
 			dsoStatus: 'in behandeling'
 		);
 
@@ -108,7 +108,7 @@ class DSOStatusServiceTest extends TestCase {
 	 */
 	public function testBuildStatusPayloadTimestampIsISO8601(): void {
 		$payload = $this->service->buildStatusPayload(
-			verzoekId: 'dso-12345',
+			requestId: 'dso-12345',
 			dsoStatus: 'ontvangen'
 		);
 

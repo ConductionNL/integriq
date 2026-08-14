@@ -215,7 +215,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array {
+	public function listCustomerContacts(array $sourceConfiguration, ?string $since, int $pageSize): array {
 		$query = [
 			'expand' => self::DEFAULT_EXPAND,
 			'sorteer' => 'registratiedatum',
@@ -248,14 +248,14 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		$results = array_values($results);
 		$nextCursor = null;
 		foreach ($results as $item) {
-			$registratiedatum = (string)($item['registratiedatum'] ?? '');
-			if ($registratiedatum !== '' && ($nextCursor === null || $registratiedatum > $nextCursor)) {
-				$nextCursor = $registratiedatum;
+			$registrationDate = (string)($item['registratiedatum'] ?? '');
+			if ($registrationDate !== '' && ($nextCursor === null || $registrationDate > $nextCursor)) {
+				$nextCursor = $registrationDate;
 			}
 		}
 
 		return ['items' => $results, 'nextCursor' => $nextCursor];
-	}//end listKlantcontacten()
+	}//end listCustomerContacts()
 
 	/**
 	 * {@inheritDoc}
@@ -267,9 +267,9 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function createKlantcontact(array $sourceConfiguration, array $payload): string {
-		$betrokkene = ($payload['betrokkene'] ?? null);
-		unset($payload['betrokkene']);
+	public function createCustomerContact(array $sourceConfiguration, array $payload): string {
+		$involvedParty = ($payload['involvedParty'] ?? null);
+		unset($payload['involvedParty']);
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
@@ -279,37 +279,37 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 			jsonBody: $payload
 		);
 
-		$klantcontactId = $this->extractId(response: $response, context: 'klantcontact');
+		$customerContactId = $this->extractId(response: $response, context: 'klantcontact');
 
-		if (is_array($betrokkene) === true && $betrokkene !== []) {
+		if (is_array($involvedParty) === true && $involvedParty !== []) {
 			// Best-effort: a klantcontact with no betrokkene is still a valid
 			// partial success, so a betrokkene-creation failure is logged, not
 			// propagated (the caller already has a usable klantcontact id).
 			try {
-				$betrokkene['klantcontact'] = ['uuid' => $klantcontactId];
+				$involvedParty['klantcontact'] = ['uuid' => $customerContactId];
 				$this->dispatch(
 					sourceConfiguration: $sourceConfiguration,
 					method: 'POST',
 					path: '/betrokkenen',
 					query: [],
-					jsonBody: $betrokkene
+					jsonBody: $involvedParty
 				);
 			} catch (Throwable $exception) {
 				$this->logger->warning(
 					'[KlantinteractiesClient] betrokkene creation failed; klantcontact was still created',
-					['klantcontactId' => $klantcontactId, 'exception' => $exception->getMessage()]
+					['klantcontactId' => $customerContactId, 'exception' => $exception->getMessage()]
 				);
 			}
 		}
 
-		return $klantcontactId;
-	}//end createKlantcontact()
+		return $customerContactId;
+	}//end createCustomerContact()
 
 	/**
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The KISS source's `configuration` object.
-	 * @param string $klantcontactId The KISS klantcontact id to attach the link to.
+	 * @param string $customerContactId The KISS klantcontact id to attach the link to.
 	 * @param string $caseReference The case identifier (bare UUID or zaak identificatie).
 	 * @param string $caseObjectType The onderwerpobjectidentificator `codeObjecttype`.
 	 *
@@ -319,19 +319,19 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 */
 	public function linkOnderwerpobject(
 		array $sourceConfiguration,
-		string $klantcontactId,
+		string $customerContactId,
 		string $caseReference,
 		string $caseObjectType,
 	): string {
 		$codeRegister = (string)($sourceConfiguration['onderwerpobject']['codeRegister'] ?? self::DEFAULT_CODE_REGISTER);
 
 		$payload = [
-			'klantcontact' => ['uuid' => $klantcontactId],
+			'klantcontact' => ['uuid' => $customerContactId],
 			'onderwerpobjectidentificator' => [
 				'objectId' => $caseReference,
 				'codeObjecttype' => $caseObjectType,
 				'codeRegister' => $codeRegister,
-				'codeSoortObjectId' => $this->resolveSoortObjectId(caseReference: $caseReference),
+				'codeSoortObjectId' => $this->resolveKindObjectId(caseReference: $caseReference),
 			],
 		];
 
@@ -354,7 +354,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 *
 	 * @return string `UUID` when the reference is RFC-4122-shaped, `IDENTIFICATIE` otherwise.
 	 */
-	private function resolveSoortObjectId(string $caseReference): string {
+	private function resolveKindObjectId(string $caseReference): string {
 		$isUuid = (preg_match(
 			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
 			$caseReference

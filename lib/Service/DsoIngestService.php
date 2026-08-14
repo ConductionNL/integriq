@@ -4,7 +4,7 @@
  * OpenConnector DSO Ingest Service.
  *
  * Completes the dso-connector-adapter: persists an already-verified,
- * already-parsed DSO Verzoek ({@see DSOParserService::parseVerzoek()}) as a
+ * already-parsed DSO Verzoek ({@see DSOParserService::parseRequest()}) as a
  * `dso_verzoek` OR record (`received` -> `mapped`|`failed`), and executes
  * the separate, authenticated `verzoek-to-case` handoff through
  * OpenRegister's real `Handoff\HandoffService` under the calling user's own
@@ -46,7 +46,7 @@ use OCA\OpenConnector\Exception\DsoProviderException;
 use OCA\OpenConnector\Exception\DsoTranslationException;
 use OCA\OpenConnector\Service\Dso\DsoClient;
 use OCA\OpenConnector\Service\Dso\DsoConnectorProviderInterface;
-use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
+use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
 use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -121,7 +121,7 @@ class DsoIngestService {
 	 *
 	 * @param ORObjectService $objectService OR object service for source/verzoek/message persistence.
 	 * @param HandoffService $handoffService Executes the declared handoff under the caller's RBAC.
-	 * @param DsoVerzoekTranslator $translator Translates a parsed Verzoek into normalised handoff fields.
+	 * @param DsoRequestTranslator $translator Translates a parsed Verzoek into normalised handoff fields.
 	 * @param LogDsoConnectorProvider $logProvider The sandbox outbound provider binding.
 	 * @param DsoClient $restProvider The generic REST outbound provider binding.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
@@ -130,7 +130,7 @@ class DsoIngestService {
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly HandoffService $handoffService,
-		private readonly DsoVerzoekTranslator $translator,
+		private readonly DsoRequestTranslator $translator,
 		private readonly LogDsoConnectorProvider $logProvider,
 		private readonly DsoClient $restProvider,
 		private readonly LoggerInterface $logger,
@@ -141,23 +141,23 @@ class DsoIngestService {
 
 	/**
 	 * Persist one already-verified, already-parsed DSO Verzoek
-	 * (`received`), then resolve + apply {@see DsoVerzoekTranslator}
+	 * (`received`), then resolve + apply {@see DsoRequestTranslator}
 	 * (`mapped`|`failed`, isolated to this verzoek).
 	 *
-	 * @param array<string, mixed> $parsedVerzoek The {@see DSOParserService::parseVerzoek()} output.
+	 * @param array<string, mixed> $parsedRequest The {@see DSOParserService::parseRequest()} output.
 	 *
 	 * @return ObjectEntity The persisted `dso_verzoek` record (any status).
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
 	 */
-	public function ingest(array $parsedVerzoek): ObjectEntity {
-		$verzoek = $this->objectService->saveObject(
+	public function ingest(array $parsedRequest): ObjectEntity {
+		$request = $this->objectService->saveObject(
 			object: [
-				'verzoekId' => (string)($parsedVerzoek['verzoekId'] ?? ''),
-				'bronorganisatie' => (string)($parsedVerzoek['bronorganisatie'] ?? ''),
-				'type' => (string)($parsedVerzoek['type'] ?? ''),
-				'indieningsdatum' => (string)($parsedVerzoek['indieningsdatum'] ?? ''),
-				'rawVerzoek' => $parsedVerzoek,
+				'verzoekId' => (string)($parsedRequest['verzoekId'] ?? ''),
+				'bronorganisatie' => (string)($parsedRequest['bronorganisatie'] ?? ''),
+				'type' => (string)($parsedRequest['type'] ?? ''),
+				'submissionDate' => (string)($parsedRequest['submissionDate'] ?? ''),
+				'rawRequest' => $parsedRequest,
 				'mappedTitle' => '',
 				'mappedSummary' => '',
 				'mappedChannel' => '',
@@ -174,25 +174,25 @@ class DsoIngestService {
 		);
 
 		try {
-			$mapped = $this->translator->translate(verzoek: $parsedVerzoek);
+			$mapped = $this->translator->translate(request: $parsedRequest);
 		} catch (DsoTranslationException $exception) {
 			$this->logger->warning(
-				'[DsoIngestService] translation failed for verzoek ' . $verzoek->getUuid(),
+				'[DsoIngestService] translation failed for verzoek ' . $request->getUuid(),
 				['exception' => $exception->getMessage()]
 			);
 
 			return $this->objectService->saveObject(
 				object: array_merge(
-					$verzoek->getObject(),
+					$request->getObject(),
 					['status' => 'failed', 'errorDetail' => $exception->getMessage()]
 				),
 				register: self::REGISTER,
 				schema: self::SCHEMA_VERZOEK,
-				uuid: $verzoek->getUuid()
+				uuid: $request->getUuid()
 			);
 		}
 
-		$data = $verzoek->getObject();
+		$data = $request->getObject();
 		$data['mappedTitle'] = $mapped['mappedTitle'];
 		$data['mappedSummary'] = $mapped['mappedSummary'];
 		$data['mappedChannel'] = $mapped['mappedChannel'];
@@ -204,7 +204,7 @@ class DsoIngestService {
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA_VERZOEK,
-			uuid: $verzoek->getUuid()
+			uuid: $request->getUuid()
 		);
 
 	}//end ingest()
@@ -220,14 +220,14 @@ class DsoIngestService {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
 	 */
-	public function getVerzoek(string $uuid): array {
-		$verzoek = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		if ($verzoek instanceof ObjectEntity === false) {
+	public function getRequest(string $uuid): array {
+		$request = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		if ($request instanceof ObjectEntity === false) {
 			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $uuid . '".');
 		}
 
-		return ($verzoek->getObject() + ['id' => $verzoek->getUuid()]);
-	}//end getVerzoek()
+		return ($request->getObject() + ['id' => $request->getUuid()]);
+	}//end getRequest()
 
 	/**
 	 * List dso_verzoek records, optionally filtered by status (e.g. `mapped`
@@ -278,12 +278,12 @@ class DsoIngestService {
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
 	 */
 	public function handoff(string $uuid): array {
-		$verzoek = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		if ($verzoek instanceof ObjectEntity === false) {
+		$request = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		if ($request instanceof ObjectEntity === false) {
 			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $uuid . '".');
 		}
 
-		$data = $verzoek->getObject();
+		$data = $request->getObject();
 		if (($data['status'] ?? null) !== 'mapped') {
 			throw new DsoTranslationException(
 				message: 'Verzoek "' . $uuid . '" is not in "mapped" status (currently "'
@@ -299,12 +299,12 @@ class DsoIngestService {
 				handoffId: self::HANDOFF_ID
 			);
 		} catch (Throwable $exception) {
-			$this->markFailed(verzoek: $verzoek, message: $exception->getMessage());
+			$this->markFailed(request: $request, message: $exception->getMessage());
 			throw $exception;
 		}
 
 		if (($result['status'] ?? null) === 'executed') {
-			$this->recordHandoffSuccess(verzoek: $verzoek, result: $result);
+			$this->recordHandoffSuccess(request: $request, result: $result);
 		}
 
 		return $result;
@@ -315,7 +315,7 @@ class DsoIngestService {
 	 * `besluit` message for a previously received verzoek, persisting a
 	 * `dso_message` audit row regardless of outcome.
 	 *
-	 * @param string $verzoekUuid The `dso_verzoek` uuid this message concerns.
+	 * @param string $requestUuid The `dso_verzoek` uuid this message concerns.
 	 * @param string $type The message kind: `status` or `besluit`.
 	 * @param array<string, mixed> $fields Type-specific fields (`status` for `type=status`;
 	 *                                     `besluit`/`gemotiveerd` for `type=besluit`).
@@ -328,24 +328,24 @@ class DsoIngestService {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-outbound-status-besluit-post-with-per-message-audit-req-006
 	 */
-	public function postOutbound(string $verzoekUuid, string $type, array $fields = []): array {
+	public function postOutbound(string $requestUuid, string $type, array $fields = []): array {
 		if (in_array($type, self::OUTBOUND_TYPES, true) === false) {
 			throw new DsoTranslationException(
 				message: 'Unknown outbound DSO message type "' . $type . '" (must be `status` or `besluit`).'
 			);
 		}
 
-		$verzoek = $this->objectService->find(id: $verzoekUuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		if ($verzoek instanceof ObjectEntity === false) {
-			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $verzoekUuid . '".');
+		$request = $this->objectService->find(id: $requestUuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		if ($request instanceof ObjectEntity === false) {
+			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $requestUuid . '".');
 		}
 
-		$verzoekId = (string)($verzoek->getObject()['verzoekId'] ?? '');
+		$requestId = (string)($request->getObject()['verzoekId'] ?? '');
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		$payload = array_merge(['verzoekId' => $verzoekId, 'timestamp' => (new DateTime())->format('c')], $fields);
+		$payload = array_merge(['verzoekId' => $requestId, 'timestamp' => (new DateTime())->format('c')], $fields);
 
 		$status = 'sent';
 		$error = null;
@@ -353,7 +353,7 @@ class DsoIngestService {
 		try {
 			$ref = $provider->send(
 				sourceConfiguration: $configuration,
-				verzoekId: $verzoekId,
+				requestId: $requestId,
 				type: $type,
 				payload: $payload
 			);
@@ -368,7 +368,7 @@ class DsoIngestService {
 				'type' => $type,
 				'status' => $status,
 				'payload' => $payload,
-				'verzoekUuid' => $verzoekUuid,
+				'verzoekUuid' => $requestUuid,
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
@@ -443,17 +443,17 @@ class DsoIngestService {
 	 * verzoek (`status` itself was already set by the engine's own
 	 * `onSuccess.set`).
 	 *
-	 * @param ObjectEntity $verzoek The (pre-handoff) verzoek object.
+	 * @param ObjectEntity $request The (pre-handoff) verzoek object.
 	 * @param array<string, mixed> $result The engine's `execute()` result (`status: executed`).
 	 *
 	 * @return void
 	 */
-	private function recordHandoffSuccess(ObjectEntity $verzoek, array $result): void {
+	private function recordHandoffSuccess(ObjectEntity $request, array $result): void {
 		$target = (array)($result['target'] ?? []);
 		$correlationId = (string)($result['correlationId'] ?? '');
 
-		$current = $this->objectService->find(id: $verzoek->getUuid(), register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		$data = $verzoek->getObject();
+		$current = $this->objectService->find(id: $request->getUuid(), register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		$data = $request->getObject();
 		if ($current instanceof ObjectEntity === true) {
 			$data = $current->getObject();
 		}
@@ -464,7 +464,7 @@ class DsoIngestService {
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA_VERZOEK,
-			uuid: $verzoek->getUuid()
+			uuid: $request->getUuid()
 		);
 
 	}//end recordHandoffSuccess()
@@ -474,17 +474,17 @@ class DsoIngestService {
 	 * this verzoek, never thrown past this method (the original exception
 	 * is rethrown by the caller separately).
 	 *
-	 * @param ObjectEntity $verzoek The verzoek being handed off.
+	 * @param ObjectEntity $request The verzoek being handed off.
 	 * @param string $message The failure detail.
 	 *
 	 * @return void
 	 */
-	private function markFailed(ObjectEntity $verzoek, string $message): void {
+	private function markFailed(ObjectEntity $request, string $message): void {
 		$this->objectService->saveObject(
-			object: array_merge($verzoek->getObject(), ['status' => 'failed', 'errorDetail' => $message]),
+			object: array_merge($request->getObject(), ['status' => 'failed', 'errorDetail' => $message]),
 			register: self::REGISTER,
 			schema: self::SCHEMA_VERZOEK,
-			uuid: $verzoek->getUuid()
+			uuid: $request->getUuid()
 		);
 
 	}//end markFailed()

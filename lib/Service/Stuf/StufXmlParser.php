@@ -5,8 +5,8 @@
  *
  * XXE-hardened XML parsing shared by every StUF-family bridge that consumes
  * externally-delivered XML in this app (`iwmo-ijw-adapter`'s
- * `InboundRetourTranslator`, `stuf-zkn-bridge`'s inbound translator).
- * Extracted from `InboundRetourTranslator::parseXml()` (iwmo-ijw-adapter,
+ * `InboundReturnTranslator`, `stuf-zkn-bridge`'s inbound translator).
+ * Extracted from `InboundReturnTranslator::parseXml()` (iwmo-ijw-adapter,
  * 2026-07-14) verbatim — same flag, same error-collection shape, same
  * "never throw a domain exception from here" contract, so both callers keep
  * choosing their own exception type (`IwmoIjwTranslationException` /

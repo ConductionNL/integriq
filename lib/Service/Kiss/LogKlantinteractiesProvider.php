@@ -80,9 +80,9 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-pulls-nothing-without-a-network-call-or-secret
 	 */
-	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array {
+	public function listCustomerContacts(array $sourceConfiguration, ?string $since, int $pageSize): array {
 		return ['items' => [], 'nextCursor' => null];
-	}//end listKlantcontacten()
+	}//end listCustomerContacts()
 
 	/**
 	 * {@inheritDoc}
@@ -94,16 +94,16 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function createKlantcontact(array $sourceConfiguration, array $payload): string {
+	public function createCustomerContact(array $sourceConfiguration, array $payload): string {
 		self::$counter++;
 		return 'MOCK-KISS-' . self::$counter;
-	}//end createKlantcontact()
+	}//end createCustomerContact()
 
 	/**
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
-	 * @param string $klantcontactId Unused.
+	 * @param string $customerContactId Unused.
 	 * @param string $caseReference Unused.
 	 * @param string $caseObjectType Unused.
 	 *
@@ -113,7 +113,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 	 */
 	public function linkOnderwerpobject(
 		array $sourceConfiguration,
-		string $klantcontactId,
+		string $customerContactId,
 		string $caseReference,
 		string $caseObjectType,
 	): string {

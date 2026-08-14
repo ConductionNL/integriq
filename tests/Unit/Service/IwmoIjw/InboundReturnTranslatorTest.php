@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for InboundRetourTranslator.
+ * Unit tests for InboundReturnTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\IwmoIjw;
 
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,12 +30,12 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
-class InboundRetourTranslatorTest extends TestCase {
+class InboundReturnTranslatorTest extends TestCase {
 
 	/**
-	 * @var InboundRetourTranslator
+	 * @var InboundReturnTranslator
 	 */
-	private InboundRetourTranslator $translator;
+	private InboundReturnTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -44,7 +44,7 @@ class InboundRetourTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new InboundRetourTranslator();
+		$this->translator = new InboundReturnTranslator();
 
 	}//end setUp()
 
@@ -52,14 +52,14 @@ class InboundRetourTranslatorTest extends TestCase {
 	 * Build a minimal retour envelope XML string.
 	 *
 	 * @param string $berichtcode The berichtcode (e.g. Wmo304).
-	 * @param string $kenmerk The correlation back-reference.
+	 * @param string $reference The correlation back-reference.
 	 * @param string $bodyXml The `<body>` inner XML.
 	 *
 	 * @return string The rendered retour envelope.
 	 */
-	private function envelope(string $berichtcode, string $kenmerk, string $bodyXml = ''): string {
+	private function envelope(string $berichtcode, string $reference, string $bodyXml = ''): string {
 		return '<Bericht><stuurgegevens><berichtcode>' . $berichtcode . '</berichtcode>'
-			. '<kenmerk>' . $kenmerk . '</kenmerk></stuurgegevens><body>' . $bodyXml . '</body></Bericht>';
+			. '<kenmerk>' . $reference . '</kenmerk></stuurgegevens><body>' . $bodyXml . '</body></Bericht>';
 
 	}//end envelope()
 
@@ -77,7 +77,7 @@ class InboundRetourTranslatorTest extends TestCase {
 
 		$this->assertSame('accepted', $update['status']);
 		$this->assertSame('Wmo304', $update['berichttype']);
-		$this->assertSame('WMO-ref-1', $update['kenmerk']);
+		$this->assertSame('WMO-ref-1', $update['reference']);
 
 	}//end testWmo304AcceptanceMapsToAccepted()
 
@@ -288,7 +288,7 @@ class InboundRetourTranslatorTest extends TestCase {
 
 		// The external entity MUST NOT have been resolved to file contents —
 		// the kenmerk should not contain typical /etc/passwd content.
-		$this->assertStringNotContainsString('root:', $update['kenmerk']);
+		$this->assertStringNotContainsString('root:', $update['reference']);
 
 	}//end testDoctypeEntityIsNotExpanded()
 }//end class

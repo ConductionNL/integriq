@@ -31,13 +31,13 @@ namespace OCA\OpenConnector\Service;
 use DateTime;
 use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
 use OCA\OpenConnector\Exception\ZgwVersionTranslationException;
-use OCA\OpenConnector\Service\ZgwVersion\BesluitTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\InformatieObjectTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ResultaatTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\ResultTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\RolTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\StatusTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTypeTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\CaseTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\CaseTypeTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\ZgwResourceTranslatorInterface;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -78,34 +78,34 @@ class ZgwVersionTranslationService {
 	 *
 	 * @param ZgwVersionNegotiationService $negotiationService The version negotiation service.
 	 * @param ORObjectService $objectService OR object service for log persistence.
-	 * @param ZaakTranslator $zaakTranslator The `zaak` translator.
-	 * @param ZaakTypeTranslator $zaakTypeTranslator The `zaaktype` translator.
+	 * @param CaseTranslator $caseTranslator The `zaak` translator.
+	 * @param CaseTypeTranslator $caseTypeTranslator The `zaaktype` translator.
 	 * @param InformatieObjectTranslator $informatieObjectTranslator The `enkelvoudiginformatieobject` translator.
-	 * @param BesluitTranslator $besluitTranslator The `besluit` translator.
-	 * @param RolTranslator $rolTranslator The `rol` translator.
+	 * @param DecisionTranslator $decisionTranslator The `besluit` translator.
+	 * @param RolTranslator $roleTranslator The `rol` translator.
 	 * @param StatusTranslator $statusTranslator The `status` translator.
-	 * @param ResultaatTranslator $resultaatTranslator The `resultaat` translator.
+	 * @param ResultTranslator $resultTranslator The `resultaat` translator.
 	 */
 	public function __construct(
 		private readonly ZgwVersionNegotiationService $negotiationService,
 		private readonly ORObjectService $objectService,
-		ZaakTranslator $zaakTranslator,
-		ZaakTypeTranslator $zaakTypeTranslator,
+		CaseTranslator $caseTranslator,
+		CaseTypeTranslator $caseTypeTranslator,
 		InformatieObjectTranslator $informatieObjectTranslator,
-		BesluitTranslator $besluitTranslator,
-		RolTranslator $rolTranslator,
+		DecisionTranslator $decisionTranslator,
+		RolTranslator $roleTranslator,
 		StatusTranslator $statusTranslator,
-		ResultaatTranslator $resultaatTranslator,
+		ResultTranslator $resultTranslator,
 	) {
 		$this->translators = [];
 		foreach ([
-			$zaakTranslator,
-			$zaakTypeTranslator,
+			$caseTranslator,
+			$caseTypeTranslator,
 			$informatieObjectTranslator,
-			$besluitTranslator,
-			$rolTranslator,
+			$decisionTranslator,
+			$roleTranslator,
 			$statusTranslator,
-			$resultaatTranslator,
+			$resultTranslator,
 		] as $translator
 		) {
 			$this->translators[$translator->getResource()] = $translator;

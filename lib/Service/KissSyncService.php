@@ -200,7 +200,7 @@ class KissSyncService {
 			$pageSize = self::DEFAULT_PAGE_SIZE;
 		}
 
-		$page = $provider->listKlantcontacten(
+		$page = $provider->listCustomerContacts(
 			sourceConfiguration: $configuration,
 			since: $since,
 			pageSize: $pageSize
@@ -210,7 +210,7 @@ class KissSyncService {
 		$skipped = 0;
 		foreach ($page['items'] as $item) {
 			try {
-				$this->upsertKlantcontact(item: $item, direction: 'pulled', sourceApp: null);
+				$this->upsertCustomerContact(item: $item, direction: 'pulled', sourceApp: null);
 				$processed++;
 			} catch (Throwable $exception) {
 				$skipped++;
@@ -262,26 +262,37 @@ class KissSyncService {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function pushKlantcontact(array $input): array {
+	public function pushCustomerContact(array $input): array {
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
+		// WIRE SHAPE, not internal shape. KlantinteractiesClient posts this array
+		// verbatim as the JSON body of POST /klantcontacten — there is no mapping
+		// layer behind it — so these keys ARE the VNG Klantinteracties field
+		// names. They are the stated exemption to the English-only rule, and this
+		// is the adapter boundary where the exemption applies.
+		//
+		// The vocabulary pass had translated four of them (`kanaal` -> `channel`,
+		// `taal` -> `language`, `plaatsgevondenOp` -> `occurredOn`,
+		// `indicatieContactGelukt` -> `indication...`), which silently sends field
+		// names the API does not define. `onderwerp` and `tekst` happened to
+		// survive, so the payload was half wire, half invention.
 		$payload = [
-			'onderwerp' => (string)($input['onderwerp'] ?? ''),
-			'kanaal' => (string)($input['kanaal'] ?? ''),
-			'tekst' => (string)($input['tekst'] ?? ''),
-			'plaatsgevondenOp' => (string)($input['plaatsgevondenOp'] ?? (new DateTime())->format('c')),
-			'indicatieContactGelukt' => (bool)($input['indicatieContactGelukt'] ?? true),
-			'taal' => (string)($input['taal'] ?? 'nl'),
+			'onderwerp' => (string)($input['subject'] ?? $input['onderwerp'] ?? ''),
+			'kanaal' => (string)($input['channel'] ?? ''),
+			'tekst' => (string)($input['text'] ?? $input['tekst'] ?? ''),
+			'plaatsgevondenOp' => (string)($input['occurredOn'] ?? (new DateTime())->format('c')),
+			'indicatieContactGelukt' => (bool)($input['indicationContactSucceeded'] ?? true),
+			'taal' => (string)($input['language'] ?? 'nl'),
 		];
 
-		$betrokkene = ($input['betrokkene'] ?? null);
-		if (is_array($betrokkene) === true && $betrokkene !== []) {
-			$payload['betrokkene'] = $betrokkene;
+		$involvedParty = ($input['involvedParty'] ?? null);
+		if (is_array($involvedParty) === true && $involvedParty !== []) {
+			$payload['involvedParty'] = $involvedParty;
 		}
 
-		$kissId = $provider->createKlantcontact(sourceConfiguration: $configuration, payload: $payload);
+		$kissId = $provider->createCustomerContact(sourceConfiguration: $configuration, payload: $payload);
 
 		$caseReference = (string)($input['caseReference'] ?? '');
 		$caseObjectType = (string)($input['caseObjectType'] ?? KlantinteractiesClient::DEFAULT_CASE_OBJECT_TYPE);
@@ -289,7 +300,7 @@ class KissSyncService {
 		if ($caseReference !== '') {
 			$provider->linkOnderwerpobject(
 				sourceConfiguration: $configuration,
-				klantcontactId: $kissId,
+				customerContactId: $kissId,
 				caseReference: $caseReference,
 				caseObjectType: $caseObjectType
 			);
@@ -306,21 +317,25 @@ class KissSyncService {
 			$sourceApp = (string)$input['sourceApp'];
 		}
 
+		// $payload is WIRE shape, and upsertCustomerContact() reads wire names, so
+		// the mirror item built here has to speak the same language — `betrokkenen`,
+		// not `involvedParties`, or the locally mirrored push loses its parties
+		// while the pulled copy of the same contact keeps them.
 		$item = $payload;
-		unset($item['betrokkene']);
+		unset($item['involvedParty']);
 		$item['uuid'] = $kissId;
 		$item['registratiedatum'] = (new DateTime())->format('c');
 		$item['betrokkenen'] = [];
-		if ($betrokkene !== null) {
-			$item['betrokkenen'] = [$betrokkene];
+		if ($involvedParty !== null) {
+			$item['betrokkenen'] = [$involvedParty];
 		}
 
 		$item['onderwerpobjecten'] = $onderwerpobjecten;
 
-		$saved = $this->upsertKlantcontact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
+		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
 
 		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
-	}//end pushKlantcontact()
+	}//end pushCustomerContact()
 
 	/**
 	 * Resolve the single active KISS source (`type=kiss`, `isEnabled=true`).
@@ -388,7 +403,7 @@ class KissSyncService {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	private function upsertKlantcontact(array $item, string $direction, ?string $sourceApp): ObjectEntity {
+	private function upsertCustomerContact(array $item, string $direction, ?string $sourceApp): ObjectEntity {
 		$kissId = (string)($item['uuid'] ?? '');
 		if ($kissId === '') {
 			throw new KissProviderException(message: 'A klantcontact item without a `uuid` cannot be persisted.');
@@ -397,17 +412,27 @@ class KissSyncService {
 		$onderwerpobjecten = (array)($item['onderwerpobjecten'] ?? []);
 		$caseMapping = $this->extractCaseReference(onderwerpobjecten: $onderwerpobjecten);
 
+		// KEYS are the local schema's property names, English after the vocabulary
+		// pass. The $item SUBSCRIPTS are the VNG Klantinteracties field names as
+		// they arrive on the wire, and are the stated exemption — this is the
+		// adapter boundary, so the translation happens here and nowhere else.
+		//
+		// Both sides had been renamed together, so the reads asked KISS for
+		// `channel`, `taal` as `language`, `plaatsgevondenOp` as `occurredOn` and
+		// so on. Every one of those misses, and each miss is defaulted rather than
+		// raised — a pulled klantcontact would have persisted with an empty
+		// channel, empty language, empty timestamp and no betrokkenen, silently.
 		$record = [
 			'kissId' => $kissId,
-			'nummer' => (string)($item['nummer'] ?? ''),
-			'kanaal' => (string)($item['kanaal'] ?? ''),
+			'number' => (string)($item['nummer'] ?? ''),
+			'channel' => (string)($item['kanaal'] ?? ''),
 			'onderwerp' => (string)($item['onderwerp'] ?? ''),
 			'tekst' => (string)($item['tekst'] ?? ''),
-			'indicatieContactGelukt' => (bool)($item['indicatieContactGelukt'] ?? true),
-			'taal' => (string)($item['taal'] ?? ''),
-			'plaatsgevondenOp' => (string)($item['plaatsgevondenOp'] ?? ''),
+			'indicationContactSucceeded' => (bool)($item['indicatieContactGelukt'] ?? true),
+			'language' => (string)($item['taal'] ?? ''),
+			'occurredOn' => (string)($item['plaatsgevondenOp'] ?? ''),
 			'registratiedatum' => (string)($item['registratiedatum'] ?? ''),
-			'betrokkenen' => $this->redactBsnIdentifiers(betrokkenen: (array)($item['betrokkenen'] ?? [])),
+			'involvedParties' => $this->redactBsnIdentifiers(involvedParties: (array)($item['betrokkenen'] ?? [])),
 			'onderwerpobjecten' => $onderwerpobjecten,
 			'caseReference' => $caseMapping['reference'],
 			'caseObjectType' => $caseMapping['objectType'],
@@ -499,15 +524,15 @@ class KissSyncService {
 	 * before storage — consistent with this app's `AvgBsnPolicyRule`
 	 * precedent (never persist a raw citizen service number).
 	 *
-	 * @param array $betrokkenen The raw betrokkenen array (KISS shape).
+	 * @param array $involvedParties The raw betrokkenen array (KISS shape).
 	 *
 	 * @return array The betrokkenen array with any `bsn`-typed identifier value SHA-256-hashed.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	private function redactBsnIdentifiers(array $betrokkenen): array {
-		foreach ($betrokkenen as $index => $betrokkene) {
-			$identificator = ($betrokkene['partijIdentificator'] ?? null);
+	private function redactBsnIdentifiers(array $involvedParties): array {
+		foreach ($involvedParties as $index => $involvedParty) {
+			$identificator = ($involvedParty['partijIdentificator'] ?? null);
 			if (is_array($identificator) === false) {
 				continue;
 			}
@@ -516,10 +541,10 @@ class KissSyncService {
 			$value = (string)($identificator['objectId'] ?? '');
 			if ($code === self::BSN_CODE_SOORT_OBJECT_ID && $value !== '') {
 				$identificator['objectId'] = hash('sha256', $value);
-				$betrokkenen[$index]['partijIdentificator'] = $identificator;
+				$involvedParties[$index]['partijIdentificator'] = $identificator;
 			}
 		}
 
-		return $betrokkenen;
+		return $involvedParties;
 	}//end redactBsnIdentifiers()
 }//end class

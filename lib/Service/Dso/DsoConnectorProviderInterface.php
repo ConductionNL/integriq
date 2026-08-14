@@ -67,7 +67,7 @@ interface DsoConnectorProviderInterface {
 	 * Dispatch one already-built outbound DSO message.
 	 *
 	 * @param array $sourceConfiguration The `dso` source's `configuration` object.
-	 * @param string $verzoekId The DSO `verzoekId` this message concerns.
+	 * @param string $requestId The DSO `verzoekId` this message concerns.
 	 * @param string $type The message kind: `status` or `besluit`.
 	 * @param array $payload The already-built message payload (see
 	 *                       design.md's outbound field table).
@@ -79,5 +79,5 @@ interface DsoConnectorProviderInterface {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
 	 */
-	public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string;
+	public function send(array $sourceConfiguration, string $requestId, string $type, array $payload): string;
 }//end interface

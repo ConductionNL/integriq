@@ -190,7 +190,7 @@ class StUFXMLBuilderTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildZakLa01ContainsZaakData(): void {
-		$zaken = [
+		$cases = [
 			[
 				'zaakidentificatie' => 'ZAAK-2024-001',
 				'omschrijving' => 'Test zaak.',
@@ -199,7 +199,7 @@ class StUFXMLBuilderTest extends TestCase {
 		];
 
 		$xml = $this->builder->buildZakLa01(
-			zaken: $zaken,
+			cases: $cases,
 			stuurgegevens: $this->stuurgegevens
 		);
 
@@ -216,7 +216,7 @@ class StUFXMLBuilderTest extends TestCase {
 	 */
 	public function testBuildBv03ContainsZaakIdentificatie(): void {
 		$xml = $this->builder->buildBv03(
-			zaakIdentificatie: 'ZAAK-2024-001',
+			caseIdentification: 'ZAAK-2024-001',
 			stuurgegevens: $this->stuurgegevens
 		);
 
@@ -269,7 +269,7 @@ class StUFXMLBuilderTest extends TestCase {
 		$xml = $this->builder->buildNpsLv01(
 			criteria: ['inp.bsn' => '999993653'],
 			stuurgegevens: $this->stuurgegevens,
-			maximumAantal: 50
+			maximumCount: 50
 		);
 
 		$this->assertStringContainsString(needle: 'npsLv01', haystack: $xml);

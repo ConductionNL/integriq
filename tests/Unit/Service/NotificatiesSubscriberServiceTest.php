@@ -401,20 +401,20 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 				$this->equalTo('nl.conduction.zgw.notificatie.zaak'),
 				$this->equalTo('/notificaties-api/zaken'),
 				$this->equalTo('https://zaken.example/api/v1/zaken/uuid-1'),
-				$this->callback(fn ($data) => $data['abonnementId'] === 'abon-1' && $data['kanaal'] === 'zaken')
+				$this->callback(fn ($data) => $data['abonnementId'] === 'abon-1' && $data['channel'] === 'zaken')
 			)
 			->willReturn([]);
 
 		$this->service->handleInboundNotification(
 			'abon-1',
 			[
-				'kanaal' => 'zaken',
+				'channel' => 'zaken',
 				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'resource' => 'zaak',
 				'resourceUrl' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'actie' => 'create',
 				'aanmaakdatum' => '2026-07-15T10:00:00Z',
-				'kenmerken' => ['bronorganisatie' => '123443210'],
+				'characteristics' => ['bronorganisatie' => '123443210'],
 			]
 		);
 
@@ -465,14 +465,14 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$body = NotificatiesSubscriberService::buildNotificationBody(
 			$event,
-			['kind' => 'notificaties', 'kanaal' => 'zaken', 'resourceField' => null]
+			['kind' => 'notificaties', 'channel' => 'zaken', 'resourceField' => null]
 		);
 
 		$this->assertSame('update', $body['actie']);
 		$this->assertSame('uuid-1', $body['hoofdObject']);
 		$this->assertSame('2026-07-15T09:00:00Z', $body['aanmaakdatum']);
 		$this->assertSame('object', $body['resource']);
-		$this->assertSame('zaken', $body['kanaal']);
+		$this->assertSame('zaken', $body['channel']);
 
 	}//end testBuildNotificationBodyMapsUpdateEvent()
 
@@ -492,7 +492,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 				'subject' => 'uuid-1',
 				'time' => '2026-07-15T09:00:00Z',
 				'data' => [
-					'kenmerken' => [
+					'characteristics' => [
 						'bronorganisatie' => '123443210',
 						'zaaktype' => 'https://zaken.example/zaaktypen/1',
 					],
@@ -503,7 +503,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$body = NotificatiesSubscriberService::buildNotificationBody(
 			$event,
-			['kind' => 'notificaties', 'kanaal' => 'zaken', 'kenmerken' => ['bronorganisatie' => '000000000']]
+			['kind' => 'notificaties', 'channel' => 'zaken', 'characteristics' => ['bronorganisatie' => '000000000']]
 		);
 
 		$this->assertSame(
@@ -511,7 +511,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 				'bronorganisatie' => '123443210',
 				'zaaktype' => 'https://zaken.example/zaaktypen/1',
 			],
-			$body['kenmerken']
+			$body['characteristics']
 		);
 
 	}//end testBuildNotificationBodyKenmerkenMergeEventWins()

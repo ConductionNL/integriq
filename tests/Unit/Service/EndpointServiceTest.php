@@ -17,7 +17,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EndpointService;
@@ -110,7 +110,7 @@ class EndpointServiceTest extends TestCase {
 		$signatureService = new \OCA\OpenConnector\Service\WebhookSignatureService($logger);
 		$rateLimitService = $this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class);
 		$compositeFanoutRule = new CompositeFanoutRule($this->orObjectService, $logger);
-		$referentienummerRule = new ReferentienummerRule();
+		$referenceNumberRule = new ReferenceNumberRule();
 		$avgBsnPolicyRule = new AvgBsnPolicyRule();
 		$this->approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
 		$approvalService = $this->approvalService;
@@ -153,7 +153,7 @@ class EndpointServiceTest extends TestCase {
 			$signatureService,
 			$rateLimitService,
 			$compositeFanoutRule,
-			$referentienummerRule,
+			$referenceNumberRule,
 			$avgBsnPolicyRule,
 			$approvalService,
 			$requestId,
@@ -495,7 +495,7 @@ class EndpointServiceTest extends TestCase {
 			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
 			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($this->orObjectService, $logger),
-			new ReferentienummerRule(),
+			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
 			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),
@@ -600,7 +600,7 @@ class EndpointServiceTest extends TestCase {
 					new \OCA\OpenConnector\Service\WebhookSignatureService($this->createMock(LoggerInterface::class)),
 					$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
 					new CompositeFanoutRule($this->orObjectService, $this->createMock(LoggerInterface::class)),
-					new ReferentienummerRule(),
+					new ReferenceNumberRule(),
 					new AvgBsnPolicyRule(),
 					$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
 					$requestId,
@@ -671,7 +671,7 @@ class EndpointServiceTest extends TestCase {
 			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
 			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($this->orObjectService, $logger),
-			new ReferentienummerRule(),
+			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
 			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),

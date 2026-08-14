@@ -254,9 +254,9 @@ class RuleService {
 	 * Recursively processes nodes and their nested nodes to find matches and create subnodes
 	 *
 	 * @param array $nodes The nodes to process (passed by reference).
-	 * @param string|null $matchIdentificatie The identificatie to match against elementRef.
+	 * @param string|null $matchIdentification The identificatie to match against elementRef.
 	 * @param string $newElementId The ID of the new element to reference.
-	 * @param int $totalNewChildren Count of children to add for the current $matchIdentificatie.
+	 * @param int $totalNewChildren Count of children to add for the current $matchIdentification.
 	 * @param array $data The data structure to update (passed by reference).
 	 * @param string $relationId The relation id to attach to the new connection.
 	 * @param array $connections Connections accumulator (passed by reference).
@@ -267,7 +267,7 @@ class RuleService {
 	 */
 	private function processNodes(
 		array &$nodes,
-		?string $matchIdentificatie,
+		?string $matchIdentification,
 		string $newElementId,
 		int $totalNewChildren,
 		array &$data,
@@ -275,14 +275,14 @@ class RuleService {
 		array &$connections,
 	): void {
 		// If matchIdentificatie is null, return early.
-		if ($matchIdentificatie === null) {
+		if ($matchIdentification === null) {
 			return;
 		}
 
 		// Loop through each node in the array.
 		foreach ($nodes as &$node) {
 			// Check if current node has an elementRef property and if it matches the target identificatie.
-			if (isset($node['elementRef']) === true && $node['elementRef'] === $matchIdentificatie) {
+			if (isset($node['elementRef']) === true && $node['elementRef'] === $matchIdentification) {
 				// Create a subnode with reference to the newly created element.
 				$subnodeUuid = 'id-OutOfUniqueUUIDs-' . $this->currentNodeIdIndex;
 				if ($this->currentNodeIdIndex < count(self::NODE_IDS)) {
@@ -386,7 +386,7 @@ class RuleService {
 				// Call this function recursively on the nested nodes.
 				$this->processNodes(
 					nodes:$node['nodes'],
-					matchIdentificatie: $matchIdentificatie,
+					matchIdentification: $matchIdentification,
 					newElementId: $newElementId,
 					totalNewChildren: $totalNewChildren,
 					data: $data,

@@ -78,7 +78,7 @@ class IBabsConnectorServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapBesluitStatusAangenomen(): void {
-		$result = $this->service->mapBesluitStatus('aangenomen');
+		$result = $this->service->mapDecisionStatus('aangenomen');
 		$this->assertSame('Besluit: aangenomen', $result);
 
 	}//end testMapBesluitStatusAangenomen()
@@ -89,7 +89,7 @@ class IBabsConnectorServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapBesluitStatusVerworpen(): void {
-		$result = $this->service->mapBesluitStatus('verworpen');
+		$result = $this->service->mapDecisionStatus('verworpen');
 		$this->assertSame('Besluit: verworpen', $result);
 
 	}//end testMapBesluitStatusVerworpen()
@@ -100,7 +100,7 @@ class IBabsConnectorServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapBesluitStatusAangehouden(): void {
-		$result = $this->service->mapBesluitStatus('aangehouden');
+		$result = $this->service->mapDecisionStatus('aangehouden');
 		$this->assertSame('Besluit: aangehouden', $result);
 
 	}//end testMapBesluitStatusAangehouden()
@@ -111,7 +111,7 @@ class IBabsConnectorServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapBesluitStatusDoorgeschoven(): void {
-		$result = $this->service->mapBesluitStatus('doorgeschoven');
+		$result = $this->service->mapDecisionStatus('doorgeschoven');
 		$this->assertSame('Besluit: doorgeschoven', $result);
 
 	}//end testMapBesluitStatusDoorgeschoven()
@@ -122,7 +122,7 @@ class IBabsConnectorServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapBesluitStatusUnknown(): void {
-		$result = $this->service->mapBesluitStatus('unknown-status');
+		$result = $this->service->mapDecisionStatus('unknown-status');
 		$this->assertSame('Besluit: onbekend', $result);
 
 	}//end testMapBesluitStatusUnknown()
@@ -216,7 +216,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-4'
 		);
 
-		$result = $this->service->pushVoorstel($source, ['onderwerp' => 'Test voorstel']);
+		$result = $this->service->pushProposal($source, ['onderwerp' => 'Test voorstel']);
 
 		$this->assertFalse($result['success']);
 		$this->assertNull($result['vergaderstukId']);
@@ -246,7 +246,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			->method('call')
 			->willReturn($failedLog);
 
-		$result = $this->service->pushVoorstel($source, ['onderwerp' => 'Test voorstel']);
+		$result = $this->service->pushProposal($source, ['onderwerp' => 'Test voorstel']);
 
 		$this->assertFalse($result['success']);
 		$this->assertNull($result['vergaderstukId']);
@@ -276,7 +276,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			->method('call')
 			->willReturn($callLogEntity);
 
-		$result = $this->service->pushVoorstel(
+		$result = $this->service->pushProposal(
 			$source,
 			['onderwerp' => 'Bestemmingsplan Centrum', 'geheimhouding' => false]
 		);
@@ -309,7 +309,7 @@ class IBabsConnectorServiceTest extends TestCase {
 				}
 			);
 
-		$this->service->pushVoorstel(
+		$this->service->pushProposal(
 			$source,
 			['onderwerp' => 'Geheim voorstel', 'geheimhouding' => true]
 		);
@@ -331,7 +331,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-8'
 		);
 
-		$result = $this->service->createAgendapunt($source, 'doc-123');
+		$result = $this->service->createAgendaItem($source, 'doc-123');
 
 		$this->assertFalse($result['success']);
 		$this->assertNull($result['agendapuntId']);
@@ -362,7 +362,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			->method('call')
 			->willReturn($emptyListLog);
 
-		$result = $this->service->createAgendapunt($source, 'doc-123');
+		$result = $this->service->createAgendaItem($source, 'doc-123');
 
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('pending', $result['message']);
@@ -381,7 +381,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-10'
 		);
 
-		$result = $this->service->pollBesluiten($source, [['zaakId' => 'z-1', 'risMeetingId' => 'v-1']]);
+		$result = $this->service->pollDecisions($source, [['caseId' => 'z-1', 'risMeetingId' => 'v-1']]);
 		$this->assertSame([], $result);
 
 	}//end testPollBesluitenNoOrganisatieId()
@@ -398,7 +398,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-11'
 		);
 
-		$result = $this->service->pollBesluiten($source, []);
+		$result = $this->service->pollDecisions($source, []);
 		$this->assertSame([], $result);
 
 	}//end testPollBesluitenEmptySyncItems()
@@ -415,10 +415,10 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-12'
 		);
 
-		$besluitBody = json_encode(['besluitStatus' => 'aangenomen', 'besluitDatum' => '2026-06-01']);
+		$decisionBody = json_encode(['besluitStatus' => 'aangenomen', 'besluitDatum' => '2026-06-01']);
 		$callLogEntity = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $besluitBody]],
+			['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $decisionBody]],
 			'call-log-5'
 		);
 
@@ -426,12 +426,12 @@ class IBabsConnectorServiceTest extends TestCase {
 			->method('call')
 			->willReturn($callLogEntity);
 
-		$syncItems = [['zaakId' => 'zaak-001', 'risMeetingId' => 'verg-001']];
-		$result = $this->service->pollBesluiten($source, $syncItems);
+		$syncItems = [['caseId' => 'zaak-001', 'risMeetingId' => 'verg-001']];
+		$result = $this->service->pollDecisions($source, $syncItems);
 
 		$this->assertNotEmpty($result);
 		$this->assertSame('Besluit: aangenomen', $result[0]['zaakStatus']);
-		$this->assertSame('zaak-001', $result[0]['zaakId']);
+		$this->assertSame('zaak-001', $result[0]['caseId']);
 
 	}//end testPollBesluitenMapsStatus()
 

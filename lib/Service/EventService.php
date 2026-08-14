@@ -1019,7 +1019,7 @@ class EventService {
 				);
 
 			case 'notificaties':
-				return $this->dispatchNotificatiesAction(
+				return $this->dispatchNotificationsAction(
 					message: $message,
 					subscriptionData: $subscriptionData,
 					action: $actionArray
@@ -1357,11 +1357,11 @@ class EventService {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-a-publish-action-missing-kanaal-is-a-configuration-error-not-a-transient-failure-req-006
 	 */
-	private function dispatchNotificatiesAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
+	private function dispatchNotificationsAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
 		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$kanaal = (string)($action['kanaal'] ?? '');
+		$channel = (string)($action['channel'] ?? '');
 
-		if ($kanaal === '') {
+		if ($channel === '') {
 			// Configuration error (REQ-006), NOT a transient failure — fails
 			// once without entering the retry loop, mirroring the
 			// "unrecognised action.kind" treatment above.
@@ -1372,7 +1372,7 @@ class EventService {
 			return false;
 		}
 
-		$source = $this->findNotificatiesSource(sourceId: (string)($action['sourceId'] ?? ''));
+		$source = $this->findNotificationsSource(sourceId: (string)($action['sourceId'] ?? ''));
 		if ($source === null) {
 			// Unresolvable sourceId is retryable (the Source may be created
 			// or corrected later) — same treatment as an unresolvable
@@ -1391,7 +1391,7 @@ class EventService {
 		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
 		// no longer written (see createEventMessage()). Falls back to it so any
 		// pre-existing row still resolves.
-		$event = $this->findNotificatiesEvent(
+		$event = $this->findNotificationsEvent(
 			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
 		);
 		if ($event === null) {
@@ -1465,7 +1465,7 @@ class EventService {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 */
-	private function findNotificatiesSource(string $sourceId): ?ObjectEntity {
+	private function findNotificationsSource(string $sourceId): ?ObjectEntity {
 		if ($sourceId === '') {
 			return null;
 		}
@@ -1500,7 +1500,7 @@ class EventService {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 */
-	private function findNotificatiesEvent(?string $eventId): ?ObjectEntity {
+	private function findNotificationsEvent(?string $eventId): ?ObjectEntity {
 		if ($eventId === null) {
 			return null;
 		}
@@ -1590,7 +1590,7 @@ class EventService {
 		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
 		// no longer written (see createEventMessage()). Falls back to it so any
 		// pre-existing row still resolves.
-		$event = $this->findNotificatiesEvent(
+		$event = $this->findNotificationsEvent(
 			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
 		);
 		if ($event === null) {

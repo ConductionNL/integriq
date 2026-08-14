@@ -230,7 +230,7 @@ class KissSyncServiceTest extends TestCase {
 	public function testPullSourceUpsertsNewRecordsAndAdvancesCursor(): void {
 		$source = $this->sourceEntity();
 
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					['uuid' => 'kc-a', 'onderwerp' => 'Vraag A', 'registratiedatum' => '2026-07-01T10:00:00+00:00'],
@@ -268,7 +268,7 @@ class KissSyncServiceTest extends TestCase {
 		$source = $this->sourceEntity(['cursor' => ['lastRegistratiedatum' => '2026-06-15T00:00:00+00:00']]);
 
 		$this->restProvider->expects($this->once())
-			->method('listKlantcontacten')
+			->method('listCustomerContacts')
 			->with(
 				$this->anything(),
 				$this->equalTo('2026-06-15T00:00:00+00:00'),
@@ -289,7 +289,7 @@ class KissSyncServiceTest extends TestCase {
 		$this->existingByKissId['kc-a'] = ['kissId' => 'kc-a', 'onderwerp' => 'Old subject'];
 
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					['uuid' => 'kc-a', 'onderwerp' => 'New subject', 'registratiedatum' => '2026-07-01T10:00:00+00:00'],
@@ -313,7 +313,7 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testPullSourceIsolatesOneFailingRecord(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					['uuid' => 'kc-good-1', 'registratiedatum' => '2026-07-01T10:00:00+00:00'],
@@ -341,7 +341,7 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testPullSourceWithEmptyPageDoesNotAdvanceCursor(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(['items' => [], 'nextCursor' => null]);
+		$this->restProvider->method('listCustomerContacts')->willReturn(['items' => [], 'nextCursor' => null]);
 
 		$outcome = $this->service->pullSource(source: $source);
 
@@ -358,7 +358,7 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testMapsValidZaakOnderwerpobjectToCaseReference(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					[
@@ -393,7 +393,7 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testMissingOnderwerpobjectenMapsToNullCaseReference(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [['uuid' => 'kc-a', 'registratiedatum' => '2026-07-01T10:00:00+00:00']],
 				'nextCursor' => '2026-07-01T10:00:00+00:00',
@@ -415,7 +415,7 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testForeignOnderwerpobjectIsNotMappedAsCase(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					[
@@ -452,12 +452,13 @@ class KissSyncServiceTest extends TestCase {
 	 */
 	public function testRawBsnInBetrokkenenIsHashedBeforeStorage(): void {
 		$source = $this->sourceEntity();
-		$this->restProvider->method('listKlantcontacten')->willReturn(
+		$this->restProvider->method('listCustomerContacts')->willReturn(
 			[
 				'items' => [
 					[
 						'uuid' => 'kc-a',
 						'registratiedatum' => '2026-07-01T10:00:00+00:00',
+						// Wire name: this fixture stands in for what KISS returns.
 						'betrokkenen' => [
 							[
 								'rol' => 'klant',
@@ -473,7 +474,7 @@ class KissSyncServiceTest extends TestCase {
 		$this->service->pullSource(source: $source);
 
 		$saved = $this->saved[KissSyncService::SCHEMA_KLANTCONTACT][0]['object'];
-		$storedValue = $saved['betrokkenen'][0]['partijIdentificator']['objectId'];
+		$storedValue = $saved['involvedParties'][0]['partijIdentificator']['objectId'];
 		$this->assertNotSame('123456789', $storedValue);
 		$this->assertSame(hash('sha256', '123456789'), $storedValue);
 
@@ -487,7 +488,7 @@ class KissSyncServiceTest extends TestCase {
 	public function testPushWithoutActiveSourceThrows(): void {
 		$this->expectException(KissProviderException::class);
 
-		$this->service->pushKlantcontact(input: ['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->service->pushCustomerContact(input: ['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
 	}//end testPushWithoutActiveSourceThrows()
 
@@ -501,17 +502,17 @@ class KissSyncServiceTest extends TestCase {
 		$this->sources[] = $this->sourceEntity();
 
 		$this->restProvider->expects($this->once())
-			->method('createKlantcontact')
+			->method('createCustomerContact')
 			->willReturn('kiss-id-1');
 		$this->restProvider->expects($this->once())
 			->method('linkOnderwerpobject')
 			->with($this->anything(), 'kiss-id-1', 'case-uuid-1', 'zaak')
 			->willReturn('obj-id-1');
 
-		$result = $this->service->pushKlantcontact(
+		$result = $this->service->pushCustomerContact(
 			input: [
 				'onderwerp' => 'Melding',
-				'kanaal' => 'telefoon',
+				'channel' => 'telefoon',
 				'caseReference' => 'case-uuid-1',
 				'sourceApp' => 'procest',
 			]
@@ -536,10 +537,10 @@ class KissSyncServiceTest extends TestCase {
 	public function testPushWithoutCaseReferenceSkipsLinking(): void {
 		$this->sources[] = $this->sourceEntity();
 
-		$this->restProvider->method('createKlantcontact')->willReturn('kiss-id-2');
+		$this->restProvider->method('createCustomerContact')->willReturn('kiss-id-2');
 		$this->restProvider->expects($this->never())->method('linkOnderwerpobject');
 
-		$result = $this->service->pushKlantcontact(input: ['onderwerp' => 'Melding', 'kanaal' => 'e-mail']);
+		$result = $this->service->pushCustomerContact(input: ['onderwerp' => 'Melding', 'channel' => 'e-mail']);
 
 		$this->assertSame('kiss-id-2', $result['id']);
 		$saved = $this->saved[KissSyncService::SCHEMA_KLANTCONTACT][0]['object'];

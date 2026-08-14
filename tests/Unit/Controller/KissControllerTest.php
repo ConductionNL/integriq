@@ -125,9 +125,9 @@ class KissControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->controller = $this->buildController();
 
-		$this->syncService->expects($this->never())->method('pushKlantcontact');
+		$this->syncService->expects($this->never())->method('pushCustomerContact');
 
-		$response = $this->controller->createKlantcontact();
+		$response = $this->controller->createCustomerContact();
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
@@ -141,9 +141,9 @@ class KissControllerTest extends TestCase {
 	public function testCreateKlantcontactRequiresOnderwerpAndKanaal(): void {
 		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag']);
 
-		$this->syncService->expects($this->never())->method('pushKlantcontact');
+		$this->syncService->expects($this->never())->method('pushCustomerContact');
 
-		$response = $this->controller->createKlantcontact();
+		$response = $this->controller->createCustomerContact();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame('missing_fields', $response->getData()['error']);
@@ -159,17 +159,17 @@ class KissControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			[
 				'onderwerp' => 'Melding openbare ruimte',
-				'kanaal' => 'telefoon',
+				'channel' => 'telefoon',
 				'caseReference' => 'case-uuid-1',
 				'sourceApp' => 'procest',
 			]
 		);
 
 		$this->syncService->expects($this->once())
-			->method('pushKlantcontact')
+			->method('pushCustomerContact')
 			->willReturn(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1']);
 
-		$response = $this->controller->createKlantcontact();
+		$response = $this->controller->createCustomerContact();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1'], $response->getData());
@@ -182,13 +182,13 @@ class KissControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateKlantcontactReportsNotConfiguredCleanly(): void {
-		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
-		$this->syncService->method('pushKlantcontact')->willThrowException(
+		$this->syncService->method('pushCustomerContact')->willThrowException(
 			new KissProviderException(message: 'No active KISS source is configured (register "openconnector", schema "source", type "kiss", isEnabled=true). Configure one before using the KISS bridge.')
 		);
 
-		$response = $this->controller->createKlantcontact();
+		$response = $this->controller->createCustomerContact();
 
 		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
 		$this->assertSame('not_configured', $response->getData()['error']);
@@ -201,13 +201,13 @@ class KissControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateKlantcontactMapsProviderFailureTo502(): void {
-		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
-		$this->syncService->method('pushKlantcontact')->willThrowException(
+		$this->syncService->method('pushCustomerContact')->willThrowException(
 			new KissProviderException(message: 'KISS responded with HTTP 503.')
 		);
 
-		$response = $this->controller->createKlantcontact();
+		$response = $this->controller->createCustomerContact();
 
 		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
 		$this->assertSame('kiss_push_failed', $response->getData()['error']);

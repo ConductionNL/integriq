@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ReferentienummerRule.
+ * Unit tests for ReferenceNumberRule.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Rule
@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Rule;
 
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 
@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/vng-klantinteracties-adapter/specs/rule-pipeline/spec.md#req-rule-007
  */
-class ReferentienummerRuleTest extends TestCase {
+class ReferenceNumberRuleTest extends TestCase {
 
 	/**
 	 * Build a rule ObjectEntity carrying the given referentienummer configuration.
@@ -45,7 +45,7 @@ class ReferentienummerRuleTest extends TestCase {
 	 * @return void
 	 */
 	public function testDefaultReferenceIsUuidV4(): void {
-		$subject = new ReferentienummerRule();
+		$subject = new ReferenceNumberRule();
 		$result = $subject->apply(rule: $this->makeRule(), data: ['body' => []]);
 
 		$this->assertMatchesRegularExpression(
@@ -60,7 +60,7 @@ class ReferentienummerRuleTest extends TestCase {
 	 * @return void
 	 */
 	public function testReferenceIsUnique(): void {
-		$subject = new ReferentienummerRule();
+		$subject = new ReferenceNumberRule();
 		$first = $subject->apply(rule: $this->makeRule(), data: ['body' => []]);
 		$second = $subject->apply(rule: $this->makeRule(), data: ['body' => []]);
 
@@ -73,7 +73,7 @@ class ReferentienummerRuleTest extends TestCase {
 	 * @return void
 	 */
 	public function testConfiguredSchemeOverridesDefault(): void {
-		$subject = new ReferentienummerRule();
+		$subject = new ReferenceNumberRule();
 		$result = $subject->apply(
 			rule: $this->makeRule(['scheme' => 'GEM-{year}-{uuid}']),
 			data: ['body' => []]
@@ -88,7 +88,7 @@ class ReferentienummerRuleTest extends TestCase {
 	 * @return void
 	 */
 	public function testConfiguredTargetFieldIsUsed(): void {
-		$subject = new ReferentienummerRule();
+		$subject = new ReferenceNumberRule();
 		$result = $subject->apply(
 			rule: $this->makeRule(['targetField' => 'messageRef']),
 			data: ['body' => []]

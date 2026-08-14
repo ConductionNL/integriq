@@ -4,7 +4,7 @@
  * OpenConnector DSOSignatureVerifierService.
  *
  * Cryptographic signature verification for the DSO / Omgevingsloket STAM
- * koppelvlak inbound webhook (`DSOController::receiveVerzoek()`). Fails
+ * koppelvlak inbound webhook (`DSOController::receiveRequest()`). Fails
  * closed on every error path: a missing/malformed header, an untrusted or
  * expired certificate, a broken chain-of-trust, or a body-hash mismatch all
  * return `false`.

@@ -4,7 +4,7 @@
  * OpenConnector DSO Verzoek Translator.
  *
  * Translates one already-parsed DSO Verzoek (the array
- * {@see \OCA\OpenConnector\Service\DSOParserService::parseVerzoek()} produces
+ * {@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()} produces
  * — `verzoekId`, `type`, `aanvrager`, `locatie`, `activiteiten`, ...) into
  * the normalised handoff-ready fields a `dso_verzoek` OR record carries:
  * `mappedTitle`/`mappedSummary`/`mappedChannel`/`mappedPriority`. This is a
@@ -17,7 +17,7 @@
  * LITERAL-LEAK GUARD: a Verzoek with an empty/missing `verzoekId` raises
  * {@see DsoTranslationException} BEFORE any normalised record is returned —
  * the caller MUST NEVER fabricate or guess a correlation reference (mirrors
- * `InboundRetourTranslator`'s `kenmerk` guard and `FormFieldMapper`'s
+ * `InboundReturnTranslator`'s `kenmerk` guard and `FormFieldMapper`'s
  * refuse-to-leak-the-literal-key convention).
  *
  * @category Service
@@ -46,7 +46,7 @@ use OCA\OpenConnector\Exception\DsoTranslationException;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
-class DsoVerzoekTranslator {
+class DsoRequestTranslator {
 
 	/**
 	 * Recognised Verzoek types (mirrors `DSOParserService::VALID_TYPES`).
@@ -75,8 +75,8 @@ class DsoVerzoekTranslator {
 	/**
 	 * Translate one parsed DSO Verzoek into normalised handoff fields.
 	 *
-	 * @param array<string, mixed> $verzoek The parsed Verzoek
-	 *                                      ({@see \OCA\OpenConnector\Service\DSOParserService::parseVerzoek()}'s output).
+	 * @param array<string, mixed> $request The parsed Verzoek
+	 *                                      ({@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()}'s output).
 	 *
 	 * @return array{verzoekId: string, type: string, mappedTitle: string, mappedSummary: string,
 	 *         mappedChannel: string, mappedPriority: string, requester: array<string, mixed>} The
@@ -87,29 +87,29 @@ class DsoVerzoekTranslator {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-full-aanvraag-verzoek-translates-to-mapped
 	 */
-	public function translate(array $verzoek): array {
-		$verzoekId = trim((string)($verzoek['verzoekId'] ?? ''));
-		if ($verzoekId === '') {
+	public function translate(array $request): array {
+		$requestId = trim((string)($request['verzoekId'] ?? ''));
+		if ($requestId === '') {
 			throw new DsoTranslationException(
 				message: 'DSO Verzoek is missing verzoekId — refusing to create an unresolvable dso_verzoek record.'
 			);
 		}
 
-		$type = (string)($verzoek['type'] ?? '');
+		$type = (string)($request['type'] ?? '');
 		if (in_array($type, self::VALID_TYPES, true) === false) {
 			throw new DsoTranslationException(
-				message: 'DSO Verzoek "' . $verzoekId . '" declares unrecognised type "' . $type . '".'
+				message: 'DSO Verzoek "' . $requestId . '" declares unrecognised type "' . $type . '".'
 			);
 		}
 
 		return [
-			'verzoekId' => $verzoekId,
+			'verzoekId' => $requestId,
 			'type' => $type,
-			'mappedTitle' => $this->resolveTitle(verzoek: $verzoek, type: $type),
-			'mappedSummary' => $this->resolveSummary(verzoek: $verzoek),
+			'mappedTitle' => $this->resolveTitle(request: $request, type: $type),
+			'mappedSummary' => $this->resolveSummary(request: $request),
 			'mappedChannel' => self::CHANNEL,
 			'mappedPriority' => $this->resolvePriority(type: $type),
-			'requester' => $this->resolveRequester(verzoek: $verzoek),
+			'requester' => $this->resolveRequester(request: $request),
 		];
 
 	}//end translate()
@@ -121,13 +121,13 @@ class DsoVerzoekTranslator {
 	 * this bridge never fabricates a title referencing data that is not
 	 * actually on the Verzoek.
 	 *
-	 * @param array<string, mixed> $verzoek The parsed Verzoek.
+	 * @param array<string, mixed> $request The parsed Verzoek.
 	 * @param string $type The Verzoek type.
 	 *
 	 * @return string The resolved title.
 	 */
-	private function resolveTitle(array $verzoek, string $type): string {
-		$activiteiten = (array)($verzoek['activiteiten'] ?? []);
+	private function resolveTitle(array $request, string $type): string {
+		$activiteiten = (array)($request['activiteiten'] ?? []);
 		$first = ($activiteiten[0] ?? null);
 
 		if (is_array($first) === true) {
@@ -149,19 +149,19 @@ class DsoVerzoekTranslator {
 	 * Resolve the normalised summary: every activiteit's omschrijving/code,
 	 * comma-joined, plus the projectbeschrijving when present.
 	 *
-	 * @param array<string, mixed> $verzoek The parsed Verzoek.
+	 * @param array<string, mixed> $request The parsed Verzoek.
 	 *
 	 * @return string The resolved summary.
 	 */
-	private function resolveSummary(array $verzoek): string {
-		$activiteiten = (array)($verzoek['activiteiten'] ?? []);
+	private function resolveSummary(array $request): string {
+		$activiteiten = (array)($request['activiteiten'] ?? []);
 		$labels = [];
-		foreach ($activiteiten as $activiteit) {
-			if (is_array($activiteit) === false) {
+		foreach ($activiteiten as $activity) {
+			if (is_array($activity) === false) {
 				continue;
 			}
 
-			$label = trim((string)($activiteit['omschrijving'] ?? ($activiteit['code'] ?? '')));
+			$label = trim((string)($activity['omschrijving'] ?? ($activity['code'] ?? '')));
 			if ($label !== '') {
 				$labels[] = $label;
 			}
@@ -169,7 +169,7 @@ class DsoVerzoekTranslator {
 
 		$summary = implode(', ', $labels);
 
-		$projectbeschrijving = trim((string)($verzoek['projectbeschrijving'] ?? ''));
+		$projectbeschrijving = trim((string)($request['projectbeschrijving'] ?? ''));
 		if ($projectbeschrijving !== '') {
 			if ($summary !== '') {
 				$summary .= ' — ';
@@ -208,16 +208,16 @@ class DsoVerzoekTranslator {
 	 * aanvrager block — never logged by any caller (mirrors Open
 	 * Formulieren's `authContext` convention).
 	 *
-	 * @param array<string, mixed> $verzoek The parsed Verzoek.
+	 * @param array<string, mixed> $request The parsed Verzoek.
 	 *
 	 * @return array<string, mixed> `{bsn, kvkNummer}` (either may be null).
 	 */
-	private function resolveRequester(array $verzoek): array {
-		$aanvrager = (array)($verzoek['aanvrager'] ?? []);
+	private function resolveRequester(array $request): array {
+		$applicant = (array)($request['aanvrager'] ?? []);
 
 		return [
-			'bsn' => ($aanvrager['bsn'] ?? null),
-			'kvkNummer' => ($aanvrager['kvkNummer'] ?? null),
+			'bsn' => ($applicant['bsn'] ?? null),
+			'kvkNummer' => ($applicant['kvkNummer'] ?? null),
 		];
 
 	}//end resolveRequester()

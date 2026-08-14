@@ -31,7 +31,7 @@ use OC\Files\Node\File;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
@@ -136,7 +136,7 @@ class EndpointService {
 	 * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
 	 * @param InboundRateLimitService $rateLimitService Service enforcing inbound per-consumer rate limits + quotas.
 	 * @param CompositeFanoutRule $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
-	 * @param ReferentienummerRule $referentienummerRule Dialect-agnostic referentienummer generation rule.
+	 * @param ReferenceNumberRule $referenceNumberRule Dialect-agnostic referentienummer generation rule.
 	 * @param AvgBsnPolicyRule $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
 	 * @param ApprovalService $approvalService Suspends the pipeline on a HITL `approval` rule.
 	 * @param IRequestId $requestId Nextcloud request-id service, used to synthesize
@@ -169,7 +169,7 @@ class EndpointService {
 		private readonly WebhookSignatureService $webhookSignatureService,
 		private readonly InboundRateLimitService $rateLimitService,
 		private readonly CompositeFanoutRule $compositeFanoutRule,
-		private readonly ReferentienummerRule $referentienummerRule,
+		private readonly ReferenceNumberRule $referenceNumberRule,
 		private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
 		private readonly ApprovalService $approvalService,
 		private readonly IRequestId $requestId,
@@ -2592,7 +2592,7 @@ class EndpointService {
 						'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
 						'custom' => $this->processCustomRule(rule: $rule, data: $data),
 						'composite_fanout' => $this->processCompositeFanoutRule(rule: $rule, data: $data),
-						'referentienummer' => $this->processReferentienummerRule(rule: $rule, data: $data),
+						'referentienummer' => $this->processReferenceNumberRule(rule: $rule, data: $data),
 						'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
 						'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
 						'approval' => $this->processApprovalRule(
@@ -3312,7 +3312,7 @@ class EndpointService {
 	 * Process a referentienummer generation rule.
 	 *
 	 * Dialect-agnostic gateway mechanic. Delegates to
-	 * {@see ReferentienummerRule} which stamps a UUIDv4 (or configured
+	 * {@see ReferenceNumberRule} which stamps a UUIDv4 (or configured
 	 * scheme) reference onto the response body.
 	 *
 	 * @param ObjectEntity $rule The referentienummer rule to apply.
@@ -3322,8 +3322,8 @@ class EndpointService {
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processReferentienummerRule(ObjectEntity $rule, array $data): array {
-		return $this->referentienummerRule->apply(rule: $rule, data: $data);
+	private function processReferenceNumberRule(ObjectEntity $rule, array $data): array {
+		return $this->referenceNumberRule->apply(rule: $rule, data: $data);
 	}//end processReferentienummerRule()
 
 	/**

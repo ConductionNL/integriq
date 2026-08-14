@@ -61,23 +61,23 @@ class DSOSamenwerkingServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAdviesverzoekPayloadIncludesRequiredFields(): void {
-		$zaak = [
+		$case = [
 			'id' => 'zaak-001',
 			'verzoekId' => 'dso-001',
 			'aanvrager' => ['naam' => 'Test BV'],
 		];
 
 		$payload = $this->service->buildAdviesverzoekPayload(
-			zaak: $zaak,
+			case: $case,
 			partnerOin: '00000001234567890000',
-			termijn: '2024-09-15'
+			term: '2024-09-15'
 		);
 
-		$this->assertArrayHasKey('zaakId', $payload);
+		$this->assertArrayHasKey('caseId', $payload);
 		$this->assertArrayHasKey('partnerOin', $payload);
 		$this->assertArrayHasKey('termijn', $payload);
 
-		$this->assertSame('zaak-001', $payload['zaakId']);
+		$this->assertSame('zaak-001', $payload['caseId']);
 		$this->assertSame('00000001234567890000', $payload['partnerOin']);
 		$this->assertSame('2024-09-15', $payload['termijn']);
 
@@ -97,7 +97,7 @@ class DSOSamenwerkingServiceTest extends TestCase {
 
 		$result = $this->service->receiveAdvies(
 			adviesPayload: $incompletePayload,
-			zaakId: 'zaak-001'
+			caseId: 'zaak-001'
 		);
 
 		$this->assertFalse($result['stored']);
@@ -119,12 +119,12 @@ class DSOSamenwerkingServiceTest extends TestCase {
 
 		$result = $this->service->receiveAdvies(
 			adviesPayload: $validPayload,
-			zaakId: 'zaak-001'
+			caseId: 'zaak-001'
 		);
 
 		$this->assertTrue($result['stored']);
 		$this->assertSame('advies-001', $result['adviesId']);
-		$this->assertSame('zaak-001', $result['zaakId']);
+		$this->assertSame('zaak-001', $result['caseId']);
 
 	}//end testReceiveAdviesStoresValidAdvies()
 }//end class

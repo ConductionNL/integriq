@@ -30,7 +30,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/rule-pipeline/spec.md
  */
-class ReferentienummerRule {
+class ReferenceNumberRule {
 	/**
 	 * Apply the referentienummer rule to the current data envelope.
 	 *

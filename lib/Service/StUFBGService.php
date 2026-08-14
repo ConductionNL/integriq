@@ -124,7 +124,7 @@ class StUFBGService {
 
 		$criteria = $this->extractNpsCriteria(body: $body, bgNs: $bgNs);
 		$scope = $this->extractScope(body: $body, bgNs: $bgNs, stufNs: $stufNs);
-		$maximumAantal = $this->extractMaximumAantal(body: $body, stufNs: $stufNs);
+		$maximumCount = $this->extractMaximumCount(body: $body, stufNs: $stufNs);
 		$crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $stufNs);
 
 		if (empty($criteria) === true) {
@@ -139,7 +139,7 @@ class StUFBGService {
 			$stuurgegevens['crossRefnummer'] = $crossRef;
 		}
 
-		$persons = $this->searchPersons(criteria: $criteria, limit: $maximumAantal);
+		$persons = $this->searchPersons(criteria: $criteria, limit: $maximumCount);
 		$mapped = array_map(
 			callback: fn (array $p) => $this->fieldMapper->mapPersonToStUF(person: $p),
 			array: $persons
@@ -241,9 +241,9 @@ class StUFBGService {
 			$la01 = $bgBodyKids->npsLa01;
 			$la01Kids = $la01->children($bgNs);
 			if (isset($la01Kids->antwoord) === true) {
-				$antwoord = $la01Kids->antwoord;
-				$antwoordKids = $antwoord->children($bgNs);
-				foreach ($antwoordKids->object as $obj) {
+				$answer = $la01Kids->antwoord;
+				$answerKids = $answer->children($bgNs);
+				foreach ($answerKids->object as $obj) {
 					$persons[] = $this->parsePersonObject(
 						obj: $obj,
 						bgNs: $bgNs,
@@ -400,7 +400,7 @@ class StUFBGService {
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function extractMaximumAantal(SimpleXMLElement $body, string $stufNs): int {
+	private function extractMaximumCount(SimpleXMLElement $body, string $stufNs): int {
 		if ($stufNs === '') {
 			return 100;
 		}

@@ -188,13 +188,13 @@ class NotificatiesCallbackTest extends TestCase {
 		);
 		$request->method('getParams')->willReturn(
 			[
-				'kanaal' => 'zaken',
+				'channel' => 'zaken',
 				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'resource' => 'zaak',
 				'resourceUrl' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'actie' => 'create',
 				'aanmaakdatum' => '2026-07-15T10:00:00Z',
-				'kenmerken' => ['bronorganisatie' => '123443210'],
+				'characteristics' => ['bronorganisatie' => '123443210'],
 			]
 		);
 

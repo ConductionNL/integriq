@@ -3,7 +3,7 @@
 /**
  * OpenConnector DSO Translation Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator} when a
+ * Raised by {@see \OCA\OpenConnector\Service\Dso\DsoRequestTranslator} when a
  * DSO Verzoek cannot be translated into the normalised handoff-ready fields
  * a `dso_verzoek` record carries — a missing `verzoekId` (the correlation
  * reference), or a mandatory contract field with no resolvable source data.

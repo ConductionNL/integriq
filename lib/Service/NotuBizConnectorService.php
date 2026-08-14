@@ -143,8 +143,8 @@ class NotuBizConnectorService {
 	 */
 	public function testConnection(ObjectEntity $source): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -152,7 +152,7 @@ class NotuBizConnectorService {
 		}
 
 		try {
-			$endpoint = '/api/v1/organisations/' . $organisatieId;
+			$endpoint = '/api/v1/organisations/' . $organisationId;
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -246,7 +246,7 @@ class NotuBizConnectorService {
 	 * @param ObjectEntity $source The NotuBiz source configuration.
 	 * @param array $vergaderstuk Stuk data with keys: onderwerp, vergadertype,
 	 *                            zaaktype, bijlagen (array), geheimhouding (bool).
-	 * @param string|null $vergaderingId Target vergadering ID, or null to use default.
+	 * @param string|null $meetingId Target vergadering ID, or null to use default.
 	 *
 	 * @return array{success: bool, message: string, vergaderstukId: string|null} Upload result.
 	 *
@@ -255,11 +255,11 @@ class NotuBizConnectorService {
 	public function pushVergaderstuk(
 		ObjectEntity $source,
 		array $vergaderstuk,
-		?string $vergaderingId = null,
+		?string $meetingId = null,
 	): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -268,7 +268,7 @@ class NotuBizConnectorService {
 		}
 
 		$vergadertype = $this->mapVergadertype(
-			zaaktype: $vergaderstuk['vergadertype'] ?? $config['defaultVergaderType'] ?? 'college'
+			caseType: $vergaderstuk['vergadertype'] ?? $config['defaultVergaderType'] ?? 'college'
 		);
 
 		$payload = [
@@ -276,7 +276,7 @@ class NotuBizConnectorService {
 			'vergadertype' => $vergadertype,
 			'zaaktype' => $vergaderstuk['zaaktype'] ?? '',
 			'vertrouwelijk' => (bool)($vergaderstuk['geheimhouding'] ?? false),
-			'vergaderingId' => $vergaderingId,
+			'vergaderingId' => $meetingId,
 		];
 
 		$this->logger->info(
@@ -285,7 +285,7 @@ class NotuBizConnectorService {
 		);
 
 		try {
-			$endpoint = '/api/v1/organisations/' . $organisatieId . '/vergaderstukken';
+			$endpoint = '/api/v1/organisations/' . $organisationId . '/vergaderstukken';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -339,14 +339,14 @@ class NotuBizConnectorService {
 	/**
 	 * Map a zaaktype or vergadertype string to the NotuBiz API vergadertype code.
 	 *
-	 * @param string $zaaktype The zaaktype or vergadertype to map.
+	 * @param string $caseType The zaaktype or vergadertype to map.
 	 *
 	 * @return string The NotuBiz vergadertype code.
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
 	 */
-	public function mapVergadertype(string $zaaktype): string {
-		$key = strtolower($zaaktype);
+	public function mapVergadertype(string $caseType): string {
+		$key = strtolower($caseType);
 		return self::VERGADERTYPE_MAP[$key] ?? 'collegevergadering';
 	}//end mapVergadertype()
 }//end class

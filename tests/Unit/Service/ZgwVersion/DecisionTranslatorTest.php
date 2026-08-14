@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ZaakTypeTranslator.
+ * Unit tests for DecisionTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\ZgwVersion
@@ -21,20 +21,20 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\ZgwVersion;
 
 use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTypeTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests for the `zaaktype` resource translator.
+ * Tests for the `besluit` resource translator.
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTypeTranslatorTest extends TestCase {
+class DecisionTranslatorTest extends TestCase {
 
 	/**
-	 * @var ZaakTypeTranslator
+	 * @var DecisionTranslator
 	 */
-	private ZaakTypeTranslator $translator;
+	private DecisionTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -43,25 +43,22 @@ class ZaakTypeTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new ZaakTypeTranslator();
+		$this->translator = new DecisionTranslator();
 	}//end setUp()
 
 	/**
-	 * A conformant `1.0` zaaktype fixture.
+	 * A conformant `1.0` besluit fixture.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function conformantPayload(): array {
 		return [
-			'url' => 'https://host/api/zgw/catalogi/v1/zaaktypen/def',
-			'uuid' => 'def',
-			'identificatie' => 'ZT-001',
-			'omschrijving' => 'Test zaaktype',
-			'catalogus' => 'https://host/api/zgw/catalogi/v1/catalogussen/cat',
-			'vertrouwelijkheidaanduiding' => 'openbaar',
-			'besluittypen' => ['https://host/api/zgw/catalogi/v1/besluittypen/bt1'],
-			'informatieobjecttypen' => [],
-			'gerelateerdeZaaktypen' => [],
+			'url' => 'https://host/api/zgw/besluiten/v1/besluiten/bes',
+			'uuid' => 'bes',
+			'identificatie' => 'BES-001',
+			'zaak' => 'https://host/api/zgw/zaken/v1/zaken/abc',
+			'besluittype' => 'https://host/api/zgw/catalogi/v1/besluittypen/bt',
+			'datum' => '2026-01-01',
 		];
 	}//end conformantPayload()
 
@@ -69,7 +66,7 @@ class ZaakTypeTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetResource(): void {
-		$this->assertSame(expected: 'zaaktype', actual: $this->translator->getResource());
+		$this->assertSame(expected: 'besluit', actual: $this->translator->getResource());
 	}//end testGetResource()
 
 	/**
@@ -89,48 +86,11 @@ class ZaakTypeTranslatorTest extends TestCase {
 	}//end testTranslateToV1xIsStructurallyIdentical()
 
 	/**
-	 * The exact malformed shape procest's own `LoadDefaultZgwMappings`
-	 * `'besluittypen' => 'decisionTypes'` quirk could produce if that raw
-	 * literal ever leaked through unresolved instead of an array of URLs.
-	 *
-	 * @return void
-	 */
-	public function testNonArrayBesluittypenThrowsLiteralLeak(): void {
-		$payload = $this->conformantPayload();
-		$payload['besluittypen'] = 'decisionTypes';
-
-		$this->expectException(ZgwLiteralLeakException::class);
-		$this->translator->translateToV16(payload: $payload);
-	}//end testNonArrayBesluittypenThrowsLiteralLeak()
-
-	/**
-	 * @return void
-	 */
-	public function testNonArrayInformatieobjecttypenThrowsLiteralLeak(): void {
-		$payload = $this->conformantPayload();
-		$payload['informatieobjecttypen'] = 'documentTypes';
-
-		$this->expectException(ZgwLiteralLeakException::class);
-		$this->translator->translateToV1x(payload: $payload);
-	}//end testNonArrayInformatieobjecttypenThrowsLiteralLeak()
-
-	/**
-	 * @return void
-	 */
-	public function testOutOfSetEnumValueThrowsLiteralLeak(): void {
-		$payload = $this->conformantPayload();
-		$payload['vertrouwelijkheidaanduiding'] = 'top-secret';
-
-		$this->expectException(ZgwLiteralLeakException::class);
-		$this->translator->translateToV16(payload: $payload);
-	}//end testOutOfSetEnumValueThrowsLiteralLeak()
-
-	/**
 	 * @return void
 	 */
 	public function testMissingRequiredFieldThrowsLiteralLeak(): void {
 		$payload = $this->conformantPayload();
-		unset($payload['catalogus']);
+		unset($payload['besluittype']);
 
 		$this->expectException(ZgwLiteralLeakException::class);
 		$this->translator->translateToV16(payload: $payload);

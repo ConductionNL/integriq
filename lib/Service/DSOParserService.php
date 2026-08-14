@@ -41,6 +41,17 @@ class DSOParserService {
 	/**
 	 * Required fields in a DSO-verzoek payload.
 	 *
+	 * WIRE NAMES. These are the field names the Digitaal Stelsel Omgevingswet
+	 * sends, checked against an inbound payload we do not control, so they are
+	 * the stated exemption to the English-only rule.
+	 *
+	 * The vocabulary pass had translated exactly one of the six —
+	 * `indieningsdatum` -> `submissionDate` — while its five siblings stayed as
+	 * they were. That makes the field permanently absent, so every DSO verzoek
+	 * fails validation on a required field the DSO has never sent. A rename that
+	 * touches one member of a wire contract and not the rest is easy to miss in
+	 * review precisely because the surrounding lines still look right.
+	 *
 	 * @var array
 	 */
 	private const REQUIRED_FIELDS = [
@@ -138,14 +149,16 @@ class DSOParserService {
 			}
 		}
 
-		// Validate indieningsdatum format (ISO 8601).
+		// Validate the submission date's format (ISO 8601). Subscript and reported
+		// `field` are the DSO's own wire name, because the caller matches the error
+		// against the payload it sent.
 		if (isset($payload['indieningsdatum']) === true
 			&& $this->validateISODate(date: $payload['indieningsdatum']) === false
 		) {
 			$errors[] = [
 				'field' => 'indieningsdatum',
 				'error' => 'invalid_date_format',
-				'message' => 'Indieningsdatum must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
+				'message' => 'The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
 			];
 		}
 
@@ -164,19 +177,21 @@ class DSOParserService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	public function parseVerzoek(array $payload): array {
+	public function parseRequest(array $payload): array {
 		$bouwkosten = null;
 		if (isset($payload['bouwkosten']) === true) {
 			$bouwkosten = (float)$payload['bouwkosten'];
 		}
 
-		$verzoek = [
+		$request = [
 			'verzoekId' => ($payload['verzoekId'] ?? null),
 			'bronorganisatie' => ($payload['bronorganisatie'] ?? null),
 			'type' => ($payload['type'] ?? null),
-			'indieningsdatum' => ($payload['indieningsdatum'] ?? null),
-			'aanvrager' => $this->parseAanvrager(aanvrager: ($payload['aanvrager'] ?? [])),
-			'locatie' => $this->parseLocatie(locatie: ($payload['locatie'] ?? [])),
+			// KEY is the internal name every downstream service reads; the
+			// SUBSCRIPT is the DSO's wire name. This line is the whole mapping.
+			'submissionDate' => ($payload['indieningsdatum'] ?? null),
+			'aanvrager' => $this->parseApplicant(applicant: ($payload['aanvrager'] ?? [])),
+			'locatie' => $this->parseLocation(location: ($payload['locatie'] ?? [])),
 			'activiteiten' => $this->parseActiviteiten(activiteiten: ($payload['activiteiten'] ?? [])),
 			'bouwkosten' => $bouwkosten,
 			'bijlagen' => ($payload['bijlagen'] ?? []),
@@ -186,11 +201,11 @@ class DSOParserService {
 		];
 
 		if (isset($payload['projectbeschrijving']) === true) {
-			$verzoek['projectbeschrijving'] = $payload['projectbeschrijving'];
+			$request['projectbeschrijving'] = $payload['projectbeschrijving'];
 		}
 
-		return $verzoek;
-	}//end parseVerzoek()
+		return $request;
+	}//end parseRequest()
 
 	/**
 	 * Validate a BSN (Burger Service Nummer) using the 11-proef.
@@ -272,21 +287,21 @@ class DSOParserService {
 	/**
 	 * Parse the aanvrager (initiatiefnemer) block.
 	 *
-	 * @param array $aanvrager The raw aanvrager data.
+	 * @param array $applicant The raw aanvrager data.
 	 *
 	 * @return array The parsed aanvrager data.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	private function parseAanvrager(array $aanvrager): array {
+	private function parseApplicant(array $applicant): array {
 		return [
-			'bsn' => ($aanvrager['bsn'] ?? null),
-			'kvkNummer' => ($aanvrager['kvkNummer'] ?? null),
-			'vestigingsnummer' => ($aanvrager['vestigingsnummer'] ?? null),
-			'naam' => ($aanvrager['naam'] ?? null),
-			'bedrijfsnaam' => ($aanvrager['bedrijfsnaam'] ?? null),
-			'adres' => ($aanvrager['adres'] ?? null),
-			'contactgegevens' => ($aanvrager['contactgegevens'] ?? null),
+			'bsn' => ($applicant['bsn'] ?? null),
+			'kvkNummer' => ($applicant['kvkNummer'] ?? null),
+			'vestigingsnummer' => ($applicant['vestigingsnummer'] ?? null),
+			'naam' => ($applicant['naam'] ?? null),
+			'bedrijfsnaam' => ($applicant['bedrijfsnaam'] ?? null),
+			'adres' => ($applicant['adres'] ?? null),
+			'contactgegevens' => ($applicant['contactgegevens'] ?? null),
 		];
 
 	}//end parseAanvrager()
@@ -296,22 +311,22 @@ class DSOParserService {
 	 *
 	 * Handles BAG-adresgegevens and GML-geometrie conversion.
 	 *
-	 * @param array $locatie The raw locatie data.
+	 * @param array $location The raw locatie data.
 	 *
 	 * @return array The parsed locatie data.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	private function parseLocatie(array $locatie): array {
+	private function parseLocation(array $location): array {
 		$parsed = [
-			'bagAdres' => ($locatie['bagAdres'] ?? null),
-			'kadastraleAanduiding' => ($locatie['kadastraleAanduiding'] ?? null),
+			'bagAdres' => ($location['bagAdres'] ?? null),
+			'kadastraleAanduiding' => ($location['kadastraleAanduiding'] ?? null),
 			'geometrie' => null,
 		];
 
 		// Convert GML to GeoJSON if present.
-		if (isset($locatie['gmlGeometrie']) === true) {
-			$parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $locatie['gmlGeometrie']);
+		if (isset($location['gmlGeometrie']) === true) {
+			$parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $location['gmlGeometrie']);
 		}
 
 		return $parsed;
@@ -328,9 +343,9 @@ class DSOParserService {
 	 */
 	private function parseActiviteiten(array $activiteiten): array {
 		$parsed = [];
-		foreach ($activiteiten as $activiteit) {
-			$code = ($activiteit['code'] ?? ($activiteit['activiteitCode'] ?? null));
-			$omschrijving = ($activiteit['omschrijving'] ?? null);
+		foreach ($activiteiten as $activity) {
+			$code = ($activity['code'] ?? ($activity['activiteitCode'] ?? null));
+			$omschrijving = ($activity['omschrijving'] ?? null);
 
 			$parsed[] = [
 				'code' => $code,

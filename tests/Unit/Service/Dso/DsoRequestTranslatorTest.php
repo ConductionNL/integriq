@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for DsoVerzoekTranslator.
+ * Unit tests for DsoRequestTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\Dso
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\Dso;
 
 use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
+use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,12 +29,12 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
-class DsoVerzoekTranslatorTest extends TestCase {
+class DsoRequestTranslatorTest extends TestCase {
 
 	/**
-	 * @var DsoVerzoekTranslator
+	 * @var DsoRequestTranslator
 	 */
-	private DsoVerzoekTranslator $translator;
+	private DsoRequestTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -43,7 +43,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new DsoVerzoekTranslator();
+		$this->translator = new DsoRequestTranslator();
 
 	}//end setUp()
 
@@ -56,7 +56,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-full-aanvraag-verzoek-translates-to-mapped
 	 */
 	public function testFullAanvraagVerzoekTranslatesCompletely(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
 			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
@@ -64,7 +64,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 			'aanvrager' => ['bsn' => '999993653', 'kvkNummer' => null],
 		];
 
-		$result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(request: $request);
 
 		$this->assertSame('dso-12345', $result['verzoekId']);
 		$this->assertSame('aanvraag', $result['type']);
@@ -87,13 +87,13 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-a-partial-melding-verzoek-still-translates-with-fallbacks
 	 */
 	public function testPartialMeldingVerzoekTranslatesWithFallbacks(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-partial-1',
 			'type' => 'melding',
 			'activiteiten' => [['code' => 'kappen-01']],
 		];
 
-		$result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(request: $request);
 
 		$this->assertSame('kappen-01', $result['mappedTitle']);
 		$this->assertSame('kappen-01', $result['mappedSummary']);
@@ -110,9 +110,9 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testVerzoekWithNoActiviteitenUsesGenericFallback(): void {
-		$verzoek = ['verzoekId' => 'dso-empty-1', 'type' => 'informatieverzoek', 'activiteiten' => []];
+		$request = ['verzoekId' => 'dso-empty-1', 'type' => 'informatieverzoek', 'activiteiten' => []];
 
-		$result = $this->translator->translate(verzoek: $verzoek);
+		$result = $this->translator->translate(request: $request);
 
 		$this->assertSame('DSO informatieverzoek', $result['mappedTitle']);
 		$this->assertSame('Verzoek zonder activiteitomschrijving.', $result['mappedSummary']);
@@ -131,7 +131,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 		$this->expectException(DsoTranslationException::class);
 		$this->expectExceptionMessageMatches('/verzoekId/');
 
-		$this->translator->translate(verzoek: ['type' => 'aanvraag']);
+		$this->translator->translate(request: ['type' => 'aanvraag']);
 
 	}//end testMissingVerzoekIdThrows()
 
@@ -144,7 +144,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	public function testEmptyVerzoekIdThrows(): void {
 		$this->expectException(DsoTranslationException::class);
 
-		$this->translator->translate(verzoek: ['verzoekId' => '', 'type' => 'aanvraag']);
+		$this->translator->translate(request: ['verzoekId' => '', 'type' => 'aanvraag']);
 
 	}//end testEmptyVerzoekIdThrows()
 
@@ -156,7 +156,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	public function testUnrecognisedTypeThrows(): void {
 		$this->expectException(DsoTranslationException::class);
 
-		$this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => 'onbekend-type']);
+		$this->translator->translate(request: ['verzoekId' => 'dso-1', 'type' => 'onbekend-type']);
 
 	}//end testUnrecognisedTypeThrows()
 
@@ -170,7 +170,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 * @dataProvider normalPriorityTypeProvider
 	 */
 	public function testNonAanvraagTypesResolveToNormalPriority(string $type): void {
-		$result = $this->translator->translate(verzoek: ['verzoekId' => 'dso-1', 'type' => $type]);
+		$result = $this->translator->translate(request: ['verzoekId' => 'dso-1', 'type' => $type]);
 		$this->assertSame('normaal', $result['mappedPriority']);
 
 	}//end testNonAanvraagTypesResolveToNormalPriority()

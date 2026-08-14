@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for OutboundKennisgevingTranslator.
+ * Unit tests for OutboundNotificationTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\StufZkn
@@ -21,8 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\StufZkn;
 
 use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,12 +31,12 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
-class OutboundKennisgevingTranslatorTest extends TestCase {
+class OutboundNotificationTranslatorTest extends TestCase {
 
 	/**
-	 * @var OutboundKennisgevingTranslator
+	 * @var OutboundNotificationTranslator
 	 */
-	private OutboundKennisgevingTranslator $translator;
+	private OutboundNotificationTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -45,7 +45,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new OutboundKennisgevingTranslator();
+		$this->translator = new OutboundNotificationTranslator();
 
 	}//end setUp()
 
@@ -56,7 +56,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 *
 	 * @return array
 	 */
-	private function zaak(array $overrides = []): array {
+	private function case(array $overrides = []): array {
 		return array_merge(
 			[
 				'identificatie' => 'ZAAK-2026-001',
@@ -79,7 +79,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
 	 */
 	public function testCompleteZaakCreateTranslatesToValidZakLk01(): void {
-		$result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
+		$result = $this->translator->translate($this->case(), 'T', 'Procest', 'Gemeente X');
 
 		$this->assertNotEmpty($result['referentienummer']);
 		$this->assertStringStartsWith('ZKN-', $result['referentienummer']);
@@ -96,9 +96,9 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testRenderedEnvelopeRoundTripsThroughInboundTranslator(): void {
-		$result = $this->translator->translate($this->zaak(), 'W', 'Procest', 'Gemeente X');
+		$result = $this->translator->translate($this->case(), 'W', 'Procest', 'Gemeente X');
 
-		$inbound = (new InboundBerichtTranslator())->translate($result['xml']);
+		$inbound = (new InboundMessageTranslator())->translate($result['xml']);
 
 		$this->assertSame('zaak', $inbound['kind']);
 		$this->assertSame('W', $inbound['verwerkingssoort']);
@@ -110,15 +110,15 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	/**
 	 * Each supported verwerkingssoort (T/W/V) is accepted.
 	 *
-	 * @param string $verwerkingssoort The verwerkingssoort code under test.
+	 * @param string $processingKind The verwerkingssoort code under test.
 	 *
 	 * @return void
 	 *
 	 * @dataProvider verwerkingssoortProvider
 	 */
-	public function testEachSupportedVerwerkingssoortIsAccepted(string $verwerkingssoort): void {
-		$result = $this->translator->translate($this->zaak(), $verwerkingssoort, 'Procest', 'Gemeente X');
-		$this->assertStringContainsString('StUF:verwerkingssoort="' . $verwerkingssoort . '"', $result['xml']);
+	public function testEachSupportedVerwerkingssoortIsAccepted(string $processingKind): void {
+		$result = $this->translator->translate($this->case(), $processingKind, 'Procest', 'Gemeente X');
+		$this->assertStringContainsString('StUF:verwerkingssoort="' . $processingKind . '"', $result['xml']);
 
 	}//end testEachSupportedVerwerkingssoortIsAccepted()
 
@@ -143,7 +143,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 */
 	public function testUnsupportedVerwerkingssoortThrows(): void {
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($this->zaak(), 'I', 'Procest', 'Gemeente X');
+		$this->translator->translate($this->case(), 'I', 'Procest', 'Gemeente X');
 
 	}//end testUnsupportedVerwerkingssoortThrows()
 
@@ -155,11 +155,11 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
 	 */
 	public function testMissingRequiredFieldThrows(): void {
-		$zaak = $this->zaak();
-		unset($zaak['zaaktypeCode']);
+		$case = $this->case();
+		unset($case['zaaktypeCode']);
 
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($zaak, 'T', 'Procest', 'Gemeente X');
+		$this->translator->translate($case, 'T', 'Procest', 'Gemeente X');
 
 	}//end testMissingRequiredFieldThrows()
 
@@ -170,7 +170,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 */
 	public function testEmptyStringRequiredFieldThrows(): void {
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($this->zaak(['omschrijving' => '   ']), 'T', 'Procest', 'Gemeente X');
+		$this->translator->translate($this->case(['omschrijving' => '   ']), 'T', 'Procest', 'Gemeente X');
 
 	}//end testEmptyStringRequiredFieldThrows()
 
@@ -181,7 +181,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testMissingOptionalFieldRendersAsNilNotEmptyTag(): void {
-		$result = $this->translator->translate($this->zaak(), 'T', 'Procest', 'Gemeente X');
+		$result = $this->translator->translate($this->case(), 'T', 'Procest', 'Gemeente X');
 
 		$this->assertStringContainsString('StUF:noValue="geenWaarde"', $result['xml']);
 		$this->assertStringContainsString('xsi:nil="true"', $result['xml']);

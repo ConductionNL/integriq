@@ -394,7 +394,7 @@ class MappingServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testTranslatePartijIdentificatorFilterPassesThroughNonBsn(): void {
-		$result = $this->service->translatePartijIdentificatorFilter('rsin', '123456782');
+		$result = $this->service->translatePartyIdentifierFilter('rsin', '123456782');
 
 		$this->assertSame(['codeSoortObjectId' => 'rsin', 'objectId' => '123456782'], $result);
 	}//end testTranslatePartijIdentificatorFilterPassesThroughNonBsn()

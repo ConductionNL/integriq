@@ -64,12 +64,12 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testProcessVerzoekRoutesMeldingToHandleMelding(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-melding-001',
 			'type' => 'melding',
 		];
 
-		$result = $this->adapter->processVerzoek(verzoek: $verzoek);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertArrayHasKey('zaaktypeIdentificatie', $result);
 		$this->assertSame('melding', $result['zaaktypeIdentificatie']);
@@ -82,12 +82,12 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testProcessVerzoekRoutesInformatieverzoek(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-info-001',
 			'type' => 'informatieverzoek',
 		];
 
-		$result = $this->adapter->processVerzoek(verzoek: $verzoek);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('informatieverzoek', $result['zaaktypeIdentificatie']);
 
@@ -99,12 +99,12 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testProcessVerzoekRoutesVooroverleg(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-voor-001',
 			'type' => 'vooroverleg',
 		];
 
-		$result = $this->adapter->processVerzoek(verzoek: $verzoek);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('vooroverleg', $result['zaaktypeIdentificatie']);
 
@@ -116,12 +116,12 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testProcessVerzoekRoutesAanvraag(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-aanvraag-001',
 			'type' => 'aanvraag',
 		];
 
-		$result = $this->adapter->processVerzoek(verzoek: $verzoek);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('aanvraag', $result['zaaktypeIdentificatie']);
 
@@ -252,17 +252,17 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testHandleUnmappedActiviteitCreatesTriage(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-triage-001',
 			'type' => 'aanvraag',
 		];
 
-		$result = $this->adapter->handleUnmappedActiviteit(
-			verzoek: $verzoek,
-			activiteitCode: 'onbekend-activiteit-2025'
+		$result = $this->adapter->handleUnmappedActivity(
+			request: $request,
+			activityCode: 'onbekend-activiteit-2025'
 		);
 
-		$this->assertArrayHasKey('zaakId', $result);
+		$this->assertArrayHasKey('caseId', $result);
 		$this->assertSame('triage', $result['status']);
 
 	}//end testHandleUnmappedActiviteitCreatesTriage()
@@ -273,28 +273,28 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateZaakMapsAllVerzoekFields(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-zaak-001',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['naam' => 'Jansen'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB']],
 			'activiteiten' => [['code' => 'bouwen-01']],
 			'bronorganisatie' => '00000001234567890000',
 		];
 
-		$zaak = $this->adapter->createZaak(
-			verzoek: $verzoek,
-			zaaktypeIdentificatie: 'ZAAKTYPE-BOUWEN-2024',
+		$case = $this->adapter->createCase(
+			request: $request,
+			caseTypeIdentification: 'ZAAKTYPE-BOUWEN-2024',
 			strategy: 'single'
 		);
 
-		$this->assertArrayHasKey('id', $zaak);
-		$this->assertSame('ZAAKTYPE-BOUWEN-2024', $zaak['zaaktypeIdentificatie']);
-		$this->assertSame('ontvangen', $zaak['status']);
-		$this->assertSame('dso-zaak-001', $zaak['verzoekId']);
-		$this->assertSame('Jansen', $zaak['aanvrager']['naam']);
-		$this->assertSame('single', $zaak['strategy']);
+		$this->assertArrayHasKey('id', $case);
+		$this->assertSame('ZAAKTYPE-BOUWEN-2024', $case['zaaktypeIdentificatie']);
+		$this->assertSame('ontvangen', $case['status']);
+		$this->assertSame('dso-zaak-001', $case['verzoekId']);
+		$this->assertSame('Jansen', $case['aanvrager']['naam']);
+		$this->assertSame('single', $case['strategy']);
 
 	}//end testCreateZaakMapsAllVerzoekFields()
 
@@ -304,7 +304,7 @@ class DSOAdapterServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateHoofdzaakWithDeelzakenCreatesDeelzaken(): void {
-		$verzoek = [
+		$request = [
 			'verzoekId' => 'dso-samenloop-001',
 			'type' => 'aanvraag',
 		];
@@ -323,7 +323,7 @@ class DSOAdapterServiceTest extends TestCase {
 		];
 
 		$result = $this->adapter->createHoofdzaakWithDeelzaken(
-			verzoek: $verzoek,
+			request: $request,
 			mappedActiviteiten: $mappedActiviteiten
 		);
 

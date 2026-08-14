@@ -7,7 +7,7 @@
  * lets a sibling app or an external municipality integration translate one
  * ZGW resource payload between the fleet's current shape (`1.0`) and VNG's
  * incremental stability line (`1.6`) — mirrors `FscController::call()` /
- * `KissController::createKlantcontact()` in shape (thin HTTP/auth shell
+ * `KissController::createCustomerContact()` in shape (thin HTTP/auth shell
  * delegating to a service).
  *
  * @category Controller

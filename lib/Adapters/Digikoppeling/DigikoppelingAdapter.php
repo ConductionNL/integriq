@@ -111,9 +111,9 @@ final class DigikoppelingAdapter {
 	 *
 	 * @spec openspec/specs/digikoppeling-adapter/spec.md
 	 */
-	public function addsBeheerRoute(): bool {
+	public function addsManagementRoute(): bool {
 		return false;
-	}//end addsBeheerRoute()
+	}//end addsManagementRoute()
 
 	/**
 	 * The transport profiles this adapter offers.

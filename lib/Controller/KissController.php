@@ -90,7 +90,7 @@ class KissController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function createKlantcontact(): JSONResponse {
+	public function createCustomerContact(): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
@@ -100,21 +100,21 @@ class KissController extends Controller {
 
 		$params = $this->request->getParams();
 		$onderwerp = (string)($params['onderwerp'] ?? '');
-		$kanaal = (string)($params['kanaal'] ?? '');
-		if ($onderwerp === '' || $kanaal === '') {
+		$channel = (string)($params['channel'] ?? '');
+		if ($onderwerp === '' || $channel === '') {
 			return new JSONResponse(
 				[
 					'error' => 'missing_fields',
-					'message' => $this->l->t('The "onderwerp" and "kanaal" fields are required'),
+					'message' => $this->l->t('The "onderwerp" and "channel" fields are required'),
 				],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$input = $this->buildPushInput(onderwerp: $onderwerp, kanaal: $kanaal, params: $params);
+		$input = $this->buildPushInput(onderwerp: $onderwerp, channel: $channel, params: $params);
 
 		try {
-			$result = $this->syncService->pushKlantcontact(input: $input);
+			$result = $this->syncService->pushCustomerContact(input: $input);
 			return new JSONResponse($result);
 		} catch (KissProviderException $exception) {
 			$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());
@@ -129,38 +129,38 @@ class KissController extends Controller {
 			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
 		}//end try
 
-	}//end createKlantcontact()
+	}//end createCustomerContact()
 
 	/**
-	 * Assemble the `KissSyncService::pushKlantcontact()` input array from the
+	 * Assemble the `KissSyncService::pushCustomerContact()` input array from the
 	 * validated required fields plus every optional field present in the
 	 * request params.
 	 *
 	 * @param string $onderwerp The already-validated, non-empty subject.
-	 * @param string $kanaal The already-validated, non-empty channel.
+	 * @param string $channel The already-validated, non-empty channel.
 	 * @param array $params The full request params.
 	 *
 	 * @return array The assembled push input.
 	 */
-	private function buildPushInput(string $onderwerp, string $kanaal, array $params): array {
+	private function buildPushInput(string $onderwerp, string $channel, array $params): array {
 		$input = [
 			'onderwerp' => $onderwerp,
-			'kanaal' => $kanaal,
+			'channel' => $channel,
 		];
 
-		$stringFields = ['tekst', 'plaatsgevondenOp', 'taal', 'caseReference', 'caseObjectType', 'sourceApp'];
+		$stringFields = ['tekst', 'occurredOn', 'language', 'caseReference', 'caseObjectType', 'sourceApp'];
 		foreach ($stringFields as $stringField) {
 			if (isset($params[$stringField]) === true) {
 				$input[$stringField] = (string)$params[$stringField];
 			}
 		}
 
-		if (isset($params['indicatieContactGelukt']) === true) {
-			$input['indicatieContactGelukt'] = (bool)$params['indicatieContactGelukt'];
+		if (isset($params['indicationContactSucceeded']) === true) {
+			$input['indicationContactSucceeded'] = (bool)$params['indicationContactSucceeded'];
 		}
 
-		if (isset($params['betrokkene']) === true && is_array($params['betrokkene']) === true) {
-			$input['betrokkene'] = $params['betrokkene'];
+		if (isset($params['involvedParty']) === true && is_array($params['involvedParty']) === true) {
+			$input['involvedParty'] = $params['involvedParty'];
 		}
 
 		return $input;

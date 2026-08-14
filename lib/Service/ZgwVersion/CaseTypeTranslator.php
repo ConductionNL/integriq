@@ -37,7 +37,7 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTypeTranslator extends AbstractZgwResourceTranslator {
+class CaseTypeTranslator extends AbstractZgwResourceTranslator {
 
 	/**
 	 * Fields procest's own `LoadDefaultZgwMappings::getZaakTypeMapping()`

@@ -22,9 +22,9 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Exception\StufZknProviderException;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
 use OCA\OpenConnector\Service\StufZknSyncService;
@@ -129,18 +129,18 @@ class StufZknSyncServiceTest extends TestCase {
 				}
 
 				if ($schema === StufZknSyncService::SCHEMA_MESSAGE) {
-					$referentienummer = ($filters['referentienummer'] ?? null);
+					$referenceNumber = ($filters['referentienummer'] ?? null);
 					$direction = ($filters['direction'] ?? null);
 					$matching = array_values(
 						array_filter(
 							$this->messages,
-							static function (ObjectEntity $m) use ($referentienummer, $direction): bool {
+							static function (ObjectEntity $m) use ($referenceNumber, $direction): bool {
 								$data = $m->getObject();
 								if ($direction !== null && ($data['direction'] ?? null) !== $direction) {
 									return false;
 								}
 
-								if ($referentienummer !== null && ($data['referentienummer'] ?? null) !== $referentienummer) {
+								if ($referenceNumber !== null && ($data['referentienummer'] ?? null) !== $referenceNumber) {
 									return false;
 								}
 
@@ -152,9 +152,9 @@ class StufZknSyncServiceTest extends TestCase {
 				}
 
 				// zaak/document target lookup by identificatie.
-				$identificatie = ($filters['identificatie'] ?? null);
+				$identification = ($filters['identificatie'] ?? null);
 				$register = ($filters['register'] ?? '');
-				$key = $register . ':' . $schema . ':' . $identificatie;
+				$key = $register . ':' . $schema . ':' . $identification;
 				$found = ($this->targets[$key] ?? null);
 
 				return ['results' => ($found === null ? [] : [$found])];
@@ -170,9 +170,9 @@ class StufZknSyncServiceTest extends TestCase {
 				if ($schema === StufZknSyncService::DEFAULT_ZAAK_SCHEMA
 					|| $schema === StufZknSyncService::DEFAULT_DOCUMENT_SCHEMA
 				) {
-					$identificatie = ($object['identificatie'] ?? null);
-					if ($identificatie !== null) {
-						$this->targets[$register . ':' . $schema . ':' . $identificatie] = $entity;
+					$identification = ($object['identificatie'] ?? null);
+					if ($identification !== null) {
+						$this->targets[$register . ':' . $schema . ':' . $identification] = $entity;
 					}
 				}
 
@@ -184,8 +184,8 @@ class StufZknSyncServiceTest extends TestCase {
 			$this->objectService,
 			$this->logProvider,
 			$this->restProvider,
-			new InboundBerichtTranslator(),
-			new OutboundKennisgevingTranslator(),
+			new InboundMessageTranslator(),
+			new OutboundNotificationTranslator(),
 			new StufZknAcknowledgementBuilder(),
 			$this->logger,
 			new RawSourceResolver($this->objectService, $this->logger)
@@ -228,13 +228,13 @@ class StufZknSyncServiceTest extends TestCase {
 	/**
 	 * A minimal well-formed zakLk01 SOAP envelope.
 	 *
-	 * @param string $verwerkingssoort The object's verwerkingssoort attribute.
-	 * @param string $referentienummer The stuurgegevens.referentienummer.
-	 * @param string $identificatie The object's identificatie.
+	 * @param string $processingKind The object's verwerkingssoort attribute.
+	 * @param string $referenceNumber The stuurgegevens.referentienummer.
+	 * @param string $identification The object's identificatie.
 	 *
 	 * @return string
 	 */
-	private function zakLk01(string $verwerkingssoort = 'T', string $referentienummer = 'REF-1', string $identificatie = 'ZAAK-1'): string {
+	private function zakLk01(string $processingKind = 'T', string $referenceNumber = 'REF-1', string $identification = 'ZAAK-1'): string {
 		return <<<XML
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
                 xmlns:StUF="http://www.egem.nl/StUF/StUF0301"
@@ -246,13 +246,13 @@ class StufZknSyncServiceTest extends TestCase {
         <StUF:berichtcode>Lk01</StUF:berichtcode>
         <StUF:zender><StUF:organisatie>Gemeente X</StUF:organisatie></StUF:zender>
         <StUF:ontvanger><StUF:organisatie>Procest</StUF:organisatie></StUF:ontvanger>
-        <StUF:referentienummer>{$referentienummer}</StUF:referentienummer>
+        <StUF:referentienummer>{$referenceNumber}</StUF:referentienummer>
         <StUF:tijdstipBericht>20260716120000</StUF:tijdstipBericht>
         <StUF:entiteittype>ZAK</StUF:entiteittype>
       </zkn:stuurgegevens>
-      <zkn:parameters><StUF:mutatiesoort>{$verwerkingssoort}</StUF:mutatiesoort></zkn:parameters>
-      <zkn:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="{$verwerkingssoort}">
-        <zkn:identificatie>{$identificatie}</zkn:identificatie>
+      <zkn:parameters><StUF:mutatiesoort>{$processingKind}</StUF:mutatiesoort></zkn:parameters>
+      <zkn:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="{$processingKind}">
+        <zkn:identificatie>{$identification}</zkn:identificatie>
         <zkn:omschrijving>Kapvergunning</zkn:omschrijving>
         <zkn:zaaktype><zkn:code>B0337</zkn:code></zkn:zaaktype>
         <zkn:registratiedatum>20260716</zkn:registratiedatum>
@@ -270,7 +270,7 @@ XML;
 	 *
 	 * @return array
 	 */
-	private function zaakFields(): array {
+	private function caseFields(): array {
 		return [
 			'identificatie' => 'ZAAK-2026-001',
 			'omschrijving' => 'Kapvergunning',
@@ -319,7 +319,7 @@ XML;
 	 */
 	public function testSendKennisgevingThrowsWhenNoSourceConfigured(): void {
 		$this->expectException(StufZknProviderException::class);
-		$this->service->sendKennisgeving($this->zaakFields(), 'T');
+		$this->service->sendNotification($this->caseFields(), 'T');
 
 	}//end testSendKennisgevingThrowsWhenNoSourceConfigured()
 
@@ -332,7 +332,7 @@ XML;
 		$this->sources[] = $this->sourceEntity();
 		$this->logProvider->method('send')->willReturn('MOCK-STUFZKN-1');
 
-		$result = $this->service->sendKennisgeving($this->zaakFields(), 'T');
+		$result = $this->service->sendNotification($this->caseFields(), 'T');
 
 		$this->assertNotSame('', $result['referentienummer']);
 		$this->assertCount(1, $this->saved[StufZknSyncService::SCHEMA_MESSAGE]);
@@ -355,7 +355,7 @@ XML;
 		);
 
 		try {
-			$this->service->sendKennisgeving($this->zaakFields(), 'T');
+			$this->service->sendNotification($this->caseFields(), 'T');
 			$this->fail('Expected StufZknProviderException was not thrown.');
 		} catch (StufZknProviderException $exception) {
 			$this->assertSame('consumer unreachable', $exception->getMessage());
@@ -380,8 +380,8 @@ XML;
 		$this->assertStringContainsString('<StUF:crossRefnummer>REF-1</StUF:crossRefnummer>', $reply);
 
 		$this->assertCount(1, $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA]);
-		$savedZaak = $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA][0]['object'];
-		$this->assertSame('ZAAK-1', $savedZaak['identificatie']);
+		$savedCase = $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA][0]['object'];
+		$this->assertSame('ZAAK-1', $savedCase['identificatie']);
 
 		$savedMessage = $this->saved[StufZknSyncService::SCHEMA_MESSAGE][0]['object'];
 		$this->assertSame('inbound', $savedMessage['direction']);
@@ -414,7 +414,7 @@ XML;
 	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-redelivered-inbound-message-is-acknowledged-without-duplicating-state
 	 */
 	public function testRedeliveredInboundMessageDoesNotDuplicate(): void {
-		$first = $this->service->receiveInbound($this->zakLk01(referentienummer: 'REF-DUP'));
+		$first = $this->service->receiveInbound($this->zakLk01(referenceNumber: 'REF-DUP'));
 		$this->assertStringContainsString('Bv03Bericht', $first);
 		$this->assertCount(1, $this->saved[StufZknSyncService::SCHEMA_MESSAGE]);
 		$this->assertCount(1, $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA]);
@@ -430,7 +430,7 @@ XML;
 			'msg-dup'
 		);
 
-		$second = $this->service->receiveInbound($this->zakLk01(referentienummer: 'REF-DUP'));
+		$second = $this->service->receiveInbound($this->zakLk01(referenceNumber: 'REF-DUP'));
 
 		$this->assertStringContainsString('Bv03Bericht', $second);
 		// No NEW stuf_message row and no NEW zaak upsert were added for the redelivery.
@@ -450,12 +450,12 @@ XML;
 			'zaak-uuid-1'
 		);
 
-		$reply = $this->service->receiveInbound($this->zakLk01(verwerkingssoort: 'V'));
+		$reply = $this->service->receiveInbound($this->zakLk01(processingKind: 'V'));
 
 		$this->assertStringContainsString('Bv03Bericht', $reply);
-		$savedZaak = $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA][0]['object'];
-		$this->assertSame('vervallen', $savedZaak['status']);
-		$this->assertSame('Kapvergunning', $savedZaak['omschrijving'], 'vervallen must not wipe other fields');
+		$savedCase = $this->saved[StufZknSyncService::DEFAULT_ZAAK_SCHEMA][0]['object'];
+		$this->assertSame('vervallen', $savedCase['status']);
+		$this->assertSame('Kapvergunning', $savedCase['omschrijving'], 'vervallen must not wipe other fields');
 
 	}//end testVervallenMarksExistingZaakVervallenRatherThanDeleting()
 
@@ -466,7 +466,7 @@ XML;
 	 * @return void
 	 */
 	public function testVervallenForUnknownIdentificatieIsNoOp(): void {
-		$reply = $this->service->receiveInbound($this->zakLk01(verwerkingssoort: 'V', identificatie: 'ZAAK-NEVER-SEEN'));
+		$reply = $this->service->receiveInbound($this->zakLk01(processingKind: 'V', identification: 'ZAAK-NEVER-SEEN'));
 
 		$this->assertStringContainsString('Bv03Bericht', $reply);
 		$this->assertArrayNotHasKey(StufZknSyncService::DEFAULT_ZAAK_SCHEMA, $this->saved);

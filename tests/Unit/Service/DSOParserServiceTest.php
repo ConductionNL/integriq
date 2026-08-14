@@ -196,15 +196,15 @@ class DSOParserServiceTest extends TestCase {
 			'bouwkosten' => '250000',
 		];
 
-		$verzoek = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseRequest($payload);
 
-		$this->assertSame('dso-12345', $verzoek['verzoekId']);
-		$this->assertSame('aanvraag', $verzoek['type']);
-		$this->assertSame('ontvangen', $verzoek['status']);
-		$this->assertSame(250000.0, $verzoek['bouwkosten']);
-		$this->assertSame('999993653', $verzoek['aanvrager']['bsn']);
-		$this->assertCount(1, $verzoek['activiteiten']);
-		$this->assertSame('bouwen-01', $verzoek['activiteiten'][0]['code']);
+		$this->assertSame('dso-12345', $request['verzoekId']);
+		$this->assertSame('aanvraag', $request['type']);
+		$this->assertSame('ontvangen', $request['status']);
+		$this->assertSame(250000.0, $request['bouwkosten']);
+		$this->assertSame('999993653', $request['aanvrager']['bsn']);
+		$this->assertCount(1, $request['activiteiten']);
+		$this->assertSame('bouwen-01', $request['activiteiten'][0]['code']);
 
 	}//end testParseVerzoekExtractsAllFields()
 
@@ -225,12 +225,12 @@ class DSOParserServiceTest extends TestCase {
 			'activiteiten' => [],
 		];
 
-		$verzoek = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseRequest($payload);
 
-		$this->assertNotNull($verzoek['locatie']['geometrie']);
-		$this->assertSame('Point', $verzoek['locatie']['geometrie']['type']);
-		$this->assertEqualsWithDelta(4.895168, $verzoek['locatie']['geometrie']['coordinates'][0], 0.0001);
-		$this->assertEqualsWithDelta(52.370216, $verzoek['locatie']['geometrie']['coordinates'][1], 0.0001);
+		$this->assertNotNull($request['locatie']['geometrie']);
+		$this->assertSame('Point', $request['locatie']['geometrie']['type']);
+		$this->assertEqualsWithDelta(4.895168, $request['locatie']['geometrie']['coordinates'][0], 0.0001);
+		$this->assertEqualsWithDelta(52.370216, $request['locatie']['geometrie']['coordinates'][1], 0.0001);
 
 	}//end testParseLocatieConvertsGMLPoint()
 

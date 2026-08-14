@@ -392,13 +392,13 @@ class PdokConnector {
 	 * @return array Canonical PostalAddress object.
 	 */
 	public function normalize(array $pdokDoc): array {
-		$huisnummer = ($pdokDoc['huisnummer'] ?? null);
-		$huisletter = ($pdokDoc['huisletter'] ?? null);
+		$rawHouseNumber = ($pdokDoc['huisnummer'] ?? null);
+		$houseLetter = ($pdokDoc['huisletter'] ?? null);
 		$houseNumber = null;
-		if ($huisnummer !== null) {
-			$houseNumber = (string)$huisnummer;
-			if ($huisletter !== null && $huisletter !== '') {
-				$houseNumber .= (string)$huisletter;
+		if ($rawHouseNumber !== null) {
+			$houseNumber = (string)$rawHouseNumber;
+			if ($houseLetter !== null && $houseLetter !== '') {
+				$houseNumber .= (string)$houseLetter;
 			}
 		}
 

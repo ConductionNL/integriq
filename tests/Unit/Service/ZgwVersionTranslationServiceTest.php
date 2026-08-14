@@ -23,13 +23,13 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
 use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
 use OCA\OpenConnector\Exception\ZgwUnknownVersionException;
-use OCA\OpenConnector\Service\ZgwVersion\BesluitTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\InformatieObjectTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ResultaatTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\ResultTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\RolTranslator;
 use OCA\OpenConnector\Service\ZgwVersion\StatusTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTypeTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\CaseTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\CaseTypeTranslator;
 use OCA\OpenConnector\Service\ZgwVersionNegotiationService;
 use OCA\OpenConnector\Service\ZgwVersionTranslationService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -66,13 +66,13 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 		$this->service = new ZgwVersionTranslationService(
 			negotiationService: new ZgwVersionNegotiationService(),
 			objectService: $this->objectService,
-			zaakTranslator: new ZaakTranslator(),
-			zaakTypeTranslator: new ZaakTypeTranslator(),
+			caseTranslator: new CaseTranslator(),
+			caseTypeTranslator: new CaseTypeTranslator(),
 			informatieObjectTranslator: new InformatieObjectTranslator(),
-			besluitTranslator: new BesluitTranslator(),
-			rolTranslator: new RolTranslator(),
+			decisionTranslator: new DecisionTranslator(),
+			roleTranslator: new RolTranslator(),
 			statusTranslator: new StatusTranslator(),
-			resultaatTranslator: new ResultaatTranslator()
+			resultTranslator: new ResultTranslator()
 		);
 	}//end setUp()
 

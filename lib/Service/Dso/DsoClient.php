@@ -6,7 +6,7 @@
  * Thin REST binding for {@see DsoConnectorProviderInterface} against a
  * DSO-LV-fronted "voortgangsinformatie"/besluit endpoint. Deliberately a
  * hand-rolled HTTP client (Guzzle, already an app dependency) rather than a
- * DSO SDK dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient}
+ * DSO SDK dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
  * and {@see \OCA\OpenConnector\Service\Kiss\KlantinteractiesClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live DSO-LV/preprod connection was available
@@ -38,7 +38,7 @@
  * `configuration.authentication.encryptedToken`, ENCRYPTED AT REST via
  * Nextcloud's `OCP\Security\ICrypto`, decrypted in-process only for the
  * instant needed to build each request's Authorization header (never
- * logged, never persisted decrypted). Mirrors `IStandaardenClient`'s
+ * logged, never persisted decrypted). Mirrors `IStandardsClient`'s
  * identical, already-accepted deviation from `credentialRef`/
  * `BrokeredCallService`.
  *
@@ -204,7 +204,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The `dso` source's `configuration` object.
-	 * @param string $verzoekId The DSO `verzoekId` this message concerns.
+	 * @param string $requestId The DSO `verzoekId` this message concerns.
 	 * @param string $type The message kind: `status` or `besluit`.
 	 * @param array $payload The already-built message payload.
 	 *
@@ -212,7 +212,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
 	 */
-	public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string {
+	public function send(array $sourceConfiguration, string $requestId, string $type, array $payload): string {
 		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
 		if ($baseUrl === '') {
 			throw new DsoProviderException(
@@ -280,7 +280,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 			throw new DsoProviderException(message: 'DSO-LV endpoint responded with HTTP ' . $status . '.');
 		}
 
-		return $this->extractRef(body: $body, verzoekId: $verzoekId, type: $type);
+		return $this->extractRef(body: $body, requestId: $requestId, type: $type);
 	}//end send()
 
 	/**
@@ -315,12 +315,12 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * (the endpoint accepted the message but assigned no ref of its own).
 	 *
 	 * @param string $body The raw response body.
-	 * @param string $verzoekId The DSO `verzoekId` this message concerned.
+	 * @param string $requestId The DSO `verzoekId` this message concerned.
 	 * @param string $type The message kind (`status`|`besluit`).
 	 *
 	 * @return string The extracted (or locally-derived) reference.
 	 */
-	private function extractRef(string $body, string $verzoekId, string $type): string {
+	private function extractRef(string $body, string $requestId, string $type): string {
 		$trimmed = trim($body);
 		if ($trimmed !== '') {
 			$decoded = json_decode($trimmed, true);
@@ -334,7 +334,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 
 		// No transport-assigned ref — derive a locally-unique one so the
 		// caller still has something to persist/correlate on.
-		return $verzoekId . '-' . $type . '-' . (string)time();
+		return $requestId . '-' . $type . '-' . (string)time();
 	}//end extractRef()
 
 	/**

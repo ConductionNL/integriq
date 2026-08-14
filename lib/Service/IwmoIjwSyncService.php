@@ -34,11 +34,11 @@ namespace OCA\OpenConnector\Service;
 use DateTime;
 use OCA\OpenConnector\Exception\IwmoIjwProviderException;
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
+use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
 use OCA\OpenConnector\Service\IwmoIjw\IwmoIjwProviderInterface;
 use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -90,9 +90,9 @@ class IwmoIjwSyncService {
 	 *
 	 * @param ORObjectService $objectService OR object service for source/message/case persistence.
 	 * @param LogIwmoIjwProvider $logProvider The sandbox provider binding.
-	 * @param IStandaardenClient $restProvider The generic REST provider binding.
-	 * @param OutboundBerichtTranslator $outboundTranslator Translates an OR case object into an envelope.
-	 * @param InboundRetourTranslator $inboundTranslator Translates a retour envelope into a status update.
+	 * @param IStandardsClient $restProvider The generic REST provider binding.
+	 * @param OutboundMessageTranslator $outboundTranslator Translates an OR case object into an envelope.
+	 * @param InboundReturnTranslator $inboundTranslator Translates a retour envelope into a status update.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
@@ -100,9 +100,9 @@ class IwmoIjwSyncService {
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly LogIwmoIjwProvider $logProvider,
-		private readonly IStandaardenClient $restProvider,
-		private readonly OutboundBerichtTranslator $outboundTranslator,
-		private readonly InboundRetourTranslator $inboundTranslator,
+		private readonly IStandardsClient $restProvider,
+		private readonly OutboundMessageTranslator $outboundTranslator,
+		private readonly InboundReturnTranslator $inboundTranslator,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
@@ -127,7 +127,7 @@ class IwmoIjwSyncService {
 	 *
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
 	 */
-	public function sendBericht(array $input): array {
+	public function sendMessage(array $input): array {
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
@@ -162,7 +162,7 @@ class IwmoIjwSyncService {
 			'domain' => $domain,
 			'status' => $status,
 			'ref' => $translated['ref'],
-			'kenmerk' => null,
+			'reference' => null,
 			'caseReference' => $caseReference,
 			'caseRegister' => $caseRegister,
 			'caseSchema' => $caseSchema,
@@ -170,7 +170,7 @@ class IwmoIjwSyncService {
 			'syncedAt' => (new DateTime())->format('c'),
 		];
 
-		if ($kind === OutboundBerichtTranslator::KIND_TOEWIJZING && isset($input['bsn']) === true) {
+		if ($kind === OutboundMessageTranslator::KIND_TOEWIJZING && isset($input['bsn']) === true) {
 			$record['bsnHash'] = hash('sha256', (string)$input['bsn']);
 		}
 
@@ -181,7 +181,7 @@ class IwmoIjwSyncService {
 		}
 
 		return ['ref' => $translated['ref'], 'berichttype' => $translated['berichttype']];
-	}//end sendBericht()
+	}//end sendMessage()
 
 	/**
 	 * Receive, verify-translate, and process one retour envelope.
@@ -199,7 +199,7 @@ class IwmoIjwSyncService {
 	 *
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
 	 */
-	public function receiveRetour(string $rawXml): void {
+	public function receiveReturn(string $rawXml): void {
 		try {
 			$update = $this->inboundTranslator->translate(xml: $rawXml);
 		} catch (Throwable $exception) {
@@ -210,7 +210,7 @@ class IwmoIjwSyncService {
 			return;
 		}
 
-		$outbound = $this->findByRef(ref: $update['kenmerk']);
+		$outbound = $this->findByRef(ref: $update['reference']);
 		$caseReference = null;
 		$caseRegister = null;
 		$caseSchema = null;
@@ -235,7 +235,7 @@ class IwmoIjwSyncService {
 				'domain' => $domain,
 				'status' => $update['status'],
 				'ref' => null,
-				'kenmerk' => $update['kenmerk'],
+				'reference' => $update['reference'],
 				'caseReference' => $caseReference,
 				'caseRegister' => $caseRegister,
 				'caseSchema' => $caseSchema,
@@ -249,7 +249,7 @@ class IwmoIjwSyncService {
 		if ($outbound === null || $caseReference === null || $caseRegister === null || $caseSchema === null) {
 			$this->logger->warning(
 				$this->l->t('iWMO/iJW retour kenmerk did not resolve to a linkable case'),
-				['kenmerk' => $update['kenmerk']]
+				['reference' => $update['reference']]
 			);
 			return;
 		}
@@ -261,7 +261,7 @@ class IwmoIjwSyncService {
 			update: $update
 		);
 
-	}//end receiveRetour()
+	}//end receiveReturn()
 
 	/**
 	 * Re-attempt every `iwmo_ijw_message` row with `status: failed` or
@@ -414,7 +414,7 @@ class IwmoIjwSyncService {
 	 *
 	 * `findAll()` LOCATES the source but ALWAYS renders it — it has no `_render`
 	 * parameter and calls `renderEntities()` unconditionally — so the credentials
-	 * {@see IStandaardenClient} needs are stripped by the write-only boundary
+	 * {@see IStandardsClient} needs are stripped by the write-only boundary
 	 * (ocon#242 / openregister#459). {@see RawSourceResolver::resolveRaw()} re-reads
 	 * the located uuid with `_render: false`, the ONLY read that survives it.
 	 * `_rbac: false` does NOT — the strip is schema-gated (the ocon#212/#226 lesson).

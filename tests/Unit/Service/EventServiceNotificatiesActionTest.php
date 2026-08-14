@@ -154,7 +154,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 	public function testActionKindNotificatiesPublishesBodyOn2xx(): void {
 		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://notificaties.example'], 'source-1');
 		$event = $this->wireSubscription(
-			['kind' => 'notificaties', 'sourceId' => 'source-1', 'kanaal' => 'zaken'],
+			['kind' => 'notificaties', 'sourceId' => 'source-1', 'channel' => 'zaken'],
 			['source' => $source]
 		);
 
@@ -174,7 +174,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 
 		$this->assertSame('/notificaties', $capturedCall['endpoint']);
 		$this->assertSame('POST', $capturedCall['method']);
-		$this->assertSame('zaken', $capturedCall['config']['json']['kanaal']);
+		$this->assertSame('zaken', $capturedCall['config']['json']['channel']);
 		$this->assertSame('delivered', $this->capturedMessage['status']);
 
 	}//end testActionKindNotificatiesPublishesBodyOn2xx()
@@ -190,7 +190,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 	public function testActionKindNotificatiesFailureIncrementsRetryCount(): void {
 		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://notificaties.example'], 'source-1');
 		$event = $this->wireSubscription(
-			['kind' => 'notificaties', 'sourceId' => 'source-1', 'kanaal' => 'zaken'],
+			['kind' => 'notificaties', 'sourceId' => 'source-1', 'channel' => 'zaken'],
 			['source' => $source]
 		);
 
@@ -212,7 +212,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 */
 	public function testActionKindNotificatiesUnresolvableSourceIsRetryable(): void {
-		$event = $this->wireSubscription(['kind' => 'notificaties', 'sourceId' => 'missing-uuid', 'kanaal' => 'zaken']);
+		$event = $this->wireSubscription(['kind' => 'notificaties', 'sourceId' => 'missing-uuid', 'channel' => 'zaken']);
 
 		$this->callService->expects($this->never())->method('call');
 

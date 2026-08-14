@@ -171,14 +171,14 @@ class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 			$this->abonnement(['consumerId' => self::CONSUMER_ID])
 		);
 		$this->request->method('getHeader')->with('Authorization')->willReturn('secret-key');
-		$this->request->method('getParams')->willReturn(['_route' => 'x', 'kanaal' => 'zaken']);
+		$this->request->method('getParams')->willReturn(['_route' => 'x', 'channel' => 'zaken']);
 		$this->authorizationService->method('getResolvedConsumer')->willReturn(
 			$this->consumer(self::CONSUMER_ID)
 		);
 
 		$this->subscriberService->expects($this->once())
 			->method('handleInboundNotification')
-			->with(self::ABONNEMENT_ID, ['kanaal' => 'zaken']);
+			->with(self::ABONNEMENT_ID, ['channel' => 'zaken']);
 
 		$response = $this->controller()->callback(self::ABONNEMENT_ID);
 
@@ -261,7 +261,7 @@ class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 			$this->abonnement(['consumerId' => self::CONSUMER_ID])
 		);
 		$this->request->method('getHeader')->willReturn('wrong-key');
-		$this->request->method('getParams')->willReturn(['kanaal' => 'zaken']);
+		$this->request->method('getParams')->willReturn(['channel' => 'zaken']);
 		$this->authorizationService->method('authorizeApiKey')
 			->willThrowException(new AuthenticationException('no such key', []));
 

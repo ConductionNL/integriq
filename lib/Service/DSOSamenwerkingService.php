@@ -65,9 +65,9 @@ class DSOSamenwerkingService {
 	 * Builds the adviesverzoek payload from zaak data and POSTs it to the
 	 * partner's OIN endpoint at $dsoSwfUrl.
 	 *
-	 * @param array $zaak The zaak for which advice is requested.
+	 * @param array $case The zaak for which advice is requested.
 	 * @param string $partnerOin OIN of the partner organisation to consult.
-	 * @param string $termijn ISO 8601 deadline for the partner's response.
+	 * @param string $term ISO 8601 deadline for the partner's response.
 	 * @param string $dsoSwfUrl Base URL of the DSO-SWF endpoint.
 	 * @param string|null $certPath Optional client certificate path for mTLS.
 	 *
@@ -76,16 +76,16 @@ class DSOSamenwerkingService {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
 	 */
 	public function sendAdviesverzoek(
-		array $zaak,
+		array $case,
 		string $partnerOin,
-		string $termijn,
+		string $term,
 		string $dsoSwfUrl,
 		?string $certPath = null,
 	): array {
 		$payload = $this->buildAdviesverzoekPayload(
-			zaak: $zaak,
+			case: $case,
 			partnerOin: $partnerOin,
-			termijn: $termijn
+			term: $term
 		);
 		$adviesverzoekId = ($payload['adviesverzoekId'] ?? uniqid(prefix: 'avz-', more_entropy: true));
 
@@ -113,7 +113,7 @@ class DSOSamenwerkingService {
 					[
 						'adviesverzoekId' => $adviesverzoekId,
 						'partnerOin' => $partnerOin,
-						'zaakId' => ($zaak['id'] ?? null),
+						'caseId' => ($case['id'] ?? null),
 					]
 				);
 
@@ -150,7 +150,7 @@ class DSOSamenwerkingService {
 			return [
 				'success' => false,
 				'adviesverzoekId' => $adviesverzoekId,
-				'message' => 'Verzenden mislukt: ' . $e->getMessage(),
+				'message' => 'Send failed: ' . $e->getMessage(),
 			];
 		}//end try
 
@@ -163,20 +163,20 @@ class DSOSamenwerkingService {
 	 * (adviesId, organisatieOin, advies) and stores it linked to the given zaakId.
 	 *
 	 * @param array $adviesPayload The incoming advies payload from the partner.
-	 * @param string $zaakId The zaak identifier to link this advies to.
+	 * @param string $caseId The zaak identifier to link this advies to.
 	 *
-	 * @return array Array with 'stored', 'adviesId', and 'zaakId' keys.
+	 * @return array Array with 'stored', 'adviesId', and 'caseId' keys.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
 	 */
-	public function receiveAdvies(array $adviesPayload, string $zaakId): array {
+	public function receiveAdvies(array $adviesPayload, string $caseId): array {
 		// Validate required fields.
 		foreach (self::REQUIRED_ADVIES_FIELDS as $field) {
 			if (isset($adviesPayload[$field]) === false || $adviesPayload[$field] === '') {
 				$this->logger->warning(
 					'DSO-SWF: received advies missing required field',
 					[
-						'zaakId' => $zaakId,
+						'caseId' => $caseId,
 						'field' => $field,
 					]
 				);
@@ -184,7 +184,7 @@ class DSOSamenwerkingService {
 				return [
 					'stored' => false,
 					'adviesId' => null,
-					'zaakId' => $zaakId,
+					'caseId' => $caseId,
 					'error' => 'required_field_missing: ' . $field,
 				];
 			}
@@ -197,14 +197,14 @@ class DSOSamenwerkingService {
 			[
 				'adviesId' => $adviesId,
 				'organisatieOin' => ($adviesPayload['organisatieOin'] ?? null),
-				'zaakId' => $zaakId,
+				'caseId' => $caseId,
 			]
 		);
 
 		return [
 			'stored' => true,
 			'adviesId' => $adviesId,
-			'zaakId' => $zaakId,
+			'caseId' => $caseId,
 		];
 
 	}//end receiveAdvies()
@@ -214,25 +214,25 @@ class DSOSamenwerkingService {
 	 *
 	 * Assembles the structured payload from zaak data, partner OIN, and termijn.
 	 *
-	 * @param array $zaak The zaak for which advice is requested.
+	 * @param array $case The zaak for which advice is requested.
 	 * @param string $partnerOin OIN of the partner organisation.
-	 * @param string $termijn ISO 8601 deadline for the response.
+	 * @param string $term ISO 8601 deadline for the response.
 	 *
-	 * @return array Payload array with 'adviesverzoekId', 'zaakId', 'partnerOin',
+	 * @return array Payload array with 'adviesverzoekId', 'caseId', 'partnerOin',
 	 *               'termijn', and 'zaakDocumenten' keys.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
 	 */
-	public function buildAdviesverzoekPayload(array $zaak, string $partnerOin, string $termijn): array {
+	public function buildAdviesverzoekPayload(array $case, string $partnerOin, string $term): array {
 		$adviesverzoekId = uniqid(prefix: 'avz-', more_entropy: true);
-		$zaakDocumenten = ($zaak['documenten'] ?? []);
+		$caseDocumenten = ($case['documenten'] ?? []);
 
 		return [
 			'adviesverzoekId' => $adviesverzoekId,
-			'zaakId' => ($zaak['id'] ?? null),
+			'caseId' => ($case['id'] ?? null),
 			'partnerOin' => $partnerOin,
-			'termijn' => $termijn,
-			'zaakDocumenten' => $zaakDocumenten,
+			'termijn' => $term,
+			'zaakDocumenten' => $caseDocumenten,
 			'aangemaakt' => date('c'),
 		];
 

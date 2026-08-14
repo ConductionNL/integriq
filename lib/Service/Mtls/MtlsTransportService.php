@@ -7,7 +7,7 @@
  * with a client certificate attached: materialise → merge Guzzle TLS
  * options → dispatch via the CALLER'S OWN injected Guzzle `Client` (no
  * parallel HTTP stack) → clean up temp files in a `finally` block,
- * regardless of success or failure. `IStandaardenClient`,
+ * regardless of success or failure. `IStandardsClient`,
  * `FscDirectoryClient`, and `DsoClient` each call this instead of
  * `Client::request()` directly when their source's
  * `configuration.authentication.mode=mtls`.

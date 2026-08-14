@@ -6,7 +6,7 @@
  * Thin binding for {@see StufZknProviderInterface} against a subscribed
  * legacy StUF consumer's inbound endpoint. Deliberately a hand-rolled HTTP
  * client (Guzzle, already an app dependency) rather than a SOAP/XSD library
- * dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient}
+ * dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
  * and {@see \OCA\OpenConnector\Service\Dso\DsoClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live municipal StUF-ZKN endpoint was
@@ -28,7 +28,7 @@
  * client dispatches through the SAME shared
  * {@see \OCA\OpenConnector\Service\Mtls\MtlsTransportService} +
  * `authentication.mode` (`token`|`mtls`) pattern already proven by
- * `IStandaardenClient`/`FscDirectoryClient`/`DsoClient` — never a new,
+ * `IStandardsClient`/`FscDirectoryClient`/`DsoClient` — never a new,
  * bespoke TLS implementation. Token mode remains available as the
  * demonstrable pre-production fallback (mirrors every sibling REST
  * binding's identical, already-accepted deviation for the SAME reason: no
@@ -186,14 +186,14 @@ class StufZknClient implements StufZknProviderInterface {
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-	 * @param string $referentienummer The kennisgeving's `stuurgegevens.referentienummer`.
+	 * @param string $referenceNumber The kennisgeving's `stuurgegevens.referentienummer`.
 	 * @param string $envelopeXml The fully rendered `zakLk01` envelope XML.
 	 *
 	 * @return string The extracted (or locally-derived) reference.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
 	 */
-	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string {
+	public function send(array $sourceConfiguration, string $referenceNumber, string $envelopeXml): string {
 		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
 		if ($baseUrl === '') {
 			throw new StufZknProviderException(
@@ -252,7 +252,7 @@ class StufZknClient implements StufZknProviderInterface {
 			throw new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP ' . $status . '.');
 		}
 
-		return $this->extractRef(body: $body, referentienummer: $referentienummer);
+		return $this->extractRef(body: $body, referenceNumber: $referenceNumber);
 	}//end send()
 
 	/**
@@ -285,11 +285,11 @@ class StufZknClient implements StufZknProviderInterface {
 	 * reference so the caller still has something to persist/correlate on.
 	 *
 	 * @param string $body The raw response body.
-	 * @param string $referentienummer The outbound kennisgeving's own referentienummer.
+	 * @param string $referenceNumber The outbound kennisgeving's own referentienummer.
 	 *
 	 * @return string The extracted (or locally-derived) reference.
 	 */
-	private function extractRef(string $body, string $referentienummer): string {
+	private function extractRef(string $body, string $referenceNumber): string {
 		$parsed = $this->xmlParser->parse(xml: $body);
 		if ($parsed !== null) {
 			$found = $parsed->xpath('//*[local-name()="referentienummer"]');
@@ -301,7 +301,7 @@ class StufZknClient implements StufZknProviderInterface {
 			}
 		}
 
-		return $referentienummer . '-ack-' . (string)time();
+		return $referenceNumber . '-ack-' . (string)time();
 	}//end extractRef()
 
 	/**

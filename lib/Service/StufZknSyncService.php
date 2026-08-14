@@ -53,9 +53,9 @@ use DateTime;
 use OCA\OpenConnector\Exception\StufZknProviderException;
 use OCA\OpenConnector\Exception\StufZknTranslationException;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
 use OCA\OpenConnector\Service\StufZkn\StufZknProviderInterface;
@@ -147,8 +147,8 @@ class StufZknSyncService {
 	 * @param ORObjectService $objectService OR object service for source/message/zaak/document persistence.
 	 * @param LogStufZknProvider $logProvider The sandbox outbound provider binding.
 	 * @param StufZknClient $restProvider The generic REST/mTLS outbound provider binding.
-	 * @param InboundBerichtTranslator $inboundTranslator Translates an inbound kennisgeving.
-	 * @param OutboundKennisgevingTranslator $outboundTranslator Translates an OR zaak into a kennisgeving.
+	 * @param InboundMessageTranslator $inboundTranslator Translates an inbound kennisgeving.
+	 * @param OutboundNotificationTranslator $outboundTranslator Translates an OR zaak into a kennisgeving.
 	 * @param StufZknAcknowledgementBuilder $ackBuilder Builds Bv03/Fo03 replies.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
@@ -157,8 +157,8 @@ class StufZknSyncService {
 		private readonly ORObjectService $objectService,
 		private readonly LogStufZknProvider $logProvider,
 		private readonly StufZknClient $restProvider,
-		private readonly InboundBerichtTranslator $inboundTranslator,
-		private readonly OutboundKennisgevingTranslator $outboundTranslator,
+		private readonly InboundMessageTranslator $inboundTranslator,
+		private readonly OutboundNotificationTranslator $outboundTranslator,
 		private readonly StufZknAcknowledgementBuilder $ackBuilder,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
@@ -171,7 +171,7 @@ class StufZknSyncService {
 	 *
 	 * Never throws out to the controller — every failure path (malformed XML, translation
 	 * guard, OR write failure) is captured and shaped into a `Fo03` reply instead (mirrors
-	 * `IwmoIjwSyncService::receiveRetour()`'s "the controller always gets something to send
+	 * `IwmoIjwSyncService::receiveReturn()`'s "the controller always gets something to send
 	 * back" contract, adapted to StUF's own ack/fault berichten instead of a bare HTTP status).
 	 *
 	 * @param string $soapXml The raw inbound SOAP envelope XML, exactly as received on the wire.
@@ -181,7 +181,7 @@ class StufZknSyncService {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
 	 */
 	public function receiveInbound(string $soapXml): string {
-		[$zenderOrganisatie] = $this->resolveOrganisatieCodes();
+		[$zenderOrganisation] = $this->resolveOrganisationCodes();
 
 		try {
 			$translated = $this->inboundTranslator->translate(soapXml: $soapXml);
@@ -189,9 +189,9 @@ class StufZknSyncService {
 			$this->persistMessage(
 				direction: 'inbound',
 				berichttype: 'unknown',
-				referentienummer: '',
-				verwerkingssoort: null,
-				entiteittype: null,
+				referenceNumber: '',
+				processingKind: null,
+				entityType: null,
 				status: 'failed',
 				error: $exception->getMessage()
 			);
@@ -200,23 +200,23 @@ class StufZknSyncService {
 			return $this->ackBuilder->buildFo03(
 				reason: 'validation_failed',
 				crossRefnummer: '',
-				zenderOrganisatie: $zenderOrganisatie,
-				ontvangerOrganisatie: ''
+				zenderOrganisation: $zenderOrganisation,
+				ontvangerOrganisation: ''
 			);
 		}//end try
 
-		$ontvangerOrganisatie = $translated['senderOrganisatie'];
+		$ontvangerOrganisation = $translated['senderOrganisatie'];
 
 		// Idempotency: a redelivery of an already-fully-processed
 		// referentienummer never touches the OR object again — just
 		// re-acknowledges (REQ: "a redelivered StUF message must not
 		// duplicate").
-		$existing = $this->findInboundByReferentienummer(referentienummer: $translated['referentienummer']);
+		$existing = $this->findInboundByReferenceNumber(referenceNumber: $translated['referentienummer']);
 		if ($existing !== null && ($existing->getObject()['status'] ?? null) === 'processed') {
 			return $this->ackBuilder->buildBv03(
 				crossRefnummer: $translated['referentienummer'],
-				zenderOrganisatie: $zenderOrganisatie,
-				ontvangerOrganisatie: $ontvangerOrganisatie
+				zenderOrganisation: $zenderOrganisation,
+				ontvangerOrganisation: $ontvangerOrganisation
 			);
 		}
 
@@ -233,9 +233,9 @@ class StufZknSyncService {
 		$this->persistMessage(
 			direction: 'inbound',
 			berichttype: $translated['berichttype'],
-			referentienummer: $translated['referentienummer'],
-			verwerkingssoort: $translated['verwerkingssoort'],
-			entiteittype: $translated['entiteittype'],
+			referenceNumber: $translated['referentienummer'],
+			processingKind: $translated['verwerkingssoort'],
+			entityType: $translated['entiteittype'],
 			status: $status,
 			error: $error,
 			existing: $existing
@@ -245,15 +245,15 @@ class StufZknSyncService {
 			return $this->ackBuilder->buildFo03(
 				reason: 'processing_failed',
 				crossRefnummer: $translated['referentienummer'],
-				zenderOrganisatie: $zenderOrganisatie,
-				ontvangerOrganisatie: $ontvangerOrganisatie
+				zenderOrganisation: $zenderOrganisation,
+				ontvangerOrganisation: $ontvangerOrganisation
 			);
 		}
 
 		return $this->ackBuilder->buildBv03(
 			crossRefnummer: $translated['referentienummer'],
-			zenderOrganisatie: $zenderOrganisatie,
-			ontvangerOrganisatie: $ontvangerOrganisatie
+			zenderOrganisation: $zenderOrganisation,
+			ontvangerOrganisation: $ontvangerOrganisation
 		);
 
 	}//end receiveInbound()
@@ -261,8 +261,8 @@ class StufZknSyncService {
 	/**
 	 * Translate and dispatch one outbound `zakLk01` kennisgeving for an OR/ZGW zaak change.
 	 *
-	 * @param array $zaak The OR/ZGW zaak object fields — see design.md's outbound field table.
-	 * @param string $verwerkingssoort `T` (create), `W` (update/status change), or `V` (vervallen).
+	 * @param array $case The OR/ZGW zaak object fields — see design.md's outbound field table.
+	 * @param string $processingKind `T` (create), `W` (update/status change), or `V` (vervallen).
 	 *
 	 * @return array{referentienummer: string, ref: string} The kennisgeving's own referentienummer
 	 *                                                      and the transport-assigned/derived reference.
@@ -274,20 +274,20 @@ class StufZknSyncService {
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
 	 */
-	public function sendKennisgeving(array $zaak, string $verwerkingssoort): array {
+	public function sendNotification(array $case, string $processingKind): array {
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		[$zenderOrganisatie, $ontvangerOrganisatie] = $this->resolveOrganisatieCodes();
+		[$zenderOrganisation, $ontvangerOrganisation] = $this->resolveOrganisationCodes();
 
 		// Translation failures never reach the transport and never get an
 		// audit record — no referentienummer exists yet to key one on.
 		$translated = $this->outboundTranslator->translate(
-			zaak: $zaak,
-			verwerkingssoort: $verwerkingssoort,
-			zenderOrganisatie: $zenderOrganisatie,
-			ontvangerOrganisatie: $ontvangerOrganisatie
+			case: $case,
+			processingKind: $processingKind,
+			zenderOrganisation: $zenderOrganisation,
+			ontvangerOrganisation: $ontvangerOrganisation
 		);
 
 		$status = 'sent';
@@ -296,7 +296,7 @@ class StufZknSyncService {
 		try {
 			$ref = $provider->send(
 				sourceConfiguration: $configuration,
-				referentienummer: $translated['referentienummer'],
+				referenceNumber: $translated['referentienummer'],
 				envelopeXml: $translated['xml']
 			);
 		} catch (StufZknProviderException $exception) {
@@ -307,9 +307,9 @@ class StufZknSyncService {
 		$this->persistMessage(
 			direction: 'outbound',
 			berichttype: 'zakLk01',
-			referentienummer: $translated['referentienummer'],
-			verwerkingssoort: $verwerkingssoort,
-			entiteittype: 'ZAK',
+			referenceNumber: $translated['referentienummer'],
+			processingKind: $processingKind,
+			entityType: 'ZAK',
 			status: $status,
 			error: $error
 		);
@@ -319,7 +319,7 @@ class StufZknSyncService {
 		}
 
 		return ['referentienummer' => $translated['referentienummer'], 'ref' => $ref];
-	}//end sendKennisgeving()
+	}//end sendNotification()
 
 	/**
 	 * Re-attempt every `stuf_message` row with `status: failed` (direction=outbound) through the
@@ -437,7 +437,7 @@ class StufZknSyncService {
 	 *
 	 * @return array{0: string, 1: string} `[zenderOrganisatie, ontvangerOrganisatie]`.
 	 */
-	private function resolveOrganisatieCodes(): array {
+	private function resolveOrganisationCodes(): array {
 		$source = $this->tryResolveActiveSource();
 		if ($source === null) {
 			return [self::FALLBACK_ORGANISATIE, ''];
@@ -456,7 +456,7 @@ class StufZknSyncService {
 	 * deleting it (never destroy data on an external signal); a `V` for an identificatie with no
 	 * existing record is a no-op (nothing to vervallen — idempotent).
 	 *
-	 * @param array<string, mixed> $translated The {@see InboundBerichtTranslator::translate()} output.
+	 * @param array<string, mixed> $translated The {@see InboundMessageTranslator::translate()} output.
 	 *
 	 * @return void
 	 *
@@ -464,11 +464,11 @@ class StufZknSyncService {
 	 */
 	private function upsertOrObject(array $translated): void {
 		[$register, $schema] = $this->resolveTargetRegisterSchema(kind: $translated['kind']);
-		$identificatie = (string)$translated['fields']['identificatie'];
+		$identification = (string)$translated['fields']['identificatie'];
 
 		$matches = $this->objectService->findAll(
 			config: [
-				'filters' => ['register' => $register, 'schema' => $schema, 'identificatie' => $identificatie],
+				'filters' => ['register' => $register, 'schema' => $schema, 'identificatie' => $identification],
 				'limit' => 1,
 			]
 		);
@@ -479,7 +479,7 @@ class StufZknSyncService {
 			if ($existing === null) {
 				$this->logger->info(
 					'[StufZknSyncService] vervallen for an unknown identificatie — nothing to do',
-					['identificatie' => $identificatie]
+					['identificatie' => $identification]
 				);
 				return;
 			}
@@ -530,12 +530,12 @@ class StufZknSyncService {
 	/**
 	 * Find an existing inbound `stuf_message` row by its `referentienummer`.
 	 *
-	 * @param string $referentienummer The referentienummer to look up.
+	 * @param string $referenceNumber The referentienummer to look up.
 	 *
 	 * @return ObjectEntity|null The matching row, or null when none matches.
 	 */
-	private function findInboundByReferentienummer(string $referentienummer): ?ObjectEntity {
-		if ($referentienummer === '') {
+	private function findInboundByReferenceNumber(string $referenceNumber): ?ObjectEntity {
+		if ($referenceNumber === '') {
 			return null;
 		}
 
@@ -545,7 +545,7 @@ class StufZknSyncService {
 					'register' => self::REGISTER,
 					'schema' => self::SCHEMA_MESSAGE,
 					'direction' => 'inbound',
-					'referentienummer' => $referentienummer,
+					'referentienummer' => $referenceNumber,
 				],
 				'limit' => 1,
 			]
@@ -565,10 +565,10 @@ class StufZknSyncService {
 	 *
 	 * @param string $direction `inbound` or `outbound`.
 	 * @param string $berichttype `zakLk01`, `edcLk01`, or `unknown`.
-	 * @param string $referentienummer The message's correlation reference (may be empty
-	 *                                 when translation failed before it could be read).
-	 * @param string|null $verwerkingssoort `T`/`W`/`I`/`V`, or null when unknown.
-	 * @param string|null $entiteittype `ZAK`/`EDC`, or null when unknown.
+	 * @param string $referenceNumber The message's correlation reference (may be empty
+	 *                                when translation failed before it could be read).
+	 * @param string|null $processingKind `T`/`W`/`I`/`V`, or null when unknown.
+	 * @param string|null $entityType `ZAK`/`EDC`, or null when unknown.
 	 * @param string $status `processed`/`sent`/`failed`.
 	 * @param string|null $error The failure detail, or null on success.
 	 * @param ObjectEntity|null $existing An existing row to update in place (idempotent
@@ -579,9 +579,9 @@ class StufZknSyncService {
 	private function persistMessage(
 		string $direction,
 		string $berichttype,
-		string $referentienummer,
-		?string $verwerkingssoort,
-		?string $entiteittype,
+		string $referenceNumber,
+		?string $processingKind,
+		?string $entityType,
 		string $status,
 		?string $error,
 		?ObjectEntity $existing = null,
@@ -589,9 +589,9 @@ class StufZknSyncService {
 		$record = [
 			'direction' => $direction,
 			'berichttype' => $berichttype,
-			'referentienummer' => $referentienummer,
-			'verwerkingssoort' => $verwerkingssoort,
-			'entiteittype' => $entiteittype,
+			'referentienummer' => $referenceNumber,
+			'verwerkingssoort' => $processingKind,
+			'entiteittype' => $entityType,
 			'status' => $status,
 			'error' => $error,
 			'syncedAt' => (new DateTime())->format('c'),
@@ -627,10 +627,10 @@ class StufZknSyncService {
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		$referentienummer = (string)($data['referentienummer'] ?? '');
-		$envelopeXml = '<Retry referentienummer="' . htmlspecialchars($referentienummer, ENT_XML1 | ENT_QUOTES) . '"/>';
+		$referenceNumber = (string)($data['referentienummer'] ?? '');
+		$envelopeXml = '<Retry referentienummer="' . htmlspecialchars($referenceNumber, ENT_XML1 | ENT_QUOTES) . '"/>';
 
-		$provider->send(sourceConfiguration: $configuration, referentienummer: $referentienummer, envelopeXml: $envelopeXml);
+		$provider->send(sourceConfiguration: $configuration, referenceNumber: $referenceNumber, envelopeXml: $envelopeXml);
 
 		$data['status'] = 'sent';
 		$data['error'] = null;

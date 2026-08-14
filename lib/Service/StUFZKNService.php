@@ -119,8 +119,8 @@ class StUFZKNService {
 			);
 		}
 
-		$zaakData = $this->extractZaakData(body: $body, zknNs: $zknNs);
-		if (empty($zaakData) === true) {
+		$caseData = $this->extractCaseData(body: $body, zknNs: $zknNs);
+		if (empty($caseData) === true) {
 			return $this->xmlBuilder->buildFo03(
 				code: 'StUF046',
 				omschrijving: 'Missing required zaak data in zakLk01.',
@@ -128,7 +128,7 @@ class StUFZKNService {
 			);
 		}
 
-		if (isset($zaakData['zaaktype']) === false) {
+		if (isset($caseData['zaaktype']) === false) {
 			return $this->xmlBuilder->buildFo03(
 				code: 'StUF050',
 				omschrijving: 'Required field zaaktype is missing.',
@@ -136,14 +136,14 @@ class StUFZKNService {
 			);
 		}
 
-		$zaakIdentificatie = $this->persistZaak(zaakData: $zaakData);
+		$caseIdentification = $this->persistCase(caseData: $caseData);
 
 		$crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $this->resolveNamespace(namespaces: $namespaces, hint: 'stuf'));
 		if ($crossRef !== null) {
 			$stuurgegevens['crossRefnummer'] = $crossRef;
 		}
 
-		return $this->xmlBuilder->buildBv03(zaakIdentificatie: $zaakIdentificatie, stuurgegevens: $stuurgegevens);
+		return $this->xmlBuilder->buildBv03(caseIdentification: $caseIdentification, stuurgegevens: $stuurgegevens);
 	}//end handleZakLk01()
 
 	/**
@@ -189,10 +189,10 @@ class StUFZKNService {
 			$stuurgegevens['crossRefnummer'] = $crossRef;
 		}
 
-		$zaken = $this->searchZaken(criteria: $criteria);
-		$mapped = array_map(callback: fn (array $z) => $this->mapZaakToStuf(zaak: $z), array: $zaken);
+		$cases = $this->searchCases(criteria: $criteria);
+		$mapped = array_map(callback: fn (array $z) => $this->mapCaseToStuf(case: $z), array: $cases);
 
-		return $this->xmlBuilder->buildZakLa01(zaken: $mapped, stuurgegevens: $stuurgegevens);
+		return $this->xmlBuilder->buildZakLa01(cases: $mapped, stuurgegevens: $stuurgegevens);
 	}//end handleZakLv01()
 
 	/**
@@ -205,31 +205,31 @@ class StUFZKNService {
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function extractZaakData(SimpleXMLElement $body, string $zknNs): array {
-		$zaakData = [];
+	private function extractCaseData(SimpleXMLElement $body, string $zknNs): array {
+		$caseData = [];
 		if ($zknNs === '') {
-			return $zaakData;
+			return $caseData;
 		}
 
 		$zknBodyKids = $body->children($zknNs);
 		if (isset($zknBodyKids->zakLk01) === false) {
-			return $zaakData;
+			return $caseData;
 		}
 
 		$zakLk01 = $zknBodyKids->zakLk01;
 		$zakLk01Kids = $zakLk01->children($zknNs);
 		if (isset($zakLk01Kids->object) === false) {
-			return $zaakData;
+			return $caseData;
 		}
 
 		$obj = $zakLk01Kids->object;
 		foreach ($obj->children($zknNs) as $elName => $el) {
 			if (isset(self::ZAAK_FIELD_MAP[$elName]) === true && (string)$el !== '') {
-				$zaakData[self::ZAAK_FIELD_MAP[$elName]] = (string)$el;
+				$caseData[self::ZAAK_FIELD_MAP[$elName]] = (string)$el;
 			}
 		}
 
-		return $zaakData;
+		return $caseData;
 	}//end extractZaakData()
 
 	/**
@@ -275,17 +275,17 @@ class StUFZKNService {
 	/**
 	 * Map an OpenRegister zaak array to StUF-ZKN field names for XML building.
 	 *
-	 * @param array $zaak The OpenRegister zaak property array.
+	 * @param array $case The OpenRegister zaak property array.
 	 *
 	 * @return array StUF field name to value pairs.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function mapZaakToStuf(array $zaak): array {
+	private function mapCaseToStuf(array $case): array {
 		$stufData = [];
 		foreach (array_values(self::ZAAK_FIELD_MAP) as $registerField) {
-			if (isset($zaak[$registerField]) === true) {
-				$stufData[$registerField] = $zaak[$registerField];
+			if (isset($case[$registerField]) === true) {
+				$stufData[$registerField] = $case[$registerField];
 			}
 		}
 
@@ -297,22 +297,22 @@ class StUFZKNService {
 	 *
 	 * Checks for an existing zaak by zaakidentificatie and updates it, or creates a new one.
 	 *
-	 * @param array $zaakData The zaak data to persist.
+	 * @param array $caseData The zaak data to persist.
 	 *
 	 * @return string The zaakidentificatie of the persisted zaak.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function persistZaak(array $zaakData): string {
-		$identificatie = $zaakData['zaakidentificatie'] ?? '';
+	private function persistCase(array $caseData): string {
+		$identification = $caseData['zaakidentificatie'] ?? '';
 
-		if ($identificatie !== '') {
+		if ($identification !== '') {
 			$existing = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
 						'register' => self::REGISTER_ZKN,
 						'schema' => self::SCHEMA_ZAAK,
-						'zaakidentificatie' => $identificatie,
+						'zaakidentificatie' => $identification,
 					],
 				]
 			);
@@ -325,20 +325,20 @@ class StUFZKNService {
 					$existingData = $results[0]->getObject();
 				}
 
-				$merged = array_merge($existingData, $zaakData);
+				$merged = array_merge($existingData, $caseData);
 				$this->orObjectService->saveObject(
 					register: self::REGISTER_ZKN,
 					schema: self::SCHEMA_ZAAK,
 					object: $merged
 				);
-				return $identificatie;
+				return $identification;
 			}
 		}//end if
 
 		$saved = $this->orObjectService->saveObject(
 			register: self::REGISTER_ZKN,
 			schema: self::SCHEMA_ZAAK,
-			object: $zaakData
+			object: $caseData
 		);
 		if (is_array($saved) === true) {
 			$savedData = $saved;
@@ -346,7 +346,7 @@ class StUFZKNService {
 			$savedData = $saved->getObject();
 		}
 
-		return (string)($savedData['zaakidentificatie'] ?? $identificatie);
+		return (string)($savedData['zaakidentificatie'] ?? $identification);
 	}//end persistZaak()
 
 	/**
@@ -358,7 +358,7 @@ class StUFZKNService {
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function searchZaken(array $criteria): array {
+	private function searchCases(array $criteria): array {
 		$filters = array_merge(
 			[
 				'register' => self::REGISTER_ZKN,

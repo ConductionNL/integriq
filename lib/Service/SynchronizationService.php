@@ -2355,7 +2355,7 @@ class SynchronizationService {
 		}
 
 		$result['timing']['summary'] = [
-			'slowest_stage' => $this->getSlowestStage(stages: $result['timing']['stages']),
+			'slowest_stage' => $this->getSlowestInternship(stages: $result['timing']['stages']),
 			'efficiency_ratio' => $this->calculateEfficiencyRatio(stages: $result['timing']['stages']),
 			'objects_per_second' => $objectsPerSecond,
 		];
@@ -8688,7 +8688,7 @@ class SynchronizationService {
 		// on every single record and then discard the result, because the
 		// `conditions !== []` test came after they were built rather than before.
 		$conditions = ($synchronization['conditions'] ?? []);
-		$conditionsMet = true;
+		$conditionsWith = true;
 
 		if ($conditions !== []) {
 			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
@@ -8700,11 +8700,11 @@ class SynchronizationService {
 
 			// Take note, JsonLogic::apply() returns a range of return types, so
 			// checking it with '=== false' or '!== true' does not work properly.
-			$conditionsMet = (JsonLogic::apply($conditions, $conditionsObject) !== false);
+			$conditionsWith = (JsonLogic::apply($conditions, $conditionsObject) !== false);
 		}
 
 		// Check if object adheres to conditions.
-		if ($conditionsMet === false) {
+		if ($conditionsWith === false) {
 			// Increment skipped count in log since object doesn't meet conditions.
 			$result['objects']['skipped']++;
 			if ($trace !== null) {
@@ -8977,7 +8977,7 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function getSlowestStage(array $stages): array {
+	private function getSlowestInternship(array $stages): array {
 		if (empty($stages) === true) {
 			return [
 				'name' => 'none',
@@ -8986,20 +8986,20 @@ class SynchronizationService {
 			];
 		}
 
-		$slowestStage = '';
+		$slowestInternship = '';
 		$slowestDuration = 0.0;
 		$slowestDescription = '';
 
 		foreach ($stages as $stageName => $stageData) {
 			if ($stageData['duration_ms'] > $slowestDuration) {
 				$slowestDuration = $stageData['duration_ms'];
-				$slowestStage = $stageName;
+				$slowestInternship = $stageName;
 				$slowestDescription = $stageData['description'];
 			}
 		}
 
 		return [
-			'name' => $slowestStage,
+			'name' => $slowestInternship,
 			'duration_ms' => $slowestDuration,
 			'description' => $slowestDescription,
 		];

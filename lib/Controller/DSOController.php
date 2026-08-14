@@ -122,7 +122,7 @@ class DSOController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	public function receiveVerzoek(): JSONResponse {
+	public function receiveRequest(): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$body = $this->request->getParams();
 
@@ -156,21 +156,21 @@ class DSOController extends Controller {
 		}
 
 		// Parse the verzoek.
-		$verzoek = $this->parser->parseVerzoek(payload: $body);
+		$request = $this->parser->parseRequest(payload: $body);
 
 		// Tag with environment if provided by DSO-LV.
 		$environment = $this->request->getHeader('X-DSO-Environment');
 		if ($environment !== '' && $environment !== null) {
-			$verzoek['environment'] = $environment;
+			$request['environment'] = $environment;
 		}
 
-		$verzoekId = ($verzoek['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
+		$requestId = ($request['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
 
 		$this->logger->info(
 			'DSO STAM: Verzoek received',
 			[
-				'verzoekId' => $verzoekId,
-				'type' => ($verzoek['type'] ?? 'unknown'),
+				'verzoekId' => $requestId,
+				'type' => ($request['type'] ?? 'unknown'),
 			]
 		);
 
@@ -180,27 +180,27 @@ class DSOController extends Controller {
 		// a persistence/translation failure is logged, never surfaced as a
 		// non-202 response, matching the STAM koppelvlak's documented
 		// asynchronous-processing contract (mirrors
-		// IwmoIjwSyncService::receiveRetour()'s "never throws out to the
+		// IwmoIjwSyncService::receiveReturn()'s "never throws out to the
 		// controller" isolation).
 		try {
-			$this->ingestService->ingest(parsedVerzoek: $verzoek);
+			$this->ingestService->ingest(parsedRequest: $request);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'DSO STAM: verzoek persistence/mapping failed',
-				['verzoekId' => $verzoekId, 'exception' => $exception->getMessage()]
+				['verzoekId' => $requestId, 'exception' => $exception->getMessage()]
 			);
 		}
 
 		return new JSONResponse(
 			data: [
-				'verzoekId' => $verzoekId,
+				'verzoekId' => $requestId,
 				'status' => 'ontvangen',
 				'message' => 'Verzoek ontvangen en wordt verwerkt',
 			],
 			statusCode: Http::STATUS_ACCEPTED
 		);
 
-	}//end receiveVerzoek()
+	}//end receiveRequest()
 
 	/**
 	 * List `dso_verzoek` records, optionally filtered by `?status=`.
@@ -256,7 +256,7 @@ class DSOController extends Controller {
 		}
 
 		try {
-			$result = $this->ingestService->getVerzoek(uuid: $id);
+			$result = $this->ingestService->getRequest(uuid: $id);
 		} catch (DsoTranslationException $exception) {
 			return new JSONResponse(
 				['error' => 'verzoek_not_found', 'message' => $exception->getMessage()],
@@ -363,7 +363,7 @@ class DSOController extends Controller {
 		unset($body['type'], $body['id']);
 
 		try {
-			$result = $this->ingestService->postOutbound(verzoekUuid: $id, type: $type, fields: $body);
+			$result = $this->ingestService->postOutbound(requestUuid: $id, type: $type, fields: $body);
 			return new JSONResponse($result);
 		} catch (DsoTranslationException $exception) {
 			return new JSONResponse(
