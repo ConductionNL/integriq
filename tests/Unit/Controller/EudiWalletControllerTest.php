@@ -30,6 +30,7 @@ use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -94,6 +95,7 @@ class EudiWalletControllerTest extends TestCase {
 			$this->keyService,
 			$this->statusListService,
 			$this->authorizationService,
+			$this->createMock(IThrottler::class),
 			$this->createMock(LoggerInterface::class)
 		);
 
