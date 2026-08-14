@@ -1714,7 +1714,11 @@ class CallService {
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
 			register: 'openconnector',
-			schema: 'call_log'
+			schema: 'call_log',
+			_rbac: false,
+			_multitenancy: false,
+			silent: true,
+			_validation: false
 		);
 
 		// Set full response (with body) on the returned entity for processing.
