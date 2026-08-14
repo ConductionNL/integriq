@@ -339,6 +339,35 @@ class SynchronizationService {
 	public const FILE_TAG_TYPE = 'files';
 	public const VALID_MUTATION_TYPES = ['create', 'update', 'delete'];
 	public const DEFAULT_MAX_PAGES = 50;
+
+	/**
+	 * Percentage of PHP's memory limit a fetch may reach before it stops.
+	 *
+	 * Eighty leaves room for the item loop, the write buffers and the run log
+	 * that all come AFTER the fetch — stopping at 95% would trade a fatal during
+	 * fetching for a fatal during processing, which is the same outage with a
+	 * later timestamp.
+	 *
+	 * Overridable per source with `maxMemoryPercent`; 0 disables the ceiling.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_MAX_MEMORY_PERCENT = 80;
+
+	/**
+	 * The most pages one synchronization may have in flight at once.
+	 *
+	 * Every page in the window is an open HTTP connection held by a single
+	 * apache worker, so this is a bound on what ONE synchronization can take
+	 * from the container and from the upstream.
+	 *
+	 * Twenty is generous rather than tight: measured 2026-08-14, throughput
+	 * PEAKS around a window of 5-10 and falls away above it. Nothing above this
+	 * has been observed to help, on any source tested.
+	 *
+	 * @var int
+	 */
+	public const MAX_PREFETCH_WINDOW = 20;
 	// Safety limit to prevent infinite page requesting loop.
 	private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
 	private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
@@ -695,6 +724,72 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
+	/**
+	 * Whether this run is close enough to PHP's memory limit to stop fetching.
+	 *
+	 * Configurable per source via `maxMemoryPercent`, defaulting to
+	 * {@see self::DEFAULT_MAX_MEMORY_PERCENT}. Set it to 0 to disable the
+	 * ceiling for a source that legitimately needs the whole limit and runs
+	 * somewhere nothing else shares.
+	 *
+	 * Uses `memory_get_usage(true)` — real allocated memory, not PHP's
+	 * bookkeeping of what it thinks is in use — because the thing being guarded
+	 * against is the allocator hitting the ceiling, not the object graph's
+	 * nominal size.
+	 *
+	 * Returns false when the limit is unlimited (`-1`), which is the CLI default:
+	 * a cron run with no limit cannot exceed one, and inventing a ceiling for it
+	 * would stop background imports that are working.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 *
+	 * @return boolean True when fetching should stop.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function exceededMemoryCeiling(array $sourceConfig): bool {
+		$percent = (int)($sourceConfig['maxMemoryPercent'] ?? self::DEFAULT_MAX_MEMORY_PERCENT);
+		if ($percent <= 0) {
+			return false;
+		}
+
+		$limit = $this->phpMemoryLimitBytes();
+		if ($limit <= 0) {
+			return false;
+		}
+
+		return (memory_get_usage(true) > ($limit * ($percent / 100)));
+	}//end exceededMemoryCeiling()
+
+	/**
+	 * PHP's configured memory limit in bytes, or -1 when unlimited.
+	 *
+	 * `memory_limit` is a shorthand string (`512M`, `2G`, `-1`), so it cannot be
+	 * compared numerically without conversion — reading it as an int gives 512
+	 * for `512M`, which would make every run look like it had exceeded its
+	 * ceiling on the first page.
+	 *
+	 * @return int The limit in bytes, or -1 for unlimited.
+	 */
+	private function phpMemoryLimitBytes(): int {
+		$raw = trim((string)ini_get('memory_limit'));
+		if ($raw === '' || $raw === '-1') {
+			return -1;
+		}
+
+		$value = (int)$raw;
+		switch (strtolower(substr($raw, -1))) {
+			case 'g':
+				return ($value * 1024 * 1024 * 1024);
+			case 'm':
+				return ($value * 1024 * 1024);
+			case 'k':
+				return ($value * 1024);
+			default:
+				return $value;
+		}
+	}//end phpMemoryLimitBytes()
+
 	private function persistPageCursor(array $synchronization, array $source): void {
 		if (($source['rateLimitLimit'] ?? null) === null) {
 			return;
@@ -5822,6 +5917,38 @@ class SynchronizationService {
 				$complete = false;
 				$failureReason = 'max_pages_reached';
 			}
+
+			// A CEILING ON MEMORY, not just on pages.
+			//
+			// `maxPages` bounds how many REQUESTS a run makes; nothing bounded how
+			// much it holds. A crawl accumulates every fetched page in memory
+			// before the item loop starts, so a source with large records reaches
+			// the PHP memory limit while still well inside its page budget — and
+			// what happens then is a fatal, mid-run, with no log line and no
+			// synchronization_log row, because the process dies before writing
+			// either. MEASURED 2026-08-14: a 19,822-object crawl held 1.4 GB
+			// resident on a container with 44 other apps sharing it.
+			//
+			// Stopping deliberately is strictly better than being killed. It uses
+			// the SAME `complete = false` path as the page cap, which already
+			// blocks the deletion pass — so a run that stopped early can never be
+			// read as "the source no longer has these records".
+			if ($this->exceededMemoryCeiling(sourceConfig: $sourceConfig) === true) {
+				$complete = false;
+				$failureReason = 'memory_ceiling_reached';
+				$this->logger->warning(
+					'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
+					. 'limit is in use. The pages already fetched are processed; deletion is '
+					. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
+					. 'page size, or narrow the query.',
+					[
+						'pages' => ($i + 1),
+						'used' => round(memory_get_usage(true) / 1048576),
+						'limit' => round($this->phpMemoryLimitBytes() / 1048576),
+					]
+				);
+				break;
+			}
 		}//end for
 
 		return ['objects' => $allObjects, 'complete' => $complete, 'failureReason' => $failureReason, 'pagesFetched' => $pageCount];
@@ -5988,6 +6115,25 @@ class SynchronizationService {
 		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
 		if ($window < 1) {
 			$window = 1;
+		}
+
+		// CLAMPED AT BOTH ENDS. This is a per-source number in hand-written JSON,
+		// and it decides how many HTTP connections one synchronization opens at
+		// once — a fat-fingered 500 is 500 sockets from one apache worker, against
+		// an upstream that did nothing to deserve it.
+		//
+		// The ceiling is not conservatism: measured 2026-08-14, wider windows are
+		// SLOWER well before this limit. data.overheid.nl over 40 pages took 14.0 s
+		// at a window of 5 and 28.8 s at 40, and against a source answering in
+		// 5.3 ms a window of 10 bought 1.24x rather than the ~10x it implies. There
+		// is no configuration above this worth having.
+		if ($window > self::MAX_PREFETCH_WINDOW) {
+			$this->logger->warning(
+				'prefetchConcurrency of {asked} is above the ceiling of {max} and has been '
+				. 'clamped. Wider windows measured SLOWER, not faster.',
+				['asked' => $window, 'max' => self::MAX_PREFETCH_WINDOW]
+			);
+			$window = self::MAX_PREFETCH_WINDOW;
 		}
 
 		$until = min($last, ($fromPage + $window - 1));
