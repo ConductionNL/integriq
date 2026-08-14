@@ -695,6 +695,47 @@ class SynchronizationService {
 	}//end findAllContractObjects()
 
 	/**
+	 * Origin ids for the pre-loop contract index, skipping what cannot resolve.
+	 *
+	 * Deliberately total. `getOriginId()` throws when an item carries no id at
+	 * the configured position, and this runs before the per-item try/catch — so
+	 * a throw here ends the whole synchronization rather than dead-lettering one
+	 * record. The index is a CACHE; failing to warm it for one item must cost
+	 * that item a lookup, not cost the run.
+	 *
+	 * @param array $synchronization The synchronization being run.
+	 * @param array $objectList The fetched source items.
+	 *
+	 * @return array<int, string> The resolvable origin ids.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function originIdsForIndex(array $synchronization, array $objectList): array {
+		$originIds = [];
+		foreach ($objectList as $item) {
+			$asArray = ['id' => $item];
+			if (is_array($item) === true) {
+				$asArray = $item;
+			}
+
+			try {
+				$originIds[] = $this->getOriginId(synchronization: $synchronization, object: $asArray);
+			} catch (\Throwable $exception) {
+				// FULLY QUALIFIED deliberately: this file does not import
+				// Throwable, so an unqualified catch resolves to
+				// OCA\OpenConnector\Service\Throwable and silently matches
+				// nothing — the exception sails straight through a catch block
+				// that looks correct.
+				// The loop will raise this again for this item, in the place that
+				// knows how to record it against that item.
+				continue;
+			}
+		}
+
+		return $originIds;
+	}//end originIdsForIndex()
+
+	/**
 	 * Find a single synchronization contract OpenRegister object by id/uuid.
 	 *
 	 * @param string|int $id The OpenRegister id/uuid of the contract.
@@ -1998,19 +2039,20 @@ class SynchronizationService {
 			// ONE contract read for the whole page, before the loop. The loop
 			// below is unchanged; it resolves each item's contract from this
 			// index rather than issuing its own query.
+			// PER-ITEM ISOLATION HOLDS HERE TOO. `getOriginId()` THROWS for an item
+			// that carries no id at the configured position, and this index runs
+			// BEFORE the loop — outside the per-item try/catch that exists so one
+			// malformed record cannot end the pass. An `array_map` over it meant a
+			// single bad item aborted the whole synchronization from a line whose
+			// only job is to warm a cache.
+			//
+			// An item with no resolvable origin simply is not indexed. Nothing is
+			// lost: the loop calls `getOriginId()` again for each item and the
+			// existing handler dead-letters that one item, exactly as it did
+			// before this index existed.
 			$contractIndex = $this->indexContractsByOrigin(
 				synchronizationId: (string)($synchronization['id'] ?? ''),
-				originIds: array_map(
-					function ($item) use ($synchronization): string {
-						$asArray = ['id' => $item];
-						if (is_array($item) === true) {
-							$asArray = $item;
-						}
-
-						return $this->getOriginId(synchronization: $synchronization, object: $asArray);
-					},
-					$objectList
-				),
+				originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
 				justByOriginId: (
 					isset($sourceConfig['findContractByOriginIdOnly']) === true
 					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
