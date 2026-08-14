@@ -1,14 +1,12 @@
 <?php
 
 /**
- * OpenConnector Zaak Translator.
+ * OpenConnector Besluit Translator.
  *
- * `1.0` ↔ `1.6` translator for the ZGW `zaak` resource. Per VNG's own
- * public characterisation of the `1.6` stability line ("no breaking
- * changes to the resource model" — see design.md's delta table), the
- * `zaak` field set is structurally identical between `1.0` and `1.6`; this
- * translator's value is the literal-leak guard (required-field presence +
- * `vertrouwelijkheidaanduiding` enum conformance), not a field rename.
+ * `1.0` ↔ `1.6` translator for the ZGW `besluit` resource. Structurally
+ * identical field set between `1.0` and `1.6` (VNG: no breaking changes in
+ * the stability line — see design.md's delta table); this translator's
+ * value is required-field presence.
  *
  * @category Service
  * @package  OCA\OpenConnector\Service\ZgwVersion
@@ -30,14 +28,14 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Service\ZgwVersion;
 
 /**
- * Translates the `zaak` resource between `1.0` and `1.6`.
+ * Translates the `besluit` resource between `1.0` and `1.6`.
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTranslator extends AbstractZgwResourceTranslator {
+class DecisionTranslator extends AbstractZgwResourceTranslator {
 
 	/**
-	 * Fields procest's own `LoadDefaultZgwMappings::getZaakMapping()`
+	 * Fields procest's own `LoadDefaultZgwMappings::getBesluitMapping()`
 	 * always emits and this translator treats as mandatory on both sides.
 	 *
 	 * @var string[]
@@ -46,13 +44,9 @@ class ZaakTranslator extends AbstractZgwResourceTranslator {
 		'url',
 		'uuid',
 		'identificatie',
-		'bronorganisatie',
-		'omschrijving',
-		'zaaktype',
-		'registratiedatum',
-		'startdatum',
-		'vertrouwelijkheidaanduiding',
-		'verantwoordelijkeOrganisatie',
+		'zaak',
+		'besluittype',
+		'datum',
 	];
 
 	/**
@@ -63,7 +57,7 @@ class ZaakTranslator extends AbstractZgwResourceTranslator {
 	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
 	 */
 	public function getResource(): string {
-		return 'zaak';
+		return 'besluit';
 	}//end getResource()
 
 	/**
@@ -77,12 +71,7 @@ class ZaakTranslator extends AbstractZgwResourceTranslator {
 	 */
 	public function translateToV16(array $payload): array {
 		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-		$this->guardEnum(payload: $payload, field: 'vertrouwelijkheidaanduiding', allowed: self::VERTROUWELIJKHEID_VALUES);
 
-		// Structurally identical to 1.0 (VNG: no breaking resource-model
-		// change in 1.6) — see design.md's delta table. The `?expand=`
-		// query mechanism is a negotiation-layer concern, not a payload
-		// field, handled by ZgwVersionNegotiationService::stripUnsupportedExpandHint().
 		return $payload;
 	}//end translateToV16()
 
@@ -97,7 +86,6 @@ class ZaakTranslator extends AbstractZgwResourceTranslator {
 	 */
 	public function translateToV1x(array $payload): array {
 		$this->requireFields(payload: $payload, required: self::REQUIRED_FIELDS);
-		$this->guardEnum(payload: $payload, field: 'vertrouwelijkheidaanduiding', allowed: self::VERTROUWELIJKHEID_VALUES);
 
 		return $payload;
 	}//end translateToV1x()

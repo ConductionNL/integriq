@@ -61,11 +61,11 @@ class DSOStatusServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapZaakStatusKnownStatuses(): void {
-		$this->assertSame('ontvangen', $this->service->mapZaakStatusToDSOStatus(caseStatus: 'ontvangen'));
-		$this->assertSame('in behandeling', $this->service->mapZaakStatusToDSOStatus(caseStatus: 'in_behandeling'));
-		$this->assertSame('besluit genomen', $this->service->mapZaakStatusToDSOStatus(caseStatus: 'besluit_genomen'));
-		$this->assertSame('afgerond', $this->service->mapZaakStatusToDSOStatus(caseStatus: 'afgerond'));
-		$this->assertSame('buiten behandeling', $this->service->mapZaakStatusToDSOStatus(caseStatus: 'buiten_behandeling'));
+		$this->assertSame('ontvangen', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'ontvangen'));
+		$this->assertSame('in behandeling', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'in_behandeling'));
+		$this->assertSame('besluit genomen', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'besluit_genomen'));
+		$this->assertSame('afgerond', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'afgerond'));
+		$this->assertSame('buiten behandeling', $this->service->mapCaseStatusToDsoStatus(caseStatus: 'buiten_behandeling'));
 
 	}//end testMapZaakStatusKnownStatuses()
 
@@ -75,7 +75,7 @@ class DSOStatusServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMapZaakStatusUnknownReturnsOnbekend(): void {
-		$result = $this->service->mapZaakStatusToDSOStatus(caseStatus: 'some_unknown_status');
+		$result = $this->service->mapCaseStatusToDsoStatus(caseStatus: 'some_unknown_status');
 
 		$this->assertSame('onbekend', $result);
 

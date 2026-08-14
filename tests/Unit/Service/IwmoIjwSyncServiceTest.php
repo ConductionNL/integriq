@@ -22,10 +22,10 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Exception\IwmoIjwProviderException;
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
+use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
 use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\OpenConnector\Service\IwmoIjwSyncService;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
@@ -57,7 +57,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 	private $logProvider;
 
 	/**
-	 * @var IStandaardenClient|\PHPUnit\Framework\MockObject\MockObject
+	 * @var IStandardsClient|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $restProvider;
 
@@ -111,7 +111,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 		$this->logProvider = $this->createMock(LogIwmoIjwProvider::class);
-		$this->restProvider = $this->createMock(IStandaardenClient::class);
+		$this->restProvider = $this->createMock(IStandardsClient::class);
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnArgument(0);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -167,8 +167,8 @@ class IwmoIjwSyncServiceTest extends TestCase {
 			$this->objectService,
 			$this->logProvider,
 			$this->restProvider,
-			new OutboundBerichtTranslator(),
-			new InboundRetourTranslator(),
+			new OutboundMessageTranslator(),
+			new InboundReturnTranslator(),
 			$l,
 			$this->logger,
 			new RawSourceResolver($this->objectService, $this->logger)
@@ -218,7 +218,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 	private function toewijzingInput(array $overrides = []): array {
 		return array_merge(
 			[
-				'kind' => OutboundBerichtTranslator::KIND_TOEWIJZING,
+				'kind' => OutboundMessageTranslator::KIND_TOEWIJZING,
 				'domain' => 'wmo',
 				'bsn' => '999995571',
 				'productcode' => '05C05',
@@ -274,7 +274,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 	 */
 	public function testSendBerichtThrowsWhenNoSourceConfigured(): void {
 		$this->expectException(IwmoIjwProviderException::class);
-		$this->service->sendBericht($this->toewijzingInput());
+		$this->service->sendMessage($this->toewijzingInput());
 
 	}//end testSendBerichtThrowsWhenNoSourceConfigured()
 
@@ -289,7 +289,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 		$this->sources[] = $this->sourceEntity();
 		$this->logProvider->method('send')->willReturn('MOCK-IWMO-1');
 
-		$result = $this->service->sendBericht($this->toewijzingInput());
+		$result = $this->service->sendMessage($this->toewijzingInput());
 
 		$this->assertSame('Wmo303', $result['berichttype']);
 		$this->assertNotSame('', $result['ref']);
@@ -313,7 +313,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 	public function testSendBerichtHashesBsnBeforePersistence(): void {
 		$this->sources[] = $this->sourceEntity();
 
-		$this->service->sendBericht($this->toewijzingInput());
+		$this->service->sendMessage($this->toewijzingInput());
 
 		$saved = $this->saved[IwmoIjwSyncService::SCHEMA_MESSAGE][0]['object'];
 		$this->assertArrayNotHasKey('bsn', $saved);
@@ -336,7 +336,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 		);
 
 		try {
-			$this->service->sendBericht($this->toewijzingInput());
+			$this->service->sendMessage($this->toewijzingInput());
 			$this->fail('Expected IwmoIjwProviderException was not thrown.');
 		} catch (IwmoIjwProviderException $exception) {
 			$this->assertSame('transport unreachable', $exception->getMessage());
@@ -361,7 +361,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 
 		$this->expectException(IwmoIjwTranslationException::class);
 		try {
-			$this->service->sendBericht($incomplete);
+			$this->service->sendMessage($incomplete);
 		} finally {
 			$this->assertArrayNotHasKey(IwmoIjwSyncService::SCHEMA_MESSAGE, $this->saved);
 		}
@@ -394,7 +394,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 			. '<kenmerk>WMO-ref-1</kenmerk></stuurgegevens>'
 			. '<body><resultaat>akkoord</resultaat></body></Bericht>';
 
-		$this->service->receiveRetour($xml);
+		$this->service->receiveReturn($xml);
 
 		$this->assertCount(1, $this->saved['toewijzing']);
 		$updated = $this->saved['toewijzing'][0]['object'];
@@ -421,7 +421,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 			. '<kenmerk>UNKNOWN-REF</kenmerk></stuurgegevens>'
 			. '<body><resultaat>akkoord</resultaat></body></Bericht>';
 
-		$this->service->receiveRetour($xml);
+		$this->service->receiveReturn($xml);
 
 		$this->assertArrayNotHasKey('toewijzing', $this->saved);
 
@@ -435,7 +435,7 @@ class IwmoIjwSyncServiceTest extends TestCase {
 	public function testReceiveRetourWithMalformedXmlLogsAndDoesNotThrow(): void {
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$this->service->receiveRetour('not-xml-at-all');
+		$this->service->receiveReturn('not-xml-at-all');
 
 		$this->assertArrayNotHasKey(IwmoIjwSyncService::SCHEMA_MESSAGE, $this->saved);
 

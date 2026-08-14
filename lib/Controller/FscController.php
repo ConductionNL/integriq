@@ -7,7 +7,7 @@
  * sibling apps discover what is currently resolvable, and `call()` lets a
  * sibling app invoke another organisation's published service through the
  * FSC (Federatieve Service Connectiviteit) provider seam — mirrors
- * `IwmoIjwController::createBericht()` / `KissController::createKlantcontact()`.
+ * `IwmoIjwController::createMessage()` / `KissController::createCustomerContact()`.
  * There is no inbound leg in this change (see design.md "Architecture
  * Overview"), so — unlike those two controllers — there is no signed
  * webhook receiver here.

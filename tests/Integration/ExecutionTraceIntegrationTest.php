@@ -36,7 +36,7 @@ namespace OCA\OpenConnector\Tests\Integration;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\BrokeredCallService;
@@ -297,7 +297,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
 			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($orObjectService, $logger),
-			new ReferentienummerRule(),
+			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
 			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),

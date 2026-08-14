@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for DsoVerzoekTranslator.
+ * Unit tests for DsoRequestTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\Dso
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\Dso;
 
 use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
+use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -32,9 +32,9 @@ use PHPUnit\Framework\TestCase;
 class DsoVerzoekTranslatorTest extends TestCase {
 
 	/**
-	 * @var DsoVerzoekTranslator
+	 * @var DsoRequestTranslator
 	 */
-	private DsoVerzoekTranslator $translator;
+	private DsoRequestTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -43,7 +43,7 @@ class DsoVerzoekTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new DsoVerzoekTranslator();
+		$this->translator = new DsoRequestTranslator();
 
 	}//end setUp()
 

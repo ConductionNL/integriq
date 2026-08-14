@@ -150,7 +150,7 @@ class DSOSamenwerkingService {
 			return [
 				'success' => false,
 				'adviesverzoekId' => $adviesverzoekId,
-				'message' => 'Verzenden mislukt: ' . $e->getMessage(),
+				'message' => 'Send failed: ' . $e->getMessage(),
 			];
 		}//end try
 

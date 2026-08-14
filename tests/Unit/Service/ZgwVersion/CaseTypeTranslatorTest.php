@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ZaakTypeTranslator.
+ * Unit tests for CaseTypeTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\ZgwVersion
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\ZgwVersion;
 
 use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Service\ZgwVersion\ZaakTypeTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\CaseTypeTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -32,9 +32,9 @@ use PHPUnit\Framework\TestCase;
 class ZaakTypeTranslatorTest extends TestCase {
 
 	/**
-	 * @var ZaakTypeTranslator
+	 * @var CaseTypeTranslator
 	 */
-	private ZaakTypeTranslator $translator;
+	private CaseTypeTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -43,7 +43,7 @@ class ZaakTypeTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new ZaakTypeTranslator();
+		$this->translator = new CaseTypeTranslator();
 	}//end setUp()
 
 	/**

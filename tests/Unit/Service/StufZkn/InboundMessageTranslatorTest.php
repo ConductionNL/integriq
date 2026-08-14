@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for InboundBerichtTranslator.
+ * Unit tests for InboundMessageTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\StufZkn
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\StufZkn;
 
 use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,9 +34,9 @@ use PHPUnit\Framework\TestCase;
 class InboundBerichtTranslatorTest extends TestCase {
 
 	/**
-	 * @var InboundBerichtTranslator
+	 * @var InboundMessageTranslator
 	 */
-	private InboundBerichtTranslator $translator;
+	private InboundMessageTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -45,7 +45,7 @@ class InboundBerichtTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new InboundBerichtTranslator();
+		$this->translator = new InboundMessageTranslator();
 
 	}//end setUp()
 

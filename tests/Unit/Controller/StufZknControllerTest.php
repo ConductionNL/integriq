@@ -206,7 +206,7 @@ class StufZknControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->controller = $this->buildController();
 
-		$this->syncService->expects($this->never())->method('sendKennisgeving');
+		$this->syncService->expects($this->never())->method('sendNotification');
 
 		$response = $this->controller->outbound();
 
@@ -222,7 +222,7 @@ class StufZknControllerTest extends TestCase {
 	public function testOutboundRequiresZaakAndVerwerkingssoort(): void {
 		$this->request->method('getParams')->willReturn(['zaak' => ['identificatie' => 'X']]);
 
-		$this->syncService->expects($this->never())->method('sendKennisgeving');
+		$this->syncService->expects($this->never())->method('sendNotification');
 
 		$response = $this->controller->outbound();
 
@@ -242,7 +242,7 @@ class StufZknControllerTest extends TestCase {
 		);
 
 		$this->syncService->expects($this->once())
-			->method('sendKennisgeving')
+			->method('sendNotification')
 			->willReturn(['referentienummer' => 'ZKN-abc', 'ref' => 'ack-1']);
 
 		$response = $this->controller->outbound();
@@ -262,7 +262,7 @@ class StufZknControllerTest extends TestCase {
 			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
 		);
 
-		$this->syncService->method('sendKennisgeving')->willThrowException(
+		$this->syncService->method('sendNotification')->willThrowException(
 			new StufZknTranslationException(message: 'Required field "omschrijving" is missing or empty.')
 		);
 
@@ -283,7 +283,7 @@ class StufZknControllerTest extends TestCase {
 			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
 		);
 
-		$this->syncService->method('sendKennisgeving')->willThrowException(
+		$this->syncService->method('sendNotification')->willThrowException(
 			new StufZknProviderException(message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.')
 		);
 
@@ -304,7 +304,7 @@ class StufZknControllerTest extends TestCase {
 			['zaak' => ['identificatie' => 'ZAAK-1'], 'verwerkingssoort' => 'T']
 		);
 
-		$this->syncService->method('sendKennisgeving')->willThrowException(
+		$this->syncService->method('sendNotification')->willThrowException(
 			new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP 503.')
 		);
 

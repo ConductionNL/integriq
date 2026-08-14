@@ -3,8 +3,8 @@
 /**
  * OpenConnector iWMO/iJW Translation Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator}
- * and {@see \OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator} when a
+ * Raised by {@see \OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator}
+ * and {@see \OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator} when a
  * required field is missing/empty, or when a rendered envelope still
  * contains an unresolved template marker — the literal-leak guard. This
  * exception type MUST NEVER be swallowed into a passed-through envelope:

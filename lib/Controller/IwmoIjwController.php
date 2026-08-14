@@ -6,7 +6,7 @@
  * REST controller for the iwmo-ijw-adapter: the push endpoint sibling apps
  * (e.g. procest's social-domain case module) call directly over an
  * authenticated NC session to register a toewijzing/declaratie — mirrors
- * `KissController::createKlantcontact()` — and the signed inbound retour
+ * `KissController::createCustomerContact()` — and the signed inbound retour
  * receiver — mirrors `PeppolController::inbound()`.
  *
  * @category Controller
@@ -92,7 +92,7 @@ class IwmoIjwController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function createBericht(): JSONResponse {
+	public function createMessage(): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
@@ -114,7 +114,7 @@ class IwmoIjwController extends Controller {
 		}
 
 		try {
-			$result = $this->syncService->sendBericht(input: $params);
+			$result = $this->syncService->sendMessage(input: $params);
 			return new JSONResponse($result);
 		} catch (IwmoIjwTranslationException $exception) {
 			return new JSONResponse(
@@ -134,7 +134,7 @@ class IwmoIjwController extends Controller {
 			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
 		}//end try
 
-	}//end createBericht()
+	}//end createMessage()
 
 	/**
 	 * Receive an inbound iWMO/iJW retour message.
@@ -185,7 +185,7 @@ class IwmoIjwController extends Controller {
 		// is XML (not JSON), so the body is passed to the sync service
 		// verbatim — never a second decode pass.
 		try {
-			$this->syncService->receiveRetour(rawXml: $rawBody);
+			$this->syncService->receiveReturn(rawXml: $rawBody);
 		} catch (Throwable $exception) {
 			// Never 500 on a verified callback: log and acknowledge receipt.
 			$this->logger->error(

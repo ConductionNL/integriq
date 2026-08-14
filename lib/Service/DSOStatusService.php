@@ -97,7 +97,7 @@ class DSOStatusService {
 		string $dsoApiUrl,
 		?string $certPath = null,
 	): bool {
-		$dsoStatus = $this->mapZaakStatusToDSOStatus(caseStatus: $caseStatus);
+		$dsoStatus = $this->mapCaseStatusToDsoStatus(caseStatus: $caseStatus);
 		$payload = $this->buildStatusPayload(requestId: $requestId, dsoStatus: $dsoStatus);
 
 		$attempt = 0;
@@ -183,13 +183,13 @@ class DSOStatusService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
 	 */
-	public function mapZaakStatusToDSOStatus(string $caseStatus): string {
+	public function mapCaseStatusToDsoStatus(string $caseStatus): string {
 		if (isset(self::STATUS_MAP[$caseStatus]) === false) {
 			return 'onbekend';
 		}
 
 		return self::STATUS_MAP[$caseStatus];
-	}//end mapZaakStatusToDSOStatus()
+	}//end mapCaseStatusToDsoStatus()
 
 	/**
 	 * Build the DSO-LV status update payload.

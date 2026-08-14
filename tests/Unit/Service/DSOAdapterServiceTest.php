@@ -69,7 +69,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'type' => 'melding',
 		];
 
-		$result = $this->adapter->processVerzoek(request: $request);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertArrayHasKey('zaaktypeIdentificatie', $result);
 		$this->assertSame('melding', $result['zaaktypeIdentificatie']);
@@ -87,7 +87,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'type' => 'informatieverzoek',
 		];
 
-		$result = $this->adapter->processVerzoek(request: $request);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('informatieverzoek', $result['zaaktypeIdentificatie']);
 
@@ -104,7 +104,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'type' => 'vooroverleg',
 		];
 
-		$result = $this->adapter->processVerzoek(request: $request);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('vooroverleg', $result['zaaktypeIdentificatie']);
 
@@ -121,7 +121,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'type' => 'aanvraag',
 		];
 
-		$result = $this->adapter->processVerzoek(request: $request);
+		$result = $this->adapter->processRequest(request: $request);
 
 		$this->assertSame('aanvraag', $result['zaaktypeIdentificatie']);
 
@@ -257,7 +257,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'type' => 'aanvraag',
 		];
 
-		$result = $this->adapter->handleUnmappedActiviteit(
+		$result = $this->adapter->handleUnmappedActivity(
 			request: $request,
 			activityCode: 'onbekend-activiteit-2025'
 		);
@@ -283,7 +283,7 @@ class DSOAdapterServiceTest extends TestCase {
 			'bronorganisatie' => '00000001234567890000',
 		];
 
-		$case = $this->adapter->createZaak(
+		$case = $this->adapter->createCase(
 			request: $request,
 			caseTypeIdentification: 'ZAAKTYPE-BOUWEN-2024',
 			strategy: 'single'

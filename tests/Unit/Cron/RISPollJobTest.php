@@ -81,7 +81,7 @@ class RISPollJobTest extends TestCase {
 		// No call to ibabsService or notuBizService expected when no records.
 		$this->ibabsService
 			->expects($this->never())
-			->method('pollBesluiten');
+			->method('pollDecisions');
 
 		$this->job->run([]);
 
@@ -135,7 +135,7 @@ class RISPollJobTest extends TestCase {
 		// If source is null, pollBesluiten is NOT called (source loading fails).
 		$this->ibabsService
 			->expects($this->never())
-			->method('pollBesluiten');
+			->method('pollDecisions');
 
 		$this->job->run([]);
 

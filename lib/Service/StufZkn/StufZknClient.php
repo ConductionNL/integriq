@@ -6,7 +6,7 @@
  * Thin binding for {@see StufZknProviderInterface} against a subscribed
  * legacy StUF consumer's inbound endpoint. Deliberately a hand-rolled HTTP
  * client (Guzzle, already an app dependency) rather than a SOAP/XSD library
- * dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient}
+ * dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
  * and {@see \OCA\OpenConnector\Service\Dso\DsoClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live municipal StUF-ZKN endpoint was
@@ -28,7 +28,7 @@
  * client dispatches through the SAME shared
  * {@see \OCA\OpenConnector\Service\Mtls\MtlsTransportService} +
  * `authentication.mode` (`token`|`mtls`) pattern already proven by
- * `IStandaardenClient`/`FscDirectoryClient`/`DsoClient` — never a new,
+ * `IStandardsClient`/`FscDirectoryClient`/`DsoClient` — never a new,
  * bespoke TLS implementation. Token mode remains available as the
  * demonstrable pre-production fallback (mirrors every sibling REST
  * binding's identical, already-accepted deviation for the SAME reason: no

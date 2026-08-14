@@ -77,7 +77,7 @@ class CompositeFanoutRuleTest extends TestCase {
 			[
 				'parent' => ['bodyKey' => 'klantcontact', 'register' => 'pipelinq', 'schema' => 'ticket'],
 				'children' => [
-					['bodyKey' => 'betrokkene', 'register' => 'pipelinq', 'schema' => 'contact', 'parentField' => 'ticket'],
+					['bodyKey' => 'involvedParty', 'register' => 'pipelinq', 'schema' => 'contact', 'parentField' => 'ticket'],
 				],
 			]
 		);
@@ -85,7 +85,7 @@ class CompositeFanoutRuleTest extends TestCase {
 		$data = [
 			'body' => [
 				'klantcontact' => ['onderwerp' => 'Vraag over afvalpas'],
-				'betrokkene' => ['rol' => 'klant'],
+				'involvedParty' => ['rol' => 'klant'],
 			],
 		];
 
@@ -172,8 +172,8 @@ class CompositeFanoutRuleTest extends TestCase {
 			[
 				'parent' => ['bodyKey' => 'klantcontact', 'register' => 'pipelinq', 'schema' => 'ticket'],
 				'children' => [
-					['bodyKey' => 'betrokkene', 'register' => 'pipelinq', 'schema' => 'contact', 'parentField' => 'ticket'],
-					['bodyKey' => 'digitaalAdres', 'register' => 'pipelinq', 'schema' => 'contactPoint', 'parentField' => 'contact', 'parentRef' => 'betrokkene'],
+					['bodyKey' => 'involvedParty', 'register' => 'pipelinq', 'schema' => 'contact', 'parentField' => 'ticket'],
+					['bodyKey' => 'digitaalAdres', 'register' => 'pipelinq', 'schema' => 'contactPoint', 'parentField' => 'contact', 'parentRef' => 'involvedParty'],
 				],
 			]
 		);
@@ -181,7 +181,7 @@ class CompositeFanoutRuleTest extends TestCase {
 		$data = [
 			'body' => [
 				'klantcontact' => [],
-				'betrokkene' => ['rol' => 'klant'],
+				'involvedParty' => ['rol' => 'klant'],
 				'digitaalAdres' => ['adres' => '0612345678'],
 			],
 		];
@@ -210,7 +210,7 @@ class CompositeFanoutRuleTest extends TestCase {
 			[
 				'parent' => ['bodyKey' => 'klantcontact', 'register' => 'pipelinq', 'schema' => 'ticket'],
 				'children' => [
-					['bodyKey' => 'betrokkene', 'register' => 'pipelinq', 'schema' => 'contact', 'required' => true],
+					['bodyKey' => 'involvedParty', 'register' => 'pipelinq', 'schema' => 'contact', 'required' => true],
 				],
 			]
 		);

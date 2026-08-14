@@ -215,7 +215,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array {
+	public function listCustomerContacts(array $sourceConfiguration, ?string $since, int $pageSize): array {
 		$query = [
 			'expand' => self::DEFAULT_EXPAND,
 			'sorteer' => 'registratiedatum',
@@ -255,7 +255,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		}
 
 		return ['items' => $results, 'nextCursor' => $nextCursor];
-	}//end listKlantcontacten()
+	}//end listCustomerContacts()
 
 	/**
 	 * {@inheritDoc}
@@ -267,9 +267,9 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function createKlantcontact(array $sourceConfiguration, array $payload): string {
-		$involvedParty = ($payload['betrokkene'] ?? null);
-		unset($payload['betrokkene']);
+	public function createCustomerContact(array $sourceConfiguration, array $payload): string {
+		$involvedParty = ($payload['involvedParty'] ?? null);
+		unset($payload['involvedParty']);
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
@@ -303,7 +303,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		}
 
 		return $customerContactId;
-	}//end createKlantcontact()
+	}//end createCustomerContact()
 
 	/**
 	 * {@inheritDoc}

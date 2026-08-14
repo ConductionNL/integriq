@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for OutboundKennisgevingTranslator.
+ * Unit tests for OutboundNotificationTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\StufZkn
@@ -21,8 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\StufZkn;
 
 use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,9 +34,9 @@ use PHPUnit\Framework\TestCase;
 class OutboundKennisgevingTranslatorTest extends TestCase {
 
 	/**
-	 * @var OutboundKennisgevingTranslator
+	 * @var OutboundNotificationTranslator
 	 */
-	private OutboundKennisgevingTranslator $translator;
+	private OutboundNotificationTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -45,7 +45,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new OutboundKennisgevingTranslator();
+		$this->translator = new OutboundNotificationTranslator();
 
 	}//end setUp()
 
@@ -98,7 +98,7 @@ class OutboundKennisgevingTranslatorTest extends TestCase {
 	public function testRenderedEnvelopeRoundTripsThroughInboundTranslator(): void {
 		$result = $this->translator->translate($this->case(), 'W', 'Procest', 'Gemeente X');
 
-		$inbound = (new InboundBerichtTranslator())->translate($result['xml']);
+		$inbound = (new InboundMessageTranslator())->translate($result['xml']);
 
 		$this->assertSame('zaak', $inbound['kind']);
 		$this->assertSame('W', $inbound['verwerkingssoort']);

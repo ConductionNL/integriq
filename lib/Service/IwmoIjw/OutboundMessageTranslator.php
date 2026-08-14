@@ -51,7 +51,7 @@ use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
-class OutboundBerichtTranslator {
+class OutboundMessageTranslator {
 
 	/**
 	 * Case object kind identifying a care assignment.

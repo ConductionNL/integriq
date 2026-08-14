@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for InboundRetourTranslator.
+ * Unit tests for InboundReturnTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\IwmoIjw;
 
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,9 +33,9 @@ use PHPUnit\Framework\TestCase;
 class InboundRetourTranslatorTest extends TestCase {
 
 	/**
-	 * @var InboundRetourTranslator
+	 * @var InboundReturnTranslator
 	 */
-	private InboundRetourTranslator $translator;
+	private InboundReturnTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -44,7 +44,7 @@ class InboundRetourTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new InboundRetourTranslator();
+		$this->translator = new InboundReturnTranslator();
 
 	}//end setUp()
 

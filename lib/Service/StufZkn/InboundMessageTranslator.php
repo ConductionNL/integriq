@@ -18,7 +18,7 @@
  * business key) raises {@see StufZknTranslationException} BEFORE any OR
  * mapping is returned — this translator MUST NEVER guess or synthesise
  * either value (mirrors `IwmoIjwInboundRetourTranslator`'s `kenmerk` guard
- * and `DsoVerzoekTranslator`'s `verzoekId` guard).
+ * and `DsoRequestTranslator`'s `verzoekId` guard).
  *
  * VERWERKINGSSOORT semantics (StUF 3.01 core, `StUF:verwerkingssoort`
  * attribute on the `object` element): `T` = toevoeging (create), `W` =
@@ -71,7 +71,7 @@ use SimpleXMLElement;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-zaklk01-edclk01-translation-with-a-literal-leak-guard-req-002
  */
-class InboundBerichtTranslator {
+class InboundMessageTranslator {
 
 	/**
 	 * Recognised verwerkingssoort codes (StUF 3.01 core).

@@ -31,7 +31,7 @@ use OC\Files\Node\File;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
@@ -136,7 +136,7 @@ class EndpointService {
 	 * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
 	 * @param InboundRateLimitService $rateLimitService Service enforcing inbound per-consumer rate limits + quotas.
 	 * @param CompositeFanoutRule $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
-	 * @param ReferentienummerRule $referenceNumberRule Dialect-agnostic referentienummer generation rule.
+	 * @param ReferenceNumberRule $referenceNumberRule Dialect-agnostic referentienummer generation rule.
 	 * @param AvgBsnPolicyRule $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
 	 * @param ApprovalService $approvalService Suspends the pipeline on a HITL `approval` rule.
 	 * @param IRequestId $requestId Nextcloud request-id service, used to synthesize
@@ -169,7 +169,7 @@ class EndpointService {
 		private readonly WebhookSignatureService $webhookSignatureService,
 		private readonly InboundRateLimitService $rateLimitService,
 		private readonly CompositeFanoutRule $compositeFanoutRule,
-		private readonly ReferentienummerRule $referenceNumberRule,
+		private readonly ReferenceNumberRule $referenceNumberRule,
 		private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
 		private readonly ApprovalService $approvalService,
 		private readonly IRequestId $requestId,
@@ -3312,7 +3312,7 @@ class EndpointService {
 	 * Process a referentienummer generation rule.
 	 *
 	 * Dialect-agnostic gateway mechanic. Delegates to
-	 * {@see ReferentienummerRule} which stamps a UUIDv4 (or configured
+	 * {@see ReferenceNumberRule} which stamps a UUIDv4 (or configured
 	 * scheme) reference onto the response body.
 	 *
 	 * @param ObjectEntity $rule The referentienummer rule to apply.

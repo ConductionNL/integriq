@@ -196,7 +196,7 @@ class DSOParserServiceTest extends TestCase {
 			'bouwkosten' => '250000',
 		];
 
-		$request = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseRequest($payload);
 
 		$this->assertSame('dso-12345', $request['verzoekId']);
 		$this->assertSame('aanvraag', $request['type']);
@@ -225,7 +225,7 @@ class DSOParserServiceTest extends TestCase {
 			'activiteiten' => [],
 		];
 
-		$request = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseRequest($payload);
 
 		$this->assertNotNull($request['locatie']['geometrie']);
 		$this->assertSame('Point', $request['locatie']['geometrie']['type']);

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for BesluitTranslator.
+ * Unit tests for DecisionTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\ZgwVersion
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\ZgwVersion;
 
 use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Service\ZgwVersion\BesluitTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -32,9 +32,9 @@ use PHPUnit\Framework\TestCase;
 class BesluitTranslatorTest extends TestCase {
 
 	/**
-	 * @var BesluitTranslator
+	 * @var DecisionTranslator
 	 */
-	private BesluitTranslator $translator;
+	private DecisionTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -43,7 +43,7 @@ class BesluitTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new BesluitTranslator();
+		$this->translator = new DecisionTranslator();
 	}//end setUp()
 
 	/**

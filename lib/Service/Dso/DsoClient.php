@@ -6,7 +6,7 @@
  * Thin REST binding for {@see DsoConnectorProviderInterface} against a
  * DSO-LV-fronted "voortgangsinformatie"/besluit endpoint. Deliberately a
  * hand-rolled HTTP client (Guzzle, already an app dependency) rather than a
- * DSO SDK dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient}
+ * DSO SDK dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
  * and {@see \OCA\OpenConnector\Service\Kiss\KlantinteractiesClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live DSO-LV/preprod connection was available
@@ -38,7 +38,7 @@
  * `configuration.authentication.encryptedToken`, ENCRYPTED AT REST via
  * Nextcloud's `OCP\Security\ICrypto`, decrypted in-process only for the
  * instant needed to build each request's Authorization header (never
- * logged, never persisted decrypted). Mirrors `IStandaardenClient`'s
+ * logged, never persisted decrypted). Mirrors `IStandardsClient`'s
  * identical, already-accepted deviation from `credentialRef`/
  * `BrokeredCallService`.
  *

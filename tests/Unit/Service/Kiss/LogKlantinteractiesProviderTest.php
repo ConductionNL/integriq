@@ -53,7 +53,7 @@ class LogKlantinteractiesProviderTest extends TestCase {
 	 * @return void
 	 */
 	public function testListReturnsEmptyPage(): void {
-		$result = $this->provider->listKlantcontacten(sourceConfiguration: [], since: '2026-01-01T00:00:00+00:00', pageSize: 10);
+		$result = $this->provider->listCustomerContacts(sourceConfiguration: [], since: '2026-01-01T00:00:00+00:00', pageSize: 10);
 
 		$this->assertSame([], $result['items']);
 		$this->assertNull($result['nextCursor']);
@@ -66,7 +66,7 @@ class LogKlantinteractiesProviderTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateKlantcontactReturnsSyntheticId(): void {
-		$id = $this->provider->createKlantcontact(sourceConfiguration: [], payload: ['onderwerp' => 'x']);
+		$id = $this->provider->createCustomerContact(sourceConfiguration: [], payload: ['onderwerp' => 'x']);
 
 		$this->assertStringStartsWith('MOCK-KISS-', $id);
 

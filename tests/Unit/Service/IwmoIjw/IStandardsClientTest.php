@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for IStandaardenClient.
+ * Unit tests for IStandardsClient.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
@@ -26,7 +26,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
+use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
 use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
 use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
 use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
@@ -95,16 +95,16 @@ class IStandaardenClientTest extends TestCase {
 	 *
 	 * @param array<int,Response> $responses The queued mock responses.
 	 *
-	 * @return IStandaardenClient The client under test.
+	 * @return IStandardsClient The client under test.
 	 */
-	private function buildClient(array $responses): IStandaardenClient {
+	private function buildClient(array $responses): IStandardsClient {
 		$mock = new MockHandler($responses);
 		$stack = HandlerStack::create($mock);
 
 		$this->history = [];
 		$stack->push(Middleware::history($this->history));
 
-		return new IStandaardenClient(
+		return new IStandardsClient(
 			new Client(['handler' => $stack]),
 			$this->crypto,
 			$this->l,
@@ -316,7 +316,7 @@ class IStandaardenClientTest extends TestCase {
 			)
 		);
 
-		$client = new IStandaardenClient(
+		$client = new IStandardsClient(
 			new Client(),
 			$this->crypto,
 			$this->l,
@@ -354,7 +354,7 @@ class IStandaardenClientTest extends TestCase {
 		$mock = new MockHandler([new Response(200, [], 'IWMO-token-ref')]);
 		$stack = HandlerStack::create($mock);
 
-		$client = new IStandaardenClient(
+		$client = new IStandardsClient(
 			new Client(['handler' => $stack]),
 			$this->crypto,
 			$this->l,

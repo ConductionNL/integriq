@@ -164,7 +164,7 @@ class DSOParserService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	public function parseVerzoek(array $payload): array {
+	public function parseRequest(array $payload): array {
 		$bouwkosten = null;
 		if (isset($payload['bouwkosten']) === true) {
 			$bouwkosten = (float)$payload['bouwkosten'];
@@ -190,7 +190,7 @@ class DSOParserService {
 		}
 
 		return $request;
-	}//end parseVerzoek()
+	}//end parseRequest()
 
 	/**
 	 * Validate a BSN (Burger Service Nummer) using the 11-proef.

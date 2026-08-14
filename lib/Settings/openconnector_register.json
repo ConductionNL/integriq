@@ -118,7 +118,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit — log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam — not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveVerzoek(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit — log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam — not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
@@ -3662,7 +3662,7 @@
           },
           "rawRequest": {
             "type": "object",
-            "description": "The full parsed Verzoek (DSOParserService::parseVerzoek() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
+            "description": "The full parsed Verzoek (DSOParserService::parseRequest() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
             "title": "Raw Request"
           },
           "requester": {
@@ -3672,12 +3672,12 @@
           },
           "mappedTitle": {
             "type": "string",
-            "description": "Normalised ns#Case title, resolved by DsoVerzoekTranslator",
+            "description": "Normalised ns#Case title, resolved by DsoRequestTranslator",
             "title": "Mapped Title"
           },
           "mappedSummary": {
             "type": "string",
-            "description": "Normalised ns#Case summary, resolved by DsoVerzoekTranslator",
+            "description": "Normalised ns#Case summary, resolved by DsoRequestTranslator",
             "title": "Mapped Summary"
           },
           "mappedChannel": {
@@ -3687,7 +3687,7 @@
           },
           "mappedPriority": {
             "type": "string",
-            "description": "Normalised ns#Case priority (hoog for aanvraag, normaal otherwise), resolved by DsoVerzoekTranslator",
+            "description": "Normalised ns#Case priority (hoog for aanvraag, normaal otherwise), resolved by DsoRequestTranslator",
             "title": "Mapped Priority"
           },
           "status": {
@@ -4285,7 +4285,7 @@
               "pulled",
               "pushed"
             ],
-            "description": "Whether this record originated from a KISS pull sweep or from a local push mirrored after KissController::createKlantcontact()",
+            "description": "Whether this record originated from a KISS pull sweep or from a local push mirrored after KissController::createCustomerContact()",
             "title": "Direction"
           },
           "sourceApp": {

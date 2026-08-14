@@ -210,7 +210,7 @@ class IBabsConnectorService {
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-2
 	 */
-	public function pushVoorstel(ObjectEntity $source, array $proposal): array {
+	public function pushProposal(ObjectEntity $source, array $proposal): array {
 		$config = $this->extractConfig(source: $source);
 		$organisationId = $config['organisatieId'] ?? null;
 		if ($organisationId === null) {
@@ -283,7 +283,7 @@ class IBabsConnectorService {
 			];
 		}//end try
 
-	}//end pushVoorstel()
+	}//end pushProposal()
 
 	/**
 	 * Create an agendapunt in iBabs linked to a vergaderstuk.
@@ -306,7 +306,7 @@ class IBabsConnectorService {
 	 * @spec                      openspec/changes/ibabs-notubiz-connector/tasks.md#task-3
 	 * @orphaned-write-capability exclude Outbound-push entry point (REQ-RIS-003); its Zaak->iBabs pipeline is unbuilt.
 	 */
-	public function createAgendapunt(
+	public function createAgendaItem(
 		ObjectEntity $source,
 		string $vergaderstukId,
 		?string $meetingId = null,
@@ -379,7 +379,7 @@ class IBabsConnectorService {
 			];
 		}//end try
 
-	}//end createAgendapunt()
+	}//end createAgendaItem()
 
 	/**
 	 * Select the next upcoming vergadering from iBabs for auto-assignment.
@@ -450,7 +450,7 @@ class IBabsConnectorService {
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
 	 */
-	public function pollBesluiten(ObjectEntity $source, array $syncedItems = []): array {
+	public function pollDecisions(ObjectEntity $source, array $syncedItems = []): array {
 		$config = $this->extractConfig(source: $source);
 		$organisationId = $config['organisatieId'] ?? null;
 		if ($organisationId === null) {
@@ -504,7 +504,7 @@ class IBabsConnectorService {
 		}//end foreach
 
 		return array_filter($decisions);
-	}//end pollBesluiten()
+	}//end pollDecisions()
 
 	/**
 	 * Parse an iBabs besluit response body into a normalised record.
@@ -527,7 +527,7 @@ class IBabsConnectorService {
 			'caseId' => $caseId,
 			'vergaderingId' => $meetingId,
 			'ibabsStatus' => $ibabsStatus,
-			'zaakStatus' => $this->mapBesluitStatus(ibabsStatus: $ibabsStatus),
+			'zaakStatus' => $this->mapDecisionStatus(ibabsStatus: $ibabsStatus),
 			'besluitdatum' => $besluitdatum,
 		];
 
@@ -672,7 +672,7 @@ class IBabsConnectorService {
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
 	 */
-	public function mapBesluitStatus(string $ibabsStatus): string {
+	public function mapDecisionStatus(string $ibabsStatus): string {
 		return self::BESLUIT_STATUS_MAP[strtolower($ibabsStatus)] ?? 'Besluit: onbekend';
-	}//end mapBesluitStatus()
+	}//end mapDecisionStatus()
 }//end class

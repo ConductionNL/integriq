@@ -749,7 +749,7 @@ class MappingService {
 			}
 
 			if ($operator === 'objectId' && isset($codeKindByField[$field]) === true) {
-				$translated[$field] = $this->translatePartijIdentificatorFilter(
+				$translated[$field] = $this->translatePartyIdentifierFilter(
 					codeKind: (string)$codeKindByField[$field],
 					objectId: (string)$value
 				);
@@ -782,7 +782,7 @@ class MappingService {
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	public function translatePartijIdentificatorFilter(string $codeKind, string $objectId): array {
+	public function translatePartyIdentifierFilter(string $codeKind, string $objectId): array {
 		if (strtolower($codeKind) !== 'bsn') {
 			return ['codeSoortObjectId' => $codeKind, 'objectId' => $objectId];
 		}
@@ -791,7 +791,7 @@ class MappingService {
 			'codeSoortObjectId' => $codeKind,
 			'objectId' => hash('sha256', $objectId),
 		];
-	}//end translatePartijIdentificatorFilter()
+	}//end translatePartyIdentifierFilter()
 
 	/**
 	 * Embed named relations inline (VNG `expand=` semantics), bounded by depth.

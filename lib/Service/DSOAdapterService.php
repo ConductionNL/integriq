@@ -97,7 +97,7 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-4
 	 */
-	public function processVerzoek(array $request): array {
+	public function processRequest(array $request): array {
 		$type = ($request['type'] ?? 'aanvraag');
 
 		$this->logger->info(
@@ -109,7 +109,7 @@ class DSOAdapterService {
 		);
 
 		if ($type === 'melding') {
-			return $this->handleMelding(request: $request);
+			return $this->handleReport(request: $request);
 		}
 
 		if ($type === 'informatieverzoek') {
@@ -120,8 +120,8 @@ class DSOAdapterService {
 			return $this->handleVooroverleg(request: $request);
 		}
 
-		return $this->handleAanvraag(request: $request);
-	}//end processVerzoek()
+		return $this->handleApplication(request: $request);
+	}//end processRequest()
 
 	/**
 	 * Handle a melding-type verzoek.
@@ -134,19 +134,19 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-4
 	 */
-	public function handleMelding(array $request): array {
+	public function handleReport(array $request): array {
 		$this->logger->info(
 			'DSO: handling melding',
 			['verzoekId' => ($request['verzoekId'] ?? null)]
 		);
 
-		return $this->createZaak(
+		return $this->createCase(
 			request: $request,
 			caseTypeIdentification: 'melding',
 			strategy: 'single'
 		);
 
-	}//end handleMelding()
+	}//end handleReport()
 
 	/**
 	 * Handle an informatieverzoek-type verzoek.
@@ -165,7 +165,7 @@ class DSOAdapterService {
 			['verzoekId' => ($request['verzoekId'] ?? null)]
 		);
 
-		return $this->createZaak(
+		return $this->createCase(
 			request: $request,
 			caseTypeIdentification: 'informatieverzoek',
 			strategy: 'single'
@@ -190,7 +190,7 @@ class DSOAdapterService {
 			['verzoekId' => ($request['verzoekId'] ?? null)]
 		);
 
-		return $this->createZaak(
+		return $this->createCase(
 			request: $request,
 			caseTypeIdentification: 'vooroverleg',
 			strategy: 'single'
@@ -209,19 +209,19 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-4
 	 */
-	public function handleAanvraag(array $request): array {
+	public function handleApplication(array $request): array {
 		$this->logger->info(
 			'DSO: handling aanvraag',
 			['verzoekId' => ($request['verzoekId'] ?? null)]
 		);
 
-		return $this->createZaak(
+		return $this->createCase(
 			request: $request,
 			caseTypeIdentification: 'aanvraag',
 			strategy: 'single'
 		);
 
-	}//end handleAanvraag()
+	}//end handleApplication()
 
 	/**
 	 * Download bijlagen from DSO-LV to local storage.
@@ -238,7 +238,7 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-5
 	 */
-	public function downloadBijlagen(array $attachments, string $requestId, ?string $certPath = null): array {
+	public function downloadAttachments(array $attachments, string $requestId, ?string $certPath = null): array {
 		$year = date('Y');
 		$baseDir = self::BIJLAGEN_BASE_PATH . '/' . $year . '/' . $requestId . '/bijlagen';
 		$results = [];
@@ -331,7 +331,7 @@ class DSOAdapterService {
 		}//end foreach
 
 		return $results;
-	}//end downloadBijlagen()
+	}//end downloadAttachments()
 
 	/**
 	 * Map DSO activiteiten to zaaktypen using the provided mapping table.
@@ -604,7 +604,7 @@ class DSOAdapterService {
 			);
 		}
 
-		return $this->createGecombineerdZaak(
+		return $this->createCombinedCase(
 			request: $request,
 			mappedActiviteiten: $mappedActiviteiten
 		);
@@ -622,7 +622,7 @@ class DSOAdapterService {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-7
 	 */
 	public function createHoofdzaakWithDeelzaken(array $request, array $mappedActiviteiten): array {
-		$hoofdzaak = $this->createZaak(
+		$hoofdzaak = $this->createCase(
 			request: $request,
 			caseTypeIdentification: 'aanvraag-meerdere-activiteiten',
 			strategy: 'hoofdzaak'
@@ -637,7 +637,7 @@ class DSOAdapterService {
 			$deelRequest['activiteiten'] = [$activity];
 			$deelRequest['hoofdzaakId'] = $hoofdzaakId;
 
-			$deelzaak = $this->createZaak(
+			$deelzaak = $this->createCase(
 				request: $deelRequest,
 				caseTypeIdentification: $caseTypeId,
 				strategy: 'deelzaak'
@@ -664,14 +664,14 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-7
 	 */
-	public function createGecombineerdZaak(array $request, array $mappedActiviteiten): array {
+	public function createCombinedCase(array $request, array $mappedActiviteiten): array {
 		$gecombineerdRequest = $request;
 		$gecombineerdRequest['activiteiten'] = $mappedActiviteiten;
-		$gecombineerdRequest['eigenschappen'] = $this->buildActiviteitenEigenschappen(
+		$gecombineerdRequest['eigenschappen'] = $this->buildActivityAttributes(
 			activiteiten: $mappedActiviteiten
 		);
 
-		$case = $this->createZaak(
+		$case = $this->createCase(
 			request: $gecombineerdRequest,
 			caseTypeIdentification: 'aanvraag-gecombineerd',
 			strategy: 'gecombineerd'
@@ -681,7 +681,7 @@ class DSOAdapterService {
 			'caseId' => ($case['id'] ?? uniqid(prefix: 'zaak-', more_entropy: true)),
 		];
 
-	}//end createGecombineerdZaak()
+	}//end createCombinedCase()
 
 	/**
 	 * Handle an unmapped activiteitcode by creating a triage zaak.
@@ -696,7 +696,7 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-8
 	 */
-	public function handleUnmappedActiviteit(array $request, string $activityCode): array {
+	public function handleUnmappedActivity(array $request, string $activityCode): array {
 		$this->logger->warning(
 			'DSO: unmapped activiteit encountered, creating triage zaak',
 			[
@@ -709,7 +709,7 @@ class DSOAdapterService {
 		$triageRequest['activiteitCode'] = $activityCode;
 		$triageRequest['triageReason'] = 'Onbekende DSO activiteitcode: ' . $activityCode;
 
-		$case = $this->createZaak(
+		$case = $this->createCase(
 			request: $triageRequest,
 			caseTypeIdentification: 'onbekend-dso-activiteit',
 			strategy: 'triage'
@@ -720,7 +720,7 @@ class DSOAdapterService {
 			'status' => 'triage',
 		];
 
-	}//end handleUnmappedActiviteit()
+	}//end handleUnmappedActivity()
 
 	/**
 	 * Create a zaak structure from a verzoek.
@@ -738,7 +738,7 @@ class DSOAdapterService {
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-9
 	 */
-	public function createZaak(array $request, string $caseTypeIdentification, string $strategy = 'single'): array {
+	public function createCase(array $request, string $caseTypeIdentification, string $strategy = 'single'): array {
 		$caseId = uniqid(prefix: 'zaak-', more_entropy: true);
 
 		return [
@@ -756,7 +756,7 @@ class DSOAdapterService {
 			'aangemaaktOp' => date('c'),
 		];
 
-	}//end createZaak()
+	}//end createCase()
 
 	/**
 	 * Validate a client certificate file for DSO mTLS.
@@ -884,7 +884,7 @@ class DSOAdapterService {
 
 			return [
 				'success' => false,
-				'message' => 'Verbinding mislukt: ' . $e->getMessage(),
+				'message' => 'Connection failed: ' . $e->getMessage(),
 				'responseTime' => round(num: $responseTime, precision: 3),
 			];
 		}//end try
@@ -900,7 +900,7 @@ class DSOAdapterService {
 	 *
 	 * @return array Array of eigenschap objects with 'naam' and 'waarde' keys.
 	 */
-	private function buildActiviteitenEigenschappen(array $activiteiten): array {
+	private function buildActivityAttributes(array $activiteiten): array {
 		$attributes = [];
 		$index = 1;
 
@@ -916,5 +916,5 @@ class DSOAdapterService {
 		}//end foreach
 
 		return $attributes;
-	}//end buildActiviteitenEigenschappen()
+	}//end buildActivityAttributes()
 }//end class

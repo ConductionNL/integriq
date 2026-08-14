@@ -53,7 +53,7 @@ use SimpleXMLElement;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
-class InboundRetourTranslator {
+class InboundReturnTranslator {
 	/**
 	 * Constructor.
 	 *

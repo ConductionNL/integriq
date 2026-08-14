@@ -11,7 +11,7 @@
  * bare HTTP status); the outbound push endpoint lets sibling apps (e.g.
  * procest) register a zaak change for kennisgeving dispatch to the
  * subscribed StUF consumer (mirrors
- * `IwmoIjwController::createBericht()`/`KissController::createKlantcontact()`).
+ * `IwmoIjwController::createMessage()`/`KissController::createCustomerContact()`).
  *
  * INBOUND AUTHENTICATION: a real StUF-ZKN deployment typically establishes
  * trust at the transport layer (PKIoverheid mTLS / municipal network
@@ -188,7 +188,7 @@ class StufZknController extends Controller {
 		}
 
 		try {
-			$result = $this->syncService->sendKennisgeving(case: $case, processingKind: $processingKind);
+			$result = $this->syncService->sendNotification(case: $case, processingKind: $processingKind);
 			return new JSONResponse($result);
 		} catch (StufZknTranslationException $exception) {
 			return new JSONResponse(

@@ -194,7 +194,7 @@ class RISPollJob extends TimedJob {
 			}
 
 			try {
-				$decisions = $this->ibabsConnectorService->pollBesluiten(
+				$decisions = $this->ibabsConnectorService->pollDecisions(
 					source: $source,
 					syncedItems: $sourceRecords
 				);

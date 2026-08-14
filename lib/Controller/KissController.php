@@ -90,7 +90,7 @@ class KissController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function createKlantcontact(): JSONResponse {
+	public function createCustomerContact(): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
@@ -114,7 +114,7 @@ class KissController extends Controller {
 		$input = $this->buildPushInput(onderwerp: $onderwerp, channel: $channel, params: $params);
 
 		try {
-			$result = $this->syncService->pushKlantcontact(input: $input);
+			$result = $this->syncService->pushCustomerContact(input: $input);
 			return new JSONResponse($result);
 		} catch (KissProviderException $exception) {
 			$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());
@@ -129,10 +129,10 @@ class KissController extends Controller {
 			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
 		}//end try
 
-	}//end createKlantcontact()
+	}//end createCustomerContact()
 
 	/**
-	 * Assemble the `KissSyncService::pushKlantcontact()` input array from the
+	 * Assemble the `KissSyncService::pushCustomerContact()` input array from the
 	 * validated required fields plus every optional field present in the
 	 * request params.
 	 *
@@ -159,8 +159,8 @@ class KissController extends Controller {
 			$input['indicationContactGelukt'] = (bool)$params['indicationContactGelukt'];
 		}
 
-		if (isset($params['betrokkene']) === true && is_array($params['betrokkene']) === true) {
-			$input['betrokkene'] = $params['betrokkene'];
+		if (isset($params['involvedParty']) === true && is_array($params['involvedParty']) === true) {
+			$input['involvedParty'] = $params['involvedParty'];
 		}
 
 		return $input;

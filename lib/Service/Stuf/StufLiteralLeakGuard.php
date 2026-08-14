@@ -6,7 +6,7 @@
  * Defense-in-depth scan for leftover unresolved template markers in a
  * rendered outbound envelope, shared by every StUF-family bridge in this
  * app. Extracted from
- * `IwmoIjw\OutboundBerichtTranslator::assertNoUnresolvedPlaceholder()`
+ * `IwmoIjw\OutboundMessageTranslator::assertNoUnresolvedPlaceholder()`
  * (iwmo-ijw-adapter, 2026-07-14) verbatim — same regex, same "scan the
  * fully rendered string, after the required-fields pre-check has already
  * run" contract. Each translator's pre-check (which required fields are

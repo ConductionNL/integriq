@@ -135,9 +135,9 @@ class IwmoIjwControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->controller = $this->buildController();
 
-		$this->syncService->expects($this->never())->method('sendBericht');
+		$this->syncService->expects($this->never())->method('sendMessage');
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
@@ -151,9 +151,9 @@ class IwmoIjwControllerTest extends TestCase {
 	public function testCreateBerichtRequiresKindAndDomain(): void {
 		$this->request->method('getParams')->willReturn(['kind' => 'toewijzing']);
 
-		$this->syncService->expects($this->never())->method('sendBericht');
+		$this->syncService->expects($this->never())->method('sendMessage');
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame('missing_fields', $response->getData()['error']);
@@ -171,10 +171,10 @@ class IwmoIjwControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['kind' => 'toewijzing', 'domain' => 'wmo']);
 
 		$this->syncService->expects($this->once())
-			->method('sendBericht')
+			->method('sendMessage')
 			->willReturn(['ref' => 'WMO-abc123', 'berichttype' => 'Wmo303']);
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['ref' => 'WMO-abc123', 'berichttype' => 'Wmo303'], $response->getData());
@@ -189,11 +189,11 @@ class IwmoIjwControllerTest extends TestCase {
 	public function testCreateBerichtMapsTranslationExceptionTo400(): void {
 		$this->request->method('getParams')->willReturn(['kind' => 'toewijzing', 'domain' => 'wmo']);
 
-		$this->syncService->method('sendBericht')->willThrowException(
+		$this->syncService->method('sendMessage')->willThrowException(
 			new IwmoIjwTranslationException(message: 'Required field "productcode" is missing or empty.')
 		);
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame('invalid_bericht', $response->getData()['error']);
@@ -210,11 +210,11 @@ class IwmoIjwControllerTest extends TestCase {
 	public function testCreateBerichtReportsNotConfiguredCleanly(): void {
 		$this->request->method('getParams')->willReturn(['kind' => 'toewijzing', 'domain' => 'wmo']);
 
-		$this->syncService->method('sendBericht')->willThrowException(
+		$this->syncService->method('sendMessage')->willThrowException(
 			new IwmoIjwProviderException(message: 'No active iWMO/iJW source is configured (register "openconnector", schema "source", type "iwmo-ijw", isEnabled=true). Configure one before using the iWMO/iJW bridge.')
 		);
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
 		$this->assertSame('not_configured', $response->getData()['error']);
@@ -229,11 +229,11 @@ class IwmoIjwControllerTest extends TestCase {
 	public function testCreateBerichtMapsProviderFailureTo502(): void {
 		$this->request->method('getParams')->willReturn(['kind' => 'toewijzing', 'domain' => 'wmo']);
 
-		$this->syncService->method('sendBericht')->willThrowException(
+		$this->syncService->method('sendMessage')->willThrowException(
 			new IwmoIjwProviderException(message: 'iStandaarden endpoint responded with HTTP 503.')
 		);
 
-		$response = $this->controller->createBericht();
+		$response = $this->controller->createMessage();
 
 		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
 		$this->assertSame('iwmo_ijw_send_failed', $response->getData()['error']);
@@ -271,7 +271,7 @@ class IwmoIjwControllerTest extends TestCase {
 		$this->syncService->method('resolveActiveSource')->willReturn($source);
 		$this->signatureService->method('verify')->willReturn(false);
 
-		$this->syncService->expects($this->never())->method('receiveRetour');
+		$this->syncService->expects($this->never())->method('receiveReturn');
 
 		$response = $this->controller->inbound();
 
@@ -291,7 +291,7 @@ class IwmoIjwControllerTest extends TestCase {
 		$this->syncService->method('resolveActiveSource')->willReturn($source);
 		$this->signatureService->method('verify')->willReturn(true);
 
-		$this->syncService->expects($this->once())->method('receiveRetour');
+		$this->syncService->expects($this->once())->method('receiveReturn');
 
 		$response = $this->controller->inbound();
 
@@ -312,7 +312,7 @@ class IwmoIjwControllerTest extends TestCase {
 		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
 		$this->syncService->method('resolveActiveSource')->willReturn($source);
 		$this->signatureService->method('verify')->willReturn(true);
-		$this->syncService->method('receiveRetour')->willThrowException(new \RuntimeException('boom'));
+		$this->syncService->method('receiveReturn')->willThrowException(new \RuntimeException('boom'));
 
 		$response = $this->controller->inbound();
 

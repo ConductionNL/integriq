@@ -45,17 +45,17 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
+use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
 use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
 use OCA\OpenConnector\Service\DsoIngestService;
 use OCA\OpenConnector\Service\EventService;
 use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
 use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
 use OCA\OpenConnector\Service\FscCallService;
-use OCA\OpenConnector\Service\IwmoIjw\InboundRetourTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
+use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
 use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\OpenConnector\Service\IwmoIjwSyncService;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
 use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
@@ -64,9 +64,9 @@ use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\Sms\LogSmsProvider;
 use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
 use OCA\OpenConnector\Service\SmsDispatchService;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
 use OCA\OpenConnector\Service\StufZknSyncService;
@@ -163,9 +163,9 @@ class SourceRawReadContractTest extends TestCase {
 			'IStandaarden' => new IwmoIjwSyncService(
 				$fake,
 				$this->createMock(LogIwmoIjwProvider::class),
-				$this->createMock(IStandaardenClient::class),
-				new OutboundBerichtTranslator(),
-				new InboundRetourTranslator(),
+				$this->createMock(IStandardsClient::class),
+				new OutboundMessageTranslator(),
+				new InboundReturnTranslator(),
 				$this->l10n(),
 				$logger,
 				$resolver
@@ -173,7 +173,7 @@ class SourceRawReadContractTest extends TestCase {
 			'Dso' => new DsoIngestService(
 				$fake,
 				$this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
-				new DsoVerzoekTranslator(),
+				new DsoRequestTranslator(),
 				new LogDsoConnectorProvider(),
 				$this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 				$logger,
@@ -191,8 +191,8 @@ class SourceRawReadContractTest extends TestCase {
 				$fake,
 				$this->createMock(LogStufZknProvider::class),
 				$this->getMockBuilder(StufZknClient::class)->disableOriginalConstructor()->getMock(),
-				new InboundBerichtTranslator(),
-				new OutboundKennisgevingTranslator(),
+				new InboundMessageTranslator(),
+				new OutboundNotificationTranslator(),
 				new StufZknAcknowledgementBuilder(),
 				$logger,
 				$resolver

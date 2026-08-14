@@ -59,7 +59,7 @@ class CompositeFanoutRule {
 	 * {
 	 *   "parent": {"bodyKey": "klantcontact", "register": "pipelinq", "schema": "ticket"},
 	 *   "children": [
-	 *     {"bodyKey": "betrokkene", "register": "pipelinq", "schema": "contact", "parentField": "klantcontact", "required": false},
+	 *     {"bodyKey": "involvedParty", "register": "pipelinq", "schema": "contact", "parentField": "klantcontact", "required": false},
 	 *     {"bodyKey": "digitaalAdres", "register": "pipelinq", "schema": "digitaalAdres", "parentField": "klantcontact", "required": false}
 	 *   ]
 	 * }

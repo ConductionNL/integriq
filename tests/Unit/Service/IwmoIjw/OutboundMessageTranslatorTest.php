@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for OutboundBerichtTranslator.
+ * Unit tests for OutboundMessageTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\IwmoIjw;
 
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
+use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,9 +33,9 @@ use PHPUnit\Framework\TestCase;
 class OutboundBerichtTranslatorTest extends TestCase {
 
 	/**
-	 * @var OutboundBerichtTranslator
+	 * @var OutboundMessageTranslator
 	 */
-	private OutboundBerichtTranslator $translator;
+	private OutboundMessageTranslator $translator;
 
 	/**
 	 * A complete toewijzing case object.
@@ -75,7 +75,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new OutboundBerichtTranslator();
+		$this->translator = new OutboundMessageTranslator();
 
 	}//end setUp()
 
@@ -87,7 +87,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
 	 */
 	public function testToewijzingTranslatesToWmo303(): void {
-		$result = $this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 
 		$this->assertSame('Wmo303', $result['berichttype']);
 		$this->assertNotSame('', $result['ref']);
@@ -108,7 +108,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-same-case-object-translates-to-jw303-when-domain-is-jw
 	 */
 	public function testToewijzingTranslatesToJw303ForJwDomain(): void {
-		$result = $this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'jw');
+		$result = $this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'jw');
 
 		$this->assertSame('Jw303', $result['berichttype']);
 		$this->assertStringStartsWith('JW-', $result['ref']);
@@ -123,7 +123,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-declaratie-translates-to-a-valid-wmo321jw321-envelope
 	 */
 	public function testDeclaratieTranslatesToWmo321(): void {
-		$result = $this->translator->translate($this->declaratie, OutboundBerichtTranslator::KIND_DECLARATIE, 'wmo');
+		$result = $this->translator->translate($this->declaratie, OutboundMessageTranslator::KIND_DECLARATIE, 'wmo');
 
 		$this->assertSame('Wmo321', $result['berichttype']);
 		$this->assertStringContainsString('<toewijzingReferentie>WMO-abc123</toewijzingReferentie>', $result['xml']);
@@ -140,7 +140,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testDeclaratieTranslatesToJw321ForJwDomain(): void {
-		$result = $this->translator->translate($this->declaratie, OutboundBerichtTranslator::KIND_DECLARATIE, 'jw');
+		$result = $this->translator->translate($this->declaratie, OutboundMessageTranslator::KIND_DECLARATIE, 'jw');
 
 		$this->assertSame('Jw321', $result['berichttype']);
 
@@ -160,7 +160,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 
 		$this->expectException(IwmoIjwTranslationException::class);
 		$this->expectExceptionMessageMatches('/productcode/');
-		$this->translator->translate($incomplete, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$this->translator->translate($incomplete, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 
 	}//end testMissingRequiredFieldRaisesTranslationException()
 
@@ -174,7 +174,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 		$incomplete['leveringsvorm'] = '   ';
 
 		$this->expectException(IwmoIjwTranslationException::class);
-		$this->translator->translate($incomplete, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$this->translator->translate($incomplete, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 
 	}//end testEmptyStringRequiredFieldRaisesTranslationException()
 
@@ -196,7 +196,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 */
 	public function testUnsupportedDomainRaisesTranslationException(): void {
 		$this->expectException(IwmoIjwTranslationException::class);
-		$this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'unknown-domain');
+		$this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'unknown-domain');
 
 	}//end testUnsupportedDomainRaisesTranslationException()
 
@@ -207,7 +207,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testOptionalFieldOmittedWhenAbsent(): void {
-		$result = $this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringNotContainsString('<einddatum', $result['xml']);
 
 	}//end testOptionalFieldOmittedWhenAbsent()
@@ -221,7 +221,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 		$withEndDate = $this->toewijzing;
 		$withEndDate['einddatum'] = '2027-08-01';
 
-		$result = $this->translator->translate($withEndDate, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($withEndDate, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringContainsString('<einddatum>2027-08-01</einddatum>', $result['xml']);
 
 	}//end testOptionalFieldIncludedWhenPresent()
@@ -232,7 +232,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testReferentienummerIsEmbeddedInEnvelope(): void {
-		$result = $this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringContainsString(
 			'<referentienummer>' . $result['ref'] . '</referentienummer>',
 			$result['xml']
@@ -246,7 +246,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testZenderAndOntvangerAreEmbedded(): void {
-		$result = $this->translator->translate($this->toewijzing, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($this->toewijzing, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringContainsString('<zender><code>GM0344</code></zender>', $result['xml']);
 		$this->assertStringContainsString('<ontvanger><code>01234567</code></ontvanger>', $result['xml']);
 
@@ -262,7 +262,7 @@ class OutboundBerichtTranslatorTest extends TestCase {
 		$withAmpersand = $this->toewijzing;
 		$withAmpersand['leveringsvorm'] = 'ZIN & PGB';
 
-		$result = $this->translator->translate($withAmpersand, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($withAmpersand, OutboundMessageTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringContainsString('ZIN &amp; PGB', $result['xml']);
 		$this->assertStringNotContainsString('ZIN & PGB<', $result['xml']);
 

@@ -163,7 +163,7 @@ class DSOControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn($body);
 		$this->request->method('getHeader')->willReturn('');
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
@@ -188,7 +188,7 @@ class DSOControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getHeader')->willReturn('');
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
@@ -222,11 +222,11 @@ class DSOControllerTest extends TestCase {
 			);
 
 		$this->parser->method('validatePayload')->willReturn([]);
-		$this->parser->method('parseVerzoek')->willReturn(
+		$this->parser->method('parseRequest')->willReturn(
 			array_merge($body, ['status' => 'ontvangen'])
 		);
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
@@ -265,7 +265,7 @@ class DSOControllerTest extends TestCase {
 
 		$this->parser->method('validatePayload')->willReturn($validationErrors);
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
@@ -297,9 +297,9 @@ class DSOControllerTest extends TestCase {
 			);
 
 		$this->parser->method('validatePayload')->willReturn([]);
-		$this->parser->method('parseVerzoek')->willReturn(['verzoekId' => 'test-id-999', 'type' => 'aanvraag']);
+		$this->parser->method('parseRequest')->willReturn(['verzoekId' => 'test-id-999', 'type' => 'aanvraag']);
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$data = $response->getData();
 		$this->assertSame('test-id-999', $data['verzoekId']);
@@ -331,9 +331,9 @@ class DSOControllerTest extends TestCase {
 			);
 
 		$this->parser->method('validatePayload')->willReturn([]);
-		$this->parser->method('parseVerzoek')->willReturn(['verzoekId' => 'dso-env-test', 'type' => 'aanvraag']);
+		$this->parser->method('parseRequest')->willReturn(['verzoekId' => 'dso-env-test', 'type' => 'aanvraag']);
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
 
@@ -371,13 +371,13 @@ class DSOControllerTest extends TestCase {
 			);
 
 		$this->parser->method('validatePayload')->willReturn([]);
-		$this->parser->method('parseVerzoek')->willReturn(array_merge($body, ['status' => 'ontvangen']));
+		$this->parser->method('parseRequest')->willReturn(array_merge($body, ['status' => 'ontvangen']));
 
 		$this->ingestService->expects($this->once())
 			->method('ingest')
 			->with($this->callback(static fn (array $parsedRequest): bool => ($parsedRequest['verzoekId'] === 'dso-12345')));
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
 
@@ -406,10 +406,10 @@ class DSOControllerTest extends TestCase {
 			);
 
 		$this->parser->method('validatePayload')->willReturn([]);
-		$this->parser->method('parseVerzoek')->willReturn($body);
+		$this->parser->method('parseRequest')->willReturn($body);
 		$this->ingestService->method('ingest')->willThrowException(new DsoTranslationException(message: 'boom'));
 
-		$response = $this->controller->receiveVerzoek();
+		$response = $this->controller->receiveRequest();
 
 		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
 
@@ -458,7 +458,7 @@ class DSOControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testStatusReturns404ForUnknownVerzoek(): void {
-		$this->ingestService->method('getVerzoek')
+		$this->ingestService->method('getRequest')
 			->willThrowException(new DsoTranslationException(message: 'no such verzoek'));
 
 		$response = $this->controller->status(id: 'unknown');
@@ -473,7 +473,7 @@ class DSOControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testStatusReturnsVerzoekRecord(): void {
-		$this->ingestService->method('getVerzoek')
+		$this->ingestService->method('getRequest')
 			->with('v1')
 			->willReturn(['id' => 'v1', 'status' => 'mapped']);
 

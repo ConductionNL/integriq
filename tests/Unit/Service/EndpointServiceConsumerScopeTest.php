@@ -32,7 +32,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Rule\ReferenceNumberRule;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
@@ -126,7 +126,7 @@ class EndpointServiceConsumerScopeTest extends TestCase {
 			new WebhookSignatureService($logger),
 			$this->rateLimitService,
 			new CompositeFanoutRule($this->orObjectService, $logger),
-			new ReferentienummerRule(),
+			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
 			$this->createMock(ApprovalService::class),
 			$this->createMock(IRequestId::class),

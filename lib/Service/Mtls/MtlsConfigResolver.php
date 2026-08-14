@@ -7,7 +7,7 @@
  * block into an in-memory {@see MtlsCertificateBundle}, entirely BEFORE any
  * network call is attempted. Certificate material is `OCP\Security\ICrypto`-
  * encrypted at rest — the SAME storage pattern already used by
- * `IStandaardenClient`/`FscDirectoryClient`/`DsoClient`/`RestNotifyNlProvider`
+ * `IStandardsClient`/`FscDirectoryClient`/`DsoClient`/`RestNotifyNlProvider`
  * for their bearer tokens. See the change's design.md "Key-storage decision"
  * for why the OpenRegister credential broker's `resolveInjectable()` was
  * verified unsuitable for raw private-key material (it is a documented

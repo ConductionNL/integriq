@@ -544,7 +544,7 @@ class NotificatiesSubscriberService {
 	 *                      hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`.
 	 *
 	 * @return array{channel: string, hoofdObject: mixed, resource: mixed, resourceUrl: mixed,
-	 *               actie: string, aanmaakdatum: mixed, characteristics: array} The ZGW notification body.
+	 *               action: string, aanmaakdatum: mixed, characteristics: array} The ZGW notification body.
 	 *
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-zgw-notification-publish-body-shape-req-005
 	 */
@@ -578,7 +578,7 @@ class NotificatiesSubscriberService {
 		}
 
 		$suffix = self::typeSuffix(type: (string)($eventData['type'] ?? ''));
-		$actie = (string)($actionMap[$suffix] ?? $suffix);
+		$actionName = (string)($actionMap[$suffix] ?? $suffix);
 
 		$staticCharacteristics = (array)($action['characteristics'] ?? []);
 		$eventCharacteristics = (array)($dot->get('characteristics') ?? []);
@@ -590,7 +590,7 @@ class NotificatiesSubscriberService {
 			'hoofdObject' => $mainObject,
 			'resource' => $resource,
 			'resourceUrl' => $resourceUrl,
-			'actie' => $actie,
+			'action' => $actionName,
 			'aanmaakdatum' => ($eventData['time'] ?? null),
 			'characteristics' => $characteristics,
 		];

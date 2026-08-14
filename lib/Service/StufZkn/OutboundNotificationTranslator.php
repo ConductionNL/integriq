@@ -18,7 +18,7 @@
  * rendered envelope is scanned via the shared
  * {@see \OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard} for leftover
  * `{{`/`}}`/`%%UNRESOLVED%%` markers and rejected if any survive (mirrors
- * `IwmoIjw\OutboundBerichtTranslator`).
+ * `IwmoIjw\OutboundMessageTranslator`).
  *
  * @category Service
  * @package  OCA\OpenConnector\Service\StufZkn
@@ -50,7 +50,7 @@ use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
-class OutboundKennisgevingTranslator {
+class OutboundNotificationTranslator {
 
 	/**
 	 * Required zaak fields — see design.md's outbound field table.

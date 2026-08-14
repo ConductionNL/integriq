@@ -4,7 +4,7 @@
  * OpenConnector DSO Verzoek Translator.
  *
  * Translates one already-parsed DSO Verzoek (the array
- * {@see \OCA\OpenConnector\Service\DSOParserService::parseVerzoek()} produces
+ * {@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()} produces
  * — `verzoekId`, `type`, `aanvrager`, `locatie`, `activiteiten`, ...) into
  * the normalised handoff-ready fields a `dso_verzoek` OR record carries:
  * `mappedTitle`/`mappedSummary`/`mappedChannel`/`mappedPriority`. This is a
@@ -17,7 +17,7 @@
  * LITERAL-LEAK GUARD: a Verzoek with an empty/missing `verzoekId` raises
  * {@see DsoTranslationException} BEFORE any normalised record is returned —
  * the caller MUST NEVER fabricate or guess a correlation reference (mirrors
- * `InboundRetourTranslator`'s `kenmerk` guard and `FormFieldMapper`'s
+ * `InboundReturnTranslator`'s `kenmerk` guard and `FormFieldMapper`'s
  * refuse-to-leak-the-literal-key convention).
  *
  * @category Service
@@ -46,7 +46,7 @@ use OCA\OpenConnector\Exception\DsoTranslationException;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
-class DsoVerzoekTranslator {
+class DsoRequestTranslator {
 
 	/**
 	 * Recognised Verzoek types (mirrors `DSOParserService::VALID_TYPES`).
@@ -76,7 +76,7 @@ class DsoVerzoekTranslator {
 	 * Translate one parsed DSO Verzoek into normalised handoff fields.
 	 *
 	 * @param array<string, mixed> $request The parsed Verzoek
-	 *                                      ({@see \OCA\OpenConnector\Service\DSOParserService::parseVerzoek()}'s output).
+	 *                                      ({@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()}'s output).
 	 *
 	 * @return array{verzoekId: string, type: string, mappedTitle: string, mappedSummary: string,
 	 *         mappedChannel: string, mappedPriority: string, requester: array<string, mixed>} The

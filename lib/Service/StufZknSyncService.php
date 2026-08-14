@@ -53,9 +53,9 @@ use DateTime;
 use OCA\OpenConnector\Exception\StufZknProviderException;
 use OCA\OpenConnector\Exception\StufZknTranslationException;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
 use OCA\OpenConnector\Service\StufZkn\StufZknProviderInterface;
@@ -147,8 +147,8 @@ class StufZknSyncService {
 	 * @param ORObjectService $objectService OR object service for source/message/zaak/document persistence.
 	 * @param LogStufZknProvider $logProvider The sandbox outbound provider binding.
 	 * @param StufZknClient $restProvider The generic REST/mTLS outbound provider binding.
-	 * @param InboundBerichtTranslator $inboundTranslator Translates an inbound kennisgeving.
-	 * @param OutboundKennisgevingTranslator $outboundTranslator Translates an OR zaak into a kennisgeving.
+	 * @param InboundMessageTranslator $inboundTranslator Translates an inbound kennisgeving.
+	 * @param OutboundNotificationTranslator $outboundTranslator Translates an OR zaak into a kennisgeving.
 	 * @param StufZknAcknowledgementBuilder $ackBuilder Builds Bv03/Fo03 replies.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
@@ -157,8 +157,8 @@ class StufZknSyncService {
 		private readonly ORObjectService $objectService,
 		private readonly LogStufZknProvider $logProvider,
 		private readonly StufZknClient $restProvider,
-		private readonly InboundBerichtTranslator $inboundTranslator,
-		private readonly OutboundKennisgevingTranslator $outboundTranslator,
+		private readonly InboundMessageTranslator $inboundTranslator,
+		private readonly OutboundNotificationTranslator $outboundTranslator,
 		private readonly StufZknAcknowledgementBuilder $ackBuilder,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
@@ -171,7 +171,7 @@ class StufZknSyncService {
 	 *
 	 * Never throws out to the controller — every failure path (malformed XML, translation
 	 * guard, OR write failure) is captured and shaped into a `Fo03` reply instead (mirrors
-	 * `IwmoIjwSyncService::receiveRetour()`'s "the controller always gets something to send
+	 * `IwmoIjwSyncService::receiveReturn()`'s "the controller always gets something to send
 	 * back" contract, adapted to StUF's own ack/fault berichten instead of a bare HTTP status).
 	 *
 	 * @param string $soapXml The raw inbound SOAP envelope XML, exactly as received on the wire.
@@ -274,7 +274,7 @@ class StufZknSyncService {
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
 	 */
-	public function sendKennisgeving(array $case, string $processingKind): array {
+	public function sendNotification(array $case, string $processingKind): array {
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
@@ -319,7 +319,7 @@ class StufZknSyncService {
 		}
 
 		return ['referentienummer' => $translated['referentienummer'], 'ref' => $ref];
-	}//end sendKennisgeving()
+	}//end sendNotification()
 
 	/**
 	 * Re-attempt every `stuf_message` row with `status: failed` (direction=outbound) through the
@@ -456,7 +456,7 @@ class StufZknSyncService {
 	 * deleting it (never destroy data on an external signal); a `V` for an identificatie with no
 	 * existing record is a no-op (nothing to vervallen — idempotent).
 	 *
-	 * @param array<string, mixed> $translated The {@see InboundBerichtTranslator::translate()} output.
+	 * @param array<string, mixed> $translated The {@see InboundMessageTranslator::translate()} output.
 	 *
 	 * @return void
 	 *

@@ -118,7 +118,7 @@ class KlantinteractiesClientTest extends TestCase {
 	public function testListSendsTokenAuthorizationHeader(): void {
 		$client = $this->buildClient([new Response(200, [], json_encode(['results' => []]))]);
 
-		$client->listKlantcontacten(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
+		$client->listCustomerContacts(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
 
 		$this->assertCount(1, $this->history);
 		$this->assertSame(
@@ -138,7 +138,7 @@ class KlantinteractiesClientTest extends TestCase {
 		$configuration['authentication']['scheme'] = 'Bearer';
 
 		$client = $this->buildClient([new Response(200, [], json_encode(['results' => []]))]);
-		$client->listKlantcontacten(sourceConfiguration: $configuration, since: null, pageSize: 50);
+		$client->listCustomerContacts(sourceConfiguration: $configuration, since: null, pageSize: 50);
 
 		$this->assertSame(
 			'Bearer raw-token-value',
@@ -155,7 +155,7 @@ class KlantinteractiesClientTest extends TestCase {
 	public function testListRequestsExpandSortAndPageSize(): void {
 		$client = $this->buildClient([new Response(200, [], json_encode(['results' => []]))]);
 
-		$client->listKlantcontacten(sourceConfiguration: $this->configuration, since: null, pageSize: 25);
+		$client->listCustomerContacts(sourceConfiguration: $this->configuration, since: null, pageSize: 25);
 
 		$request = $this->history[0]['request'];
 		$this->assertSame('GET', $request->getMethod());
@@ -176,7 +176,7 @@ class KlantinteractiesClientTest extends TestCase {
 	public function testListAppliesSinceAsGteFilter(): void {
 		$client = $this->buildClient([new Response(200, [], json_encode(['results' => []]))]);
 
-		$client->listKlantcontacten(
+		$client->listCustomerContacts(
 			sourceConfiguration: $this->configuration,
 			since: '2026-07-01T00:00:00+00:00',
 			pageSize: 50
@@ -202,7 +202,7 @@ class KlantinteractiesClientTest extends TestCase {
 		];
 		$client = $this->buildClient([new Response(200, [], json_encode($body))]);
 
-		$result = $client->listKlantcontacten(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
+		$result = $client->listCustomerContacts(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
 
 		$this->assertCount(3, $result['items']);
 		$this->assertSame('2026-07-02T10:00:00+00:00', $result['nextCursor']);
@@ -217,7 +217,7 @@ class KlantinteractiesClientTest extends TestCase {
 	public function testListWithEmptyResultsYieldsNullCursor(): void {
 		$client = $this->buildClient([new Response(200, [], json_encode(['results' => []]))]);
 
-		$result = $client->listKlantcontacten(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
+		$result = $client->listCustomerContacts(sourceConfiguration: $this->configuration, since: null, pageSize: 50);
 
 		$this->assertSame([], $result['items']);
 		$this->assertNull($result['nextCursor']);
@@ -232,7 +232,7 @@ class KlantinteractiesClientTest extends TestCase {
 	public function testCreateKlantcontactPostsPayloadAndExtractsUuid(): void {
 		$client = $this->buildClient([new Response(201, [], json_encode(['uuid' => 'kc-1']))]);
 
-		$id = $client->createKlantcontact(
+		$id = $client->createCustomerContact(
 			sourceConfiguration: $this->configuration,
 			payload: ['onderwerp' => 'Vraag', 'channel' => 'telefoon']
 		);
@@ -243,7 +243,7 @@ class KlantinteractiesClientTest extends TestCase {
 		$this->assertSame('/api/v1/klantcontacten', $request->getUri()->getPath());
 		$body = json_decode((string)$request->getBody(), true);
 		$this->assertSame('Vraag', $body['onderwerp']);
-		$this->assertArrayNotHasKey('betrokkene', $body);
+		$this->assertArrayNotHasKey('involvedParty', $body);
 
 	}//end testCreateKlantcontactPostsPayloadAndExtractsUuid()
 
@@ -260,9 +260,9 @@ class KlantinteractiesClientTest extends TestCase {
 			]
 		);
 
-		$client->createKlantcontact(
+		$client->createCustomerContact(
 			sourceConfiguration: $this->configuration,
-			payload: ['onderwerp' => 'Vraag', 'betrokkene' => ['rol' => 'klant']]
+			payload: ['onderwerp' => 'Vraag', 'involvedParty' => ['rol' => 'klant']]
 		);
 
 		$this->assertCount(2, $this->history);
@@ -287,9 +287,9 @@ class KlantinteractiesClientTest extends TestCase {
 			]
 		);
 
-		$id = $client->createKlantcontact(
+		$id = $client->createCustomerContact(
 			sourceConfiguration: $this->configuration,
-			payload: ['onderwerp' => 'Vraag', 'betrokkene' => ['rol' => 'klant']]
+			payload: ['onderwerp' => 'Vraag', 'involvedParty' => ['rol' => 'klant']]
 		);
 
 		$this->assertSame('kc-1', $id);
@@ -375,7 +375,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$this->expectException(KissProviderException::class);
 
-		$client->listKlantcontacten(sourceConfiguration: ['authentication' => ['encryptedToken' => 'x']], since: null, pageSize: 10);
+		$client->listCustomerContacts(sourceConfiguration: ['authentication' => ['encryptedToken' => 'x']], since: null, pageSize: 10);
 
 	}//end testMissingBaseUrlThrowsBeforeDispatch()
 
@@ -389,7 +389,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$this->expectException(KissProviderException::class);
 
-		$client->listKlantcontacten(sourceConfiguration: ['baseUrl' => 'https://kiss.example.nl'], since: null, pageSize: 10);
+		$client->listCustomerContacts(sourceConfiguration: ['baseUrl' => 'https://kiss.example.nl'], since: null, pageSize: 10);
 
 	}//end testMissingCredentialThrowsBeforeDispatch()
 
@@ -403,7 +403,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$this->expectException(KissProviderException::class);
 
-		$client->listKlantcontacten(sourceConfiguration: $this->configuration, since: null, pageSize: 10);
+		$client->listCustomerContacts(sourceConfiguration: $this->configuration, since: null, pageSize: 10);
 
 	}//end testNonSuccessStatusIsMappedNotCrash()
 
@@ -417,7 +417,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$this->expectException(KissProviderException::class);
 
-		$client->createKlantcontact(sourceConfiguration: $this->configuration, payload: ['onderwerp' => 'x']);
+		$client->createCustomerContact(sourceConfiguration: $this->configuration, payload: ['onderwerp' => 'x']);
 
 	}//end testCreateKlantcontactWithoutUsableIdThrows()
 

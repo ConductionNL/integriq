@@ -84,7 +84,7 @@ interface KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array;
+	public function listCustomerContacts(array $sourceConfiguration, ?string $since, int $pageSize): array;
 
 	/**
 	 * Create one klantcontact in KISS.
@@ -100,7 +100,7 @@ interface KlantinteractiesProviderInterface {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function createKlantcontact(array $sourceConfiguration, array $payload): string;
+	public function createCustomerContact(array $sourceConfiguration, array $payload): string;
 
 	/**
 	 * Link a klantcontact to a case/zaak by creating an onderwerpobject.

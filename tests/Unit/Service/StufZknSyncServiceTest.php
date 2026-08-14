@@ -22,9 +22,9 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Exception\StufZknProviderException;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
+use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
+use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
 use OCA\OpenConnector\Service\StufZknSyncService;
@@ -184,8 +184,8 @@ class StufZknSyncServiceTest extends TestCase {
 			$this->objectService,
 			$this->logProvider,
 			$this->restProvider,
-			new InboundBerichtTranslator(),
-			new OutboundKennisgevingTranslator(),
+			new InboundMessageTranslator(),
+			new OutboundNotificationTranslator(),
 			new StufZknAcknowledgementBuilder(),
 			$this->logger,
 			new RawSourceResolver($this->objectService, $this->logger)
@@ -319,7 +319,7 @@ XML;
 	 */
 	public function testSendKennisgevingThrowsWhenNoSourceConfigured(): void {
 		$this->expectException(StufZknProviderException::class);
-		$this->service->sendKennisgeving($this->caseFields(), 'T');
+		$this->service->sendNotification($this->caseFields(), 'T');
 
 	}//end testSendKennisgevingThrowsWhenNoSourceConfigured()
 
@@ -332,7 +332,7 @@ XML;
 		$this->sources[] = $this->sourceEntity();
 		$this->logProvider->method('send')->willReturn('MOCK-STUFZKN-1');
 
-		$result = $this->service->sendKennisgeving($this->caseFields(), 'T');
+		$result = $this->service->sendNotification($this->caseFields(), 'T');
 
 		$this->assertNotSame('', $result['referentienummer']);
 		$this->assertCount(1, $this->saved[StufZknSyncService::SCHEMA_MESSAGE]);
@@ -355,7 +355,7 @@ XML;
 		);
 
 		try {
-			$this->service->sendKennisgeving($this->caseFields(), 'T');
+			$this->service->sendNotification($this->caseFields(), 'T');
 			$this->fail('Expected StufZknProviderException was not thrown.');
 		} catch (StufZknProviderException $exception) {
 			$this->assertSame('consumer unreachable', $exception->getMessage());

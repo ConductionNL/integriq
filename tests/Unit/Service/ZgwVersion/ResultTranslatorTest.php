@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ResultaatTranslator.
+ * Unit tests for ResultTranslator.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service\ZgwVersion
@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\ZgwVersion;
 
 use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Service\ZgwVersion\ResultaatTranslator;
+use OCA\OpenConnector\Service\ZgwVersion\ResultTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,9 +34,9 @@ use PHPUnit\Framework\TestCase;
 class ResultaatTranslatorTest extends TestCase {
 
 	/**
-	 * @var ResultaatTranslator
+	 * @var ResultTranslator
 	 */
-	private ResultaatTranslator $translator;
+	private ResultTranslator $translator;
 
 	/**
 	 * Set up test fixtures.
@@ -45,7 +45,7 @@ class ResultaatTranslatorTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->translator = new ResultaatTranslator();
+		$this->translator = new ResultTranslator();
 	}//end setUp()
 
 	/**

@@ -200,7 +200,7 @@ class KissSyncService {
 			$pageSize = self::DEFAULT_PAGE_SIZE;
 		}
 
-		$page = $provider->listKlantcontacten(
+		$page = $provider->listCustomerContacts(
 			sourceConfiguration: $configuration,
 			since: $since,
 			pageSize: $pageSize
@@ -262,7 +262,7 @@ class KissSyncService {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	public function pushKlantcontact(array $input): array {
+	public function pushCustomerContact(array $input): array {
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
@@ -276,12 +276,12 @@ class KissSyncService {
 			'language' => (string)($input['language'] ?? 'nl'),
 		];
 
-		$involvedParty = ($input['betrokkene'] ?? null);
+		$involvedParty = ($input['involvedParty'] ?? null);
 		if (is_array($involvedParty) === true && $involvedParty !== []) {
-			$payload['betrokkene'] = $involvedParty;
+			$payload['involvedParty'] = $involvedParty;
 		}
 
-		$kissId = $provider->createKlantcontact(sourceConfiguration: $configuration, payload: $payload);
+		$kissId = $provider->createCustomerContact(sourceConfiguration: $configuration, payload: $payload);
 
 		$caseReference = (string)($input['caseReference'] ?? '');
 		$caseObjectType = (string)($input['caseObjectType'] ?? KlantinteractiesClient::DEFAULT_CASE_OBJECT_TYPE);
@@ -307,7 +307,7 @@ class KissSyncService {
 		}
 
 		$item = $payload;
-		unset($item['betrokkene']);
+		unset($item['involvedParty']);
 		$item['uuid'] = $kissId;
 		$item['registratiedatum'] = (new DateTime())->format('c');
 		$item['involvedParties'] = [];
@@ -320,7 +320,7 @@ class KissSyncService {
 		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
 
 		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
-	}//end pushKlantcontact()
+	}//end pushCustomerContact()
 
 	/**
 	 * Resolve the single active KISS source (`type=kiss`, `isEnabled=true`).

@@ -23,7 +23,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Exception\DsoProviderException;
 use OCA\OpenConnector\Exception\DsoTranslationException;
 use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
+use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
 use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
 use OCA\OpenConnector\Service\DsoIngestService;
 use OCA\OpenConnector\Service\Security\RawSourceResolver;
@@ -174,7 +174,7 @@ class DsoIngestServiceTest extends TestCase {
 		return new DsoIngestService(
 			objectService: $objectService,
 			handoffService: $this->handoffService,
-			translator: new DsoVerzoekTranslator(),
+			translator: new DsoRequestTranslator(),
 			logProvider: new LogDsoConnectorProvider(),
 			restProvider: $this->restProvider,
 			logger: $this->createMock(LoggerInterface::class),
@@ -327,7 +327,7 @@ class DsoIngestServiceTest extends TestCase {
 		$this->expectException(DsoProviderException::class);
 		$this->expectExceptionMessageMatches('/No active DSO source/');
 
-		$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
+		$service->postOutbound(requestUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
 
 	}//end testPostOutboundThrowsWhenNotConfigured()
 
@@ -339,7 +339,7 @@ class DsoIngestServiceTest extends TestCase {
 		$service = $this->buildService();
 		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
-		$result = $service->postOutbound(verzoekUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
+		$result = $service->postOutbound(requestUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
 
 		$this->assertSame('sent', $result['status']);
 		$this->assertStringStartsWith('MOCK-DSO-', $result['ref']);
@@ -362,7 +362,7 @@ class DsoIngestServiceTest extends TestCase {
 		$this->expectException(DsoProviderException::class);
 
 		try {
-			$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'besluit', fields: ['besluit' => 'verleend']);
+			$service->postOutbound(requestUuid: $request->getUuid(), type: 'besluit', fields: ['besluit' => 'verleend']);
 		} finally {
 			$this->assertCount(1, $this->messageStore);
 			$this->assertSame('failed', $this->messageStore[0]->getObject()['status']);
@@ -383,7 +383,7 @@ class DsoIngestServiceTest extends TestCase {
 
 		$this->expectException(DsoTranslationException::class);
 
-		$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'onbekend', fields: []);
+		$service->postOutbound(requestUuid: $request->getUuid(), type: 'onbekend', fields: []);
 
 	}//end testPostOutboundRejectsUnknownType()
 }//end class

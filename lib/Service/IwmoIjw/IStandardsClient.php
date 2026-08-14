@@ -83,7 +83,7 @@ use Throwable;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class IStandaardenClient implements IwmoIjwProviderInterface {
+class IStandardsClient implements IwmoIjwProviderInterface {
 
 	/**
 	 * Default `Authorization` header scheme.
@@ -239,7 +239,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface {
 			);
 		} catch (MtlsTransportException $exception) {
 			$this->logger->warning(
-				'[IStandaardenClient] mTLS request failed',
+				'[IStandardsClient] mTLS request failed',
 				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
 			);
 			throw new IwmoIjwProviderException(
@@ -248,7 +248,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface {
 			);
 		} catch (GuzzleException $exception) {
 			$this->logger->warning(
-				'[IStandaardenClient] unexpected transport failure',
+				'[IStandardsClient] unexpected transport failure',
 				['exception' => $exception->getMessage()]
 			);
 			throw new IwmoIjwProviderException(
