@@ -2451,7 +2451,7 @@ class SynchronizationService
             if (isset($targetConfig['idInRequestBody']) === true) {
                 $targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
             }
-			$this->applyFileUploadToTargetConfig($targetConfig, $contract);
+			$this->applyFileUploadToTargetConfig($targetConfig, $contract, $object);
 			$response = $this->callService->call(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig)->getResponse();
 
 			$body = json_decode($response['body'], true);
@@ -2492,7 +2492,7 @@ class SynchronizationService
             $targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
 		}
 
-		$this->applyFileUploadToTargetConfig($targetConfig, $contract);
+		$this->applyFileUploadToTargetConfig($targetConfig, $contract, $object);
 		$response = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)->getResponse();
 
             $decodedResponseBody = json_decode($response['body'] ?? '', true);
@@ -3011,7 +3011,7 @@ class SynchronizationService
 	 * When no file can be resolved the method logs a warning and leaves targetConfig unchanged
 	 * so the caller falls back to a normal JSON request.
 	 */
-	private function applyFileUploadToTargetConfig(array &$targetConfig, SynchronizationContract $contract): void
+	private function applyFileUploadToTargetConfig(array &$targetConfig, SynchronizationContract $contract, array $object = []): void
 	{
 		if (isset($targetConfig['fileUpload']) === false) {
 			return;
@@ -3032,13 +3032,19 @@ class SynchronizationService
 			}
 		} else {
 			// Resolve the OpenRegister object whose files we want.
-			$objectId = $fileUploadConfig['objectId'] ?? $contract->getOriginId();
-			if ($objectId !== null) {
+			if (isset($fileUploadConfig['objectId']) === true) {
 				$objectId = str_replace(
 					['{{ originId }}', '{{originId}}'],
 					(string) ($contract->getOriginId() ?? ''),
-					(string) $objectId
+					(string) $fileUploadConfig['objectId']
 				);
+			} elseif (isset($fileUploadConfig['objectIdProperty']) === true) {
+				// Resolve the object id from a property on the object being synced (e.g. a related
+				// object referenced by URL/UUID, such as "informatieobject" on a ZaakInformatieObject)
+				// instead of defaulting to the source object's own id.
+				$objectId = $this->extractObjectIdFromReference((new Dot($object))->get($fileUploadConfig['objectIdProperty']));
+			} else {
+				$objectId = $contract->getOriginId();
 			}
 
 			if (empty($objectId) === false) {
@@ -3100,6 +3106,29 @@ class SynchronizationService
 		unset($targetConfig['headers']['Content-Type'], $targetConfig['headers']['content-type']);
 
 	}//end applyFileUploadToTargetConfig()
+
+	/**
+	 * Resolves an OpenRegister object id from a reference value, which may already be a plain
+	 * id/UUID or a URL ending in one (e.g. ".../enkelvoudiginformatieobjecten/{uuid}").
+	 *
+	 * @param mixed $value The raw property value to resolve.
+	 *
+	 * @return string|null The resolved object id, or null if it could not be determined.
+	 */
+	private function extractObjectIdFromReference(mixed $value): ?string
+	{
+		if (is_string($value) === false || trim($value) === '') {
+			return null;
+		}
+
+		if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+			return $value;
+		}
+
+		$segments = explode('/', rtrim($value, '/'));
+
+		return end($segments) ?: null;
+	}
 
     private function getFilenameFromHeaders(array $response, CallLog $result): ?string
     {
