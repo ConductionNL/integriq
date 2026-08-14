@@ -97,6 +97,28 @@ class SynchronizationService {
 	private array $pagePrefetch = [];
 
 	/**
+	 * Source objects already resolved during this request, keyed by identifier.
+	 *
+	 * A source is resolved from OpenRegister on EVERY call, and a paginated fetch
+	 * makes one call per page — so a 199-page crawl re-read the same row 199
+	 * times. Measured 2026-08-14 at ~11 ms a page against a source answering in
+	 * 5.3 ms: twice the cost of the request it was preparing.
+	 *
+	 * SAFE ONLY BECAUSE `CallService::sourceRateLimit()` NOW UPDATES THE ENTITY
+	 * IT MUTATES. It persists the decremented `rateLimitRemaining` to the
+	 * database, and used to leave the in-memory object holding the old value —
+	 * so the per-call re-read was how that counter advanced. Caching without
+	 * that fix is 11 ms faster and stops rate limiting from ever tripping, which
+	 * is the failure you would not notice until a source banned you.
+	 *
+	 * Request-scoped, so it cannot outlive the run and go stale against an edited
+	 * source: the service is built per request, and a cron pass gets a fresh one.
+	 *
+	 * @var array<string, ObjectEntity>
+	 */
+	private array $resolvedSourceObjects = [];
+
+	/**
 	 * Number of buffered target rows that forces an intermediate flush.
 	 *
 	 * A run's whole object list is processed in one loop, so without a ceiling
@@ -5479,15 +5501,33 @@ class SynchronizationService {
 		}
 
 		// Fetch all pages recursively.
-		$pageResult = $this->fetchAllPages(
-			source: $source,
-			endpoint: $endpoint,
-			config: $config,
-			synchronization: $synchronization,
-			currentPage: $currentPage,
-			isTest: $isTest,
-			usesPagination: $usesPagination
-		);
+		//
+		// Call logs are BUFFERED for the duration of the fetch. One page is one
+		// call is one CallLog, and that save — even stripped of RBAC, audit and
+		// validation — costs ~55 ms and runs SERIALLY inside the page fan-out,
+		// which is why widening the concurrency window barely moved the per-page
+		// number. Buffered, the logs are written once at the end instead of
+		// between every pair of pages.
+		//
+		// The flush is in a `finally`: a fetch that throws still made those calls,
+		// and losing their logs would make the failure harder to diagnose than
+		// not buffering at all.
+		$this->callService->bufferCallLogs(enabled: true);
+
+		try {
+			$pageResult = $this->fetchAllPages(
+				source: $source,
+				endpoint: $endpoint,
+				config: $config,
+				synchronization: $synchronization,
+				currentPage: $currentPage,
+				isTest: $isTest,
+				usesPagination: $usesPagination
+			);
+		} finally {
+			$this->callService->bufferCallLogs(enabled: false);
+			$this->callService->flushCallLogs();
+		}
 
 		$objects = $pageResult['objects'];
 		$fetchInfo = [
@@ -7050,7 +7090,14 @@ class SynchronizationService {
 			$sourceIdentifier = (string)($source['id'] ?? '');
 		}
 
-		return $this->findSourceObject(id: (string)$sourceIdentifier);
+		$key = (string)$sourceIdentifier;
+		if (isset($this->resolvedSourceObjects[$key]) === true) {
+			return $this->resolvedSourceObjects[$key];
+		}
+
+		$this->resolvedSourceObjects[$key] = $this->findSourceObject(id: $key);
+
+		return $this->resolvedSourceObjects[$key];
 	}//end resolveSourceObjectForCall()
 
 	/**

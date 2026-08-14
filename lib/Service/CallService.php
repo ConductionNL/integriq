@@ -129,6 +129,23 @@ class CallService {
 	private Client $client;
 
 	/**
+	 * Whether call logs are buffered for a bulk write rather than saved per call.
+	 *
+	 * Off by default. Only a run that opts in ({@see self::bufferCallLogs()})
+	 * and flushes in a `finally` turns it on.
+	 *
+	 * @var bool
+	 */
+	private bool $bufferCallLogs = false;
+
+	/**
+	 * Call log payloads awaiting the bulk write.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $callLogBuffer = [];
+
+	/**
 	 * Twig environment used to render templated configuration values.
 	 *
 	 * @var Environment
@@ -1711,6 +1728,15 @@ class CallService {
 			$callLogData['sessionId'] = $trace->getTraceId();
 		}
 
+		// Buffered: hand back the same in-memory CallLog the interactive path
+		// returns, and write the batch later. The row is still written, in full —
+		// it just is not written between two pages of a fetch.
+		if ($this->bufferCallLogs === true) {
+			$this->callLogBuffer[] = $callLogData;
+
+			return $this->buildTransientCallLog(source: $source, data: $data, trace: $trace);
+		}
+
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
 			register: 'openconnector',
@@ -1746,6 +1772,77 @@ class CallService {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
+	/**
+	 * Buffer call logs instead of writing one per call, for the duration of a run.
+	 *
+	 * A paginated fetch makes one call per page and writes one CallLog per call.
+	 * Even stripped of RBAC, audit and validation that save costs ~55 ms, and it
+	 * is SERIAL inside the page fan-out — which is why widening the concurrency
+	 * window barely moved the per-page number.
+	 *
+	 * Buffered, the caller still gets a CallLog carrying the full request and
+	 * response (the same object the interactive test path has always returned);
+	 * it simply has no uuid until the flush. That is the one behavioural
+	 * difference, and it is why this is OPT-IN per run rather than the default:
+	 * a caller that needs the persisted row's identity immediately must not
+	 * enable it.
+	 *
+	 * @param bool $enabled Whether to buffer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	public function bufferCallLogs(bool $enabled): void {
+		$this->bufferCallLogs = $enabled;
+
+	}//end bufferCallLogs()
+
+	/**
+	 * Write every buffered call log in one bulk save.
+	 *
+	 * MUST be called in a `finally` by whoever enabled buffering — a run that
+	 * throws still made the calls, and losing their logs would make the failure
+	 * harder to diagnose than not buffering at all.
+	 *
+	 * Failure to write logs must never fail the work they describe, so this
+	 * swallows and reports: the calls succeeded, and a lost log is a lost log.
+	 *
+	 * @return int How many logs were written.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	public function flushCallLogs(): int {
+		if ($this->callLogBuffer === []) {
+			return 0;
+		}
+
+		$batch = $this->callLogBuffer;
+		// Cleared BEFORE the write: a throw must not leave the buffer populated
+		// for a later flush to write the same logs a second time.
+		$this->callLogBuffer = [];
+
+		try {
+			$this->objectService->saveObjects(
+				objects: $batch,
+				register: 'openconnector',
+				schema: 'call_log',
+				_rbac: false,
+				_multitenancy: false,
+				validation: false,
+				events: false,
+				_audit: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'CallService: could not flush {count} buffered call logs: {error}',
+				['count' => count($batch), 'error' => $e->getMessage()]
+			);
+		}
+
+		return count($batch);
+	}//end flushCallLogs()
+
 	private function buildTransientCallLog(
 		ObjectEntity $source,
 		array $data,
@@ -3293,6 +3390,18 @@ class CallService {
 				_rbac: false,
 				_multitenancy: false
 			);
+
+			// ...and keep the ENTITY we were handed in step with what was just
+			// persisted. It carried the pre-decrement `rateLimitRemaining`, so the
+			// only way a caller saw the new value was to throw this object away and
+			// re-read the row — which is exactly what the fetch loop did, once per
+			// page, for every source whether rate-limited or not.
+			//
+			// Without this line an in-memory source cannot be reused: cache it and
+			// the counter silently stops advancing, which is a rate limiter that
+			// never trips. With it, the object is as current as the database, and
+			// re-reading buys nothing.
+			$source->setObject($sourceData);
 		}
 
 		if ($rateLimitLimit !== null || $rateLimitWindow !== null) {
