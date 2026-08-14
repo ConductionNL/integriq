@@ -18,7 +18,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		label-id="subscription-signing"
+		labelId="subscription-signing"
 		data-testid="subscription-signing-modal"
 		@close="$emit('close')">
 		<div class="signing">
@@ -62,7 +62,7 @@
 			</p>
 
 			<div class="signing__actions">
-				<NcButton type="primary" :disabled="busy" @click="generate">
+				<NcButton variant="primary" :disabled="busy" @click="generate">
 					{{ t('openconnector', 'Generate signing secret') }}
 				</NcButton>
 				<NcButton v-if="hasSecret" :disabled="busy" @click="rotate">
@@ -75,10 +75,10 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { NcModal, NcButton } from '@nextcloud/vue'
+import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcModal } from '@nextcloud/vue'
 
 export default {
 	name: 'SubscriptionSigningModal',
@@ -90,6 +90,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		subscription: {
 			type: Object,
 			default: null,
@@ -109,6 +110,7 @@ export default {
 	watch: {
 		/**
 		 * Reset reveal state and recompute hasSecret when opened.
+		 *
 		 * @param {boolean} next The new open value.
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
@@ -124,14 +126,17 @@ export default {
 		t,
 		/**
 		 * Resolve the subscription UUID for the API path.
+		 *
 		 * @return {string|undefined}
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		subId() {
 			return this.subscription?.uuid || this.subscription?.id
 		},
+
 		/**
 		 * Generate a fresh signing secret.
+		 *
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		async generate() {
@@ -140,8 +145,10 @@ export default {
 				t('openconnector', 'Signing secret generated'),
 			)
 		},
+
 		/**
 		 * Rotate the current signing secret.
+		 *
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		async rotate() {
@@ -150,8 +157,10 @@ export default {
 				t('openconnector', 'Signing secret rotated'),
 			)
 		},
+
 		/**
 		 * POST a signing lifecycle action and reveal the returned secret once.
+		 *
 		 * @param {string} path The endpoint suffix (signing-secret[/rotate]).
 		 * @param {string} successMsg The toast on success.
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
@@ -182,8 +191,10 @@ export default {
 				this.busy = false
 			}
 		},
+
 		/**
 		 * Copy the revealed secret to the clipboard.
+		 *
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		copy() {

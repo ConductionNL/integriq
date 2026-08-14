@@ -23,27 +23,27 @@
 			v-if="schema.kind !== 'var-only'"
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Field')"
-			:model-value="varPath"
+			:modelValue="varPath"
 			:placeholder="t('openconnector', 'e.g. body.status')"
-			@update:model-value="onVarInput" />
+			@update:modelValue="onVarInput" />
 		<NcTextField
 			v-else
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Variable path')"
-			:model-value="varOnlyPath"
+			:modelValue="varOnlyPath"
 			:placeholder="t('openconnector', 'e.g. user.email')"
-			@update:model-value="onVarOnlyInput" />
+			@update:modelValue="onVarOnlyInput" />
 		<NcSelect
 			class="rule-condition-leaf__op"
-			:input-id="'rule-condition-op-' + uid"
-			:input-label="t('openconnector', 'Operator')"
-			:model-value="selectedOperator"
+			:inputId="'rule-condition-op-' + uid"
+			:inputLabel="t('openconnector', 'Operator')"
+			:modelValue="selectedOperator"
 			:options="operatorOptions"
 			:clearable="false"
 			:placeholder="t('openconnector', 'Operator')"
 			label="label"
 			:reduce="(option) => option"
-			@update:model-value="onOperatorPick">
+			@update:modelValue="onOperatorPick">
 			<template #option="{ label, group }">
 				<div class="rule-condition-leaf__op-option">
 					<span class="rule-condition-leaf__op-option-label">{{
@@ -61,19 +61,19 @@
 			<NcTextField
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[0] || t('openconnector', 'Value')"
-				:model-value="slotString(1)"
+				:modelValue="slotString(1)"
 				:placeholder="
 					schema.placeholders?.[0]
 					|| t('openconnector', 'Comparison value')
 				"
-				@update:model-value="(value) => onSlotInput(1, value)" />
+				@update:modelValue="(value) => onSlotInput(1, value)" />
 			<NcTextField
 				v-if="schema.kind === 'ternary'"
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[1] || t('openconnector', 'Length')"
-				:model-value="slotString(2)"
+				:modelValue="slotString(2)"
 				:placeholder="schema.placeholders?.[1] || ''"
-				@update:model-value="(value) => onSlotInput(2, value)" />
+				@update:modelValue="(value) => onSlotInput(2, value)" />
 		</template>
 		<template v-else-if="schema.kind === 'if'">
 			<label class="rule-condition-leaf__json-label">
@@ -154,7 +154,7 @@
 		<NcButton
 			class="rule-condition-leaf__remove"
 			:aria-label="t('openconnector', 'Remove condition')"
-			type="tertiary-no-background"
+			variant="tertiary-no-background"
 			@click="$emit('remove')">
 			<template #icon>
 				<Close :size="18" />
@@ -322,6 +322,7 @@ export default {
 				group: op.group ? this.t('openconnector', op.group) : '',
 			}))
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
@@ -330,6 +331,7 @@ export default {
 			)
 			return op || '=='
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		schema() {
 			return (
@@ -337,6 +339,7 @@ export default {
 				|| OPERATORS[0]
 			)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
 			return (
@@ -345,6 +348,7 @@ export default {
 				) ?? this.operatorOptions[0]
 			)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		args() {
 			const value = this.node?.[this.currentOperator]
@@ -355,33 +359,28 @@ export default {
 			}
 			return []
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varPath() {
 			const first = this.args[0]
-			if (
-				first
-				&& typeof first === 'object'
-				&& Object.prototype.hasOwnProperty.call(first, 'var')
-			) {
+			if (first && typeof first === 'object' && Object.hasOwn(first, 'var')) {
 				return String(first.var ?? '')
 			}
 			if (typeof first === 'string') return first
 			return ''
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varOnlyPath() {
 			// For top-level `var` ops, args[0] is the dotted-path string.
 			const first = this.args[0]
 			if (typeof first === 'string') return first
-			if (
-				first
-				&& typeof first === 'object'
-				&& Object.prototype.hasOwnProperty.call(first, 'var')
-			) {
+			if (first && typeof first === 'object' && Object.hasOwn(first, 'var')) {
 				return String(first.var ?? '')
 			}
 			return ''
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		mergeJson() {
 			try {
@@ -406,6 +405,7 @@ export default {
 		onVarInput(value) {
 			this.emitUpdate({ varPath: value })
 		},
+
 		/**
 		 * Handle typing in the "Variable path" input shown when the picked
 		 * operator is `var` itself — the whole node is the reference, so it
@@ -422,6 +422,7 @@ export default {
 			// here for shape parity with other ops in the tree.
 			this.$emit('update', { var: [value] })
 		},
+
 		/**
 		 * Handle a pick in the operator NcSelect. Ignores the clear event
 		 * so the leaf always keeps a valid JsonLogic operator.
@@ -436,6 +437,7 @@ export default {
 			if (!option) return
 			this.emitUpdate({ operator: option.id })
 		},
+
 		/**
 		 * Handle typing in a plain-text value slot (comparison value, or the
 		 * start/length slots of a ternary op). The text is coerced to a
@@ -451,6 +453,7 @@ export default {
 		onSlotInput(slot, value) {
 			this.emitUpdate({ slot, slotValue: this.coerce(value) })
 		},
+
 		/**
 		 * Handle typing in a JsonLogic textarea slot (the then/else branches
 		 * of `if`, or the collection/predicate of an array op). Empty input
@@ -483,6 +486,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Handle typing in the `merge` textarea. `merge` is variadic, so the
 		 * whole args array is authored as one JSON array; anything that is
@@ -520,6 +524,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Render one arg slot as text for a plain `NcTextField`. Objects are
 		 * stringified so a nested node at least stays visible instead of
@@ -542,6 +547,7 @@ export default {
 			}
 			return String(raw)
 		},
+
 		/**
 		 * Render one arg slot as pretty-printed JSON for a textarea. Strings
 		 * are passed through unquoted so a user's in-progress typing is not
@@ -565,6 +571,7 @@ export default {
 				return String(raw)
 			}
 		},
+
 		/**
 		 * Best-effort literal coercion. Numbers and booleans get
 		 * recognised so JsonLogic's `>`/`<` actually compare numerics
@@ -586,6 +593,7 @@ export default {
 			if (/^-?\d+\.\d+$/.test(raw)) return Number(raw)
 			return raw
 		},
+
 		/**
 		 * Rebuild the JsonLogic node and emit. Done in one place so
 		 * the operator change can both flip the operator key AND
@@ -641,6 +649,7 @@ export default {
 
 			this.$emit('update', { [operator]: args })
 		},
+
 		/**
 		 * Build a fresh args array for a given schema kind. Used when
 		 * switching ops so the new shape is well-formed.

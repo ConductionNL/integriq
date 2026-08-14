@@ -15,26 +15,26 @@
 		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Signature scheme')"
-			:model-value="selectedSchemeOption"
+			:modelValue="selectedSchemeOption"
 			:options="schemeOptions"
 			:clearable="false"
-			@update:model-value="onSchemePick" />
+			@update:modelValue="onSchemePick" />
 		<NcTextField
 			:label="t('openconnector', 'Signature header')"
-			:model-value="value.header || ''"
+			:modelValue="value.header || ''"
 			placeholder="X-OpenConnector-Signature"
-			@update:model-value="(next) => patch('header', next)" />
+			@update:modelValue="(next) => patch('header', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Shared secret')"
 			type="password"
-			:model-value="value.secret || ''"
-			@update:model-value="(next) => patch('secret', next)" />
+			:modelValue="value.secret || ''"
+			@update:modelValue="(next) => patch('secret', next)" />
 		<NcTextField
 			v-if="value.scheme !== 'github'"
 			:label="t('openconnector', 'Timestamp tolerance (seconds)')"
-			:model-value="String(value.toleranceSeconds || 300)"
+			:modelValue="String(value.toleranceSeconds || 300)"
 			placeholder="300"
-			@update:model-value="
+			@update:modelValue="
 				(next) => patch('toleranceSeconds', Number(next) || 300)
 			" />
 		<span class="action-form__helper">
@@ -70,6 +70,7 @@ export default {
 				label: this.t('openconnector', row.label),
 			}))
 		},
+
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		selectedSchemeOption() {
 			return (
@@ -79,11 +80,13 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		patch: patchMethod(),
 		/**
 		 * Store the picked signature scheme; clearing the select falls back to
 		 * the `openconnector` scheme rather than leaving the rule unsigned.
+		 *
 		 * @param {{id: string, label: string}|null} option The selected entry
 		 *   from `schemeOptions` (openconnector / stripe / github).
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5

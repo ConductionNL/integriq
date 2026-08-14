@@ -66,9 +66,9 @@
 </template>
 
 <script>
-import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 
 export default {
 	name: 'FlowRunLog',
@@ -156,6 +156,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Expands or collapses one run, fetching its per-step trace the first
 		 * time it is opened. Fetching lazily keeps the index cheap for a flow
@@ -172,6 +173,7 @@ export default {
 				await this.fetchStepLogs(runId)
 			}
 		},
+
 		/**
 		 * Lists one run's `flow_run_log` entries, ordered by `stepOrder` so the
 		 * trace reads in execution sequence rather than insertion order.
@@ -214,6 +216,7 @@ export default {
 				this.stepLogs[runId] = []
 			}
 		},
+
 		/**
 		 * Renders a run timestamp in the viewer's locale, returning the raw
 		 * value if it cannot be parsed — an unrecognised timestamp is still

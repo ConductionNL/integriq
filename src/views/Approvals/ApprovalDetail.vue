@@ -18,7 +18,7 @@
 -->
 <template>
 	<div class="approvalDetail">
-		<NcButton type="tertiary" class="approvalDetail__back" @click="goBack">
+		<NcButton variant="tertiary" class="approvalDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to approvals') }}
 		</NcButton>
 
@@ -102,11 +102,11 @@
 					rows="3"
 					:placeholder="t('openconnector', 'Add a note…')" />
 				<div class="approvalDetail__buttons">
-					<NcButton type="primary" :disabled="busy" @click="approve">
+					<NcButton variant="primary" :disabled="busy" @click="approve">
 						{{ t('openconnector', 'Approve') }}
 					</NcButton>
 					<NcButton
-						type="error"
+						variant="error"
 						:disabled="busy || !comment.trim()"
 						data-testid="reject-button"
 						@click="reject">
@@ -134,9 +134,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 
@@ -177,13 +177,16 @@ export default {
 		t,
 		/**
 		 * Navigate back to the approvals list.
+		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		goBack() {
 			this.$router.push('/approvals')
 		},
+
 		/**
 		 * Fetch this request's detail from the two-layer-authorized endpoint.
+		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async load() {
@@ -201,8 +204,10 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Approve the request (optional comment), resuming the suspended chain.
+		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async approve() {
@@ -226,8 +231,10 @@ export default {
 				this.busy = false
 			}
 		},
+
 		/**
 		 * Reject the request with a mandatory comment.
+		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async reject() {

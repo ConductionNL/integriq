@@ -9,40 +9,40 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Size location (dot path, required)')"
-			:model-value="value.sizeLocation || ''"
+			:modelValue="value.sizeLocation || ''"
 			placeholder="body.size"
-			@update:model-value="(next) => patch('sizeLocation', next)" />
+			@update:modelValue="(next) => patch('sizeLocation', next)" />
 		<label class="action-form__label">{{ t('openconnector', 'Schema') }}</label>
 		<NcSelect
 			data-testid="action-form-fileparts-schema"
 			:aria-label-combobox="t('openconnector', 'Schema')"
-			:model-value="selectedSchema"
+			:modelValue="selectedSchema"
 			:options="schemaOptions"
 			:loading="schemasLoading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@update:model-value="
+			@update:modelValue="
 				(option) => patch('schemaId', option?.id ? String(option.id) : '')
 			" />
 		<NcTextField
 			:label="t('openconnector', 'Filename location (default: filename)')"
-			:model-value="value.filenameLocation || ''"
+			:modelValue="value.filenameLocation || ''"
 			placeholder="filename"
-			@update:model-value="(next) => patch('filenameLocation', next)" />
+			@update:modelValue="(next) => patch('filenameLocation', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filepart location (default: fileParts)')"
-			:model-value="value.filePartLocation || ''"
+			:modelValue="value.filePartLocation || ''"
 			placeholder="fileParts"
-			@update:model-value="(next) => patch('filePartLocation', next)" />
+			@update:modelValue="(next) => patch('filePartLocation', next)" />
 		<label class="action-form__label">{{
 			t('openconnector', 'Mapping (optional)')
 		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
-			:model-value="selectedMapping"
+			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="mappingsLoading"
 			:placeholder="t('openconnector', 'Pick a mapping')"
-			@update:model-value="
+			@update:modelValue="
 				(option) => patch('mappingId', option?.id ? String(option.id) : '')
 			" />
 	</div>
@@ -64,6 +64,7 @@ export default {
 			mappingsLoading: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
@@ -73,6 +74,7 @@ export default {
 				this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
 			)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mappingId || '')
@@ -82,6 +84,7 @@ export default {
 			)
 		},
 	},
+
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.schemasLoading = true
@@ -95,6 +98,7 @@ export default {
 		this.schemasLoading = false
 		this.mappingsLoading = false
 	},
+
 	methods: { patch: patchMethod() },
 }
 </script>

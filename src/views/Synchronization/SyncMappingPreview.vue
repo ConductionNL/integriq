@@ -31,7 +31,7 @@
 			class="sync-mapping-preview__header"
 			:class="{ 'sync-mapping-preview__header--collapsed': !expanded }">
 			<NcButton
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				:aria-label="
 					expanded
 						? t('openconnector', 'Hide mapping preview')
@@ -115,11 +115,11 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 let previewSeq = 0
 
@@ -171,6 +171,7 @@ export default {
 		inputId() {
 			return `sync-mapping-preview-${this.previewUid}-input`
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		resultJson() {
 			if (this.result === null) return ''
@@ -212,6 +213,7 @@ export default {
 				}
 			},
 		},
+
 		/**
 		 * Lazy-load on first open: the mapping is only fetched (and the preview
 		 * only run) once the user actually expands the panel.
@@ -248,6 +250,7 @@ export default {
 			this.inputJson = value
 			this.scheduleRun()
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		scheduleRun() {
 			if (this.debounceTimer) {
@@ -258,6 +261,7 @@ export default {
 				this.runPreview()
 			}, DEBOUNCE_MS)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadAndRun() {
 			this.loadError = ''
@@ -288,6 +292,7 @@ export default {
 					|| t('openconnector', 'Failed to load mapping.')
 			}
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async runPreview() {
 			if (!this.mapping) {

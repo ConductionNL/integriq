@@ -21,7 +21,7 @@
 		<div class="notificatiesAbonnementen__header">
 			<h2>{{ t('openconnector', 'Abonnementen') }}</h2>
 			<NcButton
-				type="primary"
+				variant="primary"
 				data-testid="add-abonnement"
 				@click="openCreate">
 				{{ t('openconnector', 'Add Item') }}
@@ -85,10 +85,10 @@
 						{{ row.status === 'error' ? row.lastError || '—' : '—' }}
 					</td>
 					<td class="notificatiesAbonnementen__actions">
-						<NcButton type="tertiary" @click="openEdit(row)">
+						<NcButton variant="tertiary" @click="openEdit(row)">
 							{{ t('openconnector', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="remove(row)">
+						<NcButton variant="tertiary" @click="remove(row)">
 							{{ t('openconnector', 'Delete') }}
 						</NcButton>
 					</td>
@@ -106,9 +106,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import BellRingOutline from 'vue-material-design-icons/BellRingOutline.vue'
 import NotificatiesAbonnementForm from '../../modals/NotificatiesAbonnement/NotificatiesAbonnementForm.vue'
@@ -143,6 +143,7 @@ export default {
 		t,
 		/**
 		 * Reload the abonnementen list.
+		 *
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
 		async reload() {
@@ -161,6 +162,7 @@ export default {
 
 		/**
 		 * Format a row's kanalen array as a comma-separated list of names.
+		 *
 		 * @param {object} row An abonnement row.
 		 * @return {string}
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
@@ -192,6 +194,7 @@ export default {
 
 		/**
 		 * Open the edit modal for an existing abonnement.
+		 *
 		 * @param {object} row The abonnement to edit.
 		 * @return {void}
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008

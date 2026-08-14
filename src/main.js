@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 
-// Must run before any other import so webpack's publicPath is set before the
-// first lazy chunk loads (fixes chunk 404s on non-/apps install paths).
-import './publicpath.js'
-
-import { createApp, h } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
 import {
-	translate as t,
-	translatePlural as n,
-	loadTranslations,
-} from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import {
+	buildManifest,
 	CnPageRenderer,
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
-	buildManifest,
 } from '@conduction/nextcloud-vue'
-import pinia from './pinia.js'
+import {
+	loadTranslations,
+	translatePlural as n,
+	translate as t,
+} from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { createApp, h } from 'vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import App from './App.vue'
-import bundledManifest from './manifest.json'
-import menuLayout from './menu-layout.json'
-import customComponents, { registry } from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import appIcons from './icons.js'
+import bundledManifest from './manifest.json'
+import menuLayout from './menu-layout.json'
+import pinia from './pinia.js'
+import customComponents, { registry } from './registry.js'
 
+// Must run before any other import so webpack's publicPath is set before the
+// first lazy chunk loads (fixes chunk 404s on non-/apps install paths).
+import './publicpath.js'
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
 // `menu[]` entries. CnActionsBar + CnAppNav render them via CnIcon,
 // which reads from the per-app registry below. Anything NOT registered
@@ -41,10 +40,8 @@ import appIcons from './icons.js'
 // These now live in src/icons.js, generated from this app's own manifests and
 // register files so the registry can never drift behind the icons the
 // manifests name (ADR-077).
-
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
-
 // GridStack CSS. `gridstack` is a *required* peerDependency of
 // @conduction/nextcloud-vue (CnDashboardGrid / CnWidgetGrid import `GridStack`
 // from it) and the library deliberately bundles neither the JS nor the CSS, so
@@ -55,7 +52,6 @@ import '@conduction/nextcloud-vue/css/index.css'
 // height from the JS but their width from the CSS, so every dashboard widget
 // lays out 0px wide with no console error at all.
 import 'gridstack/dist/gridstack.min.css'
-
 // Global (unscoped) app styles
 import './assets/app.css'
 
@@ -80,6 +76,9 @@ try {
 // JS/CSS allowlist through Apache and rewrite everything else to index.php —
 // there is no route for /custom_apps/<app>/l10n/<locale>.json so the request
 // 404s. Boot MUST NOT depend on this resolving.
+/**
+ *
+ */
 function tryLoadTranslations() {
 	try {
 		const result = loadTranslations('openconnector', () => {})

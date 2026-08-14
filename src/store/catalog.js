@@ -16,9 +16,9 @@
 //     dialog performs before offering an action (REQ-002),
 //   - instantiate(id): the Enable/Instantiate action call (REQ-002).
 
-import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
 
 export const useCatalogStore = defineStore('openconnector-catalog', {
 	state: () => ({

@@ -10,14 +10,14 @@
 		<NcTextField
 			:label="t('openconnector', 'HTTP status code')"
 			type="number"
-			:model-value="value.code != null ? String(value.code) : ''"
+			:modelValue="value.code != null ? String(value.code) : ''"
 			placeholder="500"
-			@update:model-value="onCodeInput" />
+			@update:modelValue="onCodeInput" />
 		<NcTextField
 			:label="t('openconnector', 'Error title')"
-			:model-value="value.name || ''"
+			:modelValue="value.name || ''"
 			:placeholder="t('openconnector', 'Something went wrong')"
-			@update:model-value="(next) => patch('name', next)" />
+			@update:modelValue="(next) => patch('name', next)" />
 		<label class="action-form__label" :for="'rule-action-error-msg-' + uid">
 			{{ t('openconnector', 'Error message') }}
 		</label>
@@ -30,8 +30,8 @@
 			@input="(event) => patch('message', event.target.value)" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:model-value="!!value.includeJsonLogicResult"
-			@update:model-value="(next) => patch('includeJsonLogicResult', !!next)">
+			:modelValue="!!value.includeJsonLogicResult"
+			@update:modelValue="(next) => patch('includeJsonLogicResult', !!next)">
 			{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 		</NcCheckboxRadioSwitch>
 	</div>
@@ -50,12 +50,14 @@ export default {
 	data() {
 		return { uid: ++uidCounter }
 	},
+
 	methods: {
 		patch: patchMethod(),
 		/**
 		 * Coerce the HTTP status-code field: an empty input removes the key
 		 * entirely, non-numeric input is ignored, anything else is stored as a
 		 * number.
+		 *
 		 * @param {string|null} raw The raw text emitted by the number NcTextField.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */

@@ -63,12 +63,12 @@
 			</NcNoteCard>
 
 			<div class="oc-catalog-detail__actions">
-				<NcButton type="tertiary" @click="close">
+				<NcButton variant="tertiary" @click="close">
 					{{ t('openconnector', 'Close') }}
 				</NcButton>
 				<NcButton
 					v-if="showPrimaryAction"
-					type="primary"
+					variant="primary"
 					:disabled="actionRunning || statusLoading"
 					data-testid="catalog-detail-primary-action"
 					@click="runPrimaryAction">

@@ -17,7 +17,7 @@
 -->
 <template>
 	<div class="traceDetail">
-		<NcButton type="tertiary" class="traceDetail__back" @click="goBack">
+		<NcButton variant="tertiary" class="traceDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to traces') }}
 		</NcButton>
 
@@ -66,7 +66,7 @@
 
 				<NcButton
 					v-if="!preview"
-					type="secondary"
+					variant="secondary"
 					:disabled="busy"
 					@click="runDryRun">
 					{{ t('openconnector', 'Replay (dry-run preview)') }}
@@ -86,13 +86,13 @@
 					<template v-if="!confirmingForce">
 						<div class="traceDetail__replayButtons">
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="busy"
 								@click="runDryRun">
 								{{ t('openconnector', 'Re-run preview') }}
 							</NcButton>
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="busy"
 								@click="confirmingForce = true">
 								{{ t('openconnector', 'Force replay (real write)') }}
@@ -112,7 +112,7 @@
 						</p>
 						<div class="traceDetail__replayButtons">
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="busy"
 								data-testid="confirm-force-replay"
 								@click="runForced">
@@ -147,9 +147,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import TraceTimelineWidget from './TraceTimelineWidget.vue'
@@ -190,13 +190,16 @@ export default {
 		t,
 		/**
 		 * Navigate back to the traces list.
+		 *
 		 * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
 		 */
 		goBack() {
 			this.$router.push('/traces')
 		},
+
 		/**
 		 * Fetch this trace's detail, including its full ordered steps array.
+		 *
 		 * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
 		 */
 		async load() {
@@ -214,8 +217,10 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Run a dry-run replay preview (default — no writes performed).
+		 *
 		 * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
 		 */
 		async runDryRun() {
@@ -240,9 +245,11 @@ export default {
 				this.busy = false
 			}
 		},
+
 		/**
 		 * Run a forced (real-write) replay — only reachable after the
 		 * explicit confirmation step.
+		 *
 		 * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-points-real-dispatch-path-req-006
 		 */
 		async runForced() {

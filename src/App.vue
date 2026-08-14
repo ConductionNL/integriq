@@ -2,12 +2,12 @@
 <template>
 	<div class="openconnector-app-root">
 		<CnAppRoot
-			:ai-companion="true"
+			:aiCompanion="true"
 			:manifest="manifest"
-			:custom-components="customComponents"
+			:customComponents="customComponents"
 			:registry="registry"
-			:page-types="pageTypes"
-			app-id="openconnector"
+			:pageTypes="pageTypes"
+			appId="openconnector"
 			:translate="translateForApp"
 			:permissions="permissions" />
 		<!--
@@ -21,8 +21,8 @@
 </template>
 
 <script>
-import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
+import { translate as ncT } from '@nextcloud/l10n'
 import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
@@ -37,10 +37,12 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		customComponents: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/**
 		 * V2 component registry (ADR-036) — map of registry-key →
 		 * `{ kind, component }`. Forwarded verbatim to CnAppRoot, which resolves
@@ -51,6 +53,7 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageTypes: {
 			type: Object,
 			default: () => ({}),

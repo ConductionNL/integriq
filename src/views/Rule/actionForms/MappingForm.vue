@@ -14,11 +14,11 @@
 		<NcSelect
 			data-testid="action-form-mapping"
 			:aria-label-combobox="t('openconnector', 'Mapping')"
-			:model-value="selected"
+			:modelValue="selected"
 			:options="options"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@update:model-value="onPick" />
+			@update:modelValue="onPick" />
 		<span class="action-form__helper">
 			{{
 				t(
@@ -42,9 +42,11 @@ export default {
 		// `configuration.mapping`. Parent supplies it via the `id` prop.
 		id: { type: [String, Number, null], default: '' },
 	},
+
 	data() {
 		return { options: [], loading: false }
 	},
+
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selected() {
@@ -58,16 +60,19 @@ export default {
 			)
 		},
 	},
+
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.options = await fetchOpenRegisterCollection('mapping')
 		this.loading = false
 	},
+
 	methods: {
 		/**
 		 * Emit the picked mapping's id upwards so the parent can write it to
 		 * `configuration.mapping`; clearing the select emits an empty string.
+		 *
 		 * @param {{id: string, label: string, raw: object}|null} option The
 		 *   mapping option selected in the NcSelect.
 		 * @spec openspec/specs/rule-editor-ui/spec.md

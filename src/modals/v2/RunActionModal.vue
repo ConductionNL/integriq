@@ -27,7 +27,7 @@
 <template>
 	<NcModal
 		v-if="open && descriptor"
-		label-id="runActionModal"
+		labelId="runActionModal"
 		size="normal"
 		@close="onClose">
 		<div class="cn-run-action">
@@ -51,9 +51,9 @@
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
 						type="switch"
-						:model-value="values[option.key] === true"
+						:modelValue="values[option.key] === true"
 						:disabled="isOptionDisabled(option)"
-						@update:model-value="setOption(option, $event)">
+						@update:modelValue="setOption(option, $event)">
 						{{ option.label }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -73,7 +73,7 @@
 					<NcButton @click="onClose">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
-					<NcButton type="primary" :disabled="!subjectId" @click="fire">
+					<NcButton variant="primary" :disabled="!subjectId" @click="fire">
 						<template #icon>
 							<PlayOutlineIcon :size="20" />
 						</template>
@@ -176,7 +176,7 @@
 					</NcButton>
 					<NcButton
 						v-if="retryAction"
-						type="secondary"
+						variant="secondary"
 						@click="runAgain(retryAction.values)">
 						<template #icon>
 							<RestartIcon :size="20" />
@@ -189,7 +189,7 @@
 						</template>
 						{{ t('openconnector', 'Run again') }}
 					</NcButton>
-					<NcButton type="primary" @click="onClose">
+					<NcButton variant="primary" @click="onClose">
 						{{ t('openconnector', 'Close') }}
 					</NcButton>
 				</div>
@@ -199,23 +199,23 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcModal,
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
+	NcModal,
 	NcNoteCard,
 } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestartIcon from 'vue-material-design-icons/Restart.vue'
 import TextBoxOutlineIcon from 'vue-material-design-icons/TextBoxOutline.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import {
 	getRunDescriptor,
 	initialOptionValues,
-	visibleOptions,
 	rowId,
+	visibleOptions,
 } from './runTargets.js'
 
 export default {
@@ -335,7 +335,10 @@ export default {
 	},
 
 	watch: {
-		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
+		/**
+		 * @param value
+		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
+		 */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -379,7 +382,10 @@ export default {
 			this.requestError = ''
 		},
 
-		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
+		/**
+		 * @param option
+		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
+		 */
 		isOptionDisabled(option) {
 			if (option.locked === true) {
 				return true
@@ -396,6 +402,7 @@ export default {
 		 * A disabled switch explains why it is disabled rather than what it would
 		 * have done — the latter is useless when it cannot be turned on.
 		 *
+		 * @param option
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
 		 */
 		noteFor(option) {
@@ -410,7 +417,10 @@ export default {
 			return option.note
 		},
 
-		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004 */
+		/**
+		 * @param option
+		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
+		 */
 		noteTypeFor(option) {
 			if (
 				option.disabledNote
@@ -427,6 +437,8 @@ export default {
 		 * Set one switch. Reassigns `values` wholesale so a `hiddenWhen` keyed on
 		 * another switch re-evaluates.
 		 *
+		 * @param option
+		 * @param value
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
 		 */
 		setOption(option, value) {
@@ -477,6 +489,7 @@ export default {
 		 * return `{ error, message }` on failure — rather than a bare
 		 * "request failed".
 		 *
+		 * @param err
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md#requirement-shared-runtest-modal-for-row-actions-req-shellui-004
 		 */
 		extractError(err) {

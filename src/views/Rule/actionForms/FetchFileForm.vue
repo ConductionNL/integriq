@@ -14,61 +14,61 @@
 		<NcSelect
 			data-testid="action-form-fetch-source"
 			:aria-label-combobox="t('openconnector', 'Source')"
-			:model-value="selectedSource"
+			:modelValue="selectedSource"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:placeholder="t('openconnector', 'Select a source')"
-			@update:model-value="onSourcePick" />
+			@update:modelValue="onSourcePick" />
 
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path)')"
-			:model-value="value.filePath || ''"
+			:modelValue="value.filePath || ''"
 			placeholder="body.attachment.url"
-			@update:model-value="(next) => patch('filePath', next)" />
+			@update:modelValue="(next) => patch('filePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Endpoint (optional)')"
-			:model-value="value.endpoint || ''"
+			:modelValue="value.endpoint || ''"
 			placeholder="https://upstream/file/123"
-			@update:model-value="(next) => patch('endpoint', next)" />
+			@update:modelValue="(next) => patch('endpoint', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Object ID path (optional)')"
-			:model-value="value.objectIdPath || ''"
+			:modelValue="value.objectIdPath || ''"
 			placeholder="body.id"
-			@update:model-value="(next) => patch('objectIdPath', next)" />
+			@update:modelValue="(next) => patch('objectIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Origin ID path (optional)')"
-			:model-value="value.originIdPath || ''"
+			:modelValue="value.originIdPath || ''"
 			placeholder="body.origin.id"
-			@update:model-value="(next) => patch('originIdPath', next)" />
+			@update:modelValue="(next) => patch('originIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Content path (optional)')"
-			:model-value="value.contentPath || ''"
+			:modelValue="value.contentPath || ''"
 			placeholder="body.attachment.content"
-			@update:model-value="(next) => patch('contentPath', next)" />
+			@update:modelValue="(next) => patch('contentPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filename path (optional)')"
-			:model-value="value.filenamePath || ''"
+			:modelValue="value.filenamePath || ''"
 			placeholder="body.attachment.name"
-			@update:model-value="(next) => patch('filenamePath', next)" />
+			@update:modelValue="(next) => patch('filenamePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File extension (optional)')"
-			:model-value="value.fileExtension || ''"
+			:modelValue="value.fileExtension || ''"
 			placeholder="pdf"
-			@update:model-value="(next) => patch('fileExtension', next)" />
+			@update:modelValue="(next) => patch('fileExtension', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Sub-object filepath (optional)')"
-			:model-value="value.subObjectFilepath || ''"
+			:modelValue="value.subObjectFilepath || ''"
 			placeholder="body.objects.0.url"
-			@update:model-value="(next) => patch('subObjectFilepath', next)" />
+			@update:modelValue="(next) => patch('subObjectFilepath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Tags (comma-separated)')"
-			:model-value="csv(value.tags)"
+			:modelValue="csv(value.tags)"
 			placeholder="invoice,inbox"
-			@update:model-value="(next) => patch('tags', toArray(next))" />
+			@update:modelValue="(next) => patch('tags', toArray(next))" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:model-value="!!value.autoShare"
-			@update:model-value="(next) => patch('autoShare', !!next)">
+			:modelValue="!!value.autoShare"
+			@update:modelValue="(next) => patch('autoShare', !!next)">
 			{{ t('openconnector', 'Auto-share fetched files') }}
 		</NcCheckboxRadioSwitch>
 
@@ -110,6 +110,7 @@ export default {
 			sourceConfigError: '',
 		}
 	},
+
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSource() {
@@ -120,16 +121,18 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		// Keep textarea in sync if parent feeds in a value from a remote
 		// fetch. Drift is rare because the rule loads once.
-		'value.sourceConfiguration'(next) {
+		'value.sourceConfiguration': function (next) {
 			const serialized = this.serialiseSourceConfig(next)
 			if (serialized !== this.sourceConfigDraft) {
 				this.sourceConfigDraft = serialized
 			}
 		},
 	},
+
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.sourcesLoading = true
@@ -139,6 +142,7 @@ export default {
 			this.value?.sourceConfiguration,
 		)
 	},
+
 	methods: {
 		patch: patchMethod(),
 		/**
@@ -153,6 +157,7 @@ export default {
 		onSourcePick(option) {
 			this.patch('source', option?.id ? String(option.id) : '')
 		},
+
 		/**
 		 * Render the stored `tags` list for the comma-separated text field.
 		 *
@@ -164,6 +169,7 @@ export default {
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : value || ''
 		},
+
 		/**
 		 * Parse the tags text field back into the stored array, trimming each
 		 * entry and dropping empties so trailing commas are harmless.
@@ -178,6 +184,7 @@ export default {
 				.map((entry) => entry.trim())
 				.filter(Boolean)
 		},
+
 		/**
 		 * Render the persisted `sourceConfiguration` as pretty-printed JSON for
 		 * the textarea. Strings pass through untouched (the user's own text) and
@@ -197,6 +204,7 @@ export default {
 				return String(value)
 			}
 		},
+
 		/**
 		 * Handle typing in the source-configuration textarea: keep the draft
 		 * text verbatim, drop the key entirely when the field is emptied, and

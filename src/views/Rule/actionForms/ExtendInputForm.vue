@@ -19,18 +19,18 @@
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:model-value="row.property"
+				:modelValue="row.property"
 				placeholder="a.b"
-				@update:model-value="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="
 					t('openconnector', 'Extends (comma-separated paths, optional)')
 				"
-				:model-value="(row.extends || []).join(',')"
+				:modelValue="(row.extends || []).join(',')"
 				placeholder="x.y,z"
-				@update:model-value="(next) => onExtendsInput(index, next)" />
+				@update:modelValue="(next) => onExtendsInput(index, next)" />
 			<NcButton
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
@@ -38,7 +38,7 @@
 				</template>
 			</NcButton>
 		</div>
-		<NcButton type="secondary" @click="addRow">
+		<NcButton variant="secondary" @click="addRow">
 			<template #icon>
 				<Plus :size="18" />
 			</template>
@@ -75,6 +75,7 @@ export default {
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Split the edited rows back into the two shapes the backend expects —
@@ -103,6 +104,7 @@ export default {
 			}
 			this.$emit('update:value', next)
 		},
+
 		/**
 		 * Update the dot-path of one row as the user types.
 		 *
@@ -117,6 +119,7 @@ export default {
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
+
 		/**
 		 * Update the per-property extend paths of one row, parsing the
 		 * comma-separated text field into an array of trimmed, non-empty paths.
@@ -137,12 +140,14 @@ export default {
 			}
 			this.emitRows(rows)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', extends: [] })
 			this.emitRows(rows)
 		},
+
 		/**
 		 * Drop one property row, discarding its extend paths with it.
 		 *

@@ -79,7 +79,7 @@
 		:name="dialogTitle"
 		size="large"
 		class="cn-sync-editor-modal"
-		:no-close="saving"
+		:noClose="saving"
 		@closing="onCancel">
 		<div class="cn-sync-editor">
 			<NcNoteCard v-if="saveError" type="error">
@@ -94,7 +94,7 @@
 					v-model="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
-					:helper-text="nameError"
+					:helperText="nameError"
 					:disabled="saving"
 					required
 					@blur="nameTouched = true" />
@@ -119,19 +119,19 @@
 							t('openconnector', 'Source type')
 						}}</label>
 						<NcSelect
-							:model-value="selectedSourceType"
+							:modelValue="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Source type')"
-							@update:model-value="onSourceTypeChange" />
+							@update:modelValue="onSourceTypeChange" />
 
 						<SyncConfigWidget
 							kind="source"
 							:type="draft.sourceType"
-							:source-id="draft.sourceId"
+							:sourceId="draft.sourceId"
 							:config="draft.sourceConfig"
-							@update:source-id="
+							@update:sourceId="
 								(value) => updateDraft('sourceId', value)
 							"
 							@update:config="
@@ -142,19 +142,19 @@
 							t('openconnector', 'Sync mode')
 						}}</label>
 						<NcSelect
-							:model-value="selectedSyncMode"
+							:modelValue="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Sync mode')"
-							@update:model-value="onSyncModeChange" />
+							@update:modelValue="onSyncModeChange" />
 
 						<template v-if="draft.syncMode === 'incremental'">
 							<NcTextField
-								:model-value="draft.sourceConfig?.cursorField || ''"
+								:modelValue="draft.sourceConfig?.cursorField || ''"
 								:label="t('openconnector', 'Cursor field')"
 								:disabled="saving"
-								@update:model-value="
+								@update:modelValue="
 									(value) =>
 										updateSourceConfigField('cursorField', value)
 								" />
@@ -162,14 +162,14 @@
 								t('openconnector', 'Cursor comparator')
 							}}</label>
 							<NcSelect
-								:model-value="selectedCursorComparator"
+								:modelValue="selectedCursorComparator"
 								:options="cursorComparatorOptions"
 								:clearable="false"
 								:disabled="saving"
 								:aria-label-combobox="
 									t('openconnector', 'Cursor comparator')
 								"
-								@update:model-value="onCursorComparatorChange" />
+								@update:modelValue="onCursorComparatorChange" />
 						</template>
 					</div>
 				</section>
@@ -191,19 +191,19 @@
 							t('openconnector', 'Target type')
 						}}</label>
 						<NcSelect
-							:model-value="selectedTargetType"
+							:modelValue="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Target type')"
-							@update:model-value="onTargetTypeChange" />
+							@update:modelValue="onTargetTypeChange" />
 
 						<SyncConfigWidget
 							kind="target"
 							:type="draft.targetType"
-							:source-id="draft.targetId"
+							:sourceId="draft.targetId"
 							:config="draft.targetConfig"
-							@update:source-id="
+							@update:sourceId="
 								(value) => updateDraft('targetId', value)
 							"
 							@update:config="
@@ -280,16 +280,16 @@
 								</p>
 								<SyncReferenceList
 									schema="rule"
-									label-key="name"
+									labelKey="name"
 									:value="draft.actions"
-									:input-label="t('openconnector', 'Rules')"
+									:inputLabel="t('openconnector', 'Rules')"
 									:placeholder="
 										t(
 											'openconnector',
 											'Pick rules to run during sync',
 										)
 									"
-									:empty-label="
+									:emptyLabel="
 										t('openconnector', 'No rules linked yet.')
 									"
 									@input="
@@ -302,17 +302,17 @@
 							<div class="cn-sync-editor__panel">
 								<SyncMappingPicker
 									:value="draft.sourceTargetMapping"
-									:hash-value="draft.sourceHashMapping"
-									:target-source-value="draft.targetSourceMapping"
+									:hashValue="draft.sourceHashMapping"
+									:targetSourceValue="draft.targetSourceMapping"
 									@update:value="
 										(value) =>
 											updateDraft('sourceTargetMapping', value)
 									"
-									@update:hash-value="
+									@update:hashValue="
 										(value) =>
 											updateDraft('sourceHashMapping', value)
 									"
-									@update:target-source-value="
+									@update:targetSourceValue="
 										(value) =>
 											updateDraft('targetSourceMapping', value)
 									" />
@@ -339,17 +339,17 @@
 								</p>
 								<SyncReferenceList
 									schema="synchronization"
-									label-key="name"
+									labelKey="name"
 									:value="draft.followUps"
-									:exclude-id="itemIdString"
-									:input-label="t('openconnector', 'Follow-ups')"
+									:excludeId="itemIdString"
+									:inputLabel="t('openconnector', 'Follow-ups')"
 									:placeholder="
 										t(
 											'openconnector',
 											'Pick follow-up synchronizations',
 										)
 									"
-									:empty-label="
+									:emptyLabel="
 										t(
 											'openconnector',
 											'No follow-ups linked yet.',
@@ -387,7 +387,7 @@
 				</template>
 				{{ t('openconnector', 'Test') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!canSave" @click="onSave">
+			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />
@@ -405,6 +405,9 @@
 
 <script>
 import { CnTab, CnTabs } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcDialog,
@@ -421,27 +424,23 @@ import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArr
 import PlayCircleOutlineIcon from 'vue-material-design-icons/PlayCircleOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess } from '@nextcloud/dialogs'
-
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
+import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
 import {
 	CURSOR_COMPARATOR_OPTIONS,
-	NEXTCLOUD_FORM_OPTION,
-	NEXTCLOUD_TABLE_OPTION,
-	SYNC_MODE_OPTIONS,
-	TYPE_OPTIONS,
 	emptyDraft,
 	fetchBridgeStatus,
+	NEXTCLOUD_FORM_OPTION,
+	NEXTCLOUD_TABLE_OPTION,
 	normaliseConditions,
 	serializeConditions,
+	SYNC_MODE_OPTIONS,
+	TYPE_OPTIONS,
 } from '../../views/Synchronization/syncDraft.js'
 import { NEXTCLOUD_TABLE_KIND } from '../../views/Synchronization/tablesBridge.js'
-import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
 const NAME_PATTERN = /[\p{L}\p{N}]/u
@@ -478,16 +477,19 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		/** Slot scope: the row being edited, or `null` in create mode. */
 		item: {
 			type: Object,
 			default: null,
 		},
+
 		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
 		schema: {
 			type: Object,
 			default: null,
 		},
+
 		/**
 		 * Slot scope: persists the object through CnIndexPage's own save path
 		 * and refreshes the list. Saving here instead of calling this would
@@ -499,6 +501,7 @@ export default {
 			type: Function,
 			default: null,
 		},
+
 		/** Slot scope: closes the form dialog on CnIndexPage. */
 		close: {
 			type: Function,
@@ -531,16 +534,19 @@ export default {
 		isCreate() {
 			return !this.item
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		itemIdString() {
 			return this.item?.id != null ? String(this.item.id) : ''
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
 				? this.t('openconnector', 'Create synchronization')
 				: this.t('openconnector', 'Edit synchronization')
 		},
+
 		/**
 		 * Required marker on the label. NcTextField/NcInputField has no
 		 * `required` prop and renders no marker of its own, so the ` *` suffix
@@ -554,6 +560,7 @@ export default {
 		nameLabel() {
 			return this.t('openconnector', 'Name') + ' *'
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
@@ -568,10 +575,12 @@ export default {
 						'Name must contain at least one letter or number',
 					)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dirty() {
 			return JSON.stringify(this.draft) !== this.originalSignature
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
 			return (
@@ -583,6 +592,7 @@ export default {
 				&& typeof this.confirm === 'function'
 			)
 		},
+
 		/**
 		 * Kind options shared by both selectors. An already-configured
 		 * `nextcloud-table` stays visible even if the Tables app is later
@@ -601,6 +611,7 @@ export default {
 			}
 			return TYPE_OPTIONS
 		},
+
 		/**
 		 * Kind options offered in the SOURCE selector only. `nextcloud-form` is
 		 * appended here and never to the shared list the target selector uses —
@@ -617,6 +628,7 @@ export default {
 			}
 			return this.typeOptions
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSourceType() {
 			return (
@@ -625,6 +637,7 @@ export default {
 				) || TYPE_OPTIONS[0]
 			)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
 			return (
@@ -632,10 +645,12 @@ export default {
 				|| TYPE_OPTIONS[1]
 			)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		syncModeOptions() {
 			return SYNC_MODE_OPTIONS
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSyncMode() {
 			return (
@@ -643,10 +658,12 @@ export default {
 				|| SYNC_MODE_OPTIONS[0]
 			)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		cursorComparatorOptions() {
 			return CURSOR_COMPARATOR_OPTIONS
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedCursorComparator() {
 			const current = this.draft?.sourceConfig?.cursorComparator
@@ -655,10 +672,12 @@ export default {
 				|| CURSOR_COMPARATOR_OPTIONS[0]
 			)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		formattedTestResult() {
 			try {
@@ -756,6 +775,7 @@ export default {
 		onSourceTypeChange(option) {
 			this.updateDraft('sourceType', option?.id || TYPE_OPTIONS[0].id)
 		},
+
 		/**
 		 * @param {?object} option Selected target-kind option.
 		 *
@@ -764,6 +784,7 @@ export default {
 		onTargetTypeChange(option) {
 			this.updateDraft('targetType', option?.id || TYPE_OPTIONS[1].id)
 		},
+
 		/**
 		 * @param {?object} option Selected sync-mode option.
 		 *
@@ -772,6 +793,7 @@ export default {
 		onSyncModeChange(option) {
 			this.updateDraft('syncMode', option?.id || SYNC_MODE_OPTIONS[0].id)
 		},
+
 		/**
 		 * @param {?object} option Selected cursor-comparator option.
 		 *
@@ -783,6 +805,7 @@ export default {
 				option?.id || CURSOR_COMPARATOR_OPTIONS[0].id,
 			)
 		},
+
 		/**
 		 * @param {object} node The JsonLogic group node from the visual builder.
 		 *

@@ -26,8 +26,8 @@
 // bundle hasn't installed the real registry yet, the call is queued on a stub
 // and replayed on install. This bundle MUST NOT call installIntegrationRegistry.
 
-import { createApp } from 'vue'
 import { registerIntegration } from '@conduction/nextcloud-vue'
+import { createApp } from 'vue'
 import SyncedFromTab from './integration/SyncedFromTab.vue'
 
 /**
