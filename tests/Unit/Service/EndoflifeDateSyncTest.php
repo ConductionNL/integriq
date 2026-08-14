@@ -236,6 +236,36 @@ class EndoflifeDateSyncTest extends TestCase {
 		// Stateful saveObject: contracts AND eolCycle target writes are both
 		// recorded and replayed, exactly like the origin-id-matching harness
 		// does for contracts alone.
+		// The BULK path, which is how target and contract writes actually land
+		// now: the engine buffers them for the duration of a run and flushes
+		// through `saveObjects()`. Stubbing only the singular left both stores
+		// empty while the run reported success, so two tests here asserted
+		// `actual size 0 matches expected size 2` and read as sync bugs.
+		//
+		// Keyed by uuid, mirroring the real bulk save's `deduplicateIds: true`:
+		// two writes of one object must collapse to ONE row, or a store that
+		// appended would report a duplicate that production does not create.
+		$this->orObjectService->method('saveObjects')->willReturnCallback(
+			function (array $objects, $register = null, $schema = null, ...$rest): array {
+				$saved = [];
+				foreach ($objects as $object) {
+					$key = ($object['uuid'] ?? ($object['id'] ?? null));
+
+					if ((string)$schema === 'synchronization_contract') {
+						$key = ($key ?? 'contract-' . (count($this->contractStore) + 1));
+						$this->contractStore[$key] = $object;
+					} elseif ((string)$schema === 'eolCycle') {
+						$key = ($key ?? 'eolcycle-' . (count($this->eolCycleStore) + 1));
+						$this->eolCycleStore[$key] = $object;
+					}
+
+					$saved[] = ObjectServiceMockBuilder::objectEntity($this, $object, (string)$key);
+				}
+
+				return ['saved' => $saved, 'errors' => [], 'statistics' => ['saved' => count($saved)]];
+			}
+		);
+
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
 				if ($schema === 'synchronization_contract') {
@@ -269,7 +299,21 @@ class EndoflifeDateSyncTest extends TestCase {
 				if (isset($filters['originId']) === true || isset($filters['synchronizationId']) === true) {
 					$matches = [];
 					foreach ($this->contractStore as $uuid => $payload) {
-						if (isset($filters['originId']) === true && ($payload['originId'] ?? null) !== $filters['originId']) {
+						// `originId` may be a SINGLE id or a LIST of them: the engine
+						// warms a contract index for a whole page in one query, so
+						// it filters on an array. Comparing that with `!==` against
+						// a scalar never matches, the index comes back empty, and
+						// the engine correctly concludes no contract exists — then
+						// creates a second one. That reads as a lost-idempotency
+						// bug in the sync rather than a gap in this double.
+						$wantedOriginIds = ($filters['originId'] ?? null);
+						if ($wantedOriginIds !== null && is_array($wantedOriginIds) === false) {
+							$wantedOriginIds = [$wantedOriginIds];
+						}
+
+						if ($wantedOriginIds !== null
+							&& in_array(($payload['originId'] ?? null), $wantedOriginIds, true) === false
+						) {
 							continue;
 						}
 

@@ -104,6 +104,36 @@ class ExecutionTraceContext {
 	private array $steps = [];
 
 	/**
+	 * Steps dropped once the cap was reached, tallied by status.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $droppedByStatus = [];
+
+	/**
+	 * How many detailed steps one trace retains.
+	 *
+	 * A trace records ONE STEP PER SYNCHRONISED OBJECT, and each step carries
+	 * that object's `input` and `output`. Unbounded, a synchronization's trace is
+	 * therefore a second copy of everything it just imported — held for the whole
+	 * run, then written into a single object.
+	 *
+	 * MEASURED 2026-08-14 on data.overheid.nl. A 19,822-object run finished its
+	 * actual work in 186 s — every object written, every contract written, the
+	 * log saved — and then spent OVER TEN MINUTES at 100% CPU with no database
+	 * activity, inside the one `saveObject()` that persists this array. Nothing
+	 * appeared in any log; the run read exactly like a hang, and the objects were
+	 * already there, so nothing downstream noticed either.
+	 *
+	 * Five hundred is far more than anyone reads by hand and far below where the
+	 * cost appears. Past it the steps are TALLIED rather than kept, so the trace
+	 * still reports what happened — it stops reporting it one row at a time.
+	 *
+	 * @var int
+	 */
+	private const MAX_RETAINED_STEPS = 500;
+
+	/**
 	 * Constructor. Mints a fresh UUIDv4 traceId unless one is supplied
 	 * (replay/rehydration passes the original traceId to continue an
 	 * existing trace — design.md Decision 2's approval-resume continuation).
@@ -186,6 +216,15 @@ class ExecutionTraceContext {
 		$start = ($startedAtMicrotime ?? microtime(true));
 		$end = ($finishedAtMicrotime ?? $start);
 
+		// Past the cap, count rather than keep. Dropping the step's `input` and
+		// `output` is the whole point: those hold the record itself, so retaining
+		// them makes the trace a duplicate of the import.
+		if (count($this->steps) >= self::MAX_RETAINED_STEPS) {
+			$this->droppedByStatus[$status] = (($this->droppedByStatus[$status] ?? 0) + 1);
+
+			return;
+		}
+
 		$this->steps[] = [
 			'order' => (count($this->steps) + 1),
 			'type' => $type,
@@ -252,7 +291,31 @@ class ExecutionTraceContext {
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
 	 */
 	public function getSteps(): array {
-		return $this->steps;
+		if ($this->droppedByStatus === []) {
+			return $this->steps;
+		}
+
+		// One synthetic final entry, so a truncated trace SAYS it is truncated.
+		// Silently returning the first 500 of 19,822 would be worse than the cost
+		// it avoids: the trace would read as a complete record of a short run.
+		$steps = $this->steps;
+		$steps[] = [
+			'order' => (count($steps) + 1),
+			'type' => 'synchronization',
+			'name' => 'truncated',
+			'timing' => null,
+			'status' => 'truncated',
+			'durationMs' => 0,
+			'startedAt' => (new DateTime())->format(DateTime::ATOM),
+			'input' => [],
+			'output' => [
+				'retainedSteps' => count($this->steps),
+				'droppedSteps' => array_sum($this->droppedByStatus),
+				'droppedByStatus' => $this->droppedByStatus,
+			],
+		];
+
+		return $steps;
 	}//end getSteps()
 
 	/**

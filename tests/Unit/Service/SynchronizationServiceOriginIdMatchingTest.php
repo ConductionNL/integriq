@@ -129,6 +129,35 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 			}
 		);
 
+		// Stateful saveObjectS — the BULK path. Contract writes are buffered for
+		// the duration of a run and flushed through `persistBulk()`, which calls
+		// `saveObjects()`, not `saveObject()`. Stubbing only the singular meant
+		// every buffered contract write was invisible here: the store stayed
+		// empty, `contractSaves` counted only the unbuffered writes, and four
+		// tests read that as the engine failing to reuse a contract.
+		//
+		// Keyed by uuid, because that is what the real bulk save does
+		// (`deduplicateIds: true`): the identity write and the outcome write
+		// carry the SAME uuid and must collapse to ONE row. A store that
+		// appended would report two rows and look like a duplicate-contract bug.
+		$this->orObjectService->method('saveObjects')->willReturnCallback(
+			function (array $objects, $register = null, $schema = null, ...$rest): array {
+				if ((string)$schema !== 'synchronization_contract') {
+					return ['saved' => [], 'errors' => [], 'statistics' => []];
+				}
+
+				$saved = [];
+				foreach ($objects as $object) {
+					$this->contractSaves++;
+					$key = ($object['uuid'] ?? ($object['id'] ?? 'contract-' . $this->contractSaves));
+					$this->contractStore[$key] = $object;
+					$saved[] = ObjectServiceMockBuilder::objectEntity($this, $object, (string)$key);
+				}
+
+				return ['saved' => $saved, 'errors' => [], 'statistics' => ['created' => count($saved)]];
+			}
+		);
+
 		// findAll replays the contract store for contract lookups (filters
 		// carrying an originId, or the cleanup pass's synchronizationId-only
 		// filter); everything else (source-by-location) finds nothing.
@@ -139,8 +168,23 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 				if (isset($filters['originId']) === true || isset($filters['synchronizationId']) === true) {
 					$matches = [];
 					foreach ($this->contractStore as $uuid => $payload) {
-						if (isset($filters['originId']) === true && ($payload['originId'] ?? null) !== $filters['originId']) {
-							continue;
+						// `originId` may be a SINGLE id or a LIST of them. The
+						// engine now warms a contract index for a whole page in
+						// one query, so it filters on an array; comparing that
+						// with `!==` against a scalar never matches, the index
+						// comes back empty, and the engine correctly concludes
+						// there is no existing contract — creating a duplicate
+						// and skipping the duplicate-detection warning. Four
+						// tests failed on that, all reading as engine bugs.
+						if (isset($filters['originId']) === true) {
+							$wanted = $filters['originId'];
+							if (is_array($wanted) === false) {
+								$wanted = [$wanted];
+							}
+
+							if (in_array(($payload['originId'] ?? null), $wanted, true) === false) {
+								continue;
+							}
 						}
 
 						if (isset($filters['synchronizationId']) === true
@@ -308,21 +352,28 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 
 		$first = $this->service->synchronize(synchronization: $this->makeSyncPayload());
 		$this->assertSame(1, $first['result']['objects']['created'], 'First run creates the contract');
-		// ocon#109: the first run writes the SAME contract twice — the identity
-		// mapping is persisted straight after updateTarget() (so a throw in the
-		// `after` rules can no longer lose it and cause a duplicate object on the
-		// next run), then updated with the rule outcomes at the end of
-		// synchronizeContract(). Both writes carry the same uuid, so exactly ONE
-		// contract row exists — asserted via $contractStore below, which is the
-		// invariant that actually matters.
-		$this->assertSame(2, $this->contractSaves, 'First run writes the contract twice: identity, then outcomes');
-		$this->assertCount(1, $this->contractStore, 'but only one contract ROW exists');
+		// ocon#109 made the first run write the SAME contract twice — the identity
+		// mapping straight after updateTarget(), so a throw in the `after` rules
+		// could not lose it, then the rule outcomes at the end of
+		// synchronizeContract().
+		//
+		// The identity write is now skipped when the synchronization has NO
+		// `actions`: there are no `after` rules to throw, so nothing between the
+		// two writes can fail and the first one protects nothing. It cost a full
+		// object save per record — measured at 1,464 writes for 374 records — so
+		// not doing it is the point, not a side effect. A synchronization WITH
+		// actions still writes twice.
+		//
+		// This fixture configures no actions, so ONE write. The invariant that
+		// actually matters is unchanged and asserted below: one contract ROW.
+		$this->assertSame(1, $this->contractSaves, 'No `after` rules, so no separate identity write');
+		$this->assertCount(1, $this->contractStore, 'and exactly one contract ROW exists');
 
 		$second = $this->service->synchronize(synchronization: $this->makeSyncPayload());
 
 		// The second run matches the existing contract and returns `skip` before
 		// updateTarget(), so it performs no contract write at all.
-		$this->assertSame(2, $this->contractSaves, 'Second run must NOT persist another contract');
+		$this->assertSame(1, $this->contractSaves, 'Second run must NOT persist another contract');
 		$this->assertCount(1, $this->contractStore, 'Exactly one contract exists after both runs');
 		$this->assertSame(
 			1,
@@ -345,9 +396,9 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 		$this->service->synchronize(synchronization: $payload);
 		$this->service->synchronize(synchronization: $payload);
 
-		// Two writes from the first run only (identity + outcomes, same uuid); the
-		// second run skips before updateTarget(). One contract ROW either way.
-		$this->assertSame(2, $this->contractSaves, 'originId-only lookup must also reuse the existing contract');
+		// One write from the first run (no `actions`, so no separate identity
+		// write); the second run skips before updateTarget(). One contract ROW.
+		$this->assertSame(1, $this->contractSaves, 'originId-only lookup must also reuse the existing contract');
 		$this->assertCount(1, $this->contractStore);
 	}//end testResyncWithFindContractByOriginIdOnlyMatchesExistingContract()
 

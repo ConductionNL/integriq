@@ -97,6 +97,28 @@ class SynchronizationService {
 	private array $pagePrefetch = [];
 
 	/**
+	 * Source objects already resolved during this request, keyed by identifier.
+	 *
+	 * A source is resolved from OpenRegister on EVERY call, and a paginated fetch
+	 * makes one call per page — so a 199-page crawl re-read the same row 199
+	 * times. Measured 2026-08-14 at ~11 ms a page against a source answering in
+	 * 5.3 ms: twice the cost of the request it was preparing.
+	 *
+	 * SAFE ONLY BECAUSE `CallService::sourceRateLimit()` NOW UPDATES THE ENTITY
+	 * IT MUTATES. It persists the decremented `rateLimitRemaining` to the
+	 * database, and used to leave the in-memory object holding the old value —
+	 * so the per-call re-read was how that counter advanced. Caching without
+	 * that fix is 11 ms faster and stops rate limiting from ever tripping, which
+	 * is the failure you would not notice until a source banned you.
+	 *
+	 * Request-scoped, so it cannot outlive the run and go stale against an edited
+	 * source: the service is built per request, and a cron pass gets a fresh one.
+	 *
+	 * @var array<string, ObjectEntity>
+	 */
+	private array $resolvedSourceObjects = [];
+
+	/**
 	 * Number of buffered target rows that forces an intermediate flush.
 	 *
 	 * A run's whole object list is processed in one loop, so without a ceiling
@@ -108,6 +130,22 @@ class SynchronizationService {
 	 * @var int
 	 */
 	private const WRITE_BUFFER_FLUSH_SIZE = 500;
+
+	/**
+	 * How many contracts a run will inline into `_embed.contracts`.
+	 *
+	 * `_embed` is a convenience for reading ONE run's contracts inline. Past a
+	 * few hundred it stops being convenient and starts being the most expensive
+	 * thing the synchronization does — every contract re-read, re-serialised,
+	 * held in memory twice and json-encoded onto the log row.
+	 *
+	 * Five hundred is comfortably above any run a person reads by hand and far
+	 * below the size where the cost matters. Overridable per source with
+	 * `maxEmbeddedContracts`; 0 disables the cap.
+	 *
+	 * @var int
+	 */
+	private const MAX_EMBEDDED_CONTRACTS = 500;
 
 	/**
 	 * Namespace for deriving a target object's uuid from its source identity.
@@ -153,6 +191,41 @@ class SynchronizationService {
 	 * @var int
 	 */
 	private const PREFETCH_WINDOW = 10;
+
+	/**
+	 * Query-string keys a source might use to express its page size.
+	 *
+	 * Needed to turn "how many objects do we expect" into "how many pages is
+	 * that". There is no standard spelling, so the common ones are recognised
+	 * and `sourceConfig.pageSize` overrides all of them. An unrecognised source
+	 * simply yields no prediction and keeps the previous behaviour.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PAGE_SIZE_KEYS = [
+		'per_page',
+		'perPage',
+		'pageSize',
+		'page_size',
+		'limit',
+		'count',
+		'top',
+		'$top',
+		// CKAN (data.overheid.nl, and every other CKAN portal) names its page
+		// size `rows` and its cursor `start`. Both are offsets, not indexes —
+		// see self::paginationValueFor().
+		'rows',
+	];
+
+	/**
+	 * Pages this run expects to fetch, predicted before the first request.
+	 *
+	 * Null when nothing could be predicted, in which case the engine falls back
+	 * to learning the count from page one's `Link` header as before.
+	 *
+	 * @var int|null
+	 */
+	private ?int $predictedLastPage = null;
 
 	/**
 	 * Whether target/contract writes are being buffered for a bulk flush.
@@ -595,6 +668,41 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Persist the mid-pagination cursor, but only when something will read it.
+	 *
+	 * `getAllObjectsFromApi()` reads `currentPage` back under exactly one
+	 * condition: the source reports a rate limit (`rateLimitLimit !== null`), so
+	 * a run that was cut off mid-crawl can resume where it stopped. For every
+	 * other source the value was written on every page and never once consulted.
+	 *
+	 * It is not a cheap write — a full OpenRegister object save of the
+	 * synchronization, inside the fetch loop, and SERIAL, so no amount of page
+	 * concurrency can overlap it.
+	 *
+	 * MEASURED 2026-08-14 against a static JSON source answering in 5.3 ms, so
+	 * that the only cost left was ours: 40 pages cost 297.9 ms EACH serially, and
+	 * widening the concurrency window to 10 bought 1.24x rather than the ~10x the
+	 * window implies — because this write sat in the middle of it. Writing it only
+	 * when it is read: 297.9 -> 156.9 ms serial, 239.4 -> 131.2 ms at a window of
+	 * 5. Against a real API the whole overhead was invisible, hidden under a
+	 * source answering in 700 ms.
+	 *
+	 * @param array $synchronization The synchronization, carrying `currentPage`.
+	 * @param array $source The source, whose rate-limit fields decide this.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function persistPageCursor(array $synchronization, array $source): void {
+		if (($source['rateLimitLimit'] ?? null) === null) {
+			return;
+		}
+
+		$this->persistSynchronization(synchronization: $synchronization);
+	}//end persistPageCursor()
+
 	private function persistSynchronization(array $synchronization): void {
 		$object = $synchronization;
 
@@ -642,6 +750,63 @@ class SynchronizationService {
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllContractObjects()
+
+	/**
+	 * Origin ids for the pre-loop contract index, skipping what cannot resolve.
+	 *
+	 * 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL.
+	 *
+	 * That boundary is real and sits a few lines below the caller: the loop
+	 * catches per item, records the failure to the dead-letter service and
+	 * carries on, which is what `testOneBadItemDoesNotAbortTheSyncPass` asserts —
+	 * one bad item out of three leaves `invalid: 1, skipped: 2, found: 3`.
+	 * Batching the contract lookup for speed moved the resolution OUT of that
+	 * boundary and the isolation guarantee went with it; keeping the batch and
+	 * skipping the unreadable row keeps both.
+	 *
+	 * Skipping is safe because this index is an OPTIMISATION, not a source of
+	 * truth: an item missing from it resolves its own contract in the loop
+	 * exactly as it did before the batch existed — and an item whose origin id
+	 * cannot be read will fail there, on its own, and be dead-lettered with a
+	 * message naming the item rather than killing the page.
+	 *
+	 * Deliberately total. `getOriginId()` throws when an item carries no id at
+	 * the configured position, and this runs before the per-item try/catch — so
+	 * a throw here ends the whole synchronization rather than dead-lettering one
+	 * record. The index is a CACHE; failing to warm it for one item must cost
+	 * that item a lookup, not cost the run.
+	 *
+	 * @param array $synchronization The synchronization being run.
+	 * @param array $objectList The fetched source items.
+	 *
+	 * @return array<int, string> The resolvable origin ids.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function originIdsForIndex(array $synchronization, array $objectList): array {
+		$originIds = [];
+		foreach ($objectList as $item) {
+			$asArray = ['id' => $item];
+			if (is_array($item) === true) {
+				$asArray = $item;
+			}
+
+			try {
+				$originIds[] = $this->getOriginId(synchronization: $synchronization, object: $asArray);
+			} catch (\Throwable $exception) {
+				// FULLY QUALIFIED deliberately: this file does not import
+				// Throwable, so an unqualified catch resolves to
+				// OCA\OpenConnector\Service\Throwable and silently matches
+				// nothing — the exception sails straight through a catch block
+				// that looks correct.
+				// The loop will raise this again for this item, in the place that
+				// knows how to record it against that item.
+				continue;
+			}
+		}
+
+		return $originIds;
+	}//end originIdsForIndex()
 
 	/**
 	 * Find a single synchronization contract OpenRegister object by id/uuid.
@@ -1951,59 +2116,17 @@ class SynchronizationService {
 			// ONE contract read for the whole page, before the loop. The loop
 			// below is unchanged; it resolves each item's contract from this
 			// index rather than issuing its own query.
+			//
+			// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL. The
+			// reasoning lives on {@see self::originIdsForIndex()}, which this and
+			// origin/development arrived at independently and identically; the
+			// only thing merged here was whether it is written inline or extracted.
+			// Extracted, because this method is already long enough that phpmd
+			// counts it, and forty lines of pre-pass would be forty lines between
+			// the reader and the loop the pre-pass exists to serve.
 			$contractIndex = $this->indexContractsByOrigin(
 				synchronizationId: (string)($synchronization['id'] ?? ''),
-				// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL.
-				//
-				// `getOriginId()` throws for an item with no id, and this map
-				// runs over the WHOLE PAGE before the per-item loop starts —
-				// so without this catch a single malformed row aborts the
-				// entire synchronisation from OUTSIDE the boundary that exists
-				// to contain exactly that.
-				//
-				// That boundary is real and is a few lines below: the loop
-				// catches per item, records the failure to the dead-letter
-				// service and carries on, which is what
-				// `testOneBadItemDoesNotAbortTheSyncPass` asserts — one bad
-				// item out of three leaves `invalid: 1, skipped: 2, found: 3`.
-				// Batching the contract lookup for speed moved the resolution
-				// OUT of that boundary and the isolation guarantee went with
-				// it; keeping the batch and skipping the unreadable row keeps
-				// both.
-				//
-				// Skipping is safe because this index is an OPTIMISATION, not
-				// a source of truth: an item missing from it resolves its own
-				// contract in the loop exactly as it did before the batch
-				// existed — and an item whose origin id cannot be read will
-				// fail there, on its own, and be dead-lettered with a message
-				// naming the item rather than killing the page.
-				originIds: array_values(
-					array_filter(
-						array_map(
-							function ($item) use ($synchronization): ?string {
-								$asArray = ['id' => $item];
-								if (is_array($item) === true) {
-									$asArray = $item;
-								}
-
-								try {
-									return $this->getOriginId(synchronization: $synchronization, object: $asArray);
-								} catch (\Throwable $e) {
-									// ⚠️ FULLY QUALIFIED ON PURPOSE. This file
-									// imports `Exception` and not `Throwable`,
-									// so a bare `Throwable` here resolves to
-									// `OCA\OpenConnector\Service\Throwable`,
-									// which does not exist — the catch compiles,
-									// matches nothing, and the exception sails
-									// through exactly as if it were not written.
-									return null;
-								}
-							},
-							$objectList
-						),
-						static fn (?string $originId): bool => ($originId !== null && $originId !== '')
-					)
-				),
+				originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
 				justByOriginId: (
 					isset($sourceConfig['findContractByOriginIdOnly']) === true
 					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
@@ -2159,6 +2282,37 @@ class SynchronizationService {
                 )
 			);
 
+			// EMBEDDING IS BOUNDED, and the bound is the point. `_embed` exists so
+			// a caller reading ONE run can see its contracts inline; it was never
+			// meant to inline a whole corpus. Unbounded it resolves every contract
+			// the run touched, `jsonSerialize()`s each, holds them all in
+			// `$resolved`, copies them into `$result`, and then json-encodes the
+			// lot onto the log row.
+			//
+			// MEASURED 2026-08-14 on data.overheid.nl: a 19,822-object run wrote
+			// every object and every contract, then sat at 100% CPU with 1.2-1.4 GB
+			// resident and NO database activity for ten minutes doing this. The
+			// same sync at 2,000 objects finished in 24 s, which is why nothing
+			// smaller ever showed it. Bypassing the flow and skipping the deletion
+			// guard both reproduced it, so this is the sync's own cost.
+			//
+			// Past the cap the contract UUIDs are still returned in
+			// `$result['contracts']` — nothing is hidden, and a caller who wants a
+			// specific contract can fetch it.
+			$embedContracts = true;
+			$embedCap = (int)($sourceConfig['maxEmbeddedContracts'] ?? self::MAX_EMBEDDED_CONTRACTS);
+			if ($embedCap > 0 && count($contractIds) > $embedCap) {
+				$this->logger->info(
+					'Skipped _embed.contracts for {count} contracts (cap {cap}): inlining them would '
+					. 'cost more memory and CPU than the synchronization itself. The uuids remain in '
+					. '`contracts`.',
+					['count' => count($contractIds), 'cap' => $embedCap]
+				);
+
+				$contractIds = [];
+				$embedContracts = false;
+			}
+
 			$resolved = [];
 			if ($contractIds !== []) {
 				try {
@@ -2176,16 +2330,22 @@ class SynchronizationService {
 				}
 			}
 
-			$result['_embed']['contracts'] = array_map(
-				static function ($contractId) use ($resolved) {
-					if ($contractId === null) {
-						return null;
-					}
+			// Positionally aligned with `contracts` when embedding — but omitted
+			// entirely when capped, rather than filled with one null per contract.
+			// A list of 19,800 nulls carries no information and is the same size
+			// problem in a cheaper disguise.
+			if ($embedContracts === true) {
+				$result['_embed']['contracts'] = array_map(
+					static function ($contractId) use ($resolved) {
+						if ($contractId === null) {
+							return null;
+						}
 
-					return ($resolved[(string)$contractId] ?? null);
-				},
-				($result['contracts'] ?? [])
-			);
+						return ($resolved[(string)$contractId] ?? null);
+					},
+					($result['contracts'] ?? [])
+				);
+			}
 
 			$totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
 
@@ -2747,6 +2907,7 @@ class SynchronizationService {
 		$log->setExecutionTime($executionTime);
 		$log->setMessage('Success');
 		$log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
+
 		$log = $this->synchronizationLogService->update(log: $log);
 
 		if ($ownsTrace === true) {
@@ -3319,16 +3480,26 @@ class SynchronizationService {
 				// `openregister_objects` to scope by the target object's schema is
 				// replaced by an explicit per-target scope-check via find() below.
 				$contractObjects = $this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]);
+
+				// Only the TARGET IDS are needed to work out what disappeared from
+				// the source. The originId map and the full contract bodies are
+				// read solely for the contracts actually being deleted — normally
+				// a handful, and on a healthy sync none at all — so they are built
+				// below, once that set is known.
+				//
+				// Building all three up front cost a full `jsonSerialize()` per
+				// contract plus a retained copy of every one. MEASURED 2026-08-14
+				// on data.overheid.nl: after a run wrote 19,822 contracts, this
+				// method held 1.39 GB resident and burned ten minutes of CPU with
+				// no database activity and nothing left to write — for a source
+				// that had not deleted a single record. It scales with the size of
+				// the SYNCHRONIZATION, not with what changed, so a larger source
+				// does not slow down, it runs out of memory.
 				$allContractTargetIds = [];
-				$allContractSourceIds = [];
-				$contractsByTargetId = [];
 				foreach ($contractObjects as $contractObject) {
-					$contract = $contractObject->jsonSerialize();
-					$contractTargetId = ($contract['targetId'] ?? null);
+					$contractTargetId = ($contractObject->getObject()['targetId'] ?? null);
 					if ($contractTargetId !== null) {
 						$allContractTargetIds[] = $contractTargetId;
-						$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
-						$contractsByTargetId[$contractTargetId] = $contract;
 					}
 				}
 
@@ -3380,6 +3551,24 @@ class SynchronizationService {
 					$guardInfo['ratio'] = $ratio;
 					$guardInfo['threshold'] = $threshold;
 				}//end if
+
+				// The delete set is known and the ratio guard has had its say, so
+				// the expensive lookups can be built for THOSE contracts only.
+				// Past the guard this is normally empty or a handful; before this
+				// change it was every contract the synchronization has ever had.
+				$wantedTargetIds = array_flip($targetIdsToDelete);
+				$allContractSourceIds = [];
+				$contractsByTargetId = [];
+				foreach ($contractObjects as $contractObject) {
+					$contract = $contractObject->jsonSerialize();
+					$contractTargetId = ($contract['targetId'] ?? null);
+					if ($contractTargetId === null || isset($wantedTargetIds[$contractTargetId]) === false) {
+						continue;
+					}
+
+					$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
+					$contractsByTargetId[$contractTargetId] = $contract;
+				}
 
 				if ($deleteRestriction === true) {
 					$encodedData = json_encode($data);
@@ -5312,15 +5501,33 @@ class SynchronizationService {
 		}
 
 		// Fetch all pages recursively.
-		$pageResult = $this->fetchAllPages(
-			source: $source,
-			endpoint: $endpoint,
-			config: $config,
-			synchronization: $synchronization,
-			currentPage: $currentPage,
-			isTest: $isTest,
-			usesPagination: $usesPagination
-		);
+		//
+		// Call logs are BUFFERED for the duration of the fetch. One page is one
+		// call is one CallLog, and that save — even stripped of RBAC, audit and
+		// validation — costs ~55 ms and runs SERIALLY inside the page fan-out,
+		// which is why widening the concurrency window barely moved the per-page
+		// number. Buffered, the logs are written once at the end instead of
+		// between every pair of pages.
+		//
+		// The flush is in a `finally`: a fetch that throws still made those calls,
+		// and losing their logs would make the failure harder to diagnose than
+		// not buffering at all.
+		$this->callService->bufferCallLogs(enabled: true);
+
+		try {
+			$pageResult = $this->fetchAllPages(
+				source: $source,
+				endpoint: $endpoint,
+				config: $config,
+				synchronization: $synchronization,
+				currentPage: $currentPage,
+				isTest: $isTest,
+				usesPagination: $usesPagination
+			);
+		} finally {
+			$this->callService->bufferCallLogs(enabled: false);
+			$this->callService->flushCallLogs();
+		}
 
 		$objects = $pageResult['objects'];
 		$fetchInfo = [
@@ -5476,6 +5683,48 @@ class SynchronizationService {
 		// synchronization's cached pages.
 		$this->lastPageFromLink = null;
 		$this->pagePrefetch = [];
+		$this->predictedLastPage = null;
+
+		// Predict the page count from the last run's contracts so page ONE can
+		// go out concurrently with the rest instead of being fetched alone to
+		// discover how many pages there are. Skipped for a `next`-link source,
+		// whose pages are only reachable one at a time by construction.
+		if ($usesNextEndpoint !== true) {
+			$dotSourceConfig = $this->callService->applyConfigDot($sourceConfig);
+			$this->predictedLastPage = $this->predictLastPage(
+				synchronization: $synchronization,
+				sourceConfig: $dotSourceConfig
+			);
+
+			// `$currentPage >= 1` because a prefetched page is matched by the page
+			// number in the request config, and page 0 is that lookup's "no
+			// pagination info" sentinel. A source numbering from zero would fetch
+			// its first page twice, so it keeps the sequential path instead.
+			if ($this->predictedLastPage !== null && $this->predictedLastPage > 1 && $currentPage >= 1) {
+				// Page one's request has to be built the SAME way the fan-out
+				// builds pages two onward, or the two will not agree on the cache
+				// key and page one gets fetched a second time. This is the only
+				// behaviour change: the first request now carries an explicit
+				// page number where it previously relied on the source's default.
+				// For any source that paginates at all these are the same page —
+				// and only a synchronization that has already run successfully
+				// reaches this branch, so the shape is one the source has served
+				// before.
+				$config = $this->getNextPage(
+					config: $config,
+					sourceConfig: $sourceConfig,
+					currentPage: $currentPage
+				);
+
+				$this->prefetchRemainingPages(
+					source: $source,
+					endpoint: $endpoint,
+					config: $config,
+					synchronization: $synchronization,
+					fromPage: $currentPage
+				);
+			}
+		}
 
 		for ($i = 0; $i < $maxPages; $i++) {
 			// Fetch the current page.
@@ -5559,9 +5808,11 @@ class SynchronizationService {
 			$currentPage = $nextInfo['page'];
 			$usesNextEndpoint = $nextInfo['usesNextEndpoint'];
 
-			// Update synchronization current page.
+			// Update synchronization current page — persisted only when something
+			// will read it back ({@see self::persistPageCursor()}, which carries
+			// the measurements).
 			$synchronization['currentPage'] = $currentPage;
-			$this->persistSynchronization(synchronization: $synchronization);
+			$this->persistPageCursor(synchronization: $synchronization, source: $source);
 
 			// A next page is known to exist, but this was the last iteration
 			// the DEFAULT_MAX_PAGES safety cap allows — an unknown amount of
@@ -5708,6 +5959,7 @@ class SynchronizationService {
 	 * @return void
 	 *
 	 * @see self::PREFETCH_WINDOW for why this fetches a window rather than the whole remainder.
+	 * @see self::predictLastPage() for where the count comes from before any page has been fetched.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
@@ -5718,15 +5970,19 @@ class SynchronizationService {
 		array $synchronization,
 		int $fromPage
 	): void {
-		$last = $this->lastPageFromLink;
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+		// How far this RUN will read. Resolved BEFORE the guard below so its
+		// existing `$fromPage > $last` test covers the bounded case too — a
+		// second, later check would say the same thing twice.
+		$last = $this->prefetchCeiling(sourceConfig: $sourceConfig);
+
 		if ($last === null || $fromPage > $last || $this->pagePrefetch !== []) {
 			// No known count, nothing left, or pages are still in hand — the
 			// buffer emptying is what asks for the next window, so re-running
 			// while it holds anything would double those requests.
 			return;
 		}
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// Only a WINDOW of pages, never the whole remainder — see PREFETCH_WINDOW.
 		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
@@ -5761,6 +6017,143 @@ class SynchronizationService {
 			}
 		}
 	}//end prefetchRemainingPages()
+
+	/**
+	 * How far this RUN will read, which is not how many pages the source has.
+	 *
+	 * Two facts, combined once so the fan-out does not have to know about
+	 * either:
+	 *
+	 * The COUNT is the header's when we have it, otherwise the prediction. The
+	 * header is authoritative and replaces the prediction as soon as page one
+	 * answers; the prediction only ever decides how far to read AHEAD, never
+	 * when to stop — that stays with `rel="last"`, the empty-page rule and the
+	 * failure check, so an over- or under-estimate costs requests rather than
+	 * correctness.
+	 *
+	 * The CEILING is this run's own. A bounded crawl (`maxPages`, or the
+	 * `DEFAULT_MAX_PAGES` safety cap) stops early, and fanning out to the
+	 * source's total then fetches pages the loop throws away — requests spent on
+	 * a source that did not need to serve them, which is precisely the cost the
+	 * fan-out exists to avoid. Measured against data.overheid.nl, whose 19,822
+	 * datasets are 199 pages: a ten-page probe would fan out into the whole
+	 * corpus.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 *
+	 * @return int|null The last page this run will read, or null when unknown.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function prefetchCeiling(array $sourceConfig): ?int {
+		$last = ($this->lastPageFromLink ?? $this->predictedLastPage);
+		if ($last === null) {
+			return null;
+		}
+
+		$maxPages = (int)($sourceConfig['maxPages'] ?? self::DEFAULT_MAX_PAGES);
+		if ($maxPages < 1) {
+			return $last;
+		}
+
+		return min($last, $maxPages);
+	}//end prefetchCeiling()
+
+	/**
+	 * Predict how many pages this run will need, before fetching anything.
+	 *
+	 * The point is to stop paying for a serial first request. Today the engine
+	 * fetches page one, reads `rel="last"` off it, and only then fans out — so
+	 * the first page is always sequential, and on a four-page source that is
+	 * 40% of the fetch. If the page count is known UP FRONT, page one goes out
+	 * with all the others.
+	 *
+	 * The count is free when the synchronization has run before: it wrote one
+	 * contract per source record, so the number of contracts IS last run's
+	 * object count. A source does not usually change size dramatically between
+	 * runs, and being wrong is cheap in both directions — too low and the
+	 * existing top-up fetches the rest, too high and a few requests come back
+	 * empty. Neither can truncate the run, because none of the stop conditions
+	 * consult this number.
+	 *
+	 * Returns null when there is no prior run, when the page size cannot be
+	 * determined, or when the synchronization does not paginate — all of which
+	 * leave the previous "fetch page one, then fan out" behaviour untouched.
+	 *
+	 * @param array $synchronization The synchronization about to run.
+	 * @param array $sourceConfig The dot-expanded source config.
+	 *
+	 * @return int|null The expected last page, or null when it cannot be predicted.
+	 */
+	private function predictLastPage(array $synchronization, array $sourceConfig): ?int {
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($pageSize === null || $pageSize < 1) {
+			return null;
+		}
+
+		$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
+		if ($synchronizationId === '') {
+			return null;
+		}
+
+		try {
+			$knownObjects = $this->orObjectService->count(
+				config: [
+					'filters' => [
+						'register' => 'openconnector',
+						'schema' => 'synchronization_contract',
+						'synchronizationId' => $synchronizationId,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			// A prediction is an optimisation; failing to make one must never
+			// fail the run that would have gone ahead without it.
+			$this->logger->debug(
+				'Could not predict the page count from existing contracts: '.$e->getMessage()
+			);
+			return null;
+		}
+
+		if ($knownObjects < 1) {
+			return null;
+		}
+
+		return (int)ceil($knownObjects / $pageSize);
+	}//end predictLastPage()
+
+	/**
+	 * Work out how many records a page of this source holds.
+	 *
+	 * `sourceConfig.pageSize` wins when set. Otherwise the request's own query
+	 * string is inspected for one of the conventional spellings — there is no
+	 * standard, so this recognises the common ones and gives up cleanly rather
+	 * than guessing.
+	 *
+	 * @param array $sourceConfig The dot-expanded source config.
+	 *
+	 * @return int|null The page size, or null when it cannot be determined.
+	 */
+	private function resolvePageSize(array $sourceConfig): ?int {
+		$explicit = ($sourceConfig['pageSize'] ?? null);
+		if ($explicit !== null && (int)$explicit > 0) {
+			return (int)$explicit;
+		}
+
+		$query = ($sourceConfig['query'] ?? []);
+		if (is_array($query) === false) {
+			return null;
+		}
+
+		foreach (self::PAGE_SIZE_KEYS as $key) {
+			$value = ($query[$key] ?? null);
+			if ($value !== null && is_numeric($value) === true && (int)$value > 0) {
+				return (int)$value;
+			}
+		}
+
+		return null;
+	}//end resolvePageSize()
 
 	/**
 	 * Read the total page count from an RFC 5988 `Link` header.
@@ -5818,7 +6211,11 @@ class SynchronizationService {
 		// sniffing, results position — then runs identically whether the page
 		// arrived serially or in the fan-out, so concurrency cannot change how a
 		// page is interpreted. That matters for REQ-009 in particular.
-		$page = (int)($config['pagination']['page'] ?? 0);
+		// The page NUMBER, which is what the prefetch cache is keyed by — not the
+		// value substituted into the request, which for an offset-paginated
+		// source is a record offset. `index` is absent only for a config built
+		// before this method ran, where the two are the same thing anyway.
+		$page = (int)($config['pagination']['index'] ?? ($config['pagination']['page'] ?? 0));
 		if ($page > 0 && array_key_exists($page, $this->pagePrefetch) === true) {
 			$callLog = $this->pagePrefetch[$page];
 			unset($this->pagePrefetch[$page]);
@@ -6037,12 +6434,101 @@ class SynchronizationService {
 			return ['objects' => [], 'result' => []];
 		}//end if
 
+		// A source that reports its TOTAL in the body tells us the page count on
+		// the very first response — the same fact `rel="last"` gives, from
+		// sources that do not send that header. Recorded into the same field, so
+		// the prefetch window and the stop-check need no knowledge of where the
+		// count came from.
+		$this->recordLastPageFromBody(body: $result, synchronization: $synchronization);
+
 		// Process and return the objects from this page.
 		return [
 			'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
 			'result' => $result,
 		];
 	}//end fetchSinglePageData()
+
+	/**
+	 * Learn the page count from a total the source reports in its BODY.
+	 *
+	 * The concurrency machinery already here needs one thing to fan out: how
+	 * many pages there are. It could only ever learn that from an RFC 5988
+	 * `rel="last"` header, and most APIs do not send one — they put the total in
+	 * the payload instead. `{"result": {"count": 19822, ...}}` is CKAN;
+	 * `@odata.count`, `totalElements`, `totalResults` and `numFound` are the
+	 * same fact under other names.
+	 *
+	 * Without it the whole crawl is serial. **Measured 2026-08-14 against
+	 * data.overheid.nl: 20 pages took 13,519 ms — 676 ms each, back to back,
+	 * which is exactly the source's own latency.** The engine added nothing and
+	 * overlapped nothing; page two could not be requested until page one had
+	 * been read, purely because nobody had counted the pages. The count was in
+	 * page one's body the entire time.
+	 *
+	 * Deliberately narrow:
+	 *
+	 * - Opt-in via `totalPosition`. Guessing a total out of an arbitrary payload
+	 *   would eventually find a number that means something else, and a WRONG
+	 *   page count reads ahead into pages that do not exist.
+	 * - Needs a page size, for the same reason offset pagination does: a total
+	 *   without one cannot become a page count.
+	 * - NEVER overwritten once known, and never written from a page other than
+	 *   the first useful one — a source that recomputes its total per page (a
+	 *   filtered search) would otherwise move the finish line mid-crawl.
+	 * - The count only decides how far to read AHEAD. Stopping stays with the
+	 *   empty-page rule and the failure check, so an over-estimate costs
+	 *   requests rather than correctness.
+	 *
+	 * @param array $body The decoded response body.
+	 * @param array $synchronization The synchronization being run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function recordLastPageFromBody(array $body, array $synchronization): void {
+		if ($this->lastPageFromLink !== null) {
+			// Already known — from a header, or from this method on an earlier
+			// page. The first answer wins.
+			return;
+		}
+
+		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		if (is_array($sourceConfig) === false) {
+			return;
+		}
+
+		$position = trim((string)($sourceConfig['totalPosition'] ?? ''));
+		if ($position === '') {
+			return;
+		}
+
+		$total = (new Dot($body))->get($position);
+		if (is_numeric($total) === false) {
+			return;
+		}
+
+		$total = (int)$total;
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($total < 1 || $pageSize === null || $pageSize < 1) {
+			return;
+		}
+
+		$this->lastPageFromLink = (int)ceil($total / $pageSize);
+
+		$this->logger->debug(
+			'SynchronizationService: page count learned from the body total at {position} '
+			. '({total} records / {pageSize} per page = {pages} pages), so the remaining '
+			. 'pages can be fetched concurrently.',
+			[
+				'position' => $position,
+				'total' => $total,
+				'pageSize' => $pageSize,
+				'pages' => $this->lastPageFromLink,
+			]
+		);
+
+	}//end recordLastPageFromBody()
 
 	/**
 	 * Whether an unparseable body looks like an HTML document.
@@ -6604,7 +7090,14 @@ class SynchronizationService {
 			$sourceIdentifier = (string)($source['id'] ?? '');
 		}
 
-		return $this->findSourceObject(id: (string)$sourceIdentifier);
+		$key = (string)$sourceIdentifier;
+		if (isset($this->resolvedSourceObjects[$key]) === true) {
+			return $this->resolvedSourceObjects[$key];
+		}
+
+		$this->resolvedSourceObjects[$key] = $this->findSourceObject(id: $key);
+
+		return $this->resolvedSourceObjects[$key];
 	}//end resolveSourceObjectForCall()
 
 	/**
@@ -6686,11 +7179,66 @@ class SynchronizationService {
 		$config['pagination'] = [
 			'paginationQuery' => $sourceConfig['paginationQuery'] ?? 'page',
 			'paginationIn' => $sourceConfig['paginationIn'] ?? 'query',
-			'page' => $currentPage,
+			// What the SOURCE is sent: a page index, or an offset.
+			'page' => $this->paginationValueFor(sourceConfig: $sourceConfig, currentPage: $currentPage),
+			// What WE call this page. Identical to `page` for an index-paginated
+			// source, and deliberately separate for an offset one: the prefetch
+			// cache is keyed by page NUMBER, and once `page` started carrying an
+			// offset the producer stored key 2 while the consumer looked up key
+			// 100. Nothing matched, so every prefetched page was fetched a second
+			// time serially — the fan-out did not merely fail to help, it added a
+			// wasted request per page, which is why enabling it measured SLOWER.
+			'index' => $currentPage,
 		];
 
 		return $config;
 	}//end getNextPage()
+
+	/**
+	 * The value this source's cursor parameter actually takes for a given page.
+	 *
+	 * Two families of API count pages differently, and until now only one of
+	 * them worked. A page-INDEXED source (GitHub, most REST APIs) wants
+	 * `page=1,2,3`. An OFFSET source wants the number of records to skip:
+	 * CKAN's `start=0,100,200`, OData's `$skip`, Solr's `start`.
+	 *
+	 * Handing an offset source a page index does not fail — which is the
+	 * dangerous part. `start=1,2,3` against a 100-row page size returns three
+	 * windows overlapping by 99 rows, so the crawl reads almost the same
+	 * records over and over, terminates when the source runs out, and reports a
+	 * healthy-looking run that fetched a fraction of the corpus. Nothing errors.
+	 * Measured against data.overheid.nl's 19,822 datasets before this existed.
+	 *
+	 * Falls back to the page index whenever the offset cannot be computed —
+	 * an offset needs a page SIZE, and a source that declares `paginationMode:
+	 * offset` without one has told us how to count but not what to count in.
+	 * Guessing a size would be worse than the pre-existing behaviour.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 * @param int $currentPage The 1-based page the crawl is on.
+	 *
+	 * @return int The value to substitute for the cursor parameter.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function paginationValueFor(array $sourceConfig, int $currentPage): int {
+		$mode = strtolower(trim((string)($sourceConfig['paginationMode'] ?? 'page')));
+		if ($mode !== 'offset') {
+			return $currentPage;
+		}
+
+		$pageSize = $this->resolvePageSize(sourceConfig: $sourceConfig);
+		if ($pageSize === null || $pageSize < 1) {
+			return $currentPage;
+		}
+
+		// Which index the source calls its first page. Almost always 1, but an
+		// offset source that starts at 0 would otherwise skip a whole page's
+		// worth of records before it read anything.
+		$firstPage = (int)($sourceConfig['paginationFirstPage'] ?? 1);
+
+		return (max($currentPage, $firstPage) - $firstPage) * $pageSize;
+	}//end paginationValueFor()
 
 	/**
 	 * Extracts the next API endpoint for pagination from the response body.
