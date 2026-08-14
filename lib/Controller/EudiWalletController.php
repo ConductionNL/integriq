@@ -37,11 +37,14 @@ use OCA\OpenConnector\Service\EudiIssuerKeyService;
 use OCA\OpenConnector\Service\EudiStatusListService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -63,6 +66,18 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 class EudiWalletController extends Controller {
+
+	/**
+	 * Brute-force throttler action for rejected wallet credential presentations.
+	 *
+	 * One action for the whole controller, so a caller cannot spread guesses
+	 * across `token`, `credential`, `resolveOffer` and `revoke` to stay under
+	 * a per-endpoint ceiling.
+	 *
+	 * @var string
+	 */
+	private const THROTTLE_ACTION = 'openconnector_eudi_wallet_credential';
+
 	/**
 	 * Constructor.
 	 *
@@ -81,6 +96,7 @@ class EudiWalletController extends Controller {
 		private readonly EudiIssuerKeyService $keyService,
 		private readonly EudiStatusListService $statusListService,
 		private readonly AuthorizationService $authorizationService,
+		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -95,6 +111,30 @@ class EudiWalletController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function renderRejection(EudiIssuanceException $exception): JSONResponse {
+		// Every rejection on this controller funnels through here, and on the
+		// credential-bearing endpoints a rejection means a presented secret --
+		// a pre-authorized_code, a tx_code, a Bearer token -- did not check
+		// out. Registering the attempt here rather than at each throw site is
+		// deliberate: the next endpoint added to this controller inherits the
+		// counter instead of forgetting it.
+		//
+		// This registration is the half that COUNTS. The half that ENFORCES is
+		// the #[BruteForceProtection] attribute on the endpoints, without which
+		// BruteForceMiddleware never calls sleepDelayOrThrowOnMax() and this
+		// counter is written but never read. Both are required. See ADR-082.
+		try {
+			$this->throttler->registerAttempt(
+				action: self::THROTTLE_ACTION,
+				ip: $this->request->getRemoteAddress()
+			);
+		} catch (\Throwable $throttlerFailure) {
+			// Throttler bookkeeping must never change the protocol response --
+			// a wallet gets its RFC-shaped error, not a 500.
+			$this->logger->warning(
+				'EudiWalletController: registerAttempt failed: ' . $throttlerFailure->getMessage()
+			);
+		}
+
 		$this->logger->info(
 			'EudiWalletController: request rejected',
 			[
@@ -203,6 +243,9 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// Discovery document — wallets are SUPPOSED to fetch this, and it carries
+	// no credential, so it gets a volume ceiling and no brute-force counter.
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function issuerMetadata(): JSONResponse {
 		$organisationId = $this->offerService->resolveOrganisationId();
 		$baseUrl = $this->buildBaseUrl();
@@ -245,6 +288,7 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function createOffer(): JSONResponse {
 		$consumerId = $this->authenticateConsumer();
 		if ($consumerId instanceof JSONResponse) {
@@ -282,6 +326,8 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function revoke(string $id): JSONResponse {
 		$consumerId = $this->authenticateConsumer();
 		if ($consumerId instanceof JSONResponse) {
@@ -313,6 +359,8 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function resolveOffer(string $id): JSONResponse {
 		$offer = $this->offerService->resolveOfferForWallet($id);
 		if ($offer === null) {
@@ -338,6 +386,8 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function token(): JSONResponse {
 		try {
 			$result = $this->offerService->exchangeToken($this->request->getParams());
@@ -361,6 +411,8 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function credential(): JSONResponse {
 		$token = ($this->extractBearerToken() ?? '');
 
@@ -389,6 +441,8 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// Status list is a published artefact verifiers poll; volume ceiling only.
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function statusList(string $id): DataDisplayResponse|JSONResponse {
 		$token = $this->statusListService->getPublishedToken($id);
 		if ($token === null) {
