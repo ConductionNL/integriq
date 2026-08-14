@@ -155,8 +155,8 @@ class KissController extends Controller {
 			}
 		}
 
-		if (isset($params['indicationContactGelukt']) === true) {
-			$input['indicationContactGelukt'] = (bool)$params['indicationContactGelukt'];
+		if (isset($params['indicationContactSucceeded']) === true) {
+			$input['indicationContactSucceeded'] = (bool)$params['indicationContactSucceeded'];
 		}
 
 		if (isset($params['involvedParty']) === true && is_array($params['involvedParty']) === true) {

@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
-class ZaakTypeTranslatorTest extends TestCase {
+class CaseTypeTranslatorTest extends TestCase {
 
 	/**
 	 * @var CaseTypeTranslator

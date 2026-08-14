@@ -4230,7 +4230,7 @@
             "description": "Klantcontact content/body (VNG field name `tekst`)",
             "title": "Text"
           },
-          "indicationContactGelukt": {
+          "indicationContactSucceeded": {
             "type": "boolean",
             "description": "Whether the contact attempt succeeded",
             "default": true,

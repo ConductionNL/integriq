@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-resultaat-translates-the-verified-resultaattoelichting-delta-both-directions
  */
-class ResultaatTranslatorTest extends TestCase {
+class ResultTranslatorTest extends TestCase {
 
 	/**
 	 * @var ResultTranslator

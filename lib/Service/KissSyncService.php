@@ -267,13 +267,24 @@ class KissSyncService {
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
+		// WIRE SHAPE, not internal shape. KlantinteractiesClient posts this array
+		// verbatim as the JSON body of POST /klantcontacten — there is no mapping
+		// layer behind it — so these keys ARE the VNG Klantinteracties field
+		// names. They are the stated exemption to the English-only rule, and this
+		// is the adapter boundary where the exemption applies.
+		//
+		// The vocabulary pass had translated four of them (`kanaal` -> `channel`,
+		// `taal` -> `language`, `plaatsgevondenOp` -> `occurredOn`,
+		// `indicatieContactGelukt` -> `indication...`), which silently sends field
+		// names the API does not define. `onderwerp` and `tekst` happened to
+		// survive, so the payload was half wire, half invention.
 		$payload = [
-			'onderwerp' => (string)($input['onderwerp'] ?? ''),
-			'channel' => (string)($input['channel'] ?? ''),
-			'tekst' => (string)($input['tekst'] ?? ''),
-			'occurredOn' => (string)($input['occurredOn'] ?? (new DateTime())->format('c')),
-			'indicationContactGelukt' => (bool)($input['indicationContactGelukt'] ?? true),
-			'language' => (string)($input['language'] ?? 'nl'),
+			'onderwerp' => (string)($input['subject'] ?? $input['onderwerp'] ?? ''),
+			'kanaal' => (string)($input['channel'] ?? ''),
+			'tekst' => (string)($input['text'] ?? $input['tekst'] ?? ''),
+			'plaatsgevondenOp' => (string)($input['occurredOn'] ?? (new DateTime())->format('c')),
+			'indicatieContactGelukt' => (bool)($input['indicationContactSucceeded'] ?? true),
+			'taal' => (string)($input['language'] ?? 'nl'),
 		];
 
 		$involvedParty = ($input['involvedParty'] ?? null);
@@ -306,13 +317,17 @@ class KissSyncService {
 			$sourceApp = (string)$input['sourceApp'];
 		}
 
+		// $payload is WIRE shape, and upsertCustomerContact() reads wire names, so
+		// the mirror item built here has to speak the same language — `betrokkenen`,
+		// not `involvedParties`, or the locally mirrored push loses its parties
+		// while the pulled copy of the same contact keeps them.
 		$item = $payload;
 		unset($item['involvedParty']);
 		$item['uuid'] = $kissId;
 		$item['registratiedatum'] = (new DateTime())->format('c');
-		$item['involvedParties'] = [];
+		$item['betrokkenen'] = [];
 		if ($involvedParty !== null) {
-			$item['involvedParties'] = [$involvedParty];
+			$item['betrokkenen'] = [$involvedParty];
 		}
 
 		$item['onderwerpobjecten'] = $onderwerpobjecten;
@@ -397,17 +412,27 @@ class KissSyncService {
 		$onderwerpobjecten = (array)($item['onderwerpobjecten'] ?? []);
 		$caseMapping = $this->extractCaseReference(onderwerpobjecten: $onderwerpobjecten);
 
+		// KEYS are the local schema's property names, English after the vocabulary
+		// pass. The $item SUBSCRIPTS are the VNG Klantinteracties field names as
+		// they arrive on the wire, and are the stated exemption — this is the
+		// adapter boundary, so the translation happens here and nowhere else.
+		//
+		// Both sides had been renamed together, so the reads asked KISS for
+		// `channel`, `taal` as `language`, `plaatsgevondenOp` as `occurredOn` and
+		// so on. Every one of those misses, and each miss is defaulted rather than
+		// raised — a pulled klantcontact would have persisted with an empty
+		// channel, empty language, empty timestamp and no betrokkenen, silently.
 		$record = [
 			'kissId' => $kissId,
-			'number' => (string)($item['number'] ?? ''),
-			'channel' => (string)($item['channel'] ?? ''),
+			'number' => (string)($item['nummer'] ?? ''),
+			'channel' => (string)($item['kanaal'] ?? ''),
 			'onderwerp' => (string)($item['onderwerp'] ?? ''),
 			'tekst' => (string)($item['tekst'] ?? ''),
-			'indicationContactGelukt' => (bool)($item['indicationContactGelukt'] ?? true),
-			'language' => (string)($item['language'] ?? ''),
-			'occurredOn' => (string)($item['occurredOn'] ?? ''),
+			'indicationContactSucceeded' => (bool)($item['indicatieContactGelukt'] ?? true),
+			'language' => (string)($item['taal'] ?? ''),
+			'occurredOn' => (string)($item['plaatsgevondenOp'] ?? ''),
 			'registratiedatum' => (string)($item['registratiedatum'] ?? ''),
-			'involvedParties' => $this->redactBsnIdentifiers(involvedParties: (array)($item['involvedParties'] ?? [])),
+			'involvedParties' => $this->redactBsnIdentifiers(involvedParties: (array)($item['betrokkenen'] ?? [])),
 			'onderwerpobjecten' => $onderwerpobjecten,
 			'caseReference' => $caseMapping['reference'],
 			'caseObjectType' => $caseMapping['objectType'],

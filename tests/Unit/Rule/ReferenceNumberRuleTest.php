@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/vng-klantinteracties-adapter/specs/rule-pipeline/spec.md#req-rule-007
  */
-class ReferentienummerRuleTest extends TestCase {
+class ReferenceNumberRuleTest extends TestCase {
 
 	/**
 	 * Build a rule ObjectEntity carrying the given referentienummer configuration.

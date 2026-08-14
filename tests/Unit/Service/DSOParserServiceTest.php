@@ -104,7 +104,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'submissionDate' => '2024-06-15',
+			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB']],
 			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
@@ -130,7 +130,7 @@ class DSOParserServiceTest extends TestCase {
 		$fieldNames = array_column($errors, 'field');
 		$this->assertContains('verzoekId', $fieldNames);
 		$this->assertContains('type', $fieldNames);
-		$this->assertContains('submissionDate', $fieldNames);
+		$this->assertContains('indieningsdatum', $fieldNames);
 		$this->assertContains('aanvrager', $fieldNames);
 		$this->assertContains('locatie', $fieldNames);
 		$this->assertContains('activiteiten', $fieldNames);
@@ -146,7 +146,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'ongeldig',
-			'submissionDate' => '2024-06-15',
+			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -167,7 +167,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'submissionDate' => '2024-06-15',
+			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '123456789', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -189,7 +189,7 @@ class DSOParserServiceTest extends TestCase {
 			'verzoekId' => 'dso-12345',
 			'bronorganisatie' => '00000001234567890000',
 			'type' => 'aanvraag',
-			'submissionDate' => '2024-06-15',
+			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Jansen'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB', 'huisnummer' => '10']],
 			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
@@ -217,7 +217,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'submissionDate' => '2024-06-15',
+			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => [],
 			'locatie' => [
 				'gmlGeometrie' => '<gml:Point><gml:pos>52.370216 4.895168</gml:pos></gml:Point>',

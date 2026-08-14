@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
-class InboundRetourTranslatorTest extends TestCase {
+class InboundReturnTranslatorTest extends TestCase {
 
 	/**
 	 * @var InboundReturnTranslator

@@ -41,12 +41,23 @@ class DSOParserService {
 	/**
 	 * Required fields in a DSO-verzoek payload.
 	 *
+	 * WIRE NAMES. These are the field names the Digitaal Stelsel Omgevingswet
+	 * sends, checked against an inbound payload we do not control, so they are
+	 * the stated exemption to the English-only rule.
+	 *
+	 * The vocabulary pass had translated exactly one of the six —
+	 * `indieningsdatum` -> `submissionDate` — while its five siblings stayed as
+	 * they were. That makes the field permanently absent, so every DSO verzoek
+	 * fails validation on a required field the DSO has never sent. A rename that
+	 * touches one member of a wire contract and not the rest is easy to miss in
+	 * review precisely because the surrounding lines still look right.
+	 *
 	 * @var array
 	 */
 	private const REQUIRED_FIELDS = [
 		'verzoekId',
 		'type',
-		'submissionDate',
+		'indieningsdatum',
 		'aanvrager',
 		'locatie',
 		'activiteiten',
@@ -138,14 +149,16 @@ class DSOParserService {
 			}
 		}
 
-		// Validate indieningsdatum format (ISO 8601).
-		if (isset($payload['submissionDate']) === true
-			&& $this->validateISODate(date: $payload['submissionDate']) === false
+		// Validate the submission date's format (ISO 8601). Subscript and reported
+		// `field` are the DSO's own wire name, because the caller matches the error
+		// against the payload it sent.
+		if (isset($payload['indieningsdatum']) === true
+			&& $this->validateISODate(date: $payload['indieningsdatum']) === false
 		) {
 			$errors[] = [
-				'field' => 'submissionDate',
+				'field' => 'indieningsdatum',
 				'error' => 'invalid_date_format',
-				'message' => 'Indieningsdatum must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
+				'message' => 'The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
 			];
 		}
 
@@ -174,7 +187,9 @@ class DSOParserService {
 			'verzoekId' => ($payload['verzoekId'] ?? null),
 			'bronorganisatie' => ($payload['bronorganisatie'] ?? null),
 			'type' => ($payload['type'] ?? null),
-			'submissionDate' => ($payload['submissionDate'] ?? null),
+			// KEY is the internal name every downstream service reads; the
+			// SUBSCRIPT is the DSO's wire name. This line is the whole mapping.
+			'submissionDate' => ($payload['indieningsdatum'] ?? null),
 			'aanvrager' => $this->parseApplicant(applicant: ($payload['aanvrager'] ?? [])),
 			'locatie' => $this->parseLocation(location: ($payload['locatie'] ?? [])),
 			'activiteiten' => $this->parseActiviteiten(activiteiten: ($payload['activiteiten'] ?? [])),

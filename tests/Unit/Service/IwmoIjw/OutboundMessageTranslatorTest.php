@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
-class OutboundBerichtTranslatorTest extends TestCase {
+class OutboundMessageTranslatorTest extends TestCase {
 
 	/**
 	 * @var OutboundMessageTranslator

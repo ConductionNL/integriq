@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
-class OutboundKennisgevingTranslatorTest extends TestCase {
+class OutboundNotificationTranslatorTest extends TestCase {
 
 	/**
 	 * @var OutboundNotificationTranslator

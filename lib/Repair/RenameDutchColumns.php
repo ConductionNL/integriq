@@ -87,7 +87,7 @@ class RenameDutchColumns implements IRepairStep {
 		'actie_map' => 'action_map',
 		'betrokkenen' => 'involved_parties',
 		'hoofd_object_field' => 'main_object_field',
-		'indicatie_contact_gelukt' => 'indication_contact_gelukt',
+		'indicatie_contact_gelukt' => 'indication_contact_succeeded',
 		'indieningsdatum' => 'submission_date',
 		'kanaal' => 'channel',
 		'kenmerk' => 'reference',

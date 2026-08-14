@@ -458,7 +458,8 @@ class KissSyncServiceTest extends TestCase {
 					[
 						'uuid' => 'kc-a',
 						'registratiedatum' => '2026-07-01T10:00:00+00:00',
-						'involvedParties' => [
+						// Wire name: this fixture stands in for what KISS returns.
+						'betrokkenen' => [
 							[
 								'rol' => 'klant',
 								'partijIdentificator' => ['codeSoortObjectId' => 'bsn', 'objectId' => '123456789'],

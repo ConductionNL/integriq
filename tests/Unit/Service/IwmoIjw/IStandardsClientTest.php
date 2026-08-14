@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
-class IStandaardenClientTest extends TestCase {
+class IStandardsClientTest extends TestCase {
 
 	/**
 	 * @var array<int,array{request:\GuzzleHttp\Psr7\Request}>

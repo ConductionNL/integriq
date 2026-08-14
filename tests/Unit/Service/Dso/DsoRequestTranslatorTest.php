@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
-class DsoVerzoekTranslatorTest extends TestCase {
+class DsoRequestTranslatorTest extends TestCase {
 
 	/**
 	 * @var DsoRequestTranslator
