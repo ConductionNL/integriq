@@ -444,12 +444,17 @@ class UserController extends Controller {
 	// is the one public surface here where the caller presents a credential a
 	// stranger could guess.
 	//
-	// A ceiling is not the whole answer for this one -- it caps volume but
-	// does nothing to make guessing expensive per source. #[BruteForceProtection]
-	// plus a registerAttempt() on the failed-credential path is the other half
-	// (ADR-082), and it needs the login failure path traced properly rather
-	// than bolted on; left as follow-up so this commit does not ship a
-	// half-wired counter, which is the exact anti-pattern ADR-082 documents.
+	// Brute-force protection is ALREADY COMPLETE here, and deliberately not
+	// via NC's IThrottler: SecurityService::checkLoginRateLimit() gates entry
+	// (with a lockout and a delay), recordFailedLoginAttempt() feeds it on
+	// both failure paths, and recordSuccessfulLogin() clears it. That is the
+	// two-halves shape ADR-082 asks for, keyed on USERNAME + IP rather than IP
+	// alone — finer-grained than the framework throttler, so adding
+	// #[BruteForceProtection] on top would be a second, coarser counter for
+	// the same event.
+	//
+	// The ceiling below is the volume half, which app-local logic did not
+	// cover.
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {
