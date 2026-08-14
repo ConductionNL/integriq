@@ -62,7 +62,7 @@
 			</p>
 
 			<div class="signing__actions">
-				<NcButton variant="primary" :disabled="busy" @click="generate">
+				<NcButton type="primary" :disabled="busy" @click="generate">
 					{{ t('openconnector', 'Generate signing secret') }}
 				</NcButton>
 				<NcButton v-if="hasSecret" :disabled="busy" @click="rotate">

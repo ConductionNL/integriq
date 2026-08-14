@@ -2,7 +2,141 @@
 import { translate as t } from '@nextcloud/l10n'
 import { Endpoint } from '../../entities/index.js'
 import { endpointStore, navigationStore } from '../../store/store.js'
-defineOptions({
+</script>
+
+<template>
+	<NcModal
+		v-if="navigationStore.modal === 'editEndpoint'"
+		ref="modalRef"
+		labelId="editEndpoint"
+		@close="closeModal">
+		<div class="modalContent">
+			<h2>
+				{{
+					endpointItem.id
+						? t('openconnector', 'Edit endpoint')
+						: t('openconnector', 'Add endpoint')
+				}}
+			</h2>
+
+			<div v-if="success !== null">
+				<NcNoteCard v-if="success" type="success">
+					<p>{{ t('openconnector', 'Endpoint successfully saved') }}</p>
+				</NcNoteCard>
+				<NcNoteCard v-if="error" type="error">
+					<p>{{ error }}</p>
+				</NcNoteCard>
+			</div>
+
+			<form v-if="success === null" @submit.prevent="handleSubmit">
+				<div class="form-group">
+					<NcTextField
+						v-model="endpointItem.name"
+						:label="t('openconnector', 'Name') + '*'" />
+
+					<NcTextArea
+						v-model="endpointItem.description"
+						resize="vertical"
+						:label="t('openconnector', 'Description')" />
+
+					<NcTextField
+						v-model="endpointItem.endpoint"
+						:label="t('openconnector', 'Endpoint')" />
+
+					<NcTextArea
+						v-model="endpointItem.endpointArray"
+						resize="vertical"
+						:label="t('openconnector', 'Endpoint array (split on ,)')" />
+
+					<NcTextField
+						v-model="endpointItem.endpointRegex"
+						:label="t('openconnector', 'Endpoint regex')" />
+
+					<NcTextField
+						v-model="endpointItem.slug"
+						:label="t('openconnector', 'Slug')" />
+
+					<div>
+						<NcSelect
+							v-bind="methodOptions"
+							v-model="methodOptions.value"
+							:inputLabel="t('openconnector', 'Method')" />
+					</div>
+
+					<div>
+						<NcSelect
+							v-bind="targetTypeOptions"
+							v-model="targetTypeOptions.value"
+							:inputLabel="t('openconnector', 'Target Type')" />
+					</div>
+
+					<div>
+						<NcSelect
+							v-bind="registerOptions"
+							v-model="registerOptions.value"
+							:inputLabel="t('openconnector', 'Register')"
+							:disabled="registersLoading" />
+
+						<NcSelect
+							v-bind="schemaOptions"
+							v-model="schemaOptions.value"
+							:disabled="!registerOptions.value || schemasLoading"
+							:inputLabel="t('openconnector', 'Schema')" />
+					</div>
+
+					<div>
+						<NcSelect
+							v-bind="configurationOptions"
+							v-model="configurationOptions.value"
+							:inputLabel="t('openconnector', 'Configurations')"
+							:multiple="true"
+							:disabled="configurationsLoading" />
+					</div>
+				</div>
+			</form>
+
+			<div class="modal-actions">
+				<NcButton v-if="success === null" @click="closeModal">
+					<template #icon>
+						<CancelIcon size="20" />
+					</template>
+					{{ t('openconnector', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					v-if="success === null"
+					:disabled="
+						loading
+						|| !endpointItem.name
+						|| !registerOptions.value
+						|| !schemaOptions.value
+					"
+					type="primary"
+					@click="editEndpoint()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading" :size="20" />
+					</template>
+					{{ t('openconnector', 'Save') }}
+				</NcButton>
+			</div>
+		</div>
+	</NcModal>
+</template>
+
+<script>
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import CancelIcon from 'vue-material-design-icons/Cancel.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+
+export default {
 	name: 'EditEndpoint',
 	components: {
 		NcModal,
@@ -398,138 +532,5 @@ defineOptions({
 				})
 		},
 	},
-})
-</script>
-
-<template>
-	<NcModal
-		v-if="navigationStore.modal === 'editEndpoint'"
-		ref="modalRef"
-		labelId="editEndpoint"
-		@close="closeModal">
-		<div class="modalContent">
-			<h2>
-				{{
-					endpointItem.id
-						? t('openconnector', 'Edit endpoint')
-						: t('openconnector', 'Add endpoint')
-				}}
-			</h2>
-
-			<div v-if="success !== null">
-				<NcNoteCard v-if="success" type="success">
-					<p>{{ t('openconnector', 'Endpoint successfully saved') }}</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="error" type="error">
-					<p>{{ error }}</p>
-				</NcNoteCard>
-			</div>
-
-			<form v-if="success === null" @submit.prevent="handleSubmit">
-				<div class="form-group">
-					<NcTextField
-						v-model="endpointItem.name"
-						:label="t('openconnector', 'Name') + '*'" />
-
-					<NcTextArea
-						v-model="endpointItem.description"
-						resize="vertical"
-						:label="t('openconnector', 'Description')" />
-
-					<NcTextField
-						v-model="endpointItem.endpoint"
-						:label="t('openconnector', 'Endpoint')" />
-
-					<NcTextArea
-						v-model="endpointItem.endpointArray"
-						resize="vertical"
-						:label="t('openconnector', 'Endpoint array (split on ,)')" />
-
-					<NcTextField
-						v-model="endpointItem.endpointRegex"
-						:label="t('openconnector', 'Endpoint regex')" />
-
-					<NcTextField
-						v-model="endpointItem.slug"
-						:label="t('openconnector', 'Slug')" />
-
-					<div>
-						<NcSelect
-							v-bind="methodOptions"
-							v-model="methodOptions.value"
-							:inputLabel="t('openconnector', 'Method')" />
-					</div>
-
-					<div>
-						<NcSelect
-							v-bind="targetTypeOptions"
-							v-model="targetTypeOptions.value"
-							:inputLabel="t('openconnector', 'Target Type')" />
-					</div>
-
-					<div>
-						<NcSelect
-							v-bind="registerOptions"
-							v-model="registerOptions.value"
-							:inputLabel="t('openconnector', 'Register')"
-							:disabled="registersLoading" />
-
-						<NcSelect
-							v-bind="schemaOptions"
-							v-model="schemaOptions.value"
-							:disabled="!registerOptions.value || schemasLoading"
-							:inputLabel="t('openconnector', 'Schema')" />
-					</div>
-
-					<div>
-						<NcSelect
-							v-bind="configurationOptions"
-							v-model="configurationOptions.value"
-							:inputLabel="t('openconnector', 'Configurations')"
-							:multiple="true"
-							:disabled="configurationsLoading" />
-					</div>
-				</div>
-			</form>
-
-			<div class="modal-actions">
-				<NcButton v-if="success === null" @click="closeModal">
-					<template #icon>
-						<CancelIcon size="20" />
-					</template>
-					{{ t('openconnector', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					v-if="success === null"
-					:disabled="
-						loading
-						|| !endpointItem.name
-						|| !registerOptions.value
-						|| !schemaOptions.value
-					"
-					variant="primary"
-					@click="editEndpoint()">
-					<template #icon>
-						<NcLoadingIcon v-if="loading" :size="20" />
-						<ContentSaveOutline v-if="!loading" :size="20" />
-					</template>
-					{{ t('openconnector', 'Save') }}
-				</NcButton>
-			</div>
-		</div>
-	</NcModal>
-</template>
-
-<script>
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcModal,
-	NcNoteCard,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
-import CancelIcon from 'vue-material-design-icons/Cancel.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+}
 </script>

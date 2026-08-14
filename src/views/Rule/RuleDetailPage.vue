@@ -57,7 +57,7 @@
 		:empty="!loading && !error && !draft">
 		<template #actions>
 			<NcButton
-				variant="secondary"
+				type="secondary"
 				:disabled="saving || !dirty"
 				@click="resetEdits">
 				<template #icon>
@@ -65,7 +65,7 @@
 				</template>
 				{{ t('openconnector', 'Discard') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="saving || !dirty" @click="onSave">
+			<NcButton type="primary" :disabled="saving || !dirty" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
@@ -156,7 +156,7 @@
 			icon="icon-filter">
 			<template #actions>
 				<NcButton
-					variant="tertiary"
+					type="tertiary"
 					:aria-label="
 						rawConditions
 							? t('openconnector', 'Switch back to visual builder')

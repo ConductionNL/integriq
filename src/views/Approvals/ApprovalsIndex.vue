@@ -71,7 +71,7 @@
 					<td>{{ row.createdAt || '—' }}</td>
 					<td>{{ row.expiresAt || '—' }}</td>
 					<td>
-						<NcButton variant="tertiary" @click="openDetail(row)">
+						<NcButton type="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Open') }}
 						</NcButton>
 					</td>

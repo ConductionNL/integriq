@@ -126,7 +126,7 @@
 					<FilterOutlineIcon :size="20" />
 					<h3>{{ t('openconnector', 'When (conditions)') }}</h3>
 					<NcButton
-						variant="tertiary"
+						type="tertiary"
 						:disabled="saving"
 						:aria-label="
 							rawConditions
@@ -177,7 +177,7 @@
 							}}
 						</span>
 						<NcButton
-							variant="secondary"
+							type="secondary"
 							size="small"
 							:disabled="
 								saving
@@ -369,7 +369,7 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('openconnector', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />

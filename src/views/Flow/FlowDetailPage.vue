@@ -51,7 +51,7 @@
 			</NcButton>
 			<NcButton
 				v-if="dirty"
-				variant="primary"
+				type="primary"
 				:disabled="saving || !canSave"
 				@click="save">
 				<template #icon>
@@ -132,7 +132,7 @@
 					@remove="removeStep(index)"
 					@moveUp="moveStep(index, -1)"
 					@moveDown="moveStep(index, 1)" />
-				<NcButton variant="secondary" @click="addStep">
+				<NcButton type="secondary" @click="addStep">
 					<template #icon>
 						<Plus :size="20" />
 					</template>

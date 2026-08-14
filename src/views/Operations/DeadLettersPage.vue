@@ -44,7 +44,7 @@
 						:key="queue.id"
 						role="tab"
 						:aria-selected="activeQueue === queue.id ? 'true' : 'false'"
-						:variant="activeQueue === queue.id ? 'primary' : 'tertiary'"
+						:type="activeQueue === queue.id ? 'primary' : 'tertiary'"
 						:data-testid="`dead-letters-queue-${queue.id}`"
 						@click="selectQueue(queue.id)">
 						{{ queue.label }}

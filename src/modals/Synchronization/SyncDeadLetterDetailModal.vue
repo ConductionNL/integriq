@@ -104,7 +104,7 @@
 									)
 						}}
 					</span>
-					<NcButton variant="primary" :disabled="busy" @click="commit">
+					<NcButton type="primary" :disabled="busy" @click="commit">
 						{{ t('openconnector', 'Confirm') }}
 					</NcButton>
 					<NcButton :disabled="busy" @click="confirming = null">
@@ -113,7 +113,7 @@
 				</template>
 				<template v-else>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canAct || busy"
 						@click="confirming = 'replay'">
 						{{ t('openconnector', 'Replay') }}

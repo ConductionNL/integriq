@@ -50,7 +50,7 @@
 							{{ t('openconnector', 'Close') }}
 						</NcButton>
 						<NcButton
-							variant="primary"
+							type="primary"
 							:disabled="!canRun"
 							@click="runTest">
 							<template #icon>

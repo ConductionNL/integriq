@@ -29,7 +29,7 @@
 				placeholder="contact"
 				@update:modelValue="(next) => onSchemaInput(index, next)" />
 			<NcButton
-				variant="tertiary-no-background"
+				type="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
@@ -37,7 +37,7 @@
 				</template>
 			</NcButton>
 		</div>
-		<NcButton variant="secondary" @click="addRow">
+		<NcButton type="secondary" @click="addRow">
 			<template #icon>
 				<Plus :size="18" />
 			</template>

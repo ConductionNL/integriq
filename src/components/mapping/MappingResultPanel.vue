@@ -154,10 +154,7 @@
 				}}
 			</p>
 
-			<NcButton
-				variant="primary"
-				:disabled="!canSaveResult"
-				@click="saveResult">
+			<NcButton type="primary" :disabled="!canSaveResult" @click="saveResult">
 				<template #icon>
 					<NcLoadingIcon v-if="savingResult" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />

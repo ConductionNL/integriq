@@ -54,7 +54,7 @@
 		<template #actions>
 			<NcButton
 				v-if="dirty"
-				variant="primary"
+				type="primary"
 				:disabled="saving || !canSave"
 				@click="save">
 				<template #icon>
@@ -173,7 +173,7 @@
 								}}
 							</span>
 							<NcButton
-								variant="secondary"
+								type="secondary"
 								:disabled="
 									resettingCursor
 									|| !objectIdString
@@ -371,7 +371,7 @@
 						<h3>{{ t('openconnector', 'Conditions') }}</h3>
 						<div class="sync-detail__card-header-spacer" />
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							:aria-label="
 								rawConditions
 									? t(

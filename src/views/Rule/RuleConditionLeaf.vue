@@ -154,7 +154,7 @@
 		<NcButton
 			class="rule-condition-leaf__remove"
 			:aria-label="t('openconnector', 'Remove condition')"
-			variant="tertiary-no-background"
+			type="tertiary-no-background"
 			@click="$emit('remove')">
 			<template #icon>
 				<Close :size="18" />

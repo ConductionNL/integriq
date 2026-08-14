@@ -60,11 +60,11 @@
 				</NcNoteCard>
 
 				<div class="oc-promote-modal__actions">
-					<NcButton variant="tertiary" @click="close">
+					<NcButton type="tertiary" @click="close">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canPreview || previewing"
 						data-testid="promote-run-preview"
 						@click="runPreview">
@@ -185,11 +185,11 @@
 				</NcNoteCard>
 
 				<div class="oc-promote-modal__actions">
-					<NcButton variant="tertiary" @click="backToSelect">
+					<NcButton type="tertiary" @click="backToSelect">
 						{{ t('openconnector', 'Back') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="confirming"
 						data-testid="promote-confirm"
 						@click="confirmPromotion">

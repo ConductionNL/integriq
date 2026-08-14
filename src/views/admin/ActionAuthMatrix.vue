@@ -69,7 +69,7 @@
 
 		<div class="openconnector-admin__matrix-actions">
 			<NcButton
-				variant="primary"
+				type="primary"
 				data-testid="admin-action-matrix-save"
 				:disabled="loading || saving"
 				@click="save">

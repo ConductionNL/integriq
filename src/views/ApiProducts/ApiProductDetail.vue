@@ -22,7 +22,7 @@
 -->
 <template>
 	<div class="apiProductDetail">
-		<NcButton variant="tertiary" class="apiProductDetail__back" @click="goBack">
+		<NcButton type="tertiary" class="apiProductDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to API Products') }}
 		</NcButton>
 
@@ -54,7 +54,7 @@
 					<li v-for="id in productEndpoints" :key="id">
 						{{ endpointLabel(id) }}
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							:aria-label="t('openconnector', 'Remove endpoint')"
 							@click="removeEndpoint(id)">
 							{{ t('openconnector', 'Remove') }}
@@ -83,7 +83,7 @@
 						t('openconnector', 'Pick one or more endpoints')
 					" />
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="selectedEndpoints.length === 0 || saving"
 					@click="addSelectedEndpoints">
 					{{ t('openconnector', 'Add') }}
@@ -138,7 +138,7 @@
 							<td>{{ tier.approverGroup || '—' }}</td>
 							<td>
 								<NcButton
-									variant="tertiary"
+									type="tertiary"
 									:aria-label="t('openconnector', 'Remove tier')"
 									@click="removeTier(name)">
 									{{ t('openconnector', 'Remove') }}
@@ -235,13 +235,13 @@
 						{{ sub.consumer }} — {{ sub.tier }} — {{ sub.status }}
 						<template v-if="sub.status === 'pending_approval'">
 							<NcButton
-								variant="primary"
+								type="primary"
 								:disabled="busy"
 								@click="approveSubscription(sub)">
 								{{ t('openconnector', 'Approve') }}
 							</NcButton>
 							<NcButton
-								variant="error"
+								type="error"
 								:disabled="busy"
 								@click="rejectSubscription(sub)">
 								{{ t('openconnector', 'Reject') }}

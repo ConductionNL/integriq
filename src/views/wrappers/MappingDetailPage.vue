@@ -113,7 +113,7 @@
 						<h3 class="cn-mapping-detail__section-title">
 							{{ t('openconnector', 'Live preview') }}
 						</h3>
-						<NcButton variant="tertiary" @click="resetPreview">
+						<NcButton type="tertiary" @click="resetPreview">
 							<template #icon>
 								<RestoreIcon :size="18" />
 							</template>

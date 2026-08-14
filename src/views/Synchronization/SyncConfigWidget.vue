@@ -158,7 +158,7 @@
 							(value) => $emit('update:sourceId', value)
 						" />
 					<NcButton
-						variant="secondary"
+						type="secondary"
 						:aria-label="t('openconnector', 'Browse Files app')"
 						:disabled="pickingFile"
 						@click="openFilePicker">

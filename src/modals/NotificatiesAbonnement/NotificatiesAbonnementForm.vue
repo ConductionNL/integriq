@@ -115,7 +115,7 @@
 				" />
 
 			<div class="abonnementForm__actions">
-				<NcButton variant="primary" :disabled="busy" @click="save">
+				<NcButton type="primary" :disabled="busy" @click="save">
 					{{ t('openconnector', 'Save') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="$emit('close')">

@@ -61,7 +61,7 @@
 								count: selected.length,
 							})
 				}}</span>
-				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
+				<NcButton type="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
@@ -70,7 +70,7 @@
 			</template>
 			<template v-else>
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="busy"
 					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
@@ -134,7 +134,7 @@
 					<td>{{ row.retryCount || 0 }}</td>
 					<td>{{ row.lastAttempt }}</td>
 					<td>
-						<NcButton variant="tertiary" @click="openDetail(row)">
+						<NcButton type="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Inspect') }}
 						</NcButton>
 					</td>

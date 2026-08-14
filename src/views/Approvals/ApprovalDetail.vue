@@ -18,7 +18,7 @@
 -->
 <template>
 	<div class="approvalDetail">
-		<NcButton variant="tertiary" class="approvalDetail__back" @click="goBack">
+		<NcButton type="tertiary" class="approvalDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to approvals') }}
 		</NcButton>
 
@@ -102,11 +102,11 @@
 					rows="3"
 					:placeholder="t('openconnector', 'Add a note…')" />
 				<div class="approvalDetail__buttons">
-					<NcButton variant="primary" :disabled="busy" @click="approve">
+					<NcButton type="primary" :disabled="busy" @click="approve">
 						{{ t('openconnector', 'Approve') }}
 					</NcButton>
 					<NcButton
-						variant="error"
+						type="error"
 						:disabled="busy || !comment.trim()"
 						data-testid="reject-button"
 						@click="reject">

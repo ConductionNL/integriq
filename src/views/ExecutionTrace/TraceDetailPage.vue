@@ -17,7 +17,7 @@
 -->
 <template>
 	<div class="traceDetail">
-		<NcButton variant="tertiary" class="traceDetail__back" @click="goBack">
+		<NcButton type="tertiary" class="traceDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to traces') }}
 		</NcButton>
 
@@ -66,7 +66,7 @@
 
 				<NcButton
 					v-if="!preview"
-					variant="secondary"
+					type="secondary"
 					:disabled="busy"
 					@click="runDryRun">
 					{{ t('openconnector', 'Replay (dry-run preview)') }}
@@ -86,13 +86,13 @@
 					<template v-if="!confirmingForce">
 						<div class="traceDetail__replayButtons">
 							<NcButton
-								variant="secondary"
+								type="secondary"
 								:disabled="busy"
 								@click="runDryRun">
 								{{ t('openconnector', 'Re-run preview') }}
 							</NcButton>
 							<NcButton
-								variant="error"
+								type="error"
 								:disabled="busy"
 								@click="confirmingForce = true">
 								{{ t('openconnector', 'Force replay (real write)') }}
@@ -112,7 +112,7 @@
 						</p>
 						<div class="traceDetail__replayButtons">
 							<NcButton
-								variant="error"
+								type="error"
 								:disabled="busy"
 								data-testid="confirm-force-replay"
 								@click="runForced">

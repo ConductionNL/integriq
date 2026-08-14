@@ -260,7 +260,7 @@
 					</span>
 					<div class="cn-consumer-editor__helper-actions">
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							size="small"
 							:disabled="saving || !authConfigPlaceholder"
 							@click="insertAuthConfigTemplate">
@@ -268,7 +268,7 @@
 						</NcButton>
 						<NcButton
 							v-if="!isCreate"
-							variant="tertiary"
+							type="tertiary"
 							size="small"
 							:disabled="saving || authConfigCleared"
 							@click="clearAuthConfig">
@@ -371,7 +371,7 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('openconnector', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />

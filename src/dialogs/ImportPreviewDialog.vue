@@ -183,14 +183,14 @@
 							{{ entry.slug }}: {{ entry.fields.join(', ') }}
 						</li>
 					</ul>
-					<NcButton variant="secondary" @click="goToSources">
+					<NcButton type="secondary" @click="goToSources">
 						{{ t('openconnector', 'Open Sources') }}
 					</NcButton>
 				</NcNoteCard>
 			</div>
 
 			<div class="oc-import-dialog__actions">
-				<NcButton variant="tertiary" @click="close">
+				<NcButton type="tertiary" @click="close">
 					{{
 						step === 'done'
 							? t('openconnector', 'Close')
@@ -199,7 +199,7 @@
 				</NcButton>
 				<NcButton
 					v-if="step === 'preview'"
-					variant="primary"
+					type="primary"
 					:disabled="importRunning || confirmBlocked"
 					data-testid="confirm-import"
 					@click="confirmImport">

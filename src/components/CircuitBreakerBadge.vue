@@ -52,7 +52,7 @@
 			</span>
 			<NcButton
 				v-if="isOpen"
-				variant="primary"
+				type="primary"
 				:disabled="busy || !objectId"
 				data-testid="circuit-breaker-reset"
 				@click="reset">

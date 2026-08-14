@@ -55,11 +55,11 @@
 			</NcNoteCard>
 
 			<div class="oc-export-dialog__actions">
-				<NcButton variant="tertiary" @click="close">
+				<NcButton type="tertiary" @click="close">
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="!selected || exporting"
 					data-testid="export-configuration-confirm"
 					@click="runExport">

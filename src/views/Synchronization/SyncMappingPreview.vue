@@ -31,7 +31,7 @@
 			class="sync-mapping-preview__header"
 			:class="{ 'sync-mapping-preview__header--collapsed': !expanded }">
 			<NcButton
-				variant="tertiary-no-background"
+				type="tertiary-no-background"
 				:aria-label="
 					expanded
 						? t('openconnector', 'Hide mapping preview')

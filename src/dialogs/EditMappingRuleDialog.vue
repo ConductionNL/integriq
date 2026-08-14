@@ -66,11 +66,11 @@
 				</label>
 
 				<div class="cn-rule-dialog__actions">
-					<NcButton variant="tertiary" @click="$emit('cancel')">
+					<NcButton type="tertiary" @click="$emit('cancel')">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canSubmit"
 						@click="onSubmit">
 						{{ submitLabel }}

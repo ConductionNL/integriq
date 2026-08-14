@@ -117,7 +117,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('mapping', row.key)">
@@ -126,7 +126,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -150,7 +150,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							variant="primary"
+							type="primary"
 							:disabled="saving"
 							@click="openCreate('mapping')">
 							<template #icon>
@@ -234,7 +234,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('cast', row.key)">
@@ -243,7 +243,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -262,7 +262,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							variant="primary"
+							type="primary"
 							:disabled="saving"
 							@click="openCreate('cast')">
 							<template #icon>
@@ -340,7 +340,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEditUnset(property)">
@@ -349,7 +349,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										variant="tertiary"
+										type="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -368,7 +368,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							variant="primary"
+							type="primary"
 							:disabled="saving || !passThrough"
 							@click="openCreate('unset')">
 							<template #icon>

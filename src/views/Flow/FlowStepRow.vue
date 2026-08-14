@@ -67,7 +67,7 @@
 				<NcButton
 					:disabled="isFirst"
 					:aria-label="t('openconnector', 'Move step up')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('move-up')">
 					<template #icon>
 						<ArrowUp :size="18" />
@@ -76,7 +76,7 @@
 				<NcButton
 					:disabled="isLast"
 					:aria-label="t('openconnector', 'Move step down')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('move-down')">
 					<template #icon>
 						<ArrowDown :size="18" />
@@ -84,7 +84,7 @@
 				</NcButton>
 				<NcButton
 					:aria-label="t('openconnector', 'Remove step')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('remove')">
 					<template #icon>
 						<Delete :size="18" />
@@ -203,7 +203,7 @@
 						" />
 				</div>
 				<NcButton
-					variant="tertiary"
+					type="tertiary"
 					:aria-label="t('openconnector', 'Remove branch')"
 					@click="removeBranch(branchIndex)">
 					<template #icon>
@@ -211,7 +211,7 @@
 					</template>
 				</NcButton>
 			</div>
-			<NcButton variant="secondary" @click="addBranch">
+			<NcButton type="secondary" @click="addBranch">
 				<template #icon>
 					<Plus :size="18" />
 				</template>

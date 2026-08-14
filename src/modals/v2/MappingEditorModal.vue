@@ -185,7 +185,7 @@
 				</template>
 				{{ t('openconnector', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />

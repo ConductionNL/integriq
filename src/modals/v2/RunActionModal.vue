@@ -73,7 +73,7 @@
 					<NcButton @click="onClose">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
-					<NcButton variant="primary" :disabled="!subjectId" @click="fire">
+					<NcButton type="primary" :disabled="!subjectId" @click="fire">
 						<template #icon>
 							<PlayOutlineIcon :size="20" />
 						</template>
@@ -176,7 +176,7 @@
 					</NcButton>
 					<NcButton
 						v-if="retryAction"
-						variant="secondary"
+						type="secondary"
 						@click="runAgain(retryAction.values)">
 						<template #icon>
 							<RestartIcon :size="20" />
@@ -189,7 +189,7 @@
 						</template>
 						{{ t('openconnector', 'Run again') }}
 					</NcButton>
-					<NcButton variant="primary" @click="onClose">
+					<NcButton type="primary" @click="onClose">
 						{{ t('openconnector', 'Close') }}
 					</NcButton>
 				</div>

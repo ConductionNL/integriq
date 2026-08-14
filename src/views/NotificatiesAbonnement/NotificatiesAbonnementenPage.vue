@@ -21,7 +21,7 @@
 		<div class="notificatiesAbonnementen__header">
 			<h2>{{ t('openconnector', 'Abonnementen') }}</h2>
 			<NcButton
-				variant="primary"
+				type="primary"
 				data-testid="add-abonnement"
 				@click="openCreate">
 				{{ t('openconnector', 'Add Item') }}
@@ -85,10 +85,10 @@
 						{{ row.status === 'error' ? row.lastError || '—' : '—' }}
 					</td>
 					<td class="notificatiesAbonnementen__actions">
-						<NcButton variant="tertiary" @click="openEdit(row)">
+						<NcButton type="tertiary" @click="openEdit(row)">
 							{{ t('openconnector', 'Edit') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="remove(row)">
+						<NcButton type="tertiary" @click="remove(row)">
 							{{ t('openconnector', 'Delete') }}
 						</NcButton>
 					</td>

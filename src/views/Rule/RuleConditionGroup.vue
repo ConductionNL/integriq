@@ -34,7 +34,7 @@
 			<NcButton
 				v-if="removable"
 				:aria-label="t('openconnector', 'Remove group')"
-				variant="tertiary-no-background"
+				type="tertiary-no-background"
 				@click="$emit('remove')">
 				<template #icon>
 					<Close :size="18" />
@@ -72,13 +72,13 @@
 			</NcEmptyContent>
 		</div>
 		<div class="rule-condition-group__actions">
-			<NcButton variant="secondary" @click="addLeaf">
+			<NcButton type="secondary" @click="addLeaf">
 				<template #icon>
 					<Plus :size="18" />
 				</template>
 				{{ t('openconnector', 'Add condition') }}
 			</NcButton>
-			<NcButton variant="tertiary" @click="addGroup">
+			<NcButton type="tertiary" @click="addGroup">
 				<template #icon>
 					<FormatListGroup :size="18" />
 				</template>

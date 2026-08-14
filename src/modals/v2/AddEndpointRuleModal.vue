@@ -67,7 +67,7 @@
 				</NcButton>
 				<NcButton
 					v-if="!success"
-					variant="primary"
+					type="primary"
 					:disabled="!canSave || saving"
 					@click="onSave">
 					<template #icon>
