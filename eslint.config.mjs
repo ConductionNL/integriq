@@ -171,6 +171,39 @@ export default [
 		},
 	},
 
+	{
+		// Test globals. Several apps keep their spec files INSIDE `src/`, which the
+		// lint script scans, and neither `@nextcloud/eslint-config` nor the runner
+		// declares the framework globals. Without this, `no-undef` reports every
+		// `describe` / `it` / `expect` as undefined: 1203 findings in openregister
+		// alone, all from 7 identifiers.
+		//
+		// This is describing the environment, not relaxing a rule — the same reason
+		// a webpack `require.context` file declares `require`. It matters that they
+		// are declared rather than suppressed: 1203 fake findings would bury any
+		// REAL `no-undef` in the same app, and `no-undef` is the rule that catches
+		// a genuine typo'd identifier.
+		files: [
+			'**/*.{test,spec}.{js,mjs,ts,tsx,vue}',
+			'**/{test,tests,__tests__,__mocks__}/**/*.{js,mjs,ts,tsx,vue}',
+		],
+		languageOptions: {
+			globals: {
+				describe: 'readonly',
+				it: 'readonly',
+				test: 'readonly',
+				expect: 'readonly',
+				beforeEach: 'readonly',
+				afterEach: 'readonly',
+				beforeAll: 'readonly',
+				afterAll: 'readonly',
+				vi: 'readonly',
+				jest: 'readonly',
+				suite: 'readonly',
+			},
+		},
+	},
+
 	// eslint-config-prettier LAST OF THE PRESETS, and it has to be: it only turns
 	// rules OFF, and what it turns off is everything prettier owns — including the
 	// `@stylistic/*` family v9 introduces (`indent`, `quotes`, `semi`).
