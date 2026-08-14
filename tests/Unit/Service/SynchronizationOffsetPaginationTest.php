@@ -194,6 +194,49 @@ class SynchronizationOffsetPaginationTest extends TestCase {
 	}
 
 	/**
+	 * The page NUMBER travels alongside the substituted value, and for an offset
+	 * source they are NOT the same thing.
+	 *
+	 * The prefetch cache is keyed by page number: the fan-out stores page 2, 3,
+	 * 4. Once `page` began carrying an offset, the consumer looked up 100, 200,
+	 * 300 and missed every time — so each prefetched page was then fetched
+	 * AGAIN, serially. The fan-out did not merely stop helping, it added one
+	 * wasted request per page, which is why enabling it measured SLOWER.
+	 *
+	 * Measured against data.overheid.nl before the fix: 199 pages in 140.7 s,
+	 * 707 ms each — precisely the source's serial latency, with a concurrency
+	 * window of 10 supposedly open.
+	 */
+	public function testThePageNumberTravelsSeparatelyFromTheOffset(): void {
+		$getNextPage = new ReflectionMethod(SynchronizationService::class, 'getNextPage');
+		$getNextPage->setAccessible(true);
+
+		$config = $getNextPage->invoke(
+			$this->service,
+			[],
+			['paginationMode' => 'offset', 'paginationQuery' => 'start', 'query' => ['rows' => 100]],
+			3
+		);
+
+		$this->assertSame(200, $config['pagination']['page'], 'the source is sent an offset');
+		$this->assertSame(3, $config['pagination']['index'], 'the cache is keyed by the page number');
+	}
+
+	/**
+	 * For a page-indexed source the two are identical, so nothing about the
+	 * pre-existing cache behaviour changes.
+	 */
+	public function testTheIndexEqualsThePageForAPageIndexedSource(): void {
+		$getNextPage = new ReflectionMethod(SynchronizationService::class, 'getNextPage');
+		$getNextPage->setAccessible(true);
+
+		$config = $getNextPage->invoke($this->service, [], ['query' => ['per_page' => 100]], 7);
+
+		$this->assertSame(7, $config['pagination']['page']);
+		$this->assertSame(7, $config['pagination']['index']);
+	}
+
+	/**
 	 * ...and the same route leaves a page-indexed source alone, which is the
 	 * half that every existing synchronisation in the fleet depends on.
 	 */
