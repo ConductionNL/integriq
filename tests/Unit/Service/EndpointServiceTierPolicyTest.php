@@ -110,7 +110,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$ruleService = $this->createMock(RuleService::class);
 		$signatureService = new WebhookSignatureService($logger);
 		$compositeFanoutRule = new CompositeFanoutRule($this->orObjectService, $logger);
-		$referentienummerRule = new ReferentienummerRule();
+		$referenceNumberRule = new ReferentienummerRule();
 		$avgBsnPolicyRule = new AvgBsnPolicyRule();
 		$approvalService = $this->createMock(ApprovalService::class);
 		$requestId = $this->createMock(IRequestId::class);
@@ -138,7 +138,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 			$signatureService,
 			$this->rateLimitService,
 			$compositeFanoutRule,
-			$referentienummerRule,
+			$referenceNumberRule,
 			$avgBsnPolicyRule,
 			$approvalService,
 			$requestId,

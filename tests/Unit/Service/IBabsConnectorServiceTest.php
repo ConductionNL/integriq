@@ -381,7 +381,7 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-10'
 		);
 
-		$result = $this->service->pollBesluiten($source, [['zaakId' => 'z-1', 'risMeetingId' => 'v-1']]);
+		$result = $this->service->pollBesluiten($source, [['caseId' => 'z-1', 'risMeetingId' => 'v-1']]);
 		$this->assertSame([], $result);
 
 	}//end testPollBesluitenNoOrganisatieId()
@@ -415,10 +415,10 @@ class IBabsConnectorServiceTest extends TestCase {
 			'ibabs-source-12'
 		);
 
-		$besluitBody = json_encode(['besluitStatus' => 'aangenomen', 'besluitDatum' => '2026-06-01']);
+		$decisionBody = json_encode(['besluitStatus' => 'aangenomen', 'besluitDatum' => '2026-06-01']);
 		$callLogEntity = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $besluitBody]],
+			['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $decisionBody]],
 			'call-log-5'
 		);
 
@@ -426,12 +426,12 @@ class IBabsConnectorServiceTest extends TestCase {
 			->method('call')
 			->willReturn($callLogEntity);
 
-		$syncItems = [['zaakId' => 'zaak-001', 'risMeetingId' => 'verg-001']];
+		$syncItems = [['caseId' => 'zaak-001', 'risMeetingId' => 'verg-001']];
 		$result = $this->service->pollBesluiten($source, $syncItems);
 
 		$this->assertNotEmpty($result);
 		$this->assertSame('Besluit: aangenomen', $result[0]['zaakStatus']);
-		$this->assertSame('zaak-001', $result[0]['zaakId']);
+		$this->assertSame('zaak-001', $result[0]['caseId']);
 
 	}//end testPollBesluitenMapsStatus()
 

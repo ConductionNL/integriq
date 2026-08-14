@@ -52,20 +52,20 @@ class InboundBerichtTranslatorTest extends TestCase {
 	/**
 	 * Build a minimal `zakLk01` SOAP envelope.
 	 *
-	 * @param string $verwerkingssoort The `object`'s verwerkingssoort attribute.
-	 * @param string $referentienummer The stuurgegevens.referentienummer.
-	 * @param string $identificatie The object's identificatie ('' to omit the element).
-	 * @param string $toelichtingXml Raw `<zkn:toelichting>` XML fragment (default: nil).
+	 * @param string $processingKind The `object`'s verwerkingssoort attribute.
+	 * @param string $referenceNumber The stuurgegevens.referentienummer.
+	 * @param string $identification The object's identificatie ('' to omit the element).
+	 * @param string $notesXml Raw `<zkn:toelichting>` XML fragment (default: nil).
 	 *
 	 * @return string
 	 */
 	private function zakLk01(
-		string $verwerkingssoort = 'T',
-		string $referentienummer = 'REF-1',
-		string $identificatie = 'ZAAK-1',
-		string $toelichtingXml = '<zkn:toelichting StUF:noValue="geenWaarde" xsi:nil="true"/>',
+		string $processingKind = 'T',
+		string $referenceNumber = 'REF-1',
+		string $identification = 'ZAAK-1',
+		string $notesXml = '<zkn:toelichting StUF:noValue="geenWaarde" xsi:nil="true"/>',
 	): string {
-		$identificatieXml = ($identificatie === '') ? '' : '<zkn:identificatie>' . $identificatie . '</zkn:identificatie>';
+		$identificationXml = ($identification === '') ? '' : '<zkn:identificatie>' . $identification . '</zkn:identificatie>';
 
 		return <<<XML
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
@@ -78,18 +78,18 @@ class InboundBerichtTranslatorTest extends TestCase {
         <StUF:berichtcode>Lk01</StUF:berichtcode>
         <StUF:zender><StUF:organisatie>Gemeente X</StUF:organisatie></StUF:zender>
         <StUF:ontvanger><StUF:organisatie>Procest</StUF:organisatie></StUF:ontvanger>
-        <StUF:referentienummer>{$referentienummer}</StUF:referentienummer>
+        <StUF:referentienummer>{$referenceNumber}</StUF:referentienummer>
         <StUF:tijdstipBericht>20260716120000</StUF:tijdstipBericht>
         <StUF:entiteittype>ZAK</StUF:entiteittype>
       </zkn:stuurgegevens>
       <zkn:parameters>
-        <StUF:mutatiesoort>{$verwerkingssoort}</StUF:mutatiesoort>
+        <StUF:mutatiesoort>{$processingKind}</StUF:mutatiesoort>
         <StUF:indicatorOvername>V</StUF:indicatorOvername>
       </zkn:parameters>
-      <zkn:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="{$verwerkingssoort}">
-        {$identificatieXml}
+      <zkn:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="{$processingKind}">
+        {$identificationXml}
         <zkn:omschrijving>Vergunningaanvraag kap boom</zkn:omschrijving>
-        {$toelichtingXml}
+        {$notesXml}
         <zkn:zaaktype>
           <zkn:code>B0337</zkn:code>
           <zkn:omschrijving>Kapvergunning</zkn:omschrijving>
@@ -154,7 +154,7 @@ XML;
 	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaklk01-toevoeging-translates-to-a-normalised-zaak-representation
 	 */
 	public function testCompleteZakLk01ToevoegingTranslatesToNormalisedZaak(): void {
-		$result = $this->translator->translate($this->zakLk01(verwerkingssoort: 'T'));
+		$result = $this->translator->translate($this->zakLk01(processingKind: 'T'));
 
 		$this->assertSame('zaak', $result['kind']);
 		$this->assertSame('zakLk01', $result['berichttype']);
@@ -194,15 +194,15 @@ XML;
 	/**
 	 * Each recognised verwerkingssoort (T/W/I/V) is accepted and echoed back.
 	 *
-	 * @param string $verwerkingssoort The verwerkingssoort code under test.
+	 * @param string $processingKind The verwerkingssoort code under test.
 	 *
 	 * @return void
 	 *
 	 * @dataProvider verwerkingssoortProvider
 	 */
-	public function testEachVerwerkingssoortIsAccepted(string $verwerkingssoort): void {
-		$result = $this->translator->translate($this->zakLk01(verwerkingssoort: $verwerkingssoort));
-		$this->assertSame($verwerkingssoort, $result['verwerkingssoort']);
+	public function testEachVerwerkingssoortIsAccepted(string $processingKind): void {
+		$result = $this->translator->translate($this->zakLk01(processingKind: $processingKind));
+		$this->assertSame($processingKind, $result['verwerkingssoort']);
 
 	}//end testEachVerwerkingssoortIsAccepted()
 
@@ -228,7 +228,7 @@ XML;
 	 */
 	public function testUnrecognisedVerwerkingssoortThrows(): void {
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($this->zakLk01(verwerkingssoort: 'X'));
+		$this->translator->translate($this->zakLk01(processingKind: 'X'));
 
 	}//end testUnrecognisedVerwerkingssoortThrows()
 
@@ -252,7 +252,7 @@ XML;
 	 */
 	public function testPresentFieldIsReadAsText(): void {
 		$result = $this->translator->translate(
-			$this->zakLk01(toelichtingXml: '<zkn:toelichting>Spoedaanvraag</zkn:toelichting>')
+			$this->zakLk01(notesXml: '<zkn:toelichting>Spoedaanvraag</zkn:toelichting>')
 		);
 		$this->assertSame('Spoedaanvraag', $result['fields']['toelichting']);
 
@@ -267,7 +267,7 @@ XML;
 	 */
 	public function testMissingReferentienummerThrows(): void {
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($this->zakLk01(referentienummer: ''));
+		$this->translator->translate($this->zakLk01(referenceNumber: ''));
 
 	}//end testMissingReferentienummerThrows()
 
@@ -278,7 +278,7 @@ XML;
 	 */
 	public function testMissingIdentificatieThrows(): void {
 		$this->expectException(StufZknTranslationException::class);
-		$this->translator->translate($this->zakLk01(identificatie: ''));
+		$this->translator->translate($this->zakLk01(identification: ''));
 
 	}//end testMissingIdentificatieThrows()
 

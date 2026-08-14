@@ -86,11 +86,11 @@ class OutboundKennisgevingTranslator {
 	/**
 	 * Translate an OR/ZGW zaak object + change kind into a `zakLk01` kennisgeving.
 	 *
-	 * @param array $zaak The OR/ZGW zaak object fields — see design.md's outbound
+	 * @param array $case The OR/ZGW zaak object fields — see design.md's outbound
 	 *                    field table for the full assumed vocabulary.
-	 * @param string $verwerkingssoort `T` (create), `W` (update/status change), or `V` (vervallen).
-	 * @param string $zenderOrganisatie This bridge's own organisatie code (`stuurgegevens.zender`).
-	 * @param string $ontvangerOrganisatie The subscribed StUF consumer's organisatie code
+	 * @param string $processingKind `T` (create), `W` (update/status change), or `V` (vervallen).
+	 * @param string $zenderOrganisation This bridge's own organisatie code (`stuurgegevens.zender`).
+	 * @param string $ontvangerOrganisation The subscribed StUF consumer's organisatie code
 	 *                                     (`stuurgegevens.ontvanger`).
 	 *
 	 * @return array{referentienummer: string, xml: string} The generated correlation reference and
@@ -103,20 +103,20 @@ class OutboundKennisgevingTranslator {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
 	 */
 	public function translate(
-		array $zaak,
-		string $verwerkingssoort,
-		string $zenderOrganisatie,
-		string $ontvangerOrganisatie,
+		array $case,
+		string $processingKind,
+		string $zenderOrganisation,
+		string $ontvangerOrganisation,
 	): array {
-		if (in_array($verwerkingssoort, self::VERWERKINGSSOORTEN, true) === false) {
+		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
 			throw new StufZknTranslationException(
-				message: 'Unsupported outbound verwerkingssoort "' . $verwerkingssoort . '" (expected T, W, or V).'
+				message: 'Unsupported outbound verwerkingssoort "' . $processingKind . '" (expected T, W, or V).'
 			);
 		}
 
-		$this->assertRequiredFieldsPresent(zaak: $zaak);
+		$this->assertRequiredFieldsPresent(case: $case);
 
-		$referentienummer = 'ZKN-' . bin2hex(random_bytes(8));
+		$referenceNumber = 'ZKN-' . bin2hex(random_bytes(8));
 
 		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$envelope = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Envelope');
@@ -134,21 +134,21 @@ class OutboundKennisgevingTranslator {
 		$this->appendStuurgegevens(
 			document: $document,
 			parent: $zakLk01,
-			referentienummer: $referentienummer,
-			zenderOrganisatie: $zenderOrganisatie,
-			ontvangerOrganisatie: $ontvangerOrganisatie
+			referenceNumber: $referenceNumber,
+			zenderOrganisation: $zenderOrganisation,
+			ontvangerOrganisation: $ontvangerOrganisation
 		);
 
 		$parameters = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
 		$zakLk01->appendChild($parameters);
-		$this->appendStufText(document: $document, parent: $parameters, name: 'mutatiesoort', value: $verwerkingssoort);
+		$this->appendStufText(document: $document, parent: $parameters, name: 'mutatiesoort', value: $processingKind);
 		$this->appendStufText(document: $document, parent: $parameters, name: 'indicatorOvername', value: 'V');
 
 		$object = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:object');
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'ZAK');
-		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', $verwerkingssoort);
+		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', $processingKind);
 		$zakLk01->appendChild($object);
-		$this->appendZaakObjectFields(document: $document, object: $object, zaak: $zaak);
+		$this->appendCaseObjectFields(document: $document, object: $object, case: $case);
 
 		$xml = (string)$document->saveXML();
 		if ($this->leakGuard->hasUnresolvedPlaceholder(xml: $xml) === true) {
@@ -157,14 +157,14 @@ class OutboundKennisgevingTranslator {
 			);
 		}
 
-		return ['referentienummer' => $referentienummer, 'xml' => $xml];
+		return ['referentienummer' => $referenceNumber, 'xml' => $xml];
 	}//end translate()
 
 	/**
 	 * Assert every required zaak field is present and non-empty — the literal-leak guard's first
 	 * line of defence.
 	 *
-	 * @param array $zaak The OR/ZGW zaak object fields.
+	 * @param array $case The OR/ZGW zaak object fields.
 	 *
 	 * @return void
 	 *
@@ -172,9 +172,9 @@ class OutboundKennisgevingTranslator {
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml-literal-leak-guard
 	 */
-	private function assertRequiredFieldsPresent(array $zaak): void {
+	private function assertRequiredFieldsPresent(array $case): void {
 		foreach (self::REQUIRED_FIELDS as $field) {
-			$value = ($zaak[$field] ?? null);
+			$value = ($case[$field] ?? null);
 			$isEmptyString = (is_string($value) === true && trim($value) === '');
 			if ($value === null || $isEmptyString === true) {
 				throw new StufZknTranslationException(
@@ -191,18 +191,18 @@ class OutboundKennisgevingTranslator {
 	 *
 	 * @param DOMDocument $document The owning document.
 	 * @param DOMElement $parent The `zakLk01` element to append into.
-	 * @param string $referentienummer The generated correlation reference.
-	 * @param string $zenderOrganisatie This bridge's own organisatie code.
-	 * @param string $ontvangerOrganisatie The subscribed consumer's organisatie code.
+	 * @param string $referenceNumber The generated correlation reference.
+	 * @param string $zenderOrganisation This bridge's own organisatie code.
+	 * @param string $ontvangerOrganisation The subscribed consumer's organisatie code.
 	 *
 	 * @return void
 	 */
 	private function appendStuurgegevens(
 		DOMDocument $document,
 		DOMElement $parent,
-		string $referentienummer,
-		string $zenderOrganisatie,
-		string $ontvangerOrganisatie,
+		string $referenceNumber,
+		string $zenderOrganisation,
+		string $ontvangerOrganisation,
 	): void {
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
@@ -211,17 +211,17 @@ class OutboundKennisgevingTranslator {
 
 		$zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
 		$stuurgegevens->appendChild($zender);
-		$this->appendStufText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisatie);
+		$this->appendStufText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisation);
 
 		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
 		$stuurgegevens->appendChild($ontvanger);
-		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisatie);
+		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisation);
 
 		$this->appendStufText(
 			document: $document,
 			parent: $stuurgegevens,
 			name: 'referentienummer',
-			value: $referentienummer
+			value: $referenceNumber
 		);
 		$this->appendStufText(
 			document: $document,
@@ -238,31 +238,31 @@ class OutboundKennisgevingTranslator {
 	 *
 	 * @param DOMDocument $document The owning document.
 	 * @param DOMElement $object The `object` element to append into.
-	 * @param array $zaak The OR/ZGW zaak object fields (already validated present).
+	 * @param array $case The OR/ZGW zaak object fields (already validated present).
 	 *
 	 * @return void
 	 */
-	private function appendZaakObjectFields(DOMDocument $document, DOMElement $object, array $zaak): void {
-		$this->appendZknText(document: $document, parent: $object, name: 'identificatie', value: (string)$zaak['identificatie']);
-		$this->appendZknText(document: $document, parent: $object, name: 'omschrijving', value: (string)$zaak['omschrijving']);
+	private function appendCaseObjectFields(DOMDocument $document, DOMElement $object, array $case): void {
+		$this->appendZknText(document: $document, parent: $object, name: 'identificatie', value: (string)$case['identificatie']);
+		$this->appendZknText(document: $document, parent: $object, name: 'omschrijving', value: (string)$case['omschrijving']);
 
-		if (empty($zaak['toelichting']) === true) {
+		if (empty($case['toelichting']) === true) {
 			$this->appendNilField(document: $document, parent: $object, name: 'toelichting');
 		}
 
-		if (empty($zaak['toelichting']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'toelichting', value: (string)$zaak['toelichting']);
+		if (empty($case['toelichting']) === false) {
+			$this->appendZknText(document: $document, parent: $object, name: 'toelichting', value: (string)$case['toelichting']);
 		}
 
-		$zaaktype = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:zaaktype');
-		$object->appendChild($zaaktype);
-		$this->appendZknText(document: $document, parent: $zaaktype, name: 'code', value: (string)$zaak['zaaktypeCode']);
-		if (empty($zaak['zaaktypeOmschrijving']) === false) {
+		$caseType = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:zaaktype');
+		$object->appendChild($caseType);
+		$this->appendZknText(document: $document, parent: $caseType, name: 'code', value: (string)$case['zaaktypeCode']);
+		if (empty($case['zaaktypeOmschrijving']) === false) {
 			$this->appendZknText(
 				document: $document,
-				parent: $zaaktype,
+				parent: $caseType,
 				name: 'omschrijving',
-				value: (string)$zaak['zaaktypeOmschrijving']
+				value: (string)$case['zaaktypeOmschrijving']
 			);
 		}
 
@@ -270,16 +270,16 @@ class OutboundKennisgevingTranslator {
 			document: $document,
 			parent: $object,
 			name: 'registratiedatum',
-			value: (string)$zaak['registratiedatum']
+			value: (string)$case['registratiedatum']
 		);
-		$this->appendZknText(document: $document, parent: $object, name: 'startdatum', value: (string)$zaak['startdatum']);
+		$this->appendZknText(document: $document, parent: $object, name: 'startdatum', value: (string)$case['startdatum']);
 
-		if (empty($zaak['einddatum']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'einddatum', value: (string)$zaak['einddatum']);
+		if (empty($case['einddatum']) === false) {
+			$this->appendZknText(document: $document, parent: $object, name: 'einddatum', value: (string)$case['einddatum']);
 		}
 
-		if (empty($zaak['status']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'status', value: (string)$zaak['status']);
+		if (empty($case['status']) === false) {
+			$this->appendZknText(document: $document, parent: $object, name: 'status', value: (string)$case['status']);
 		}
 
 	}//end appendZaakObjectFields()

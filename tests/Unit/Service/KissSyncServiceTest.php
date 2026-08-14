@@ -458,7 +458,7 @@ class KissSyncServiceTest extends TestCase {
 					[
 						'uuid' => 'kc-a',
 						'registratiedatum' => '2026-07-01T10:00:00+00:00',
-						'betrokkenen' => [
+						'involvedParties' => [
 							[
 								'rol' => 'klant',
 								'partijIdentificator' => ['codeSoortObjectId' => 'bsn', 'objectId' => '123456789'],
@@ -473,7 +473,7 @@ class KissSyncServiceTest extends TestCase {
 		$this->service->pullSource(source: $source);
 
 		$saved = $this->saved[KissSyncService::SCHEMA_KLANTCONTACT][0]['object'];
-		$storedValue = $saved['betrokkenen'][0]['partijIdentificator']['objectId'];
+		$storedValue = $saved['involvedParties'][0]['partijIdentificator']['objectId'];
 		$this->assertNotSame('123456789', $storedValue);
 		$this->assertSame(hash('sha256', '123456789'), $storedValue);
 
@@ -487,7 +487,7 @@ class KissSyncServiceTest extends TestCase {
 	public function testPushWithoutActiveSourceThrows(): void {
 		$this->expectException(KissProviderException::class);
 
-		$this->service->pushKlantcontact(input: ['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->service->pushKlantcontact(input: ['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
 	}//end testPushWithoutActiveSourceThrows()
 
@@ -511,7 +511,7 @@ class KissSyncServiceTest extends TestCase {
 		$result = $this->service->pushKlantcontact(
 			input: [
 				'onderwerp' => 'Melding',
-				'kanaal' => 'telefoon',
+				'channel' => 'telefoon',
 				'caseReference' => 'case-uuid-1',
 				'sourceApp' => 'procest',
 			]
@@ -539,7 +539,7 @@ class KissSyncServiceTest extends TestCase {
 		$this->restProvider->method('createKlantcontact')->willReturn('kiss-id-2');
 		$this->restProvider->expects($this->never())->method('linkOnderwerpobject');
 
-		$result = $this->service->pushKlantcontact(input: ['onderwerp' => 'Melding', 'kanaal' => 'e-mail']);
+		$result = $this->service->pushKlantcontact(input: ['onderwerp' => 'Melding', 'channel' => 'e-mail']);
 
 		$this->assertSame('kiss-id-2', $result['id']);
 		$saved = $this->saved[KissSyncService::SCHEMA_KLANTCONTACT][0]['object'];

@@ -100,18 +100,18 @@ class KissController extends Controller {
 
 		$params = $this->request->getParams();
 		$onderwerp = (string)($params['onderwerp'] ?? '');
-		$kanaal = (string)($params['kanaal'] ?? '');
-		if ($onderwerp === '' || $kanaal === '') {
+		$channel = (string)($params['channel'] ?? '');
+		if ($onderwerp === '' || $channel === '') {
 			return new JSONResponse(
 				[
 					'error' => 'missing_fields',
-					'message' => $this->l->t('The "onderwerp" and "kanaal" fields are required'),
+					'message' => $this->l->t('The "onderwerp" and "channel" fields are required'),
 				],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$input = $this->buildPushInput(onderwerp: $onderwerp, kanaal: $kanaal, params: $params);
+		$input = $this->buildPushInput(onderwerp: $onderwerp, channel: $channel, params: $params);
 
 		try {
 			$result = $this->syncService->pushKlantcontact(input: $input);
@@ -137,26 +137,26 @@ class KissController extends Controller {
 	 * request params.
 	 *
 	 * @param string $onderwerp The already-validated, non-empty subject.
-	 * @param string $kanaal The already-validated, non-empty channel.
+	 * @param string $channel The already-validated, non-empty channel.
 	 * @param array $params The full request params.
 	 *
 	 * @return array The assembled push input.
 	 */
-	private function buildPushInput(string $onderwerp, string $kanaal, array $params): array {
+	private function buildPushInput(string $onderwerp, string $channel, array $params): array {
 		$input = [
 			'onderwerp' => $onderwerp,
-			'kanaal' => $kanaal,
+			'channel' => $channel,
 		];
 
-		$stringFields = ['tekst', 'plaatsgevondenOp', 'taal', 'caseReference', 'caseObjectType', 'sourceApp'];
+		$stringFields = ['tekst', 'occurredOn', 'language', 'caseReference', 'caseObjectType', 'sourceApp'];
 		foreach ($stringFields as $stringField) {
 			if (isset($params[$stringField]) === true) {
 				$input[$stringField] = (string)$params[$stringField];
 			}
 		}
 
-		if (isset($params['indicatieContactGelukt']) === true) {
-			$input['indicatieContactGelukt'] = (bool)$params['indicatieContactGelukt'];
+		if (isset($params['indicationContactGelukt']) === true) {
+			$input['indicationContactGelukt'] = (bool)$params['indicationContactGelukt'];
 		}
 
 		if (isset($params['betrokkene']) === true && is_array($params['betrokkene']) === true) {

@@ -61,7 +61,7 @@ interface StufZknProviderInterface {
 	 * Dispatch one already-translated `zakLk01` kennisgeving envelope.
 	 *
 	 * @param array $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-	 * @param string $referentienummer The kennisgeving's `stuurgegevens.referentienummer`.
+	 * @param string $referenceNumber The kennisgeving's `stuurgegevens.referentienummer`.
 	 * @param string $envelopeXml The fully rendered envelope XML — the transport MUST send
 	 *                            this verbatim as the request body, never re-serialize it.
 	 *
@@ -71,5 +71,5 @@ interface StufZknProviderInterface {
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
 	 */
-	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string;
+	public function send(array $sourceConfiguration, string $referenceNumber, string $envelopeXml): string;
 }//end interface

@@ -48,7 +48,7 @@ class DsoIngestServiceTest extends TestCase {
 	 *
 	 * @var array<string, ObjectEntity>
 	 */
-	private array $verzoekStore = [];
+	private array $requestStore = [];
 
 	/**
 	 * In-memory `dso_message` store (append-only, indexed).
@@ -100,7 +100,7 @@ class DsoIngestServiceTest extends TestCase {
 
 				$resolvedUuid = ($uuid ?? 'verzoek-' . (++$this->uuidCounter));
 				$entity = $this->buildEntity((array)$object, $resolvedUuid);
-				$this->verzoekStore[$resolvedUuid] = $entity;
+				$this->requestStore[$resolvedUuid] = $entity;
 
 				return $entity;
 			}
@@ -109,7 +109,7 @@ class DsoIngestServiceTest extends TestCase {
 		$mock->method('find')->willReturnCallback(
 			function ($id, ?string $register = null, ?string $schema = null) {
 				if ($schema === DsoIngestService::SCHEMA_VERZOEK) {
-					return ($this->verzoekStore[(string)$id] ?? null);
+					return ($this->requestStore[(string)$id] ?? null);
 				}
 
 				// RawSourceResolver re-reads the located source by uuid with
@@ -140,7 +140,7 @@ class DsoIngestServiceTest extends TestCase {
 
 				if ($schema === DsoIngestService::SCHEMA_VERZOEK) {
 					$status = ($config['filters']['status'] ?? null);
-					$results = array_values($this->verzoekStore);
+					$results = array_values($this->requestStore);
 					if ($status !== null) {
 						$results = array_values(
 							array_filter(
@@ -197,16 +197,16 @@ class DsoIngestServiceTest extends TestCase {
 	public function testIngestReachesMappedForValidVerzoek(): void {
 		$service = $this->buildService();
 
-		$verzoek = $service->ingest(
-			parsedVerzoek: [
+		$request = $service->ingest(
+			parsedRequest: [
 				'verzoekId' => 'dso-1',
 				'type' => 'aanvraag',
 				'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
 			]
 		);
 
-		$this->assertSame('mapped', $verzoek->getObject()['status']);
-		$this->assertSame('Bouwen van een woning', $verzoek->getObject()['mappedTitle']);
+		$this->assertSame('mapped', $request->getObject()['status']);
+		$this->assertSame('Bouwen van een woning', $request->getObject()['mappedTitle']);
 
 	}//end testIngestReachesMappedForValidVerzoek()
 
@@ -216,10 +216,10 @@ class DsoIngestServiceTest extends TestCase {
 	public function testIngestFailsClosedForMissingVerzoekId(): void {
 		$service = $this->buildService();
 
-		$verzoek = $service->ingest(parsedVerzoek: ['type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['type' => 'aanvraag']);
 
-		$this->assertSame('failed', $verzoek->getObject()['status']);
-		$this->assertStringContainsString('verzoekId', (string)$verzoek->getObject()['errorDetail']);
+		$this->assertSame('failed', $request->getObject()['status']);
+		$this->assertStringContainsString('verzoekId', (string)$request->getObject()['errorDetail']);
 
 	}//end testIngestFailsClosedForMissingVerzoekId()
 
@@ -232,8 +232,8 @@ class DsoIngestServiceTest extends TestCase {
 	public function testTranslationFailureIsolatesToOneVerzoek(): void {
 		$service = $this->buildService();
 
-		$first = $service->ingest(parsedVerzoek: ['type' => 'aanvraag']);
-		$second = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-2', 'type' => 'melding']);
+		$first = $service->ingest(parsedRequest: ['type' => 'aanvraag']);
+		$second = $service->ingest(parsedRequest: ['verzoekId' => 'dso-2', 'type' => 'melding']);
 
 		$this->assertSame('failed', $first->getObject()['status']);
 		$this->assertSame('mapped', $second->getObject()['status']);
@@ -247,8 +247,8 @@ class DsoIngestServiceTest extends TestCase {
 	public function testListVerzoekenFiltersByStatus(): void {
 		$service = $this->buildService();
 
-		$service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
-		$service->ingest(parsedVerzoek: ['type' => 'aanvraag']);
+		$service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$service->ingest(parsedRequest: ['type' => 'aanvraag']);
 
 		$mapped = $service->listVerzoeken(status: 'mapped');
 		$failed = $service->listVerzoeken(status: 'failed');
@@ -263,8 +263,8 @@ class DsoIngestServiceTest extends TestCase {
 	 */
 	public function testHandoffSucceedsAndUpdatesVerzoek(): void {
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
-		$this->assertSame('mapped', $verzoek->getObject()['status']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$this->assertSame('mapped', $request->getObject()['status']);
 
 		$this->handoffService->method('execute')->willReturn(
 			[
@@ -274,10 +274,10 @@ class DsoIngestServiceTest extends TestCase {
 			]
 		);
 
-		$result = $service->handoff(uuid: $verzoek->getUuid());
+		$result = $service->handoff(uuid: $request->getUuid());
 
 		$this->assertSame('executed', $result['status']);
-		$stored = $this->verzoekStore[$verzoek->getUuid()]->getObject();
+		$stored = $this->requestStore[$request->getUuid()]->getObject();
 		$this->assertSame('corr-1', $stored['correlationId']);
 		$this->assertSame('case-uuid-1', $stored['targetCase']['uuid']);
 
@@ -288,7 +288,7 @@ class DsoIngestServiceTest extends TestCase {
 	 */
 	public function testHandoffRejectsWhenVerzoekNotYetMapped(): void {
 		$service = $this->buildService();
-		$this->verzoekStore['v-received'] = $this->buildEntity(['status' => 'received'], 'v-received');
+		$this->requestStore['v-received'] = $this->buildEntity(['status' => 'received'], 'v-received');
 
 		$this->expectException(DsoTranslationException::class);
 
@@ -301,7 +301,7 @@ class DsoIngestServiceTest extends TestCase {
 	 */
 	public function testHandoffFailureMarksVerzoekFailedAndRethrows(): void {
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
 		$this->handoffService->method('execute')->willThrowException(
 			new HandoffException(errorCode: HandoffException::PROVIDER_UNAVAILABLE, message: 'no provider')
@@ -310,9 +310,9 @@ class DsoIngestServiceTest extends TestCase {
 		$this->expectException(HandoffException::class);
 
 		try {
-			$service->handoff(uuid: $verzoek->getUuid());
+			$service->handoff(uuid: $request->getUuid());
 		} finally {
-			$this->assertSame('failed', $this->verzoekStore[$verzoek->getUuid()]->getObject()['status']);
+			$this->assertSame('failed', $this->requestStore[$request->getUuid()]->getObject()['status']);
 		}
 
 	}//end testHandoffFailureMarksVerzoekFailedAndRethrows()
@@ -322,12 +322,12 @@ class DsoIngestServiceTest extends TestCase {
 	 */
 	public function testPostOutboundThrowsWhenNotConfigured(): void {
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
 		$this->expectException(DsoProviderException::class);
 		$this->expectExceptionMessageMatches('/No active DSO source/');
 
-		$service->postOutbound(verzoekUuid: $verzoek->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
+		$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
 
 	}//end testPostOutboundThrowsWhenNotConfigured()
 
@@ -337,15 +337,15 @@ class DsoIngestServiceTest extends TestCase {
 	public function testPostOutboundDispatchesViaLogProviderByDefault(): void {
 		$this->addSourceFixture(configuration: []);
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
-		$result = $service->postOutbound(verzoekUuid: $verzoek->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
+		$result = $service->postOutbound(verzoekUuid: $request->getUuid(), type: 'status', fields: ['status' => 'in_behandeling']);
 
 		$this->assertSame('sent', $result['status']);
 		$this->assertStringStartsWith('MOCK-DSO-', $result['ref']);
 		$this->assertCount(1, $this->messageStore);
 		$this->assertSame('status', $this->messageStore[0]->getObject()['type']);
-		$this->assertSame($verzoek->getUuid(), $this->messageStore[0]->getObject()['verzoekUuid']);
+		$this->assertSame($request->getUuid(), $this->messageStore[0]->getObject()['verzoekUuid']);
 
 	}//end testPostOutboundDispatchesViaLogProviderByDefault()
 
@@ -355,14 +355,14 @@ class DsoIngestServiceTest extends TestCase {
 	public function testPostOutboundPersistsFailedMessageAndRethrowsOnProviderFailure(): void {
 		$this->addSourceFixture(configuration: ['provider' => 'rest']);
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
 		$this->restProvider->method('send')->willThrowException(new DsoProviderException(message: 'transport down'));
 
 		$this->expectException(DsoProviderException::class);
 
 		try {
-			$service->postOutbound(verzoekUuid: $verzoek->getUuid(), type: 'besluit', fields: ['besluit' => 'verleend']);
+			$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'besluit', fields: ['besluit' => 'verleend']);
 		} finally {
 			$this->assertCount(1, $this->messageStore);
 			$this->assertSame('failed', $this->messageStore[0]->getObject()['status']);
@@ -379,11 +379,11 @@ class DsoIngestServiceTest extends TestCase {
 	 */
 	public function testPostOutboundRejectsUnknownType(): void {
 		$service = $this->buildService();
-		$verzoek = $service->ingest(parsedVerzoek: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
+		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
 
 		$this->expectException(DsoTranslationException::class);
 
-		$service->postOutbound(verzoekUuid: $verzoek->getUuid(), type: 'onbekend', fields: []);
+		$service->postOutbound(verzoekUuid: $request->getUuid(), type: 'onbekend', fields: []);
 
 	}//end testPostOutboundRejectsUnknownType()
 }//end class

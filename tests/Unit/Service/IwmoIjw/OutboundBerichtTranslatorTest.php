@@ -218,10 +218,10 @@ class OutboundBerichtTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testOptionalFieldIncludedWhenPresent(): void {
-		$withEinddatum = $this->toewijzing;
-		$withEinddatum['einddatum'] = '2027-08-01';
+		$withEndDate = $this->toewijzing;
+		$withEndDate['einddatum'] = '2027-08-01';
 
-		$result = $this->translator->translate($withEinddatum, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
+		$result = $this->translator->translate($withEndDate, OutboundBerichtTranslator::KIND_TOEWIJZING, 'wmo');
 		$this->assertStringContainsString('<einddatum>2027-08-01</einddatum>', $result['xml']);
 
 	}//end testOptionalFieldIncludedWhenPresent()

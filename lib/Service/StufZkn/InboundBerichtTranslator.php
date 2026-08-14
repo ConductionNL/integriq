@@ -122,37 +122,37 @@ class InboundBerichtTranslator {
 			throw new StufZknTranslationException(message: 'StUF-ZKN envelope is empty or not well-formed XML.');
 		}
 
-		[$berichtEl, $tag] = $this->locateBericht(root: $root);
+		[$messageEl, $tag] = $this->locateMessage(root: $root);
 		$meta = self::BERICHTTYPEN[$tag];
 
-		$stuurgegevens = $berichtEl->children(StufZknNamespaces::ZKN)->stuurgegevens;
+		$stuurgegevens = $messageEl->children(StufZknNamespaces::ZKN)->stuurgegevens;
 		$stuur = $stuurgegevens->children(StufZknNamespaces::STUF);
 
-		$referentienummer = trim((string)$stuur->referentienummer);
-		if ($referentienummer === '') {
+		$referenceNumber = trim((string)$stuur->referentienummer);
+		if ($referenceNumber === '') {
 			throw new StufZknTranslationException(
 				message: 'StUF-ZKN envelope is missing stuurgegevens.referentienummer — refusing to process an '
 					. 'unacknowledgeable, uncorrelatable message.'
 			);
 		}
 
-		$senderOrganisatie = trim((string)$stuur->zender->organisatie);
+		$senderOrganisation = trim((string)$stuur->zender->organisatie);
 
-		$object = $berichtEl->children(StufZknNamespaces::ZKN)->object;
+		$object = $messageEl->children(StufZknNamespaces::ZKN)->object;
 		if (count($object) === 0) {
 			throw new StufZknTranslationException(message: 'StUF-ZKN envelope is missing the `object` element.');
 		}
 
-		$verwerkingssoort = trim((string)$this->stufAttribute(element: $object, name: 'verwerkingssoort'));
-		if (in_array($verwerkingssoort, self::VERWERKINGSSOORTEN, true) === false) {
+		$processingKind = trim((string)$this->stufAttribute(element: $object, name: 'verwerkingssoort'));
+		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
 			throw new StufZknTranslationException(
-				message: 'StUF-ZKN object carries an unrecognised verwerkingssoort "' . $verwerkingssoort . '" '
+				message: 'StUF-ZKN object carries an unrecognised verwerkingssoort "' . $processingKind . '" '
 					. '(expected one of T/W/I/V).'
 			);
 		}
 
-		$identificatie = $this->readField(parent: $object, name: 'identificatie');
-		if ($identificatie === null || trim($identificatie) === '') {
+		$identification = $this->readField(parent: $object, name: 'identificatie');
+		if ($identification === null || trim($identification) === '') {
 			throw new StufZknTranslationException(
 				message: 'StUF-ZKN object is missing identificatie — refusing to upsert an unidentifiable '
 					. $meta['kind'] . '.'
@@ -160,16 +160,16 @@ class InboundBerichtTranslator {
 		}
 
 		$fields = match ($meta['kind']) {
-			'zaak' => $this->extractZaakFields(object: $object, identificatie: $identificatie),
-			default => $this->extractDocumentFields(object: $object, identificatie: $identificatie),
+			'zaak' => $this->extractCaseFields(object: $object, identification: $identification),
+			default => $this->extractDocumentFields(object: $object, identification: $identification),
 		};
 
 		return [
 			'kind' => $meta['kind'],
 			'berichttype' => $tag,
-			'referentienummer' => $referentienummer,
-			'senderOrganisatie' => $senderOrganisatie,
-			'verwerkingssoort' => $verwerkingssoort,
+			'referentienummer' => $referenceNumber,
+			'senderOrganisatie' => $senderOrganisation,
+			'verwerkingssoort' => $processingKind,
 			'entiteittype' => $meta['entiteittype'],
 			'fields' => $fields,
 		];
@@ -185,7 +185,7 @@ class InboundBerichtTranslator {
 	 *
 	 * @throws StufZknTranslationException When neither a `zakLk01` nor `edcLk01` element is present.
 	 */
-	private function locateBericht(SimpleXMLElement $root): array {
+	private function locateMessage(SimpleXMLElement $root): array {
 		$body = $root->children(StufZknNamespaces::SOAP)->Body;
 		if (count($body) === 0) {
 			// Tolerate a bare (non-SOAP-enveloped) bericht — some StUF
@@ -213,19 +213,19 @@ class InboundBerichtTranslator {
 	 * Extract normalised zaak fields from a `ZAK` object element.
 	 *
 	 * @param SimpleXMLElement $object The `object` element (`StUF:entiteittype="ZAK"`).
-	 * @param string $identificatie The already-validated, non-empty identificatie.
+	 * @param string $identification The already-validated, non-empty identificatie.
 	 *
 	 * @return array<string, mixed> The normalised zaak fields — see design.md's inbound field table.
 	 */
-	private function extractZaakFields(SimpleXMLElement $object, string $identificatie): array {
-		$zaaktype = $object->children(StufZknNamespaces::ZKN)->zaaktype;
+	private function extractCaseFields(SimpleXMLElement $object, string $identification): array {
+		$caseType = $object->children(StufZknNamespaces::ZKN)->zaaktype;
 
 		return [
-			'identificatie' => $identificatie,
+			'identificatie' => $identification,
 			'omschrijving' => ($this->readField(parent: $object, name: 'omschrijving') ?? ''),
 			'toelichting' => $this->readField(parent: $object, name: 'toelichting'),
-			'zaaktypeCode' => ($this->readField(parent: $zaaktype, name: 'code') ?? ''),
-			'zaaktypeOmschrijving' => $this->readField(parent: $zaaktype, name: 'omschrijving'),
+			'zaaktypeCode' => ($this->readField(parent: $caseType, name: 'code') ?? ''),
+			'zaaktypeOmschrijving' => $this->readField(parent: $caseType, name: 'omschrijving'),
 			'registratiedatum' => $this->readField(parent: $object, name: 'registratiedatum'),
 			'startdatum' => $this->readField(parent: $object, name: 'startdatum'),
 			'einddatumGepland' => $this->readField(parent: $object, name: 'einddatumGepland'),
@@ -240,19 +240,19 @@ class InboundBerichtTranslator {
 	 * Extract normalised document fields from an `EDC` object element.
 	 *
 	 * @param SimpleXMLElement $object The `object` element (`StUF:entiteittype="EDC"`).
-	 * @param string $identificatie The already-validated, non-empty identificatie.
+	 * @param string $identification The already-validated, non-empty identificatie.
 	 *
 	 * @return array<string, mixed> The normalised document fields — see design.md's inbound field table.
 	 */
-	private function extractDocumentFields(SimpleXMLElement $object, string $identificatie): array {
-		$isRelevantVoor = $object->children(StufZknNamespaces::ZKN)->isRelevantVoor;
-		$gerelateerde = $isRelevantVoor->children(StufZknNamespaces::ZKN)->gerelateerde;
+	private function extractDocumentFields(SimpleXMLElement $object, string $identification): array {
+		$isRelevantFor = $object->children(StufZknNamespaces::ZKN)->isRelevantVoor;
+		$gerelateerde = $isRelevantFor->children(StufZknNamespaces::ZKN)->gerelateerde;
 
 		return [
-			'identificatie' => $identificatie,
+			'identificatie' => $identification,
 			'titel' => ($this->readField(parent: $object, name: 'titel') ?? ''),
 			'formaat' => $this->readField(parent: $object, name: 'formaat'),
-			'taal' => $this->readField(parent: $object, name: 'taal'),
+			'language' => $this->readField(parent: $object, name: 'language'),
 			'creatiedatum' => $this->readField(parent: $object, name: 'creatiedatum'),
 			'ontvangstdatum' => $this->readField(parent: $object, name: 'ontvangstdatum'),
 			'vertrouwelijkAanduiding' => $this->readField(parent: $object, name: 'vertrouwelijkAanduiding'),

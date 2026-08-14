@@ -80,7 +80,7 @@ class LogKlantinteractiesProviderTest extends TestCase {
 	public function testLinkOnderwerpobjectReturnsSyntheticId(): void {
 		$id = $this->provider->linkOnderwerpobject(
 			sourceConfiguration: [],
-			klantcontactId: 'kc-1',
+			customerContactId: 'kc-1',
 			caseReference: 'zaak-1',
 			caseObjectType: 'zaak'
 		);

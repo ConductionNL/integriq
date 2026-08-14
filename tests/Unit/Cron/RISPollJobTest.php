@@ -115,7 +115,7 @@ class RISPollJobTest extends TestCase {
 			->method('getObject')
 			->willReturn(
 				[
-					'zaakId' => 'zaak-001',
+					'caseId' => 'zaak-001',
 					'risType' => 'ibabs',
 					'status' => 'synced',
 					'risMeetingId' => 'verg-001',

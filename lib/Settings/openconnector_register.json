@@ -1061,12 +1061,12 @@
                 "description": "Target Source UUID for kind=notificaties — the Notificaties API to POST /notificaties to",
                 "title": "Notificaties Source ID"
               },
-              "kanaal": {
+              "channel": {
                 "type": "string",
                 "description": "Required for kind=notificaties — the ZGW kanaal name published to. Absent/empty is a configuration error (REQ-006), not a transient failure.",
                 "title": "Notificaties Channel"
               },
-              "hoofdObjectField": {
+              "mainObjectField": {
                 "type": "string",
                 "description": "For kind=notificaties — dot-path into event.data used to derive the notification's hoofdObject. Absent falls back to event.subject.",
                 "title": "Main Object Field"
@@ -1076,12 +1076,12 @@
                 "description": "For kind=notificaties — dot-path into event.data used to derive the notification's resource. Absent falls back to the trailing dot-segment of event.type.",
                 "title": "Resource Field"
               },
-              "actieMap": {
+              "actionMap": {
                 "type": "object",
                 "description": "For kind=notificaties — overrides the default {created:'create', updated:'update', deleted:'destroy'} event.type-suffix-to-actie mapping",
                 "title": "Action Map"
               },
-              "kenmerken": {
+              "characteristics": {
                 "type": "object",
                 "description": "For kind=notificaties — static kenmerken shallow-merged with event.data.kenmerken (event-supplied values win on key collision)",
                 "title": "Characteristics"
@@ -2686,14 +2686,14 @@
         "summary": "Audit record for iBabs/NotuBiz synchronisation operations",
         "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-033.",
         "required": [
-          "zaakId",
+          "caseId",
           "risType",
           "direction",
           "status"
         ],
         "type": "object",
         "properties": {
-          "zaakId": {
+          "caseId": {
             "type": "string",
             "format": "uuid",
             "description": "Source zaak UUID in Procest",
@@ -2812,7 +2812,7 @@
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-1"
             },
-            "zaakId": "a1b2c3d4-0001-4001-8001-aabbccdd0001",
+            "caseId": "a1b2c3d4-0001-4001-8001-aabbccdd0001",
             "risType": "ibabs",
             "direction": "outbound",
             "status": "synced",
@@ -2828,7 +2828,7 @@
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-2"
             },
-            "zaakId": "a1b2c3d4-0002-4002-8002-aabbccdd0002",
+            "caseId": "a1b2c3d4-0002-4002-8002-aabbccdd0002",
             "risType": "ibabs",
             "direction": "inbound",
             "status": "synced",
@@ -2844,7 +2844,7 @@
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-3"
             },
-            "zaakId": "a1b2c3d4-0003-4003-8003-aabbccdd0003",
+            "caseId": "a1b2c3d4-0003-4003-8003-aabbccdd0003",
             "risType": "notubiz",
             "direction": "outbound",
             "status": "pending",
@@ -2856,7 +2856,7 @@
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-4"
             },
-            "zaakId": "a1b2c3d4-0004-4004-8004-aabbccdd0004",
+            "caseId": "a1b2c3d4-0004-4004-8004-aabbccdd0004",
             "risType": "notubiz",
             "direction": "outbound",
             "status": "failed",
@@ -2869,7 +2869,7 @@
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-5"
             },
-            "zaakId": "a1b2c3d4-0005-4005-8005-aabbccdd0005",
+            "caseId": "a1b2c3d4-0005-4005-8005-aabbccdd0005",
             "risType": "ibabs",
             "direction": "outbound",
             "status": "synced",
@@ -3655,12 +3655,12 @@
             "description": "The Verzoek type (aanvraag, melding, informatieverzoek, vooroverleg)",
             "title": "Type"
           },
-          "indieningsdatum": {
+          "submissionDate": {
             "type": "string",
             "description": "ISO 8601 submission date as reported by DSO-LV",
             "title": "Submission Date"
           },
-          "rawVerzoek": {
+          "rawRequest": {
             "type": "object",
             "description": "The full parsed Verzoek (DSOParserService::parseVerzoek() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
             "title": "Raw Request"
@@ -4210,12 +4210,12 @@
             "description": "The KISS-assigned klantcontact id (uuid) — the idempotency key for pull upserts",
             "title": "KISS ID"
           },
-          "nummer": {
+          "number": {
             "type": "string",
             "description": "KISS klantcontactnummer",
             "title": "Number"
           },
-          "kanaal": {
+          "channel": {
             "type": "string",
             "description": "Contact channel (e.g. telefoon, e-mail, balie)",
             "title": "Channel"
@@ -4230,18 +4230,18 @@
             "description": "Klantcontact content/body (VNG field name `tekst`)",
             "title": "Text"
           },
-          "indicatieContactGelukt": {
+          "indicationContactGelukt": {
             "type": "boolean",
             "description": "Whether the contact attempt succeeded",
             "default": true,
             "title": "Contact Succeeded"
           },
-          "taal": {
+          "language": {
             "type": "string",
             "description": "Contact language (ISO 639)",
             "title": "Language"
           },
-          "plaatsgevondenOp": {
+          "occurredOn": {
             "type": "string",
             "format": "date-time",
             "description": "When the contact took place",
@@ -4253,7 +4253,7 @@
             "description": "KISS registration timestamp — the pull cursor field",
             "title": "Registration Date"
           },
-          "betrokkenen": {
+          "involvedParties": {
             "type": "array",
             "description": "Expanded betrokkenen (parties involved). Any partijIdentificator with codeSoortObjectId=bsn is SHA-256-hashed before storage — never a raw BSN (consistent with this app's AvgBsnPolicyRule).",
             "items": {
@@ -4364,7 +4364,7 @@
             "description": "The stuurgegevens.referentienummer this OUTBOUND message carries — the correlation key a retour's kenmerk echoes back; null on inbound records",
             "title": "Reference"
           },
-          "kenmerk": {
+          "reference": {
             "type": "string",
             "description": "The stuurgegevens.kenmerk an INBOUND retour echoed back — resolved against a prior outbound record's ref; null on outbound records",
             "title": "Reference Code"

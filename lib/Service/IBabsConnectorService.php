@@ -150,8 +150,8 @@ class IBabsConnectorService {
 	public function testConnection(ObjectEntity $source): array {
 		$config = $this->extractConfig(source: $source);
 
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -159,7 +159,7 @@ class IBabsConnectorService {
 		}
 
 		try {
-			$endpoint = self::API_BASE . '/' . $organisatieId . '/vergaderingen';
+			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -202,7 +202,7 @@ class IBabsConnectorService {
 	 * a vergaderstuk linked to the specified vergadering.
 	 *
 	 * @param ObjectEntity $source The iBabs source configuration.
-	 * @param array $voorstel The voorstel data including document path and metadata.
+	 * @param array $proposal The voorstel data including document path and metadata.
 	 *                        Expected keys: onderwerp, portefeuillehouder, zaaktype,
 	 *                        geheimhouding (bool), bijlagen (array of {name, content}).
 	 *
@@ -210,10 +210,10 @@ class IBabsConnectorService {
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-2
 	 */
-	public function pushVoorstel(ObjectEntity $source, array $voorstel): array {
+	public function pushVoorstel(ObjectEntity $source, array $proposal): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -222,19 +222,19 @@ class IBabsConnectorService {
 		}
 
 		$metadata = [
-			'onderwerp' => $voorstel['onderwerp'] ?? '',
-			'portefeuillehouder' => $voorstel['portefeuillehouder'] ?? '',
-			'zaaktype' => $voorstel['zaaktype'] ?? '',
-			'vertrouwelijk' => (bool)($voorstel['geheimhouding'] ?? false),
+			'onderwerp' => $proposal['onderwerp'] ?? '',
+			'portefeuillehouder' => $proposal['portefeuillehouder'] ?? '',
+			'zaaktype' => $proposal['zaaktype'] ?? '',
+			'vertrouwelijk' => (bool)($proposal['geheimhouding'] ?? false),
 		];
 
 		$this->logger->info(
 			'iBabs: Pushing voorstel',
-			['onderwerp' => $metadata['onderwerp'], 'organisatieId' => $organisatieId]
+			['onderwerp' => $metadata['onderwerp'], 'organisatieId' => $organisationId]
 		);
 
 		try {
-			$endpoint = self::API_BASE . '/' . $organisatieId . '/documents';
+			$endpoint = self::API_BASE . '/' . $organisationId . '/documents';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -293,7 +293,7 @@ class IBabsConnectorService {
 	 *
 	 * @param ObjectEntity $source The iBabs source configuration.
 	 * @param string $vergaderstukId The iBabs document/vergaderstuk ID.
-	 * @param string|null $vergaderingId Specific vergadering to link to, or null for auto-select.
+	 * @param string|null $meetingId Specific vergadering to link to, or null for auto-select.
 	 *
 	 * @return array{success: bool, message: string, agendapuntId: string|null} Creation result.
 	 *
@@ -309,11 +309,11 @@ class IBabsConnectorService {
 	public function createAgendapunt(
 		ObjectEntity $source,
 		string $vergaderstukId,
-		?string $vergaderingId = null,
+		?string $meetingId = null,
 	): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -322,14 +322,14 @@ class IBabsConnectorService {
 		}
 
 		try {
-			if ($vergaderingId === null) {
-				$vergaderingId = $this->selectNextVergadering(
+			if ($meetingId === null) {
+				$meetingId = $this->selectNextMeeting(
 					source: $source,
-					organisatieId: $organisatieId
+					organisationId: $organisationId
 				);
 			}
 
-			if ($vergaderingId === null) {
+			if ($meetingId === null) {
 				$this->logger->warning('iBabs: no upcoming vergadering found for agendapunt');
 				return [
 					'success' => false,
@@ -339,10 +339,10 @@ class IBabsConnectorService {
 			}
 
 			$payload = [
-				'vergaderingId' => $vergaderingId,
+				'vergaderingId' => $meetingId,
 				'vergaderstukId' => $vergaderstukId,
 			];
-			$endpoint = self::API_BASE . '/' . $organisatieId . '/vergaderingen/' . $vergaderingId . '/agendapunten';
+			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/agendapunten';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -360,15 +360,15 @@ class IBabsConnectorService {
 			}
 
 			$body = $this->getResponseBody(callLog: $callLog);
-			$agendapuntId = null;
+			$agendaItemId = null;
 			if (is_array($body) === true) {
-				$agendapuntId = $body['id'] ?? $body['agendapuntId'] ?? null;
+				$agendaItemId = $body['id'] ?? $body['agendapuntId'] ?? null;
 			}
 
 			return [
 				'success' => true,
 				'message' => 'Agendapunt created',
-				'agendapuntId' => $agendapuntId,
+				'agendapuntId' => $agendaItemId,
 			];
 		} catch (\Exception $e) {
 			$this->logger->error('iBabs: agendapunt creation exception', ['exception' => $e->getMessage()]);
@@ -385,12 +385,12 @@ class IBabsConnectorService {
 	 * Select the next upcoming vergadering from iBabs for auto-assignment.
 	 *
 	 * @param ObjectEntity $source The iBabs source.
-	 * @param string $organisatieId The organisation ID.
+	 * @param string $organisationId The organisation ID.
 	 *
 	 * @return string|null The ID of the next vergadering, or null if none found.
 	 */
-	private function selectNextVergadering(ObjectEntity $source, string $organisatieId): ?string {
-		$endpoint = self::API_BASE . '/' . $organisatieId . '/vergaderingen';
+	private function selectNextMeeting(ObjectEntity $source, string $organisationId): ?string {
+		$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen';
 		$callLog = $this->callService->call(
 			source: $source,
 			endpoint: $endpoint,
@@ -416,13 +416,13 @@ class IBabsConnectorService {
 		$upcoming = array_filter(
 			$vergaderingen,
 			static function (array $v) use ($now): bool {
-				$datum = $v['datum'] ?? $v['date'] ?? null;
-				if ($datum === null) {
+				$date = $v['datum'] ?? $v['date'] ?? null;
+				if ($date === null) {
 					return false;
 				}
 
 				try {
-					return new DateTime($datum) > $now;
+					return new DateTime($date) > $now;
 				} catch (\Exception) {
 					return false;
 				}
@@ -446,30 +446,30 @@ class IBabsConnectorService {
 	 * @param ObjectEntity $source The iBabs source configuration.
 	 * @param array $syncedItems List of sync records with iBabs agendapunt IDs to check.
 	 *
-	 * @return array<int, array{zaakId: string, ibabsStatus: string, zaakStatus: string, besluitdatum: string|null}> Besluit records.
+	 * @return array<int, array{caseId: string, ibabsStatus: string, zaakStatus: string, besluitdatum: string|null}> Besluit records.
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
 	 */
 	public function pollBesluiten(ObjectEntity $source, array $syncedItems = []): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			$this->logger->warning('iBabs: pollBesluiten called without organisatieId');
 			return [];
 		}
 
-		$besluiten = [];
+		$decisions = [];
 
 		foreach ($syncedItems as $syncRecord) {
-			$vergaderingId = $syncRecord['risMeetingId'] ?? null;
-			$zaakId = $syncRecord['zaakId'] ?? null;
+			$meetingId = $syncRecord['risMeetingId'] ?? null;
+			$caseId = $syncRecord['caseId'] ?? null;
 
-			if ($vergaderingId === null || $zaakId === null) {
+			if ($meetingId === null || $caseId === null) {
 				continue;
 			}
 
 			try {
-				$endpoint = self::API_BASE . '/' . $organisatieId . '/vergaderingen/' . $vergaderingId . '/besluiten';
+				$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/besluiten';
 				$callLog = $this->callService->call(
 					source: $source,
 					endpoint: $endpoint,
@@ -480,7 +480,7 @@ class IBabsConnectorService {
 				if ($statusCode !== 200) {
 					$this->logger->info(
 						'iBabs: no besluit yet for vergadering',
-						['vergaderingId' => $vergaderingId, 'status' => $statusCode]
+						['vergaderingId' => $meetingId, 'status' => $statusCode]
 					);
 					continue;
 				}
@@ -490,32 +490,32 @@ class IBabsConnectorService {
 					continue;
 				}
 
-				$besluiten[] = $this->parseBesluitResponse(
+				$decisions[] = $this->parseDecisionResponse(
 					body: $body,
-					zaakId: $zaakId,
-					vergaderingId: $vergaderingId
+					caseId: $caseId,
+					meetingId: $meetingId
 				);
 			} catch (\Exception $e) {
 				$this->logger->error(
 					'iBabs: besluit polling failed',
-					['vergaderingId' => $vergaderingId, 'exception' => $e->getMessage()]
+					['vergaderingId' => $meetingId, 'exception' => $e->getMessage()]
 				);
 			}//end try
 		}//end foreach
 
-		return array_filter($besluiten);
+		return array_filter($decisions);
 	}//end pollBesluiten()
 
 	/**
 	 * Parse an iBabs besluit response body into a normalised record.
 	 *
 	 * @param array $body The decoded response body.
-	 * @param string $zaakId The source zaak UUID.
-	 * @param string $vergaderingId The iBabs vergadering ID.
+	 * @param string $caseId The source zaak UUID.
+	 * @param string $meetingId The iBabs vergadering ID.
 	 *
 	 * @return array<string,mixed>|null Normalised besluit record, or null if status unknown.
 	 */
-	private function parseBesluitResponse(array $body, string $zaakId, string $vergaderingId): ?array {
+	private function parseDecisionResponse(array $body, string $caseId, string $meetingId): ?array {
 		$ibabsStatus = strtolower($body['besluitStatus'] ?? $body['status'] ?? '');
 		$besluitdatum = $body['besluitDatum'] ?? $body['datum'] ?? null;
 
@@ -524,8 +524,8 @@ class IBabsConnectorService {
 		}
 
 		return [
-			'zaakId' => $zaakId,
-			'vergaderingId' => $vergaderingId,
+			'caseId' => $caseId,
+			'vergaderingId' => $meetingId,
 			'ibabsStatus' => $ibabsStatus,
 			'zaakStatus' => $this->mapBesluitStatus(ibabsStatus: $ibabsStatus),
 			'besluitdatum' => $besluitdatum,
@@ -540,8 +540,8 @@ class IBabsConnectorService {
 	 * in Nextcloud Files under /RIS-besluiten/{year}/{datum}/.
 	 *
 	 * @param ObjectEntity $source The iBabs source configuration.
-	 * @param string $vergaderingId The iBabs vergadering ID.
-	 * @param string $vergaderingDatum The vergadering date (YYYY-MM-DD).
+	 * @param string $meetingId The iBabs vergadering ID.
+	 * @param string $meetingDate The vergadering date (YYYY-MM-DD).
 	 * @param string $userId Nextcloud user ID under whose account to store.
 	 *
 	 * @return array{success: bool, message: string, filePath: string|null} Result with file path.
@@ -550,13 +550,13 @@ class IBabsConnectorService {
 	 */
 	public function retrieveBesluitenlijst(
 		ObjectEntity $source,
-		string $vergaderingId,
-		string $vergaderingDatum,
+		string $meetingId,
+		string $meetingDate,
 		string $userId,
 	): array {
 		$config = $this->extractConfig(source: $source);
-		$organisatieId = $config['organisatieId'] ?? null;
-		if ($organisatieId === null) {
+		$organisationId = $config['organisatieId'] ?? null;
+		if ($organisationId === null) {
 			return [
 				'success' => false,
 				'message' => 'Organisation ID not configured',
@@ -565,7 +565,7 @@ class IBabsConnectorService {
 		}
 
 		try {
-			$endpoint = self::API_BASE . '/' . $organisatieId . '/vergaderingen/' . $vergaderingId . '/besluitenlijst';
+			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/besluitenlijst';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -606,7 +606,7 @@ class IBabsConnectorService {
 
 			$filePath = $this->storeBesluitenlijst(
 				userId: $userId,
-				datum: $vergaderingDatum,
+				date: $meetingDate,
 				content: $content
 			);
 
@@ -618,7 +618,7 @@ class IBabsConnectorService {
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'iBabs: besluitenlijst retrieval failed',
-				['vergaderingId' => $vergaderingId, 'exception' => $e->getMessage()]
+				['vergaderingId' => $meetingId, 'exception' => $e->getMessage()]
 			);
 			return [
 				'success' => false,
@@ -633,14 +633,14 @@ class IBabsConnectorService {
 	 * Store besluitenlijst content in Nextcloud Files.
 	 *
 	 * @param string $userId Nextcloud user ID.
-	 * @param string $datum Vergadering date (YYYY-MM-DD).
+	 * @param string $date Vergadering date (YYYY-MM-DD).
 	 * @param string $content File content (PDF binary or JSON).
 	 *
 	 * @return string The stored file path within the user's file system.
 	 */
-	private function storeBesluitenlijst(string $userId, string $datum, string $content): string {
-		$year = substr($datum, 0, 4);
-		$folder = '/RIS-besluiten/' . $year . '/' . $datum;
+	private function storeBesluitenlijst(string $userId, string $date, string $content): string {
+		$year = substr($date, 0, 4);
+		$folder = '/RIS-besluiten/' . $year . '/' . $date;
 		$fileName = 'besluitenlijst.pdf';
 		$filePath = $folder . '/' . $fileName;
 

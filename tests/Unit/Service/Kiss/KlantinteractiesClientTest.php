@@ -234,7 +234,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$id = $client->createKlantcontact(
 			sourceConfiguration: $this->configuration,
-			payload: ['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']
+			payload: ['onderwerp' => 'Vraag', 'channel' => 'telefoon']
 		);
 
 		$this->assertSame('kc-1', $id);
@@ -266,9 +266,9 @@ class KlantinteractiesClientTest extends TestCase {
 		);
 
 		$this->assertCount(2, $this->history);
-		$betrokkeneRequest = $this->history[1]['request'];
-		$this->assertSame('/api/v1/betrokkenen', $betrokkeneRequest->getUri()->getPath());
-		$body = json_decode((string)$betrokkeneRequest->getBody(), true);
+		$involvedPartyRequest = $this->history[1]['request'];
+		$this->assertSame('/api/v1/betrokkenen', $involvedPartyRequest->getUri()->getPath());
+		$body = json_decode((string)$involvedPartyRequest->getBody(), true);
 		$this->assertSame('klant', $body['rol']);
 		$this->assertSame('kc-1', $body['klantcontact']['uuid']);
 
@@ -306,7 +306,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$id = $client->linkOnderwerpobject(
 			sourceConfiguration: $this->configuration,
-			klantcontactId: 'kc-1',
+			customerContactId: 'kc-1',
 			caseReference: '11111111-2222-3333-4444-555555555555',
 			caseObjectType: 'zaak'
 		);
@@ -333,7 +333,7 @@ class KlantinteractiesClientTest extends TestCase {
 
 		$client->linkOnderwerpobject(
 			sourceConfiguration: $this->configuration,
-			klantcontactId: 'kc-1',
+			customerContactId: 'kc-1',
 			caseReference: 'ZAAK-2026-001234',
 			caseObjectType: 'zaak'
 		);
@@ -355,7 +355,7 @@ class KlantinteractiesClientTest extends TestCase {
 		$client = $this->buildClient([new Response(201, [], json_encode(['uuid' => 'obj-1']))]);
 		$client->linkOnderwerpobject(
 			sourceConfiguration: $configuration,
-			klantcontactId: 'kc-1',
+			customerContactId: 'kc-1',
 			caseReference: 'ZAAK-1',
 			caseObjectType: 'zaak'
 		);

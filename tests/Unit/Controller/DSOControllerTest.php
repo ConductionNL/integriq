@@ -154,7 +154,7 @@ class DSOControllerTest extends TestCase {
 		$body = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -203,7 +203,7 @@ class DSOControllerTest extends TestCase {
 		$body = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -352,7 +352,7 @@ class DSOControllerTest extends TestCase {
 		$body = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -375,7 +375,7 @@ class DSOControllerTest extends TestCase {
 
 		$this->ingestService->expects($this->once())
 			->method('ingest')
-			->with($this->callback(static fn (array $parsedVerzoek): bool => ($parsedVerzoek['verzoekId'] === 'dso-12345')));
+			->with($this->callback(static fn (array $parsedRequest): bool => ($parsedRequest['verzoekId'] === 'dso-12345')));
 
 		$response = $this->controller->receiveVerzoek();
 

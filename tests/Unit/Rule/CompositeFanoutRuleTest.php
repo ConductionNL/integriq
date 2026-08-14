@@ -152,17 +152,17 @@ class CompositeFanoutRuleTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$parentObject = $this->makeObject('parent-uuid', []);
-		$betrokkeneObject = $this->makeObject('betrokkene-uuid', []);
+		$involvedPartyObject = $this->makeObject('betrokkene-uuid', []);
 		$adresObject = $this->makeObject('adres-uuid', []);
 
 		$captured = [];
 		$orObjectService->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema) use (&$captured, $parentObject, $betrokkeneObject, $adresObject) {
+				function ($object, $register, $schema) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
 					$captured[] = $object;
 					return match (count($captured)) {
 						1 => $parentObject,
-						2 => $betrokkeneObject,
+						2 => $involvedPartyObject,
 						default => $adresObject,
 					};
 				}

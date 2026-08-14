@@ -156,21 +156,21 @@ class DSOController extends Controller {
 		}
 
 		// Parse the verzoek.
-		$verzoek = $this->parser->parseVerzoek(payload: $body);
+		$request = $this->parser->parseVerzoek(payload: $body);
 
 		// Tag with environment if provided by DSO-LV.
 		$environment = $this->request->getHeader('X-DSO-Environment');
 		if ($environment !== '' && $environment !== null) {
-			$verzoek['environment'] = $environment;
+			$request['environment'] = $environment;
 		}
 
-		$verzoekId = ($verzoek['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
+		$requestId = ($request['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
 
 		$this->logger->info(
 			'DSO STAM: Verzoek received',
 			[
-				'verzoekId' => $verzoekId,
-				'type' => ($verzoek['type'] ?? 'unknown'),
+				'verzoekId' => $requestId,
+				'type' => ($request['type'] ?? 'unknown'),
 			]
 		);
 
@@ -183,17 +183,17 @@ class DSOController extends Controller {
 		// IwmoIjwSyncService::receiveRetour()'s "never throws out to the
 		// controller" isolation).
 		try {
-			$this->ingestService->ingest(parsedVerzoek: $verzoek);
+			$this->ingestService->ingest(parsedRequest: $request);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'DSO STAM: verzoek persistence/mapping failed',
-				['verzoekId' => $verzoekId, 'exception' => $exception->getMessage()]
+				['verzoekId' => $requestId, 'exception' => $exception->getMessage()]
 			);
 		}
 
 		return new JSONResponse(
 			data: [
-				'verzoekId' => $verzoekId,
+				'verzoekId' => $requestId,
 				'status' => 'ontvangen',
 				'message' => 'Verzoek ontvangen en wordt verwerkt',
 			],

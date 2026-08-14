@@ -1806,7 +1806,7 @@ class SynchronizationService {
 		];
 
 		// Stage 1: Configuration and validation.
-		$stageStartTime = microtime(true);
+		$internshipStartTime = microtime(true);
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// If a source is provided, use it instead of the synchronization's source.
@@ -1822,7 +1822,7 @@ class SynchronizationService {
 		}
 
 		$result['timing']['stages']['configuration_validation'] = [
-			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'duration_ms' => round((microtime(true) - $internshipStartTime) * 1000, 2),
 			'description' => 'Configuration loading and source validation',
 		];
 
@@ -1847,7 +1847,7 @@ class SynchronizationService {
 			);
 		} else {
 			// Stage 2: Fetching objects from source.
-			$stageStartTime = microtime(true);
+			$internshipStartTime = microtime(true);
 			$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
 			try {
 				// $source, when non-null here, is the transient/resolved source array
@@ -1871,7 +1871,7 @@ class SynchronizationService {
 				$fetchInfo = ['complete' => false, 'pagesFetched' => 0, 'failureReason' => 'rate_limited'];
 			}//end try
 
-			$fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
+			$fetchDuration = round((microtime(true) - $internshipStartTime) * 1000, 2);
 			$result['timing']['stages']['fetch_objects'] = [
 				'duration_ms' => $fetchDuration,
 				'description' => 'Fetching objects from external source (optimized pagination)',
@@ -1881,7 +1881,7 @@ class SynchronizationService {
 			];
 
 			// Stage 3: Object list preparation.
-			$stageStartTime = microtime(true);
+			$internshipStartTime = microtime(true);
 			$result['objects']['found'] = count($objectList);
 
 			if (($sourceConfig['resultsPosition'] ?? null) === '_object') {
@@ -1893,7 +1893,7 @@ class SynchronizationService {
 			}
 
 			$result['timing']['stages']['object_preparation'] = [
-				'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+				'duration_ms' => round((microtime(true) - $internshipStartTime) * 1000, 2),
 				'description' => 'Object list preparation and counting',
 				'final_object_count' => count($objectList),
 			];
@@ -1944,7 +1944,7 @@ class SynchronizationService {
 			}//end if
 
 			// Stage 4: Processing individual objects.
-			$stageStartTime = microtime(true);
+			$internshipStartTime = microtime(true);
 			$synchronizedTargetIds = [];
 			$objectProcessingTimes = [];
 
@@ -2147,7 +2147,7 @@ class SynchronizationService {
 				($result['contracts'] ?? [])
 			);
 
-			$totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
+			$totalProcessingDuration = round((microtime(true) - $internshipStartTime) * 1000, 2);
 
 			$averagePerObjectMs = 0;
 			if (count($objectList) > 0) {
@@ -2179,7 +2179,7 @@ class SynchronizationService {
 			];
 
 			// Stage 5: Cleanup - Delete invalid objects.
-			$stageStartTime = microtime(true);
+			$internshipStartTime = microtime(true);
 
 			$deleteRestriction = (isset($sourceConfig['restrictDeletion']) === true && (bool)$sourceConfig['restrictDeletion']);
 
@@ -2245,7 +2245,7 @@ class SynchronizationService {
 			$result['objects']['deletionGuard'] = $guardInfo;
 
 			$result['timing']['stages']['cleanup_invalid'] = [
-				'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+				'duration_ms' => round((microtime(true) - $internshipStartTime) * 1000, 2),
 				'description' => 'Deleting invalid/orphaned objects',
 				'objects_deleted' => $deletedCount,
 			];
@@ -2269,7 +2269,7 @@ class SynchronizationService {
 		// Chaining like this is what the OpenRegister flow migration replaces:
 		// a flow states the order explicitly, the engine bounds the recursion,
 		// and each hop gets its own persisted, inspectable run.
-		$stageStartTime = microtime(true);
+		$internshipStartTime = microtime(true);
 		$followUpCount = 0;
 		$followUpSkipped = [];
 		$selfId = (string)($synchronization['id'] ?? ($synchronization['uuid'] ?? ''));
@@ -2299,7 +2299,7 @@ class SynchronizationService {
 		}
 
 		$result['timing']['stages']['follow_ups'] = [
-			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'duration_ms' => round((microtime(true) - $internshipStartTime) * 1000, 2),
 			'description' => 'Executing follow-up synchronizations',
 			'follow_ups_executed' => $followUpCount,
 			'follow_ups_skipped' => $followUpSkipped,
@@ -2315,7 +2315,7 @@ class SynchronizationService {
 		}
 
 		$result['timing']['summary'] = [
-			'slowest_stage' => $this->getSlowestStage(stages: $result['timing']['stages']),
+			'slowest_stage' => $this->getSlowestInternship(stages: $result['timing']['stages']),
 			'efficiency_ratio' => $this->calculateEfficiencyRatio(stages: $result['timing']['stages']),
 			'objects_per_second' => $objectsPerSecond,
 		];
@@ -8648,7 +8648,7 @@ class SynchronizationService {
 		// on every single record and then discard the result, because the
 		// `conditions !== []` test came after they were built rather than before.
 		$conditions = ($synchronization['conditions'] ?? []);
-		$conditionsMet = true;
+		$conditionsWith = true;
 
 		if ($conditions !== []) {
 			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
@@ -8660,11 +8660,11 @@ class SynchronizationService {
 
 			// Take note, JsonLogic::apply() returns a range of return types, so
 			// checking it with '=== false' or '!== true' does not work properly.
-			$conditionsMet = (JsonLogic::apply($conditions, $conditionsObject) !== false);
+			$conditionsWith = (JsonLogic::apply($conditions, $conditionsObject) !== false);
 		}
 
 		// Check if object adheres to conditions.
-		if ($conditionsMet === false) {
+		if ($conditionsWith === false) {
 			// Increment skipped count in log since object doesn't meet conditions.
 			$result['objects']['skipped']++;
 			if ($trace !== null) {
@@ -8937,7 +8937,7 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function getSlowestStage(array $stages): array {
+	private function getSlowestInternship(array $stages): array {
 		if (empty($stages) === true) {
 			return [
 				'name' => 'none',
@@ -8946,20 +8946,20 @@ class SynchronizationService {
 			];
 		}
 
-		$slowestStage = '';
+		$slowestInternship = '';
 		$slowestDuration = 0.0;
 		$slowestDescription = '';
 
-		foreach ($stages as $stageName => $stageData) {
-			if ($stageData['duration_ms'] > $slowestDuration) {
-				$slowestDuration = $stageData['duration_ms'];
-				$slowestStage = $stageName;
-				$slowestDescription = $stageData['description'];
+		foreach ($stages as $internshipName => $internshipData) {
+			if ($internshipData['duration_ms'] > $slowestDuration) {
+				$slowestDuration = $internshipData['duration_ms'];
+				$slowestInternship = $internshipName;
+				$slowestDescription = $internshipData['description'];
 			}
 		}
 
 		return [
-			'name' => $slowestStage,
+			'name' => $slowestInternship,
 			'duration_ms' => $slowestDuration,
 			'description' => $slowestDescription,
 		];
@@ -8989,12 +8989,12 @@ class SynchronizationService {
 		$totalDuration = 0.0;
 		$processingDuration = 0.0;
 
-		foreach ($stages as $stageName => $stageData) {
-			$totalDuration += $stageData['duration_ms'];
+		foreach ($stages as $internshipName => $internshipData) {
+			$totalDuration += $internshipData['duration_ms'];
 
 			// Consider 'process_objects' as the core processing stage.
-			if ($stageName === 'process_objects') {
-				$processingDuration = $stageData['duration_ms'];
+			if ($internshipName === 'process_objects') {
+				$processingDuration = $internshipData['duration_ms'];
 			}
 		}
 

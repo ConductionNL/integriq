@@ -140,9 +140,9 @@ class StUFXMLBuilder {
 		$ref->nodeValue = (string)Uuid::v4();
 		$sg->appendChild($ref);
 
-		$tijd = $doc->createElementNS(self::NS_STUF, 'StUF:tijdstipBericht');
-		$tijd->nodeValue = date(format: 'YmdHis') . '000';
-		$sg->appendChild($tijd);
+		$time = $doc->createElementNS(self::NS_STUF, 'StUF:tijdstipBericht');
+		$time->nodeValue = date(format: 'YmdHis') . '000';
+		$sg->appendChild($time);
 
 		if (isset($stuurgegevens['crossRefnummer']) === true) {
 			$cross = $doc->createElementNS(self::NS_STUF, 'StUF:crossRefnummer');
@@ -288,12 +288,12 @@ class StUFXMLBuilder {
 		$params->appendChild($count);
 		$response->appendChild($params);
 
-		$antwoord = $doc->createElementNS(self::NS_BG, 'BG:antwoord');
+		$answer = $doc->createElementNS(self::NS_BG, 'BG:antwoord');
 		foreach ($persons as $person) {
-			$antwoord->appendChild($this->buildPersonObject(doc: $doc, fields: $person, scope: $scope));
+			$answer->appendChild($this->buildPersonObject(doc: $doc, fields: $person, scope: $scope));
 		}
 
-		$response->appendChild($antwoord);
+		$response->appendChild($answer);
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $response);
 
 		return (string)$doc->saveXML();
@@ -322,12 +322,12 @@ class StUFXMLBuilder {
 		$params->appendChild($count);
 		$response->appendChild($params);
 
-		$antwoord = $doc->createElementNS(self::NS_BG, 'BG:antwoord');
+		$answer = $doc->createElementNS(self::NS_BG, 'BG:antwoord');
 		foreach ($addresses as $address) {
-			$antwoord->appendChild($this->buildAddressObject(doc: $doc, fields: $address));
+			$answer->appendChild($this->buildAddressObject(doc: $doc, fields: $address));
 		}
 
-		$response->appendChild($antwoord);
+		$response->appendChild($answer);
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $response);
 
 		return (string)$doc->saveXML();
@@ -377,14 +377,14 @@ class StUFXMLBuilder {
 	/**
 	 * Build zakLa01 (zaak antwoord) SOAP response XML.
 	 *
-	 * @param array $zaken Array of zaak field arrays.
+	 * @param array $cases Array of zaak field arrays.
 	 * @param array $stuurgegevens Stuurgegevens configuration.
 	 *
 	 * @return string The complete SOAP XML string.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	public function buildZakLa01(array $zaken, array $stuurgegevens): string {
+	public function buildZakLa01(array $cases, array $stuurgegevens): string {
 		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$doc->formatOutput = true;
 
@@ -393,16 +393,16 @@ class StUFXMLBuilder {
 
 		$params = $doc->createElementNS(self::NS_STUF, 'StUF:parameters');
 		$count = $doc->createElementNS(self::NS_STUF, 'StUF:aantalVoorkomens');
-		$count->nodeValue = (string)count($zaken);
+		$count->nodeValue = (string)count($cases);
 		$params->appendChild($count);
 		$response->appendChild($params);
 
-		$antwoord = $doc->createElementNS(self::NS_ZKN, 'ZKN:antwoord');
-		foreach ($zaken as $zaak) {
-			$antwoord->appendChild($this->buildZaakObject(doc: $doc, fields: $zaak));
+		$answer = $doc->createElementNS(self::NS_ZKN, 'ZKN:antwoord');
+		foreach ($cases as $case) {
+			$answer->appendChild($this->buildCaseObject(doc: $doc, fields: $case));
 		}
 
-		$response->appendChild($antwoord);
+		$response->appendChild($answer);
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $response);
 
 		return (string)$doc->saveXML();
@@ -418,7 +418,7 @@ class StUFXMLBuilder {
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function buildZaakObject(DOMDocument $doc, array $fields): DOMElement {
+	private function buildCaseObject(DOMDocument $doc, array $fields): DOMElement {
 		$obj = $doc->createElementNS(self::NS_ZKN, 'ZKN:object');
 		$obj->setAttributeNS(self::NS_STUF, 'StUF:entiteittype', 'ZAK');
 
@@ -445,14 +445,14 @@ class StUFXMLBuilder {
 	/**
 	 * Build Bv03 bevestiging SOAP response for zakLk01 operations.
 	 *
-	 * @param string $zaakIdentificatie The zaak identifier being confirmed.
+	 * @param string $caseIdentification The zaak identifier being confirmed.
 	 * @param array $stuurgegevens Stuurgegevens configuration.
 	 *
 	 * @return string The complete SOAP XML string.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	public function buildBv03(string $zaakIdentificatie, array $stuurgegevens): string {
+	public function buildBv03(string $caseIdentification, array $stuurgegevens): string {
 		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$doc->formatOutput = true;
 
@@ -460,9 +460,9 @@ class StUFXMLBuilder {
 		$bv03->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Bv03', stuurgegevens: $stuurgegevens));
 
 		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
-		$zaak = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
-		$zaak->nodeValue = $zaakIdentificatie;
-		$body->appendChild($zaak);
+		$case = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
+		$case->nodeValue = $caseIdentification;
+		$body->appendChild($case);
 		$bv03->appendChild($body);
 
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $bv03);
@@ -514,13 +514,13 @@ class StUFXMLBuilder {
 	 *
 	 * @param array $criteria Search criteria (field => value pairs).
 	 * @param array $stuurgegevens Stuurgegevens for the outbound request.
-	 * @param int $maximumAantal Maximum number of results to request.
+	 * @param int $maximumCount Maximum number of results to request.
 	 *
 	 * @return string The complete SOAP XML string.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	public function buildNpsLv01(array $criteria, array $stuurgegevens, int $maximumAantal = 100): string {
+	public function buildNpsLv01(array $criteria, array $stuurgegevens, int $maximumCount = 100): string {
 		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$doc->formatOutput = true;
 
@@ -529,7 +529,7 @@ class StUFXMLBuilder {
 
 		$params = $doc->createElementNS(self::NS_STUF, 'StUF:parameters');
 		$max = $doc->createElementNS(self::NS_STUF, 'StUF:maximumAantal');
-		$max->nodeValue = (string)$maximumAantal;
+		$max->nodeValue = (string)$maximumCount;
 		$params->appendChild($max);
 		$npsLv01->appendChild($params);
 

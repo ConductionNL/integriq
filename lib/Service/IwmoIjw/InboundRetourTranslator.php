@@ -84,7 +84,7 @@ class InboundRetourTranslator {
 	 *
 	 * @param string $xml The raw retour envelope XML, exactly as received on the wire.
 	 *
-	 * @return array{berichttype: string, kenmerk: string, status: string, careStartedAt: string|null,
+	 * @return array{berichttype: string, reference: string, status: string, careStartedAt: string|null,
 	 *         careStoppedAt: string|null, paymentReference: string|null} The status update.
 	 *
 	 * @throws IwmoIjwTranslationException When the XML is malformed, the `kenmerk` is missing/empty,
@@ -100,8 +100,8 @@ class InboundRetourTranslator {
 			throw new IwmoIjwTranslationException(message: 'Retour envelope is missing stuurgegevens.berichtcode.');
 		}
 
-		$kenmerk = trim((string)($root->stuurgegevens->kenmerk ?? ''));
-		if ($kenmerk === '') {
+		$reference = trim((string)($root->stuurgegevens->kenmerk ?? ''));
+		if ($reference === '') {
 			throw new IwmoIjwTranslationException(
 				message: 'Retour envelope is missing stuurgegevens.kenmerk — refusing to update an unresolvable case.'
 			);
@@ -118,7 +118,7 @@ class InboundRetourTranslator {
 
 		$update = [
 			'berichttype' => $berichtcode,
-			'kenmerk' => $kenmerk,
+			'reference' => $reference,
 			'status' => $this->resolveStatus(code: $code, body: $body),
 			'careStartedAt' => null,
 			'careStoppedAt' => null,
@@ -150,11 +150,11 @@ class InboundRetourTranslator {
 	 * @return string The resolved status.
 	 */
 	private function resolveStatus(string $code, SimpleXMLElement $body): string {
-		$resultaat = strtolower(trim((string)($body->resultaat ?? '')));
-		$resultaatAkkoord = ($resultaat === self::RESULTAAT_AKKOORD);
+		$result = strtolower(trim((string)($body->resultaat ?? '')));
+		$resultApproved = ($result === self::RESULTAAT_AKKOORD);
 
 		$requestOutcome = 'rejected';
-		if ($resultaatAkkoord === true) {
+		if ($resultApproved === true) {
 			$requestOutcome = 'accepted';
 		}
 

@@ -104,7 +104,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB']],
 			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
@@ -130,7 +130,7 @@ class DSOParserServiceTest extends TestCase {
 		$fieldNames = array_column($errors, 'field');
 		$this->assertContains('verzoekId', $fieldNames);
 		$this->assertContains('type', $fieldNames);
-		$this->assertContains('indieningsdatum', $fieldNames);
+		$this->assertContains('submissionDate', $fieldNames);
 		$this->assertContains('aanvrager', $fieldNames);
 		$this->assertContains('locatie', $fieldNames);
 		$this->assertContains('activiteiten', $fieldNames);
@@ -146,7 +146,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'ongeldig',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -167,7 +167,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '123456789', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
 			'activiteiten' => [['code' => 'bouwen-01']],
@@ -189,22 +189,22 @@ class DSOParserServiceTest extends TestCase {
 			'verzoekId' => 'dso-12345',
 			'bronorganisatie' => '00000001234567890000',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Jansen'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB', 'huisnummer' => '10']],
 			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
 			'bouwkosten' => '250000',
 		];
 
-		$verzoek = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseVerzoek($payload);
 
-		$this->assertSame('dso-12345', $verzoek['verzoekId']);
-		$this->assertSame('aanvraag', $verzoek['type']);
-		$this->assertSame('ontvangen', $verzoek['status']);
-		$this->assertSame(250000.0, $verzoek['bouwkosten']);
-		$this->assertSame('999993653', $verzoek['aanvrager']['bsn']);
-		$this->assertCount(1, $verzoek['activiteiten']);
-		$this->assertSame('bouwen-01', $verzoek['activiteiten'][0]['code']);
+		$this->assertSame('dso-12345', $request['verzoekId']);
+		$this->assertSame('aanvraag', $request['type']);
+		$this->assertSame('ontvangen', $request['status']);
+		$this->assertSame(250000.0, $request['bouwkosten']);
+		$this->assertSame('999993653', $request['aanvrager']['bsn']);
+		$this->assertCount(1, $request['activiteiten']);
+		$this->assertSame('bouwen-01', $request['activiteiten'][0]['code']);
 
 	}//end testParseVerzoekExtractsAllFields()
 
@@ -217,7 +217,7 @@ class DSOParserServiceTest extends TestCase {
 		$payload = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'indieningsdatum' => '2024-06-15',
+			'submissionDate' => '2024-06-15',
 			'aanvrager' => [],
 			'locatie' => [
 				'gmlGeometrie' => '<gml:Point><gml:pos>52.370216 4.895168</gml:pos></gml:Point>',
@@ -225,12 +225,12 @@ class DSOParserServiceTest extends TestCase {
 			'activiteiten' => [],
 		];
 
-		$verzoek = $this->parser->parseVerzoek($payload);
+		$request = $this->parser->parseVerzoek($payload);
 
-		$this->assertNotNull($verzoek['locatie']['geometrie']);
-		$this->assertSame('Point', $verzoek['locatie']['geometrie']['type']);
-		$this->assertEqualsWithDelta(4.895168, $verzoek['locatie']['geometrie']['coordinates'][0], 0.0001);
-		$this->assertEqualsWithDelta(52.370216, $verzoek['locatie']['geometrie']['coordinates'][1], 0.0001);
+		$this->assertNotNull($request['locatie']['geometrie']);
+		$this->assertSame('Point', $request['locatie']['geometrie']['type']);
+		$this->assertEqualsWithDelta(4.895168, $request['locatie']['geometrie']['coordinates'][0], 0.0001);
+		$this->assertEqualsWithDelta(52.370216, $request['locatie']['geometrie']['coordinates'][1], 0.0001);
 
 	}//end testParseLocatieConvertsGMLPoint()
 

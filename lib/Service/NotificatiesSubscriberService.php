@@ -283,15 +283,15 @@ class NotificatiesSubscriberService {
 			strlen(WebhookSignatureService::SECRET_PREFIX)
 		);
 
-		$kanaalNames = array_values(
+		$channelNames = array_values(
 			array_filter(
-				array_map(static fn ($kanaal) => (string)($kanaal['naam'] ?? ''), $kanalen)
+				array_map(static fn ($channel) => (string)($channel['naam'] ?? ''), $kanalen)
 			)
 		);
 
 		$consumer = $this->objectService->saveObject(
 			object: [
-				'name' => 'Notificaties abonnement: ' . implode(', ', $kanaalNames),
+				'name' => 'Notificaties abonnement: ' . implode(', ', $channelNames),
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
@@ -510,11 +510,11 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-inbound-zgw-notificaties-api-notifications-are-normalized-to-cloudevents-via-emitcloudevent-req-011
 	 */
 	public function handleInboundNotification(string $abonnementId, array $notification): array {
-		$kanaal = (string)($notification['kanaal'] ?? '');
+		$channel = (string)($notification['channel'] ?? '');
 		$resource = (string)($notification['resource'] ?? '');
-		$actie = (string)($notification['actie'] ?? '');
+		$action = (string)($notification['actie'] ?? '');
 
-		if ($kanaal === '' || $resource === '' || $actie === '') {
+		if ($channel === '' || $resource === '' || $action === '') {
 			throw new InvalidArgumentException('Malformed ZGW notification: kanaal, resource and actie are required');
 		}
 
@@ -523,7 +523,7 @@ class NotificatiesSubscriberService {
 
 		return $this->eventService->emitCloudEvent(
 			type: 'nl.conduction.zgw.notificatie.' . $resource,
-			source: '/notificaties-api/' . $kanaal,
+			source: '/notificaties-api/' . $channel,
 			subject: ($notification['resourceUrl'] ?? null),
 			data: $data
 		);
@@ -543,8 +543,8 @@ class NotificatiesSubscriberService {
 	 * @param array $action The resolved `action` block: `{kind, sourceId, kanaal,
 	 *                      hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`.
 	 *
-	 * @return array{kanaal: string, hoofdObject: mixed, resource: mixed, resourceUrl: mixed,
-	 *               actie: string, aanmaakdatum: mixed, kenmerken: array} The ZGW notification body.
+	 * @return array{channel: string, hoofdObject: mixed, resource: mixed, resourceUrl: mixed,
+	 *               actie: string, aanmaakdatum: mixed, characteristics: array} The ZGW notification body.
 	 *
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-zgw-notification-publish-body-shape-req-005
 	 */
@@ -553,12 +553,12 @@ class NotificatiesSubscriberService {
 		$data = (array)($eventData['data'] ?? []);
 		$dot = new Dot($data);
 
-		$kanaal = (string)($action['kanaal'] ?? '');
+		$channel = (string)($action['channel'] ?? '');
 
-		$hoofdObjectField = ($action['hoofdObjectField'] ?? null);
-		$hoofdObject = ($eventData['subject'] ?? null);
-		if ($hoofdObjectField !== null && $hoofdObjectField !== '') {
-			$hoofdObject = $dot->get($hoofdObjectField);
+		$mainObjectField = ($action['mainObjectField'] ?? null);
+		$mainObject = ($eventData['subject'] ?? null);
+		if ($mainObjectField !== null && $mainObjectField !== '') {
+			$mainObject = $dot->get($mainObjectField);
 		}
 
 		$resourceField = ($action['resourceField'] ?? null);
@@ -572,27 +572,27 @@ class NotificatiesSubscriberService {
 			$resourceUrl = ($eventData['subject'] ?? null);
 		}
 
-		$actieMap = (array)($action['actieMap'] ?? []);
-		if (empty($actieMap) === true) {
-			$actieMap = self::DEFAULT_ACTIE_MAP;
+		$actionMap = (array)($action['actionMap'] ?? []);
+		if (empty($actionMap) === true) {
+			$actionMap = self::DEFAULT_ACTIE_MAP;
 		}
 
 		$suffix = self::typeSuffix(type: (string)($eventData['type'] ?? ''));
-		$actie = (string)($actieMap[$suffix] ?? $suffix);
+		$actie = (string)($actionMap[$suffix] ?? $suffix);
 
-		$staticKenmerken = (array)($action['kenmerken'] ?? []);
-		$eventKenmerken = (array)($dot->get('kenmerken') ?? []);
+		$staticCharacteristics = (array)($action['characteristics'] ?? []);
+		$eventCharacteristics = (array)($dot->get('characteristics') ?? []);
 		// Event-supplied values win on key collision (REQ-005).
-		$kenmerken = array_merge($staticKenmerken, $eventKenmerken);
+		$characteristics = array_merge($staticCharacteristics, $eventCharacteristics);
 
 		return [
-			'kanaal' => $kanaal,
-			'hoofdObject' => $hoofdObject,
+			'channel' => $channel,
+			'hoofdObject' => $mainObject,
 			'resource' => $resource,
 			'resourceUrl' => $resourceUrl,
 			'actie' => $actie,
 			'aanmaakdatum' => ($eventData['time'] ?? null),
-			'kenmerken' => $kenmerken,
+			'characteristics' => $characteristics,
 		];
 
 	}//end buildNotificationBody()

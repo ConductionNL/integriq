@@ -103,7 +103,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
-	 * @param string $klantcontactId Unused.
+	 * @param string $customerContactId Unused.
 	 * @param string $caseReference Unused.
 	 * @param string $caseObjectType Unused.
 	 *
@@ -113,7 +113,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface {
 	 */
 	public function linkOnderwerpobject(
 		array $sourceConfiguration,
-		string $klantcontactId,
+		string $customerContactId,
 		string $caseReference,
 		string $caseObjectType,
 	): string {

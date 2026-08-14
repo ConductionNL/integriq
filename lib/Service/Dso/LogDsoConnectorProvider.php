@@ -72,7 +72,7 @@ class LogDsoConnectorProvider implements DsoConnectorProviderInterface {
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
-	 * @param string $verzoekId Unused.
+	 * @param string $requestId Unused.
 	 * @param string $type Unused.
 	 * @param array $payload Unused.
 	 *
@@ -80,7 +80,7 @@ class LogDsoConnectorProvider implements DsoConnectorProviderInterface {
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
-	public function send(array $sourceConfiguration, string $verzoekId, string $type, array $payload): string {
+	public function send(array $sourceConfiguration, string $requestId, string $type, array $payload): string {
 		self::$counter++;
 		return 'MOCK-DSO-' . self::$counter;
 	}//end send()

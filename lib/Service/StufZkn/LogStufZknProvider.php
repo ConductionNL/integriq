@@ -67,14 +67,14 @@ class LogStufZknProvider implements StufZknProviderInterface {
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration Unused — the log provider needs no configuration.
-	 * @param string $referentienummer Unused.
+	 * @param string $referenceNumber Unused.
 	 * @param string $envelopeXml Unused.
 	 *
 	 * @return string The synthetic `MOCK-STUFZKN-<n>` reference.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
-	public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string {
+	public function send(array $sourceConfiguration, string $referenceNumber, string $envelopeXml): string {
 		self::$counter++;
 		return 'MOCK-STUFZKN-' . self::$counter;
 	}//end send()

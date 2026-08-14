@@ -46,7 +46,7 @@ class DSOParserService {
 	private const REQUIRED_FIELDS = [
 		'verzoekId',
 		'type',
-		'indieningsdatum',
+		'submissionDate',
 		'aanvrager',
 		'locatie',
 		'activiteiten',
@@ -139,11 +139,11 @@ class DSOParserService {
 		}
 
 		// Validate indieningsdatum format (ISO 8601).
-		if (isset($payload['indieningsdatum']) === true
-			&& $this->validateISODate(date: $payload['indieningsdatum']) === false
+		if (isset($payload['submissionDate']) === true
+			&& $this->validateISODate(date: $payload['submissionDate']) === false
 		) {
 			$errors[] = [
-				'field' => 'indieningsdatum',
+				'field' => 'submissionDate',
 				'error' => 'invalid_date_format',
 				'message' => 'Indieningsdatum must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
 			];
@@ -170,13 +170,13 @@ class DSOParserService {
 			$bouwkosten = (float)$payload['bouwkosten'];
 		}
 
-		$verzoek = [
+		$request = [
 			'verzoekId' => ($payload['verzoekId'] ?? null),
 			'bronorganisatie' => ($payload['bronorganisatie'] ?? null),
 			'type' => ($payload['type'] ?? null),
-			'indieningsdatum' => ($payload['indieningsdatum'] ?? null),
-			'aanvrager' => $this->parseAanvrager(aanvrager: ($payload['aanvrager'] ?? [])),
-			'locatie' => $this->parseLocatie(locatie: ($payload['locatie'] ?? [])),
+			'submissionDate' => ($payload['submissionDate'] ?? null),
+			'aanvrager' => $this->parseApplicant(applicant: ($payload['aanvrager'] ?? [])),
+			'locatie' => $this->parseLocation(location: ($payload['locatie'] ?? [])),
 			'activiteiten' => $this->parseActiviteiten(activiteiten: ($payload['activiteiten'] ?? [])),
 			'bouwkosten' => $bouwkosten,
 			'bijlagen' => ($payload['bijlagen'] ?? []),
@@ -186,10 +186,10 @@ class DSOParserService {
 		];
 
 		if (isset($payload['projectbeschrijving']) === true) {
-			$verzoek['projectbeschrijving'] = $payload['projectbeschrijving'];
+			$request['projectbeschrijving'] = $payload['projectbeschrijving'];
 		}
 
-		return $verzoek;
+		return $request;
 	}//end parseVerzoek()
 
 	/**
@@ -272,21 +272,21 @@ class DSOParserService {
 	/**
 	 * Parse the aanvrager (initiatiefnemer) block.
 	 *
-	 * @param array $aanvrager The raw aanvrager data.
+	 * @param array $applicant The raw aanvrager data.
 	 *
 	 * @return array The parsed aanvrager data.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	private function parseAanvrager(array $aanvrager): array {
+	private function parseApplicant(array $applicant): array {
 		return [
-			'bsn' => ($aanvrager['bsn'] ?? null),
-			'kvkNummer' => ($aanvrager['kvkNummer'] ?? null),
-			'vestigingsnummer' => ($aanvrager['vestigingsnummer'] ?? null),
-			'naam' => ($aanvrager['naam'] ?? null),
-			'bedrijfsnaam' => ($aanvrager['bedrijfsnaam'] ?? null),
-			'adres' => ($aanvrager['adres'] ?? null),
-			'contactgegevens' => ($aanvrager['contactgegevens'] ?? null),
+			'bsn' => ($applicant['bsn'] ?? null),
+			'kvkNummer' => ($applicant['kvkNummer'] ?? null),
+			'vestigingsnummer' => ($applicant['vestigingsnummer'] ?? null),
+			'naam' => ($applicant['naam'] ?? null),
+			'bedrijfsnaam' => ($applicant['bedrijfsnaam'] ?? null),
+			'adres' => ($applicant['adres'] ?? null),
+			'contactgegevens' => ($applicant['contactgegevens'] ?? null),
 		];
 
 	}//end parseAanvrager()
@@ -296,22 +296,22 @@ class DSOParserService {
 	 *
 	 * Handles BAG-adresgegevens and GML-geometrie conversion.
 	 *
-	 * @param array $locatie The raw locatie data.
+	 * @param array $location The raw locatie data.
 	 *
 	 * @return array The parsed locatie data.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
 	 */
-	private function parseLocatie(array $locatie): array {
+	private function parseLocation(array $location): array {
 		$parsed = [
-			'bagAdres' => ($locatie['bagAdres'] ?? null),
-			'kadastraleAanduiding' => ($locatie['kadastraleAanduiding'] ?? null),
+			'bagAdres' => ($location['bagAdres'] ?? null),
+			'kadastraleAanduiding' => ($location['kadastraleAanduiding'] ?? null),
 			'geometrie' => null,
 		];
 
 		// Convert GML to GeoJSON if present.
-		if (isset($locatie['gmlGeometrie']) === true) {
-			$parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $locatie['gmlGeometrie']);
+		if (isset($location['gmlGeometrie']) === true) {
+			$parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $location['gmlGeometrie']);
 		}
 
 		return $parsed;
@@ -328,9 +328,9 @@ class DSOParserService {
 	 */
 	private function parseActiviteiten(array $activiteiten): array {
 		$parsed = [];
-		foreach ($activiteiten as $activiteit) {
-			$code = ($activiteit['code'] ?? ($activiteit['activiteitCode'] ?? null));
-			$omschrijving = ($activiteit['omschrijving'] ?? null);
+		foreach ($activiteiten as $activity) {
+			$code = ($activity['code'] ?? ($activity['activiteitCode'] ?? null));
+			$omschrijving = ($activity['omschrijving'] ?? null);
 
 			$parsed[] = [
 				'code' => $code,

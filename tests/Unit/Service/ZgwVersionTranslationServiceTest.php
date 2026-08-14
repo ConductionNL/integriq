@@ -66,13 +66,13 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 		$this->service = new ZgwVersionTranslationService(
 			negotiationService: new ZgwVersionNegotiationService(),
 			objectService: $this->objectService,
-			zaakTranslator: new ZaakTranslator(),
-			zaakTypeTranslator: new ZaakTypeTranslator(),
+			caseTranslator: new ZaakTranslator(),
+			caseTypeTranslator: new ZaakTypeTranslator(),
 			informatieObjectTranslator: new InformatieObjectTranslator(),
-			besluitTranslator: new BesluitTranslator(),
-			rolTranslator: new RolTranslator(),
+			decisionTranslator: new BesluitTranslator(),
+			roleTranslator: new RolTranslator(),
 			statusTranslator: new StatusTranslator(),
-			resultaatTranslator: new ResultaatTranslator()
+			resultTranslator: new ResultaatTranslator()
 		);
 	}//end setUp()
 

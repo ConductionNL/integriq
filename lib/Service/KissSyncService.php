@@ -210,7 +210,7 @@ class KissSyncService {
 		$skipped = 0;
 		foreach ($page['items'] as $item) {
 			try {
-				$this->upsertKlantcontact(item: $item, direction: 'pulled', sourceApp: null);
+				$this->upsertCustomerContact(item: $item, direction: 'pulled', sourceApp: null);
 				$processed++;
 			} catch (Throwable $exception) {
 				$skipped++;
@@ -269,16 +269,16 @@ class KissSyncService {
 
 		$payload = [
 			'onderwerp' => (string)($input['onderwerp'] ?? ''),
-			'kanaal' => (string)($input['kanaal'] ?? ''),
+			'channel' => (string)($input['channel'] ?? ''),
 			'tekst' => (string)($input['tekst'] ?? ''),
-			'plaatsgevondenOp' => (string)($input['plaatsgevondenOp'] ?? (new DateTime())->format('c')),
-			'indicatieContactGelukt' => (bool)($input['indicatieContactGelukt'] ?? true),
-			'taal' => (string)($input['taal'] ?? 'nl'),
+			'occurredOn' => (string)($input['occurredOn'] ?? (new DateTime())->format('c')),
+			'indicationContactGelukt' => (bool)($input['indicationContactGelukt'] ?? true),
+			'language' => (string)($input['language'] ?? 'nl'),
 		];
 
-		$betrokkene = ($input['betrokkene'] ?? null);
-		if (is_array($betrokkene) === true && $betrokkene !== []) {
-			$payload['betrokkene'] = $betrokkene;
+		$involvedParty = ($input['betrokkene'] ?? null);
+		if (is_array($involvedParty) === true && $involvedParty !== []) {
+			$payload['betrokkene'] = $involvedParty;
 		}
 
 		$kissId = $provider->createKlantcontact(sourceConfiguration: $configuration, payload: $payload);
@@ -289,7 +289,7 @@ class KissSyncService {
 		if ($caseReference !== '') {
 			$provider->linkOnderwerpobject(
 				sourceConfiguration: $configuration,
-				klantcontactId: $kissId,
+				customerContactId: $kissId,
 				caseReference: $caseReference,
 				caseObjectType: $caseObjectType
 			);
@@ -310,14 +310,14 @@ class KissSyncService {
 		unset($item['betrokkene']);
 		$item['uuid'] = $kissId;
 		$item['registratiedatum'] = (new DateTime())->format('c');
-		$item['betrokkenen'] = [];
-		if ($betrokkene !== null) {
-			$item['betrokkenen'] = [$betrokkene];
+		$item['involvedParties'] = [];
+		if ($involvedParty !== null) {
+			$item['involvedParties'] = [$involvedParty];
 		}
 
 		$item['onderwerpobjecten'] = $onderwerpobjecten;
 
-		$saved = $this->upsertKlantcontact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
+		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
 
 		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
 	}//end pushKlantcontact()
@@ -388,7 +388,7 @@ class KissSyncService {
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	private function upsertKlantcontact(array $item, string $direction, ?string $sourceApp): ObjectEntity {
+	private function upsertCustomerContact(array $item, string $direction, ?string $sourceApp): ObjectEntity {
 		$kissId = (string)($item['uuid'] ?? '');
 		if ($kissId === '') {
 			throw new KissProviderException(message: 'A klantcontact item without a `uuid` cannot be persisted.');
@@ -399,15 +399,15 @@ class KissSyncService {
 
 		$record = [
 			'kissId' => $kissId,
-			'nummer' => (string)($item['nummer'] ?? ''),
-			'kanaal' => (string)($item['kanaal'] ?? ''),
+			'number' => (string)($item['number'] ?? ''),
+			'channel' => (string)($item['channel'] ?? ''),
 			'onderwerp' => (string)($item['onderwerp'] ?? ''),
 			'tekst' => (string)($item['tekst'] ?? ''),
-			'indicatieContactGelukt' => (bool)($item['indicatieContactGelukt'] ?? true),
-			'taal' => (string)($item['taal'] ?? ''),
-			'plaatsgevondenOp' => (string)($item['plaatsgevondenOp'] ?? ''),
+			'indicationContactGelukt' => (bool)($item['indicationContactGelukt'] ?? true),
+			'language' => (string)($item['language'] ?? ''),
+			'occurredOn' => (string)($item['occurredOn'] ?? ''),
 			'registratiedatum' => (string)($item['registratiedatum'] ?? ''),
-			'betrokkenen' => $this->redactBsnIdentifiers(betrokkenen: (array)($item['betrokkenen'] ?? [])),
+			'involvedParties' => $this->redactBsnIdentifiers(involvedParties: (array)($item['involvedParties'] ?? [])),
 			'onderwerpobjecten' => $onderwerpobjecten,
 			'caseReference' => $caseMapping['reference'],
 			'caseObjectType' => $caseMapping['objectType'],
@@ -499,15 +499,15 @@ class KissSyncService {
 	 * before storage — consistent with this app's `AvgBsnPolicyRule`
 	 * precedent (never persist a raw citizen service number).
 	 *
-	 * @param array $betrokkenen The raw betrokkenen array (KISS shape).
+	 * @param array $involvedParties The raw betrokkenen array (KISS shape).
 	 *
 	 * @return array The betrokkenen array with any `bsn`-typed identifier value SHA-256-hashed.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
-	private function redactBsnIdentifiers(array $betrokkenen): array {
-		foreach ($betrokkenen as $index => $betrokkene) {
-			$identificator = ($betrokkene['partijIdentificator'] ?? null);
+	private function redactBsnIdentifiers(array $involvedParties): array {
+		foreach ($involvedParties as $index => $involvedParty) {
+			$identificator = ($involvedParty['partijIdentificator'] ?? null);
 			if (is_array($identificator) === false) {
 				continue;
 			}
@@ -516,10 +516,10 @@ class KissSyncService {
 			$value = (string)($identificator['objectId'] ?? '');
 			if ($code === self::BSN_CODE_SOORT_OBJECT_ID && $value !== '') {
 				$identificator['objectId'] = hash('sha256', $value);
-				$betrokkenen[$index]['partijIdentificator'] = $identificator;
+				$involvedParties[$index]['partijIdentificator'] = $identificator;
 			}
 		}
 
-		return $betrokkenen;
+		return $involvedParties;
 	}//end redactBsnIdentifiers()
 }//end class

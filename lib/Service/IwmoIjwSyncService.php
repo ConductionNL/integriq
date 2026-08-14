@@ -162,7 +162,7 @@ class IwmoIjwSyncService {
 			'domain' => $domain,
 			'status' => $status,
 			'ref' => $translated['ref'],
-			'kenmerk' => null,
+			'reference' => null,
 			'caseReference' => $caseReference,
 			'caseRegister' => $caseRegister,
 			'caseSchema' => $caseSchema,
@@ -210,7 +210,7 @@ class IwmoIjwSyncService {
 			return;
 		}
 
-		$outbound = $this->findByRef(ref: $update['kenmerk']);
+		$outbound = $this->findByRef(ref: $update['reference']);
 		$caseReference = null;
 		$caseRegister = null;
 		$caseSchema = null;
@@ -235,7 +235,7 @@ class IwmoIjwSyncService {
 				'domain' => $domain,
 				'status' => $update['status'],
 				'ref' => null,
-				'kenmerk' => $update['kenmerk'],
+				'reference' => $update['reference'],
 				'caseReference' => $caseReference,
 				'caseRegister' => $caseRegister,
 				'caseSchema' => $caseSchema,
@@ -249,7 +249,7 @@ class IwmoIjwSyncService {
 		if ($outbound === null || $caseReference === null || $caseRegister === null || $caseSchema === null) {
 			$this->logger->warning(
 				$this->l->t('iWMO/iJW retour kenmerk did not resolve to a linkable case'),
-				['kenmerk' => $update['kenmerk']]
+				['reference' => $update['reference']]
 			);
 			return;
 		}

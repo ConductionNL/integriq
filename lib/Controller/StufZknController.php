@@ -175,9 +175,9 @@ class StufZknController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'stuf-zkn.push');
 
 		$params = $this->request->getParams();
-		$zaak = (array)($params['zaak'] ?? []);
-		$verwerkingssoort = (string)($params['verwerkingssoort'] ?? '');
-		if ($zaak === [] || $verwerkingssoort === '') {
+		$case = (array)($params['zaak'] ?? []);
+		$processingKind = (string)($params['verwerkingssoort'] ?? '');
+		if ($case === [] || $processingKind === '') {
 			return new JSONResponse(
 				[
 					'error' => 'missing_fields',
@@ -188,7 +188,7 @@ class StufZknController extends Controller {
 		}
 
 		try {
-			$result = $this->syncService->sendKennisgeving(zaak: $zaak, verwerkingssoort: $verwerkingssoort);
+			$result = $this->syncService->sendKennisgeving(case: $case, processingKind: $processingKind);
 			return new JSONResponse($result);
 		} catch (StufZknTranslationException $exception) {
 			return new JSONResponse(

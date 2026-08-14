@@ -118,7 +118,7 @@ class StUFZKNServiceTest extends TestCase {
 		$soapXml = $this->buildZakLk01Xml(
 			zaakidentificatie: 'ZAAK-001',
 			omschrijving: 'Test',
-			zaaktype: ''
+			caseType: ''
 		);
 
 		$this->xmlBuilder->expects($this->once())
@@ -148,7 +148,7 @@ class StUFZKNServiceTest extends TestCase {
 		$soapXml = $this->buildZakLk01Xml(
 			zaakidentificatie: 'ZAAK-2024-001',
 			omschrijving: 'Omgevingsvergunning',
-			zaaktype: 'omgevingsvergunning'
+			caseType: 'omgevingsvergunning'
 		);
 
 		$this->orObjectService->expects($this->atLeastOnce())
@@ -166,7 +166,7 @@ class StUFZKNServiceTest extends TestCase {
 		$this->xmlBuilder->expects($this->once())
 			->method('buildBv03')
 			->with(
-				zaakIdentificatie: 'ZAAK-2024-001',
+				caseIdentification: 'ZAAK-2024-001',
 				stuurgegevens: $this->anything()
 			)
 			->willReturn('<Bv03/>');
@@ -188,14 +188,14 @@ class StUFZKNServiceTest extends TestCase {
 	public function testHandleZakLv01ReturnsZakLa01(): void {
 		$soapXml = $this->buildZakLv01Xml(zaakidentificatie: 'ZAAK-2024-001');
 
-		$zaak = [
+		$case = [
 			'zaakidentificatie' => 'ZAAK-2024-001',
 			'omschrijving' => 'Test zaak.',
 		];
 
 		$this->orObjectService->expects($this->once())
 			->method('findAll')
-			->willReturn(['results' => [$zaak], 'total' => 1]);
+			->willReturn(['results' => [$case], 'total' => 1]);
 
 		$this->xmlBuilder->expects($this->once())
 			->method('buildZakLa01')
@@ -234,15 +234,15 @@ class StUFZKNServiceTest extends TestCase {
 	 *
 	 * @param string $zaakidentificatie The zaak identifier.
 	 * @param string $omschrijving The zaak description.
-	 * @param string $zaaktype The zaak type.
+	 * @param string $caseType The zaak type.
 	 *
 	 * @return string The SOAP XML string.
 	 */
-	private function buildZakLk01Xml(string $zaakidentificatie, string $omschrijving, string $zaaktype): string {
-		if ($zaaktype !== '') {
-			$zaaktypeXml = '<ZKN:zaaktype>' . $zaaktype . '</ZKN:zaaktype>';
+	private function buildZakLk01Xml(string $zaakidentificatie, string $omschrijving, string $caseType): string {
+		if ($caseType !== '') {
+			$caseTypeXml = '<ZKN:zaaktype>' . $caseType . '</ZKN:zaaktype>';
 		} else {
-			$zaaktypeXml = '';
+			$caseTypeXml = '';
 		}
 
 		return '<SOAP-ENV:Envelope'
@@ -254,7 +254,7 @@ class StUFZKNServiceTest extends TestCase {
 			. '<ZKN:object>'
 			. '<ZKN:identificatie>' . $zaakidentificatie . '</ZKN:identificatie>'
 			. '<ZKN:omschrijving>' . $omschrijving . '</ZKN:omschrijving>'
-			. $zaaktypeXml
+			. $caseTypeXml
 			. '</ZKN:object>'
 			. '</ZKN:zakLk01>'
 			. '</SOAP-ENV:Body>'

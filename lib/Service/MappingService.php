@@ -721,10 +721,10 @@ class MappingService {
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
 	public function translateVngFilterOperators(array $filters): array {
-		$codeSoortByField = [];
+		$codeKindByField = [];
 		foreach ($filters as $key => $value) {
 			if (str_ends_with($key, '__codeSoortObjectId') === true) {
-				$codeSoortByField[substr($key, 0, -strlen('__codeSoortObjectId'))] = $value;
+				$codeKindByField[substr($key, 0, -strlen('__codeSoortObjectId'))] = $value;
 			}
 		}
 
@@ -748,9 +748,9 @@ class MappingService {
 				continue;
 			}
 
-			if ($operator === 'objectId' && isset($codeSoortByField[$field]) === true) {
+			if ($operator === 'objectId' && isset($codeKindByField[$field]) === true) {
 				$translated[$field] = $this->translatePartijIdentificatorFilter(
-					codeSoort: (string)$codeSoortByField[$field],
+					codeKind: (string)$codeKindByField[$field],
 					objectId: (string)$value
 				);
 				continue;
@@ -775,20 +775,20 @@ class MappingService {
 	 * the hash is ever persisted — see {@see \OCA\OpenConnector\Rule\AvgBsnPolicyRule}).
 	 * Non-BSN identity types pass through unchanged.
 	 *
-	 * @param string $codeSoort The VNG identity type code (e.g. `bsn`, `rsin`, `vestigingsnummer`).
+	 * @param string $codeKind The VNG identity type code (e.g. `bsn`, `rsin`, `vestigingsnummer`).
 	 * @param string $objectId The identity value as supplied by the caller.
 	 *
 	 * @return array{codeSoortObjectId: string, objectId: string} The folded identity filter.
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	public function translatePartijIdentificatorFilter(string $codeSoort, string $objectId): array {
-		if (strtolower($codeSoort) !== 'bsn') {
-			return ['codeSoortObjectId' => $codeSoort, 'objectId' => $objectId];
+	public function translatePartijIdentificatorFilter(string $codeKind, string $objectId): array {
+		if (strtolower($codeKind) !== 'bsn') {
+			return ['codeSoortObjectId' => $codeKind, 'objectId' => $objectId];
 		}
 
 		return [
-			'codeSoortObjectId' => $codeSoort,
+			'codeSoortObjectId' => $codeKind,
 			'objectId' => hash('sha256', $objectId),
 		];
 	}//end translatePartijIdentificatorFilter()

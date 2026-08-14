@@ -82,8 +82,8 @@ class DSOStatusService {
 	 * $dsoApiUrl. Retries up to MAX_RETRIES times with exponential backoff
 	 * (2 s, 4 s, 8 s). Returns true on success, false on persistent failure.
 	 *
-	 * @param string $verzoekId The DSO verzoek identifier.
-	 * @param string $zaakStatus The internal zaak status to push.
+	 * @param string $requestId The DSO verzoek identifier.
+	 * @param string $caseStatus The internal zaak status to push.
 	 * @param string $dsoApiUrl Base URL of the DSO-LV status endpoint.
 	 * @param string|null $certPath Optional client certificate path for mTLS.
 	 *
@@ -92,13 +92,13 @@ class DSOStatusService {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
 	 */
 	public function pushStatusToDSO(
-		string $verzoekId,
-		string $zaakStatus,
+		string $requestId,
+		string $caseStatus,
 		string $dsoApiUrl,
 		?string $certPath = null,
 	): bool {
-		$dsoStatus = $this->mapZaakStatusToDSOStatus(zaakStatus: $zaakStatus);
-		$payload = $this->buildStatusPayload(verzoekId: $verzoekId, dsoStatus: $dsoStatus);
+		$dsoStatus = $this->mapZaakStatusToDSOStatus(caseStatus: $caseStatus);
+		$payload = $this->buildStatusPayload(requestId: $requestId, dsoStatus: $dsoStatus);
 
 		$attempt = 0;
 		$clientOptions = [
@@ -126,7 +126,7 @@ class DSOStatusService {
 					$this->logger->info(
 						'DSO: status pushed successfully',
 						[
-							'verzoekId' => $verzoekId,
+							'verzoekId' => $requestId,
 							'dsoStatus' => $dsoStatus,
 							'attempt' => $attempt,
 						]
@@ -138,7 +138,7 @@ class DSOStatusService {
 				$this->logger->warning(
 					'DSO: status push returned non-2xx',
 					[
-						'verzoekId' => $verzoekId,
+						'verzoekId' => $requestId,
 						'statusCode' => $statusCode,
 						'attempt' => $attempt,
 					]
@@ -147,7 +147,7 @@ class DSOStatusService {
 				$this->logger->warning(
 					'DSO: status push attempt failed',
 					[
-						'verzoekId' => $verzoekId,
+						'verzoekId' => $requestId,
 						'attempt' => $attempt,
 						'error' => $e->getMessage(),
 					]
@@ -163,7 +163,7 @@ class DSOStatusService {
 		$this->logger->error(
 			'DSO: status push failed after all retries',
 			[
-				'verzoekId' => $verzoekId,
+				'verzoekId' => $requestId,
 				'dsoStatus' => $dsoStatus,
 			]
 		);
@@ -177,33 +177,33 @@ class DSOStatusService {
 	 * Uses the STATUS_MAP constant. Returns 'onbekend' for any status that
 	 * has no mapping entry.
 	 *
-	 * @param string $zaakStatus The internal zaak status string.
+	 * @param string $caseStatus The internal zaak status string.
 	 *
 	 * @return string The corresponding DSO status string, or 'onbekend'.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
 	 */
-	public function mapZaakStatusToDSOStatus(string $zaakStatus): string {
-		if (isset(self::STATUS_MAP[$zaakStatus]) === false) {
+	public function mapZaakStatusToDSOStatus(string $caseStatus): string {
+		if (isset(self::STATUS_MAP[$caseStatus]) === false) {
 			return 'onbekend';
 		}
 
-		return self::STATUS_MAP[$zaakStatus];
+		return self::STATUS_MAP[$caseStatus];
 	}//end mapZaakStatusToDSOStatus()
 
 	/**
 	 * Build the DSO-LV status update payload.
 	 *
-	 * @param string $verzoekId The DSO verzoek identifier.
+	 * @param string $requestId The DSO verzoek identifier.
 	 * @param string $dsoStatus The mapped DSO status string.
 	 *
 	 * @return array Payload array with 'verzoekId', 'status', and 'timestamp' keys.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
 	 */
-	public function buildStatusPayload(string $verzoekId, string $dsoStatus): array {
+	public function buildStatusPayload(string $requestId, string $dsoStatus): array {
 		return [
-			'verzoekId' => $verzoekId,
+			'verzoekId' => $requestId,
 			'status' => $dsoStatus,
 			'timestamp' => date('c'),
 		];

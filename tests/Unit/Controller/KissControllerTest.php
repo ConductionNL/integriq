@@ -159,7 +159,7 @@ class KissControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			[
 				'onderwerp' => 'Melding openbare ruimte',
-				'kanaal' => 'telefoon',
+				'channel' => 'telefoon',
 				'caseReference' => 'case-uuid-1',
 				'sourceApp' => 'procest',
 			]
@@ -182,7 +182,7 @@ class KissControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateKlantcontactReportsNotConfiguredCleanly(): void {
-		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
 		$this->syncService->method('pushKlantcontact')->willThrowException(
 			new KissProviderException(message: 'No active KISS source is configured (register "openconnector", schema "source", type "kiss", isEnabled=true). Configure one before using the KISS bridge.')
@@ -201,7 +201,7 @@ class KissControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateKlantcontactMapsProviderFailureTo502(): void {
-		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'kanaal' => 'telefoon']);
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'telefoon']);
 
 		$this->syncService->method('pushKlantcontact')->willThrowException(
 			new KissProviderException(message: 'KISS responded with HTTP 503.')

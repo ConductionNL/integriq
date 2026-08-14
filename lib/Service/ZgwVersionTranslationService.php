@@ -78,34 +78,34 @@ class ZgwVersionTranslationService {
 	 *
 	 * @param ZgwVersionNegotiationService $negotiationService The version negotiation service.
 	 * @param ORObjectService $objectService OR object service for log persistence.
-	 * @param ZaakTranslator $zaakTranslator The `zaak` translator.
-	 * @param ZaakTypeTranslator $zaakTypeTranslator The `zaaktype` translator.
+	 * @param ZaakTranslator $caseTranslator The `zaak` translator.
+	 * @param ZaakTypeTranslator $caseTypeTranslator The `zaaktype` translator.
 	 * @param InformatieObjectTranslator $informatieObjectTranslator The `enkelvoudiginformatieobject` translator.
-	 * @param BesluitTranslator $besluitTranslator The `besluit` translator.
-	 * @param RolTranslator $rolTranslator The `rol` translator.
+	 * @param BesluitTranslator $decisionTranslator The `besluit` translator.
+	 * @param RolTranslator $roleTranslator The `rol` translator.
 	 * @param StatusTranslator $statusTranslator The `status` translator.
-	 * @param ResultaatTranslator $resultaatTranslator The `resultaat` translator.
+	 * @param ResultaatTranslator $resultTranslator The `resultaat` translator.
 	 */
 	public function __construct(
 		private readonly ZgwVersionNegotiationService $negotiationService,
 		private readonly ORObjectService $objectService,
-		ZaakTranslator $zaakTranslator,
-		ZaakTypeTranslator $zaakTypeTranslator,
+		ZaakTranslator $caseTranslator,
+		ZaakTypeTranslator $caseTypeTranslator,
 		InformatieObjectTranslator $informatieObjectTranslator,
-		BesluitTranslator $besluitTranslator,
-		RolTranslator $rolTranslator,
+		BesluitTranslator $decisionTranslator,
+		RolTranslator $roleTranslator,
 		StatusTranslator $statusTranslator,
-		ResultaatTranslator $resultaatTranslator,
+		ResultaatTranslator $resultTranslator,
 	) {
 		$this->translators = [];
 		foreach ([
-			$zaakTranslator,
-			$zaakTypeTranslator,
+			$caseTranslator,
+			$caseTypeTranslator,
 			$informatieObjectTranslator,
-			$besluitTranslator,
-			$rolTranslator,
+			$decisionTranslator,
+			$roleTranslator,
 			$statusTranslator,
-			$resultaatTranslator,
+			$resultTranslator,
 		] as $translator
 		) {
 			$this->translators[$translator->getResource()] = $translator;

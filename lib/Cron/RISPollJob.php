@@ -194,15 +194,15 @@ class RISPollJob extends TimedJob {
 			}
 
 			try {
-				$besluiten = $this->ibabsConnectorService->pollBesluiten(
+				$decisions = $this->ibabsConnectorService->pollBesluiten(
 					source: $source,
 					syncedItems: $sourceRecords
 				);
 
-				foreach ($besluiten as $besluit) {
+				foreach ($decisions as $decision) {
 					$this->logger->info(
 						'RISPollJob: iBabs besluit received',
-						['zaakId' => $besluit['zaakId'], 'status' => $besluit['zaakStatus']]
+						['caseId' => $decision['caseId'], 'status' => $decision['zaakStatus']]
 					);
 				}
 			} catch (\Exception $e) {
