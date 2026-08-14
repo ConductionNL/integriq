@@ -26,7 +26,7 @@ return [
 		// request now MUST carry an `X-DSO-Signature` header that
 		// cryptographically verifies before the payload is parsed; the
 		// previous string-presence-only placeholder has been removed.
-		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		['name' => 'dSO#receiveRequest', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
 		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
 		// surface completing the STAM koppelvlak above (which previously
@@ -72,7 +72,7 @@ return [
 		// Push is an authenticated NC-session call (production binding for sibling
 		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
 		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
-		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+		['name' => 'kiss#createCustomerContact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
 
 		// iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0) bridge
 		// (openspec/changes/iwmo-ijw-adapter). Push is an authenticated NC-session
@@ -80,7 +80,7 @@ return [
 		// modules) — mirrors kiss#createKlantcontact. The inbound retour receiver
 		// is gated by webhook signature (HMAC), not an NC session; see
 		// IwmoIjwController::inbound().
-		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
+		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
