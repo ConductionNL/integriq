@@ -26,14 +26,16 @@ import { test, expect, type Page } from '@playwright/test'
 const APP_BASE = '/index.php/apps/openconnector/#'
 
 async function openPage(page: Page, route: string): Promise<void> {
-	await page.goto(`${APP_BASE}${route}`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+	await page.goto(`${APP_BASE}${route}`, {
+		waitUntil: 'domcontentloaded',
+		timeout: 30_000,
+	})
 	await expect(
 		page.locator('#app-content, [data-cy=app-content], .app-content').first(),
 	).toBeVisible({ timeout: 20_000 })
 }
 
 test.describe('api-product-gateway — operator surfaces', () => {
-
 	// @e2e api-product-gateway::api-products-list-page-mounts-and-shows-content
 	test('API Products list page mounts and shows content', async ({ page }) => {
 		await openPage(page, '/products')
@@ -50,7 +52,9 @@ test.describe('api-product-gateway — operator surfaces', () => {
 		// its place, which is what a missing `#` produces.
 		const body = (await content.innerText()).toLowerCase()
 		expect(
-			body.includes('product') || body.includes('geen') || body.includes('no '),
+			body.includes('product')
+				|| body.includes('geen')
+				|| body.includes('no '),
 			`API Products showed neither a product surface nor an empty state: ${body.slice(0, 200)}`,
 		).toBe(true)
 	})

@@ -29,7 +29,12 @@
  * suite skips (not fails) when that flag isn't set on the instance.
  */
 
-import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as pwRequest,
+	type APIRequestContext,
+} from '@playwright/test'
 import { BASE_URL } from '../support/baseUrl'
 
 const NEXTCLOUD = BASE_URL
@@ -66,13 +71,16 @@ const TARGET_REGISTER = OC_REGISTER
 const TARGET_SCHEMA = 'source'
 
 /** OR object ids created by the suite, torn down in afterAll. */
-const created: Array<{ register: string, schema: string, id: string }> = []
+const created: Array<{ register: string; schema: string; id: string }> = []
 
 async function apiContext(): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: NEXTCLOUD,
 		httpCredentials: { username: ADMIN_USER, password: ADMIN_PASS },
-		extraHTTPHeaders: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
+		extraHTTPHeaders: {
+			'OCS-APIRequest': 'true',
+			'Content-Type': 'application/json',
+		},
 	})
 }
 
@@ -84,7 +92,10 @@ async function createObject(
 	body: Record<string, unknown>,
 ): Promise<string> {
 	const res = await ctx.post(`${OR}/objects/${register}/${schema}`, { data: body })
-	expect(res.status(), `create ${register}/${schema} → ${await res.text()}`).toBeLessThan(300)
+	expect(
+		res.status(),
+		`create ${register}/${schema} → ${await res.text()}`,
+	).toBeLessThan(300)
 	const json = await res.json()
 	const self = json['@self'] ?? json.results?.['@self'] ?? {}
 	const id = String(self.uuid ?? self.id ?? json.id ?? '')
@@ -118,7 +129,6 @@ let storageMigrated = false
 let skipReason = 'openconnector.storage_migrated is not true on this instance'
 
 test.describe('Synced-from leaf — contract provenance on objects', () => {
-
 	test.beforeAll(async () => {
 		const ctx = await apiContext()
 
@@ -149,12 +159,16 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// A brand-new openconnector therefore never surfaces "Synced from" on
 		// any OpenRegister object. That is a product defect, not a test
 		// problem, and it is why this suite skips in CI rather than passing.
-		let disabledReason = 'openconnector.storage_migrated is not true on this instance'
+		let disabledReason =
+			'openconnector.storage_migrated is not true on this instance'
 		try {
-			const probe = await ctx.get('/index.php/apps/openregister/api/integrations')
+			const probe = await ctx.get(
+				'/index.php/apps/openregister/api/integrations',
+			)
 			const body = await probe.json()
-			const list: Array<Record<string, unknown>> = body.integrations ?? body.results ?? []
-			const leaf = list.find(i => i.id === 'sync-contract')
+			const list: Array<Record<string, unknown>> =
+				body.integrations ?? body.results ?? []
+			const leaf = list.find((i) => i.id === 'sync-contract')
 			storageMigrated = leaf?.enabled === true
 			const authStatus = leaf?.authStatus as { message?: string } | undefined
 			if (authStatus?.message) {
@@ -173,11 +187,13 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 
 		targetId = await createObject(ctx, TARGET_REGISTER, TARGET_SCHEMA, {
 			name: 'E2E Synced Target',
-			description: 'Seeded by synced-from-leaf.spec.ts as the object a contract points at.',
+			description:
+				'Seeded by synced-from-leaf.spec.ts as the object a contract points at.',
 		})
 		unrelatedId = await createObject(ctx, TARGET_REGISTER, TARGET_SCHEMA, {
 			name: 'E2E Unsynced Neighbour',
-			description: 'Seeded by synced-from-leaf.spec.ts as an object NO contract points at.',
+			description:
+				'Seeded by synced-from-leaf.spec.ts as an object NO contract points at.',
 		})
 		syncId = await createObject(ctx, OC_REGISTER, 'synchronization', {
 			name: 'VNG Producten Sync',
@@ -199,7 +215,9 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	test.afterAll(async () => {
 		const ctx = await apiContext()
 		for (const o of created.reverse()) {
-			await ctx.delete(`${OR}/objects/${o.register}/${o.schema}/${o.id}`).catch(() => undefined)
+			await ctx
+				.delete(`${OR}/objects/${o.register}/${o.schema}/${o.id}`)
+				.catch(() => undefined)
 		}
 		await ctx.dispose()
 	})
@@ -210,16 +228,28 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		const res = await ctx.get(
 			`${OR}/objects/${TARGET_REGISTER}/${TARGET_SCHEMA}/${targetId}/integrations/sync-contract`,
 		)
-		expect(res.status(), 'integrations/sync-contract MUST be 200 (regression: was 500 via getUuid __call)').toBe(200)
+		expect(
+			res.status(),
+			'integrations/sync-contract MUST be 200 (regression: was 500 via getUuid __call)',
+		).toBe(200)
 		const body = await res.json()
 		const items = body.items ?? body.results ?? body
 		expect(Array.isArray(items)).toBe(true)
-		expect(items.length, 'one contract for the seeded target object (regression: was 0 via filter shape)').toBe(1)
+		expect(
+			items.length,
+			'one contract for the seeded target object (regression: was 0 via filter shape)',
+		).toBe(1)
 
 		const row = items[0]
-		expect(row.title, 'title resolves to the synchronization name').toBe('VNG Producten Sync')
-		expect(String(row.subtitle), 'subtitle summarises the last sync').toContain('update')
-		expect(String(row.url), 'url deep-links into the synchronization').toContain(syncId)
+		expect(row.title, 'title resolves to the synchronization name').toBe(
+			'VNG Producten Sync',
+		)
+		expect(String(row.subtitle), 'subtitle summarises the last sync').toContain(
+			'update',
+		)
+		expect(String(row.url), 'url deep-links into the synchronization').toContain(
+			syncId,
+		)
 		expect(row.originId, 'raw provenance preserved').toBe('vng-product-4821')
 		await ctx.dispose()
 	})
@@ -237,7 +267,10 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		expect(res.status(), 'an existing object must answer, not 404').toBe(200)
 		const body = await res.json()
 		const items = body.items ?? body.results ?? body
-		expect(Array.isArray(items) ? items.length : 0, 'no contract for an unrelated object').toBe(0)
+		expect(
+			Array.isArray(items) ? items.length : 0,
+			'no contract for an unrelated object',
+		).toBe(0)
 		await ctx.dispose()
 	})
 
@@ -252,7 +285,10 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		const res = await ctx.get(
 			`${OR}/objects/${TARGET_REGISTER}/${TARGET_SCHEMA}/00000000-0000-0000-0000-000000000000/integrations/sync-contract`,
 		)
-		expect(res.status(), 'a missing object is 404, never 200 and never 500').toBe(404)
+		expect(
+			res.status(),
+			'a missing object is 404, never 200 and never 500',
+		).toBe(404)
 		await ctx.dispose()
 	})
 
@@ -281,7 +317,9 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	 * ones got here. Quarantined with an issue rather than left red or
 	 * "fixed" by another guess.
 	 */
-	test.fixme('leaf renders the contract row on an object-detail integration surface', async ({ page }) => {
+	test.fixme('leaf renders the contract row on an object-detail integration surface', async ({
+		page,
+	}) => {
 		test.skip(!storageMigrated, skipReason)
 
 		// OpenRegister's own object detail mounts the same registry-driven
@@ -302,13 +340,19 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// nothing), and every failure downstream is silent because each step
 		// here ends in `.catch(() => undefined)`. Resolve them by slug instead.
 		const idCtx = await apiContext()
-		const lookupId = async (collection: string, slug: string): Promise<string> => {
+		const lookupId = async (
+			collection: string,
+			slug: string,
+		): Promise<string> => {
 			const res = await idCtx.get(`${OR}/${collection}?_limit=1000`)
 			expect(res.status(), `GET ${collection} for id lookup`).toBe(200)
 			const body = await res.json()
 			const items = Array.isArray(body) ? body : (body.results ?? [])
 			const hit = items.find((i: Record<string, unknown>) => i.slug === slug)
-			expect(hit, `OpenRegister must expose a "${slug}" ${collection.replace(/s$/, '')}`).toBeTruthy()
+			expect(
+				hit,
+				`OpenRegister must expose a "${slug}" ${collection.replace(/s$/, '')}`,
+			).toBeTruthy()
 			return String(hit.id)
 		}
 		const registerId = await lookupId('registers', TARGET_REGISTER)
@@ -329,7 +373,9 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// `createWebHashHistory()` means the route lives in the fragment, so a
 		// plain goto IS the client-side navigation — no router handle needed,
 		// and nothing to fall silent.
-		await page.goto(`${NEXTCLOUD}/index.php/apps/openregister/#/objects/${registerId}/${schemaId}/${targetId}`)
+		await page.goto(
+			`${NEXTCLOUD}/index.php/apps/openregister/#/objects/${registerId}/${schemaId}/${targetId}`,
+		)
 		await page.waitForLoadState('domcontentloaded').catch(() => undefined)
 
 		// Open the Integrations tab, then the "Synced from" leaf.
@@ -340,6 +386,8 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		await page.getByText('Synced from', { exact: false }).first().click()
 
 		// The rendered contract row shows the resolved synchronization name.
-		await expect(page.getByText('VNG Producten Sync').first()).toBeVisible({ timeout: 15000 })
+		await expect(page.getByText('VNG Producten Sync').first()).toBeVisible({
+			timeout: 15000,
+		})
 	})
 })

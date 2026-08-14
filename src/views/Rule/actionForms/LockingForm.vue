@@ -8,7 +8,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Lock action') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Lock action')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Lock action')"
 			:model-value="selectedAction"
@@ -22,7 +24,12 @@
 			placeholder="3600"
 			@update:model-value="onDurationInput" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Lock or unlock the object identified by the request. Duration only applies to lock; unlock ignores it.') }}
+			{{
+				t(
+					'openconnector',
+					'Lock or unlock the object identified by the request. Duration only applies to lock; unlock ignores it.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -43,11 +50,17 @@ export default {
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		actionOptions() {
-			return LOCK_ACTIONS.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
+			return LOCK_ACTIONS.map((row) => ({
+				id: row.id,
+				label: this.t('openconnector', row.label),
+			}))
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
-			return this.actionOptions.find((opt) => opt.id === this.value.action) || null
+			return (
+				this.actionOptions.find((opt) => opt.id === this.value.action)
+				|| null
+			)
 		},
 	},
 	methods: {
@@ -85,9 +98,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

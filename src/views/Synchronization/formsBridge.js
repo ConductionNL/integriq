@@ -50,7 +50,7 @@ export function extractResults(data) {
 export function mapFormOptions(forms) {
 	if (!Array.isArray(forms)) return []
 	return forms
-		.filter((f) => f && (f.id !== undefined && f.id !== null))
+		.filter((f) => f && f.id !== undefined && f.id !== null)
 		.map((f) => ({
 			id: Number(f.id),
 			label: f.title || String(f.id),
@@ -116,7 +116,7 @@ export function isArrayValuedQuestion(question) {
  */
 export function ambiguousQuestionTexts(questions) {
 	const counts = new Map()
-	for (const question of (Array.isArray(questions) ? questions : [])) {
+	for (const question of Array.isArray(questions) ? questions : []) {
 		const text = normaliseQuestion(question).text
 		if (text === '') continue
 		counts.set(text, (counts.get(text) || 0) + 1)

@@ -28,7 +28,8 @@
  * exact same string the backend resolves with
  * `containerInterface->get($jobClass)`.
  */
-export const SYNCHRONIZATION_ACTION_CLASS = 'OCA\\OpenConnector\\Action\\SynchronizationAction'
+export const SYNCHRONIZATION_ACTION_CLASS =
+	'OCA\\OpenConnector\\Action\\SynchronizationAction'
 
 /**
  * The nested key inside a job's `arguments` object that
@@ -67,7 +68,10 @@ export function groupFieldRuns(fields) {
 		if (!field || typeof field.key !== 'string') continue
 		// Only a non-empty STRING groups. `group: ''` or `group: 5` is treated
 		// as ungrouped so a stray value can't silently merge unrelated fields.
-		const group = (typeof field.group === 'string' && field.group !== '') ? field.group : null
+		const group =
+			typeof field.group === 'string' && field.group !== ''
+				? field.group
+				: null
 		const last = runs[runs.length - 1]
 		if (group !== null && last !== undefined && last.group === group) {
 			last.fields.push(field)
@@ -106,7 +110,9 @@ export function groupFieldRuns(fields) {
  */
 export function dateValueFromStored(raw) {
 	if (!raw) return null
-	const parts = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/)
+	const parts = String(raw).match(
+		/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/,
+	)
 	if (parts !== null) {
 		return new Date(
 			Number(parts[1]),
@@ -194,7 +200,7 @@ export function coerceNumber(raw) {
 export function readSynchronizationId(args) {
 	if (args === null || typeof args !== 'object' || Array.isArray(args)) return null
 	const id = args[SYNCHRONIZATION_ID_KEY]
-	return (id === null || id === undefined || id === '') ? null : String(id)
+	return id === null || id === undefined || id === '' ? null : String(id)
 }
 
 /**
@@ -216,9 +222,10 @@ export function readSynchronizationId(args) {
  * @spec openspec/specs/endpoint-job-editor-ui/spec.md
  */
 export function writeSynchronizationId(args, id) {
-	const next = (args !== null && typeof args === 'object' && !Array.isArray(args))
-		? { ...args }
-		: {}
+	const next =
+		args !== null && typeof args === 'object' && !Array.isArray(args)
+			? { ...args }
+			: {}
 	if (id === null || id === undefined || id === '') {
 		delete next[SYNCHRONIZATION_ID_KEY]
 		return next

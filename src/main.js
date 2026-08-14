@@ -7,7 +7,11 @@ import './publicpath.js'
 
 import { createApp, h } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
+import {
+	translate as t,
+	translatePlural as n,
+	loadTranslations,
+} from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
 	CnPageRenderer,
@@ -66,7 +70,10 @@ try {
 } catch (e) {
 	// Non-fatal — lib translations fall back to English source.
 	// eslint-disable-next-line no-console
-	console.warn('[openconnector] registerTranslations failed; falling back to English', e)
+	console.warn(
+		'[openconnector] registerTranslations failed; falling back to English',
+		e,
+	)
 }
 
 // Fire-and-forget translation load. Some Nextcloud installs only allow the
@@ -77,7 +84,10 @@ function tryLoadTranslations() {
 	try {
 		const result = loadTranslations('openconnector', () => {})
 		if (result && typeof result.then === 'function') {
-			result.then(() => {}, () => {})
+			result.then(
+				() => {},
+				() => {},
+			)
 		}
 	} catch {
 		// no-op
@@ -96,7 +106,10 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // by this app's own webpack build, so it stays app-local — then hand the base
 // manifest, fragments, and menu-layout to the shared pipeline.
 const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
-const fragments = fragmentCtx.keys().sort().map((key) => fragmentCtx(key))
+const fragments = fragmentCtx
+	.keys()
+	.sort()
+	.map((key) => fragmentCtx(key))
 const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
 
 /**
@@ -127,8 +140,14 @@ function routesFromManifest(manifest) {
 	routes.push({ path: '/catalog', redirect: '/store' })
 	// The two dead-letter queues merged into one Operations page; the queue
 	// param lands the caller on the queue their old link meant.
-	routes.push({ path: '/cloud-events/deliveries', redirect: { path: '/dead-letters', query: { queue: 'events' } } })
-	routes.push({ path: '/synchronizations/dead-letters', redirect: { path: '/dead-letters', query: { queue: 'sync' } } })
+	routes.push({
+		path: '/cloud-events/deliveries',
+		redirect: { path: '/dead-letters', query: { queue: 'events' } },
+	})
+	routes.push({
+		path: '/synchronizations/dead-letters',
+		redirect: { path: '/dead-letters', query: { queue: 'sync' } },
+	})
 	// Environments stopped being an index: an environment is metadata plus a
 	// sourceRef, so it now renders as a widget on the Source it points at.
 	routes.push({ path: '/environments', redirect: '/sources' })
@@ -183,12 +202,13 @@ const registryProp = { ...registry }
 const app = createApp({
 	// Pure Vue 3 (ADR-066): native render() with `h` from 'vue'. Props pass
 	// FLAT (no `props:` wrapper in the data object).
-	render: () => h(App, {
-		manifest: mergedManifest,
-		customComponents: customComponentsProp,
-		registry: registryProp,
-		pageTypes: pageTypesProp,
-	}),
+	render: () =>
+		h(App, {
+			manifest: mergedManifest,
+			customComponents: customComponentsProp,
+			registry: registryProp,
+			pageTypes: pageTypesProp,
+		}),
 })
 
 // Vue 3 global install contract (ADR-066): t/n move from Vue.mixin /

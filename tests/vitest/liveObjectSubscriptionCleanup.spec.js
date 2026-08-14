@@ -31,7 +31,8 @@ vi.mock('@/store/objectStore.js', () => ({
 	useObjectStore: () => ({ unsubscribe, subscribe: vi.fn() }),
 }))
 
-const liveObjectSubscription = (await import('@/mixins/liveObjectSubscription.js')).default
+const liveObjectSubscription = (await import('@/mixins/liveObjectSubscription.js'))
+	.default
 
 /**
  * Mount a throwaway host component that carries the mixin.
@@ -39,10 +40,12 @@ const liveObjectSubscription = (await import('@/mixins/liveObjectSubscription.js
  * @return {object} the mounted wrapper
  */
 function mountHost() {
-	return mount(defineComponent({
-		mixins: [liveObjectSubscription],
-		render: () => h('div'),
-	}))
+	return mount(
+		defineComponent({
+			mixins: [liveObjectSubscription],
+			render: () => h('div'),
+		}),
+	)
 }
 
 describe('liveObjectSubscription teardown', () => {

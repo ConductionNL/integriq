@@ -74,14 +74,18 @@ describe('POST action handlers — endpoint + success toast', () => {
 	it('runFlowHandler posts to /api/flows/{id}/run', async () => {
 		post.mockResolvedValueOnce({ data: { status: 'completed' } })
 		await runFlowHandler({ item: { id: 3 } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/3/run')
+		expect(post).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/flows/3/run',
+		)
 		expect(showSuccess).toHaveBeenCalledTimes(1)
 	})
 
 	it('runFlowHandler falls back to uuid when id is absent', async () => {
 		post.mockResolvedValueOnce({ data: { status: 'completed' } })
 		await runFlowHandler({ item: { uuid: 'abc' } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/flows/abc/run')
+		expect(post).toHaveBeenCalledWith(
+			'/index.php/apps/openconnector/api/flows/abc/run',
+		)
 	})
 })
 
@@ -119,8 +123,18 @@ describe('run/test handlers — open the shared run modal instead of posting', (
 	}
 
 	it.each([
-		['runSynchronizationHandler', runSynchronizationHandler, 'synchronization', 'run'],
-		['testSynchronizationHandler', testSynchronizationHandler, 'synchronization', 'test'],
+		[
+			'runSynchronizationHandler',
+			runSynchronizationHandler,
+			'synchronization',
+			'run',
+		],
+		[
+			'testSynchronizationHandler',
+			testSynchronizationHandler,
+			'synchronization',
+			'test',
+		],
 		['runJobHandler', runJobHandler, 'job', 'run'],
 		['testJobHandler', testJobHandler, 'job', 'test'],
 	])('%s emits open-run-action for %s/%s', (_name, handler, target, mode) => {
@@ -172,15 +186,25 @@ describe('viewLogsHandler — actionId → route + query', () => {
 		const push = vi.fn().mockResolvedValue()
 		setRouter({ push })
 		viewLogsHandler({ actionId: 'view-source-logs', item: { id: 42 } })
-		expect(push).toHaveBeenCalledWith({ name: 'SourceLogs', query: { source: 42 } })
+		expect(push).toHaveBeenCalledWith({
+			name: 'SourceLogs',
+			query: { source: 42 },
+		})
 	})
 
-	it('maps each known actionId to its destination route', () => {
+	it('maps each filterable actionId to its destination route and field', () => {
 		const cases = [
+			// Each param must name a field the log rows are actually WRITTEN
+			// with — `jobId` (JobService::saveJobLog), `endpoint`
+			// (EndpointService::recordInboundCallLog) — or the destination page
+			// applies a filter that matches nothing and renders empty.
 			['view-endpoint-logs', 'EndpointLogs', 'endpoint'],
-			['view-job-logs', 'JobLogs', 'job'],
-			['view-synchronization-logs', 'SynchronizationLogs', 'synchronization'],
-			['view-cloud-event-logs', 'CloudEventLogs', 'event'],
+			['view-job-logs', 'JobLogs', 'jobId'],
+			[
+				'view-synchronization-logs',
+				'SynchronizationLogs',
+				'synchronizationId',
+			],
 		]
 		for (const [actionId, route, param] of cases) {
 			const push = vi.fn().mockResolvedValue()
@@ -188,6 +212,33 @@ describe('viewLogsHandler — actionId → route + query', () => {
 			viewLogsHandler({ actionId, item: { id: 5 } })
 			expect(push).toHaveBeenCalledWith({ name: route, query: { [param]: 5 } })
 		}
+	})
+
+	it('navigates UNFILTERED where the log rows carry no field to scope by', () => {
+		// call_log declares no event property, so filtering on one would land
+		// the user on a guaranteed-empty table — worse than showing everything.
+		const push = vi.fn().mockResolvedValue()
+		setRouter({ push })
+		viewLogsHandler({ actionId: 'view-cloud-event-logs', item: { id: 5 } })
+		expect(push).toHaveBeenCalledWith({ name: 'CloudEventLogs' })
+	})
+
+	it('reaches the unfiltered page even from a row that carries no id', () => {
+		// An unfiltered target never reads the id, so requiring one gated the
+		// navigation on a value it had no use for.
+		const push = vi.fn().mockResolvedValue()
+		setRouter({ push })
+		viewLogsHandler({ actionId: 'view-cloud-event-logs', item: {} })
+		expect(push).toHaveBeenCalledWith({ name: 'CloudEventLogs' })
+	})
+
+	it('still no-ops on a SCOPED target when the row carries no id', () => {
+		// The missing-id guard has to survive being moved past the unfiltered
+		// branch — a scoped target with no id would filter on `undefined`.
+		const push = vi.fn()
+		setRouter({ push })
+		viewLogsHandler({ actionId: 'view-job-logs', item: {} })
+		expect(push).not.toHaveBeenCalled()
 	})
 
 	it('no-ops on an unknown actionId', () => {
@@ -199,6 +250,8 @@ describe('viewLogsHandler — actionId → route + query', () => {
 
 	it('no-ops (no throw) when the router was never set', () => {
 		setRouter(null)
-		expect(() => viewLogsHandler({ actionId: 'view-job-logs', item: { id: 1 } })).not.toThrow()
+		expect(() =>
+			viewLogsHandler({ actionId: 'view-job-logs', item: { id: 1 } }),
+		).not.toThrow()
 	})
 })

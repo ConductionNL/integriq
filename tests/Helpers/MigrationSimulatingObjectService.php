@@ -116,6 +116,8 @@ class MigrationSimulatingObjectService extends OrObjectService {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_render = true,
+		bool $_audit = true,
+		?array $_extend = [],
 	): ?ObjectEntity {
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
 
@@ -176,6 +178,8 @@ class MigrationSimulatingObjectService extends OrObjectService {
 		?string $uuid = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		bool $silent = false,
+		bool $_validation = true,
 	): ObjectEntity {
 		$data = $object;
 		if ($object instanceof ObjectEntity === true) {

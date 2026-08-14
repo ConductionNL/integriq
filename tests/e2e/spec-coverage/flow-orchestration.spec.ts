@@ -72,11 +72,13 @@ const runId = `flow-${Date.now().toString(36)}-${Math.random().toString(36).slic
  * "did not run". Each describe owns its own client and tears down its own rows.
  */
 class Fixtures {
-
 	api!: ApiClient
-	private created: Array<{ schema: string, id: string }> = []
+	private created: Array<{ schema: string; id: string }> = []
 
-	async open(browser: import('@playwright/test').Browser, baseURL: string): Promise<void> {
+	async open(
+		browser: import('@playwright/test').Browser,
+		baseURL: string,
+	): Promise<void> {
 		this.api = await makeApiClient(browser, baseURL)
 	}
 
@@ -85,7 +87,9 @@ class Fixtures {
 		const obj = await createObject(this.api, schema, data)
 		const id = obj.id ?? obj.uuid
 		if (!id) {
-			throw new Error(`createObject(${schema}) returned no id/uuid — cannot track it for cleanup: ${JSON.stringify(obj).slice(0, 300)}`)
+			throw new Error(
+				`createObject(${schema}) returned no id/uuid — cannot track it for cleanup: ${JSON.stringify(obj).slice(0, 300)}`,
+			)
 		}
 		this.created.push({ schema, id })
 		return obj
@@ -114,7 +118,6 @@ class Fixtures {
 		this.created = []
 		await this.api?.dispose()
 	}
-
 }
 
 /**
@@ -186,7 +189,7 @@ function stepRow(page: Page, index: number): Locator {
 async function stepTypeLabel(page: Page, index: number): Promise<string> {
 	const selected = stepRow(page, index).locator('.vs__selected').first()
 	const titled = selected.locator('xpath=descendant-or-self::*[@title]').first()
-	if (await titled.count() > 0) {
+	if ((await titled.count()) > 0) {
 		const title = (await titled.getAttribute('title'))?.trim()
 		if (title) {
 			return title
@@ -215,7 +218,9 @@ async function stepTypeLabel(page: Page, index: number): Promise<string> {
 async function optionLabels(page: Page, select: Locator): Promise<string[]> {
 	await select.locator('.vs__dropdown-toggle').click()
 	const menu = page.locator('.vs__dropdown-menu')
-	await expect(menu.first(), 'the dropdown must actually open').toBeVisible({ timeout: 10_000 })
+	await expect(menu.first(), 'the dropdown must actually open').toBeVisible({
+		timeout: 10_000,
+	})
 
 	const options = menu.locator('li[role="option"]')
 	// The list is fetched (`configRefLoading`), so give it a moment to arrive
@@ -223,17 +228,27 @@ async function optionLabels(page: Page, select: Locator): Promise<string[]> {
 	// a picker that never populates fails on the explicit check below rather
 	// than silently yielding an empty array.
 	await expect
-		.poll(async () => await options.count(), { timeout: 15_000, message: 'the picker never populated' })
+		.poll(async () => await options.count(), {
+			timeout: 15_000,
+			message: 'the picker never populated',
+		})
 		.toBeGreaterThan(0)
 		.catch(async () => {
-			const rendered = (await menu.first().innerText()).replace(/\s+/g, ' ').trim()
-			throw new Error(`the dropdown opened but offered no selectable option — it rendered: ${JSON.stringify(rendered)}`)
+			const rendered = (await menu.first().innerText())
+				.replace(/\s+/g, ' ')
+				.trim()
+			throw new Error(
+				`the dropdown opened but offered no selectable option — it rendered: ${JSON.stringify(rendered)}`,
+			)
 		})
 
 	const labels: string[] = []
 	for (const opt of await options.all()) {
 		const titled = opt.locator('xpath=descendant-or-self::*[@title]').first()
-		const title = (await titled.count()) > 0 ? (await titled.getAttribute('title'))?.trim() : undefined
+		const title =
+			(await titled.count()) > 0
+				? (await titled.getAttribute('title'))?.trim()
+				: undefined
 		labels.push(title || (await opt.innerText()).replace(/\s+/g, ' ').trim())
 	}
 	await page.keyboard.press('Escape')
@@ -258,14 +273,25 @@ test.describe('Flow detail — the draft is only saveable once it differs (REQ-0
 			// instead. Seeding a readable marker into every field is not an
 			// option here either — see the dead-letter spec's note on
 			// `required: []` not meaning "validates nothing".
-			steps: [{ order: 1, type: 'event', onError: 'stop', config: { type: 'com.example.seed', source: `urn:${runId}` } }],
+			steps: [
+				{
+					order: 1,
+					type: 'event',
+					onError: 'stop',
+					config: { type: 'com.example.seed', source: `urn:${runId}` },
+				},
+			],
 		})
 		flowId = flow.id ?? flow.uuid
 	})
-	test.afterAll(async () => { await fx.close() })
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e flow-orchestration::an-untouched-flow-offers-nothing-to-save
-	test('a freshly loaded flow offers no Save or Discard, and one keystroke offers both', async ({ page }) => {
+	test('a freshly loaded flow offers no Save or Discard, and one keystroke offers both', async ({
+		page,
+	}) => {
 		await openFlow(page, flowId)
 
 		// THE REQUIREMENT (an absence claim — worthless alone).
@@ -298,7 +324,9 @@ test.describe('Flow detail — the draft is only saveable once it differs (REQ-0
 	})
 
 	// @e2e flow-orchestration::a-flow-with-no-name-cannot-be-saved
-	test('clearing the name leaves Save offered but disabled, and restoring it re-enables', async ({ page }) => {
+	test('clearing the name leaves Save offered but disabled, and restoring it re-enables', async ({
+		page,
+	}) => {
 		await openFlow(page, flowId)
 
 		// Make the draft dirty with a VALID name first, so that the disabled
@@ -308,7 +336,10 @@ test.describe('Flow detail — the draft is only saveable once it differs (REQ-0
 		// observation.
 		await nameField(page).fill(`${runId} renamed`)
 		const save = saveButton(page)
-		await expect(save, 'a dirty draft with a valid name offers Save').toBeVisible({ timeout: 10_000 })
+		await expect(
+			save,
+			'a dirty draft with a valid name offers Save',
+		).toBeVisible({ timeout: 10_000 })
 		await expect(save, 'and it is ENABLED — this is the control').toBeEnabled()
 
 		// THE REQUIREMENT. `canSave` requires a non-empty trimmed name.
@@ -325,7 +356,9 @@ test.describe('Flow detail — the draft is only saveable once it differs (REQ-0
 		// Back to enabled, proving the disable is driven by the value and not
 		// by some sticky state the first fill introduced.
 		await nameField(page).fill(`${runId} renamed again`)
-		await expect(save, 'a valid name re-enables Save').toBeEnabled({ timeout: 10_000 })
+		await expect(save, 'a valid name re-enables Save').toBeEnabled({
+			timeout: 10_000,
+		})
 	})
 })
 
@@ -344,32 +377,63 @@ test.describe('Flow detail — the typed step list is the keyboard-operable edit
 		// below is only meaningful because both exist at the same moment: a
 		// picker that lists nothing would satisfy "no Sources are offered"
 		// trivially.
-		await fx.make('source', { name: SOURCE_NAME, description: 'flow picker fixture', location: 'https://example.invalid/alpha', type: 'api', isEnabled: true })
-		await fx.make('mapping', { name: MAPPING_NAME, description: 'flow picker fixture', mapping: { a: 'b' } })
+		await fx.make('source', {
+			name: SOURCE_NAME,
+			description: 'flow picker fixture',
+			location: 'https://example.invalid/alpha',
+			type: 'api',
+			isEnabled: true,
+		})
+		await fx.make('mapping', {
+			name: MAPPING_NAME,
+			description: 'flow picker fixture',
+			mapping: { a: 'b' },
+		})
 		const flow = await fx.make('flow', {
 			name: `${runId} three steps`,
 			description: 'fixture for the reorder + picker scenarios',
 			isEnabled: false,
 			steps: [
-				{ order: 1, type: 'call', onError: 'stop', config: { endpoint: '/alpha', method: 'GET' } },
-				{ order: 2, type: 'event', onError: 'continue', config: { type: 'com.example.beta', source: `urn:${runId}` } },
+				{
+					order: 1,
+					type: 'call',
+					onError: 'stop',
+					config: { endpoint: '/alpha', method: 'GET' },
+				},
+				{
+					order: 2,
+					type: 'event',
+					onError: 'continue',
+					config: { type: 'com.example.beta', source: `urn:${runId}` },
+				},
 				{ order: 3, type: 'synchronization', onError: 'dead_letter' },
 			],
 		})
 		flowId = flow.id ?? flow.uuid
 	})
-	test.afterAll(async () => { await fx.close() })
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e flow-orchestration::reordering-is-possible-without-a-pointer-drag
-	test('Move up swaps two steps by keyboard alone, with no pointer drag', async ({ page }) => {
+	test('Move up swaps two steps by keyboard alone, with no pointer drag', async ({
+		page,
+	}) => {
 		await openFlow(page, flowId)
 		await expect(page.getByTestId('flow-step-row')).toHaveCount(3)
 
 		// The three seeded steps carry three DIFFERENT types, which is what
 		// makes a swap observable at all. Read the order as rendered rather
 		// than assuming the seed order survived load.
-		const before = [await stepTypeLabel(page, 0), await stepTypeLabel(page, 1), await stepTypeLabel(page, 2)]
-		expect(before, 'the three seeded steps must render as three distinguishable rows').toEqual(['Call', 'Event', 'Synchronization'])
+		const before = [
+			await stepTypeLabel(page, 0),
+			await stepTypeLabel(page, 1),
+			await stepTypeLabel(page, 2),
+		]
+		expect(
+			before,
+			'the three seeded steps must render as three distinguishable rows',
+		).toEqual(['Call', 'Event', 'Synchronization'])
 
 		// The first row's "Move step up" is disabled and the last row's "Move
 		// step down" is disabled — the editor knows where the ends are. This
@@ -379,17 +443,27 @@ test.describe('Flow detail — the typed step list is the keyboard-operable edit
 		const moveUp = page.getByRole('button', { name: 'Move step up' })
 		await expect(moveUp).toHaveCount(3)
 		await expect(moveUp.nth(0), 'the first step cannot move up').toBeDisabled()
-		await expect(page.getByRole('button', { name: 'Move step down' }).nth(2), 'the last step cannot move down').toBeDisabled()
+		await expect(
+			page.getByRole('button', { name: 'Move step down' }).nth(2),
+			'the last step cannot move down',
+		).toBeDisabled()
 
 		// KEYBOARD ONLY. `.focus()` + Enter is a real keyboard activation of
 		// the button; no drag, no pointer. WCAG 2.1 AA 2.1.1 is the reason the
 		// spec forbids a drag-only editor, so exercising the pointer path here
 		// would test the wrong thing.
 		await moveUp.nth(1).focus()
-		await expect(moveUp.nth(1), 'the control must be reachable by focus for the keyboard path to exist').toBeFocused()
+		await expect(
+			moveUp.nth(1),
+			'the control must be reachable by focus for the keyboard path to exist',
+		).toBeFocused()
 		await page.keyboard.press('Enter')
 
-		const after = [await stepTypeLabel(page, 0), await stepTypeLabel(page, 1), await stepTypeLabel(page, 2)]
+		const after = [
+			await stepTypeLabel(page, 0),
+			await stepTypeLabel(page, 1),
+			await stepTypeLabel(page, 2),
+		]
 		expect(
 			after,
 			'Move up on step 2 must swap it with step 1 — order is the step identity, so the ROWS move and the `order` values stay 1,2,3',
@@ -400,17 +474,26 @@ test.describe('Flow detail — the typed step list is the keyboard-operable edit
 		// behaviour the branch targets depend on: `nextStepOrder` references
 		// `order` BY VALUE, so a reorder that renumbered would silently
 		// invalidate every branch target in the flow.
-		await expect(stepRow(page, 0).locator('.flow-step-row__order')).toHaveText('#1')
-		await expect(stepRow(page, 2).locator('.flow-step-row__order')).toHaveText('#3')
+		await expect(stepRow(page, 0).locator('.flow-step-row__order')).toHaveText(
+			'#1',
+		)
+		await expect(stepRow(page, 2).locator('.flow-step-row__order')).toHaveText(
+			'#3',
+		)
 
 		// A reorder is an edit, so the draft must now be dirty. Same
 		// differential shape as the REQ-010 tests: the swap above is only
 		// believable if the page agrees something changed.
-		await expect(saveButton(page), 'a reorder is an edit and must offer Save').toBeVisible({ timeout: 10_000 })
+		await expect(
+			saveButton(page),
+			'a reorder is an edit and must offer Save',
+		).toBeVisible({ timeout: 10_000 })
 	})
 
 	// @e2e flow-orchestration::the-step-list-editor-adds-a-step-with-a-typed-config-picker
-	test('Add step yields a row whose config-ref picker is scoped to the picked type', async ({ page }) => {
+	test('Add step yields a row whose config-ref picker is scoped to the picked type', async ({
+		page,
+	}) => {
 		await openFlow(page, flowId)
 		await expect(page.getByTestId('flow-step-row')).toHaveCount(3)
 
@@ -423,7 +506,12 @@ test.describe('Flow detail — the typed step list is the keyboard-operable edit
 
 		// Pick `mapping` through the type NcSelect exactly as an operator would.
 		await typeSelect.locator('.vs__dropdown-toggle').click()
-		await page.locator('.vs__dropdown-menu li[role="option"]', { hasText: /^Mapping$/ }).first().click()
+		await page
+			.locator('.vs__dropdown-menu li[role="option"]', {
+				hasText: /^Mapping$/,
+			})
+			.first()
+			.click()
 
 		// THE REQUIREMENT: the config-ref picker is now scoped to Mappings.
 		const configRef = newRow.locator('.flow-step-row__field').nth(1)
@@ -450,7 +538,10 @@ test.describe('Flow detail — the typed step list is the keyboard-operable edit
 		// must flip both memberships. A dead selector cannot produce this
 		// difference; only the scoping rule actually working can.
 		await typeSelect.locator('.vs__dropdown-toggle').click()
-		await page.locator('.vs__dropdown-menu li[role="option"]', { hasText: /^Call$/ }).first().click()
+		await page
+			.locator('.vs__dropdown-menu li[role="option"]', { hasText: /^Call$/ })
+			.first()
+			.click()
 
 		const callOptions = await optionLabels(page, configRef)
 		expect(
@@ -486,17 +577,39 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 			durationMs: 3120,
 			error: { message: `${runId} upstream refused the call` },
 			steps: [
-				{ order: 1, type: 'mapping', name: `${runId} map inbound`, status: 'success', durationMs: 12, input: { token: '[REDACTED]', id: 'abc' }, output: { ok: true } },
-				{ order: 2, type: 'call', name: `${runId} upstream call`, status: 'failed', durationMs: 3100, input: { url: 'https://example.invalid/alpha' }, output: { error: 'refused' } },
+				{
+					order: 1,
+					type: 'mapping',
+					name: `${runId} map inbound`,
+					status: 'success',
+					durationMs: 12,
+					input: { token: '[REDACTED]', id: 'abc' },
+					output: { ok: true },
+				},
+				{
+					order: 2,
+					type: 'call',
+					name: `${runId} upstream call`,
+					status: 'failed',
+					durationMs: 3100,
+					input: { url: 'https://example.invalid/alpha' },
+					output: { error: 'refused' },
+				},
 			],
 		})
 		traceId = trace.id ?? trace.uuid
 	})
-	test.afterAll(async () => { await fx.close() })
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e execution-trace::operator-inspects-a-traces-step-timeline
-	test('a failed trace renders an ordered timeline whose steps expand to their redacted payloads', async ({ page }) => {
-		await page.goto(`${APP_BASE}/traces/${traceId}`, { waitUntil: 'domcontentloaded' })
+	test('a failed trace renders an ordered timeline whose steps expand to their redacted payloads', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/traces/${traceId}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const timeline = page.getByTestId('trace-timeline')
 		await expect(
@@ -513,9 +626,14 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 		const rendered = (await timeline.innerText()).replace(/\s+/g, ' ')
 		expect(rendered, 'step 1 type').toMatch(/mapping/i)
 		expect(rendered, 'step 2 type').toMatch(/call/i)
-		expect(rendered, 'a per-step duration must be shown').toMatch(/3100\s*ms|3\.1\s*s/)
+		expect(rendered, 'a per-step duration must be shown').toMatch(
+			/3100\s*ms|3\.1\s*s/,
+		)
 		expect(rendered, 'a per-step status must be shown').toMatch(/failed/i)
-		expect(rendered, 'and the succeeding step is distinguished from the failing one').toMatch(/success/i)
+		expect(
+			rendered,
+			'and the succeeding step is distinguished from the failing one',
+		).toMatch(/success/i)
 		// The two steps must render in `order`, not in whatever order the
 		// payload happened to arrive in.
 		expect(
@@ -525,7 +643,9 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 
 		// The trace-level error surfaces as its own element, not only inside
 		// the timeline text.
-		await expect(page.getByTestId('trace-error')).toContainText('upstream refused the call')
+		await expect(page.getByTestId('trace-error')).toContainText(
+			'upstream refused the call',
+		)
 
 		// EXPANSION IS THE REQUIREMENT — and "the payload is not shown" is an
 		// absence claim, so it is asserted BEFORE and AFTER the same click on
@@ -537,14 +657,26 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 
 		await timeline.locator('li').nth(1).getByRole('button').first().click()
 		const detail = page.getByTestId('step-detail')
-		await expect(detail, 'expanding a step must reveal its snapshot').toHaveCount(1)
-		await expect(detail, 'the expanded snapshot is the step input/output').toContainText('example.invalid')
+		await expect(
+			detail,
+			'expanding a step must reveal its snapshot',
+		).toHaveCount(1)
+		await expect(
+			detail,
+			'the expanded snapshot is the step input/output',
+		).toContainText('example.invalid')
 	})
 
 	// @e2e execution-trace::replay-defaults-to-dry-run-with-a-confirmation-step-for-force
-	test('Replay offers only a dry-run first, and a forced replay needs a second explicit confirmation', async ({ page }) => {
-		await page.goto(`${APP_BASE}/traces/${traceId}`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByTestId('trace-timeline')).toBeVisible({ timeout: 25_000 })
+	test('Replay offers only a dry-run first, and a forced replay needs a second explicit confirmation', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/traces/${traceId}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.getByTestId('trace-timeline')).toBeVisible({
+			timeout: 25_000,
+		})
 
 		// THE REQUIREMENT, first half: before anything is clicked, the ONLY
 		// replay control offered is the dry run. Both halves are asserted —
@@ -572,7 +704,10 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 		// Only NOW is the forced option offered — and it is still one step
 		// away from executing.
 		const force = page.getByRole('button', { name: 'Force replay (real write)' })
-		await expect(force, 'the forced option appears only after the preview').toBeVisible()
+		await expect(
+			force,
+			'the forced option appears only after the preview',
+		).toBeVisible()
 		await expect(
 			page.getByTestId('confirm-force-replay'),
 			'and it is still not the button that writes',
@@ -589,6 +724,9 @@ test.describe('Trace detail — timeline and replay safety (execution-trace REQ-
 		// write button armed. This test never clicks the write button: the
 		// requirement is about the gate, not about the replay succeeding.
 		await page.getByRole('button', { name: 'Cancel' }).click()
-		await expect(page.getByTestId('confirm-force-replay'), 'Cancel must disarm it').toHaveCount(0)
+		await expect(
+			page.getByTestId('confirm-force-replay'),
+			'Cancel must disarm it',
+		).toHaveCount(0)
 	})
 })

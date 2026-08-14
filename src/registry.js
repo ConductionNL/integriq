@@ -48,6 +48,7 @@ import {
 	openPromotionHandler,
 } from './handlers/actionHandlers.js'
 import CatalogItemCard from './components/CatalogItemCard.vue'
+import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
@@ -133,6 +134,18 @@ export default {
 	// retry-policy block — neither is a declarative schema widget. See
 	// nextcloud-event-hub REQ-008/REQ-009.
 	SubscriptionActionFields,
+
+	// The Consumers page wires `form-dialog` to ConsumerEditorModal. Unlike the
+	// three below, NOT for width — this one has to own the submit PAYLOAD, which
+	// a `form-fields` slot cannot reach (initFormData and buildSubmitPayload both
+	// live in CnFormDialog, above the slot). `domains`/`ips` are bare
+	// `type: array`, so they resolve to the `tags` widget, and initFormData seeds
+	// every tags field to `[]` on create — which ConsumerScopeService::isAllowed()
+	// reads as "an allowlist admitting nobody" (it gates on is_array), so every
+	// consumer created through the generic dialog would have 403'd all inbound
+	// traffic. It also restores authorizationConfiguration, rateLimit and quota:
+	// all three are `type: object`, which fieldsFromSchema drops.
+	ConsumerEditorModal,
 
 	// The Mappings page wires `form-dialog` — not `form-fields` — to
 	// MappingEditorModal, restoring the wide three-column create/edit surface
@@ -253,10 +266,16 @@ export default {
 // registry, so only they are listed here.
 export const registry = {
 	ApiProductDetail: { kind: 'page', component: ApiProductDetail },
-	NotificatiesAbonnementenPage: { kind: 'page', component: NotificatiesAbonnementenPage },
+	NotificatiesAbonnementenPage: {
+		kind: 'page',
+		component: NotificatiesAbonnementenPage,
+	},
 	MappingDetailPage: { kind: 'page', component: MappingDetailPage },
 	RuleDetailPage: { kind: 'page', component: RuleDetailPage },
-	SynchronizationDetailPage: { kind: 'page', component: SynchronizationDetailPage },
+	SynchronizationDetailPage: {
+		kind: 'page',
+		component: SynchronizationDetailPage,
+	},
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },

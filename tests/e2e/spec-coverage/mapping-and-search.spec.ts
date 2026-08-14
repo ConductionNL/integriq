@@ -35,7 +35,9 @@ const API_BASE = '/index.php/apps/openconnector/api'
 
 test.describe('REQ-UI-001: Mappings list page mounts', () => {
 	// @e2e mapping-and-search::mappings-list-page-mounts-and-shows-content
-	test('Mappings index page renders inside main content area', async ({ page }) => {
+	test('Mappings index page renders inside main content area', async ({
+		page,
+	}) => {
 		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
@@ -76,14 +78,18 @@ test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
 
 test.describe('REQ-UI-001: Mapping detail page', () => {
 	// @e2e mapping-and-search::mapping-detail-page-renders-for-an-existing-mapping
-	test('Mapping detail URL renders app-content without crashing', async ({ page }) => {
+	test('Mapping detail URL renders app-content without crashing', async ({
+		page,
+	}) => {
 		// Known bug #996: table cells all "—", so navigate directly to detail URL.
 		// SPA gracefully handles nonexistent IDs (shows detail shell or not-found).
 		// Hash-mode router (src/main.js — fleet #133): address the detail route via
 		// the URL hash. The mapping-detail surface keeps polling an OR fetch for the
 		// (nonexistent) id, so `networkidle` never settles — wait for DOM + main
 		// instead of network silence.
-		await page.goto(`${APP_BASE}/#/mappings/__nonexistent__`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/mappings/__nonexistent__`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)
@@ -95,7 +101,9 @@ test.describe('REQ-UI-001: Mapping detail page', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Mappings OR API — list', () => {
-	test('GET mappings list from OR returns mapping objects', async ({ request }) => {
+	test('GET mappings list from OR returns mapping objects', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/mapping?_limit=20`, {
 			failOnStatusCode: false,
 		})

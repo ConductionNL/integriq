@@ -70,7 +70,11 @@
 
 		<div v-if="!loading && draft" class="flow-detail">
 			<NcNoteCard v-if="lastRunStatus" :type="lastRunNoteType">
-				{{ t('openconnector', 'Last run status: {status}', { status: lastRunStatus }) }}
+				{{
+					t('openconnector', 'Last run status: {status}', {
+						status: lastRunStatus,
+					})
+				}}
 			</NcNoteCard>
 			<NcNoteCard v-if="saveError" type="error">
 				{{ saveError }}
@@ -85,17 +89,33 @@
 
 			<section class="flow-detail__card">
 				<h3>{{ t('openconnector', 'General') }}</h3>
-				<NcTextField :label="t('openconnector', 'Name') + '*'" :model-value="draft.name" @update:model-value="(value) => updateDraft('name', value)" />
-				<NcTextArea v-model="draft.description" resize="vertical" :label="t('openconnector', 'Description')" />
+				<NcTextField
+					:label="t('openconnector', 'Name') + '*'"
+					:model-value="draft.name"
+					@update:model-value="(value) => updateDraft('name', value)" />
+				<NcTextArea
+					v-model="draft.description"
+					resize="vertical"
+					:label="t('openconnector', 'Description')" />
 				<NcCheckboxRadioSwitch v-model="draft.isEnabled">
-					{{ t('openconnector', 'Enabled (cron/endpoint/event triggers run this flow; a manual Run always works)') }}
+					{{
+						t(
+							'openconnector',
+							'Enabled (cron/endpoint/event triggers run this flow; a manual Run always works)',
+						)
+					}}
 				</NcCheckboxRadioSwitch>
 			</section>
 
 			<section class="flow-detail__card">
 				<h3>{{ t('openconnector', 'Steps') }}</h3>
 				<p class="flow-detail__hint">
-					{{ t('openconnector', 'Steps execute in order (top to bottom). A branch step can jump to a specific step; every other step runs in sequence.') }}
+					{{
+						t(
+							'openconnector',
+							'Steps execute in order (top to bottom). A branch step can jump to a specific step; every other step runs in sequence.',
+						)
+					}}
 				</p>
 				<FlowStepRow
 					v-for="(step, index) in draft.steps"
@@ -137,9 +157,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import {
-	CnDetailPage,
-} from '@conduction/nextcloud-vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
@@ -190,7 +208,7 @@ function keyedSteps(steps) {
 		branches: [],
 		defaultNextStepOrder: null,
 		...step,
-		_key: 'step-' + (seq++) + '-' + (step.order ?? seq),
+		_key: 'step-' + seq++ + '-' + (step.order ?? seq),
 	}))
 }
 
@@ -241,7 +259,11 @@ export default {
 	setup(props) {
 		const objectStore = useObjectStore()
 		if (typeof objectStore.registerObjectType === 'function') {
-			objectStore.registerObjectType(SCHEMA_SLUG, props.schema || SCHEMA_SLUG, props.register || REGISTER_SLUG)
+			objectStore.registerObjectType(
+				SCHEMA_SLUG,
+				props.schema || SCHEMA_SLUG,
+				props.register || REGISTER_SLUG,
+			)
 		}
 		return { objectStore }
 	},
@@ -334,7 +356,10 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		canSave() {
-			return Boolean(this.draft?.name && this.draft.name.trim().length > 0) && this.validationErrors.length === 0
+			return (
+				Boolean(this.draft?.name && this.draft.name.trim().length > 0)
+				&& this.validationErrors.length === 0
+			)
 		},
 		/**
 		 * Whether the draft differs from the loaded object, comparing serialized
@@ -345,10 +370,13 @@ export default {
 		dirty() {
 			if (!this.draft || !this.original) return false
 			const originalNormalized = this.normalizeForDiff(this.original)
-			return JSON.stringify(serializeSteps(this.draft.steps)) !== JSON.stringify(serializeSteps(originalNormalized.steps))
+			return (
+				JSON.stringify(serializeSteps(this.draft.steps))
+					!== JSON.stringify(serializeSteps(originalNormalized.steps))
 				|| this.draft.name !== originalNormalized.name
 				|| this.draft.description !== originalNormalized.description
 				|| this.draft.isEnabled !== originalNormalized.isEnabled
+			)
 		},
 		/**
 		 * Maps the most recent run's terminal status onto the note styling —
@@ -358,7 +386,12 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
 		lastRunNoteType() {
-			if (this.lastRunStatus === 'failed' || this.lastRunStatus === 'stopped' || this.lastRunStatus === 'dead_letter') return 'error'
+			if (
+				this.lastRunStatus === 'failed'
+				|| this.lastRunStatus === 'stopped'
+				|| this.lastRunStatus === 'dead_letter'
+			)
+				return 'error'
 			if (this.lastRunStatus === 'suspended') return 'warning'
 			return 'success'
 		},
@@ -378,7 +411,13 @@ export default {
 			const seen = new Set()
 			for (const order of orders) {
 				if (seen.has(order)) {
-					errors.push(t('openconnector', 'Two or more steps share order #{order} — each step\'s order must be unique.', { order }))
+					errors.push(
+						t(
+							'openconnector',
+							"Two or more steps share order #{order} — each step's order must be unique.",
+							{ order },
+						),
+					)
 				}
 				seen.add(order)
 			}
@@ -386,13 +425,33 @@ export default {
 			const orderSet = new Set(orders)
 			for (const step of this.draft.steps) {
 				if (step.type !== 'branch') continue
-				for (const branch of (step.branches || [])) {
-					if (branch.nextStepOrder !== null && branch.nextStepOrder !== undefined && !orderSet.has(branch.nextStepOrder)) {
-						errors.push(t('openconnector', 'Branch step #{order} targets step #{target}, which does not exist.', { order: step.order, target: branch.nextStepOrder }))
+				for (const branch of step.branches || []) {
+					if (
+						branch.nextStepOrder !== null
+						&& branch.nextStepOrder !== undefined
+						&& !orderSet.has(branch.nextStepOrder)
+					) {
+						errors.push(
+							t(
+								'openconnector',
+								'Branch step #{order} targets step #{target}, which does not exist.',
+								{ order: step.order, target: branch.nextStepOrder },
+							),
+						)
 					}
 				}
-				if (step.defaultNextStepOrder !== null && step.defaultNextStepOrder !== undefined && !orderSet.has(step.defaultNextStepOrder)) {
-					errors.push(t('openconnector', 'Branch step #{order}\'s default target #{target} does not exist.', { order: step.order, target: step.defaultNextStepOrder }))
+				if (
+					step.defaultNextStepOrder !== null
+					&& step.defaultNextStepOrder !== undefined
+					&& !orderSet.has(step.defaultNextStepOrder)
+				) {
+					errors.push(
+						t(
+							'openconnector',
+							"Branch step #{order}'s default target #{target} does not exist.",
+							{ order: step.order, target: step.defaultNextStepOrder },
+						),
+					)
 				}
 			}
 
@@ -435,9 +494,14 @@ export default {
 			this.loading = true
 			this.loadError = ''
 			try {
-				const data = await this.objectStore.fetchObject(this.schemaSlug, this.objectIdString)
+				const data = await this.objectStore.fetchObject(
+					this.schemaSlug,
+					this.objectIdString,
+				)
 				if (!data) {
-					this.loadError = this.objectStore.errors?.[this.schemaSlug] || t('openconnector', 'Failed to load flow')
+					this.loadError =
+						this.objectStore.errors?.[this.schemaSlug]
+						|| t('openconnector', 'Failed to load flow')
 					this.draft = null
 					this.original = null
 					return
@@ -446,7 +510,8 @@ export default {
 				this.draft = this.normalizeForDiff(data)
 				this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
 			} catch (err) {
-				this.loadError = err?.message || t('openconnector', 'Failed to load flow')
+				this.loadError =
+					err?.message || t('openconnector', 'Failed to load flow')
 				this.draft = null
 				this.original = null
 			} finally {
@@ -510,9 +575,24 @@ export default {
 				//     filter. Did you mean _limit? Control params require
 				//     underscore prefix." }
 				const [sources, mappings, synchronizations] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/source'), { params: { _limit: 500 } }),
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/mapping'), { params: { _limit: 500 } }),
-					axios.get(generateUrl('/apps/openregister/api/objects/openconnector/synchronization'), { params: { _limit: 500 } }),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/objects/openconnector/source',
+						),
+						{ params: { _limit: 500 } },
+					),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/objects/openconnector/mapping',
+						),
+						{ params: { _limit: 500 } },
+					),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/objects/openconnector/synchronization',
+						),
+						{ params: { _limit: 500 } },
+					),
 				])
 				this.sourceOptions = this.toOptions(sources.data)
 				this.mappingOptions = this.toOptions(mappings.data)
@@ -533,7 +613,11 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		toOptions(data) {
-			const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+			const list = Array.isArray(data?.results)
+				? data.results
+				: Array.isArray(data)
+					? data
+					: []
 			return list.map((row) => ({
 				id: String(row.id || row.uuid),
 				label: row.name || row.title || row.id,
@@ -571,7 +655,12 @@ export default {
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		addStep() {
-			const steps = [...this.draft.steps, ...keyedSteps([{ order: this.nextOrder(), type: 'mapping', onError: 'stop' }])]
+			const steps = [
+				...this.draft.steps,
+				...keyedSteps([
+					{ order: this.nextOrder(), type: 'mapping', onError: 'stop' },
+				]),
+			]
 			this.draft.steps = steps
 		},
 
@@ -616,7 +705,8 @@ export default {
 		 */
 		moveStep(index, direction) {
 			const neighbourIndex = index + direction
-			if (neighbourIndex < 0 || neighbourIndex >= this.draft.steps.length) return
+			if (neighbourIndex < 0 || neighbourIndex >= this.draft.steps.length)
+				return
 			const steps = [...this.draft.steps]
 			const currentOrder = steps[index].order
 			const neighbourOrder = steps[neighbourIndex].order
@@ -637,16 +727,32 @@ export default {
 			if (!this.objectIdString || this.running) return
 			this.running = true
 			try {
-				const response = await axios.post(generateUrl(`/apps/openconnector/api/flows/${this.objectIdString}/run`))
+				const response = await axios.post(
+					generateUrl(
+						`/apps/openconnector/api/flows/${this.objectIdString}/run`,
+					),
+				)
 				const status = response.data?.status || 'completed'
 				this.lastRunStatus = status
-				if (status === 'failed' || status === 'stopped' || status === 'dead_letter') {
-					showError(t('openconnector', 'Flow run ended with status: {status}', { status }))
+				if (
+					status === 'failed'
+					|| status === 'stopped'
+					|| status === 'dead_letter'
+				) {
+					showError(
+						t('openconnector', 'Flow run ended with status: {status}', {
+							status,
+						}),
+					)
 				} else {
 					showSuccess(t('openconnector', 'Flow run triggered'))
 				}
 			} catch (err) {
-				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to run flow'))
+				showError(
+					err?.response?.data?.error
+						|| err?.message
+						|| t('openconnector', 'Failed to run flow'),
+				)
 			} finally {
 				this.running = false
 			}
@@ -671,9 +777,14 @@ export default {
 					isEnabled: this.draft.isEnabled,
 					steps: serializeSteps(this.draft.steps),
 				}
-				const saved = await this.objectStore.saveObject(this.schemaSlug, payload)
+				const saved = await this.objectStore.saveObject(
+					this.schemaSlug,
+					payload,
+				)
 				if (!saved) {
-					this.saveError = this.objectStore.errors?.[this.schemaSlug] || t('openconnector', 'Save failed')
+					this.saveError =
+						this.objectStore.errors?.[this.schemaSlug]
+						|| t('openconnector', 'Save failed')
 					return
 				}
 				this.original = saved

@@ -47,7 +47,13 @@
 					:placeholder="placeholderFor(field.key)"
 					@update:model-value="onEndpointArrayInput" />
 				<CnFieldHelper
-					:text="field.description || t('openconnector', 'Path segments, split on commas. Left empty the backend derives them from the endpoint path.')"
+					:text="
+						field.description
+						|| t(
+							'openconnector',
+							'Path segments, split on commas. Left empty the backend derives them from the endpoint path.',
+						)
+					"
 					:more="field.descriptionLong"
 					:error="errors[field.key]" />
 			</template>
@@ -56,16 +62,22 @@
 			<div
 				v-else-if="field.key === 'method' || field.key === 'targetType'"
 				class="cn-endpoint-form-fields__select-wrapper">
-				<label :for="'cn-endpoint-form-' + field.key" class="cn-endpoint-form-fields__label">
+				<label
+					:for="'cn-endpoint-form-' + field.key"
+					class="cn-endpoint-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
 					:input-id="'cn-endpoint-form-' + field.key"
 					:aria-label-combobox="field.label"
 					:model-value="selectedEnumOption(field.key)"
-					:options="field.key === 'method' ? methodOptions : targetTypeOptions"
+					:options="
+						field.key === 'method' ? methodOptions : targetTypeOptions
+					"
 					:clearable="!field.required"
-					@update:model-value="(option) => updateField(field.key, option?.id ?? null)" />
+					@update:model-value="
+						(option) => updateField(field.key, option?.id ?? null)
+					" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
@@ -74,9 +86,17 @@
 				<!-- Register + Schema compose `targetId`, and only that target kind
 				     is addressed by a register/schema pair — so they appear only
 				     once Target Type selects it. -->
-				<template v-if="field.key === 'targetType' && isRegisterSchemaTarget">
-					<div v-if="registerUnavailable" class="cn-endpoint-form-fields__note cn-endpoint-form-fields__note--warn">
-						{{ t('openconnector', 'OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.') }}
+				<template
+					v-if="field.key === 'targetType' && isRegisterSchemaTarget">
+					<div
+						v-if="registerUnavailable"
+						class="cn-endpoint-form-fields__note cn-endpoint-form-fields__note--warn">
+						{{
+							t(
+								'openconnector',
+								'OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.',
+							)
+						}}
 					</div>
 					<template v-else>
 						<!-- Register and Schema sit on one row: they are two halves
@@ -84,12 +104,16 @@
 						     as one control. -->
 						<div class="cn-endpoint-form-fields__row">
 							<div class="cn-endpoint-form-fields__col">
-								<label for="cn-endpoint-form-register" class="cn-endpoint-form-fields__label">
+								<label
+									for="cn-endpoint-form-register"
+									class="cn-endpoint-form-fields__label">
 									{{ t('openconnector', 'Register') }} *
 								</label>
 								<NcSelect
 									input-id="cn-endpoint-form-register"
-									:aria-label-combobox="t('openconnector', 'Register')"
+									:aria-label-combobox="
+										t('openconnector', 'Register')
+									"
 									:model-value="selectedRegister"
 									:options="registerOptions"
 									:loading="registersLoading"
@@ -97,12 +121,16 @@
 							</div>
 
 							<div class="cn-endpoint-form-fields__col">
-								<label for="cn-endpoint-form-schema" class="cn-endpoint-form-fields__label">
+								<label
+									for="cn-endpoint-form-schema"
+									class="cn-endpoint-form-fields__label">
 									{{ t('openconnector', 'Schema') }} *
 								</label>
 								<NcSelect
 									input-id="cn-endpoint-form-schema"
-									:aria-label-combobox="t('openconnector', 'Schema')"
+									:aria-label-combobox="
+										t('openconnector', 'Schema')
+									"
 									:model-value="selectedSchema"
 									:options="schemaOptions"
 									:disabled="!selectedRegister"
@@ -111,14 +139,23 @@
 							</div>
 						</div>
 						<CnFieldHelper
-							:text="t('openconnector', 'Stored together as the endpoint\'s target id.')" />
+							:text="
+								t(
+									'openconnector',
+									'Stored together as the endpoint\'s target id.',
+								)
+							" />
 					</template>
 				</template>
 			</div>
 
 			<!-- configurations: multiselect over OpenRegister configurations. -->
-			<div v-else-if="field.key === 'configurations'" class="cn-endpoint-form-fields__select-wrapper">
-				<label for="cn-endpoint-form-configurations" class="cn-endpoint-form-fields__label">
+			<div
+				v-else-if="field.key === 'configurations'"
+				class="cn-endpoint-form-fields__select-wrapper">
+				<label
+					for="cn-endpoint-form-configurations"
+					class="cn-endpoint-form-fields__label">
 					{{ field.label }}
 				</label>
 				<NcSelect
@@ -136,8 +173,12 @@
 					:error="errors[field.key]" />
 			</div>
 
-			<div v-else-if="field.widget === 'textarea'" class="cn-endpoint-form-fields__textarea-wrapper">
-				<label :for="'cn-endpoint-form-' + field.key" class="cn-endpoint-form-fields__label">
+			<div
+				v-else-if="field.widget === 'textarea'"
+				class="cn-endpoint-form-fields__textarea-wrapper">
+				<label
+					:for="'cn-endpoint-form-' + field.key"
+					class="cn-endpoint-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -167,7 +208,11 @@
 			<template v-else>
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="placeholderFor(field.key)"
@@ -182,17 +227,16 @@
 </template>
 
 <script>
-import {
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 /** HTTP methods the original EditEndpoint modal offered, in its order. */
-const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({ id, label: id }))
+const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
+	id,
+	label: id,
+}))
 
 /**
  * Target kinds. The original modal offered ONLY `register/schema`, which is why
@@ -318,7 +362,9 @@ export default {
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		activeRegisterId() {
-			return this.pickedRegisterId !== null ? this.pickedRegisterId : this.targetRegisterId
+			return this.pickedRegisterId !== null
+				? this.pickedRegisterId
+				: this.targetRegisterId
 		},
 
 		/**
@@ -368,7 +414,11 @@ export default {
 		 */
 		selectedRegister() {
 			if (this.activeRegisterId == null) return null
-			return this.registerOptions.find((option) => String(option.id) === String(this.activeRegisterId)) ?? null
+			return (
+				this.registerOptions.find(
+					(option) => String(option.id) === String(this.activeRegisterId),
+				) ?? null
+			)
 		},
 
 		/**
@@ -385,10 +435,20 @@ export default {
 			// on whether an id is a number or a string, and a strict `includes`
 			// silently matched nothing — leaving the picker empty and Create
 			// permanently disabled, since a complete target needs both halves.
-			const allowedIds = Array.isArray(allowed) ? allowed.map((id) => String(id)) : null
+			const allowedIds = Array.isArray(allowed)
+				? allowed.map((id) => String(id))
+				: null
 			return this.schemas
-				.filter((schema) => allowedIds === null || allowedIds.length === 0 || allowedIds.includes(String(schema.id)))
-				.map((schema) => ({ id: schema.id, label: schema.title || schema.name || String(schema.id) }))
+				.filter(
+					(schema) =>
+						allowedIds === null
+						|| allowedIds.length === 0
+						|| allowedIds.includes(String(schema.id)),
+				)
+				.map((schema) => ({
+					id: schema.id,
+					label: schema.title || schema.name || String(schema.id),
+				}))
 		},
 
 		/**
@@ -397,7 +457,11 @@ export default {
 		 */
 		selectedSchema() {
 			if (this.targetSchemaId == null) return null
-			return this.schemaOptions.find((option) => String(option.id) === String(this.targetSchemaId)) ?? null
+			return (
+				this.schemaOptions.find(
+					(option) => String(option.id) === String(this.targetSchemaId),
+				) ?? null
+			)
 		},
 
 		/**
@@ -407,8 +471,12 @@ export default {
 		selectedConfigurations() {
 			const ids = this.formData?.configurations
 			if (!Array.isArray(ids)) return []
-			return ids.map((id) => this.configurationOptions.find((option) => String(option.id) === String(id))
-				?? { id, label: String(id) })
+			return ids.map(
+				(id) =>
+					this.configurationOptions.find(
+						(option) => String(option.id) === String(id),
+					) ?? { id, label: String(id) },
+			)
 		},
 	},
 
@@ -465,8 +533,14 @@ export default {
 		selectedEnumOption(key) {
 			const current = this.formData?.[key]
 			if (!current) return null
-			const options = key === 'method' ? this.methodOptions : this.targetTypeOptions
-			return options.find((option) => option.id === current) ?? { id: current, label: String(current) }
+			const options =
+				key === 'method' ? this.methodOptions : this.targetTypeOptions
+			return (
+				options.find((option) => option.id === current) ?? {
+					id: current,
+					label: String(current),
+				}
+			)
 		},
 
 		/**
@@ -530,7 +604,10 @@ export default {
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		onConfigurationsPick(options) {
-			this.updateField('configurations', (options || []).map((option) => String(option.id)))
+			this.updateField(
+				'configurations',
+				(options || []).map((option) => String(option.id)),
+			)
 		},
 
 		/**
@@ -543,7 +620,9 @@ export default {
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/registers'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/registers'),
+				)
 				this.registers = response.data?.results || []
 				this.registerUnavailable = false
 			} catch (err) {
@@ -565,7 +644,9 @@ export default {
 		async fetchSchemas() {
 			this.schemasLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas'),
+				)
 				this.schemas = response.data?.results || []
 			} catch (err) {
 				this.schemas = []
@@ -585,14 +666,18 @@ export default {
 		async fetchConfigurations() {
 			this.configurationsLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/configurations'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/configurations'),
+				)
 				// `title` first: OpenRegister's configurations API returns `title`,
 				// not `name`. The original modal read `config.name`, so its labels
 				// fell through to the raw id.
-				this.configurationOptions = (response.data?.results || []).map((config) => ({
-					id: config.id,
-					label: config.title || config.name || String(config.id),
-				}))
+				this.configurationOptions = (response.data?.results || []).map(
+					(config) => ({
+						id: config.id,
+						label: config.title || config.name || String(config.id),
+					}),
+				)
 			} catch (err) {
 				this.configurationOptions = []
 				// eslint-disable-next-line no-console

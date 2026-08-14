@@ -11,7 +11,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Synchronization') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Synchronization')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-sync"
 			:aria-label-combobox="t('openconnector', 'Synchronization')"
@@ -21,7 +23,12 @@
 			:placeholder="t('openconnector', 'Select a synchronization')"
 			@update:model-value="onSyncPick" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'The synchronization that runs when this rule matches. Pick by name; the underlying UUID is what gets stored.') }}
+			{{
+				t(
+					'openconnector',
+					'The synchronization that runs when this rule matches. Pick by name; the underlying UUID is what gets stored.',
+				)
+			}}
 		</span>
 
 		<NcCheckboxRadioSwitch
@@ -31,7 +38,12 @@
 			{{ t('openconnector', 'Retain original response') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
-			{{ t('openconnector', 'When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.') }}
+			{{
+				t(
+					'openconnector',
+					'When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.',
+				)
+			}}
 		</span>
 
 		<NcTextField
@@ -130,12 +142,29 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 
-.action-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
+.action-form__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+@media (max-width: 720px) {
+	.action-form__row {
+		grid-template-columns: 1fr;
+	}
+}
 </style>

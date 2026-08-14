@@ -26,7 +26,11 @@
 import type { Locator, Page } from '@playwright/test'
 
 /** Selectors for overlays that are not the application's own modal. */
-const CHROME_DIALOGS = ['#firstrunwizard', '.cn-support-dialog', '[data-testid-modal="cn-support-dialog"]']
+const CHROME_DIALOGS = [
+	'#firstrunwizard',
+	'.cn-support-dialog',
+	'[data-testid-modal="cn-support-dialog"]',
+]
 
 /**
  * The first `role="dialog"` that belongs to the application itself.
@@ -38,6 +42,6 @@ export function appDialog(page: Page): Locator {
 	// Self-exclusion, not descendant-exclusion: `filter({ hasNot })` asks about
 	// a dialog's children, whereas the overlays we are ruling out ARE the
 	// matched element. A `:not()` chain in the selector is the honest way.
-	const notChrome = CHROME_DIALOGS.map(sel => `:not(${sel})`).join('')
+	const notChrome = CHROME_DIALOGS.map((sel) => `:not(${sel})`).join('')
 	return page.locator(`[role="dialog"]${notChrome}`).first()
 }

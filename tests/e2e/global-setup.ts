@@ -49,18 +49,22 @@ function ensureBundleBuilt(): void {
 		return
 	}
 	// eslint-disable-next-line no-console
-	console.log(`[playwright globalSetup] bundle missing at ${BUNDLE_PATH}; running 'npm run build' once…`)
+	console.log(
+		`[playwright globalSetup] bundle missing at ${BUNDLE_PATH}; running 'npm run build' once…`,
+	)
 	execSync('npm run build', { cwd: APP_ROOT, stdio: 'inherit' })
 }
 
 async function ensureNextcloudReachable(baseURL: string): Promise<void> {
 	const ctx = await request.newContext()
 	try {
-		const res = await ctx.get(`${baseURL}/status.php`, { failOnStatusCode: false })
+		const res = await ctx.get(`${baseURL}/status.php`, {
+			failOnStatusCode: false,
+		})
 		if (!res.ok()) {
 			throw new Error(
-				`Nextcloud status.php returned ${res.status()} at ${baseURL}. ` +
-				`Make sure the docker container is running and reachable.`,
+				`Nextcloud status.php returned ${res.status()} at ${baseURL}. `
+					+ `Make sure the docker container is running and reachable.`,
 			)
 		}
 		const body = await res.json().catch(() => ({}))
@@ -78,7 +82,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// BASE_URL is the single authoritative target (see support/baseUrl.ts).
 	// The old `?? 'http://localhost:8080'` tail meant a config that failed to
 	// carry a baseURL silently logged in to the shared dev container.
-	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined) ?? BASE_URL
+	const baseURL =
+		(config.projects[0]?.use?.baseURL as string | undefined) ?? BASE_URL
 	const username = process.env.NC_ADMIN_USER ?? 'admin'
 	const password = process.env.NC_ADMIN_PASS ?? 'admin'
 
@@ -100,18 +105,24 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// NC redirects to /apps/dashboard/ on success; on brute-force block
 	// it stays on /login with an error message.
 	await Promise.all([
-		page.waitForURL(url => !/\/login/.test(url), { timeout: 30_000 }).catch(() => null),
+		page
+			.waitForURL((url) => !/\/login/.test(url), { timeout: 30_000 })
+			.catch(() => null),
 		page.locator('button[type="submit"]').first().click(),
 	])
 
 	const currentUrl = page.url()
 	if (/\/login/.test(currentUrl)) {
 		// Check for a visible error message that would explain why login failed.
-		const errorText = await page.locator('.warning, .error, [class*="error"]').first().textContent().catch(() => '')
+		const errorText = await page
+			.locator('.warning, .error, [class*="error"]')
+			.first()
+			.textContent()
+			.catch(() => '')
 		throw new Error(
-			`Login appears to have failed — still on ${currentUrl}. ` +
-			`Error on page: "${errorText}". ` +
-			`Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).`,
+			`Login appears to have failed — still on ${currentUrl}. `
+				+ `Error on page: "${errorText}". `
+				+ `Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).`,
 		)
 	}
 
@@ -173,7 +184,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// Best-effort: an instance without the wizard app installed simply 404s.
 	const wizardStatus = await page.evaluate(async () => {
 		try {
-			const token = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken ?? ''
+			const token =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken ?? ''
 			const res = await fetch('/index.php/apps/firstrunwizard/wizard', {
 				method: 'DELETE',
 				headers: { requesttoken: token },
@@ -185,8 +198,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	})
 	if (wizardStatus !== 200 && wizardStatus !== 404) {
 		// eslint-disable-next-line no-console
-		console.warn(`[playwright globalSetup] first-run wizard dismissal returned ${wizardStatus}; `
-			+ 'specs may hit an overlay that blocks clicks without hiding anything.')
+		console.warn(
+			`[playwright globalSetup] first-run wizard dismissal returned ${wizardStatus}; `
+				+ 'specs may hit an overlay that blocks clicks without hiding anything.',
+		)
 	}
 
 	await context.storageState({ path: STORAGE_STATE })

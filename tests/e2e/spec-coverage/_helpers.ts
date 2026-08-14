@@ -75,7 +75,8 @@ export const APP_ROOT_URL = '/index.php/apps/openconnector/'
  * user_status OCS endpoint reliably 500s and core logs a matching error;
  * these must NOT fail an openconnector UI assertion.
  */
-const NOISE_URL = /\/(user_status|heartbeat|notifications|core\/preview|avatar|files\/api)/i
+const NOISE_URL =
+	/\/(user_status|heartbeat|notifications|core\/preview|avatar|files\/api)/i
 const NOISE_CONSOLE = [
 	'user_status',
 	'Failed to load user status',
@@ -123,9 +124,17 @@ export function trackErrors(page: Page): ErrorSink {
  * (catches sync/endpoint dispatch regressions).
  */
 export function assertNoAppErrors(sink: ErrorSink): void {
-	const appServerErrors = sink.serverErrors.filter((e) => /openconnector|openregister/.test(e))
-	expect(appServerErrors, `Unexpected app 5xx responses: ${appServerErrors.join(', ')}`).toEqual([])
-	expect(sink.consoleErrors, `Unexpected console errors: ${sink.consoleErrors.join(' | ')}`).toEqual([])
+	const appServerErrors = sink.serverErrors.filter((e) =>
+		/openconnector|openregister/.test(e),
+	)
+	expect(
+		appServerErrors,
+		`Unexpected app 5xx responses: ${appServerErrors.join(', ')}`,
+	).toEqual([])
+	expect(
+		sink.consoleErrors,
+		`Unexpected console errors: ${sink.consoleErrors.join(' | ')}`,
+	).toEqual([])
 }
 
 /**
@@ -145,7 +154,9 @@ async function expandNavGroups(page: Page): Promise<void> {
 	// child entries appear), which invalidates positional locators. Repeatedly
 	// click the FIRST still-collapsed group header until none remain.
 	for (let guard = 0; guard < 10; guard++) {
-		const header = page.locator('.app-navigation a[href="#"][aria-expanded="false"]').first()
+		const header = page
+			.locator('.app-navigation a[href="#"][aria-expanded="false"]')
+			.first()
 		if (!(await header.isVisible({ timeout: 500 }).catch(() => false))) break
 		await header.click().catch(() => {})
 		await page.waitForTimeout(200)
@@ -160,7 +171,11 @@ async function expandNavGroups(page: Page): Promise<void> {
  * `expectedRoute` is the route fragment the URL should contain after the
  * click (e.g. '/sources').
  */
-export async function navTo(page: Page, navLabel: string, expectedRoute: string): Promise<void> {
+export async function navTo(
+	page: Page,
+	navLabel: string,
+	expectedRoute: string,
+): Promise<void> {
 	// Land on the app root first so the SPA + nav are mounted.
 	if (!page.url().includes('/apps/openconnector')) {
 		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
@@ -174,9 +189,15 @@ export async function navTo(page: Page, navLabel: string, expectedRoute: string)
 		.locator('.app-navigation')
 		.getByRole('link', { name: new RegExp(`^\\s*${navLabel}\\s*$`, 'i') })
 		.first()
-	await expect(navLink, `Nav entry "${navLabel}" must be present`).toBeVisible({ timeout: 20_000 })
+	await expect(navLink, `Nav entry "${navLabel}" must be present`).toBeVisible({
+		timeout: 20_000,
+	})
 	await navLink.click()
-	await page.waitForURL((url) => url.toString().includes(expectedRoute), { timeout: 15_000 }).catch(() => {})
+	await page
+		.waitForURL((url) => url.toString().includes(expectedRoute), {
+			timeout: 15_000,
+		})
+		.catch(() => {})
 	// ADR-074 rule 4: networkidle never settles on Nextcloud, so this waited
 	// out its own timeout and swallowed the error every time. The URL wait
 	// above is the real signal; callers assert on content after it.
@@ -187,7 +208,9 @@ export async function navTo(page: Page, navLabel: string, expectedRoute: string)
  * Assert an index page surfaced its heading and primary content area.
  */
 export async function expectHeading(page: Page, heading: RegExp): Promise<void> {
-	await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({ timeout: 15_000 })
+	await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({
+		timeout: 15_000,
+	})
 }
 
 /**
@@ -197,9 +220,14 @@ export async function expectHeading(page: Page, heading: RegExp): Promise<void> 
  * @param page      the Playwright page
  * @param addButton accessible-name regex for the create button
  */
-export async function openAndDismissCreateModal(page: Page, addButton: RegExp): Promise<void> {
+export async function openAndDismissCreateModal(
+	page: Page,
+	addButton: RegExp,
+): Promise<void> {
 	const addBtn = page.getByRole('button', { name: addButton }).first()
-	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({ timeout: 20_000 })
+	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({
+		timeout: 20_000,
+	})
 	await addBtn.click()
 	// appDialog(), not getByRole('dialog').first(): NC's first-run wizard and
 	// nc-vue's support dialog are themselves role="dialog" overlays, so the

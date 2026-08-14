@@ -26,7 +26,12 @@
 			placeholder="10"
 			@update:model-value="onMaxSizeInput" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Note: the backend handler for upload is still pending. Configuration is persisted so it activates once the dispatcher case lands.') }}
+			{{
+				t(
+					'openconnector',
+					'Note: the backend handler for upload is still pending. Configuration is persisted so it activates once the dispatcher case lands.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -64,7 +69,14 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

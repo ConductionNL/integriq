@@ -21,18 +21,37 @@
 <template>
 	<div class="circuitBreaker" data-testid="circuit-breaker-badge">
 		<div class="circuitBreaker__row">
-			<span class="circuitBreaker__badge"
-				:class="isOpen ? 'circuitBreaker__badge--open' : 'circuitBreaker__badge--closed'"
+			<span
+				class="circuitBreaker__badge"
+				:class="
+					isOpen
+						? 'circuitBreaker__badge--open'
+						: 'circuitBreaker__badge--closed'
+				"
 				data-testid="circuit-breaker-state">
-				{{ isOpen ? t('openconnector', 'Circuit open') : t('openconnector', 'Circuit closed') }}
+				{{
+					isOpen
+						? t('openconnector', 'Circuit open')
+						: t('openconnector', 'Circuit closed')
+				}}
 			</span>
 			<span class="circuitBreaker__failures">
-				{{ t('openconnector', 'Failures: {count}', { count: failureCount }) }}
+				{{
+					t('openconnector', 'Failures: {count}', { count: failureCount })
+				}}
 			</span>
-			<span v-if="isOpen && cooldownRemaining > 0" class="circuitBreaker__cooldown" data-testid="circuit-breaker-cooldown">
-				{{ t('openconnector', 'Cooldown: {seconds}s', { seconds: cooldownRemaining }) }}
+			<span
+				v-if="isOpen && cooldownRemaining > 0"
+				class="circuitBreaker__cooldown"
+				data-testid="circuit-breaker-cooldown">
+				{{
+					t('openconnector', 'Cooldown: {seconds}s', {
+						seconds: cooldownRemaining,
+					})
+				}}
 			</span>
-			<NcButton v-if="isOpen"
+			<NcButton
+				v-if="isOpen"
 				type="primary"
 				:disabled="busy || !objectId"
 				data-testid="circuit-breaker-reset"
@@ -92,7 +111,12 @@ export default {
 		objectId() {
 			const ctx = this.cnSectionContext
 			const value = ctx && ctx.value !== undefined ? ctx.value : ctx
-			return (value && value.objectId) || this.source.uuid || this.source.id || null
+			return (
+				(value && value.objectId)
+				|| this.source.uuid
+				|| this.source.id
+				|| null
+			)
 		},
 		/**
 		 * Effective breaker state (a successful local reset wins over the
@@ -132,7 +156,7 @@ export default {
 			if (!openedAt) {
 				return 0
 			}
-			return Math.max(0, (openedAt + cooldown) - this.now)
+			return Math.max(0, openedAt + cooldown - this.now)
 		},
 	},
 
@@ -172,13 +196,18 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/sources/${this.objectId}/circuit-breaker/reset`),
+					generateUrl(
+						`/apps/openconnector/api/sources/${this.objectId}/circuit-breaker/reset`,
+					),
 				)
 				this.localState = res.data?.circuitBreakerState || 'closed'
 				showSuccess(t('openconnector', 'Circuit breaker reset'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Failed to reset circuit breaker') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Failed to reset circuit breaker')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 			}

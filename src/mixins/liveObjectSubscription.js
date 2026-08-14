@@ -111,7 +111,10 @@ export default {
 				}
 				this.liveHandle = null
 				this.liveKey = ''
-				console.warn('[liveObjectSubscription] subscribe failed:', e?.message ?? e)
+				console.warn(
+					'[liveObjectSubscription] subscribe failed:',
+					e?.message ?? e,
+				)
 			}
 		},
 

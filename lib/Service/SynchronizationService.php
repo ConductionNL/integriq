@@ -1998,7 +1998,11 @@ class SynchronizationService {
 			// batch via a single approval_request, not per object
 			// (design.md Decision 6).
 			if ($isTest === false && (bool)($sourceConfig['requiresApproval'] ?? false) === true) {
-				$synchronizationId = (string)($synchronization['uuid'] ?? '');
+				// `id` first — same reason as the run log below: OpenRegister
+				// exposes no top-level `uuid`, so this resolved to '' and the
+				// approval gate looked up (and suspended against) an empty
+				// synchronization id.
+				$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
 
 				$gatedApprovalRequest = $this->resolveApprovalForSynchronization(
 					synchronizationId: $synchronizationId,
@@ -2052,7 +2056,61 @@ class SynchronizationService {
 			// before this index existed.
 			$contractIndex = $this->indexContractsByOrigin(
 				synchronizationId: (string)($synchronization['id'] ?? ''),
+<<<<<<< HEAD
 				originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
+=======
+				// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL.
+				//
+				// `getOriginId()` throws for an item with no id, and this map
+				// runs over the WHOLE PAGE before the per-item loop starts —
+				// so without this catch a single malformed row aborts the
+				// entire synchronisation from OUTSIDE the boundary that exists
+				// to contain exactly that.
+				//
+				// That boundary is real and is a few lines below: the loop
+				// catches per item, records the failure to the dead-letter
+				// service and carries on, which is what
+				// `testOneBadItemDoesNotAbortTheSyncPass` asserts — one bad
+				// item out of three leaves `invalid: 1, skipped: 2, found: 3`.
+				// Batching the contract lookup for speed moved the resolution
+				// OUT of that boundary and the isolation guarantee went with
+				// it; keeping the batch and skipping the unreadable row keeps
+				// both.
+				//
+				// Skipping is safe because this index is an OPTIMISATION, not
+				// a source of truth: an item missing from it resolves its own
+				// contract in the loop exactly as it did before the batch
+				// existed — and an item whose origin id cannot be read will
+				// fail there, on its own, and be dead-lettered with a message
+				// naming the item rather than killing the page.
+				originIds: array_values(
+					array_filter(
+						array_map(
+							function ($item) use ($synchronization): ?string {
+								$asArray = ['id' => $item];
+								if (is_array($item) === true) {
+									$asArray = $item;
+								}
+
+								try {
+									return $this->getOriginId(synchronization: $synchronization, object: $asArray);
+								} catch (\Throwable $e) {
+									// ⚠️ FULLY QUALIFIED ON PURPOSE. This file
+									// imports `Exception` and not `Throwable`,
+									// so a bare `Throwable` here resolves to
+									// `OCA\OpenConnector\Service\Throwable`,
+									// which does not exist — the catch compiles,
+									// matches nothing, and the exception sails
+									// through exactly as if it were not written.
+									return null;
+								}
+							},
+							$objectList
+						),
+						static fn (?string $originId): bool => ($originId !== null && $originId !== '')
+					)
+				),
+>>>>>>> origin/development
 				justByOriginId: (
 					isset($sourceConfig['findContractByOriginIdOnly']) === true
 					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
@@ -2718,7 +2776,11 @@ class SynchronizationService {
 		if ($ownsTrace === true) {
 			$trace = new ExecutionTraceContext(
 				entryPoint: 'sync',
-				entryPointId: ($synchronization['uuid'] ?? null),
+				// `id` first: OpenRegister returns an object's identifier as
+				// `id` (mirrored on `@self.id`) and does NOT expose a top-level
+				// `uuid`, so reading `uuid` alone always yielded null and every
+				// sync-entryPoint trace was stored without an entryPointId.
+				entryPointId: (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
 				triggeredBy: 'manual'
 			);
 		}

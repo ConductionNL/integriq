@@ -74,7 +74,8 @@
   @spec openspec/specs/sync-editor-ui/spec.md
 -->
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="dialogTitle"
 		size="large"
 		class="cn-sync-editor-modal"
@@ -89,14 +90,16 @@
 			     above the source → transform → target columns rather than inside
 			     one, stacked and capped short of the modal width. -->
 			<div class="cn-sync-editor__identity">
-				<NcTextField v-model="draft.name"
+				<NcTextField
+					v-model="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
 					:helper-text="nameError"
 					:disabled="saving"
 					required
 					@blur="nameTouched = true" />
-				<NcTextArea v-model="draft.description"
+				<NcTextArea
+					v-model="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="1"
@@ -105,29 +108,41 @@
 
 			<div class="cn-sync-editor__columns">
 				<!-- ── Source ──────────────────────────────────────────── -->
-				<section class="cn-sync-editor__column cn-sync-editor__column--source">
+				<section
+					class="cn-sync-editor__column cn-sync-editor__column--source">
 					<header class="cn-sync-editor__column-header">
 						<DatabaseArrowRightOutlineIcon :size="20" />
 						<h3>{{ t('openconnector', 'Source') }}</h3>
 					</header>
 					<div class="cn-sync-editor__column-body">
-						<label class="cn-sync-editor__label">{{ t('openconnector', 'Source type') }}</label>
-						<NcSelect :model-value="selectedSourceType"
+						<label class="cn-sync-editor__label">{{
+							t('openconnector', 'Source type')
+						}}</label>
+						<NcSelect
+							:model-value="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Source type')"
 							@update:model-value="onSourceTypeChange" />
 
-						<SyncConfigWidget kind="source"
+						<SyncConfigWidget
+							kind="source"
 							:type="draft.sourceType"
 							:source-id="draft.sourceId"
 							:config="draft.sourceConfig"
-							@update:source-id="(value) => updateDraft('sourceId', value)"
-							@update:config="(value) => updateDraft('sourceConfig', value)" />
+							@update:source-id="
+								(value) => updateDraft('sourceId', value)
+							"
+							@update:config="
+								(value) => updateDraft('sourceConfig', value)
+							" />
 
-						<label class="cn-sync-editor__label">{{ t('openconnector', 'Sync mode') }}</label>
-						<NcSelect :model-value="selectedSyncMode"
+						<label class="cn-sync-editor__label">{{
+							t('openconnector', 'Sync mode')
+						}}</label>
+						<NcSelect
+							:model-value="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
 							:disabled="saving"
@@ -135,44 +150,65 @@
 							@update:model-value="onSyncModeChange" />
 
 						<template v-if="draft.syncMode === 'incremental'">
-							<NcTextField :model-value="draft.sourceConfig?.cursorField || ''"
+							<NcTextField
+								:model-value="draft.sourceConfig?.cursorField || ''"
 								:label="t('openconnector', 'Cursor field')"
 								:disabled="saving"
-								@update:model-value="(value) => updateSourceConfigField('cursorField', value)" />
-							<label class="cn-sync-editor__label">{{ t('openconnector', 'Cursor comparator') }}</label>
-							<NcSelect :model-value="selectedCursorComparator"
+								@update:model-value="
+									(value) =>
+										updateSourceConfigField('cursorField', value)
+								" />
+							<label class="cn-sync-editor__label">{{
+								t('openconnector', 'Cursor comparator')
+							}}</label>
+							<NcSelect
+								:model-value="selectedCursorComparator"
 								:options="cursorComparatorOptions"
 								:clearable="false"
 								:disabled="saving"
-								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
+								:aria-label-combobox="
+									t('openconnector', 'Cursor comparator')
+								"
 								@update:model-value="onCursorComparatorChange" />
 						</template>
 					</div>
 				</section>
 
-				<ArrowRightIcon class="cn-sync-editor__arrow" :size="20" aria-hidden="true" />
+				<ArrowRightIcon
+					class="cn-sync-editor__arrow"
+					:size="20"
+					aria-hidden="true" />
 
 				<!-- ── Target ──────────────────────────────────────────── -->
-				<section class="cn-sync-editor__column cn-sync-editor__column--target">
+				<section
+					class="cn-sync-editor__column cn-sync-editor__column--target">
 					<header class="cn-sync-editor__column-header">
 						<DatabaseArrowLeftOutlineIcon :size="20" />
 						<h3>{{ t('openconnector', 'Target') }}</h3>
 					</header>
 					<div class="cn-sync-editor__column-body">
-						<label class="cn-sync-editor__label">{{ t('openconnector', 'Target type') }}</label>
-						<NcSelect :model-value="selectedTargetType"
+						<label class="cn-sync-editor__label">{{
+							t('openconnector', 'Target type')
+						}}</label>
+						<NcSelect
+							:model-value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Target type')"
 							@update:model-value="onTargetTypeChange" />
 
-						<SyncConfigWidget kind="target"
+						<SyncConfigWidget
+							kind="target"
 							:type="draft.targetType"
 							:source-id="draft.targetId"
 							:config="draft.targetConfig"
-							@update:source-id="(value) => updateDraft('targetId', value)"
-							@update:config="(value) => updateDraft('targetConfig', value)" />
+							@update:source-id="
+								(value) => updateDraft('targetId', value)
+							"
+							@update:config="
+								(value) => updateDraft('targetConfig', value)
+							" />
 
 						<!-- Dry-run result. The row action discards this payload for a
 						     bare toast; here it is the point of pressing Test. -->
@@ -209,10 +245,16 @@
 						<CnTab :title="t('openconnector', 'Conditions')">
 							<div class="cn-sync-editor__panel">
 								<p class="cn-sync-editor__hint">
-									{{ t('openconnector', 'Gate which source records are synchronised. Leave empty to sync everything — raw JSON editing lives in the full editor.') }}
+									{{
+										t(
+											'openconnector',
+											'Gate which source records are synchronised. Leave empty to sync everything — raw JSON editing lives in the full editor.',
+										)
+									}}
 								</p>
 								<!-- Emits `update` (not `update:node`) — matches the detail page. -->
-								<RuleConditionGroup :node="rootConditionGroup"
+								<RuleConditionGroup
+									:node="rootConditionGroup"
 									:removable="false"
 									@update="onConditionsChange" />
 							</div>
@@ -222,31 +264,58 @@
 							<template #title>
 								<span class="cn-sync-editor__tab-label">
 									{{ t('openconnector', 'Rules') }}
-									<span class="cn-sync-editor__tab-count">{{ draft.actions.length }}</span>
+									<span class="cn-sync-editor__tab-count">{{
+										draft.actions.length
+									}}</span>
 								</span>
 							</template>
 							<div class="cn-sync-editor__panel">
 								<p class="cn-sync-editor__hint">
-									{{ t('openconnector', 'Rules applied during each sync pass.') }}
+									{{
+										t(
+											'openconnector',
+											'Rules applied during each sync pass.',
+										)
+									}}
 								</p>
-								<SyncReferenceList schema="rule"
+								<SyncReferenceList
+									schema="rule"
 									label-key="name"
 									:value="draft.actions"
 									:input-label="t('openconnector', 'Rules')"
-									:placeholder="t('openconnector', 'Pick rules to run during sync')"
-									:empty-label="t('openconnector', 'No rules linked yet.')"
-									@input="(value) => updateDraft('actions', value)" />
+									:placeholder="
+										t(
+											'openconnector',
+											'Pick rules to run during sync',
+										)
+									"
+									:empty-label="
+										t('openconnector', 'No rules linked yet.')
+									"
+									@input="
+										(value) => updateDraft('actions', value)
+									" />
 							</div>
 						</CnTab>
 
 						<CnTab :title="t('openconnector', 'Mappings')">
 							<div class="cn-sync-editor__panel">
-								<SyncMappingPicker :value="draft.sourceTargetMapping"
+								<SyncMappingPicker
+									:value="draft.sourceTargetMapping"
 									:hash-value="draft.sourceHashMapping"
 									:target-source-value="draft.targetSourceMapping"
-									@update:value="(value) => updateDraft('sourceTargetMapping', value)"
-									@update:hash-value="(value) => updateDraft('sourceHashMapping', value)"
-									@update:target-source-value="(value) => updateDraft('targetSourceMapping', value)" />
+									@update:value="
+										(value) =>
+											updateDraft('sourceTargetMapping', value)
+									"
+									@update:hash-value="
+										(value) =>
+											updateDraft('sourceHashMapping', value)
+									"
+									@update:target-source-value="
+										(value) =>
+											updateDraft('targetSourceMapping', value)
+									" />
 							</div>
 						</CnTab>
 
@@ -254,21 +323,41 @@
 							<template #title>
 								<span class="cn-sync-editor__tab-label">
 									{{ t('openconnector', 'Follow-ups') }}
-									<span class="cn-sync-editor__tab-count">{{ draft.followUps.length }}</span>
+									<span class="cn-sync-editor__tab-count">{{
+										draft.followUps.length
+									}}</span>
 								</span>
 							</template>
 							<div class="cn-sync-editor__panel">
 								<p class="cn-sync-editor__hint">
-									{{ t('openconnector', 'Synchronizations to trigger when this one completes.') }}
+									{{
+										t(
+											'openconnector',
+											'Synchronizations to trigger when this one completes.',
+										)
+									}}
 								</p>
-								<SyncReferenceList schema="synchronization"
+								<SyncReferenceList
+									schema="synchronization"
 									label-key="name"
 									:value="draft.followUps"
 									:exclude-id="itemIdString"
 									:input-label="t('openconnector', 'Follow-ups')"
-									:placeholder="t('openconnector', 'Pick follow-up synchronizations')"
-									:empty-label="t('openconnector', 'No follow-ups linked yet.')"
-									@input="(value) => updateDraft('followUps', value)" />
+									:placeholder="
+										t(
+											'openconnector',
+											'Pick follow-up synchronizations',
+										)
+									"
+									:empty-label="
+										t(
+											'openconnector',
+											'No follow-ups linked yet.',
+										)
+									"
+									@input="
+										(value) => updateDraft('followUps', value)
+									" />
 							</div>
 						</CnTab>
 					</CnTabs>
@@ -280,9 +369,17 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('openconnector', 'Cancel') }}
 			</NcButton>
-			<NcButton v-if="!isCreate"
+			<NcButton
+				v-if="!isCreate"
 				:disabled="saving || testing || dirty"
-				:title="dirty ? t('openconnector', 'Save first — the dry run tests the saved version') : ''"
+				:title="
+					dirty
+						? t(
+								'openconnector',
+								'Save first — the dry run tests the saved version',
+							)
+						: ''
+				"
 				@click="onTest">
 				<template #icon>
 					<NcLoadingIcon v-if="testing" :size="20" />
@@ -296,7 +393,11 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{ isCreate ? t('openconnector', 'Create') : t('openconnector', 'Save') }}
+				{{
+					isCreate
+						? t('openconnector', 'Create')
+						: t('openconnector', 'Save')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -462,7 +563,10 @@ export default {
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
-				: this.t('openconnector', 'Name must contain at least one letter or number')
+				: this.t(
+						'openconnector',
+						'Name must contain at least one letter or number',
+					)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dirty() {
@@ -470,12 +574,14 @@ export default {
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
-			return !this.saving
+			return (
+				!this.saving
 				&& !!this.draft.name
 				&& !this.nameError
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through.
 				&& typeof this.confirm === 'function'
+			)
 		},
 		/**
 		 * Kind options shared by both selectors. An already-configured
@@ -487,7 +593,8 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		typeOptions() {
-			const usesTable = this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
+			const usesTable =
+				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
 				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
 			if (this.tablesEnabled || usesTable) {
 				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
@@ -512,11 +619,18 @@ export default {
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSourceType() {
-			return this.sourceTypeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+			return (
+				this.sourceTypeOptions.find(
+					(opt) => opt.id === this.draft?.sourceType,
+				) || TYPE_OPTIONS[0]
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
-			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
+			return (
+				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
+				|| TYPE_OPTIONS[1]
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		syncModeOptions() {
@@ -524,7 +638,10 @@ export default {
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSyncMode() {
-			return SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode) || SYNC_MODE_OPTIONS[0]
+			return (
+				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
+				|| SYNC_MODE_OPTIONS[0]
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		cursorComparatorOptions() {
@@ -533,7 +650,10 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedCursorComparator() {
 			const current = this.draft?.sourceConfig?.cursorComparator
-			return CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === current) || CURSOR_COMPARATOR_OPTIONS[0]
+			return (
+				CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === current)
+				|| CURSOR_COMPARATOR_OPTIONS[0]
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rootConditionGroup() {
@@ -622,7 +742,10 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		updateSourceConfigField(key, value) {
-			this.updateDraft('sourceConfig', { ...(this.draft.sourceConfig || {}), [key]: value })
+			this.updateDraft('sourceConfig', {
+				...(this.draft.sourceConfig || {}),
+				[key]: value,
+			})
 		},
 
 		/**
@@ -655,7 +778,10 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		onCursorComparatorChange(option) {
-			this.updateSourceConfigField('cursorComparator', option?.id || CURSOR_COMPARATOR_OPTIONS[0].id)
+			this.updateSourceConfigField(
+				'cursorComparator',
+				option?.id || CURSOR_COMPARATOR_OPTIONS[0].id,
+			)
 		},
 		/**
 		 * @param {object} node The JsonLogic group node from the visual builder.
@@ -687,16 +813,20 @@ export default {
 			this.testResult = null
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openconnector/api/synchronizations/${this.itemIdString}/test`),
+					generateUrl(
+						`/apps/openconnector/api/synchronizations/${this.itemIdString}/test`,
+					),
 				)
 				this.testResult = response.data ?? null
 			} catch (err) {
 				const status = err?.response?.status
-				const message = err?.response?.data?.message
+				const message =
+					err?.response?.data?.message
 					|| err?.response?.data?.error
 					|| err?.message
 					|| ''
-				this.testError = this.t('openconnector', 'Synchronization test failed')
+				this.testError =
+					this.t('openconnector', 'Synchronization test failed')
 					+ (status ? ` (${status})` : '')
 					+ (message ? `: ${message}` : '')
 			} finally {
@@ -728,12 +858,15 @@ export default {
 					...this.draft,
 					conditions: serializeConditions(this.draft.conditions),
 				})
-				showSuccess(this.isCreate
-					? this.t('openconnector', 'Synchronization created')
-					: this.t('openconnector', 'Synchronization saved'))
+				showSuccess(
+					this.isCreate
+						? this.t('openconnector', 'Synchronization created')
+						: this.t('openconnector', 'Synchronization saved'),
+				)
 				this.close?.()
 			} catch (err) {
-				this.saveError = err?.message
+				this.saveError =
+					err?.message
 					|| this.t('openconnector', 'Failed to save synchronization')
 			} finally {
 				this.saving = false
@@ -856,7 +989,8 @@ export default {
 	gap: 10px;
 	padding: 12px;
 	border-bottom: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large, 8px) var(--border-radius-large, 8px) 0 0;
+	border-radius: var(--border-radius-large, 8px) var(--border-radius-large, 8px) 0
+		0;
 	background: var(--color-background-hover);
 }
 

@@ -6,7 +6,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Inbound mapping (required)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Inbound mapping (required)')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-filepart-upload-mapping"
 			:aria-label-combobox="t('openconnector', 'Inbound mapping (required)')"
@@ -14,18 +16,30 @@
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@update:model-value="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) => patch('mappingId', option?.id ? String(option.id) : '')
+			" />
 
-		<label class="action-form__label">{{ t('openconnector', 'Outbound mapping (optional)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Outbound mapping (optional)')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Outbound mapping (optional)')"
 			:model-value="selectedOutbound"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@update:model-value="(option) => patch('mappingOutId', option?.id ? String(option.id) : '')" />
+			@update:model-value="
+				(option) =>
+					patch('mappingOutId', option?.id ? String(option.id) : '')
+			" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Inbound runs before the part is written; outbound runs over the written object before it returns.') }}
+			{{
+				t(
+					'openconnector',
+					'Inbound runs before the part is written; outbound runs over the written object before it returns.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -38,19 +52,25 @@ export default {
 	name: 'FilepartUploadForm',
 	components: { NcSelect },
 	props: { ...valueProp },
-	data() { return { mappingOptions: [], loading: false } },
+	data() {
+		return { mappingOptions: [], loading: false }
+	},
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedInbound() {
 			const id = String(this.value?.mappingId || '')
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOutbound() {
 			const id = String(this.value?.mappingOutId || '')
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -64,9 +84,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

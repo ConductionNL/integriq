@@ -43,7 +43,12 @@
 <template>
 	<CnDetailPage
 		:title="pageTitle"
-		:description="t('openconnector', 'Configure when this rule fires and what it does. Conditions are evaluated as JSON Logic against the incoming request/data.')"
+		:description="
+			t(
+				'openconnector',
+				'Configure when this rule fires and what it does. Conditions are evaluated as JSON Logic against the incoming request/data.',
+			)
+		"
 		icon="icon-toggle"
 		:loading="loading"
 		:error="!!error"
@@ -60,15 +65,16 @@
 				</template>
 				{{ t('openconnector', 'Discard') }}
 			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="saving || !dirty"
-				@click="onSave">
+			<NcButton type="primary" :disabled="saving || !dirty" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
 				</template>
-				{{ saving ? t('openconnector', 'Saving…') : t('openconnector', 'Save') }}
+				{{
+					saving
+						? t('openconnector', 'Saving…')
+						: t('openconnector', 'Save')
+				}}
 			</NcButton>
 		</template>
 
@@ -93,7 +99,9 @@
 						:options="actionOptions"
 						:clearable="false"
 						:placeholder="t('openconnector', 'Pick a request method')"
-						@update:model-value="(option) => updateField('action', option?.id || '')" />
+						@update:model-value="
+							(option) => updateField('action', option?.id || '')
+						" />
 				</div>
 				<!-- `before`/`after` are the only two values
 				     EndpointService::handleRuleProcessing() ever compares
@@ -108,14 +116,21 @@
 						:model-value="selectedTiming"
 						:options="timingOptions"
 						:clearable="false"
-						@update:model-value="(option) => updateField('timing', option?.id || 'before')" />
+						@update:model-value="
+							(option) => updateField('timing', option?.id || 'before')
+						" />
 				</div>
 				<NcTextField
 					:label="t('openconnector', 'Order')"
 					type="number"
-					:model-value="draft && draft.order != null ? String(draft.order) : ''"
+					:model-value="
+						draft && draft.order != null ? String(draft.order) : ''
+					"
 					:placeholder="'0'"
-					@update:model-value="(value) => updateField('order', value === '' ? null : Number(value))" />
+					@update:model-value="
+						(value) =>
+							updateField('order', value === '' ? null : Number(value))
+					" />
 				<div class="rule-detail-page__grid-full">
 					<label class="rule-detail-page__label" for="rule-description">
 						{{ t('openconnector', 'Description') }}
@@ -123,7 +138,11 @@
 					<textarea
 						id="rule-description"
 						class="rule-detail-page__textarea"
-						:value="draft && draft.description ? String(draft.description) : ''"
+						:value="
+							draft && draft.description
+								? String(draft.description)
+								: ''
+						"
 						rows="3"
 						@input="updateField('description', $event.target.value)" />
 				</div>
@@ -138,12 +157,20 @@
 			<template #actions>
 				<NcButton
 					type="tertiary"
-					:aria-label="rawConditions ? t('openconnector', 'Switch back to visual builder') : t('openconnector', 'Edit conditions as raw JSON')"
+					:aria-label="
+						rawConditions
+							? t('openconnector', 'Switch back to visual builder')
+							: t('openconnector', 'Edit conditions as raw JSON')
+					"
 					@click="rawConditions = !rawConditions">
 					<template #icon>
 						<CodeJson :size="18" />
 					</template>
-					{{ rawConditions ? t('openconnector', 'Visual builder') : t('openconnector', 'Raw JSON') }}
+					{{
+						rawConditions
+							? t('openconnector', 'Visual builder')
+							: t('openconnector', 'Raw JSON')
+					}}
 				</NcButton>
 			</template>
 			<RuleConditionGroup
@@ -164,8 +191,16 @@
 					@input="onRawConditionsInput($event.target.value)" />
 				<span
 					class="rule-detail-page__helper"
-					:class="{ 'rule-detail-page__helper--error': rawConditionsError }">
-					{{ rawConditionsError || t('openconnector', 'Edit the JSON Logic directly. Saved into the rule conditions field exactly as typed.') }}
+					:class="{
+						'rule-detail-page__helper--error': rawConditionsError,
+					}">
+					{{
+						rawConditionsError
+						|| t(
+							'openconnector',
+							'Edit the JSON Logic directly. Saved into the rule conditions field exactly as typed.',
+						)
+					}}
 				</span>
 			</div>
 		</CnDetailCard>
@@ -176,7 +211,9 @@
 			:title="t('openconnector', 'Then (action)')"
 			icon="icon-play">
 			<RuleActionConfig
-				:configuration="draft && draft.configuration ? draft.configuration : {}"
+				:configuration="
+					draft && draft.configuration ? draft.configuration : {}
+				"
 				:type="draft && draft.type ? String(draft.type) : ''"
 				@update="onConfigurationUpdate"
 				@update:type="onActionTypeUpdate" />
@@ -185,12 +222,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -249,7 +281,11 @@ export default {
 	setup(props) {
 		const objectStore = useObjectStore()
 		if (typeof objectStore.registerObjectType === 'function') {
-			objectStore.registerObjectType(OBJECT_TYPE, props.schema || 'rule', props.register || 'openconnector')
+			objectStore.registerObjectType(
+				OBJECT_TYPE,
+				props.schema || 'rule',
+				props.register || 'openconnector',
+			)
 		}
 		return { objectStore }
 	},
@@ -273,7 +309,9 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		pageTitle() {
 			if (!this.draft) return this.t('openconnector', 'Rule')
-			return this.draft.name ? `${this.t('openconnector', 'Rule')}: ${this.draft.name}` : this.t('openconnector', 'Rule')
+			return this.draft.name
+				? `${this.t('openconnector', 'Rule')}: ${this.draft.name}`
+				: this.t('openconnector', 'Rule')
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		errorMessage() {
@@ -295,19 +333,31 @@ export default {
 		},
 		/** @spec exclude static option list — presentation only */
 		actionOptions() {
-			return ACTION_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return ACTION_OPTIONS.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec exclude static option list — presentation only */
 		timingOptions() {
-			return TIMING_OPTIONS.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
+			return TIMING_OPTIONS.map((entry) => ({
+				id: entry.id,
+				label: this.t('openconnector', entry.label),
+			}))
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
-			return this.actionOptions.find((option) => option.id === this.draft?.action) || null
+			return (
+				this.actionOptions.find((option) => option.id === this.draft?.action)
+				|| null
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTiming() {
-			return this.timingOptions.find((option) => option.id === this.draft?.timing) || this.timingOptions[0]
+			return (
+				this.timingOptions.find((option) => option.id === this.draft?.timing)
+				|| this.timingOptions[0]
+			)
 		},
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dirty() {
@@ -348,7 +398,11 @@ export default {
 		rawConditions(value) {
 			if (value) {
 				try {
-					this.rawConditionsDraft = JSON.stringify(this.rootConditionGroup, null, 2)
+					this.rawConditionsDraft = JSON.stringify(
+						this.rootConditionGroup,
+						null,
+						2,
+					)
 					this.rawConditionsError = ''
 				} catch (_e) {
 					this.rawConditionsDraft = ''
@@ -363,10 +417,15 @@ export default {
 			this.loading = true
 			this.error = null
 			try {
-				const fetched = await this.objectStore.fetchObject(OBJECT_TYPE, this.id)
+				const fetched = await this.objectStore.fetchObject(
+					OBJECT_TYPE,
+					this.id,
+				)
 				if (!fetched) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
-					this.error = storeError || new Error(this.t('openconnector', 'Rule not found'))
+					this.error =
+						storeError
+						|| new Error(this.t('openconnector', 'Rule not found'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(fetched))
@@ -486,7 +545,11 @@ export default {
 				this.rawConditionsError = ''
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
-				this.rawConditionsError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.rawConditionsError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 
@@ -496,10 +559,15 @@ export default {
 			this.saving = true
 			this.error = null
 			try {
-				const saved = await this.objectStore.saveObject(OBJECT_TYPE, this.draft)
+				const saved = await this.objectStore.saveObject(
+					OBJECT_TYPE,
+					this.draft,
+				)
 				if (!saved) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
-					this.error = storeError || new Error(this.t('openconnector', 'Saving failed'))
+					this.error =
+						storeError
+						|| new Error(this.t('openconnector', 'Saving failed'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(saved))
@@ -531,8 +599,14 @@ export default {
 			this.rawConditionsError = ''
 			if (this.rawConditions) {
 				try {
-					this.rawConditionsDraft = JSON.stringify(this.rootConditionGroup, null, 2)
-				} catch (_e) { /* noop */ }
+					this.rawConditionsDraft = JSON.stringify(
+						this.rootConditionGroup,
+						null,
+						2,
+					)
+				} catch (_e) {
+					/* noop */
+				}
 			}
 		},
 

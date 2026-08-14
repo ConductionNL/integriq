@@ -83,7 +83,9 @@
 			rows="5"
 			placeholder="[]"
 			@input="onSourceConfigInput" />
-		<span v-if="sourceConfigError" class="action-form__helper action-form__helper--error">
+		<span
+			v-if="sourceConfigError"
+			class="action-form__helper action-form__helper--error">
 			{{ sourceConfigError }}
 		</span>
 	</div>
@@ -113,7 +115,9 @@ export default {
 		selectedSource() {
 			const id = String(this.value?.source || '')
 			if (!id) return null
-			return this.sourceOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.sourceOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
 	watch: {
@@ -131,7 +135,9 @@ export default {
 		this.sourcesLoading = true
 		this.sourceOptions = await fetchOpenRegisterCollection('source')
 		this.sourcesLoading = false
-		this.sourceConfigDraft = this.serialiseSourceConfig(this.value?.sourceConfiguration)
+		this.sourceConfigDraft = this.serialiseSourceConfig(
+			this.value?.sourceConfiguration,
+		)
 	},
 	methods: {
 		patch: patchMethod(),
@@ -156,7 +162,7 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		csv(value) {
-			return Array.isArray(value) ? value.join(',') : (value || '')
+			return Array.isArray(value) ? value.join(',') : value || ''
 		},
 		/**
 		 * Parse the tags text field back into the stored array, trimming each
@@ -167,7 +173,10 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		toArray(text) {
-			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
+			return (text || '')
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter(Boolean)
 		},
 		/**
 		 * Render the persisted `sourceConfiguration` as pretty-printed JSON for
@@ -182,7 +191,11 @@ export default {
 		serialiseSourceConfig(value) {
 			if (value === undefined || value === null) return ''
 			if (typeof value === 'string') return value
-			try { return JSON.stringify(value, null, 2) } catch (_e) { return String(value) }
+			try {
+				return JSON.stringify(value, null, 2)
+			} catch (_e) {
+				return String(value)
+			}
 		},
 		/**
 		 * Handle typing in the source-configuration textarea: keep the draft
@@ -210,7 +223,11 @@ export default {
 				this.sourceConfigError = ''
 				this.patch('sourceConfiguration', parsed)
 			} catch (parseErr) {
-				this.sourceConfigError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.sourceConfigError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 	},
@@ -218,19 +235,39 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
-
-.action-form__label { font-weight: bold; }
-
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
-
-.action-form__helper--error { color: var(--color-error); }
-
-.action-form__textarea {
-	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
-	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
-	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
-.action-form__textarea--code { font-family: var(--font-face-monospace, monospace); font-size: 12px; }
+.action-form__label {
+	font-weight: bold;
+}
+
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
+
+.action-form__helper--error {
+	color: var(--color-error);
+}
+
+.action-form__textarea {
+	width: 100%;
+	padding: 8px;
+	font-family: var(--font-face, sans-serif);
+	font-size: 14px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	resize: vertical;
+}
+
+.action-form__textarea--code {
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 12px;
+}
 </style>

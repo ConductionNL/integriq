@@ -57,7 +57,8 @@ describe('normaliseConditions', () => {
 	})
 
 	it('parses the JSON string the pre-manifest raw editor persisted', () => {
-		const raw = '{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
+		const raw =
+			'{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
 		expect(normaliseConditions(raw)).toEqual({
 			and: [
 				{ '==': [{ var: 'status' }, 'active'] },
@@ -77,9 +78,11 @@ describe('normaliseConditions', () => {
 	})
 
 	it('unwraps a single-element array that wraps a group', () => {
-		expect(normaliseConditions([{ or: [{ '==': [{ var: 'a' }, 1] }] }])).toEqual({
-			or: [{ '==': [{ var: 'a' }, 1] }],
-		})
+		expect(normaliseConditions([{ or: [{ '==': [{ var: 'a' }, 1] }] }])).toEqual(
+			{
+				or: [{ '==': [{ var: 'a' }, 1] }],
+			},
+		)
 	})
 
 	it('wraps a multi-element array of leaves with AND', () => {
@@ -163,11 +166,29 @@ describe('option vocabularies', () => {
 	 * "Unsupported rule type:" at request time.
 	 */
 	const ENDPOINT_RULE_TYPES = [
-		'save_object', 'authentication', 'error', 'mapping', 'synchronization',
-		'javascript', 'fileparts_create', 'filepart_upload', 'download',
-		'extend_input', 'extend_external_input', 'audit_trail', 'write_file',
-		'locking', 'override', 'webhook_signature', 'custom', 'composite_fanout',
-		'referentienummer', 'avg_bsn_policy', 'selfurl_hal', 'approval', 'flow',
+		'save_object',
+		'authentication',
+		'error',
+		'mapping',
+		'synchronization',
+		'javascript',
+		'fileparts_create',
+		'filepart_upload',
+		'download',
+		'extend_input',
+		'extend_external_input',
+		'audit_trail',
+		'write_file',
+		'locking',
+		'override',
+		'webhook_signature',
+		'custom',
+		'composite_fanout',
+		'referentienummer',
+		'avg_bsn_policy',
+		'selfurl_hal',
+		'approval',
+		'flow',
 	]
 
 	/**
@@ -176,15 +197,23 @@ describe('option vocabularies', () => {
 	 * arm at all.
 	 */
 	const SYNCHRONIZATION_RULE_TYPES = [
-		'error', 'mapping', 'synchronization', 'save_object', 'fetch_file',
-		'write_file', 'extend_input',
+		'error',
+		'mapping',
+		'synchronization',
+		'save_object',
+		'fetch_file',
+		'write_file',
+		'extend_input',
 	]
 
 	it('offers only action types one of the two pipelines can dispatch', () => {
-		const dispatchable = new Set([...ENDPOINT_RULE_TYPES, ...SYNCHRONIZATION_RULE_TYPES])
-		const undispatched = ACTION_TYPES
-			.map((entry) => entry.id)
-			.filter((id) => !dispatchable.has(id))
+		const dispatchable = new Set([
+			...ENDPOINT_RULE_TYPES,
+			...SYNCHRONIZATION_RULE_TYPES,
+		])
+		const undispatched = ACTION_TYPES.map((entry) => entry.id).filter(
+			(id) => !dispatchable.has(id),
+		)
 		expect(undispatched).toEqual(UNDISPATCHED_ACTION_TYPES)
 	})
 
@@ -204,7 +233,12 @@ describe('option vocabularies', () => {
 	})
 
 	it('offers the four HTTP verbs the rule pipeline scopes on', () => {
-		expect(ACTION_OPTIONS.map((o) => o.id)).toEqual(['post', 'get', 'put', 'delete'])
+		expect(ACTION_OPTIONS.map((o) => o.id)).toEqual([
+			'post',
+			'get',
+			'put',
+			'delete',
+		])
 	})
 
 	it('labels every option, so no select renders a bare id', () => {
@@ -218,9 +252,12 @@ describe('option vocabularies', () => {
 
 describe('DEFAULT_ERROR_CONFIG', () => {
 	it('carries the four keys the error rule reads', () => {
-		expect(Object.keys(DEFAULT_ERROR_CONFIG).sort()).toEqual(
-			['code', 'includeJsonLogicResult', 'message', 'name'],
-		)
+		expect(Object.keys(DEFAULT_ERROR_CONFIG).sort()).toEqual([
+			'code',
+			'includeJsonLogicResult',
+			'message',
+			'name',
+		])
 	})
 
 	it('defaults to a valid HTTP status code', () => {

@@ -18,7 +18,8 @@
   @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		label-id="sync-dead-letter-detail"
 		data-testid="sync-dead-letter-detail-modal"
 		@close="$emit('close')">
@@ -27,18 +28,36 @@
 
 			<div v-if="entry" class="deadLetterDetail__body">
 				<div class="deadLetterDetail__meta">
-					<span class="deadLetterDetail__badge" :class="badgeClass">{{ entry.status }}</span>
+					<span class="deadLetterDetail__badge" :class="badgeClass">{{
+						entry.status
+					}}</span>
 					<span class="deadLetterDetail__retry">
-						{{ t('openconnector', 'Attempts: {count}', { count: attempts.length }) }}
+						{{
+							t('openconnector', 'Attempts: {count}', {
+								count: attempts.length,
+							})
+						}}
 					</span>
 				</div>
 
-				<div v-if="entry.replayedBy || entry.discardedBy" class="deadLetterDetail__audit">
+				<div
+					v-if="entry.replayedBy || entry.discardedBy"
+					class="deadLetterDetail__audit">
 					<p v-if="entry.replayedBy">
-						{{ t('openconnector', 'Replayed by {who} at {when}', { who: entry.replayedBy, when: entry.replayedAt }) }}
+						{{
+							t('openconnector', 'Replayed by {who} at {when}', {
+								who: entry.replayedBy,
+								when: entry.replayedAt,
+							})
+						}}
 					</p>
 					<p v-if="entry.discardedBy">
-						{{ t('openconnector', 'Discarded by {who} at {when}', { who: entry.discardedBy, when: entry.discardedAt }) }}
+						{{
+							t('openconnector', 'Discarded by {who} at {when}', {
+								who: entry.discardedBy,
+								when: entry.discardedAt,
+							})
+						}}
 					</p>
 				</div>
 
@@ -46,25 +65,44 @@
 				<p class="deadLetterDetail__error">{{ entry.error }}</p>
 
 				<h3>{{ t('openconnector', 'Attempt timeline') }}</h3>
-				<ol v-if="attempts.length" class="deadLetterDetail__timeline" data-testid="attempt-timeline">
+				<ol
+					v-if="attempts.length"
+					class="deadLetterDetail__timeline"
+					data-testid="attempt-timeline">
 					<li v-for="(attempt, idx) in attempts" :key="idx">
 						<span class="deadLetterDetail__time">{{ attempt.at }}</span>
-						<span v-if="attempt.error" class="deadLetterDetail__attemptError">{{ attempt.error }}</span>
-						<span v-else class="deadLetterDetail__attemptOk">{{ t('openconnector', 'OK') }}</span>
+						<span
+							v-if="attempt.error"
+							class="deadLetterDetail__attemptError"
+							>{{ attempt.error }}</span
+						>
+						<span v-else class="deadLetterDetail__attemptOk">{{
+							t('openconnector', 'OK')
+						}}</span>
 					</li>
 				</ol>
-				<p v-else class="deadLetterDetail__empty">{{ t('openconnector', 'No attempts recorded yet') }}</p>
+				<p v-else class="deadLetterDetail__empty">
+					{{ t('openconnector', 'No attempts recorded yet') }}
+				</p>
 
 				<h3>{{ t('openconnector', 'Payload') }}</h3>
-				<pre class="deadLetterDetail__payload" data-testid="payload-viewer">{{ prettyPayload }}</pre>
+				<pre
+					class="deadLetterDetail__payload"
+					data-testid="payload-viewer"
+					>{{ prettyPayload }}</pre>
 			</div>
 
 			<div class="deadLetterDetail__actions">
 				<template v-if="confirming">
 					<span class="deadLetterDetail__confirm">
-						{{ confirming === 'replay'
-							? t('openconnector', 'Replay this item now?')
-							: t('openconnector', 'Discard this item? It will not be deleted.') }}
+						{{
+							confirming === 'replay'
+								? t('openconnector', 'Replay this item now?')
+								: t(
+										'openconnector',
+										'Discard this item? It will not be deleted.',
+									)
+						}}
 					</span>
 					<NcButton type="primary" :disabled="busy" @click="commit">
 						{{ t('openconnector', 'Confirm') }}
@@ -74,10 +112,15 @@
 					</NcButton>
 				</template>
 				<template v-else>
-					<NcButton type="primary" :disabled="!canAct || busy" @click="confirming = 'replay'">
+					<NcButton
+						type="primary"
+						:disabled="!canAct || busy"
+						@click="confirming = 'replay'">
 						{{ t('openconnector', 'Replay') }}
 					</NcButton>
-					<NcButton :disabled="!canAct || busy" @click="confirming = 'discard'">
+					<NcButton
+						:disabled="!canAct || busy"
+						@click="confirming = 'discard'">
 						{{ t('openconnector', 'Discard') }}
 					</NcButton>
 				</template>
@@ -171,17 +214,26 @@ export default {
 			}
 			this.busy = true
 			try {
-				await axios.post(generateUrl(`/apps/openconnector/api/sync-dead-letter/${id}/${verb}`))
-				showSuccess(verb === 'replay'
-					? t('openconnector', 'Item replayed')
-					: t('openconnector', 'Item discarded'))
+				await axios.post(
+					generateUrl(
+						`/apps/openconnector/api/sync-dead-letter/${id}/${verb}`,
+					),
+				)
+				showSuccess(
+					verb === 'replay'
+						? t('openconnector', 'Item replayed')
+						: t('openconnector', 'Item discarded'),
+				)
 				this.$emit('changed')
 				this.$emit('close')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError((verb === 'replay'
-					? t('openconnector', 'Replay failed')
-					: t('openconnector', 'Discard failed')) + (detail ? `: ${detail}` : ''))
+				showError(
+					(verb === 'replay'
+						? t('openconnector', 'Replay failed')
+						: t('openconnector', 'Discard failed'))
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 				this.confirming = null

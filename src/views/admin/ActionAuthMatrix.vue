@@ -4,10 +4,17 @@
 -->
 
 <template>
-	<div class="openconnector-admin__section" data-testid="admin-action-auth-section">
+	<div
+		class="openconnector-admin__section"
+		data-testid="admin-action-auth-section">
 		<h3>{{ t('openconnector', 'Action authorization') }}</h3>
 		<p class="openconnector-admin__hint">
-			{{ t('openconnector', 'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.') }}
+			{{
+				t(
+					'openconnector',
+					'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.',
+				)
+			}}
 		</p>
 
 		<div v-if="error" class="openconnector-admin__action-error" role="alert">
@@ -46,8 +53,16 @@
 							<NcCheckboxRadioSwitch
 								:model-value="isChecked(action, group)"
 								:disabled="group === 'admin'"
-								:aria-label="t('openconnector', 'Allow group {group} to perform {action}', { group, action })"
-								@update:model-value="toggle(action, group, $event)" />
+								:aria-label="
+									t(
+										'openconnector',
+										'Allow group {group} to perform {action}',
+										{ group, action },
+									)
+								"
+								@update:model-value="
+									toggle(action, group, $event)
+								" />
 						</td>
 					</tr>
 				</tbody>
@@ -60,7 +75,11 @@
 				data-testid="admin-action-matrix-save"
 				:disabled="loading || saving"
 				@click="save">
-				{{ saving ? t('openconnector', 'Saving…') : t('openconnector', 'Save action matrix') }}
+				{{
+					saving
+						? t('openconnector', 'Saving…')
+						: t('openconnector', 'Save action matrix')
+				}}
 			</NcButton>
 		</div>
 	</div>
@@ -106,7 +125,7 @@ export default {
 		// `admin` is always shown first as a disabled, always-on column.
 		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		displayGroups() {
-			const rest = this.groups.filter(g => g !== 'admin')
+			const rest = this.groups.filter((g) => g !== 'admin')
 			return ['admin', ...rest]
 		},
 	},
@@ -122,20 +141,28 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openconnector/api/admin/action-matrix'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openconnector/api/admin/action-matrix'),
+				)
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
 				// Clone the matrix into a plain editable map keyed by action.
 				const next = {}
-				const source = data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
+				const source =
+					data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
 				for (const action of this.actions) {
-					const allowed = Array.isArray(source[action]) ? source[action] : []
+					const allowed = Array.isArray(source[action])
+						? source[action]
+						: []
 					next[action] = [...allowed]
 				}
 				this.matrix = next
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
-				this.error = this.t('openconnector', 'Failed to load the action matrix.')
+				this.error = this.t(
+					'openconnector',
+					'Failed to load the action matrix.',
+				)
 			} finally {
 				this.loading = false
 			}
@@ -176,7 +203,9 @@ export default {
 			if (group === 'admin') {
 				return
 			}
-			const allowed = Array.isArray(this.matrix[action]) ? [...this.matrix[action]] : []
+			const allowed = Array.isArray(this.matrix[action])
+				? [...this.matrix[action]]
+				: []
 			const index = allowed.indexOf(group)
 			if (checked === true && index === -1) {
 				allowed.push(group)
@@ -194,14 +223,19 @@ export default {
 				// stored posture stays admin-inclusive and human-readable.
 				const payload = {}
 				for (const action of this.actions) {
-					const extra = (this.matrix[action] || []).filter(g => g !== 'admin')
+					const extra = (this.matrix[action] || []).filter(
+						(g) => g !== 'admin',
+					)
 					payload[action] = ['admin', ...extra]
 				}
 				const { data } = await axios.put(
 					generateUrl('/apps/openconnector/api/admin/action-matrix'),
 					{ matrix: payload },
 				)
-				const saved = data && data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
+				const saved =
+					data && data.matrix && typeof data.matrix === 'object'
+						? data.matrix
+						: {}
 				const next = {}
 				for (const action of this.actions) {
 					const allowed = Array.isArray(saved[action]) ? saved[action] : []
@@ -211,7 +245,9 @@ export default {
 				showSuccess(this.t('openconnector', 'Action matrix saved.'))
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
-				showError(this.t('openconnector', 'Failed to save the action matrix.'))
+				showError(
+					this.t('openconnector', 'Failed to save the action matrix.'),
+				)
 			} finally {
 				this.saving = false
 			}

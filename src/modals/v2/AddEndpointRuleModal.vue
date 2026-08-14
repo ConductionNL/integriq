@@ -17,7 +17,8 @@
   user can attach several rules in one trip.
 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		label-id="addEndpointRuleModal"
 		size="normal"
 		@close="onClose">
@@ -25,7 +26,13 @@
 			<h2>{{ t('openconnector', 'Add rule to endpoint') }}</h2>
 
 			<NcNoteCard v-if="endpointName" type="info">
-				<p>{{ t('openconnector', 'Endpoint: {name}', { name: endpointName }) }}</p>
+				<p>
+					{{
+						t('openconnector', 'Endpoint: {name}', {
+							name: endpointName,
+						})
+					}}
+				</p>
 			</NcNoteCard>
 
 			<NcNoteCard v-if="success" type="success">
@@ -58,7 +65,8 @@
 					</template>
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
-				<NcButton v-if="!success"
+				<NcButton
+					v-if="!success"
 					type="primary"
 					:disabled="!canSave || saving"
 					@click="onSave">
@@ -139,7 +147,9 @@ export default {
 			const raw = this.endpoint?.rules
 			if (!Array.isArray(raw)) return []
 			return raw
-				.map((r) => (typeof r === 'object' && r !== null ? (r.id || r.uuid) : r))
+				.map((r) =>
+					typeof r === 'object' && r !== null ? r.id || r.uuid : r,
+				)
 				.filter((id) => id !== undefined && id !== null)
 				.map((id) => String(id))
 		},
@@ -212,19 +222,21 @@ export default {
 			this.error = ''
 			try {
 				const newIds = this.selectedRules.map((rule) => String(rule.id))
-				const merged = Array.from(new Set([
-					...this.existingRuleIds,
-					...newIds,
-				]))
+				const merged = Array.from(
+					new Set([...this.existingRuleIds, ...newIds]),
+				)
 				await axios.patch(
-					generateUrl(`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`),
+					generateUrl(
+						`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`,
+					),
 					{ rules: merged },
 				)
 				this.success = true
 				showSuccess(t('openconnector', 'Rule(s) added to endpoint.'))
 			} catch (err) {
 				const detail = err?.response?.data?.message || err?.message || ''
-				this.error = t('openconnector', 'Failed to add rule to endpoint')
+				this.error =
+					t('openconnector', 'Failed to add rule to endpoint')
 					+ (detail ? `: ${detail}` : '')
 				showError(this.error)
 			} finally {

@@ -14,7 +14,9 @@
 		<NcEmptyContent
 			v-else-if="runs.length === 0"
 			:name="t('openconnector', 'No runs yet')"
-			:description="t('openconnector', 'Trigger a run to see its trace here.')" />
+			:description="
+				t('openconnector', 'Trigger a run to see its trace here.')
+			" />
 		<ul v-else class="flow-run-log__list">
 			<li v-for="run in runs" :key="run.id" class="flow-run-log__run">
 				<button
@@ -22,19 +24,40 @@
 					class="flow-run-log__run-header"
 					:aria-expanded="!!expanded[run.id]"
 					@click="toggle(run.id)">
-					<span class="flow-run-log__status" :class="'flow-run-log__status--' + run.status">{{ run.status }}</span>
-					<span>{{ t('openconnector', 'Trigger: {trigger}', { trigger: run.triggerSource || 'unknown' }) }}</span>
+					<span
+						class="flow-run-log__status"
+						:class="'flow-run-log__status--' + run.status"
+						>{{ run.status }}</span
+					>
+					<span>{{
+						t('openconnector', 'Trigger: {trigger}', {
+							trigger: run.triggerSource || 'unknown',
+						})
+					}}</span>
 					<span>{{ formatDate(run.startedAt) }}</span>
 				</button>
 				<ul v-if="expanded[run.id]" class="flow-run-log__steps">
-					<li v-if="!stepLogs[run.id] || stepLogs[run.id].length === 0" class="flow-run-log__step">
+					<li
+						v-if="!stepLogs[run.id] || stepLogs[run.id].length === 0"
+						class="flow-run-log__step">
 						{{ t('openconnector', 'Loading…') }}
 					</li>
-					<li v-for="entry in stepLogs[run.id]" :key="entry.id" class="flow-run-log__step">
-						<span class="flow-run-log__step-order">#{{ entry.stepOrder }}</span>
+					<li
+						v-for="entry in stepLogs[run.id]"
+						:key="entry.id"
+						class="flow-run-log__step">
+						<span class="flow-run-log__step-order"
+							>#{{ entry.stepOrder }}</span
+						>
 						<span>{{ entry.type }}</span>
-						<span class="flow-run-log__status" :class="'flow-run-log__status--' + entry.status">{{ entry.status }}</span>
-						<span v-if="entry.error" class="flow-run-log__error">{{ entry.error }}</span>
+						<span
+							class="flow-run-log__status"
+							:class="'flow-run-log__status--' + entry.status"
+							>{{ entry.status }}</span
+						>
+						<span v-if="entry.error" class="flow-run-log__error">{{
+							entry.error
+						}}</span>
 					</li>
 				</ul>
 			</li>
@@ -97,16 +120,28 @@ export default {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/flow_run'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/flow_run',
+					),
 					// `flowId` IS meant to be a property filter and `_sort` was
 					// already correctly prefixed; `limit` was not, so it became
 					// a SECOND property filter and this list returned `total: 0`
 					// for every flow — "No runs yet" on a flow that had run.
 					// See FlowDetailPage.fetchPickerOptions().
-					{ params: { flowId: this.flowId, _limit: 50, _sort: '-startedAt' } },
+					{
+						params: {
+							flowId: this.flowId,
+							_limit: 50,
+							_sort: '-startedAt',
+						},
+					},
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.runs = list.map((row) => ({
 					id: String(row.id || row.uuid),
 					status: row.status || 'running',
@@ -148,12 +183,24 @@ export default {
 		async fetchStepLogs(runId) {
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/flow_run_log'),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/flow_run_log',
+					),
 					// Same as fetchRuns above: `_limit`, not `limit`.
-					{ params: { flowRunId: runId, _limit: 200, _sort: 'stepOrder' } },
+					{
+						params: {
+							flowRunId: runId,
+							_limit: 200,
+							_sort: 'stepOrder',
+						},
+					},
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.stepLogs[runId] = list.map((row) => ({
 					id: String(row.id || row.uuid),
 					stepOrder: row.stepOrder,

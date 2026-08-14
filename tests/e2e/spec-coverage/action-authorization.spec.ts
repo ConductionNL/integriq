@@ -18,7 +18,6 @@ const MATRIX_URL = '/index.php/apps/openconnector/api/admin/action-matrix'
 const ADMIN_SETTINGS_URL = '/index.php/settings/admin/openconnector'
 
 test.describe('action-authorization: the admin-facing matrix', () => {
-
 	// `lib/Settings/OpenConnectorAdmin.php` is a one-line
 	// `extends GenericAdminSettings` with no other implementation, so this URL
 	// rendering openconnector content IS the generic admin-settings stub
@@ -34,7 +33,9 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 			'the Action authorization section must render in OpenConnector admin settings',
 		).toBeVisible({ timeout: 20_000 })
 
-		await expect(section.getByRole('heading', { name: /Action authorization/i })).toBeVisible()
+		await expect(
+			section.getByRole('heading', { name: /Action authorization/i }),
+		).toBeVisible()
 
 		// The matrix is only meaningful once it has stopped loading and has
 		// rows: a heading over an empty table would satisfy a laxer assertion
@@ -49,10 +50,15 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 
 		// Every row names an action and shows the groups allowed to invoke it.
 		// `source.test` is in lib/actions.seed.json and is seeded admin-only.
-		await expect(section.getByText('source.test', { exact: false }).first()).toBeVisible()
+		await expect(
+			section.getByText('source.test', { exact: false }).first(),
+		).toBeVisible()
 	})
 
-	test('the matrix route serves the same actions the UI renders', async ({ page, request }) => {
+	test('the matrix route serves the same actions the UI renders', async ({
+		page,
+		request,
+	}) => {
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
 		const section = page.locator('[data-testid=admin-action-auth-section]')
 		await expect(section).toBeVisible({ timeout: 20_000 })
@@ -63,17 +69,26 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 		const requesttoken = await page.evaluate(
 			() => document.head.getAttribute('data-requesttoken') ?? '',
 		)
-		expect(requesttoken, 'the settings page must carry a request token').not.toBe('')
+		expect(
+			requesttoken,
+			'the settings page must carry a request token',
+		).not.toBe('')
 
 		const resp = await request.get(MATRIX_URL, {
 			headers: { requesttoken },
 			failOnStatusCode: false,
 		})
-		expect(resp.status(), 'an admin session must be able to read the matrix').toBe(200)
+		expect(
+			resp.status(),
+			'an admin session must be able to read the matrix',
+		).toBe(200)
 
 		const body = await resp.json()
 		const original = body?.matrix ?? body
-		expect(original, 'the route must answer with the stored matrix object').toBeTruthy()
+		expect(
+			original,
+			'the route must answer with the stored matrix object',
+		).toBeTruthy()
 		expect(typeof original).toBe('object')
 
 		// The STORED matrix is legitimately EMPTY until `InitializeActions`
@@ -89,7 +104,9 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 				data: { matrix: { ...original, [PROBE]: ['admin'] } },
 				failOnStatusCode: false,
 			})
-			expect(put.status(), 'an admin must be able to write the matrix').toBe(200)
+			expect(put.status(), 'an admin must be able to write the matrix').toBe(
+				200,
+			)
 
 			const after = await request.get(MATRIX_URL, {
 				headers: { requesttoken },

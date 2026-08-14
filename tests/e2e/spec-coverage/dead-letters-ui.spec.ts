@@ -67,9 +67,12 @@ const SYNC_B = crypto.randomUUID()
  */
 class Fixtures {
 	api!: ApiClient
-	private created: Array<{ schema: string, id: string }> = []
+	private created: Array<{ schema: string; id: string }> = []
 
-	async open(browser: import('@playwright/test').Browser, baseURL: string): Promise<void> {
+	async open(
+		browser: import('@playwright/test').Browser,
+		baseURL: string,
+	): Promise<void> {
 		this.api = await makeApiClient(browser, baseURL)
 	}
 
@@ -79,7 +82,9 @@ class Fixtures {
 		const obj = await createObject(this.api, schema, data)
 		const id = obj.id ?? obj.uuid
 		if (!id) {
-			throw new Error(`createObject(${schema}) returned no id/uuid — cannot track it for cleanup: ${JSON.stringify(obj).slice(0, 300)}`)
+			throw new Error(
+				`createObject(${schema}) returned no id/uuid — cannot track it for cleanup: ${JSON.stringify(obj).slice(0, 300)}`,
+			)
 		}
 		this.created.push({ schema, id })
 		return obj
@@ -105,7 +110,9 @@ class Fixtures {
  */
 async function openDeadLetters(page: Page, queue: 'events' | 'sync'): Promise<void> {
 	const suffix = queue === 'sync' ? '?queue=sync' : ''
-	await page.goto(`${APP_BASE}/dead-letters${suffix}`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`${APP_BASE}/dead-letters${suffix}`, {
+		waitUntil: 'domcontentloaded',
+	})
 	await expect(
 		page.getByTestId(`dead-letters-${queue}`),
 		`the ${queue} queue component must mount`,
@@ -115,7 +122,8 @@ async function openDeadLetters(page: Page, queue: 'events' | 'sync'): Promise<vo
 	// the table would hang for the full timeout on a legitimately empty queue,
 	// and waiting for networkidle never settles on Nextcloud at all (ADR-074).
 	await expect(
-		page.getByTestId('dead-letters-table')
+		page
+			.getByTestId('dead-letters-table')
 			.or(page.getByTestId('deliveries-table'))
 			.or(page.getByTestId('empty-state'))
 			.first(),
@@ -134,11 +142,17 @@ async function openDeadLetters(page: Page, queue: 'events' | 'sync'): Promise<vo
  */
 test.describe('Sync dead letters — empty state (REQ-DLR-012)', () => {
 	const fx = new Fixtures()
-	test.beforeAll(async ({ browser, baseURL }) => { await fx.open(browser, baseURL!) })
-	test.afterAll(async () => { await fx.close() })
+	test.beforeAll(async ({ browser, baseURL }) => {
+		await fx.open(browser, baseURL!)
+	})
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e dead-letter-replay::empty-sync-dead-letter-queue-shows-an-empty-state
-	test('an empty sync queue renders an empty state, not an empty table', async ({ page }) => {
+	test('an empty sync queue renders an empty state, not an empty table', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 
 		// POSITIVE CONTROL FOR THE PRECONDITION. "The list is empty" is exactly
@@ -147,17 +161,27 @@ test.describe('Sync dead letters — empty state (REQ-DLR-012)', () => {
 		// the empty state, ask the endpoint that feeds it whether it agrees the
 		// queue is empty. If it returns rows, this test is being run against a
 		// dirty queue and must SKIP rather than assert a falsehood.
-		const probe = await fx.api.request.get('/index.php/apps/openconnector/api/sync-dead-letter', {
-			failOnStatusCode: false,
-		})
-		expect(probe.status(), 'the sync dead-letter endpoint must answer 200').toBe(200)
+		const probe = await fx.api.request.get(
+			'/index.php/apps/openconnector/api/sync-dead-letter',
+			{
+				failOnStatusCode: false,
+			},
+		)
+		expect(probe.status(), 'the sync dead-letter endpoint must answer 200').toBe(
+			200,
+		)
 		const body = await probe.json()
 		const rows = Array.isArray(body.results) ? body.results : []
-		test.skip(rows.length > 0, `sync dead-letter queue is not empty (${rows.length} rows) — cannot assert the empty state`)
+		test.skip(
+			rows.length > 0,
+			`sync dead-letter queue is not empty (${rows.length} rows) — cannot assert the empty state`,
+		)
 
 		await openDeadLetters(page, 'sync')
 
-		const empty = page.getByTestId('dead-letters-sync').getByTestId('empty-state')
+		const empty = page
+			.getByTestId('dead-letters-sync')
+			.getByTestId('empty-state')
 		await expect(empty, 'the empty state must render').toBeVisible()
 		await expect(empty).toHaveText(/No dead-lettered sync items/i)
 		// …and specifically NOT a table with a header row and no body.
@@ -189,15 +213,24 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 		})
 	})
 
-	test.afterAll(async () => { await fx.close() })
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e dead-letter-replay::operator-inspects-and-replays-a-dead-lettered-sync-item
-	test('the detail modal shows payload and prior attempts BEFORE the Replay action', async ({ page }) => {
+	test('the detail modal shows payload and prior attempts BEFORE the Replay action', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 		await openDeadLetters(page, 'sync')
 
-		const row = page.getByTestId('dead-letters-table').locator('tr', { hasText: originId })
-		await expect(row, 'the seeded dead letter must appear in the list').toBeVisible({ timeout: 20_000 })
+		const row = page
+			.getByTestId('dead-letters-table')
+			.locator('tr', { hasText: originId })
+		await expect(
+			row,
+			'the seeded dead letter must appear in the list',
+		).toBeVisible({ timeout: 20_000 })
 
 		await row.getByRole('button', { name: /Inspect/i }).click()
 
@@ -208,12 +241,18 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 		// prior attempts BEFORE the action". So both must already be on screen
 		// while the primary action is still the un-confirmed "Replay" button.
 		const replay = modal.getByRole('button', { name: /^Replay$/i })
-		await expect(replay, 'Replay must be offered un-confirmed at this point').toBeEnabled()
+		await expect(
+			replay,
+			'Replay must be offered un-confirmed at this point',
+		).toBeEnabled()
 
 		await expect(modal.getByTestId('payload-viewer')).toContainText(runId)
 		const timeline = modal.getByTestId('attempt-timeline')
 		await expect(timeline).toBeVisible()
-		await expect(timeline.locator('li'), 'all three seeded attempts must be listed').toHaveCount(3)
+		await expect(
+			timeline.locator('li'),
+			'all three seeded attempts must be listed',
+		).toHaveCount(3)
 		await expect(timeline).toContainText('HTTP 503 from target')
 		await expect(timeline).toContainText('timeout after 30s')
 
@@ -221,11 +260,15 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 	})
 
 	// @e2e dead-letter-replay::the-detail-view-explains-why-an-item-died
-	test('the detail modal names the failure and the attempt count', async ({ page }) => {
+	test('the detail modal names the failure and the attempt count', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 		await openDeadLetters(page, 'sync')
 
-		const row = page.getByTestId('dead-letters-table').locator('tr', { hasText: originId })
+		const row = page
+			.getByTestId('dead-letters-table')
+			.locator('tr', { hasText: originId })
 		await expect(row).toBeVisible({ timeout: 20_000 })
 		await row.getByRole('button', { name: /Inspect/i }).click()
 
@@ -235,15 +278,19 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 		// some other row's error text leaking into the modal.
 		await expect(modal).toContainText('target rejected the mapped payload (422)')
 		await expect(modal).toContainText(runId)
-		await expect(modal, 'the attempt count must be stated, not just the list')
-			.toContainText(/Attempts:\s*3/)
+		await expect(
+			modal,
+			'the attempt count must be stated, not just the list',
+		).toContainText(/Attempts:\s*3/)
 
 		assertNoAppErrors(sink)
 	})
 
 	// @e2e dead-letter-replay::default-listing-returns-failed-items-only
 	// @e2e dead-letter-replay::a-discarded-item-is-excluded-from-the-default-listing
-	test('the default view lists the failed entry and hides a discarded one', async ({ page }) => {
+	test('the default view lists the failed entry and hides a discarded one', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 
 		// A second entry, identical except that it is already discarded.
@@ -266,16 +313,22 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 		// The failed one is present — this is the POSITIVE CONTROL that makes
 		// the absence assertion below meaningful. Without it, "the discarded row
 		// is not visible" would also be satisfied by a page that renders nothing.
-		await expect(table.locator('tr', { hasText: originId }),
-			'the failed entry must be listed by default').toBeVisible({ timeout: 20_000 })
-		await expect(table.locator('tr', { hasText: discardedOrigin }),
-			'a discarded entry must NOT appear in the default listing').toHaveCount(0)
+		await expect(
+			table.locator('tr', { hasText: originId }),
+			'the failed entry must be listed by default',
+		).toBeVisible({ timeout: 20_000 })
+		await expect(
+			table.locator('tr', { hasText: discardedOrigin }),
+			'a discarded entry must NOT appear in the default listing',
+		).toHaveCount(0)
 
 		assertNoAppErrors(sink)
 	})
 
 	// @e2e dead-letter-replay::filtering-by-synchronization-narrows-the-list
-	test('the Synchronization filter narrows the list to one synchronization', async ({ page }) => {
+	test('the Synchronization filter narrows the list to one synchronization', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 
 		const otherOrigin = `${runId}-origin-other-sync`
@@ -293,17 +346,26 @@ test.describe('Sync dead letters — inspect and replay (REQ-DLR-012)', () => {
 		const table = page.getByTestId('dead-letters-table')
 
 		// Both are present before filtering — the positive control.
-		await expect(table.locator('tr', { hasText: originId })).toBeVisible({ timeout: 20_000 })
+		await expect(table.locator('tr', { hasText: originId })).toBeVisible({
+			timeout: 20_000,
+		})
 		await expect(table.locator('tr', { hasText: otherOrigin })).toBeVisible()
 
 		// The filter field is an NcTextField labelled "Synchronization" and
 		// reloads the server-side listing on a 400ms debounce.
-		await page.getByRole('textbox', { name: /Synchronization/i }).first().fill(SYNC_B)
+		await page
+			.getByRole('textbox', { name: /Synchronization/i })
+			.first()
+			.fill(SYNC_B)
 
-		await expect(table.locator('tr', { hasText: otherOrigin }),
-			'the matching entry must survive the filter').toBeVisible({ timeout: 20_000 })
-		await expect(table.locator('tr', { hasText: originId }),
-			'the non-matching entry must be filtered out').toHaveCount(0)
+		await expect(
+			table.locator('tr', { hasText: otherOrigin }),
+			'the matching entry must survive the filter',
+		).toBeVisible({ timeout: 20_000 })
+		await expect(
+			table.locator('tr', { hasText: originId }),
+			'the non-matching entry must be filtered out',
+		).toHaveCount(0)
 
 		assertNoAppErrors(sink)
 	})
@@ -377,7 +439,9 @@ test.describe('Event deliveries — action kind and provenance (REQ-DLR-013)', (
 		})
 	})
 
-	test.afterAll(async () => { await fx.close() })
+	test.afterAll(async () => {
+		await fx.close()
+	})
 
 	// @e2e dead-letter-replay::the-dead-letter-list-shows-the-action-kind-per-row
 	test('each row shows a badge matching its OWN action kind', async ({ page }) => {
@@ -389,7 +453,9 @@ test.describe('Event deliveries — action kind and provenance (REQ-DLR-013)', (
 
 		for (const kind of kinds) {
 			const row = table.locator('tr', { hasText: eventTypeFor(kind) })
-			await expect(row, `the ${kind} row must be listed`).toBeVisible({ timeout: 20_000 })
+			await expect(row, `the ${kind} row must be listed`).toBeVisible({
+				timeout: 20_000,
+			})
 			await expect(
 				row.getByTestId('action-kind-badge'),
 				`the ${kind} row's badge must read "${kind}", not another row's kind`,
@@ -400,18 +466,25 @@ test.describe('Event deliveries — action kind and provenance (REQ-DLR-013)', (
 	})
 
 	// @e2e dead-letter-replay::an-admin-filters-the-dead-letter-list-to-nextcloud-native-events-only
-	test('the Nextcloud-event filter keeps /nextcloud/ sources and drops an OR-object event', async ({ page }) => {
+	test('the Nextcloud-event filter keeps /nextcloud/ sources and drops an OR-object event', async ({
+		page,
+	}) => {
 		const sink = trackErrors(page)
 		await openDeadLetters(page, 'events')
 
 		const table = page.getByTestId('deliveries-table')
 		const ncRow = table.locator('tr', { hasText: eventTypeFor('webhook') })
-		const orRow = table.locator('tr', { hasText: `com.nextcloud.openregister.object.created.${runId}` })
+		const orRow = table.locator('tr', {
+			hasText: `com.nextcloud.openregister.object.created.${runId}`,
+		})
 
 		// Positive control: both are visible with the filter OFF. Without this,
 		// "the OR row is gone" would also be true of a page that failed to load.
 		await expect(ncRow).toBeVisible({ timeout: 20_000 })
-		await expect(orRow, 'the OR-object row must be present before filtering').toBeVisible()
+		await expect(
+			orRow,
+			'the OR-object row must be present before filtering',
+		).toBeVisible()
 
 		// TURNING ON AN nc-vue SWITCH — two traps, both of which report as a 60s
 		// `locator.check: Test timeout` rather than as a locator problem:
@@ -432,12 +505,19 @@ test.describe('Event deliveries — action kind and provenance (REQ-DLR-013)', (
 		// actually flipped rather than assuming the click landed.
 		const filter = page.getByTestId('nextcloud-event-filter')
 		await page.locator('.checkbox-radio-switch').filter({ has: filter }).click()
-		await expect(filter, 'the provenance filter must actually be on').toBeChecked()
+		await expect(
+			filter,
+			'the provenance filter must actually be on',
+		).toBeChecked()
 
-		await expect(orRow,
+		await expect(
+			orRow,
 			'an event whose source is /objects/person must be filtered out despite its com.nextcloud. TYPE prefix',
 		).toHaveCount(0, { timeout: 15_000 })
-		await expect(ncRow, 'an event whose source is /nextcloud/files must survive').toBeVisible()
+		await expect(
+			ncRow,
+			'an event whose source is /nextcloud/files must survive',
+		).toBeVisible()
 
 		assertNoAppErrors(sink)
 	})

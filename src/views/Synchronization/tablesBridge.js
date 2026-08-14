@@ -47,7 +47,7 @@ export function extractResults(data) {
 export function mapTableOptions(tables) {
 	if (!Array.isArray(tables)) return []
 	return tables
-		.filter((t) => t && (t.id !== undefined && t.id !== null))
+		.filter((t) => t && t.id !== undefined && t.id !== null)
 		.map((t) => ({
 			id: Number(t.id),
 			label: t.title || String(t.id),
@@ -71,7 +71,8 @@ export function normaliseColumn(column) {
 		type: String(c.type ?? ''),
 		subtype: c.subtype != null ? String(c.subtype) : null,
 		mandatory: Boolean(c.mandatory),
-		constraints: (c.constraints && typeof c.constraints === 'object') ? c.constraints : {},
+		constraints:
+			c.constraints && typeof c.constraints === 'object' ? c.constraints : {},
 	}
 }
 
@@ -102,29 +103,31 @@ export function columnTypeHint(column) {
 	const c = normaliseColumn(column)
 	const cons = c.constraints || {}
 	switch (c.type) {
-	case 'number':
-		if (cons.numberDecimals != null) {
-			return `number (${cons.numberDecimals} decimals)`
+		case 'number':
+			if (cons.numberDecimals != null) {
+				return `number (${cons.numberDecimals} decimals)`
+			}
+			return 'number'
+		case 'selection': {
+			const opts = Array.isArray(cons.selectionOptions)
+				? cons.selectionOptions
+				: []
+			if (opts.length > 0) {
+				return `selection: ${opts.map(String).join(', ')}`
+			}
+			return 'selection'
 		}
-		return 'number'
-	case 'selection': {
-		const opts = Array.isArray(cons.selectionOptions) ? cons.selectionOptions : []
-		if (opts.length > 0) {
-			return `selection: ${opts.map(String).join(', ')}`
-		}
-		return 'selection'
-	}
-	case 'datetime':
-		return c.subtype ? `datetime (${c.subtype})` : 'datetime'
-	case 'text':
-		if (cons.textMaxLength != null) {
-			return `text (max ${cons.textMaxLength})`
-		}
-		return 'text'
-	case 'usergroup':
-		return 'usergroup (read-only — not writable)'
-	default:
-		return c.type || 'unknown'
+		case 'datetime':
+			return c.subtype ? `datetime (${c.subtype})` : 'datetime'
+		case 'text':
+			if (cons.textMaxLength != null) {
+				return `text (max ${cons.textMaxLength})`
+			}
+			return 'text'
+		case 'usergroup':
+			return 'usergroup (read-only — not writable)'
+		default:
+			return c.type || 'unknown'
 	}
 }
 
@@ -141,7 +144,10 @@ export function readColumnMapping(config) {
 	if (!config || typeof config !== 'object') return []
 	const mapping = config.columnMapping
 	if (!Array.isArray(mapping)) return []
-	return mapping.filter((entry) => entry && typeof entry === 'object' && typeof entry.column === 'string')
+	return mapping.filter(
+		(entry) =>
+			entry && typeof entry === 'object' && typeof entry.column === 'string',
+	)
 }
 
 /**
@@ -158,8 +164,13 @@ export function readColumnMapping(config) {
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function upsertColumnMapping(config, columnTitle, value) {
-	const base = (config && typeof config === 'object' && !Array.isArray(config)) ? { ...config } : {}
-	const existing = readColumnMapping(base).filter((entry) => entry.column !== columnTitle)
+	const base =
+		config && typeof config === 'object' && !Array.isArray(config)
+			? { ...config }
+			: {}
+	const existing = readColumnMapping(base).filter(
+		(entry) => entry.column !== columnTitle,
+	)
 
 	const trimmed = typeof value === 'string' ? value.trim() : ''
 	if (trimmed !== '') {

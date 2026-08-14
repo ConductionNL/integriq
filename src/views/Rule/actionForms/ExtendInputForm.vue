@@ -13,7 +13,9 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Properties to extend') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Properties to extend')
+		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
@@ -21,7 +23,9 @@
 				placeholder="a.b"
 				@update:model-value="(next) => onPropertyInput(index, next)" />
 			<NcTextField
-				:label="t('openconnector', 'Extends (comma-separated paths, optional)')"
+				:label="
+					t('openconnector', 'Extends (comma-separated paths, optional)')
+				"
 				:model-value="(row.extends || []).join(',')"
 				placeholder="x.y,z"
 				@update:model-value="(next) => onExtendsInput(index, next)" />
@@ -56,11 +60,18 @@ export default {
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
-			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
-			const extendsMap = (this.value?.extends && typeof this.value.extends === 'object') ? this.value.extends : {}
+			const props = Array.isArray(this.value?.properties)
+				? this.value.properties
+				: []
+			const extendsMap =
+				this.value?.extends && typeof this.value.extends === 'object'
+					? this.value.extends
+					: {}
 			return props.map((property) => ({
 				property: String(property || ''),
-				extends: Array.isArray(extendsMap[property]) ? extendsMap[property] : [],
+				extends: Array.isArray(extendsMap[property])
+					? extendsMap[property]
+					: [],
 			}))
 		},
 	},
@@ -119,7 +130,10 @@ export default {
 			const rows = this.rows.slice()
 			rows[index] = {
 				...rows[index],
-				extends: value.split(',').map((entry) => entry.trim()).filter(Boolean),
+				extends: value
+					.split(',')
+					.map((entry) => entry.trim())
+					.filter(Boolean),
 			}
 			this.emitRows(rows)
 		},
@@ -146,10 +160,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
-@media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
+.action-form__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr auto;
+	gap: 8px;
+	align-items: end;
+}
+@media (max-width: 720px) {
+	.action-form__row {
+		grid-template-columns: 1fr;
+	}
+}
 </style>

@@ -116,13 +116,17 @@ let _root: string | null = null
 async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
 	if (_root) return _root
 	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, { failOnStatusCode: false })
+		const res = await page.request.get(`${candidate}/sources`, {
+			failOnStatusCode: false,
+		})
 		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
 			_root = candidate
 			return candidate
 		}
 	}
-	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 /** One manifest page, transcribed verbatim from src/manifest.json. */
@@ -145,41 +149,95 @@ type ManifestPage = {
  * without editing the manifest, or vice versa.
  */
 const MANIFEST_PAGES: ManifestPage[] = [
-	{ id: 'FeaturesRoadmap',          route: '/features-roadmap',          type: 'roadmap' },
-	{ id: 'Dashboard',                route: '/',                          type: 'dashboard' },
-	{ id: 'Sources',                  route: '/sources',                   type: 'index' },
-	{ id: 'SourceDetail',             route: '/sources/:id',               type: 'detail' },
-	{ id: 'SourceLogs',               route: '/sources/logs',              type: 'logs' },
-	{ id: 'Endpoints',                route: '/endpoints',                 type: 'index' },
-	{ id: 'EndpointDetail',           route: '/endpoints/:id',             type: 'detail' },
-	{ id: 'EndpointLogs',             route: '/endpoints/logs',            type: 'logs' },
-	{ id: 'Consumers',                route: '/consumers',                 type: 'index' },
-	{ id: 'ConsumerDetail',           route: '/consumers/:id',             type: 'detail' },
-	{ id: 'ApiProducts',              route: '/products',                  type: 'index' },
-	{ id: 'ApiProductDetail',         route: '/products/:id',              type: 'custom', component: 'ApiProductDetail' },
-	{ id: 'Webhooks',                 route: '/webhooks',                  type: 'index' },
-	{ id: 'NotificatiesAbonnementen', route: '/notificaties/abonnementen', type: 'custom', component: 'NotificatiesAbonnementenPage' },
-	{ id: 'Jobs',                     route: '/jobs',                      type: 'index' },
-	{ id: 'JobLogs',                  route: '/jobs/logs',                 type: 'logs' },
-	{ id: 'Mappings',                 route: '/mappings',                  type: 'index' },
-	{ id: 'MappingDetail',            route: '/mappings/:id',              type: 'custom', component: 'MappingDetailPage' },
-	{ id: 'Rules',                    route: '/rules',                     type: 'index' },
-	{ id: 'RuleDetail',               route: '/rules/:id',                 type: 'custom', component: 'RuleDetailPage' },
-	{ id: 'Synchronizations',         route: '/synchronizations',          type: 'index' },
-	{ id: 'SynchronizationContracts', route: '/synchronizations/contracts', type: 'index' },
-	{ id: 'SynchronizationLogs',      route: '/synchronizations/logs',     type: 'logs' },
-	{ id: 'SynchronizationDetail',    route: '/synchronizations/:id',      type: 'custom', component: 'SynchronizationDetailPage' },
-	{ id: 'CloudEvents',              route: '/cloud-events/events',       type: 'index' },
-	{ id: 'CloudEventDetail',         route: '/cloud-events/events/:id',   type: 'detail' },
-	{ id: 'CloudEventLogs',           route: '/cloud-events/logs',         type: 'logs' },
-	{ id: 'Approvals',                route: '/approvals',                 type: 'custom', component: 'ApprovalsIndex' },
-	{ id: 'Flows',                    route: '/flows',                     type: 'index' },
-	{ id: 'FlowDetail',               route: '/flows/:id',                 type: 'custom', component: 'FlowDetailPage' },
-	{ id: 'ApprovalDetail',           route: '/approvals/:id',             type: 'custom', component: 'ApprovalDetail' },
-	{ id: 'Traces',                   route: '/traces',                    type: 'logs' },
-	{ id: 'TraceDetail',              route: '/traces/:id',                type: 'custom', component: 'TraceDetailPage' },
-	{ id: 'Store',                    route: '/store',                     type: 'index' },
-	{ id: 'DeadLetters',              route: '/dead-letters',              type: 'custom', component: 'DeadLettersPage' },
+	{ id: 'FeaturesRoadmap', route: '/features-roadmap', type: 'roadmap' },
+	{ id: 'Dashboard', route: '/', type: 'dashboard' },
+	{ id: 'Sources', route: '/sources', type: 'index' },
+	{ id: 'SourceDetail', route: '/sources/:id', type: 'detail' },
+	{ id: 'SourceLogs', route: '/sources/logs', type: 'logs' },
+	{ id: 'Endpoints', route: '/endpoints', type: 'index' },
+	{ id: 'EndpointDetail', route: '/endpoints/:id', type: 'detail' },
+	{ id: 'EndpointLogs', route: '/endpoints/logs', type: 'logs' },
+	{ id: 'Consumers', route: '/consumers', type: 'index' },
+	{ id: 'ConsumerDetail', route: '/consumers/:id', type: 'detail' },
+	{ id: 'ApiProducts', route: '/products', type: 'index' },
+	{
+		id: 'ApiProductDetail',
+		route: '/products/:id',
+		type: 'custom',
+		component: 'ApiProductDetail',
+	},
+	{ id: 'Webhooks', route: '/webhooks', type: 'index' },
+	{
+		id: 'NotificatiesAbonnementen',
+		route: '/notificaties/abonnementen',
+		type: 'custom',
+		component: 'NotificatiesAbonnementenPage',
+	},
+	{ id: 'Jobs', route: '/jobs', type: 'index' },
+	{ id: 'JobLogs', route: '/jobs/logs', type: 'logs' },
+	{ id: 'Mappings', route: '/mappings', type: 'index' },
+	{
+		id: 'MappingDetail',
+		route: '/mappings/:id',
+		type: 'custom',
+		component: 'MappingDetailPage',
+	},
+	{ id: 'Rules', route: '/rules', type: 'index' },
+	{
+		id: 'RuleDetail',
+		route: '/rules/:id',
+		type: 'custom',
+		component: 'RuleDetailPage',
+	},
+	{ id: 'Synchronizations', route: '/synchronizations', type: 'index' },
+	{
+		id: 'SynchronizationContracts',
+		route: '/synchronizations/contracts',
+		type: 'index',
+	},
+	{ id: 'SynchronizationLogs', route: '/synchronizations/logs', type: 'logs' },
+	{
+		id: 'SynchronizationDetail',
+		route: '/synchronizations/:id',
+		type: 'custom',
+		component: 'SynchronizationDetailPage',
+	},
+	{ id: 'CloudEvents', route: '/cloud-events/events', type: 'index' },
+	{ id: 'CloudEventDetail', route: '/cloud-events/events/:id', type: 'detail' },
+	{ id: 'CloudEventLogs', route: '/cloud-events/logs', type: 'logs' },
+	{
+		id: 'Approvals',
+		route: '/approvals',
+		type: 'custom',
+		component: 'ApprovalsIndex',
+	},
+	{ id: 'Flows', route: '/flows', type: 'index' },
+	{
+		id: 'FlowDetail',
+		route: '/flows/:id',
+		type: 'custom',
+		component: 'FlowDetailPage',
+	},
+	{
+		id: 'ApprovalDetail',
+		route: '/approvals/:id',
+		type: 'custom',
+		component: 'ApprovalDetail',
+	},
+	{ id: 'Traces', route: '/traces', type: 'logs' },
+	{
+		id: 'TraceDetail',
+		route: '/traces/:id',
+		type: 'custom',
+		component: 'TraceDetailPage',
+	},
+	{ id: 'Store', route: '/store', type: 'index' },
+	{
+		id: 'DeadLetters',
+		route: '/dead-letters',
+		type: 'custom',
+		component: 'DeadLettersPage',
+	},
 ]
 
 /**
@@ -248,7 +306,6 @@ function attachConsoleSpy(page: Page): { errors: string[]; warnings: string[] } 
 }
 
 test.describe('manifest pages — schema-driven render', () => {
-
 	for (const pg of MANIFEST_PAGES) {
 		const label = pg.component ? `${pg.id} (${pg.component})` : pg.id
 		test(`[${pg.type}] ${label} mounts at ${pg.route}`, async ({ page }) => {
@@ -265,30 +322,47 @@ test.describe('manifest pages — schema-driven render', () => {
 			// `networkidle` always times out. The SPA mounts after DOM
 			// ready, and the `#app-content` + content-length assertions
 			// below verify the mount completed.
-			await page.goto(`${root}/#${navigableRoute(pg)}`, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+			await page.goto(`${root}/#${navigableRoute(pg)}`, {
+				waitUntil: 'domcontentloaded',
+				timeout: 30_000,
+			})
 
 			// The Nextcloud SPA shell mounts inside #app-content.
-			await expect(page.locator('#app-content, [data-cy=app-content], .app-content').first()).toBeVisible({ timeout: 10_000 })
+			await expect(
+				page
+					.locator('#app-content, [data-cy=app-content], .app-content')
+					.first(),
+			).toBeVisible({ timeout: 10_000 })
 
 			// CnAppRoot should have mounted and resolved the route to *some*
 			// page component (CnIndexPage, CnDetailPage, etc.). Verify by
 			// checking that *anything* rendered inside the app-content area
 			// beyond the loading spinner.
-			const renderedContent = await page.locator('#app-content, .app-content').first().innerHTML()
-			expect(renderedContent.length, `${pg.id} (${pg.route}) rendered no content inside app-content`).toBeGreaterThan(100)
+			const renderedContent = await page
+				.locator('#app-content, .app-content')
+				.first()
+				.innerHTML()
+			expect(
+				renderedContent.length,
+				`${pg.id} (${pg.route}) rendered no content inside app-content`,
+			).toBeGreaterThan(100)
 
 			// No fatal console errors during initial mount. Warnings are
 			// allowed (e.g. unused props from in-flight library churn).
-			expect(errors, `${pg.id} (${pg.route}) emitted console errors: ${errors.join(' | ')}`).toEqual([])
+			expect(
+				errors,
+				`${pg.id} (${pg.route}) emitted console errors: ${errors.join(' | ')}`,
+			).toEqual([])
 		})
 	}
-
 })
 
 test.describe('manifest schema validation', () => {
-
 	function readManifest(): Record<string, any> {
-		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		const manifestPath = require('path').resolve(
+			__dirname,
+			'../../../src/manifest.json',
+		)
 		return JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
 	}
 
@@ -298,15 +372,28 @@ test.describe('manifest schema validation', () => {
 		// fails it as an error with no statement of intent — and a reader
 		// checking whether "the manifest exists and parses" is covered cannot
 		// see an assertion that isn't written down.
-		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
-		expect(require('fs').existsSync(manifestPath), `manifest.json must exist at ${manifestPath}`).toBe(true)
-		expect(require('fs').statSync(manifestPath).isFile(), 'manifest.json must be a regular file').toBe(true)
-		expect(() => JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8')),
-			'manifest.json must parse as valid JSON with no syntax errors').not.toThrow()
+		const manifestPath = require('path').resolve(
+			__dirname,
+			'../../../src/manifest.json',
+		)
+		expect(
+			require('fs').existsSync(manifestPath),
+			`manifest.json must exist at ${manifestPath}`,
+		).toBe(true)
+		expect(
+			require('fs').statSync(manifestPath).isFile(),
+			'manifest.json must be a regular file',
+		).toBe(true)
+		expect(
+			() => JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8')),
+			'manifest.json must parse as valid JSON with no syntax errors',
+		).not.toThrow()
 
 		const m = readManifest()
 
-		expect(m.$schema, 'manifest declares a $schema URL').toMatch(/app-manifest(-v2)?\.schema\.json$/)
+		expect(m.$schema, 'manifest declares a $schema URL').toMatch(
+			/app-manifest(-v2)?\.schema\.json$/,
+		)
 		expect(m.version, 'manifest has a semver version').toMatch(/^\d+\.\d+\.\d+$/)
 		expect(Array.isArray(m.menu), 'menu is an array').toBe(true)
 		expect(Array.isArray(m.pages), 'pages is an array').toBe(true)
@@ -323,11 +410,19 @@ test.describe('manifest schema validation', () => {
 		const countNavEntries = (entries: Array<Record<string, unknown>>): number =>
 			entries.reduce((total, entry) => {
 				const children = entry.children
-				return total + 1 + (Array.isArray(children) ? countNavEntries(children as Array<Record<string, unknown>>) : 0)
+				return (
+					total
+					+ 1
+					+ (Array.isArray(children)
+						? countNavEntries(children as Array<Record<string, unknown>>)
+						: 0)
+				)
 			}, 0)
 
-		expect(countNavEntries(m.menu), 'menu exposes at least 13 navigable entries (groups + children)')
-			.toBeGreaterThanOrEqual(13)
+		expect(
+			countNavEntries(m.menu),
+			'menu exposes at least 13 navigable entries (groups + children)',
+		).toBeGreaterThanOrEqual(13)
 	})
 
 	/**
@@ -353,32 +448,57 @@ test.describe('manifest schema validation', () => {
 
 		// POSITIVE CONTROL: a comparison against an empty manifest would pass
 		// vacuously if the table were also empty.
-		expect(fromManifest.length, 'the manifest must declare pages for this guard to mean anything')
-			.toBeGreaterThan(20)
+		expect(
+			fromManifest.length,
+			'the manifest must declare pages for this guard to mean anything',
+		).toBeGreaterThan(20)
 
-		const key = (p: ManifestPage) => `${p.id}|${p.route}|${p.type}|${p.component ?? ''}`
+		const key = (p: ManifestPage) =>
+			`${p.id}|${p.route}|${p.type}|${p.component ?? ''}`
 		const manifestKeys = fromManifest.map(key).sort()
 		const tableKeys = MANIFEST_PAGES.map(key).sort()
 
 		const missingFromTable = manifestKeys.filter((k) => !tableKeys.includes(k))
 		const staleInTable = tableKeys.filter((k) => !manifestKeys.includes(k))
 
-		expect(missingFromTable, 'manifest pages that NO test in this file navigates to — add them to MANIFEST_PAGES')
-			.toEqual([])
-		expect(staleInTable, 'MANIFEST_PAGES entries the manifest no longer declares — these navigate to a dead route and pass anyway')
-			.toEqual([])
+		expect(
+			missingFromTable,
+			'manifest pages that NO test in this file navigates to — add them to MANIFEST_PAGES',
+		).toEqual([])
+		expect(
+			staleInTable,
+			'MANIFEST_PAGES entries the manifest no longer declares — these navigate to a dead route and pass anyway',
+		).toEqual([])
 	})
 
 	test('every page uses a standard type or has a _note justifying custom', async () => {
 		const m = readManifest()
 		// Standard nc-vue page types (ADR-030). `roadmap` is a recognised
 		// extension type used by FeaturesRoadmap.
-		const STANDARD = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'wiki', 'map', 'roadmap'])
+		const STANDARD = new Set([
+			'index',
+			'detail',
+			'dashboard',
+			'logs',
+			'settings',
+			'chat',
+			'files',
+			'form',
+			'wiki',
+			'map',
+			'roadmap',
+		])
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
-				expect(p._note, `page ${p.id} has type:custom — must include _note justifying it (chain D2 spec REQ "All manifest pages MUST use a standard page type")`).toBeTruthy()
+				expect(
+					p._note,
+					`page ${p.id} has type:custom — must include _note justifying it (chain D2 spec REQ "All manifest pages MUST use a standard page type")`,
+				).toBeTruthy()
 			} else {
-				expect(STANDARD.has(p.type), `page ${p.id} has unknown type ${p.type}`).toBe(true)
+				expect(
+					STANDARD.has(p.type),
+					`page ${p.id} has unknown type ${p.type}`,
+				).toBe(true)
 			}
 		}
 	})
@@ -387,10 +507,15 @@ test.describe('manifest schema validation', () => {
 		const m = readManifest()
 		for (const p of m.pages) {
 			if (['index', 'detail', 'logs'].includes(p.type)) {
-				expect(p.config?.register, `${p.id} (type:${p.type}) is missing config.register`).toBe('openconnector')
-				expect(p.config?.schema, `${p.id} (type:${p.type}) is missing config.schema`).toBeTruthy()
+				expect(
+					p.config?.register,
+					`${p.id} (type:${p.type}) is missing config.register`,
+				).toBe('openconnector')
+				expect(
+					p.config?.schema,
+					`${p.id} (type:${p.type}) is missing config.schema`,
+				).toBeTruthy()
 			}
 		}
 	})
-
 })

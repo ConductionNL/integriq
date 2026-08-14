@@ -71,7 +71,10 @@ export default {
 		placeholder: { type: String, default: '' },
 		emptyLabel: { type: String, default: '' },
 		/** Accessible label for the combobox input. */
-		inputLabel: { type: String, default: () => t('openconnector', 'References') },
+		inputLabel: {
+			type: String,
+			default: () => t('openconnector', 'References'),
+		},
 	},
 
 	data() {
@@ -91,10 +94,13 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedOptions() {
 			if (!Array.isArray(this.value)) return []
-			return this.value.map((id) => this.options.find((opt) => opt.id === String(id)) ?? {
-				id: String(id),
-				label: String(id),
-			})
+			return this.value.map(
+				(id) =>
+					this.options.find((opt) => opt.id === String(id)) ?? {
+						id: String(id),
+						label: String(id),
+					},
+			)
 		},
 	},
 
@@ -118,21 +124,34 @@ export default {
 		 */
 		onChange(picked) {
 			const list = Array.isArray(picked) ? picked : []
-			this.$emit('input', list.map((option) => option?.id).filter(Boolean).map(String))
+			this.$emit(
+				'input',
+				list
+					.map((option) => option?.id)
+					.filter(Boolean)
+					.map(String),
+			)
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchOptions() {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/' + this.schema),
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/'
+							+ this.schema,
+					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.options = list
 					.map((row) => ({
 						// Standardise on slug as the canonical reference
@@ -140,9 +159,17 @@ export default {
 						// `followUps[]` description). Fall back to id/uuid
 						// for legacy rows without a slug.
 						id: String(row.slug || row.id || row.uuid),
-						label: row[this.labelKey] || row.title || row.name || row.slug || row.id,
+						label:
+							row[this.labelKey]
+							|| row.title
+							|| row.name
+							|| row.slug
+							|| row.id,
 					}))
-					.filter((opt) => !this.excludeId || opt.id !== String(this.excludeId))
+					.filter(
+						(opt) =>
+							!this.excludeId || opt.id !== String(this.excludeId),
+					)
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn(`[SyncReferenceList] ${this.schema} fetch failed`, err)

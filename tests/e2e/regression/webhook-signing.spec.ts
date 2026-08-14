@@ -67,13 +67,17 @@ let _root: string | null = null
 async function rootUrl(page: Page): Promise<string> {
 	if (_root) return _root
 	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, { failOnStatusCode: false })
+		const res = await page.request.get(`${candidate}/sources`, {
+			failOnStatusCode: false,
+		})
 		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
 			_root = candidate
 			return candidate
 		}
 	}
-	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
@@ -119,15 +123,19 @@ async function gotoSpaPage(page: Page, path: string): Promise<void> {
 }
 
 test.describe('webhook-signing — operator signing surfaces', () => {
-
-	test('Webhooks page mounts and exposes the signing lifecycle surface', async ({ page }) => {
+	test('Webhooks page mounts and exposes the signing lifecycle surface', async ({
+		page,
+	}) => {
 		const { errors } = attachConsoleSpy(page)
 
 		await gotoSpaPage(page, '/webhooks')
 
 		// The custom Webhooks page resolved and rendered content beyond a bare
 		// spinner — either the subscription table/header or the empty state.
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
+		const rendered = await page
+			.locator('#app-content, .app-content')
+			.first()
+			.innerHTML()
 		expect(
 			rendered.length,
 			'Webhooks page rendered no content inside app-content',
@@ -141,12 +149,17 @@ test.describe('webhook-signing — operator signing surfaces', () => {
 		).toEqual([])
 	})
 
-	test('Rules page mounts so the webhook_signature rule type is selectable', async ({ page }) => {
+	test('Rules page mounts so the webhook_signature rule type is selectable', async ({
+		page,
+	}) => {
 		const { errors } = attachConsoleSpy(page)
 
 		await gotoSpaPage(page, '/rules')
 
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
+		const rendered = await page
+			.locator('#app-content, .app-content')
+			.first()
+			.innerHTML()
 		expect(
 			rendered.length,
 			'Rules page rendered no content inside app-content',
@@ -159,5 +172,4 @@ test.describe('webhook-signing — operator signing surfaces', () => {
 			`Rules page emitted console errors: ${errors.join(' | ')}`,
 		).toEqual([])
 	})
-
 })

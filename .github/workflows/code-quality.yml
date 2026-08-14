@@ -314,7 +314,19 @@ jobs:
       # is short 337+ translations across the required locales. That is a
       # translation backlog, and a permanently-red leg is one that gets
       # switched off again.
-      frontend-checks: '["build", "check:specs", "test:l10n"]'
+      #
+      # `format` (prettier --check) is listed because the shared workflow has NO
+      # prettier job of its own — `quality.yml` runs eslint and stylelint and
+      # mentions prettier ZERO times. This repo already carries
+      # `@nextcloud/prettier-config` and a `format` script, so without this leg
+      # `npm run format` never runs outside a developer's editor and the tree
+      # drifts straight back out of format between merges — the same inert-
+      # formatter failure mode that made the old `.prettierrc` worth deleting.
+      # Centralising the config never stopped drift; the gate does.
+      # Measured on this tree before enabling: PASSES, 176 of 222 tracked
+      # frontend files in scope (l10n/ and docs/ excluded via .prettierignore /
+      # .gitignore, which prettier 3 also reads).
+      frontend-checks: '["build", "check:specs", "test:l10n", "format"]'
 
       # ── Hydra mechanical gates ───────────────────────────────────────────
       # `enable-hydra-gates` defaults to FALSE, so this tier has never executed

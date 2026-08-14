@@ -33,7 +33,12 @@
  * @param {Array<object>}          [params.apiKeys] apiKeys UI rows, shape `[{ apiKey, user: { id } }]`.
  * @return {object} The authentication config. `keys` is ABSENT when no complete new key was entered.
  */
-export function buildAuthenticationConfiguration({ type, users, groups, apiKeys = [] }) {
+export function buildAuthenticationConfiguration({
+	type,
+	users,
+	groups,
+	apiKeys = [],
+}) {
 	const authentication = {
 		type,
 		users,
@@ -43,8 +48,8 @@ export function buildAuthenticationConfiguration({ type, users, groups, apiKeys 
 	// A "complete new key" has both a non-empty apiKey string AND a selected user id.
 	// Incomplete rows (the empty seed row, or a half-filled row) are not new keys.
 	const enteredKeys = (apiKeys || [])
-		.filter(key => key.apiKey && key.user?.id)
-		.map(key => ({ [key.apiKey]: key.user.id }))
+		.filter((key) => key.apiKey && key.user?.id)
+		.map((key) => ({ [key.apiKey]: key.user.id }))
 
 	// LOAD-BEARING OMIT: only attach `keys` when the operator actually entered new ones.
 	// When empty, leaving `keys` off the payload lets openregister#463 preserve the stored

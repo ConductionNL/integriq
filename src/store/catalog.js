@@ -68,7 +68,9 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-lists-adapters-seeded-source-templates-and-configuration-templates-with-category-filter-and-status-badges-req-001
 		 */
 		categories(state) {
-			return [...new Set(state.items.map((item) => item.category).filter(Boolean))].sort()
+			return [
+				...new Set(state.items.map((item) => item.category).filter(Boolean)),
+			].sort()
 		},
 	},
 
@@ -83,7 +85,9 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		async fetchItems() {
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openconnector/catalog_item')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openconnector/catalog_item',
+				)
 				const { data } = await axios.get(url, { params: { _limit: 500 } })
 				this.items = data?.results || []
 				return this.items
@@ -102,7 +106,9 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		async fetchStatus(id) {
-			const url = generateUrl(`/apps/openconnector/api/catalog/items/${id}/status`)
+			const url = generateUrl(
+				`/apps/openconnector/api/catalog/items/${id}/status`,
+			)
 			const { data } = await axios.get(url)
 			this.statusById = { ...this.statusById, [id]: data }
 			return data
@@ -119,7 +125,9 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 * @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
 		 */
 		async instantiate(id) {
-			const url = generateUrl(`/apps/openconnector/api/catalog/items/${id}/instantiate`)
+			const url = generateUrl(
+				`/apps/openconnector/api/catalog/items/${id}/instantiate`,
+			)
 			const { data } = await axios.post(url, {})
 			// The action changed the item's live state — refresh its status.
 			await this.fetchStatus(id).catch(() => {})
