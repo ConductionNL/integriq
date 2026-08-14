@@ -5,10 +5,10 @@
 
 <template>
 	<CnAdminSettingsShell
-		app-id="openconnector"
-		app-name="OpenConnector"
-		:show-version-card="false"
-		:show-reimport="false">
+		appId="openconnector"
+		appName="OpenConnector"
+		:showVersionCard="false"
+		:showReimport="false">
 		<div class="openconnector-admin">
 			<ActionAuthMatrix />
 			<DsoPkiSettings />

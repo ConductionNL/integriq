@@ -13,7 +13,7 @@
   Closes #835.
 -->
 <template>
-	<NcModal v-if="open" label-id="testMappingModal" size="large" @close="onClose">
+	<NcModal v-if="open" labelId="testMappingModal" size="large" @close="onClose">
 		<div class="cn-test-mapping-modal">
 			<h2>{{ t('openconnector', 'Test mapping') }}</h2>
 
@@ -50,7 +50,7 @@
 							{{ t('openconnector', 'Close') }}
 						</NcButton>
 						<NcButton
-							type="primary"
+							variant="primary"
 							:disabled="!canRun"
 							@click="runTest">
 							<template #icon>
@@ -67,9 +67,9 @@
 					<MappingResultPanel
 						ref="result"
 						:mapping="mapping"
-						:input-object="inputJson"
+						:inputObject="inputJson"
 						:auto="false"
-						@input-error="inputError = $event" />
+						@inputError="inputError = $event" />
 				</section>
 			</div>
 		</div>
@@ -77,9 +77,8 @@
 </template>
 
 <script>
-import { NcModal, NcButton, NcNoteCard } from '@nextcloud/vue'
+import { NcButton, NcModal, NcNoteCard } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
-
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 
 export default {
@@ -112,10 +111,12 @@ export default {
 		mappingName() {
 			return this.mapping?.name || ''
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		placeholder() {
 			return '{\n  "key": "value"\n}'
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canRun() {
 			return !!this.mapping && this.inputJson.trim().length > 0

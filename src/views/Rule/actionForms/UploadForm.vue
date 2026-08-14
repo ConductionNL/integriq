@@ -11,20 +11,20 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Upload path')"
-			:model-value="value.path || ''"
+			:modelValue="value.path || ''"
 			placeholder="/path/to/upload/directory"
-			@update:model-value="(next) => patch('path', next)" />
+			@update:modelValue="(next) => patch('path', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Allowed file types (comma-separated)')"
-			:model-value="value.allowedTypes || ''"
+			:modelValue="value.allowedTypes || ''"
 			placeholder="jpg,png,pdf"
-			@update:model-value="(next) => patch('allowedTypes', next)" />
+			@update:modelValue="(next) => patch('allowedTypes', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Max file size (MB)')"
 			type="number"
-			:model-value="value.maxSize != null ? String(value.maxSize) : ''"
+			:modelValue="value.maxSize != null ? String(value.maxSize) : ''"
 			placeholder="10"
-			@update:model-value="onMaxSizeInput" />
+			@update:modelValue="onMaxSizeInput" />
 		<span class="action-form__helper">
 			{{
 				t(
@@ -50,6 +50,7 @@ export default {
 		 * Coerce the max-file-size field (in MB): an empty input removes the
 		 * key entirely, non-numeric input is ignored, anything else is stored
 		 * as a number.
+		 *
 		 * @param {string|null} raw The raw text emitted by the number NcTextField.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */

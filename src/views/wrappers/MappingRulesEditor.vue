@@ -87,8 +87,8 @@
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
 							:animation="150"
-							ghost-class="cn-rules-editor__row--ghost"
-							drag-class="cn-rules-editor__row--dragging"
+							ghostClass="cn-rules-editor__row--ghost"
+							dragClass="cn-rules-editor__row--dragging"
 							@end="onMappingReorder">
 							<tr
 								v-for="(row, index) in mappingDraft"
@@ -117,7 +117,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('mapping', row.key)">
@@ -126,7 +126,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -150,7 +150,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							type="primary"
+							variant="primary"
 							:disabled="saving"
 							@click="openCreate('mapping')">
 							<template #icon>
@@ -204,8 +204,8 @@
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
 							:animation="150"
-							ghost-class="cn-rules-editor__row--ghost"
-							drag-class="cn-rules-editor__row--dragging"
+							ghostClass="cn-rules-editor__row--ghost"
+							dragClass="cn-rules-editor__row--dragging"
 							@end="onCastReorder">
 							<tr
 								v-for="(row, index) in castDraft"
@@ -234,7 +234,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('cast', row.key)">
@@ -243,7 +243,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -262,7 +262,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							type="primary"
+							variant="primary"
 							:disabled="saving"
 							@click="openCreate('cast')">
 							<template #icon>
@@ -313,8 +313,8 @@
 							handle=".cn-rules-editor__drag-handle"
 							:disabled="saving"
 							:animation="150"
-							ghost-class="cn-rules-editor__row--ghost"
-							drag-class="cn-rules-editor__row--dragging"
+							ghostClass="cn-rules-editor__row--ghost"
+							dragClass="cn-rules-editor__row--dragging"
 							@end="onUnsetReorder">
 							<tr
 								v-for="(property, index) in unsetDraft"
@@ -340,7 +340,7 @@
 								</td>
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="t('openconnector', 'Edit rule')"
 										:disabled="saving"
 										@click="openEditUnset(property)">
@@ -349,7 +349,7 @@
 										</template>
 									</NcButton>
 									<NcButton
-										type="tertiary"
+										variant="tertiary"
 										:aria-label="
 											t('openconnector', 'Delete rule')
 										"
@@ -368,7 +368,7 @@
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
-							type="primary"
+							variant="primary"
 							:disabled="saving || !passThrough"
 							@click="openCreate('unset')">
 							<template #icon>
@@ -395,10 +395,10 @@
 						}}
 					</p>
 					<NcCheckboxRadioSwitch
-						:model-value="passThrough"
+						:modelValue="passThrough"
 						:disabled="saving"
 						type="switch"
-						@update:model-value="$emit('update-pass-through', $event)">
+						@update:modelValue="$emit('update-pass-through', $event)">
 						{{ t('openconnector', 'Pass through') }}
 					</NcCheckboxRadioSwitch>
 					<p class="cn-rules-editor__help">
@@ -419,7 +419,7 @@
 			:kind="editing.kind"
 			:property="editing.property"
 			:value="editing.value"
-			:existing-keys="existingKeysFor(editing.kind, editing.property)"
+			:existingKeys="existingKeysFor(editing.kind, editing.property)"
 			@cancel="editing = null"
 			@submit="onSubmitDialog" />
 	</div>
@@ -428,12 +428,11 @@
 <script>
 import { CnTab, CnTabs } from '@conduction/nextcloud-vue'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
-import PencilIcon from 'vue-material-design-icons/Pencil.vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import DragVerticalIcon from 'vue-material-design-icons/DragVertical.vue'
-import { VueDraggable } from 'vue-draggable-plus'
-
+import PencilIcon from 'vue-material-design-icons/Pencil.vue'
+import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import EditMappingRuleDialog from '../../dialogs/EditMappingRuleDialog.vue'
 
 /**
@@ -488,26 +487,31 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/** Cast rules object: `{ property: castType }`. */
 		castRules: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/** Unset rules list: `[propertyName, …]`. */
 		unsetRules: {
 			type: Array,
 			default: () => [],
 		},
+
 		/** Whether pass-through is enabled on the parent mapping. */
 		passThrough: {
 			type: Boolean,
 			default: false,
 		},
+
 		/** Whether a persist is in flight. Disables the controls. */
 		saving: {
 			type: Boolean,
 			default: false,
 		},
+
 		/**
 		 * Show a fourth "Options" tab carrying the pass-through switch,
 		 * restoring the tab the pre-manifest mapping modal had. Off by
@@ -568,6 +572,7 @@ export default {
 						'Enable pass-through above to add unset rules.',
 					)
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRowList() {
 			return Object.keys(this.mappingRules).map((key) => ({
@@ -575,6 +580,7 @@ export default {
 				value: this.mappingRules[key],
 			}))
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castRowList() {
 			return Object.keys(this.castRules).map((key) => ({
@@ -597,8 +603,10 @@ export default {
 			handler(next) {
 				this.mappingDraft = objectToRowList(next)
 			},
+
 			deep: true,
 		},
+
 		castRules: {
 			/**
 			 * Re-seed the local cast draft when the parent persists.
@@ -610,8 +618,10 @@ export default {
 			handler(next) {
 				this.castDraft = objectToRowList(next)
 			},
+
 			deep: true,
 		},
+
 		unsetRules: {
 			/**
 			 * Re-seed the local unset draft when the parent persists. Copied
@@ -624,6 +634,7 @@ export default {
 			handler(next) {
 				this.unsetDraft = [...next]
 			},
+
 			deep: true,
 		},
 	},
@@ -646,6 +657,7 @@ export default {
 				return String(value)
 			}
 		},
+
 		/**
 		 * Collect the property names already taken in one rule collection, so
 		 * the edit dialog can reject a duplicate key.
@@ -681,6 +693,7 @@ export default {
 				value: kind === 'cast' ? 'string' : '',
 			}
 		},
+
 		/**
 		 * Open the rule dialog on an existing mapping or cast rule, seeded
 		 * with that rule's current value.
@@ -698,6 +711,7 @@ export default {
 				value: source[property] ?? (kind === 'cast' ? 'string' : ''),
 			}
 		},
+
 		/**
 		 * Open the rule dialog on an unset entry. An unset rule has no
 		 * separate value, so the property name is used as both.
@@ -753,6 +767,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-mapping', next)
 		},
+
 		/**
 		 * Emit the full cast-rules object with one rule created, updated or
 		 * renamed. The parent owns persistence.
@@ -771,6 +786,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-cast', next)
 		},
+
 		/**
 		 * Emit the full unset list with one entry added or renamed,
 		 * deduplicated while preserving order.
@@ -823,6 +839,7 @@ export default {
 				this.$emit('update-cast', next)
 			}
 		},
+
 		/**
 		 * Drop one entry from the unset list and emit the remainder.
 		 *
@@ -843,10 +860,12 @@ export default {
 		onMappingReorder() {
 			this.$emit('update-mapping', rowListToObject(this.mappingDraft))
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onCastReorder() {
 			this.$emit('update-cast', rowListToObject(this.castDraft))
 		},
+
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onUnsetReorder() {
 			this.$emit('update-unset', [...this.unsetDraft])

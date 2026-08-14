@@ -32,43 +32,43 @@
 //   2. Built-in widget types        (version-info, register-mapping, …)
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
-import {
-	testSourceHandler,
-	runJobHandler,
-	testJobHandler,
-	runSynchronizationHandler,
-	testSynchronizationHandler,
-	runFlowHandler,
-	testMappingModalHandler,
-	addEndpointRuleHandler,
-	manageSigningHandler,
-	viewLogsHandler,
-	openConfigurationImportHandler,
-	openConfigurationExportHandler,
-	openPromotionHandler,
-} from './handlers/actionHandlers.js'
 import CatalogItemCard from './components/CatalogItemCard.vue'
+import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
 import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
-import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
-import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
-import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
-import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
-import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
-import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
-import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
-import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
-import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
-import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
-import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
+import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
-import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
-import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
+import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
+import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
+import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
+import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
+import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
+import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
+import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
+import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
+import {
+	addEndpointRuleHandler,
+	manageSigningHandler,
+	openConfigurationExportHandler,
+	openConfigurationImportHandler,
+	openPromotionHandler,
+	runFlowHandler,
+	runJobHandler,
+	runSynchronizationHandler,
+	testJobHandler,
+	testMappingModalHandler,
+	testSourceHandler,
+	testSynchronizationHandler,
+	viewLogsHandler,
+} from './handlers/actionHandlers.js'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.

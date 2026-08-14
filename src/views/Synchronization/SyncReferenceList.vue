@@ -21,15 +21,15 @@
 <template>
 	<div class="sync-ref-list">
 		<NcSelect
-			:input-id="inputId"
-			:input-label="inputLabel"
-			:model-value="selectedOptions"
+			:inputId="inputId"
+			:inputLabel="inputLabel"
+			:modelValue="selectedOptions"
 			:options="options"
 			:loading="loading"
 			multiple
-			closeable-chips
+			closeableChips
 			:placeholder="placeholder"
-			@update:model-value="onChange" />
+			@update:modelValue="onChange" />
 
 		<p v-if="!selectedOptions.length" class="sync-ref-list__empty">
 			{{ emptyLabel }}
@@ -38,10 +38,10 @@
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { NcSelect } from '@nextcloud/vue'
 
 let listSeq = 0
 
@@ -91,6 +91,7 @@ export default {
 		inputId() {
 			return `sync-ref-list-${this.listUid}`
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedOptions() {
 			if (!Array.isArray(this.value)) return []
@@ -118,6 +119,7 @@ export default {
 		/**
 		 * Flatten the multi-select's option objects back to the array of slug
 		 * strings the parent binds, dropping entries without an id.
+		 *
 		 * @param {Array<{id: string, label: string}>|null} picked The options
 		 *   currently selected in the NcSelect; a non-array means "none".
 		 * @spec openspec/specs/sync-editor-ui/spec.md
@@ -132,6 +134,7 @@ export default {
 					.map(String),
 			)
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchOptions() {
 			this.loading = true

@@ -27,18 +27,18 @@
 			<div class="eventDeliveries__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:input-label="t('openconnector', 'Status')"
+					:inputLabel="t('openconnector', 'Status')"
 					:options="statusOptions"
-					@update:model-value="reload" />
+					@update:modelValue="reload" />
 				<NcTextField
 					v-model="subscriptionFilter"
 					:label="t('openconnector', 'Subscription')"
-					@update:model-value="reloadDebounced" />
+					@update:modelValue="reloadDebounced" />
 				<NcCheckboxRadioSwitch
-					:model-value="nextcloudOnly"
+					:modelValue="nextcloudOnly"
 					type="switch"
 					data-testid="nextcloud-event-filter"
-					@update:model-value="(value) => (nextcloudOnly = value)">
+					@update:modelValue="(value) => (nextcloudOnly = value)">
 					{{ t('openconnector', 'Nextcloud event') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -61,7 +61,7 @@
 								count: selected.length,
 							})
 				}}</span>
-				<NcButton type="primary" :disabled="busy" @click="commitBulk">
+				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
@@ -70,7 +70,7 @@
 			</template>
 			<template v-else>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="busy"
 					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
@@ -107,13 +107,13 @@
 				<tr v-for="row in filteredRows" :key="row.uuid || row.id">
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="isSelected(row)"
+							:modelValue="isSelected(row)"
 							:aria-label="
 								t('openconnector', 'Select delivery {id}', {
 									id: row.uuid || row.id,
 								})
 							"
-							@update:model-value="toggleSelect(row)" />
+							@update:modelValue="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
 					<td>{{ row.subscription }}</td>
@@ -134,7 +134,7 @@
 					<td>{{ row.retryCount || 0 }}</td>
 					<td>{{ row.lastAttempt }}</td>
 					<td>
-						<NcButton type="tertiary" @click="openDetail(row)">
+						<NcButton variant="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Inspect') }}
 						</NcButton>
 					</td>
@@ -152,9 +152,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -202,6 +202,7 @@ export default {
 		/**
 		 * The visible rows after applying the Nextcloud-event provenance
 		 * filter on top of the server-side status/subscription filters.
+		 *
 		 * @return {object[]}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 		 */
@@ -219,6 +220,7 @@ export default {
 		t,
 		/**
 		 * Resolve a row's CloudEvent type for the list column.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @return {string}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
@@ -226,11 +228,14 @@ export default {
 		rowEventType(row) {
 			return row?.payload?.type || row?.payload?.data?.type || '—'
 		},
+
 		isSelected(row) {
 			return this.selected.includes(row.uuid || row.id)
 		},
+
 		/**
 		 * Toggle a row in the bulk-selection set.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
@@ -242,31 +247,39 @@ export default {
 				this.selected = [...this.selected, id]
 			}
 		},
+
 		/**
 		 * Open the per-message detail modal.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		openDetail(row) {
 			this.detail = { open: true, message: row }
 		},
+
 		/**
 		 * Close the detail modal.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		closeDetail() {
 			this.detail = { open: false, message: null }
 		},
+
 		/**
 		 * Debounced reload used by the subscription filter field.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		reloadDebounced() {
 			clearTimeout(this.reloadTimer)
 			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
+
 		/**
 		 * Fetch the dead-letter listing from the admin-only endpoint.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		async reload() {
@@ -289,8 +302,10 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		async commitBulk() {

@@ -9,8 +9,8 @@
 	<div class="action-form">
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:model-value="!!value.validate"
-			@update:model-value="onValidateToggle">
+			:modelValue="!!value.validate"
+			@update:modelValue="onValidateToggle">
 			{{ t('openconnector', 'Validate fetched object against schema') }}
 		</NcCheckboxRadioSwitch>
 
@@ -20,16 +20,16 @@
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:model-value="row.property"
+				:modelValue="row.property"
 				placeholder="body.relations.contact"
-				@update:model-value="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="t('openconnector', 'Schema ID')"
-				:model-value="row.schema"
+				:modelValue="row.schema"
 				placeholder="contact"
-				@update:model-value="(next) => onSchemaInput(index, next)" />
+				@update:modelValue="(next) => onSchemaInput(index, next)" />
 			<NcButton
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
@@ -37,7 +37,7 @@
 				</template>
 			</NcButton>
 		</div>
-		<NcButton type="secondary" @click="addRow">
+		<NcButton variant="secondary" @click="addRow">
 			<template #icon>
 				<Plus :size="18" />
 			</template>
@@ -68,6 +68,7 @@ export default {
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Serialise the edited rows back into the action config and emit it.
@@ -86,6 +87,7 @@ export default {
 			}
 			this.$emit('update:value', next)
 		},
+
 		/**
 		 * Persist the "validate fetched object against schema" switch, which
 		 * drives RuleService::extendExternalUrl's schema validation.
@@ -100,6 +102,7 @@ export default {
 				validate: !!checked,
 			})
 		},
+
 		/**
 		 * Update the dot-path of one row as the user types.
 		 *
@@ -113,6 +116,7 @@ export default {
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
+
 		/**
 		 * Update the schema a row's fetched object is validated against.
 		 *
@@ -126,12 +130,14 @@ export default {
 			rows[index] = { ...rows[index], schema: value }
 			this.emitRows(rows)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', schema: '' })
 			this.emitRows(rows)
 		},
+
 		/**
 		 * Drop one property row from the list.
 		 *

@@ -27,13 +27,13 @@
 			<div class="syncDeadLetters__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:input-label="t('openconnector', 'Status')"
+					:inputLabel="t('openconnector', 'Status')"
 					:options="statusOptions"
-					@update:model-value="reload" />
+					@update:modelValue="reload" />
 				<NcTextField
 					v-model="synchronizationFilter"
 					:label="t('openconnector', 'Synchronization')"
-					@update:model-value="reloadDebounced" />
+					@update:modelValue="reloadDebounced" />
 			</div>
 		</div>
 
@@ -54,7 +54,7 @@
 								count: selected.length,
 							})
 				}}</span>
-				<NcButton type="primary" :disabled="busy" @click="commitBulk">
+				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
@@ -63,7 +63,7 @@
 			</template>
 			<template v-else>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="busy"
 					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
@@ -103,13 +103,13 @@
 				<tr v-for="row in rows" :key="row.uuid || row.id">
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="isSelected(row)"
+							:modelValue="isSelected(row)"
 							:aria-label="
 								t('openconnector', 'Select dead letter {id}', {
 									id: row.uuid || row.id,
 								})
 							"
-							@update:model-value="toggleSelect(row)" />
+							@update:modelValue="toggleSelect(row)" />
 					</td>
 					<td>{{ row.synchronization }}</td>
 					<td>{{ row.originId || '—' }}</td>
@@ -126,7 +126,7 @@
 						{{ row.errorPreview || row.error }}
 					</td>
 					<td>
-						<NcButton type="tertiary" @click="openDetail(row)">
+						<NcButton variant="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Inspect') }}
 						</NcButton>
 					</td>
@@ -144,9 +144,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -192,8 +192,10 @@ export default {
 		isSelected(row) {
 			return this.selected.includes(row.uuid || row.id)
 		},
+
 		/**
 		 * Toggle a row in the bulk-selection set.
+		 *
 		 * @param {object} row Dead-letter entry row.
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 		 */
@@ -205,31 +207,39 @@ export default {
 				this.selected = [...this.selected, id]
 			}
 		},
+
 		/**
 		 * Open the per-entry detail modal.
+		 *
 		 * @param {object} row Dead-letter entry row.
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 		 */
 		openDetail(row) {
 			this.detail = { open: true, entry: row }
 		},
+
 		/**
 		 * Close the detail modal.
+		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 		 */
 		closeDetail() {
 			this.detail = { open: false, entry: null }
 		},
+
 		/**
 		 * Debounced reload used by the synchronization filter field.
+		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 		 */
 		reloadDebounced() {
 			clearTimeout(this.reloadTimer)
 			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
+
 		/**
 		 * Fetch the sync dead-letter listing from the admin-only endpoint.
+		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
 		 */
 		async reload() {
@@ -252,8 +262,10 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
+		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
 		 */
 		async commitBulk() {

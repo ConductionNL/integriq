@@ -13,11 +13,11 @@
 		<NcSelect
 			data-testid="action-form-save-register"
 			:aria-label-combobox="t('openconnector', 'Register (required)')"
-			:model-value="selectedRegister"
+			:modelValue="selectedRegister"
 			:options="registerOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a register')"
-			@update:model-value="
+			@update:modelValue="
 				(option) => patch('register', option?.id ? String(option.id) : '')
 			" />
 
@@ -27,11 +27,11 @@
 		<NcSelect
 			data-testid="action-form-save-schema"
 			:aria-label-combobox="t('openconnector', 'Schema (required)')"
-			:model-value="selectedSchema"
+			:modelValue="selectedSchema"
 			:options="schemaOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@update:model-value="
+			@update:modelValue="
 				(option) => patch('schema', option?.id ? String(option.id) : '')
 			" />
 
@@ -40,13 +40,13 @@
 		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
-			:model-value="selectedMapping"
+			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="
 				t('openconnector', 'Pick a mapping to transform before save')
 			"
-			@update:model-value="
+			@update:modelValue="
 				(option) => patch('mapping', option?.id ? String(option.id) : '')
 			" />
 	</div>
@@ -68,6 +68,7 @@ export default {
 			loading: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedRegister() {
@@ -80,6 +81,7 @@ export default {
 				}
 			)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
 			const id = String(this.value?.schema || '')
@@ -88,6 +90,7 @@ export default {
 				this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
 			)
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mapping || '')
@@ -97,6 +100,7 @@ export default {
 			)
 		},
 	},
+
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
@@ -110,6 +114,7 @@ export default {
 		this.mappingOptions = mappings
 		this.loading = false
 	},
+
 	methods: { patch: patchMethod() },
 }
 </script>

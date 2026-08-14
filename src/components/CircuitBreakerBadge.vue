@@ -52,7 +52,7 @@
 			</span>
 			<NcButton
 				v-if="isOpen"
-				type="primary"
+				variant="primary"
 				:disabled="busy || !objectId"
 				data-testid="circuit-breaker-reset"
 				@click="reset">
@@ -64,9 +64,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 
 export default {
@@ -95,6 +95,7 @@ export default {
 	computed: {
 		/**
 		 * The loaded source object, read off the injected section context.
+		 *
 		 * @return {object}
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 		 */
@@ -103,8 +104,10 @@ export default {
 			const value = ctx && ctx.value !== undefined ? ctx.value : ctx
 			return (value && value.object) || {}
 		},
+
 		/**
 		 * The source's OR object id, used for the reset endpoint URL.
+		 *
 		 * @return {string|null}
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 		 */
@@ -118,18 +121,22 @@ export default {
 				|| null
 			)
 		},
+
 		/**
 		 * Effective breaker state (a successful local reset wins over the
 		 * loaded object until the page reloads).
+		 *
 		 * @return {string}
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 		 */
 		state() {
 			return this.localState || this.source.circuitBreakerState || 'closed'
 		},
+
 		isOpen() {
 			return this.state === 'open'
 		},
+
 		/**
 		 * The consecutive-failure count backing the badge. Reads 0 once the
 		 * breaker has been manually reset locally, so the operator sees the
@@ -145,8 +152,10 @@ export default {
 			}
 			return Number(this.source.circuitBreakerFailureCount || 0)
 		},
+
 		/**
 		 * Seconds left in the open breaker's cooldown window (0 when elapsed).
+		 *
 		 * @return {number}
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 		 */
@@ -187,6 +196,7 @@ export default {
 		/**
 		 * Reset the breaker via the admin-only endpoint (REQ-009) and flip
 		 * the local state to closed on success.
+		 *
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 		 */
 		async reset() {

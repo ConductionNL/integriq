@@ -9,9 +9,8 @@
  * app.config.globalProperties rather than Vue.mixin.
  */
 
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp } from 'vue'
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-
 import AdminSettings from './views/admin/AdminSettings.vue'
 
 const app = createApp(AdminSettings)

@@ -8,23 +8,23 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path on data, required)')"
-			:model-value="value.filePath || ''"
+			:modelValue="value.filePath || ''"
 			placeholder="body.attachment"
-			@update:model-value="(next) => patch('filePath', next)" />
+			@update:modelValue="(next) => patch('filePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filename path (dot path on data, required)')"
-			:model-value="value.fileNamePath || ''"
+			:modelValue="value.fileNamePath || ''"
 			placeholder="body.filename"
-			@update:model-value="(next) => patch('fileNamePath', next)" />
+			@update:modelValue="(next) => patch('fileNamePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Tags (comma-separated)')"
-			:model-value="csv(value.tags)"
+			:modelValue="csv(value.tags)"
 			placeholder="invoice,outbox"
-			@update:model-value="(next) => patch('tags', toArray(next))" />
+			@update:modelValue="(next) => patch('tags', toArray(next))" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:model-value="!!value.autoShare"
-			@update:model-value="(next) => patch('autoShare', !!next)">
+			:modelValue="!!value.autoShare"
+			@update:modelValue="(next) => patch('autoShare', !!next)">
 			{{ t('openconnector', 'Auto-share written files') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
@@ -51,6 +51,7 @@ export default {
 		/**
 		 * Render the stored `tags` list as the comma-separated text the
 		 * NcTextField displays.
+		 *
 		 * @param {Array<string>|string|undefined} value The stored tags, either
 		 *   an array of entries or an already-flat string.
 		 * @return {string} Comma-separated tags, or '' when unset.
@@ -59,9 +60,11 @@ export default {
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : value || ''
 		},
+
 		/**
 		 * Parse comma-separated tag input back into the array shape the backend
 		 * expects, trimming entries and dropping empty ones.
+		 *
 		 * @param {string} text Raw comma-separated text typed into the field.
 		 * @return {Array<string>} The cleaned list of tags.
 		 * @spec openspec/specs/rule-editor-ui/spec.md

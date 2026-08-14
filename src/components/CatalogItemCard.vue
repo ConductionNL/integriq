@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { modalBus, EVENT_OPEN_CATALOG_ITEM_DETAIL } from '../handlers/modalBus.js'
+import { EVENT_OPEN_CATALOG_ITEM_DETAIL, modalBus } from '../handlers/modalBus.js'
 
 export default {
 	name: 'CatalogItemCard',

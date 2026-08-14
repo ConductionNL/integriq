@@ -78,15 +78,14 @@
 </template>
 
 <script>
-import { NcLoadingIcon } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
+import { NcLoadingIcon } from '@nextcloud/vue'
 import {
-	extractResults,
-	mapQuestionDescriptors,
-	isArrayValuedQuestion,
 	ambiguousQuestionTexts,
+	extractResults,
+	isArrayValuedQuestion,
+	mapQuestionDescriptors,
 } from './formsBridge.js'
 
 export default {
@@ -126,6 +125,7 @@ export default {
 				this.fetchQuestions()
 			},
 		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009 */
 		sourceId() {
 			this.fetchQuestions()
@@ -136,6 +136,7 @@ export default {
 		/**
 		 * Whether a question's answer arrives as an array (multiple-choice and
 		 * friends), so the row can warn that the mapping target must be a list.
+		 *
 		 * @param {object} question A normalised question descriptor from
 		 *   `mapQuestionDescriptors`.
 		 * @return {boolean} True when the question type is multi-valued.
@@ -144,9 +145,11 @@ export default {
 		isArrayValued(question) {
 			return isArrayValuedQuestion(question)
 		},
+
 		/**
 		 * Whether a question's text is shared with another question in the same
 		 * form, which makes a text-based mapping reference unresolvable.
+		 *
 		 * @param {object} question A normalised question descriptor whose `text`
 		 *   is checked against the form's ambiguous-text set.
 		 * @return {boolean} True when two or more questions carry this text.
@@ -155,6 +158,7 @@ export default {
 		isAmbiguous(question) {
 			return this.ambiguousTexts.has(question.text)
 		},
+
 		/**
 		 * Fetch the form's questions via the forms-bridge discovery endpoint.
 		 * Soft-fails to an empty list with an inline error so the helper

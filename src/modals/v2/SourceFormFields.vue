@@ -46,13 +46,13 @@
 					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
-					:input-id="'cn-source-form-' + field.key"
+					:inputId="'cn-source-form-' + field.key"
 					:aria-label-combobox="field.label || t('openconnector', 'Type')"
-					:model-value="selectedTypeOption"
+					:modelValue="selectedTypeOption"
 					:options="typeOptions"
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Pick a source type')"
-					@update:model-value="onTypePick" />
+					@update:modelValue="onTypePick" />
 				<CnFieldHelper
 					:text="
 						field.description
@@ -74,7 +74,7 @@
 				">
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="
+					:modelValue="
 						formData[field.key] != null
 							? String(formData[field.key])
 							: ''
@@ -83,7 +83,7 @@
 					:type="textFieldType(field)"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:model-value="(value) => updateField(field.key, value)" />
+					@update:modelValue="(value) => updateField(field.key, value)" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
@@ -93,7 +93,7 @@
 			<template v-else-if="field.widget === 'number'">
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="
+					:modelValue="
 						formData[field.key] != null
 							? String(formData[field.key])
 							: ''
@@ -102,7 +102,7 @@
 					type="number"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:model-value="
+					@update:modelValue="
 						(value) =>
 							updateField(
 								field.key,
@@ -139,10 +139,10 @@
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:model-value="!!formData[field.key]"
+				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:model-value="(value) => updateField(field.key, value)">
+				@update:modelValue="(value) => updateField(field.key, value)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
@@ -171,7 +171,7 @@
 			<template v-else>
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:model-value="
+					:modelValue="
 						formData[field.key] != null
 							? String(formData[field.key])
 							: ''
@@ -179,7 +179,7 @@
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:model-value="(value) => updateField(field.key, value)" />
+					@update:modelValue="(value) => updateField(field.key, value)" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
@@ -190,9 +190,9 @@
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
-				:model-value="brokeredEnabled"
+				:modelValue="brokeredEnabled"
 				type="switch"
-				@update:model-value="onToggleBrokered">
+				@update:modelValue="onToggleBrokered">
 				{{ t('openconnector', 'Brokered credential (OpenRegister)') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-source-form-fields__helper">
@@ -222,19 +222,19 @@
 						{{ t('openconnector', 'Credential') }}
 					</label>
 					<NcSelect
-						input-id="cn-source-form-credentialref"
-						:input-label="t('openconnector', 'Brokered credential')"
+						inputId="cn-source-form-credentialref"
+						:inputLabel="t('openconnector', 'Brokered credential')"
 						:aria-label-combobox="
 							t('openconnector', 'Brokered credential')
 						"
-						:model-value="selectedCredential"
+						:modelValue="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
 						:placeholder="
 							t('openconnector', 'Select a brokered credential')
 						"
-						@update:model-value="onCredentialPick" />
+						@update:modelValue="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
 						{{
 							t(
@@ -260,18 +260,18 @@
 </template>
 
 <script>
-import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import {
-	EMBEDDED_SECRET_FIELDS,
-	readCredentialId,
-	isBrokered,
-	writeCredentialRef,
 	clearCredentialRef,
+	EMBEDDED_SECRET_FIELDS,
 	extractCredentialResults,
+	isBrokered,
 	mapCredentialOptions,
+	readCredentialId,
+	writeCredentialRef,
 } from './sourceCredentialRef.js'
 
 /**

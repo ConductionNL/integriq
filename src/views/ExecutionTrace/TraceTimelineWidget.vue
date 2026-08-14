@@ -74,6 +74,7 @@ export default {
 		t,
 		/**
 		 * Toggle a step's expanded (redacted input/output) state.
+		 *
 		 * @param {number} order The step's `order` field.
 		 * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
 		 */
@@ -84,6 +85,7 @@ export default {
 				this.expanded = [...this.expanded, order]
 			}
 		},
+
 		/**
 		 * Pretty-prints a step's input/output payload for the expanded detail.
 		 * Falls back to the stringified value on a circular structure rather

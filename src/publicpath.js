@@ -12,8 +12,8 @@
  * MUST be imported before any other module so the assignment runs before the first
  * dynamic import.
  */
-// eslint-disable-next-line camelcase, no-undef
+
 if (typeof OC !== 'undefined' && OC.appswebroots && OC.appswebroots.openconnector) {
-	// eslint-disable-next-line camelcase, no-undef
+	// eslint-disable-next-line no-undef
 	__webpack_public_path__ = OC.appswebroots.openconnector + '/js/'
 }
