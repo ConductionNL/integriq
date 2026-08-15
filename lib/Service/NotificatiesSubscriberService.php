@@ -510,7 +510,11 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-inbound-zgw-notificaties-api-notifications-are-normalized-to-cloudevents-via-emitcloudevent-req-011
 	 */
 	public function handleInboundNotification(string $abonnementId, array $notification): array {
-		$channel = (string)($notification['channel'] ?? '');
+		// STATUTORY WIRE SHAPE — an inbound ZGW notification carries `kanaal`,
+		// not `channel`. Reading the English key made every conformant
+		// producer's notification look malformed (see the error message below,
+		// which always named `kanaal`).
+		$channel = (string)($notification['kanaal'] ?? '');
 		$resource = (string)($notification['resource'] ?? '');
 		$action = (string)($notification['actie'] ?? '');
 
@@ -543,8 +547,11 @@ class NotificatiesSubscriberService {
 	 * @param array $action The resolved `action` block: `{kind, sourceId, kanaal,
 	 *                      hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`.
 	 *
-	 * @return array{channel: string, hoofdObject: mixed, resource: mixed, resourceUrl: mixed,
-	 *               action: string, aanmaakdatum: mixed, characteristics: array} The ZGW notification body.
+	 * @return array{kanaal: string, hoofdObject: mixed, resource: mixed, resourceUrl: mixed,
+	 *               actie: string, aanmaakdatum: mixed, kenmerken: array} The ZGW notification
+	 *               body, in the statutory wire shape (these key names are the
+	 *               Notificaties API contract and are exempt from the
+	 *               English-vocabulary rule).
 	 *
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-zgw-notification-publish-body-shape-req-005
 	 */
@@ -585,14 +592,19 @@ class NotificatiesSubscriberService {
 		// Event-supplied values win on key collision (REQ-005).
 		$characteristics = array_merge($staticCharacteristics, $eventCharacteristics);
 
+		// STATUTORY WIRE SHAPE — these keys are the ZGW Notificaties API
+		// contract, not our vocabulary. `$body` is POSTed verbatim as JSON by
+		// EventService::publishNotificatiesAction(), so `kanaal`, `actie` and
+		// `kenmerken` MUST NOT be translated to English. Internal variable
+		// names stay English; only the wire keys are Dutch.
 		return [
-			'channel' => $channel,
+			'kanaal' => $channel,
 			'hoofdObject' => $mainObject,
 			'resource' => $resource,
 			'resourceUrl' => $resourceUrl,
-			'action' => $actionName,
+			'actie' => $actionName,
 			'aanmaakdatum' => ($eventData['time'] ?? null),
-			'characteristics' => $characteristics,
+			'kenmerken' => $characteristics,
 		];
 
 	}//end buildNotificationBody()
