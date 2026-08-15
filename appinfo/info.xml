@@ -76,6 +76,11 @@
 		<job>OCA\OpenConnector\Cron\RegisterBootstrapJob</job>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
+		<!-- Closes synchronization_run records whose process died: a
+		     permanently-`running` row is indistinguishable from a live
+		     one, so the page built to answer "is my sync still going?"
+		     would answer it wrongly. -->
+		<job>OCA\OpenConnector\Cron\StaleRunSweepJob</job>
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
 		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
