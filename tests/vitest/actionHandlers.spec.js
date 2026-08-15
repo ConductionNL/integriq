@@ -3,21 +3,25 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Unit tests for the manifest row-action handlers (src/handlers/actionHandlers.js):
- *   • the remaining POST handlers hit the correct endpoint and toast success/error;
- *   • viewLogsHandler maps actionId → destination route + query param;
- *   • the modal-opening handlers emit the right event on the shared bus.
+ *   • the modal-opening handlers emit the right event on the shared bus, and
+ *     fire no request or toast of their own — the modal owns both;
+ *   • viewLogsHandler maps actionId → destination route + query param.
  *
- * The four run/test handlers moved to the modal bus (REQ-SHELLUI-004): they used
- * to POST and toast, and now open RunActionModal, which owns the request. The
- * assertions here changed accordingly — what matters is the `{ target, mode }`
- * pair, since that pair selects the descriptor that decides the endpoint.
+ * Every handler in this file now opens a modal or navigates rather than
+ * POSTing directly — the four run/test handlers moved to the modal bus
+ * (REQ-SHELLUI-004): they used to POST and toast, and now open
+ * RunActionModal, which owns the request. `runFlowHandler`, the last
+ * handler that still POSTed+toasted directly, was removed 2026-08-16 — its
+ * manifest action no longer exists (Flows moved to the shared canvas,
+ * flow-engine-unification task 6.2; see openconnector#1255).
  *
- * @nextcloud/axios + @nextcloud/dialogs are mocked so we can assert the
- * request URL and which toast fired; @nextcloud/router + @nextcloud/l10n are
+ * @nextcloud/axios + @nextcloud/dialogs are still mocked (kept for the
+ * "fires no request and no toast" assertions below) even though nothing
+ * here calls them directly; @nextcloud/router + @nextcloud/l10n are
  * aliased to deterministic stubs in vitest.config.js.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const post = vi.fn()
 vi.mock('@nextcloud/axios', () => ({ default: { post: (...a) => post(...a) } }))
@@ -30,24 +34,23 @@ vi.mock('@nextcloud/dialogs', () => ({
 }))
 
 import {
-	testSourceHandler,
-	runJobHandler,
-	testJobHandler,
-	runSynchronizationHandler,
-	testSynchronizationHandler,
-	testMappingModalHandler,
 	addEndpointRuleHandler,
-	runFlowHandler,
+	runJobHandler,
+	runSynchronizationHandler,
+	testJobHandler,
+	testMappingModalHandler,
+	testSourceHandler,
+	testSynchronizationHandler,
 	viewLogsHandler,
 } from '../../src/handlers/actionHandlers.js'
-import { setRouter } from '../../src/handlers/routerRef.js'
 import {
-	modalBus,
-	EVENT_OPEN_TEST_MAPPING,
-	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_RUN_ACTION,
+	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SOURCE,
+	modalBus,
 } from '../../src/handlers/modalBus.js'
+import { setRouter } from '../../src/handlers/routerRef.js'
 
 beforeEach(() => {
 	post.mockReset()
@@ -69,40 +72,6 @@ describe('POST action handlers — endpoint + success toast', () => {
 		expect(spy).toHaveBeenCalledWith({ source: item })
 		expect(post).not.toHaveBeenCalled()
 		expect(showSuccess).not.toHaveBeenCalled()
-	})
-
-	it('runFlowHandler posts to /api/flows/{id}/run', async () => {
-		post.mockResolvedValueOnce({ data: { status: 'completed' } })
-		await runFlowHandler({ item: { id: 3 } })
-		expect(post).toHaveBeenCalledWith(
-			'/index.php/apps/openconnector/api/flows/3/run',
-		)
-		expect(showSuccess).toHaveBeenCalledTimes(1)
-	})
-
-	it('runFlowHandler falls back to uuid when id is absent', async () => {
-		post.mockResolvedValueOnce({ data: { status: 'completed' } })
-		await runFlowHandler({ item: { uuid: 'abc' } })
-		expect(post).toHaveBeenCalledWith(
-			'/index.php/apps/openconnector/api/flows/abc/run',
-		)
-	})
-})
-
-describe('POST action handlers — error path', () => {
-	it('shows an error toast (with server message) when the request rejects', async () => {
-		post.mockRejectedValueOnce({ response: { data: { message: 'boom' } } })
-		await runFlowHandler({ item: { id: 1 } })
-		expect(showError).toHaveBeenCalledTimes(1)
-		expect(showError.mock.calls[0][0]).toContain('boom')
-		expect(showSuccess).not.toHaveBeenCalled()
-	})
-
-	it('tolerates an error with no structured detail', async () => {
-		post.mockRejectedValueOnce(new Error('network'))
-		await runFlowHandler({ item: { id: 1 } })
-		expect(showError).toHaveBeenCalledTimes(1)
-		expect(showError.mock.calls[0][0]).toContain('network')
 	})
 })
 

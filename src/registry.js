@@ -62,7 +62,6 @@ import {
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
 	openPromotionHandler,
-	runFlowHandler,
 	runJobHandler,
 	runSynchronizationHandler,
 	testJobHandler,
@@ -74,8 +73,6 @@ import {
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
-	// Flows index row action (visual-flow-orchestration): manual run trigger.
-	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testSourceHandler,
@@ -187,9 +184,9 @@ export default {
 	RuleDetailPage,
 	SynchronizationDetailPage,
 
-	// Flow detail (custom page): the ordered step-list editor + manual Run +
-	// run-log tab that a generic detail page cannot express. See
-	// visual-flow-orchestration REQ-009.
+	// Flow detail (custom page): renders the shared CnFlowDetail canvas over
+	// OpenRegister's native flow store. See flow-engine-unification task 6.2
+	// and openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note.
 	FlowDetailPage,
 
 	// Dead-letter operations view (custom page): a filtered event_message
