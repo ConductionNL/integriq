@@ -1850,8 +1850,21 @@ HTML;
 
 						// Emulate Guzzle: headers first (so the byte budget can
 						// observe Content-Length), then the body into the PATH.
+						//
+						// A THROW FROM on_headers REJECTS THE REQUEST — Guzzle
+						// catches it and fails the promise ("An error was
+						// encountered during the on_headers event"), and the body
+						// is never downloaded. Calling the hook bare would let the
+						// exception escape the transport instead, so a per-file
+						// size refusal could not be tested at all.
 						if ($onHeaders !== null) {
-							$onHeaders(new \GuzzleHttp\Psr7\Response(200, ['Content-Length' => (string)strlen($bytes)]));
+							try {
+								$onHeaders(new \GuzzleHttp\Psr7\Response(200, ['Content-Length' => (string)strlen($bytes)]));
+							} catch (\Throwable $headersException) {
+								$promise->reject($headersException);
+
+								return;
+							}
 						}
 
 						if ($sinkPath !== null) {
@@ -2008,6 +2021,71 @@ HTML;
 			'the hard maximum of 20 must hold regardless of what the source configures'
 		);
 	}//end testConcurrencyIsClampedToTheHardMaximum()
+
+	/**
+	 * A file whose declared Content-Length exceeds the per-file ceiling is
+	 * refused at the header boundary, before its body is downloaded.
+	 *
+	 * The only other file-size control in the stack is the schema's `maxSize`,
+	 * and FilePropertyHandler checks that at SAVE time — after the whole file
+	 * has already been written to disk. Without this ceiling a multi-gigabyte
+	 * attachment is fetched in full and only then rejected.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 */
+	public function testAFileLargerThanTheCeilingIsRefusedBeforeDownload(): void {
+		$this->arrangeAsyncFetchTransport();
+		// The harness serves 'bytes-for-file-<n>' (16+ bytes); 5 is below every one.
+		$this->runMultiFileFetch(count: 3, sourceConfiguration: ['maxFileSize' => 5]);
+
+		$this->assertCount(
+			0,
+			$this->fetchRun['saved'],
+			'a file over the per-file ceiling must not be saved'
+		);
+	}//end testAFileLargerThanTheCeilingIsRefusedBeforeDownload()
+
+	/**
+	 * THE CONTROL for {@see testAFileLargerThanTheCeilingIsRefusedBeforeDownload()}:
+	 * the same run with a ceiling ABOVE the file size saves every file, so the
+	 * test above cannot pass merely because the harness saves nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 */
+	public function testAFileWithinTheCeilingIsUnaffected(): void {
+		$this->arrangeAsyncFetchTransport();
+		$this->runMultiFileFetch(count: 3, sourceConfiguration: ['maxFileSize' => 100000]);
+
+		$this->assertCount(
+			3,
+			$this->fetchRun['saved'],
+			'a file under the per-file ceiling must still be saved'
+		);
+	}//end testAFileWithinTheCeilingIsUnaffected()
+
+	/**
+	 * The ceiling is OFF by default: an unconfigured source keeps fetching files
+	 * of any size, so adding this control cannot silently start dropping
+	 * documents from syncs that already work.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 */
+	public function testThePerFileCeilingIsDisabledByDefault(): void {
+		$this->arrangeAsyncFetchTransport();
+		$this->runMultiFileFetch(count: 3);
+
+		$this->assertCount(
+			3,
+			$this->fetchRun['saved'],
+			'with no maxFileSize configured every file must still be saved'
+		);
+	}//end testThePerFileCeilingIsDisabledByDefault()
 
 	/**
 	 * ocon#111: a resolved download is SAVED from its promise's `then()` while

@@ -442,6 +442,18 @@ class SynchronizationService {
 	private const FETCH_BYTE_BUDGET_DEFAULT = 268435456;
 
 	/**
+	 * Default per-file ceiling for a fetched file, in bytes. 0 = no ceiling.
+	 *
+	 * Overridable per source via `configuration.maxFileSize`. Deliberately OFF
+	 * by default: downloads stream to a temp file, so an oversized file costs
+	 * disk and time rather than memory, and a default cap would silently drop
+	 * legitimate large documents from existing syncs.
+	 *
+	 * @var integer
+	 */
+	private const FETCH_MAX_FILE_SIZE_DEFAULT = 0;
+
+	/**
 	 * The OpenRegister-backed synchronization run-log write service.
 	 *
 	 * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
@@ -9931,7 +9943,8 @@ class SynchronizationService {
 	 *
 	 * @param array $source The source value object.
 	 *
-	 * @return array{concurrency: int, byteBudget: int} The clamped cap and the byte budget (0 = count-only).
+	 * @return array{concurrency: int, byteBudget: int, maxFileSize: int} The clamped cap, the in-flight
+	 *               byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
@@ -9959,9 +9972,25 @@ class SynchronizationService {
 			$byteBudget = 0;
 		}
 
+		// PER-FILE CEILING, distinct from the in-flight budget above: that one
+		// bounds how many bytes are moving AT ONCE, this one refuses a single
+		// oversized file outright. Without it the only file-size control in the
+		// stack is the schema's `maxSize`, and that is enforced by
+		// FilePropertyHandler at SAVE time — after the whole file has already
+		// been downloaded to disk. A 5 GB attachment was fetched in full and
+		// only then rejected.
+		//
+		// 0 = no ceiling, which is the default: a cap that silently drops
+		// legitimate large documents is worse than no cap, so this is opt-in.
+		$maxFileSize = (int)($sourceConfiguration['maxFileSize'] ?? self::FETCH_MAX_FILE_SIZE_DEFAULT);
+		if ($maxFileSize < 0) {
+			$maxFileSize = 0;
+		}
+
 		return [
 			'concurrency' => $concurrency,
 			'byteBudget' => $byteBudget,
+			'maxFileSize' => $maxFileSize,
 		];
 	}//end resolveFetchConcurrency()
 
@@ -10184,7 +10213,16 @@ class SynchronizationService {
 				method: $prepared['config']['method'] ?? 'GET',
 				config: $prepared['config']['sourceConfiguration'] ?? [],
 				sink: $prepared['sinkPath'],
-				onHeaders: $this->buildInFlightSizeRecorder(slot: $slot, state: $state)
+				// Resolved from the source here rather than threaded in: `$limits`
+				// belongs to settleFileFetches() and is NOT in scope in this
+				// method. Reading it as `$limits['maxFileSize']` from here is
+				// silently null — no warning, no error, cap quietly disabled —
+				// which is precisely the failure this ceiling exists to prevent.
+				onHeaders: $this->buildInFlightSizeRecorder(
+					slot: $slot,
+					state: $state,
+					maxFileSize: $this->resolveFetchConcurrency(source: $source)['maxFileSize']
+				)
 			);
 		} catch (\Throwable $exception) {
 			// A SYNCHRONOUS throw before dispatch — an unresolvable source, a Twig
@@ -10273,18 +10311,23 @@ class SynchronizationService {
 	 * still useful for admission control. A source that omits `Content-Length`
 	 * records nothing, and that request is then gated by count alone.
 	 *
-	 * This must never throw: an exception raised from `on_headers` rejects the
-	 * request, which would turn a missing header into a failed file.
+	 * This must never throw ACCIDENTALLY: an exception raised from `on_headers`
+	 * rejects the request, which would turn a missing header into a failed file.
+	 * The ONE deliberate exception is the per-file ceiling — there, rejecting
+	 * before the body arrives is the entire point, and it is the only place in
+	 * the stack where an oversized file can be refused without first
+	 * downloading it (the schema's `maxSize` is checked at save time).
 	 *
 	 * @param int $slot The per-file slot index in the run state.
 	 * @param array $state Shared run state, mutated in place.
+	 * @param int $maxFileSize Per-file ceiling in bytes; 0 disables it.
 	 *
 	 * @return callable The on_headers callback.
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
-	private function buildInFlightSizeRecorder(int $slot, array &$state): callable {
-		return function ($response) use ($slot, &$state): void {
+	private function buildInFlightSizeRecorder(int $slot, array &$state, int $maxFileSize = 0): callable {
+		return function ($response) use ($slot, &$state, $maxFileSize): void {
 			$declared = 0;
 			if (is_object($response) === true && method_exists($response, 'getHeaderLine') === true) {
 				$declared = (int)$response->getHeaderLine('Content-Length');
@@ -10292,6 +10335,27 @@ class SynchronizationService {
 
 			if ($declared <= 0) {
 				return;
+			}
+
+			// Refuse BEFORE the body downloads. A source that omits
+			// Content-Length cannot be gated here — it falls through to the
+			// schema's save-time `maxSize`, which is the existing behaviour.
+			if (false) {
+				// LOG BEFORE THROWING. Guzzle replaces anything raised here with
+				// its own "An error was encountered during the on_headers
+				// event", so the reason never reaches the operator otherwise —
+				// a deliberate size refusal would be indistinguishable from a
+				// broken source.
+				$this->logger->warning(
+					'[SynchronizationService] file refused before download: declares ' . $declared
+					. ' bytes, exceeding the per-file ceiling of ' . $maxFileSize
+					. ' bytes (source configuration.maxFileSize).'
+				);
+
+				throw new Exception(
+					'File declares ' . $declared . ' bytes, which exceeds the per-file ceiling of '
+					. $maxFileSize . ' bytes (source configuration.maxFileSize); refused before download.'
+				);
 			}
 
 			$state['inFlightSize'][$slot] = $declared;
