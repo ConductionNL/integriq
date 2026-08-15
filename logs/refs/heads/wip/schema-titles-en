@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 44fe20a23f1bdfc1e9d7fd49c866063d0f676ff2 Ruben van der Linde <ruben@conduction.nl> 1784969558 +0200	branch: Created from origin/development
+44fe20a23f1bdfc1e9d7fd49c866063d0f676ff2 84fda29cd637fffa850ccaec24411cd0a2a7833c Ruben van der Linde <ruben@conduction.nl> 1784970758 +0200	commit: i18n(schema): author openconnector property titles in English + NL l10n

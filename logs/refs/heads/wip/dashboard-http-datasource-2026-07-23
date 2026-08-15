@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 5a06836ba3103ea6de5e5288c673ffdea12a5f01 Ruben van der Linde <ruben@conduction.nl> 1784836038 +0200	branch: Created from origin/development
+5a06836ba3103ea6de5e5288c673ffdea12a5f01 b76da0a68ed1b4765a3077e2c3806269821c804d Ruben van der Linde <ruben@conduction.nl> 1784836655 +0200	commit: spec(openspec): dashboard-http-datasource — governed HTTP/JSON resolve façade for dashboard live-data tiles

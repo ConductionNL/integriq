@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 ddd74da4e31602b4beb2c01d9f7495bb5e5dc63a Ruben van der Linde <ruben@conduction.nl> 1785963321 +0200	branch: Created from origin/development
+ddd74da4e31602b4beb2c01d9f7495bb5e5dc63a 935fd5b4f399d6fe5973be822de5172fd3412572 Ruben van der Linde <ruben@conduction.nl> 1785963483 +0200	commit: fix(apphost): register OpenRegister's autoloader before touching AppHost

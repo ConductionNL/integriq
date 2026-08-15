@@ -52,12 +52,12 @@
 		icon="icon-toggle"
 		:loading="loading"
 		:error="!!error"
-		:errorMessage="errorMessage"
-		:onRetry="onRetry"
+		:error-message="errorMessage"
+		:on-retry="onRetry"
 		:empty="!loading && !error && !draft">
 		<template #actions>
 			<NcButton
-				variant="secondary"
+				type="secondary"
 				:disabled="saving || !dirty"
 				@click="resetEdits">
 				<template #icon>
@@ -65,7 +65,7 @@
 				</template>
 				{{ t('openconnector', 'Discard') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="saving || !dirty" @click="onSave">
+			<NcButton type="primary" :disabled="saving || !dirty" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
@@ -83,8 +83,8 @@
 			<div class="rule-detail-page__grid">
 				<NcTextField
 					:label="t('openconnector', 'Name') + ' *'"
-					:modelValue="draft && draft.name ? String(draft.name) : ''"
-					@update:modelValue="(value) => updateField('name', value)" />
+					:model-value="draft && draft.name ? String(draft.name) : ''"
+					@update:model-value="(value) => updateField('name', value)" />
 				<!-- `action` is required on the rule schema, and until now this
 				     page had no editor for it at all — a rule created here was
 				     saved without the field the endpoint filters on. -->
@@ -93,13 +93,13 @@
 						{{ t('openconnector', 'Action') }} *
 					</label>
 					<NcSelect
-						inputId="rule-action"
+						input-id="rule-action"
 						:aria-label-combobox="t('openconnector', 'Action')"
-						:modelValue="selectedAction"
+						:model-value="selectedAction"
 						:options="actionOptions"
 						:clearable="false"
 						:placeholder="t('openconnector', 'Pick a request method')"
-						@update:modelValue="
+						@update:model-value="
 							(option) => updateField('action', option?.id || '')
 						" />
 				</div>
@@ -111,23 +111,23 @@
 						{{ t('openconnector', 'Timing') }}
 					</label>
 					<NcSelect
-						inputId="rule-timing"
+						input-id="rule-timing"
 						:aria-label-combobox="t('openconnector', 'Timing')"
-						:modelValue="selectedTiming"
+						:model-value="selectedTiming"
 						:options="timingOptions"
 						:clearable="false"
-						@update:modelValue="
+						@update:model-value="
 							(option) => updateField('timing', option?.id || 'before')
 						" />
 				</div>
 				<NcTextField
 					:label="t('openconnector', 'Order')"
 					type="number"
-					:modelValue="
+					:model-value="
 						draft && draft.order != null ? String(draft.order) : ''
 					"
-					placeholder="0"
-					@update:modelValue="
+					:placeholder="'0'"
+					@update:model-value="
 						(value) =>
 							updateField('order', value === '' ? null : Number(value))
 					" />
@@ -156,7 +156,7 @@
 			icon="icon-filter">
 			<template #actions>
 				<NcButton
-					variant="tertiary"
+					type="tertiary"
 					:aria-label="
 						rawConditions
 							? t('openconnector', 'Switch back to visual builder')
@@ -222,20 +222,20 @@
 </template>
 
 <script>
-import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
-import RuleActionConfig from './RuleActionConfig.vue'
-import RuleConditionGroup from './RuleConditionGroup.vue'
-import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+import RuleConditionGroup from './RuleConditionGroup.vue'
+import RuleActionConfig from './RuleActionConfig.vue'
 import {
 	ACTION_OPTIONS,
+	TIMING_OPTIONS,
 	emptyRootGroup,
 	normaliseConditions,
-	TIMING_OPTIONS,
 } from './ruleDraft.js'
 
 const OBJECT_TYPE = 'rule'
@@ -313,14 +313,12 @@ export default {
 				? `${this.t('openconnector', 'Rule')}: ${this.draft.name}`
 				: this.t('openconnector', 'Rule')
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		errorMessage() {
 			if (!this.error) return ''
 			if (typeof this.error === 'string') return this.error
 			return this.error.message || this.t('openconnector', 'An error occurred')
 		},
-
 		/**
 		 * The conditions JsonLogic node coerced into a top-level group
 		 * shape (`{and:[...]}` or `{or:[...]}`). Legacy data may have
@@ -333,7 +331,6 @@ export default {
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
 		},
-
 		/** @spec exclude static option list — presentation only */
 		actionOptions() {
 			return ACTION_OPTIONS.map((entry) => ({
@@ -341,7 +338,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec exclude static option list — presentation only */
 		timingOptions() {
 			return TIMING_OPTIONS.map((entry) => ({
@@ -349,7 +345,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
 			return (
@@ -357,7 +352,6 @@ export default {
 				|| null
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTiming() {
 			return (
@@ -365,7 +359,6 @@ export default {
 				|| this.timingOptions[0]
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dirty() {
 			if (!this.draft || !this.pristine) return false
@@ -393,7 +386,6 @@ export default {
 				if (value) this.load()
 			},
 		},
-
 		/**
 		 * Seed the raw-JSON textarea from the current condition tree whenever
 		 * the editor is switched into raw mode, so the user starts from the

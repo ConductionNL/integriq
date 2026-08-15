@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 a814852f0da8256c10021ebf5ddee2396c9ba6f8 Ruben van der Linde <ruben@conduction.nl> 1785437042 +0200	branch: Created from origin/development
+a814852f0da8256c10021ebf5ddee2396c9ba6f8 4960d304b3e67eca8f2cba4da002f89a3fb5466c Ruben van der Linde <ruben@conduction.nl> 1785437167 +0200	commit: fix(licence): pin apexcharts to its MIT range — 1.9.0+ is revenue-gated
+4960d304b3e67eca8f2cba4da002f89a3fb5466c 6599c7e68d61953635e2f28d02cf3fdd4d68426d Ruben van der Linde <ruben@conduction.nl> 1785438358 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+6599c7e68d61953635e2f28d02cf3fdd4d68426d 01475f5e1a03462fab83ce4c09d4847d9f073966 Ruben van der Linde <ruben@conduction.nl> 1785438437 +0200	commit: chore(phpmd): refresh the baseline — one NEW violation arrived from development

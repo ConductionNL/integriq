@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 564b71f1e1ebccf6e632c1d872d1396dcb9873e6 Ruben van der Linde <ruben@conduction.nl> 1786106508 +0200	branch: Created from origin/development
+564b71f1e1ebccf6e632c1d872d1396dcb9873e6 7f79a56fe75a9f08960258e678b4138559325529 Ruben van der Linde <ruben@conduction.nl> 1786366078 +0200	commit: feat(flow): the source-call node offers its source and call log in a run log
+7f79a56fe75a9f08960258e678b4138559325529 c24f5b8c3906922d338dd9b1626dbb649ebe5421 Ruben van der Linde <ruben@conduction.nl> 1786367860 +0200	commit: perf(flow): SourceCallNode dispatches its per-item calls concurrently
+c24f5b8c3906922d338dd9b1626dbb649ebe5421 cec4b4ee5ec103559a56abb1e55983057a51294f Ruben van der Linde <ruben@conduction.nl> 1786367865 +0200	commit: docs(flow,notificaties): docblocks and @spec anchors on Vue members
+cec4b4ee5ec103559a56abb1e55983057a51294f df332d9dbbbf1f14dcbd46bb7118ad4747719625 Ruben van der Linde <ruben@conduction.nl> 1786367955 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into fix/oc-spec-coverage
+df332d9dbbbf1f14dcbd46bb7118ad4747719625 ab3a064d30ef6e912f2643ac9978abfa98a2489e Ruben van der Linde <ruben@conduction.nl> 1786449082 +0200	pull --ff-only: Fast-forward

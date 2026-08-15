@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 f27e1db0899d7961d3e658d70b4940d18ad8187e Ruben van der Linde <rubenvdlinde@gmail.com> 1784127961 +0200	branch: Created from origin/development
+f27e1db0899d7961d3e658d70b4940d18ad8187e 7e15e15fd03daf4f5ff7cb79456a7034bb7cf284 Ruben van der Linde <rubenvdlinde@gmail.com> 1784128440 +0200	commit: docs(openspec): archive markdown-and-html-source-fetchers, repoint @spec anchors
+7e15e15fd03daf4f5ff7cb79456a7034bb7cf284 d16b1a8644b683955db7648a059be2bf4f6fae72 Ruben van der Linde <rubenvdlinde@gmail.com> 1784128536 +0200	merge origin/development: Merge made by the 'recursive' strategy.

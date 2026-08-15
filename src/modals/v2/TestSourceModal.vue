@@ -17,7 +17,7 @@
     On a failed call the controller returns { error: "<message>" } instead.
 -->
 <template>
-	<NcModal v-if="open" labelId="testSourceModal" size="large" @close="onClose">
+	<NcModal v-if="open" label-id="testSourceModal" size="large" @close="onClose">
 		<div class="cn-test-source-modal">
 			<h2>{{ t('openconnector', 'Test connection') }}</h2>
 
@@ -43,14 +43,14 @@
 							:options="methodOptions"
 							:aria-label-combobox="t('openconnector', 'Method')"
 							:clearable="false"
-							inputId="cn-test-source-method" />
+							input-id="cn-test-source-method" />
 						<NcSelect
 							id="cn-test-source-type"
 							v-model="type"
 							:options="typeOptions"
 							:aria-label-combobox="t('openconnector', 'Body type')"
 							:clearable="false"
-							inputId="cn-test-source-type" />
+							input-id="cn-test-source-type" />
 					</div>
 
 					<label for="cn-test-source-endpoint">
@@ -85,7 +85,7 @@
 							{{ t('openconnector', 'Close') }}
 						</NcButton>
 						<NcButton
-							variant="primary"
+							type="primary"
 							:disabled="running || !canRun"
 							@click="runTest">
 							<template #icon>
@@ -176,18 +176,18 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
-	NcButton,
-	NcLoadingIcon,
 	NcModal,
-	NcNoteCard,
+	NcButton,
 	NcSelect,
 	NcTextField,
+	NcLoadingIcon,
+	NcNoteCard,
 } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'TestSourceModal',
@@ -233,21 +233,17 @@ export default {
 				|| null
 			)
 		},
-
 		/** @spec openspec/specs/http-call-engine/spec.md */
 		sourceName() {
 			return this.source?.name || ''
 		},
-
 		/** @spec openspec/specs/http-call-engine/spec.md */
 		canRun() {
 			return !!this.sourceId
 		},
-
 		hasResult() {
 			return this.response !== null
 		},
-
 		/** @spec openspec/specs/http-call-engine/spec.md */
 		isSuccess() {
 			return String(this.response?.statusCode ?? '').startsWith('2')
@@ -255,10 +251,7 @@ export default {
 	},
 
 	watch: {
-		/**
-		 * @param value
-		 * @spec openspec/specs/http-call-engine/spec.md
-		 */
+		/** @spec openspec/specs/http-call-engine/spec.md */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -336,19 +329,13 @@ export default {
 			}
 		},
 
-		/**
-		 * @param ms
-		 * @spec openspec/specs/http-call-engine/spec.md
-		 */
+		/** @spec openspec/specs/http-call-engine/spec.md */
 		formatMs(ms) {
 			if (ms === null || ms === undefined) return '—'
 			return `${Math.round(Number(ms))} ${t('openconnector', 'ms')}`
 		},
 
-		/**
-		 * @param value
-		 * @spec openspec/specs/http-call-engine/spec.md
-		 */
+		/** @spec openspec/specs/http-call-engine/spec.md */
 		prettify(value) {
 			if (value === null || value === undefined || value === '') return '—'
 			if (typeof value === 'string') {

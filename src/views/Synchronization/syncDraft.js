@@ -26,13 +26,15 @@
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+
+import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
+import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
+
 import {
 	EMPTY_ROOT_GROUP,
 	emptyRootGroup,
 	normaliseConditions,
 } from '../Rule/ruleDraft.js'
-import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
-import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 // Re-exported, not redefined: SynchronizationDetailPage,
 // SynchronizationEditorModal and SyncConfigWidget all import these from here.

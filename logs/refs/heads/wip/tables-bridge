@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 e95edcf722aed19bfd97306c617b464980d99055 Ruben van der Linde <rubenvdlinde@gmail.com> 1784028421 +0200	branch: Created from origin/development
+e95edcf722aed19bfd97306c617b464980d99055 16de7671bcc6914a226eaedb5dcab389acd704a2 Ruben van der Linde <rubenvdlinde@gmail.com> 1784102573 +0200	commit: feat(sync): tables-bridge — Nextcloud Tables as synchronization source and target
+16de7671bcc6914a226eaedb5dcab389acd704a2 89794f5828717739da35a3013a4cf80af80a759a Ruben van der Linde <rubenvdlinde@gmail.com> 1784102731 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into wip/tables-bridge
+89794f5828717739da35a3013a4cf80af80a759a 63dd113a0749657d5fb916bc9a8dc823ab854488 Ruben van der Linde <rubenvdlinde@gmail.com> 1784103789 +0200	commit: fix(tables-bridge): nullable TablesSyncAdapter ctor param + canonical @spec paths post-merge

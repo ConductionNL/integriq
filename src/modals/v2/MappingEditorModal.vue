@@ -61,7 +61,7 @@
 		:name="dialogTitle"
 		size="large"
 		class="cn-mapping-editor-modal"
-		:noClose="saving"
+		:no-close="saving"
 		@closing="onCancel">
 		<div class="cn-mapping-editor">
 			<NcNoteCard v-if="saveError" type="error">
@@ -77,7 +77,7 @@
 					v-model="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
-					:helperText="nameError"
+					:helper-text="nameError"
 					:disabled="saving"
 					required
 					@blur="nameTouched = true" />
@@ -136,16 +136,16 @@
 					</header>
 					<div class="cn-mapping-editor__column-body">
 						<MappingRulesEditor
-							:mappingRules="draft.mapping"
-							:castRules="draft.cast"
-							:unsetRules="draft.unset"
-							:passThrough="draft.passThrough"
+							:mapping-rules="draft.mapping"
+							:cast-rules="draft.cast"
+							:unset-rules="draft.unset"
+							:pass-through="draft.passThrough"
 							:saving="saving"
-							showOptionsTab
-							@updateMapping="draft.mapping = $event"
-							@updateCast="draft.cast = $event"
-							@updateUnset="draft.unset = $event"
-							@updatePassThrough="draft.passThrough = $event" />
+							show-options-tab
+							@update-mapping="draft.mapping = $event"
+							@update-cast="draft.cast = $event"
+							@update-unset="draft.unset = $event"
+							@update-pass-through="draft.passThrough = $event" />
 					</div>
 				</section>
 
@@ -168,8 +168,8 @@
 						<MappingResultPanel
 							ref="result"
 							:mapping="testableMapping"
-							:inputObject="inputJson"
-							@inputError="inputError = $event" />
+							:input-object="inputJson"
+							@input-error="inputError = $event" />
 					</div>
 				</section>
 			</div>
@@ -185,7 +185,7 @@
 				</template>
 				{{ t('openconnector', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />
@@ -202,7 +202,6 @@
 </template>
 
 <script>
-import { showSuccess } from '@nextcloud/dialogs'
 import {
 	NcButton,
 	NcDialog,
@@ -218,8 +217,10 @@ import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArr
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
 import TestTubeIcon from 'vue-material-design-icons/TestTube.vue'
-import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
+import { showSuccess } from '@nextcloud/dialogs'
+
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
+import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
@@ -252,19 +253,16 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		/** Slot scope: the row being edited, or `null` in create mode. */
 		item: {
 			type: Object,
 			default: null,
 		},
-
 		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
 		schema: {
 			type: Object,
 			default: null,
 		},
-
 		/**
 		 * Slot scope: persists the object through CnIndexPage's own save path
 		 * and refreshes the list. Saving here instead of calling this would
@@ -276,7 +274,6 @@ export default {
 			type: Function,
 			default: null,
 		},
-
 		/** Slot scope: closes the form dialog on CnIndexPage. */
 		close: {
 			type: Function,
@@ -305,19 +302,16 @@ export default {
 		isCreate() {
 			return !this.item
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
 				? this.t('openconnector', 'Create mapping')
 				: this.t('openconnector', 'Edit mapping')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		inputPlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
-
 		/**
 		 * Required marker on the label. NcTextField/NcInputField has no
 		 * `required` prop and renders no marker of its own, so the ` *`
@@ -331,7 +325,6 @@ export default {
 		nameLabel() {
 			return this.t('openconnector', 'Name') + ' *'
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
@@ -346,7 +339,6 @@ export default {
 						'Name must contain at least one letter or number',
 					)
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canSave() {
 			return (
@@ -359,7 +351,6 @@ export default {
 				&& typeof this.confirm === 'function'
 			)
 		},
-
 		/**
 		 * The draft merged over the persisted record, which is what the test
 		 * endpoint evaluates. Sending the draft rather than `item` is the

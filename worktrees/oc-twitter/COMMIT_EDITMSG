@@ -1,0 +1,14 @@
+style: drop the blank line the twitter removal left in the try block
+
+phpcs: 'Blank line found after control structure' + 'Blank line found at end
+of control structure' at :588-589.
+
+⚠️ My local verification reported this file clean and it had not run at all.
+`composer install` failed on missing ext-bcmath/ext-soap/ext-xsl, so
+vendor/bin/phpcs did not exist and the invocation exited 127 — which produced
+no output, which I read as 'no findings'. Re-run with --ignore-platform-reqs:
+phpcs rc=0, 0 errors.
+
+'A command that did not run looks exactly like one that passed' — the same
+failure this session has been cataloguing, in my own verification step. Capture
+the exit code; an empty result is not a clean result.

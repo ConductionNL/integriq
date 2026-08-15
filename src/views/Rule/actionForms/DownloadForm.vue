@@ -11,17 +11,17 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Filename position (dotted path on object)')"
-			:modelValue="value.filenamePosition || ''"
+			:model-value="value.filenamePosition || ''"
 			placeholder="attachments.0.filename"
-			@update:modelValue="(next) => patch('filenamePosition', next)" />
+			@update:model-value="(next) => patch('filenamePosition', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File ID position in URL path (legacy)')"
 			type="number"
-			:modelValue="
+			:model-value="
 				value.fileIdPosition != null ? String(value.fileIdPosition) : ''
 			"
 			placeholder="2"
-			@update:modelValue="onFileIdInput" />
+			@update:model-value="onFileIdInput" />
 		<span class="action-form__helper">
 			{{
 				t(
@@ -47,7 +47,6 @@ export default {
 		 * Coerce the numeric file-ID-position field: an empty input removes the
 		 * key entirely, non-numeric input is ignored, anything else is stored
 		 * as a number.
-		 *
 		 * @param {string|null} raw The raw text emitted by the number NcTextField.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */

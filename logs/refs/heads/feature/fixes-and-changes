@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 2385a2bd4c39fa92e70ba0f3b06d296feb493abe Ruben van der Linde <ruben@conduction.nl> 1786333663 +0200	branch: Created from refs/remotes/origin/feature/fixes-and-changes
+2385a2bd4c39fa92e70ba0f3b06d296feb493abe 7a6c5d9cbc125f82f90fc886f4b43dc854e5e704 Ruben van der Linde <ruben@conduction.nl> 1786333698 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+7a6c5d9cbc125f82f90fc886f4b43dc854e5e704 169515b458a651c8fa4ad87c02c24da5b783f09b Ruben van der Linde <ruben@conduction.nl> 1786334998 +0200	commit: fix: merge development, clear gate-16, and stop pinning an exact schema version
+169515b458a651c8fa4ad87c02c24da5b783f09b ec546bd4ac52d0c6735d731e2d3ad57ab82e4d76 Ruben van der Linde <ruben@conduction.nl> 1786339299 +0200	commit: test: pin the form-dialog slot contract the three editor modals depend on

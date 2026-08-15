@@ -1,16 +1,843 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { Rule } from '../../entities/index.js'
-import { getTheme } from '../../services/getTheme.js'
 import {
-	mappingStore,
-	navigationStore,
 	ruleStore,
-	sourceStore,
+	navigationStore,
+	mappingStore,
 	synchronizationStore,
+	sourceStore,
 } from '../../store/store.js'
+import { getTheme } from '../../services/getTheme.js'
+import { Rule } from '../../entities/index.js'
 import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
-defineOptions({
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
+<template>
+	<NcModal ref="modalRef" label-id="editRule" @close="closeModal">
+		<div class="modalContent">
+			<h2>
+				{{
+					ruleItem.id
+						? t('openconnector', 'Edit')
+						: t('openconnector', 'Add')
+				}}
+				{{ t('openconnector', 'Rule') }}
+			</h2>
+
+			<div
+				v-if="!openRegister.isInstalled && !closeAlert"
+				class="openregister-notecard">
+				<NcNoteCard
+					:type="openRegister.isAvailable ? 'info' : 'error'"
+					:heading="
+						openRegister.isAvailable
+							? t('openconnector', 'Open register is not installed')
+							: t('openconnector', 'Failed to install open register')
+					">
+					<p>
+						{{
+							openRegister.isAvailable
+								? t(
+										'openconnector',
+										'Some features require open register to be installed',
+									)
+								: t(
+										'openconnector',
+										'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password',
+									)
+						}}
+					</p>
+
+					<div class="install-buttons">
+						<NcButton
+							v-if="openRegister.isAvailable"
+							:aria-label="t('openconnector', 'Install OpenRegister')"
+							size="small"
+							type="primary"
+							@click="installOpenRegister">
+							<template #icon>
+								<CloudDownload :size="20" />
+							</template>
+							{{ t('openconnector', 'Install OpenRegister') }}
+						</NcButton>
+						<NcButton
+							:aria-label="
+								t('openconnector', 'Install OpenRegister manually')
+							"
+							size="small"
+							type="secondary"
+							@click="
+								openLink(
+									'/index.php/settings/apps/organization/openregister',
+									'_blank',
+								)
+							">
+							<template #icon>
+								<OpenInNew :size="20" />
+							</template>
+							{{ t('openconnector', 'Install OpenRegister manually') }}
+						</NcButton>
+					</div>
+					<div class="close-button">
+						<NcActions>
+							<NcActionButton
+								close-after-click
+								@click="closeAlert = true">
+								<template #icon>
+									<Close :size="20" />
+								</template>
+								{{ t('openconnector', 'Close') }}
+							</NcActionButton>
+						</NcActions>
+					</div>
+				</NcNoteCard>
+			</div>
+
+			<!-- ====================== -->
+			<!-- Success/Error/Warning notecard -->
+			<!-- ====================== -->
+			<div v-if="success || error || warning">
+				<NcNoteCard v-if="success" type="success">
+					<p>{{ t('openconnector', 'Rule saved successfully') }}</p>
+				</NcNoteCard>
+				<NcNoteCard v-if="error" type="error">
+					<p>{{ error || 'An error occurred' }}</p>
+				</NcNoteCard>
+				<NcNoteCard v-if="warning" type="warning">
+					<p>{{ warning }}</p>
+				</NcNoteCard>
+			</div>
+
+			<!-- ====================== -->
+			<!--          Form          -->
+			<!-- ====================== -->
+			<form v-if="!success" @submit.prevent="handleSubmit">
+				<NcTextField
+					v-model="ruleItem.name"
+					:label="t('openconnector', 'Name')"
+					required />
+
+				<NcTextArea
+					resize="vertical"
+					v-model="ruleItem.description"
+					:label="t('openconnector', 'Description')" />
+
+				<div class="json-editor">
+					<label>{{
+						t('openconnector', 'Conditions (JSON logic)')
+					}}</label>
+					<div :class="`codeMirrorContainer ${getTheme()}`">
+						<CodeMirror
+							v-model="ruleItem.conditions"
+							:basic="true"
+							placeholder='{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
+							:dark="getTheme() === 'dark'"
+							:linter="jsonParseLinter()"
+							:lang="json()"
+							:tab-size="2" />
+
+						<NcButton
+							class="format-json-button"
+							type="secondary"
+							size="small"
+							@click="formatJSONCondictions">
+							{{ t('openconnector', 'Format JSON') }}
+						</NcButton>
+					</div>
+					<span
+						v-if="!isValidJson(ruleItem.conditions)"
+						class="error-message">
+						{{ t('openconnector', 'Invalid JSON format') }}
+					</span>
+				</div>
+
+				<div>
+					<NcSelect
+						v-bind="timingOptions"
+						v-model="timingOptions.value"
+						:clearable="false"
+						:input-label="t('openconnector', 'Timing')" />
+				</div>
+
+				<NcTextField
+					v-model="ruleItem.order"
+					:label="t('openconnector', 'Order')"
+					type="number" />
+
+				<NcSelect
+					v-bind="actionOptions"
+					v-model="actionOptions.value"
+					:clearable="false"
+					:input-label="t('openconnector', 'Action')" />
+
+				<NcSelect
+					v-bind="typeOptions"
+					:input-label="t('openconnector', 'Type')"
+					v-model="typeOptions.value"
+					:selectable="
+						(option) =>
+							option.label === 'Fileparts Create'
+							|| option.label === 'Filepart Upload'
+								? openRegister?.isInstalled
+								: true
+					" />
+
+				<!-- Add mapping select -->
+				<NcSelect
+					v-if="
+						typeOptions.value?.id === 'mapping'
+						|| typeOptions.value?.id === 'save_object'
+					"
+					v-bind="mappingOptions"
+					v-model="mappingOptions.value"
+					:loading="mappingOptions.loading"
+					:input-label="t('openconnector', 'Select Mapping')"
+					:multiple="false"
+					:clearable="false" />
+
+				<!-- Add synchronization select -->
+				<template v-if="typeOptions.value?.id === 'synchronization'">
+					<NcSelect
+						v-bind="syncOptions"
+						v-model="syncOptions.value"
+						:loading="syncOptions.loading"
+						:input-label="t('openconnector', 'Select Synchronization')"
+						:multiple="false"
+						:clearable="false" />
+
+					<NcCheckboxRadioSwitch
+						type="checkbox"
+						:label="t('openconnector', 'Retain response')"
+						v-model="
+							ruleItem.configuration.synchronization.retainResponse
+						">
+						{{ t('openconnector', 'Retain original response') }}
+					</NcCheckboxRadioSwitch>
+				</template>
+
+				<!-- Error Configuration -->
+				<template v-if="typeOptions.value?.id === 'error'">
+					<NcInputField
+						type="number"
+						:label="t('openconnector', 'Error Code')"
+						:min="100"
+						:max="999"
+						v-model="ruleItem.configuration.error.code"
+						placeholder="500" />
+
+					<NcTextField
+						:label="t('openconnector', 'Error Title')"
+						maxlength="255"
+						v-model="ruleItem.configuration.error.name"
+						:placeholder="t('openconnector', 'Something went wrong')" />
+
+					<NcTextArea
+						:label="t('openconnector', 'Error Message')"
+						resize="vertical"
+						maxlength="2550"
+						v-model="ruleItem.configuration.error.message"
+						:placeholder="
+							t(
+								'openconnector',
+								'We encountered an unexpected problem',
+							)
+						" />
+
+					<NcCheckboxRadioSwitch
+						type="checkbox"
+						:label="
+							t(
+								'openconnector',
+								'Include JSON Logic results in errors array',
+							)
+						"
+						v-model="
+							ruleItem.configuration.error.includeJsonLogicResult
+						">
+						{{
+							t(
+								'openconnector',
+								'Include JSON Logic results in errors array',
+							)
+						}}
+					</NcCheckboxRadioSwitch>
+				</template>
+
+				<!-- JavaScript Configuration -->
+				<template v-if="typeOptions.value?.id === 'javascript'">
+					<NcTextArea
+						resize="vertical"
+						:label="t('openconnector', 'JavaScript Code')"
+						v-model="ruleItem.configuration.javascript"
+						class="code-editor"
+						:placeholder="
+							t('openconnector', 'Enter your JavaScript code here...')
+						"
+						rows="10" />
+				</template>
+
+				<!-- Authentication Configuration -->
+				<template v-if="typeOptions.value?.id === 'authentication'">
+					<NcSelect
+						v-model="authenticationTypeOptions.value"
+						:options="authenticationTypeOptions.options"
+						:input-label="t('openconnector', 'Authentication Type')" />
+					<template
+						v-if="authenticationTypeOptions.value.value === 'api-key'">
+						<NcNoteCard type="warning">
+							{{
+								t(
+									'openconnector',
+									'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.',
+								)
+							}}
+						</NcNoteCard>
+						<VueDraggable
+							v-model="apiKeys"
+							easing="ease-in-out"
+							draggable="div:not(:last-child)">
+							<div
+								v-for="(item, index) in apiKeys"
+								:key="index"
+								class="draggable-item-container">
+								<div :class="`draggable-form-item ${getTheme()}`">
+									<Drag class="drag-handle" :size="40" />
+									<NcTextArea
+										v-model="item.apiKey"
+										:disabled="loading"
+										:label="t('openconnector', 'Api-key')"
+										resize="none"
+										class="apiKeyTextArea" />
+									<NcSelect
+										v-model="item.user"
+										v-bind="usersList"
+										:aria-label-combobox="
+											t('openconnector', 'Select allowed user')
+										"
+										:user-select="true"
+										:clearable="true"
+										:placeholder="
+											t('openconnector', 'Select allowed user')
+										"
+										class="apiKeyUserSelect" />
+								</div>
+							</div>
+						</VueDraggable>
+					</template>
+					<template v-else>
+						<!-- Users Multi-Select -->
+						<NcSelect
+							v-model="ruleItem.configuration.authentication.users"
+							v-bind="usersList"
+							:input-label="t('openconnector', 'Allowed Users')"
+							:user-select="true"
+							:multiple="true"
+							:clearable="true"
+							:placeholder="
+								t('openconnector', 'Select users who can access')
+							" />
+
+						<!-- Groups Multi-Select -->
+						<NcSelect
+							v-model="ruleItem.configuration.authentication.groups"
+							v-bind="groupsList"
+							:input-label="t('openconnector', 'Allowed Groups')"
+							:multiple="true"
+							:clearable="true"
+							:placeholder="
+								t('openconnector', 'Select groups who can access')
+							" />
+					</template>
+				</template>
+
+				<!-- Extend Input Configuration -->
+				<template v-if="typeOptions.value?.id === 'extend_input'">
+					<div class="extendList">
+						<div
+							v-for="(item, idx) in ruleItem.configuration.extend_input
+								.items"
+							:key="idx"
+							class="extendItem">
+							<div class="extendItemProperty">
+								<NcTextField
+									v-model="item.property"
+									:label="
+										t('openconnector', 'Property (dot path)')
+									"
+									placeholder="a.b" />
+							</div>
+							<div class="extendItemProperty">
+								<label>{{
+									t('openconnector', 'Extends (dot array)')
+								}}</label>
+								<NcSelect
+									:aria-label-combobox="
+										t('openconnector', 'Extends (dot array)')
+									"
+									v-model="item.extends"
+									:taggable="true"
+									:multiple="true"
+									:clearable="true"
+									:options="[]">
+									<template #no-options>
+										{{
+											t(
+												'openconnector',
+												'type to add path to extend',
+											)
+										}}
+									</template>
+								</NcSelect>
+							</div>
+							<NcButton
+								class="remove-action"
+								size="small"
+								type="tertiary"
+								:disabled="idx === 0"
+								:aria-label="t('openconnector', 'Remove property')"
+								@click="removeExtendInputItem(idx)">
+								<template #icon>
+									<TrashCanOutline :size="18" />
+								</template>
+							</NcButton>
+						</div>
+					</div>
+				</template>
+
+				<!-- Extend External Input Configuration -->
+				<template v-if="typeOptions.value?.id === 'extend_external_input'">
+					<NcCheckboxRadioSwitch
+						type="checkbox"
+						:label="
+							t('openconnector', 'Validate fetched object with schema')
+						"
+						v-model="
+							ruleItem.configuration.extend_external_input.validate
+						">
+						{{
+							t('openconnector', 'Validate fetched object with schema')
+						}}
+					</NcCheckboxRadioSwitch>
+
+					<div class="extendList">
+						<div
+							v-for="(item, idx) in ruleItem.configuration
+								.extend_external_input.properties"
+							:key="idx"
+							class="extendItem">
+							<div class="extendItemProperty">
+								<NcTextField
+									v-model="item.property"
+									:label="t('openconnector', 'Property')"
+									placeholder="path.to.url" />
+							</div>
+							<div class="extendItemProperty">
+								<NcTextField
+									v-model="item.schema"
+									:label="t('openconnector', 'Schema ID')"
+									placeholder="schemaId" />
+							</div>
+							<NcButton
+								class="remove-action"
+								size="small"
+								type="tertiary"
+								:disabled="idx === 0"
+								:aria-label="t('openconnector', 'Remove property')"
+								@click="removeExtendExternalItem(idx)">
+								<template #icon>
+									<TrashCanOutline :size="18" />
+								</template>
+							</NcButton>
+						</div>
+					</div>
+				</template>
+
+				<!-- Download Configuration -->
+				<template v-if="typeOptions.value?.id === 'download'">
+					<NcTextField
+						label="File ID Position"
+						type="number"
+						:min="0"
+						v-model="ruleItem.configuration.download.fileIdPosition"
+						placeholder="Position of file ID in URL path (e.g. 2)" />
+
+					<div class="info-text">
+						<p>
+							The system will automatically check if the authenticated
+							user has access rights to the requested file.
+						</p>
+					</div>
+				</template>
+
+				<!-- Upload Configuration -->
+				<template v-if="typeOptions.value?.id === 'upload'">
+					<NcTextField
+						label="Upload Path"
+						v-model="ruleItem.configuration.upload.path"
+						placeholder="/path/to/upload/directory" />
+
+					<NcTextField
+						label="Allowed File Types"
+						v-model="ruleItem.configuration.upload.allowedTypes"
+						placeholder="jpg,png,pdf" />
+
+					<NcInputField
+						type="number"
+						label="Max File Size (MB)"
+						:min="1"
+						v-model="ruleItem.configuration.upload.maxSize"
+						placeholder="10" />
+
+					<div class="info-text">
+						<p>
+							Configure file upload settings including path, allowed
+							types and maximum file size.
+						</p>
+					</div>
+				</template>
+
+				<!-- Locking Configuration -->
+				<template v-if="typeOptions.value?.id === 'locking'">
+					<NcSelect
+						v-model="ruleItem.configuration.locking.action"
+						:options="[
+							{ label: 'Lock Resource', value: 'lock' },
+							{ label: 'Unlock Resource', value: 'unlock' },
+						]"
+						input-label="Lock Action" />
+
+					<NcInputField
+						type="number"
+						label="Lock Timeout (minutes)"
+						:min="1"
+						v-model="ruleItem.configuration.locking.timeout"
+						placeholder="30" />
+
+					<div class="info-text">
+						<p>
+							Lock or unlock resources for exclusive access by the
+							current user.
+						</p>
+					</div>
+				</template>
+
+				<!-- Fetch File Configuration -->
+				<template v-if="typeOptions.value?.id === 'fetch_file'">
+					<NcSelect
+						v-bind="sourceOptions"
+						v-model="sourceOptions.sourceValue"
+						required
+						:loading="sourcesLoading"
+						input-label="Source ID *" />
+
+					<NcSelect
+						v-bind="methodOptions"
+						v-model="methodOptions.value"
+						input-label="Method" />
+
+					<NcSelect
+						v-model="ruleItem.configuration.fetch_file.tags"
+						:taggable="true"
+						:multiple="true"
+						input-label="Tags">
+						<template #no-options> type to add tags </template>
+					</NcSelect>
+
+					<NcTextField
+						label="File Path"
+						v-model="ruleItem.configuration.fetch_file.filePath"
+						placeholder="path.to.fetch.file" />
+
+					<NcTextField
+						label="File path in sub object(s) (optional)"
+						v-model="ruleItem.configuration.fetch_file.subObjectFilepath"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcTextField
+						label="Object id path (optional)"
+						v-model="ruleItem.configuration.fetch_file.objectIdPath"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcCheckboxRadioSwitch
+						type="checkbox"
+						label="Auto Share"
+						v-model="ruleItem.configuration.fetch_file.autoShare">
+						Auto share
+					</NcCheckboxRadioSwitch>
+
+					<div class="json-editor">
+						<label>Source Configuration (JSON)</label>
+						<div :class="`codeMirrorContainer ${getTheme()}`">
+							<CodeMirror
+								v-model="
+									ruleItem.configuration.fetch_file
+										.sourceConfiguration
+								"
+								:basic="true"
+								placeholder="[]"
+								:dark="getTheme() === 'dark'"
+								:linter="jsonParseLinter()"
+								:lang="json()"
+								:tab-size="2" />
+
+							<NcButton
+								class="format-json-button"
+								type="secondary"
+								size="small"
+								@click="formatJSONSourceConfiguration">
+								Format JSON
+							</NcButton>
+						</div>
+						<span
+							v-if="
+								!isValidJson(
+									ruleItem.configuration.fetch_file
+										.sourceConfiguration,
+								)
+							"
+							class="error-message">
+							Invalid JSON format
+						</span>
+					</div>
+
+					<NcTextField
+						label="Origin id path (optional)"
+						v-model="ruleItem.configuration.fetch_file.originIdPath"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcTextField
+						label="Content path (optional)"
+						v-model="ruleItem.configuration.fetch_file.contentPath"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcTextField
+						label="Filename path (optional)"
+						v-model="ruleItem.configuration.fetch_file.filenamePath"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcTextField
+						label="File extension (optional)"
+						v-model="ruleItem.configuration.fetch_file.fileExtension"
+						placeholder="path.to.fetch.file.objects" />
+
+					<NcTextField
+						label="Endpoint (optional)"
+						v-model="ruleItem.configuration.fetch_file.endpoint"
+						placeholder="path.to.fetch.file.objects" />
+				</template>
+
+				<!-- Write File Configuration -->
+				<template v-if="typeOptions.value?.id === 'write_file'">
+					<NcTextField
+						label="File Path"
+						required
+						v-model="ruleItem.configuration.write_file.filePath"
+						placeholder="path.to.file.content" />
+					<NcTextField
+						label="File Name Path"
+						required
+						v-model="ruleItem.configuration.write_file.fileNamePath"
+						placeholder="path.to.file.name" />
+
+					<NcSelect
+						v-model="ruleItem.configuration.write_file.tags"
+						:taggable="true"
+						:multiple="true"
+						input-label="Tags">
+						<template #no-options> type to add tags </template>
+					</NcSelect>
+
+					<NcCheckboxRadioSwitch
+						type="checkbox"
+						label="Auto Share"
+						v-model="ruleItem.configuration.write_file.autoShare">
+						Auto share
+					</NcCheckboxRadioSwitch>
+				</template>
+
+				<!-- Fileparts Create Configuration -->
+				<template v-if="typeOptions.value?.id === 'fileparts_create'">
+					<NcTextField
+						label="Size Location"
+						required
+						v-model="
+							ruleItem.configuration.fileparts_create.sizeLocation
+						"
+						placeholder="path.to.size.location" />
+
+					<NcSelect
+						v-bind="schemaOptions"
+						v-model="schemaOptions.value"
+						input-label="Schema *"
+						:loading="schemasLoading"
+						:disabled="!openRegister.isInstalled"
+						required>
+						<template #no-options="{ loading: schemasTemplateLoading }">
+							<p v-if="schemasTemplateLoading">Loading...</p>
+							<p
+								v-if="
+									!schemasTemplateLoading
+									&& !schemaOptions.options?.length
+								">
+								Er zijn geen schemas beschikbaar
+							</p>
+						</template>
+						<template #option="{ id, label, fullSchema, removeStyle }">
+							<div
+								:key="id"
+								:class="removeStyle !== true && 'schema-option'">
+								<!-- custom style is enabled -->
+								<FileTreeOutline v-if="!removeStyle" :size="25" />
+								<span v-if="!removeStyle">
+									<h6 style="margin: 0">
+										{{ label }}
+									</h6>
+									{{ fullSchema.summary }}
+								</span>
+								<!-- custom style is disabled -->
+								<p v-if="removeStyle">
+									{{ label }}
+								</p>
+							</div>
+						</template>
+					</NcSelect>
+
+					<NcTextField
+						label="Filename Location"
+						v-model="
+							ruleItem.configuration.fileparts_create.filenameLocation
+						"
+						placeholder="path.to.filename.location" />
+
+					<NcTextField
+						label="Filepart Location"
+						v-model="
+							ruleItem.configuration.fileparts_create.filePartLocation
+						"
+						placeholder="path.to.filepart.location" />
+
+					<NcSelect
+						v-bind="filepartsCreateMappingOptions"
+						v-model="filepartsCreateMappingOptions.value"
+						:loading="mappingOptions.loading"
+						input-label="Mapping ID" />
+				</template>
+
+				<!-- Filepart Upload Configuration -->
+				<template v-if="typeOptions.value?.id === 'filepart_upload'">
+					<NcSelect
+						v-bind="filepartUploadMappingOptions"
+						v-model="filepartUploadMappingOptions.value"
+						required
+						:loading="mappingOptions.loading"
+						input-label="Mapping ID*" />
+				</template>
+
+				<!-- Save object Configuration -->
+				<template v-if="typeOptions.value?.id === 'save_object'">
+					<NcTextField
+						label="Register"
+						v-model="ruleItem.configuration.save_object.register"
+						placeholder="id of register"
+						required />
+
+					<NcTextField
+						label="Schema"
+						v-model="ruleItem.configuration.save_object.schema"
+						placeholder="id of schema"
+						required />
+				</template>
+			</form>
+
+			<div class="modal-actions">
+				<NcButton v-if="!success" @click="closeModal">
+					<template #icon>
+						<CancelIcon size="20" />
+					</template>
+					{{ t('openconnector', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					v-if="!success"
+					:disabled="
+						loading
+						|| !ruleItem.name
+						|| !isValidJson(ruleItem.conditions)
+						|| (typeOptions.value?.id === 'fetch_file'
+							&& !sourceOptions.sourceValue)
+						|| (typeOptions.value?.id === 'save_object'
+							&& (!ruleItem.configuration.save_object.schema
+								|| !ruleItem.configuration.save_object.register))
+						|| (typeOptions.value?.id === 'write_file'
+							&& (!ruleItem.configuration.write_file.filePath
+								|| !ruleItem.configuration.write_file.fileNamePath))
+						|| (typeOptions.value?.id === 'fileparts_create'
+							&& (!schemaOptions.value
+								|| !ruleItem.configuration.fileparts_create
+									.sizeLocation))
+						|| (typeOptions.value?.id === 'filepart_upload'
+							&& !filepartUploadMappingOptions.value)
+						|| (typeOptions.value?.id === 'extend_input'
+							&& !(
+								ruleItem.configuration.extend_input.items
+								&& ruleItem.configuration.extend_input.items.filter(
+									(p) => p.property && p.property.trim(),
+								).length > 0
+							))
+						|| (typeOptions.value?.id === 'extend_external_input'
+							&& !(
+								ruleItem.configuration.extend_external_input
+									.properties
+								&& ruleItem.configuration.extend_external_input.properties.filter(
+									(p) =>
+										p.property
+										&& p.property.trim()
+										&& p.schema
+										&& p.schema.trim(),
+								).length > 0
+							))
+					"
+					type="primary"
+					@click="editRule()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading" :size="20" />
+					</template>
+					{{ t('openconnector', 'Save') }}
+				</NcButton>
+			</div>
+		</div>
+	</NcModal>
+</template>
+
+<script>
+import {
+	NcButton,
+	NcModal,
+	NcTextField,
+	NcTextArea,
+	NcSelect,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcInputField,
+	NcActions,
+	NcActionButton,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
+import { VueDraggable } from 'vue-draggable-plus'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import Drag from 'vue-material-design-icons/Drag.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import CloudDownload from 'vue-material-design-icons/CloudDownload.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import CancelIcon from 'vue-material-design-icons/Cancel.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+
+import openLink from '../../services/openLink.js'
+
+export default {
 	name: 'EditRule',
 	components: {
 		NcModal,
@@ -27,7 +854,6 @@ defineOptions({
 		VueDraggable,
 		CancelIcon,
 	},
-
 	data() {
 		return {
 			IS_EDIT: !!ruleStore.ruleItem?.id,
@@ -43,19 +869,16 @@ defineOptions({
 				isInstalled: true,
 				isAvailable: true,
 			},
-
 			mappingOptions: {
 				options: [],
 				value: null,
 				loading: false,
 			},
-
 			syncOptions: {
 				options: [],
 				value: null,
 				loading: false,
 			},
-
 			usersList: [],
 			groupsList: [],
 
@@ -67,13 +890,11 @@ defineOptions({
 					{ label: 'OAuth', value: 'oauth' },
 					{ label: 'Api-key', value: 'api-key' },
 				],
-
 				value: {
 					label: 'Basic Authentication',
 					value: 'basic',
 				},
 			},
-
 			apiKeyUsers: [],
 			apiKeys: [{ apiKey: '', user: this.apiKeyUsers }],
 			ruleItem: {
@@ -89,47 +910,39 @@ defineOptions({
 					extend_input: {
 						items: [{ property: '', extends: [] }],
 					},
-
 					extend_external_input: {
 						validate: true,
 						properties: [{ property: '', schema: '' }],
 					},
-
 					mapping: null,
 					synchronization: {
 						synchronization: null,
 						retainResponse: false,
 					},
-
 					error: {
 						code: 500,
 						name: 'Something went wrong',
 						message: 'We encountered an unexpected problem',
 						includeJsonLogicResult: false,
 					},
-
 					javascript: '',
 					authentication: {
 						type: { label: 'Basic Authentication', value: 'basic' },
 						users: [],
 						groups: [],
 					},
-
 					download: {
 						fileIdPosition: 0,
 					},
-
 					upload: {
 						path: '',
 						allowedTypes: '',
 						maxSize: 10,
 					},
-
 					locking: {
 						action: 'lock',
 						timeout: 30,
 					},
-
 					fetch_file: {
 						source: '',
 						filePath: '',
@@ -145,14 +958,12 @@ defineOptions({
 						filenamePath: '',
 						fileExtension: '',
 					},
-
 					write_file: {
 						filePath: '',
 						tags: [],
 						fileNamePath: '',
 						autoShare: false,
 					},
-
 					fileparts_create: {
 						sizeLocation: '',
 						schemaId: '',
@@ -160,11 +971,9 @@ defineOptions({
 						filePartLocation: '',
 						mappingId: '',
 					},
-
 					filepart_upload: {
 						mappingId: '',
 					},
-
 					save_object: {
 						register: '',
 						schema: '',
@@ -198,20 +1007,15 @@ defineOptions({
 					{ label: 'Extend input', id: 'extend_input' },
 					{ label: 'Extend external input', id: 'extend_external_input' },
 				],
-
 				value: { label: 'Error', id: 'error' },
 			},
 
 			closeTimeoutFunc: null,
 		}
 	},
-
 	watch: {
 		apiKeys: {
-			/**
-			 * @param newVal
-			 * @spec openspec/specs/rule-editor-ui/spec.md
-			 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				const currentApiKeysLength = newVal.length
 
@@ -227,16 +1031,11 @@ defineOptions({
 					}
 				}
 			},
-
 			deep: true,
 		},
-
 		// Auto-add empty extend_input item when last one is filled
 		'ruleItem.configuration.extend_input.items': {
-			/**
-			 * @param newVal
-			 * @spec openspec/specs/rule-editor-ui/spec.md
-			 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -264,16 +1063,11 @@ defineOptions({
 					}
 				}
 			},
-
 			deep: true,
 		},
-
 		// Auto-add empty extend_external_input property when last one is filled
 		'ruleItem.configuration.extend_external_input.properties': {
-			/**
-			 * @param newVal
-			 * @spec openspec/specs/rule-editor-ui/spec.md
-			 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -306,11 +1100,9 @@ defineOptions({
 					}
 				}
 			},
-
 			deep: true,
 		},
 	},
-
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	mounted() {
 		if (this.IS_EDIT) {
@@ -327,51 +1119,41 @@ defineOptions({
 						message:
 							originalConfig.error?.message
 							?? 'We encountered an unexpected problem',
-
 						includeJsonLogicResult:
 							originalConfig.error?.includeJsonLogicResult ?? false,
 					},
-
 					synchronization: {
 						synchronization:
 							originalConfig.synchronization?.synchronization ?? null,
-
 						retainResponse:
 							originalConfig.synchronization?.retainResponse ?? false,
 					},
-
 					authentication: {
 						type: originalConfig.authentication?.type ?? {
 							label: 'Basic Authentication',
 							value: 'basic',
 						},
-
 						users: originalConfig.authentication?.users ?? [],
 						groups: originalConfig.authentication?.groups ?? [],
 						keys: originalConfig.authentication?.keys ?? [],
 					},
-
 					download: {
 						fileIdPosition: originalConfig.download?.fileIdPosition ?? 0,
 					},
-
 					upload: {
 						path: originalConfig.upload?.path ?? '',
 						allowedTypes: originalConfig.upload?.allowedTypes ?? '',
 						maxSize: originalConfig.upload?.maxSize ?? 10,
 					},
-
 					locking: {
 						action: originalConfig.locking?.action ?? 'lock',
 						timeout: originalConfig.locking?.timeout ?? 30,
 					},
-
 					fetch_file: {
 						source: originalConfig.fetch_file?.source ?? '',
 						filePath: originalConfig.fetch_file?.filePath ?? '',
 						subObjectFilepath:
 							originalConfig.fetch_file?.subObjectFilepath ?? '',
-
 						objectIdPath: originalConfig.fetch_file?.objectIdPath ?? '',
 						method: originalConfig.fetch_file?.method ?? '',
 						tags: originalConfig.fetch_file?.tags ?? [],
@@ -383,7 +1165,6 @@ defineOptions({
 									2,
 								)
 							: '[]',
-
 						autoShare: originalConfig.fetch_file?.autoShare ?? false,
 						endpoint: originalConfig.fetch_file?.endpoint ?? '',
 						contentPath: originalConfig.fetch_file?.contentPath ?? '',
@@ -392,39 +1173,31 @@ defineOptions({
 						fileExtension:
 							originalConfig.fetch_file?.fileExtension ?? '',
 					},
-
 					write_file: {
 						filePath: originalConfig.write_file?.filePath ?? '',
 						fileNamePath: originalConfig.write_file?.fileNamePath ?? '',
 						tags: originalConfig.write_file?.tags ?? [],
 						autoShare: originalConfig.write_file?.autoShare ?? false,
 					},
-
 					fileparts_create: {
 						sizeLocation:
 							originalConfig.fileparts_create?.sizeLocation ?? '',
-
 						schemaId: originalConfig.fileparts_create?.schemaId ?? '',
 						filenameLocation:
 							originalConfig.fileparts_create?.filenameLocation ?? '',
-
 						filePartLocation:
 							originalConfig.fileparts_create?.filePartLocation ?? '',
-
 						mappingId: originalConfig.fileparts_create?.mappingId ?? '',
 					},
-
 					filepart_upload: {
 						mappingId: originalConfig.filepart_upload?.mappingId ?? '',
 					},
-
 					save_object: {
 						register: originalConfig.save_object?.register ?? '',
 						schema: originalConfig.save_object?.schema ?? '',
 						mapping: originalConfig.save_object?.mapping ?? '',
 					},
 				},
-
 				conditions: JSON.stringify(ruleStore.ruleItem.conditions, null, 2),
 				actionConfig: JSON.stringify(ruleStore.ruleItem.actionConfig),
 			}
@@ -473,7 +1246,7 @@ defineOptions({
 
 		// Initialize extend_input/extend_external_input structures for new items
 		if (!this.ruleItem.configuration.extend_external_input) {
-			this.ruleItem.configuration.extend_external_input = {
+			this.ruleItem.configuration['extend_external_input'] = {
 				validate: true,
 				properties: [{ property: '', schema: '' }],
 			}
@@ -505,7 +1278,7 @@ defineOptions({
 				})
 			}
 		} else if (!this.ruleItem.configuration.extend_input) {
-			this.ruleItem.configuration.extend_input = {
+			this.ruleItem.configuration['extend_input'] = {
 				items: [{ property: '', extends: [] }],
 			}
 		} else if (
@@ -517,7 +1290,6 @@ defineOptions({
 			]
 		}
 	},
-
 	methods: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getMappings() {
@@ -540,7 +1312,6 @@ defineOptions({
 							label: mapping.name,
 							value: mapping.id,
 						})),
-
 						value: activeFilepartUploadMapping
 							? {
 									label: activeFilepartUploadMapping.name,
@@ -561,7 +1332,6 @@ defineOptions({
 							label: mapping.name,
 							value: mapping.id,
 						})),
-
 						value: activeFilepartsCreateMapping
 							? {
 									label: activeFilepartsCreateMapping.name,
@@ -627,7 +1397,6 @@ defineOptions({
 					this.sourcesLoading = false
 				})
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getSchemas() {
 			this.schemasLoading = true
@@ -676,7 +1445,6 @@ defineOptions({
 					label: schema.title,
 					fullSchema: schema,
 				})),
-
 				value: activeSchema
 					? {
 							id: activeSchema.id,
@@ -757,7 +1525,6 @@ defineOptions({
 					subname: user.email,
 					user: user.id,
 				})),
-
 				value: selectedUsersValues
 					? selectedUsersValues.map((user) => ({
 							id: user.id,
@@ -867,7 +1634,6 @@ defineOptions({
 					label: group.displayname,
 					value: group.id,
 				})),
-
 				value: selectedGroupsValues
 					? selectedGroupsValues.map((group) => ({
 							label: group.displayname,
@@ -950,11 +1716,7 @@ defineOptions({
 				schema: '',
 			})
 		},
-
-		/**
-		 * @param index
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendExternalItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_external_input.properties.splice(
@@ -962,7 +1724,6 @@ defineOptions({
 				1,
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendInputItem() {
 			if (!this.ruleItem.configuration.extend_input) {
@@ -973,11 +1734,7 @@ defineOptions({
 				extends: [],
 			})
 		},
-
-		/**
-		 * @param index
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendInputItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_input.items.splice(index, 1)
@@ -989,10 +1746,7 @@ defineOptions({
 			clearTimeout(this.closeTimeoutFunc)
 		},
 
-		/**
-		 * @param str
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isValidJson(str) {
 			if (!str) return true
 			try {
@@ -1125,7 +1879,6 @@ defineOptions({
 						path: this.ruleItem.configuration.upload.path,
 						allowedTypes:
 							this.ruleItem.configuration.upload.allowedTypes,
-
 						maxSize: this.ruleItem.configuration.upload.maxSize,
 					}
 					break
@@ -1134,7 +1887,6 @@ defineOptions({
 						action:
 							this.ruleItem.configuration.locking.action.value
 							|| this.ruleItem.configuration.locking.action,
-
 						timeout: this.ruleItem.configuration.locking.timeout,
 					}
 					break
@@ -1145,7 +1897,6 @@ defineOptions({
 						)
 							.filter((i) => i.property && i.property.trim())
 							.map((i) => i.property),
-
 						extends: (
 							this.ruleItem.configuration.extend_input?.items ?? []
 						)
@@ -1161,7 +1912,6 @@ defineOptions({
 						validate:
 							this.ruleItem.configuration.extend_external_input
 								?.validate ?? true,
-
 						properties: (
 							this.ruleItem.configuration.extend_external_input
 								?.properties ?? []
@@ -1185,10 +1935,8 @@ defineOptions({
 						filePath: this.ruleItem.configuration.fetch_file.filePath,
 						subObjectFilepath:
 							this.ruleItem.configuration.fetch_file.subObjectFilepath,
-
 						objectIdPath:
 							this.ruleItem.configuration.fetch_file.objectIdPath,
-
 						method: this.methodOptions.value?.label,
 						tags: this.ruleItem.configuration.fetch_file.tags,
 						sourceConfiguration: this.ruleItem.configuration.fetch_file
@@ -1198,23 +1946,18 @@ defineOptions({
 										.sourceConfiguration,
 								)
 							: [],
-
 						autoShare: this.ruleItem.configuration.fetch_file.autoShare,
 						endpoint:
 							this.ruleItem.configuration?.fetch_file?.endpoint ?? '',
-
 						contentPath:
 							this.ruleItem.configuration?.fetch_file?.contentPath
 							?? '',
-
 						originIdPath:
 							this.ruleItem.configuration?.fetch_file?.originIdPath
 							?? '',
-
 						filenamePath:
 							this.ruleItem.configuration?.fetch_file?.filenamePath
 							?? '',
-
 						fileExtension:
 							this.ruleItem.configuration?.fetch_file?.fileExtension
 							?? '',
@@ -1225,7 +1968,6 @@ defineOptions({
 						filePath: this.ruleItem.configuration.write_file.filePath,
 						fileNamePath:
 							this.ruleItem.configuration.write_file.fileNamePath,
-
 						tags: this.ruleItem.configuration.write_file.tags,
 						autoShare: this.ruleItem.configuration.write_file.autoShare,
 					}
@@ -1235,16 +1977,13 @@ defineOptions({
 						sizeLocation:
 							this.ruleItem.configuration.fileparts_create
 								.sizeLocation,
-
 						schemaId: this.schemaOptions.value?.id,
 						filenameLocation:
 							this.ruleItem.configuration.fileparts_create
 								.filenameLocation,
-
 						filePartLocation:
 							this.ruleItem.configuration.fileparts_create
 								.filePartLocation,
-
 						mappingId: this.filepartsCreateMappingOptions.value?.value,
 					}
 					break
@@ -1267,7 +2006,6 @@ defineOptions({
 				conditions: this.ruleItem.conditions
 					? JSON.parse(this.ruleItem.conditions)
 					: [],
-
 				action: this.actionOptions.value?.id || null,
 				timing: this.timingOptions.value?.id || null,
 				type: type || null,
@@ -1325,830 +2063,7 @@ defineOptions({
 				})
 		},
 	},
-})
-</script>
-
-<template>
-	<NcModal ref="modalRef" labelId="editRule" @close="closeModal">
-		<div class="modalContent">
-			<h2>
-				{{
-					ruleItem.id
-						? t('openconnector', 'Edit')
-						: t('openconnector', 'Add')
-				}}
-				{{ t('openconnector', 'Rule') }}
-			</h2>
-
-			<div
-				v-if="!openRegister.isInstalled && !closeAlert"
-				class="openregister-notecard">
-				<NcNoteCard
-					:type="openRegister.isAvailable ? 'info' : 'error'"
-					:heading="
-						openRegister.isAvailable
-							? t('openconnector', 'Open register is not installed')
-							: t('openconnector', 'Failed to install open register')
-					">
-					<p>
-						{{
-							openRegister.isAvailable
-								? t(
-										'openconnector',
-										'Some features require open register to be installed',
-									)
-								: t(
-										'openconnector',
-										'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password',
-									)
-						}}
-					</p>
-
-					<div class="install-buttons">
-						<NcButton
-							v-if="openRegister.isAvailable"
-							:aria-label="t('openconnector', 'Install OpenRegister')"
-							size="small"
-							variant="primary"
-							@click="installOpenRegister">
-							<template #icon>
-								<CloudDownload :size="20" />
-							</template>
-							{{ t('openconnector', 'Install OpenRegister') }}
-						</NcButton>
-						<NcButton
-							:aria-label="
-								t('openconnector', 'Install OpenRegister manually')
-							"
-							size="small"
-							variant="secondary"
-							@click="
-								openLink(
-									'/index.php/settings/apps/organization/openregister',
-									'_blank',
-								)
-							">
-							<template #icon>
-								<OpenInNew :size="20" />
-							</template>
-							{{ t('openconnector', 'Install OpenRegister manually') }}
-						</NcButton>
-					</div>
-					<div class="close-button">
-						<NcActions>
-							<NcActionButton
-								closeAfterClick
-								@click="closeAlert = true">
-								<template #icon>
-									<Close :size="20" />
-								</template>
-								{{ t('openconnector', 'Close') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</NcNoteCard>
-			</div>
-
-			<!-- ====================== -->
-			<!-- Success/Error/Warning notecard -->
-			<!-- ====================== -->
-			<div v-if="success || error || warning">
-				<NcNoteCard v-if="success" type="success">
-					<p>{{ t('openconnector', 'Rule saved successfully') }}</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="error" type="error">
-					<p>{{ error || 'An error occurred' }}</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="warning" type="warning">
-					<p>{{ warning }}</p>
-				</NcNoteCard>
-			</div>
-
-			<!-- ====================== -->
-			<!--          Form          -->
-			<!-- ====================== -->
-			<form v-if="!success" @submit.prevent="handleSubmit">
-				<NcTextField
-					v-model="ruleItem.name"
-					:label="t('openconnector', 'Name')"
-					required />
-
-				<NcTextArea
-					v-model="ruleItem.description"
-					resize="vertical"
-					:label="t('openconnector', 'Description')" />
-
-				<div class="json-editor">
-					<label>{{
-						t('openconnector', 'Conditions (JSON logic)')
-					}}</label>
-					<div :class="`codeMirrorContainer ${getTheme()}`">
-						<CodeMirror
-							v-model="ruleItem.conditions"
-							:basic="true"
-							placeholder='{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
-							:dark="getTheme() === 'dark'"
-							:linter="jsonParseLinter()"
-							:lang="json()"
-							:tabSize="2" />
-
-						<NcButton
-							class="format-json-button"
-							variant="secondary"
-							size="small"
-							@click="formatJSONCondictions">
-							{{ t('openconnector', 'Format JSON') }}
-						</NcButton>
-					</div>
-					<span
-						v-if="!isValidJson(ruleItem.conditions)"
-						class="error-message">
-						{{ t('openconnector', 'Invalid JSON format') }}
-					</span>
-				</div>
-
-				<div>
-					<NcSelect
-						v-bind="timingOptions"
-						v-model="timingOptions.value"
-						:clearable="false"
-						:inputLabel="t('openconnector', 'Timing')" />
-				</div>
-
-				<NcTextField
-					v-model="ruleItem.order"
-					:label="t('openconnector', 'Order')"
-					type="number" />
-
-				<NcSelect
-					v-bind="actionOptions"
-					v-model="actionOptions.value"
-					:clearable="false"
-					:inputLabel="t('openconnector', 'Action')" />
-
-				<NcSelect
-					v-bind="typeOptions"
-					v-model="typeOptions.value"
-					:inputLabel="t('openconnector', 'Type')"
-					:selectable="
-						(option) =>
-							option.label === 'Fileparts Create'
-							|| option.label === 'Filepart Upload'
-								? openRegister?.isInstalled
-								: true
-					" />
-
-				<!-- Add mapping select -->
-				<NcSelect
-					v-if="
-						typeOptions.value?.id === 'mapping'
-						|| typeOptions.value?.id === 'save_object'
-					"
-					v-bind="mappingOptions"
-					v-model="mappingOptions.value"
-					:loading="mappingOptions.loading"
-					:inputLabel="t('openconnector', 'Select Mapping')"
-					:multiple="false"
-					:clearable="false" />
-
-				<!-- Add synchronization select -->
-				<template v-if="typeOptions.value?.id === 'synchronization'">
-					<NcSelect
-						v-bind="syncOptions"
-						v-model="syncOptions.value"
-						:loading="syncOptions.loading"
-						:inputLabel="t('openconnector', 'Select Synchronization')"
-						:multiple="false"
-						:clearable="false" />
-
-					<NcCheckboxRadioSwitch
-						v-model="
-							ruleItem.configuration.synchronization.retainResponse
-						"
-						type="checkbox"
-						:label="t('openconnector', 'Retain response')">
-						{{ t('openconnector', 'Retain original response') }}
-					</NcCheckboxRadioSwitch>
-				</template>
-
-				<!-- Error Configuration -->
-				<template v-if="typeOptions.value?.id === 'error'">
-					<NcInputField
-						v-model="ruleItem.configuration.error.code"
-						type="number"
-						:label="t('openconnector', 'Error Code')"
-						:min="100"
-						:max="999"
-						placeholder="500" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.error.name"
-						:label="t('openconnector', 'Error Title')"
-						maxlength="255"
-						:placeholder="t('openconnector', 'Something went wrong')" />
-
-					<NcTextArea
-						v-model="ruleItem.configuration.error.message"
-						:label="t('openconnector', 'Error Message')"
-						resize="vertical"
-						maxlength="2550"
-						:placeholder="
-							t(
-								'openconnector',
-								'We encountered an unexpected problem',
-							)
-						" />
-
-					<NcCheckboxRadioSwitch
-						v-model="ruleItem.configuration.error.includeJsonLogicResult"
-						type="checkbox"
-						:label="
-							t(
-								'openconnector',
-								'Include JSON Logic results in errors array',
-							)
-						">
-						{{
-							t(
-								'openconnector',
-								'Include JSON Logic results in errors array',
-							)
-						}}
-					</NcCheckboxRadioSwitch>
-				</template>
-
-				<!-- JavaScript Configuration -->
-				<template v-if="typeOptions.value?.id === 'javascript'">
-					<NcTextArea
-						v-model="ruleItem.configuration.javascript"
-						resize="vertical"
-						:label="t('openconnector', 'JavaScript Code')"
-						class="code-editor"
-						:placeholder="
-							t('openconnector', 'Enter your JavaScript code here...')
-						"
-						rows="10" />
-				</template>
-
-				<!-- Authentication Configuration -->
-				<template v-if="typeOptions.value?.id === 'authentication'">
-					<NcSelect
-						v-model="authenticationTypeOptions.value"
-						:options="authenticationTypeOptions.options"
-						:inputLabel="t('openconnector', 'Authentication Type')" />
-					<template
-						v-if="authenticationTypeOptions.value.value === 'api-key'">
-						<NcNoteCard type="warning">
-							{{
-								t(
-									'openconnector',
-									'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.',
-								)
-							}}
-						</NcNoteCard>
-						<VueDraggable
-							v-model="apiKeys"
-							easing="ease-in-out"
-							draggable="div:not(:last-child)">
-							<div
-								v-for="(item, index) in apiKeys"
-								:key="index"
-								class="draggable-item-container">
-								<div :class="`draggable-form-item ${getTheme()}`">
-									<Drag class="drag-handle" :size="40" />
-									<NcTextArea
-										v-model="item.apiKey"
-										:disabled="loading"
-										:label="t('openconnector', 'Api-key')"
-										resize="none"
-										class="apiKeyTextArea" />
-									<NcSelect
-										v-model="item.user"
-										v-bind="usersList"
-										:aria-label-combobox="
-											t('openconnector', 'Select allowed user')
-										"
-										:userSelect="true"
-										:clearable="true"
-										:placeholder="
-											t('openconnector', 'Select allowed user')
-										"
-										class="apiKeyUserSelect" />
-								</div>
-							</div>
-						</VueDraggable>
-					</template>
-					<template v-else>
-						<!-- Users Multi-Select -->
-						<NcSelect
-							v-model="ruleItem.configuration.authentication.users"
-							v-bind="usersList"
-							:inputLabel="t('openconnector', 'Allowed Users')"
-							:userSelect="true"
-							:multiple="true"
-							:clearable="true"
-							:placeholder="
-								t('openconnector', 'Select users who can access')
-							" />
-
-						<!-- Groups Multi-Select -->
-						<NcSelect
-							v-model="ruleItem.configuration.authentication.groups"
-							v-bind="groupsList"
-							:inputLabel="t('openconnector', 'Allowed Groups')"
-							:multiple="true"
-							:clearable="true"
-							:placeholder="
-								t('openconnector', 'Select groups who can access')
-							" />
-					</template>
-				</template>
-
-				<!-- Extend Input Configuration -->
-				<template v-if="typeOptions.value?.id === 'extend_input'">
-					<div class="extendList">
-						<div
-							v-for="(item, idx) in ruleItem.configuration.extend_input
-								.items"
-							:key="idx"
-							class="extendItem">
-							<div class="extendItemProperty">
-								<NcTextField
-									v-model="item.property"
-									:label="
-										t('openconnector', 'Property (dot path)')
-									"
-									placeholder="a.b" />
-							</div>
-							<div class="extendItemProperty">
-								<label>{{
-									t('openconnector', 'Extends (dot array)')
-								}}</label>
-								<NcSelect
-									v-model="item.extends"
-									:aria-label-combobox="
-										t('openconnector', 'Extends (dot array)')
-									"
-									:taggable="true"
-									:multiple="true"
-									:clearable="true"
-									:options="[]">
-									<template #no-options>
-										{{
-											t(
-												'openconnector',
-												'type to add path to extend',
-											)
-										}}
-									</template>
-								</NcSelect>
-							</div>
-							<NcButton
-								class="remove-action"
-								size="small"
-								variant="tertiary"
-								:disabled="idx === 0"
-								:aria-label="t('openconnector', 'Remove property')"
-								@click="removeExtendInputItem(idx)">
-								<template #icon>
-									<TrashCanOutline :size="18" />
-								</template>
-							</NcButton>
-						</div>
-					</div>
-				</template>
-
-				<!-- Extend External Input Configuration -->
-				<template v-if="typeOptions.value?.id === 'extend_external_input'">
-					<NcCheckboxRadioSwitch
-						v-model="
-							ruleItem.configuration.extend_external_input.validate
-						"
-						type="checkbox"
-						:label="
-							t('openconnector', 'Validate fetched object with schema')
-						">
-						{{
-							t('openconnector', 'Validate fetched object with schema')
-						}}
-					</NcCheckboxRadioSwitch>
-
-					<div class="extendList">
-						<div
-							v-for="(item, idx) in ruleItem.configuration
-								.extend_external_input.properties"
-							:key="idx"
-							class="extendItem">
-							<div class="extendItemProperty">
-								<NcTextField
-									v-model="item.property"
-									:label="t('openconnector', 'Property')"
-									placeholder="path.to.url" />
-							</div>
-							<div class="extendItemProperty">
-								<NcTextField
-									v-model="item.schema"
-									:label="t('openconnector', 'Schema ID')"
-									placeholder="schemaId" />
-							</div>
-							<NcButton
-								class="remove-action"
-								size="small"
-								variant="tertiary"
-								:disabled="idx === 0"
-								:aria-label="t('openconnector', 'Remove property')"
-								@click="removeExtendExternalItem(idx)">
-								<template #icon>
-									<TrashCanOutline :size="18" />
-								</template>
-							</NcButton>
-						</div>
-					</div>
-				</template>
-
-				<!-- Download Configuration -->
-				<template v-if="typeOptions.value?.id === 'download'">
-					<NcTextField
-						v-model="ruleItem.configuration.download.fileIdPosition"
-						label="File ID Position"
-						type="number"
-						:min="0"
-						placeholder="Position of file ID in URL path (e.g. 2)" />
-
-					<div class="info-text">
-						<p>
-							The system will automatically check if the authenticated
-							user has access rights to the requested file.
-						</p>
-					</div>
-				</template>
-
-				<!-- Upload Configuration -->
-				<template v-if="typeOptions.value?.id === 'upload'">
-					<NcTextField
-						v-model="ruleItem.configuration.upload.path"
-						label="Upload Path"
-						placeholder="/path/to/upload/directory" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.upload.allowedTypes"
-						label="Allowed File Types"
-						placeholder="jpg,png,pdf" />
-
-					<NcInputField
-						v-model="ruleItem.configuration.upload.maxSize"
-						type="number"
-						label="Max File Size (MB)"
-						:min="1"
-						placeholder="10" />
-
-					<div class="info-text">
-						<p>
-							Configure file upload settings including path, allowed
-							types and maximum file size.
-						</p>
-					</div>
-				</template>
-
-				<!-- Locking Configuration -->
-				<template v-if="typeOptions.value?.id === 'locking'">
-					<NcSelect
-						v-model="ruleItem.configuration.locking.action"
-						:options="[
-							{ label: 'Lock Resource', value: 'lock' },
-							{ label: 'Unlock Resource', value: 'unlock' },
-						]"
-						inputLabel="Lock Action" />
-
-					<NcInputField
-						v-model="ruleItem.configuration.locking.timeout"
-						type="number"
-						label="Lock Timeout (minutes)"
-						:min="1"
-						placeholder="30" />
-
-					<div class="info-text">
-						<p>
-							Lock or unlock resources for exclusive access by the
-							current user.
-						</p>
-					</div>
-				</template>
-
-				<!-- Fetch File Configuration -->
-				<template v-if="typeOptions.value?.id === 'fetch_file'">
-					<NcSelect
-						v-bind="sourceOptions"
-						v-model="sourceOptions.sourceValue"
-						required
-						:loading="sourcesLoading"
-						inputLabel="Source ID *" />
-
-					<NcSelect
-						v-bind="methodOptions"
-						v-model="methodOptions.value"
-						inputLabel="Method" />
-
-					<NcSelect
-						v-model="ruleItem.configuration.fetch_file.tags"
-						:taggable="true"
-						:multiple="true"
-						inputLabel="Tags">
-						<template #no-options> type to add tags </template>
-					</NcSelect>
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.filePath"
-						label="File Path"
-						placeholder="path.to.fetch.file" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.subObjectFilepath"
-						label="File path in sub object(s) (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.objectIdPath"
-						label="Object id path (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcCheckboxRadioSwitch
-						v-model="ruleItem.configuration.fetch_file.autoShare"
-						type="checkbox"
-						label="Auto Share">
-						Auto share
-					</NcCheckboxRadioSwitch>
-
-					<div class="json-editor">
-						<label>Source Configuration (JSON)</label>
-						<div :class="`codeMirrorContainer ${getTheme()}`">
-							<CodeMirror
-								v-model="
-									ruleItem.configuration.fetch_file
-										.sourceConfiguration
-								"
-								:basic="true"
-								placeholder="[]"
-								:dark="getTheme() === 'dark'"
-								:linter="jsonParseLinter()"
-								:lang="json()"
-								:tabSize="2" />
-
-							<NcButton
-								class="format-json-button"
-								variant="secondary"
-								size="small"
-								@click="formatJSONSourceConfiguration">
-								Format JSON
-							</NcButton>
-						</div>
-						<span
-							v-if="
-								!isValidJson(
-									ruleItem.configuration.fetch_file
-										.sourceConfiguration,
-								)
-							"
-							class="error-message">
-							Invalid JSON format
-						</span>
-					</div>
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.originIdPath"
-						label="Origin id path (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.contentPath"
-						label="Content path (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.filenamePath"
-						label="Filename path (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.fileExtension"
-						label="File extension (optional)"
-						placeholder="path.to.fetch.file.objects" />
-
-					<NcTextField
-						v-model="ruleItem.configuration.fetch_file.endpoint"
-						label="Endpoint (optional)"
-						placeholder="path.to.fetch.file.objects" />
-				</template>
-
-				<!-- Write File Configuration -->
-				<template v-if="typeOptions.value?.id === 'write_file'">
-					<NcTextField
-						v-model="ruleItem.configuration.write_file.filePath"
-						label="File Path"
-						required
-						placeholder="path.to.file.content" />
-					<NcTextField
-						v-model="ruleItem.configuration.write_file.fileNamePath"
-						label="File Name Path"
-						required
-						placeholder="path.to.file.name" />
-
-					<NcSelect
-						v-model="ruleItem.configuration.write_file.tags"
-						:taggable="true"
-						:multiple="true"
-						inputLabel="Tags">
-						<template #no-options> type to add tags </template>
-					</NcSelect>
-
-					<NcCheckboxRadioSwitch
-						v-model="ruleItem.configuration.write_file.autoShare"
-						type="checkbox"
-						label="Auto Share">
-						Auto share
-					</NcCheckboxRadioSwitch>
-				</template>
-
-				<!-- Fileparts Create Configuration -->
-				<template v-if="typeOptions.value?.id === 'fileparts_create'">
-					<NcTextField
-						v-model="
-							ruleItem.configuration.fileparts_create.sizeLocation
-						"
-						label="Size Location"
-						required
-						placeholder="path.to.size.location" />
-
-					<NcSelect
-						v-bind="schemaOptions"
-						v-model="schemaOptions.value"
-						inputLabel="Schema *"
-						:loading="schemasLoading"
-						:disabled="!openRegister.isInstalled"
-						required>
-						<template #no-options="{ loading: schemasTemplateLoading }">
-							<p v-if="schemasTemplateLoading">Loading...</p>
-							<p
-								v-if="
-									!schemasTemplateLoading
-									&& !schemaOptions.options?.length
-								">
-								Er zijn geen schemas beschikbaar
-							</p>
-						</template>
-						<template #option="{ id, label, fullSchema, removeStyle }">
-							<div
-								:key="id"
-								:class="removeStyle !== true && 'schema-option'">
-								<!-- custom style is enabled -->
-								<FileTreeOutline v-if="!removeStyle" :size="25" />
-								<span v-if="!removeStyle">
-									<h6 style="margin: 0">
-										{{ label }}
-									</h6>
-									{{ fullSchema.summary }}
-								</span>
-								<!-- custom style is disabled -->
-								<p v-if="removeStyle">
-									{{ label }}
-								</p>
-							</div>
-						</template>
-					</NcSelect>
-
-					<NcTextField
-						v-model="
-							ruleItem.configuration.fileparts_create.filenameLocation
-						"
-						label="Filename Location"
-						placeholder="path.to.filename.location" />
-
-					<NcTextField
-						v-model="
-							ruleItem.configuration.fileparts_create.filePartLocation
-						"
-						label="Filepart Location"
-						placeholder="path.to.filepart.location" />
-
-					<NcSelect
-						v-bind="filepartsCreateMappingOptions"
-						v-model="filepartsCreateMappingOptions.value"
-						:loading="mappingOptions.loading"
-						inputLabel="Mapping ID" />
-				</template>
-
-				<!-- Filepart Upload Configuration -->
-				<template v-if="typeOptions.value?.id === 'filepart_upload'">
-					<NcSelect
-						v-bind="filepartUploadMappingOptions"
-						v-model="filepartUploadMappingOptions.value"
-						required
-						:loading="mappingOptions.loading"
-						inputLabel="Mapping ID*" />
-				</template>
-
-				<!-- Save object Configuration -->
-				<template v-if="typeOptions.value?.id === 'save_object'">
-					<NcTextField
-						v-model="ruleItem.configuration.save_object.register"
-						label="Register"
-						placeholder="id of register"
-						required />
-
-					<NcTextField
-						v-model="ruleItem.configuration.save_object.schema"
-						label="Schema"
-						placeholder="id of schema"
-						required />
-				</template>
-			</form>
-
-			<div class="modal-actions">
-				<NcButton v-if="!success" @click="closeModal">
-					<template #icon>
-						<CancelIcon size="20" />
-					</template>
-					{{ t('openconnector', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					v-if="!success"
-					:disabled="
-						loading
-						|| !ruleItem.name
-						|| !isValidJson(ruleItem.conditions)
-						|| (typeOptions.value?.id === 'fetch_file'
-							&& !sourceOptions.sourceValue)
-						|| (typeOptions.value?.id === 'save_object'
-							&& (!ruleItem.configuration.save_object.schema
-								|| !ruleItem.configuration.save_object.register))
-						|| (typeOptions.value?.id === 'write_file'
-							&& (!ruleItem.configuration.write_file.filePath
-								|| !ruleItem.configuration.write_file.fileNamePath))
-						|| (typeOptions.value?.id === 'fileparts_create'
-							&& (!schemaOptions.value
-								|| !ruleItem.configuration.fileparts_create
-									.sizeLocation))
-						|| (typeOptions.value?.id === 'filepart_upload'
-							&& !filepartUploadMappingOptions.value)
-						|| (typeOptions.value?.id === 'extend_input'
-							&& !(
-								ruleItem.configuration.extend_input.items
-								&& ruleItem.configuration.extend_input.items.filter(
-									(p) => p.property && p.property.trim(),
-								).length > 0
-							))
-						|| (typeOptions.value?.id === 'extend_external_input'
-							&& !(
-								ruleItem.configuration.extend_external_input
-									.properties
-								&& ruleItem.configuration.extend_external_input.properties.filter(
-									(p) =>
-										p.property
-										&& p.property.trim()
-										&& p.schema
-										&& p.schema.trim(),
-								).length > 0
-							))
-					"
-					variant="primary"
-					@click="editRule()">
-					<template #icon>
-						<NcLoadingIcon v-if="loading" :size="20" />
-						<ContentSaveOutline v-if="!loading" :size="20" />
-					</template>
-					{{ t('openconnector', 'Save') }}
-				</NcButton>
-			</div>
-		</div>
-	</NcModal>
-</template>
-
-<script>
-import { json, jsonParseLinter } from '@codemirror/lang-json'
-import {
-	NcActionButton,
-	NcActions,
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcInputField,
-	NcLoadingIcon,
-	NcModal,
-	NcNoteCard,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
-import CodeMirror from 'vue-codemirror6'
-import { VueDraggable } from 'vue-draggable-plus'
-import CancelIcon from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
-import CloudDownload from 'vue-material-design-icons/CloudDownload.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Drag from 'vue-material-design-icons/Drag.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import openLink from '../../services/openLink.js'
+}
 </script>
 
 <style scoped>

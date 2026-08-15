@@ -46,15 +46,15 @@
 		icon="SyncOutline"
 		:loading="loading"
 		:error="hasError"
-		:errorMessage="errorMessage"
-		:onRetry="hasError ? loadObject : null"
-		:objectType="schemaSlug"
-		:objectId="objectIdString"
-		:sidebarProps="{ register: registerSlug, schema: schemaSlug }">
+		:error-message="errorMessage"
+		:on-retry="hasError ? loadObject : null"
+		:object-type="schemaSlug"
+		:object-id="objectIdString"
+		:sidebar-props="{ register: registerSlug, schema: schemaSlug }">
 		<template #actions>
 			<NcButton
 				v-if="dirty"
-				variant="primary"
+				type="primary"
 				:disabled="saving || !canSave"
 				@click="save">
 				<template #icon>
@@ -85,41 +85,41 @@
 
 					<!-- Source type discriminator -->
 					<div class="sync-detail__field">
-						<label for="sync-source-type" class="sync-detail__label">
+						<label :for="'sync-source-type'" class="sync-detail__label">
 							{{ t('openconnector', 'Source type') }}
 						</label>
 						<NcSelect
-							inputId="sync-source-type"
+							:input-id="'sync-source-type'"
 							:aria-label-combobox="t('openconnector', 'Source type')"
-							:modelValue="selectedSourceType"
+							:model-value="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
-							@update:modelValue="onSourceTypeChange" />
+							@update:model-value="onSourceTypeChange" />
 					</div>
 
 					<!-- #source-config-widget -->
 					<SyncConfigWidget
 						kind="source"
 						:type="draft.sourceType"
-						:sourceId="draft.sourceId"
+						:source-id="draft.sourceId"
 						:config="draft.sourceConfig"
-						@update:sourceId="(value) => updateDraft('sourceId', value)"
+						@update:source-id="(value) => updateDraft('sourceId', value)"
 						@update:config="
 							(value) => updateDraft('sourceConfig', value)
 						" />
 
 					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
 					<div class="sync-detail__field">
-						<label for="sync-mode" class="sync-detail__label">
+						<label :for="'sync-mode'" class="sync-detail__label">
 							{{ t('openconnector', 'Sync mode') }}
 						</label>
 						<NcSelect
-							inputId="sync-mode"
+							:input-id="'sync-mode'"
 							:aria-label-combobox="t('openconnector', 'Sync mode')"
-							:modelValue="selectedSyncMode"
+							:model-value="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
-							@update:modelValue="onSyncModeChange" />
+							@update:model-value="onSyncModeChange" />
 						<span class="sync-detail__helper">
 							{{
 								t(
@@ -134,9 +134,9 @@
 						<div class="sync-detail__field">
 							<NcTextField
 								:label="t('openconnector', 'Cursor field')"
-								:modelValue="draft.sourceConfig.cursorField || ''"
+								:model-value="draft.sourceConfig.cursorField || ''"
 								:placeholder="t('openconnector', 'e.g. updatedAt')"
-								@update:modelValue="
+								@update:model-value="
 									(value) =>
 										updateSourceConfigField('cursorField', value)
 								" />
@@ -144,18 +144,18 @@
 
 						<div class="sync-detail__field">
 							<label
-								for="sync-cursor-comparator"
+								:for="'sync-cursor-comparator'"
 								class="sync-detail__label">
 								{{ t('openconnector', 'Cursor comparator') }}
 							</label>
 							<NcSelect
-								inputId="sync-cursor-comparator"
+								:input-id="'sync-cursor-comparator'"
 								:aria-label-combobox="
 									t('openconnector', 'Cursor comparator')
 								"
-								:modelValue="selectedCursorComparator"
+								:model-value="selectedCursorComparator"
 								:options="cursorComparatorOptions"
-								@update:modelValue="onCursorComparatorChange" />
+								@update:model-value="onCursorComparatorChange" />
 						</div>
 
 						<div class="sync-detail__field">
@@ -173,7 +173,7 @@
 								}}
 							</span>
 							<NcButton
-								variant="secondary"
+								type="secondary"
 								:disabled="
 									resettingCursor
 									|| !objectIdString
@@ -207,19 +207,19 @@
 					<div class="sync-detail__field">
 						<NcTextField
 							:label="t('openconnector', 'Name')"
-							:modelValue="draft.name || ''"
+							:model-value="draft.name || ''"
 							required
-							@update:modelValue="
+							@update:model-value="
 								(value) => updateDraft('name', value)
 							" />
 					</div>
 
 					<div class="sync-detail__field">
-						<label for="sync-description" class="sync-detail__label">
+						<label :for="'sync-description'" class="sync-detail__label">
 							{{ t('openconnector', 'Description') }}
 						</label>
 						<textarea
-							id="sync-description"
+							:id="'sync-description'"
 							class="sync-detail__textarea"
 							:value="draft.description || ''"
 							rows="3"
@@ -260,25 +260,25 @@
 
 					<!-- Target type discriminator -->
 					<div class="sync-detail__field">
-						<label for="sync-target-type" class="sync-detail__label">
+						<label :for="'sync-target-type'" class="sync-detail__label">
 							{{ t('openconnector', 'Target type') }}
 						</label>
 						<NcSelect
-							inputId="sync-target-type"
+							:input-id="'sync-target-type'"
 							:aria-label-combobox="t('openconnector', 'Target type')"
-							:modelValue="selectedTargetType"
+							:model-value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
-							@update:modelValue="onTargetTypeChange" />
+							@update:model-value="onTargetTypeChange" />
 					</div>
 
 					<!-- #target-config-widget -->
 					<SyncConfigWidget
 						kind="target"
 						:type="draft.targetType"
-						:sourceId="draft.targetId"
+						:source-id="draft.targetId"
 						:config="draft.targetConfig"
-						@update:sourceId="(value) => updateDraft('targetId', value)"
+						@update:source-id="(value) => updateDraft('targetId', value)"
 						@update:config="
 							(value) => updateDraft('targetConfig', value)
 						" />
@@ -296,15 +296,15 @@
 					<!-- #mapping-picker-widget -->
 					<SyncMappingPicker
 						:value="draft.sourceTargetMapping"
-						:hashValue="draft.sourceHashMapping"
-						:targetSourceValue="draft.targetSourceMapping"
+						:hash-value="draft.sourceHashMapping"
+						:target-source-value="draft.targetSourceMapping"
 						@update:value="
 							(value) => updateDraft('sourceTargetMapping', value)
 						"
-						@update:hashValue="
+						@update:hash-value="
 							(value) => updateDraft('sourceHashMapping', value)
 						"
-						@update:targetSourceValue="
+						@update:target-source-value="
 							(value) => updateDraft('targetSourceMapping', value)
 						" />
 				</section>
@@ -326,12 +326,12 @@
 					<!-- #actions-list-widget -->
 					<SyncReferenceList
 						schema="rule"
-						labelKey="name"
+						label-key="name"
 						:value="draft.actions"
 						:placeholder="
 							t('openconnector', 'Pick rules to run during sync')
 						"
-						:emptyLabel="t('openconnector', 'No rules linked yet.')"
+						:empty-label="t('openconnector', 'No rules linked yet.')"
 						@input="(value) => updateDraft('actions', value)" />
 				</section>
 
@@ -352,13 +352,15 @@
 					<!-- #followups-list-widget -->
 					<SyncReferenceList
 						schema="synchronization"
-						labelKey="name"
+						label-key="name"
 						:value="draft.followUps"
-						:excludeId="objectIdString"
+						:exclude-id="objectIdString"
 						:placeholder="
 							t('openconnector', 'Pick follow-up synchronizations')
 						"
-						:emptyLabel="t('openconnector', 'No follow-ups linked yet.')"
+						:empty-label="
+							t('openconnector', 'No follow-ups linked yet.')
+						"
 						@input="(value) => updateDraft('followUps', value)" />
 				</section>
 			</div>
@@ -371,7 +373,7 @@
 						<h3>{{ t('openconnector', 'Conditions') }}</h3>
 						<div class="sync-detail__card-header-spacer" />
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							:aria-label="
 								rawConditions
 									? t(
@@ -443,17 +445,16 @@
 </template>
 
 <script>
-import { CnDetailPage } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
+	NcLoadingIcon,
+	NcNoteCard,
 } from '@nextcloud/vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import CallSplit from 'vue-material-design-icons/CallSplit.vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
@@ -466,27 +467,30 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
+
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
-import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
-import { useObjectStore } from '../../store/objectStore.js'
+import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 // Shared with modals/v2/SynchronizationEditorModal.vue — see syncDraft.js.
 import {
 	CURSOR_COMPARATOR_OPTIONS,
-	emptyDraft,
 	emptyRootGroup,
-	fetchBridgeStatus,
 	NEXTCLOUD_FORM_OPTION,
 	NEXTCLOUD_TABLE_OPTION,
-	normaliseConditions,
-	serializeConditions,
 	SYNC_MODE_OPTIONS,
 	TYPE_OPTIONS,
+	emptyDraft,
+	fetchBridgeStatus,
+	normaliseConditions,
+	serializeConditions,
 } from './syncDraft.js'
-import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
@@ -587,32 +591,26 @@ export default {
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSlug() {
 			return this.register || REGISTER_SLUG
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSlug() {
 			return this.schema || SCHEMA_SLUG
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		title() {
 			if (this.draft?.name) return this.draft.name
 			return this.original?.name || t('openconnector', 'Synchronization')
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		description() {
 			return this.original?.description || ''
 		},
-
 		hasError() {
 			return Boolean(this.loadError) && !this.draft
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
 			return (
@@ -620,7 +618,6 @@ export default {
 				|| t('openconnector', 'Failed to load synchronization')
 			)
 		},
-
 		/**
 		 * Kind options offered in the source/target selectors. `nextcloud-table`
 		 * is only present when the backend reports the Tables app is enabled
@@ -639,7 +636,6 @@ export default {
 			}
 			return TYPE_OPTIONS
 		},
-
 		/**
 		 * Kind options offered in the SOURCE selector only. `nextcloud-form`
 		 * is appended here (never to the shared `typeOptions` the target
@@ -658,7 +654,6 @@ export default {
 			}
 			return this.typeOptions
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSourceType() {
 			return (
@@ -667,7 +662,6 @@ export default {
 				) || TYPE_OPTIONS[0]
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
 			return (
@@ -675,12 +669,10 @@ export default {
 				|| TYPE_OPTIONS[1]
 			)
 		},
-
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		syncModeOptions() {
 			return SYNC_MODE_OPTIONS
 		},
-
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		selectedSyncMode() {
 			return (
@@ -688,23 +680,19 @@ export default {
 				|| SYNC_MODE_OPTIONS[0]
 			)
 		},
-
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		isIncremental() {
 			return this.draft?.syncMode === 'incremental'
 		},
-
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		cursorComparatorOptions() {
 			return CURSOR_COMPARATOR_OPTIONS
 		},
-
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		selectedCursorComparator() {
 			const value = this.draft?.sourceConfig?.cursorComparator
 			return CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === value) || null
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dirty() {
 			if (!this.draft || !this.original) return false
@@ -717,12 +705,10 @@ export default {
 				!== JSON.stringify(this.normalizeForDiff(this.original))
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
 			return Boolean(this.draft?.name && this.draft.name.trim().length > 0)
 		},
-
 		/**
 		 * Coerce persisted `conditions` into a JsonLogic group node so the
 		 * visual RuleConditionGroup always renders. Mirrors the
@@ -745,7 +731,6 @@ export default {
 				this.loadObject()
 			},
 		},
-
 		/**
 		 * Seed the raw JSON textarea from the visual builder's current group
 		 * whenever the editor is switched into raw mode, so the two views
@@ -797,7 +782,6 @@ export default {
 		async fetchTablesStatus() {
 			this.tablesEnabled = await fetchBridgeStatus('tables')
 		},
-
 		/**
 		 * Ask the backend whether the Forms app is enabled for the acting
 		 * user; only then is `nextcloud-form` offered in the SOURCE kind
@@ -810,7 +794,6 @@ export default {
 		async fetchFormsStatus() {
 			this.formsEnabled = await fetchBridgeStatus('forms')
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadObject() {
 			if (!this.objectIdString) {
@@ -849,7 +832,6 @@ export default {
 				this.loading = false
 			}
 		},
-
 		/**
 		 * Live-update bridge (liveObjectSubscription mixin): apply a fresh
 		 * server-side version of the synchronization to the local working
@@ -903,7 +885,6 @@ export default {
 			}
 			return out
 		},
-
 		/**
 		 * Write the condition tree back onto the draft. Shared entry point
 		 * for both editors — the visual builder emits it on every edit and
@@ -918,12 +899,10 @@ export default {
 			if (!this.draft) return
 			this.draft.conditions = node
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		toggleRawConditions() {
 			this.rawConditions = !this.rawConditions
 		},
-
 		/**
 		 * Handle typing in the raw JSON conditions textarea. Empty input
 		 * resets the draft to the empty AND group; invalid JSON only sets
@@ -954,7 +933,6 @@ export default {
 				)
 			}
 		},
-
 		/**
 		 * Generic field writer used by the simple inputs (name, description,
 		 * ids, mappings, actions, follow-ups) so each one does not need its
@@ -971,7 +949,6 @@ export default {
 			if (!this.draft) return
 			this.draft[key] = value
 		},
-
 		/**
 		 * Handle a pick in the source type selector. Switching the type
 		 * discards `sourceId` and `sourceConfig` so kind-specific settings
@@ -991,7 +968,6 @@ export default {
 			this.draft.sourceId = ''
 			this.draft.sourceConfig = {}
 		},
-
 		/**
 		 * Handle a pick in the target type selector — same reset semantics as
 		 * `onSourceTypeChange`, applied to the target side.
@@ -1008,7 +984,6 @@ export default {
 			this.draft.targetId = ''
 			this.draft.targetConfig = {}
 		},
-
 		/**
 		 * Handle a pick in the sync mode selector. Selecting `incremental`
 		 * is what reveals the cursor field / comparator inputs.
@@ -1023,7 +998,6 @@ export default {
 			if (!option?.id || !this.draft) return
 			this.draft.syncMode = option.id
 		},
-
 		/**
 		 * Merge a single key into `draft.sourceConfig` without clobbering the
 		 * other keys SyncConfigWidget independently manages on the same
@@ -1045,7 +1019,6 @@ export default {
 			}
 			this.draft.sourceConfig = next
 		},
-
 		/**
 		 * Handle a pick in the cursor comparator selector, storing it under
 		 * `sourceConfig.cursorComparator`. Clearing the select writes an
@@ -1060,7 +1033,6 @@ export default {
 		onCursorComparatorChange(option) {
 			this.updateSourceConfigField('cursorComparator', option?.id || '')
 		},
-
 		/**
 		 * Clear the stored cursor watermark via `POST .../reset-cursor`
 		 * (REQ-019). Clears the watermark only — does not change `syncMode`
@@ -1096,7 +1068,6 @@ export default {
 				this.resettingCursor = false
 			}
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async save() {
 			if (!this.draft || this.saving) return
@@ -1129,7 +1100,6 @@ export default {
 				this.saving = false
 			}
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		resetEdits() {
 			if (!this.original) return

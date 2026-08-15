@@ -1,0 +1,11 @@
+docs(openspec): propose the English-vocabulary migration for openconnector
+
+Implements the fleet policy in hydra/openspec/changes/fleet-english-vocabulary:
+English identifiers with no Dutch-origin exemption, concepts internationalised
+rather than transliterated (btw->vat, kvk->companyRegistrationNumber,
+bsn->nationalIdentityNumber), Dutch moved to app-level l10n, and an
+x-statutory-basis marker where a concept is NL law with no counterpart.
+
+Proposal only — no code changes. The cross-app words this app shares with
+others (case/caseId, decision, customer) are ratified in the fleet change's
+design.md and may not be diverged from here.

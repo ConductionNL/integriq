@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 a814852f0da8256c10021ebf5ddee2396c9ba6f8 Ruben van der Linde <ruben@conduction.nl> 1785436931 +0200	branch: Created from origin/development
+a814852f0da8256c10021ebf5ddee2396c9ba6f8 80c8d620ecec3bdb3dc8f250e19226c1daaa43b5 Ruben van der Linde <ruben@conduction.nl> 1785437021 +0200	commit (cherry-pick): feat(icons): adopt the ADR-077 semantic icon vocabulary

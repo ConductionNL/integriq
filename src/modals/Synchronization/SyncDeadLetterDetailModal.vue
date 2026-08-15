@@ -20,7 +20,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		labelId="sync-dead-letter-detail"
+		label-id="sync-dead-letter-detail"
 		data-testid="sync-dead-letter-detail-modal"
 		@close="$emit('close')">
 		<div class="deadLetterDetail">
@@ -104,7 +104,7 @@
 									)
 						}}
 					</span>
-					<NcButton variant="primary" :disabled="busy" @click="commit">
+					<NcButton type="primary" :disabled="busy" @click="commit">
 						{{ t('openconnector', 'Confirm') }}
 					</NcButton>
 					<NcButton :disabled="busy" @click="confirming = null">
@@ -113,7 +113,7 @@
 				</template>
 				<template v-else>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canAct || busy"
 						@click="confirming = 'replay'">
 						{{ t('openconnector', 'Replay') }}
@@ -131,10 +131,10 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal } from '@nextcloud/vue'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
+import { NcModal, NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'SyncDeadLetterDetailModal',
@@ -146,7 +146,6 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		entry: {
 			type: Object,
 			default: null,
@@ -165,37 +164,30 @@ export default {
 	computed: {
 		/**
 		 * The attempt audit trail for the timeline (REQ-DLR-008).
-		 *
 		 * @return {Array}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-inspection-req-dlr-008
 		 */
 		attempts() {
 			return Array.isArray(this.entry?.attempts) ? this.entry.attempts : []
 		},
-
 		/**
 		 * Whether replay/discard verbs are permitted on this entry.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 		 */
 		canAct() {
 			return this.entry?.status === 'failed'
 		},
-
 		/**
 		 * Status-badge CSS modifier class.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
 		 */
 		badgeClass() {
 			return `deadLetterDetail__badge--${this.entry?.status || 'unknown'}`
 		},
-
 		/**
 		 * Pretty-printed raw source payload for the viewer.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-inspection-req-dlr-008
 		 */
@@ -212,7 +204,6 @@ export default {
 		t,
 		/**
 		 * Commit the confirmed per-item verb (replay/discard).
-		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 		 */
 		async commit() {

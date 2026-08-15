@@ -25,23 +25,23 @@
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 import {
-	EVENT_OPEN_ADD_ENDPOINT_RULE,
-	EVENT_OPEN_CONFIGURATION_EXPORT,
-	EVENT_OPEN_CONFIGURATION_IMPORT,
-	EVENT_OPEN_PROMOTION,
-	EVENT_OPEN_RUN_ACTION,
-	EVENT_OPEN_SUBSCRIPTION_SIGNING,
+	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_TEST_SOURCE,
-	modalBus,
+	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_RUN_ACTION,
+	EVENT_OPEN_SUBSCRIPTION_SIGNING,
+	EVENT_OPEN_CONFIGURATION_IMPORT,
+	EVENT_OPEN_CONFIGURATION_EXPORT,
+	EVENT_OPEN_PROMOTION,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
+import { VIEW_LOGS_TARGETS, logsLocation } from './logTargets.js'
 
 /**
  * Build the toast detail suffix from an axios error. Surfaces the server's

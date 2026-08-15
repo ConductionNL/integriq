@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 020ff5299d38d8377606b49b138826fda694b9de Ruben van der Linde <rubenvdlinde@gmail.com> 1784311030 +0200	branch: Created from origin/development
+020ff5299d38d8377606b49b138826fda694b9de 6899adc606fb97304e412ccb1a21802836464344 Ruben van der Linde <rubenvdlinde@gmail.com> 1784311765 +0200	commit: fix(security): mark source encryptedToken/encryptedApiKey/mtls.* write-only (#242, closes #245)

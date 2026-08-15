@@ -1,8 +1,0 @@
-{
-  "label": "Admin track",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "Admin-track tutorials for instance administrators: installing OpenConnector, importing configuration bundles, and reviewing logs."
-  }
-}

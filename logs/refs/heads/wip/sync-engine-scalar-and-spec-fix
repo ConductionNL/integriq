@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 e21801ee6bd390ad17284ace60c4289852ef026d Ruben van der Linde <ruben@conduction.nl> 1784894314 +0200	branch: Created from origin/development
+e21801ee6bd390ad17284ace60c4289852ef026d ba7785a3fbb508482c40f78974baaef2530014ca Ruben van der Linde <ruben@conduction.nl> 1784896813 +0200	commit: spec(synchronization-engine): correct REQ-002 — array sourceType was never dispatched (#1051)
+ba7785a3fbb508482c40f78974baaef2530014ca 660d6e2403634aa13403dcdbc8b9b4615ecab916 Ruben van der Linde <ruben@conduction.nl> 1784896836 +0200	commit: fix(sync): coerce bare-scalar source items instead of dead-lettering (#1050)

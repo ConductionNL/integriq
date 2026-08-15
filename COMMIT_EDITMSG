@@ -1,0 +1,7 @@
+test(sync): a credential containing HTML-special characters reaches the request unescaped
+
+Regression test for 62cb4551. Mutation-checked directly: reverting the
+Environment construction to `new Environment($loader)` (no autoescape option)
+turns the assertion's expected `AB&CD"EF<GH>IJ` into the actual
+`AB&amp;CD&quot;EF&lt;GH&gt;IJ` — the exact corruption shape that sent a real
+xxllnc API key out wrong on every call for a full session before being found.

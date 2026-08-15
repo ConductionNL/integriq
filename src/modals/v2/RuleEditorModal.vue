@@ -90,7 +90,7 @@
 		:name="dialogTitle"
 		size="large"
 		class="cn-rule-editor-modal"
-		:noClose="saving"
+		:no-close="saving"
 		@closing="onCancel">
 		<div class="cn-rule-editor">
 			<NcNoteCard v-if="saveError" type="error">
@@ -102,20 +102,20 @@
 			     short of the modal width. -->
 			<div class="cn-rule-editor__identity">
 				<NcTextField
-					:modelValue="draft.name"
+					:model-value="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
-					:helperText="nameError"
+					:helper-text="nameError"
 					:disabled="saving"
-					@update:modelValue="(value) => updateDraft('name', value)"
+					@update:model-value="(value) => updateDraft('name', value)"
 					@blur="nameTouched = true" />
 				<NcTextArea
-					:modelValue="draft.description"
+					:model-value="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="1"
 					resize="vertical"
-					@update:modelValue="
+					@update:model-value="
 						(value) => updateDraft('description', value)
 					" />
 			</div>
@@ -126,7 +126,7 @@
 					<FilterOutlineIcon :size="20" />
 					<h3>{{ t('openconnector', 'When (conditions)') }}</h3>
 					<NcButton
-						variant="tertiary"
+						type="tertiary"
 						:disabled="saving"
 						:aria-label="
 							rawConditions
@@ -177,7 +177,7 @@
 							}}
 						</span>
 						<NcButton
-							variant="secondary"
+							type="secondary"
 							size="small"
 							:disabled="
 								saving
@@ -206,13 +206,13 @@
 							{{ t('openconnector', 'Timing') }}
 						</label>
 						<NcSelect
-							inputId="cn-rule-editor-timing"
-							:modelValue="selectedTiming"
+							input-id="cn-rule-editor-timing"
+							:model-value="selectedTiming"
 							:options="timingOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Timing')"
-							@update:modelValue="
+							@update:model-value="
 								(option) =>
 									updateDraft('timing', option?.id || 'before')
 							" />
@@ -228,12 +228,12 @@
 
 					<div class="cn-rule-editor__field">
 						<NcInputField
-							:modelValue="orderText"
+							:model-value="orderText"
 							type="number"
 							:label="t('openconnector', 'Order')"
 							:disabled="saving"
 							placeholder="100"
-							@update:modelValue="onOrderInput" />
+							@update:model-value="onOrderInput" />
 						<span class="cn-rule-editor__helper">
 							{{
 								t(
@@ -251,13 +251,13 @@
 							{{ t('openconnector', 'Action') }} *
 						</label>
 						<NcSelect
-							inputId="cn-rule-editor-action"
-							:modelValue="selectedAction"
+							input-id="cn-rule-editor-action"
+							:model-value="selectedAction"
 							:options="actionOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Action')"
-							@update:modelValue="
+							@update:model-value="
 								(option) => updateDraft('action', option?.id || '')
 							" />
 						<span class="cn-rule-editor__helper">
@@ -277,13 +277,13 @@
 							{{ t('openconnector', 'Type') }} *
 						</label>
 						<NcSelect
-							inputId="cn-rule-editor-type"
-							:modelValue="selectedType"
+							input-id="cn-rule-editor-type"
+							:model-value="selectedType"
 							:options="typeOptions"
 							:clearable="false"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Type')"
-							@update:modelValue="onTypePick" />
+							@update:model-value="onTypePick" />
 						<span class="cn-rule-editor__helper">
 							{{
 								isErrorType
@@ -311,31 +311,31 @@
 				<div class="cn-rule-editor__grid">
 					<div class="cn-rule-editor__field">
 						<NcInputField
-							:modelValue="errorCodeText"
+							:model-value="errorCodeText"
 							type="number"
 							:min="100"
 							:max="999"
 							:label="t('openconnector', 'Error Code')"
 							:disabled="saving"
 							placeholder="500"
-							@update:modelValue="onErrorCodeInput" />
+							@update:model-value="onErrorCodeInput" />
 					</div>
 
 					<div class="cn-rule-editor__field">
 						<NcTextField
-							:modelValue="errorConfig.name"
+							:model-value="errorConfig.name"
 							:label="t('openconnector', 'Error Title')"
 							maxlength="255"
 							:disabled="saving"
 							:placeholder="t('openconnector', 'Something went wrong')"
-							@update:modelValue="
+							@update:model-value="
 								(value) => updateErrorField('name', value)
 							" />
 					</div>
 				</div>
 
 				<NcTextArea
-					:modelValue="errorConfig.message"
+					:model-value="errorConfig.message"
 					:label="t('openconnector', 'Error Message')"
 					maxlength="2550"
 					resize="vertical"
@@ -344,15 +344,15 @@
 					:placeholder="
 						t('openconnector', 'We encountered an unexpected problem')
 					"
-					@update:modelValue="
+					@update:model-value="
 						(value) => updateErrorField('message', value)
 					" />
 
 				<NcCheckboxRadioSwitch
 					type="checkbox"
-					:modelValue="!!errorConfig.includeJsonLogicResult"
+					:model-value="!!errorConfig.includeJsonLogicResult"
 					:disabled="saving"
-					@update:modelValue="
+					@update:model-value="
 						(value) => updateErrorField('includeJsonLogicResult', value)
 					">
 					{{
@@ -369,7 +369,7 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('openconnector', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />
@@ -386,7 +386,6 @@
 </template>
 
 <script>
-import { showSuccess } from '@nextcloud/dialogs'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -404,16 +403,18 @@ import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline
 import FilterOutlineIcon from 'vue-material-design-icons/FilterOutline.vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
+import { showSuccess } from '@nextcloud/dialogs'
+
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import {
 	ACTION_OPTIONS,
 	ACTION_TYPES,
 	DEFAULT_ERROR_CONFIG,
+	TIMING_OPTIONS,
 	emptyRootGroup,
 	emptyRuleDraft,
 	normaliseConditions,
 	serializeRuleConditions,
-	TIMING_OPTIONS,
 } from '../../views/Rule/ruleDraft.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
@@ -455,19 +456,16 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		/** Slot scope: the row being edited, or `null` in create mode. */
 		item: {
 			type: Object,
 			default: null,
 		},
-
 		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
 		schema: {
 			type: Object,
 			default: null,
 		},
-
 		/**
 		 * Slot scope: persists the object through CnIndexPage's own save path
 		 * and refreshes the list. Saving here instead of calling this would
@@ -479,7 +477,6 @@ export default {
 			type: Function,
 			default: null,
 		},
-
 		/** Slot scope: closes the form dialog on CnIndexPage. */
 		close: {
 			type: Function,
@@ -513,19 +510,16 @@ export default {
 		conditionsPlaceholder() {
 			return CONDITIONS_PLACEHOLDER
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isCreate() {
 			return !this.item
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
 				? this.t('openconnector', 'Create rule')
 				: this.t('openconnector', 'Edit rule')
 		},
-
 		/**
 		 * Required marker on the label. NcTextField/NcInputField has no
 		 * `required` prop and renders no marker of its own, so the ` *` suffix
@@ -539,7 +533,6 @@ export default {
 		nameLabel() {
 			return this.t('openconnector', 'Name') + ' *'
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
@@ -554,12 +547,10 @@ export default {
 						'Name must contain at least one letter or number',
 					)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dirty() {
 			return JSON.stringify(this.draft) !== this.originalSignature
 		},
-
 		/**
 		 * Whether Save is offered. `action` joins `name` in the guard because
 		 * both are `required` on the `rule` schema, and a raw-conditions draft
@@ -583,12 +574,10 @@ export default {
 				&& typeof this.confirm === 'function'
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
 		},
-
 		/** @spec exclude static option list — presentation only */
 		timingOptions() {
 			return TIMING_OPTIONS.map((entry) => ({
@@ -596,7 +585,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec exclude static option list — presentation only */
 		actionOptions() {
 			return ACTION_OPTIONS.map((entry) => ({
@@ -604,7 +592,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec exclude static option list — presentation only */
 		typeOptions() {
 			return ACTION_TYPES.map((entry) => ({
@@ -612,7 +599,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTiming() {
 			return (
@@ -620,7 +606,6 @@ export default {
 				|| this.timingOptions[0]
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
 			return (
@@ -628,7 +613,6 @@ export default {
 				|| null
 			)
 		},
-
 		/**
 		 * The Type select's value. A rule carrying one of the eight types the
 		 * backend accepts but no UI offers (`audit_trail`, `flow`, …) gets a
@@ -650,12 +634,10 @@ export default {
 				}
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isErrorType() {
 			return this.draft?.type === 'error'
 		},
-
 		/**
 		 * The error block's values, with the pre-manifest modal's defaults
 		 * filling any gap so the fields never render empty.
@@ -670,7 +652,6 @@ export default {
 				...(this.draft?.configuration?.error || {}),
 			}
 		},
-
 		/**
 		 * @return {string} `order` as input text; empty when unset.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
@@ -678,7 +659,6 @@ export default {
 		orderText() {
 			return this.draft?.order != null ? String(this.draft.order) : ''
 		},
-
 		/**
 		 * @return {string} `configuration.error.code` as input text.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
@@ -704,7 +684,6 @@ export default {
 				if (value) this.seedDraft()
 			},
 		},
-
 		/**
 		 * Seed the raw-JSON textarea from the current condition tree whenever
 		 * the editor is switched into raw mode, so the user starts from the

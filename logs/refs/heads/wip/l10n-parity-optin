@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 1ac3efa37428881fc11d9636587472ba9df9659a Ruben van der Linde <ruben@conduction.nl> 1785389227 +0200	branch: Created from origin/development
+1ac3efa37428881fc11d9636587472ba9df9659a 27606490f6b40f57afb2b88647e756b99c6876ca Ruben van der Linde <ruben@conduction.nl> 1785389310 +0200	commit: test(l10n): make multi-locale parity opt-in (--parity) so the coverage gate stays green

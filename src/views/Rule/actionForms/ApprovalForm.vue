@@ -15,21 +15,21 @@
 			{{ t('openconnector', 'Approver group') }}
 		</label>
 		<NcSelect
-			:inputId="'rule-action-approval-group-' + uid"
-			:inputLabel="t('openconnector', 'Approver group')"
-			:modelValue="selectedGroup"
+			:input-id="'rule-action-approval-group-' + uid"
+			:input-label="t('openconnector', 'Approver group')"
+			:model-value="selectedGroup"
 			:options="groupOptions"
 			:loading="loadingGroups"
 			:clearable="false"
 			:placeholder="t('openconnector', 'Pick the NC group that may approve')"
-			@update:modelValue="onGroupPick" />
+			@update:model-value="onGroupPick" />
 
 		<NcTextField
 			:label="t('openconnector', 'Time to live (seconds, default 86400)')"
 			type="number"
-			:modelValue="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
+			:model-value="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
 			placeholder="86400"
-			@update:modelValue="onTtlInput" />
+			@update:model-value="onTtlInput" />
 
 		<label
 			class="action-form__label"
@@ -37,12 +37,12 @@
 			{{ t('openconnector', 'On reject') }}
 		</label>
 		<NcSelect
-			:inputId="'rule-action-approval-reject-' + uid"
-			:inputLabel="t('openconnector', 'On reject')"
-			:modelValue="selectedOutcome('onReject')"
+			:input-id="'rule-action-approval-reject-' + uid"
+			:input-label="t('openconnector', 'On reject')"
+			:model-value="selectedOutcome('onReject')"
 			:options="outcomeOptions"
 			:clearable="false"
-			@update:modelValue="(opt) => onOutcomePick('onReject', opt)" />
+			@update:model-value="(opt) => onOutcomePick('onReject', opt)" />
 
 		<label
 			class="action-form__label"
@@ -50,12 +50,12 @@
 			{{ t('openconnector', 'On timeout') }}
 		</label>
 		<NcSelect
-			:inputId="'rule-action-approval-timeout-' + uid"
-			:inputLabel="t('openconnector', 'On timeout')"
-			:modelValue="selectedOutcome('onTimeout')"
+			:input-id="'rule-action-approval-timeout-' + uid"
+			:input-label="t('openconnector', 'On timeout')"
+			:model-value="selectedOutcome('onTimeout')"
 			:options="outcomeOptions"
 			:clearable="false"
-			@update:modelValue="(opt) => onOutcomePick('onTimeout', opt)" />
+			@update:model-value="(opt) => onOutcomePick('onTimeout', opt)" />
 
 		<span class="action-form__helper">
 			{{
@@ -93,13 +93,11 @@ export default {
 			loadingGroups: false,
 		}
 	},
-
 	computed: {
 		/** @spec openspec/specs/approval-workflow/spec.md */
 		groupOptions() {
 			return this.groups.map((gid) => ({ id: gid, label: gid }))
 		},
-
 		/** @spec openspec/specs/approval-workflow/spec.md */
 		selectedGroup() {
 			const gid = this.value.approverGroup
@@ -111,7 +109,6 @@ export default {
 				}
 			)
 		},
-
 		/** @spec openspec/specs/approval-workflow/spec.md */
 		outcomeOptions() {
 			return OUTCOMES.map((row) => ({
@@ -120,16 +117,13 @@ export default {
 			}))
 		},
 	},
-
 	mounted() {
 		this.loadGroups()
 	},
-
 	methods: {
 		patch: patchMethod(),
 		/**
 		 * Load NC groups for the approver-group picker.
-		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async loadGroups() {
@@ -147,10 +141,8 @@ export default {
 				this.loadingGroups = false
 			}
 		},
-
 		/**
 		 * Resolve the currently-selected option for an outcome field.
-		 *
 		 * @param {string} field onReject | onTimeout.
 		 * @return {object|null}
 		 * @spec openspec/specs/approval-workflow/spec.md
@@ -159,7 +151,6 @@ export default {
 			const id = this.value[field] || 'error'
 			return this.outcomeOptions.find((opt) => opt.id === id) || null
 		},
-
 		/**
 		 * Store the NC group whose members may approve the suspended request.
 		 *
@@ -171,7 +162,6 @@ export default {
 		onGroupPick(option) {
 			this.patch('approverGroup', option?.id || '')
 		},
-
 		/**
 		 * Store what the engine does when the request is rejected or times out.
 		 * Both selects share this handler; the field is bound in the template.
@@ -186,7 +176,6 @@ export default {
 		onOutcomePick(field, option) {
 			this.patch(field, option?.id || 'error')
 		},
-
 		/**
 		 * Store the suspension time-to-live as a NUMBER (NcTextField hands back
 		 * a string even with `type="number"`). Clearing the field removes

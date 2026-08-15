@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 19955bf78703d475155d1c6a7e67c8280932043b Ruben van der Linde <ruben@conduction.nl> 1786483868 +0200	branch: Created from origin/development
+19955bf78703d475155d1c6a7e67c8280932043b a9032f55a4ace0fdd963576cf38a9e54b37a7b7c Ruben van der Linde <ruben@conduction.nl> 1786484024 +0200	commit: fix(user): drop the deprecated PROPERTY_TWITTER, from BOTH paths
+a9032f55a4ace0fdd963576cf38a9e54b37a7b7c d213575814c28dd7ad1e1827fa56df4b560a728e Ruben van der Linde <ruben@conduction.nl> 1786484261 +0200	commit: style: drop the blank line the twitter removal left in the try block

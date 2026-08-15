@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 73a7cc0e7af8e76d025ff606cd52267abe8f59e7 Ruben van der Linde <ruben@conduction.nl> 1785707052 +0200	branch: Created from HEAD
+73a7cc0e7af8e76d025ff606cd52267abe8f59e7 8410a5e7e71e502f823d7ede46e017c6f56ae082 Ruben van der Linde <ruben@conduction.nl> 1785709561 +0200	commit: fix(ci): make composer check:strict able to fail on tests

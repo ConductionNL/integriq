@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 4d38bcd6cbd1df350cef24e96489197e31bb6f44 Ruben van der Linde <rubenvdlinde@gmail.com> 1784205434 +0200	branch: Created from origin/development
+4d38bcd6cbd1df350cef24e96489197e31bb6f44 6c568e8f33501c84817871a66615006e16a9cca4 Ruben van der Linde <rubenvdlinde@gmail.com> 1784205583 +0200	commit: fix(appinfo): remove illegal double hyphen from info.xml comment (openconnector could not enable)

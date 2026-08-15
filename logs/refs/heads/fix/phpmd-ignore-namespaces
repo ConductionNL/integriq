@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 8e61219cb5805ee4350c3ff96897f60c8c8e5eb1 Ruben van der Linde <ruben@conduction.nl> 1785743941 +0200	branch: Created from origin/development
+8e61219cb5805ee4350c3ff96897f60c8c8e5eb1 a8bfbb82352c7997ffe0d2fd7c870f06f3980393 Ruben van der Linde <ruben@conduction.nl> 1785745354 +0200	commit: fix(quality): phpmd DevelopmentCodeFragment could never fire on namespaced code

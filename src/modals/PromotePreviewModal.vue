@@ -26,7 +26,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		labelId="promotePreviewModal"
+		label-id="promotePreviewModal"
 		size="large"
 		data-testid="promote-preview-modal"
 		@close="onClose">
@@ -36,35 +36,35 @@
 			<!-- Step 1: pick configuration group + target environment -->
 			<div v-if="step === 'select'" class="oc-promote-modal__step">
 				<NcSelect
-					:modelValue="selectedConfig"
+					:model-value="selectedConfig"
 					:options="configOptions"
 					:loading="loadingConfigs"
-					:inputLabel="t('openconnector', 'Configuration group')"
+					:input-label="t('openconnector', 'Configuration group')"
 					:placeholder="t('openconnector', 'Select a configuration group')"
 					label="label"
 					data-testid="promote-configuration-select"
-					@update:modelValue="onSelectConfig" />
+					@update:model-value="onSelectConfig" />
 
 				<NcSelect
-					:modelValue="selectedEnvironment"
+					:model-value="selectedEnvironment"
 					:options="environmentOptions"
 					:loading="loadingEnvironments"
-					:inputLabel="t('openconnector', 'Target environment')"
+					:input-label="t('openconnector', 'Target environment')"
 					:placeholder="t('openconnector', 'Select a target environment')"
 					label="label"
 					data-testid="promote-target-environment-select"
-					@update:modelValue="onSelectEnvironment" />
+					@update:model-value="onSelectEnvironment" />
 
 				<NcNoteCard v-if="errorMessage" type="error">
 					{{ errorMessage }}
 				</NcNoteCard>
 
 				<div class="oc-promote-modal__actions">
-					<NcButton variant="tertiary" @click="close">
+					<NcButton type="tertiary" @click="close">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canPreview || previewing"
 						data-testid="promote-run-preview"
 						@click="runPreview">
@@ -185,11 +185,11 @@
 				</NcNoteCard>
 
 				<div class="oc-promote-modal__actions">
-					<NcButton variant="tertiary" @click="backToSelect">
+					<NcButton type="tertiary" @click="backToSelect">
 						{{ t('openconnector', 'Back') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="confirming"
 						data-testid="promote-confirm"
 						@click="confirmPromotion">
@@ -206,14 +206,14 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess } from '@nextcloud/dialogs'
 import {
-	NcButton,
-	NcLoadingIcon,
 	NcModal,
-	NcNoteCard,
+	NcButton,
 	NcSelect,
+	NcLoadingIcon,
+	NcNoteCard,
 } from '@nextcloud/vue'
 
 export default {

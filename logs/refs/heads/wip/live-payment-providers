@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 8470e6d0e4c74b2a4c97a793e7d16f69c5d45aa6 Ruben van der Linde <rubenvdlinde@gmail.com> 1783947440 +0200	branch: Created from origin/development
+8470e6d0e4c74b2a4c97a793e7d16f69c5d45aa6 25483e3578a32446fbd50b6985a0deffa5019574 Ruben van der Linde <rubenvdlinde@gmail.com> 1783953060 +0200	merge origin/development: Fast-forward
+25483e3578a32446fbd50b6985a0deffa5019574 c367b8b24cca90804177293387e9351b55d5fb8d Ruben van der Linde <rubenvdlinde@gmail.com> 1783953227 +0200	commit: feat(payments): live payment provider connector (Mollie + sandbox)
+c367b8b24cca90804177293387e9351b55d5fb8d 80e7c3c79d6fbe04755f3fe78b97278f010a4fee Ruben van der Linde <rubenvdlinde@gmail.com> 1783953374 +0200	merge origin/development: Fast-forward
+80e7c3c79d6fbe04755f3fe78b97278f010a4fee 8b912f606ee525d19544163c47fb5c62e403829e Ruben van der Linde <rubenvdlinde@gmail.com> 1783953410 +0200	commit: docs(openspec): archive live-payment-providers

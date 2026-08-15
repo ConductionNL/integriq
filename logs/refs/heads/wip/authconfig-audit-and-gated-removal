@@ -1,0 +1,7 @@
+0000000000000000000000000000000000000000 451d4b1c13706f69e5131d45fc28de53b4161d9b Ruben van der Linde <rubenvdlinde@gmail.com> 1784219584 +0200	branch: Created from origin/development
+451d4b1c13706f69e5131d45fc28de53b4161d9b e37b0a9e35bc6da5d47cf1ee1a4f6bfc8b94bfe1 Ruben van der Linde <rubenvdlinde@gmail.com> 1784221240 +0200	commit: wip: authenticationConfig audit + gated removal
+e37b0a9e35bc6da5d47cf1ee1a4f6bfc8b94bfe1 19e20728579bb167c302107fc37254b44fb0ad4b Ruben van der Linde <rubenvdlinde@gmail.com> 1784221240 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+19e20728579bb167c302107fc37254b44fb0ad4b f8c741726de847e8ac9a393af73c96cc317193b4 Ruben van der Linde <rubenvdlinde@gmail.com> 1784221451 +0200	commit (amend): feat(security): audit + operator-gated removal of the vestigial authenticationConfig (#232)
+f8c741726de847e8ac9a393af73c96cc317193b4 2a80616c323f1b3790b4c86188713b06b3d9398e Ruben van der Linde <rubenvdlinde@gmail.com> 1784221475 +0200	reset: moving to origin/development
+2a80616c323f1b3790b4c86188713b06b3d9398e c558620b99f9fcf4b53f627a3964315f2a780246 Ruben van der Linde <rubenvdlinde@gmail.com> 1784221475 +0200	commit: feat(security): audit + operator-gated removal of the vestigial authenticationConfig (#232)
+c558620b99f9fcf4b53f627a3964315f2a780246 20730e10615a114ad28ccebdfaf00abd7fca636f Ruben van der Linde <rubenvdlinde@gmail.com> 1784221502 +0200	commit (amend): feat(security): audit + operator-gated removal of the vestigial authenticationConfig (#232)

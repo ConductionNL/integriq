@@ -33,7 +33,7 @@
 						v-model="propertyDraft"
 						:placeholder="propertyPlaceholder"
 						:error="!!propertyError"
-						:helperText="propertyError"
+						:helper-text="propertyError"
 						:label="propertyLabel" />
 				</label>
 
@@ -57,20 +57,20 @@
 						{{ t('openconnector', 'Cast type') }}
 					</span>
 					<NcSelect
-						:modelValue="castSelectValue"
+						:model-value="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
 						:aria-label-combobox="t('openconnector', 'Cast type')"
-						inputId="cn-rule-dialog-cast-type"
-						@update:modelValue="onCastTypeInput" />
+						input-id="cn-rule-dialog-cast-type"
+						@update:model-value="onCastTypeInput" />
 				</label>
 
 				<div class="cn-rule-dialog__actions">
-					<NcButton variant="tertiary" @click="$emit('cancel')">
+					<NcButton type="tertiary" @click="$emit('cancel')">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canSubmit"
 						@click="onSubmit">
 						{{ submitLabel }}
@@ -117,7 +117,6 @@ export default {
 			required: true,
 			validator: (value) => ['mapping', 'cast', 'unset'].includes(value),
 		},
-
 		/**
 		 * Property/key being edited. `null` indicates a new row, in which
 		 * case the property input is empty and editable.
@@ -126,7 +125,6 @@ export default {
 			type: String,
 			default: null,
 		},
-
 		/**
 		 * Initial value: a Twig template string (`kind: 'mapping'`), a
 		 * cast type id (`kind: 'cast'`), or the property name itself
@@ -136,7 +134,6 @@ export default {
 			type: [String, Number, Boolean, Object],
 			default: '',
 		},
-
 		/**
 		 * Keys already present in the collection (excluding the row being
 		 * edited). Used to surface a "duplicate property" inline error
@@ -155,7 +152,6 @@ export default {
 					? (this.property
 						?? (typeof this.value === 'string' ? this.value : ''))
 					: (this.property ?? ''),
-
 			valueDraft:
 				typeof this.value === 'string'
 					? this.value
@@ -170,7 +166,6 @@ export default {
 		castTypeOptions() {
 			return CAST_TYPE_OPTIONS
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templatePlaceholder() {
 			// Built outside the template so the embedded `{{ … }}` Twig
@@ -179,7 +174,6 @@ export default {
 			const closeBrace = '}}'
 			return `${openBrace} originalProperty ${closeBrace} or ${openBrace} source.field|default('-') ${closeBrace}`
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templateHelp() {
 			// See `templatePlaceholder`: avoid embedding `{{` directly in
@@ -192,7 +186,6 @@ export default {
 				{ open: openBrace, close: closeBrace },
 			)
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castSelectValue() {
 			return (
@@ -200,11 +193,9 @@ export default {
 				|| this.castTypeOptions[0]
 			)
 		},
-
 		isNew() {
 			return this.property == null
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			if (this.kind === 'mapping') {
@@ -221,21 +212,18 @@ export default {
 				? this.t('openconnector', 'Add unset rule')
 				: this.t('openconnector', 'Edit unset rule')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		submitLabel() {
 			return this.isNew
 				? this.t('openconnector', 'Add rule')
 				: this.t('openconnector', 'Save rule')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
 			if (this.kind === 'mapping')
 				return this.t('openconnector', 'Target property')
 			return this.t('openconnector', 'Property')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyPlaceholder() {
 			if (this.kind === 'mapping') {
@@ -243,7 +231,6 @@ export default {
 			}
 			return this.t('openconnector', 'JSON path or property name')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyError() {
 			const trimmed = this.propertyDraft.trim()
@@ -256,7 +243,6 @@ export default {
 			}
 			return ''
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canSubmit() {
 			const property = this.propertyDraft.trim()
@@ -276,7 +262,6 @@ export default {
 	methods: {
 		/**
 		 * Store the picked cast type as the rule's value draft.
-		 *
 		 * @param {{id: string, label: string}|null} selected The cast-type option
 		 *   chosen in the NcSelect, or null when the selection is cleared.
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
@@ -285,7 +270,6 @@ export default {
 			if (!selected) return
 			this.valueDraft = selected.id
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onSubmit() {
 			if (!this.canSubmit) return

@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 c9bfe076003066364355eaf8cfbce4ff27294c76 Ruben van der Linde <rubenvdlinde@gmail.com> 1784122130 +0200	branch: Created from origin/development
+c9bfe076003066364355eaf8cfbce4ff27294c76 adca17ed6e5b1c927fb6a1fa8a6e679969cd6b00 Ruben van der Linde <rubenvdlinde@gmail.com> 1784122688 +0200	commit: chore(openspec): archive bulk-gzip-jsonl-ingestion, canonicalize @spec anchors
+adca17ed6e5b1c927fb6a1fa8a6e679969cd6b00 2f95756f6f2f02239bd967a5e9360f87b359893e Ruben van der Linde <rubenvdlinde@gmail.com> 1784122741 +0200	merge origin/development: Merge made by the 'recursive' strategy.

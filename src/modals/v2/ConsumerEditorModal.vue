@@ -92,7 +92,7 @@
 		:name="dialogTitle"
 		size="normal"
 		class="cn-consumer-editor-modal"
-		:noClose="saving"
+		:no-close="saving"
 		@closing="onCancel">
 		<div class="cn-consumer-editor">
 			<NcNoteCard v-if="saveError" type="error">
@@ -102,21 +102,21 @@
 			<!-- Identity — the consumer's own metadata, above the policy sections. -->
 			<div class="cn-consumer-editor__identity">
 				<NcTextField
-					:modelValue="draft.name"
+					:model-value="draft.name"
 					:label="nameLabel"
 					:error="!!nameError"
-					:helperText="nameError"
+					:helper-text="nameError"
 					maxlength="255"
 					:disabled="saving"
-					@update:modelValue="(value) => updateDraft('name', value)"
+					@update:model-value="(value) => updateDraft('name', value)"
 					@blur="nameTouched = true" />
 				<NcTextArea
-					:modelValue="draft.description"
+					:model-value="draft.description"
 					:label="t('openconnector', 'Description')"
 					:disabled="saving"
 					rows="2"
 					resize="vertical"
-					@update:modelValue="
+					@update:model-value="
 						(value) => updateDraft('description', value)
 					" />
 			</div>
@@ -136,19 +136,19 @@
 							{{ t('openconnector', 'Allowed domains') }}
 						</label>
 						<NcSelect
-							inputId="cn-consumer-editor-domains"
-							:modelValue="draft.domains"
+							input-id="cn-consumer-editor-domains"
+							:model-value="draft.domains"
 							:options="[]"
 							:multiple="true"
 							:taggable="true"
-							:keepOpen="true"
+							:keep-open="true"
 							:clearable="true"
 							:disabled="saving"
 							:aria-label-combobox="
 								t('openconnector', 'Allowed domains')
 							"
 							:placeholder="domainPlaceholder"
-							@update:modelValue="
+							@update:model-value="
 								(value) => updateDraft('domains', value)
 							" />
 						<span class="cn-consumer-editor__helper">
@@ -168,17 +168,17 @@
 							{{ t('openconnector', 'Allowed IPs') }}
 						</label>
 						<NcSelect
-							inputId="cn-consumer-editor-ips"
-							:modelValue="draft.ips"
+							input-id="cn-consumer-editor-ips"
+							:model-value="draft.ips"
 							:options="[]"
 							:multiple="true"
 							:taggable="true"
-							:keepOpen="true"
+							:keep-open="true"
 							:clearable="true"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Allowed IPs')"
 							:placeholder="ipPlaceholder"
-							@update:modelValue="
+							@update:model-value="
 								(value) => updateDraft('ips', value)
 							" />
 						<span class="cn-consumer-editor__helper">
@@ -227,15 +227,15 @@
 						{{ t('openconnector', 'Authorization type') }}
 					</label>
 					<NcSelect
-						inputId="cn-consumer-editor-auth-type"
-						:modelValue="selectedAuthorizationType"
+						input-id="cn-consumer-editor-auth-type"
+						:model-value="selectedAuthorizationType"
 						:options="authorizationTypeOptions"
 						:clearable="false"
 						:disabled="saving"
 						:aria-label-combobox="
 							t('openconnector', 'Authorization type')
 						"
-						@update:modelValue="onAuthorizationTypePick" />
+						@update:model-value="onAuthorizationTypePick" />
 					<span class="cn-consumer-editor__helper">
 						{{ authorizationTypeHelper }}
 					</span>
@@ -252,15 +252,15 @@
 						:value="authConfigText"
 						language="json"
 						height="160px"
-						:readOnly="saving"
-						:errorText="authConfigError"
+						:read-only="saving"
+						:error-text="authConfigError"
 						@update:value="onAuthConfigInput" />
 					<span class="cn-consumer-editor__helper">
 						{{ authConfigHelper }}
 					</span>
 					<div class="cn-consumer-editor__helper-actions">
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							size="small"
 							:disabled="saving || !authConfigPlaceholder"
 							@click="insertAuthConfigTemplate">
@@ -268,7 +268,7 @@
 						</NcButton>
 						<NcButton
 							v-if="!isCreate"
-							variant="tertiary"
+							type="tertiary"
 							size="small"
 							:disabled="saving || authConfigCleared"
 							@click="clearAuthConfig">
@@ -298,7 +298,7 @@
 				<div class="cn-consumer-editor__grid">
 					<div class="cn-consumer-editor__field">
 						<NcInputField
-							:modelValue="
+							:model-value="
 								numberText(draft.rateLimitRequestsPerWindow)
 							"
 							type="number"
@@ -306,33 +306,33 @@
 							:label="t('openconnector', 'Requests per window')"
 							:disabled="saving"
 							placeholder="60"
-							@update:modelValue="
+							@update:model-value="
 								(value) =>
 									updateNumber('rateLimitRequestsPerWindow', value)
 							" />
 					</div>
 					<div class="cn-consumer-editor__field">
 						<NcInputField
-							:modelValue="numberText(draft.rateLimitWindowSeconds)"
+							:model-value="numberText(draft.rateLimitWindowSeconds)"
 							type="number"
 							min="1"
 							:label="t('openconnector', 'Window (seconds)')"
 							:disabled="saving"
 							placeholder="60"
-							@update:modelValue="
+							@update:model-value="
 								(value) =>
 									updateNumber('rateLimitWindowSeconds', value)
 							" />
 					</div>
 					<div class="cn-consumer-editor__field">
 						<NcInputField
-							:modelValue="numberText(draft.quotaLimit)"
+							:model-value="numberText(draft.quotaLimit)"
 							type="number"
 							min="1"
 							:label="t('openconnector', 'Quota limit')"
 							:disabled="saving"
 							placeholder="10000"
-							@update:modelValue="
+							@update:model-value="
 								(value) => updateNumber('quotaLimit', value)
 							" />
 					</div>
@@ -343,13 +343,13 @@
 							{{ t('openconnector', 'Quota period') }}
 						</label>
 						<NcSelect
-							inputId="cn-consumer-editor-quota-period"
-							:modelValue="selectedQuotaPeriod"
+							input-id="cn-consumer-editor-quota-period"
+							:model-value="selectedQuotaPeriod"
 							:options="quotaPeriodOptions"
 							:clearable="true"
 							:disabled="saving"
 							:aria-label-combobox="t('openconnector', 'Quota period')"
-							@update:modelValue="
+							@update:model-value="
 								(option) =>
 									updateDraft('quotaPeriod', option?.id ?? null)
 							" />
@@ -371,7 +371,7 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('openconnector', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<PlusIcon v-else-if="isCreate" :size="20" />
@@ -388,9 +388,6 @@
 </template>
 
 <script>
-import { CnJsonViewer } from '@conduction/nextcloud-vue'
-import { showSuccess } from '@nextcloud/dialogs'
-import { t } from '@nextcloud/l10n'
 import {
 	NcButton,
 	NcDialog,
@@ -401,21 +398,25 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { CnJsonViewer } from '@conduction/nextcloud-vue'
 import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import KeyOutlineIcon from 'vue-material-design-icons/KeyOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import ShieldCheckOutlineIcon from 'vue-material-design-icons/ShieldCheckOutline.vue'
 import SpeedometerIcon from 'vue-material-design-icons/Speedometer.vue'
+import { showSuccess } from '@nextcloud/dialogs'
+import { t } from '@nextcloud/l10n'
+
 import {
 	AUTHORIZATION_TYPES,
+	QUOTA_PERIODS,
 	buildConsumerPayload,
+	// Aliased: the computed below keeps the bare name for the template's sake.
+	carriesCredential as typeCarriesCredential,
 	consumerDraftFromItem,
 	emptyConsumerDraft,
 	normaliseList,
 	positiveIntOrNull,
-	QUOTA_PERIODS,
-	// Aliased: the computed below keeps the bare name for the template's sake.
-	carriesCredential as typeCarriesCredential,
 } from './consumerDraft.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
@@ -471,13 +472,11 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		/** Slot scope: the row being edited, or `null` in create mode. */
 		item: {
 			type: Object,
 			default: null,
 		},
-
 		/**
 		 * Slot scope: the effective JSON schema. Unused — the fields are
 		 * bespoke, and their labels are `t()` literals so string extraction can
@@ -487,7 +486,6 @@ export default {
 			type: Object,
 			default: null,
 		},
-
 		/**
 		 * Slot scope: persists the object through CnIndexPage's own save path
 		 * and refreshes the list. Saving here instead of calling this would
@@ -498,7 +496,6 @@ export default {
 			type: Function,
 			default: null,
 		},
-
 		/** Slot scope: closes the form dialog on CnIndexPage. */
 		close: {
 			type: Function,

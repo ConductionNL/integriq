@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 802483e1f5f9a04cf03f07331f9c5a1b7899830f Ruben van der Linde <rubenvdlinde@gmail.com> 1784103390 +0200	branch: Created from origin/development
+802483e1f5f9a04cf03f07331f9c5a1b7899830f 0e870e4f33581f94f8a86b4aaf7f9565a2058047 Ruben van der Linde <ruben@conduction.nl> 1784105185 +0200	commit: revive-dead-capabilities: wire clearCache + exportRegister, delete dead search builders
+0e870e4f33581f94f8a86b4aaf7f9565a2058047 7d203029d01852713a4e32acc13a1992f440f627 Ruben van der Linde <ruben@conduction.nl> 1784105497 +0200	commit: revive-dead-capabilities: OpenSpec change (deltas for the 9 gate-52 findings)
+7d203029d01852713a4e32acc13a1992f440f627 d7b3e012ecb874c1cabdf047d99f8c25485fd56f Ruben van der Linde <ruben@conduction.nl> 1784105532 +0200	merge origin/development: Merge made by the 'recursive' strategy.

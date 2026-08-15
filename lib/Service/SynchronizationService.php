@@ -97,28 +97,6 @@ class SynchronizationService {
 	private array $pagePrefetch = [];
 
 	/**
-	 * Source objects already resolved during this request, keyed by identifier.
-	 *
-	 * A source is resolved from OpenRegister on EVERY call, and a paginated fetch
-	 * makes one call per page — so a 199-page crawl re-read the same row 199
-	 * times. Measured 2026-08-14 at ~11 ms a page against a source answering in
-	 * 5.3 ms: twice the cost of the request it was preparing.
-	 *
-	 * SAFE ONLY BECAUSE `CallService::sourceRateLimit()` NOW UPDATES THE ENTITY
-	 * IT MUTATES. It persists the decremented `rateLimitRemaining` to the
-	 * database, and used to leave the in-memory object holding the old value —
-	 * so the per-call re-read was how that counter advanced. Caching without
-	 * that fix is 11 ms faster and stops rate limiting from ever tripping, which
-	 * is the failure you would not notice until a source banned you.
-	 *
-	 * Request-scoped, so it cannot outlive the run and go stale against an edited
-	 * source: the service is built per request, and a cron pass gets a fresh one.
-	 *
-	 * @var array<string, ObjectEntity>
-	 */
-	private array $resolvedSourceObjects = [];
-
-	/**
 	 * Number of buffered target rows that forces an intermediate flush.
 	 *
 	 * A run's whole object list is processed in one loop, so without a ceiling
@@ -339,35 +317,6 @@ class SynchronizationService {
 	public const FILE_TAG_TYPE = 'files';
 	public const VALID_MUTATION_TYPES = ['create', 'update', 'delete'];
 	public const DEFAULT_MAX_PAGES = 50;
-
-	/**
-	 * Percentage of PHP's memory limit a fetch may reach before it stops.
-	 *
-	 * Eighty leaves room for the item loop, the write buffers and the run log
-	 * that all come AFTER the fetch — stopping at 95% would trade a fatal during
-	 * fetching for a fatal during processing, which is the same outage with a
-	 * later timestamp.
-	 *
-	 * Overridable per source with `maxMemoryPercent`; 0 disables the ceiling.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_MAX_MEMORY_PERCENT = 80;
-
-	/**
-	 * The most pages one synchronization may have in flight at once.
-	 *
-	 * Every page in the window is an open HTTP connection held by a single
-	 * apache worker, so this is a bound on what ONE synchronization can take
-	 * from the container and from the upstream.
-	 *
-	 * Twenty is generous rather than tight: measured 2026-08-14, throughput
-	 * PEAKS around a window of 5-10 and falls away above it. Nothing above this
-	 * has been observed to help, on any source tested.
-	 *
-	 * @var int
-	 */
-	public const MAX_PREFETCH_WINDOW = 20;
 	// Safety limit to prevent infinite page requesting loop.
 	private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
 	private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
@@ -442,18 +391,6 @@ class SynchronizationService {
 	private const FETCH_BYTE_BUDGET_DEFAULT = 268435456;
 
 	/**
-	 * Default per-file ceiling for a fetched file, in bytes. 0 = no ceiling.
-	 *
-	 * Overridable per source via `configuration.maxFileSize`. Deliberately OFF
-	 * by default: downloads stream to a temp file, so an oversized file costs
-	 * disk and time rather than memory, and a default cap would silently drop
-	 * legitimate large documents from existing syncs.
-	 *
-	 * @var integer
-	 */
-	private const FETCH_MAX_FILE_SIZE_DEFAULT = 0;
-
-	/**
 	 * The OpenRegister-backed synchronization run-log write service.
 	 *
 	 * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
@@ -463,32 +400,6 @@ class SynchronizationService {
 	 * @var SynchronizationLogService
 	 */
 	private readonly SynchronizationLogService $synchronizationLogService;
-
-	/**
-	 * Live progress recorder for the current run.
-	 *
-	 * Nullable and NOT readonly: it is resolved in the constructor body behind a
-	 * container guard, so a bare container (the unit suite's default) simply
-	 * leaves progress recording off rather than failing. Every call site must
-	 * therefore use `?->` — a run must never fail because nobody was watching.
-	 *
-	 * @var SynchronizationRunProgressService|null
-	 */
-	private ?SynchronizationRunProgressService $runProgressService = null;
-
-	/**
-	 * Files successfully fetched and saved since the last tally reset.
-	 *
-	 * @var int
-	 */
-	private int $fileFetchSucceeded = 0;
-
-	/**
-	 * Files whose fetch or save failed since the last tally reset.
-	 *
-	 * @var int
-	 */
-	private int $fileFetchFailed = 0;
 
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
@@ -607,16 +518,6 @@ class SynchronizationService {
 		$eventDispatcher = $this->containerInterface->get(IEventDispatcher::class);
 		if ($eventDispatcher instanceof IEventDispatcher) {
 			$this->eventDispatcher = $eventDispatcher;
-		}
-
-		// Resolved in the BODY, not added to the signature: 84 tests were once
-		// pinned to this constructor's shape, and a run-progress recorder is not
-		// worth breaking them for. The null-guard is what lets a bare container
-		// mock (the unit suite's default) leave progress recording switched off
-		// rather than fatal.
-		$runProgressService = $this->containerInterface->get(SynchronizationRunProgressService::class);
-		if ($runProgressService instanceof SynchronizationRunProgressService) {
-			$this->runProgressService = $runProgressService;
 		}
 
 		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -745,107 +646,6 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 */
-	/**
-	 * Persist the mid-pagination cursor, but only when something will read it.
-	 *
-	 * `getAllObjectsFromApi()` reads `currentPage` back under exactly one
-	 * condition: the source reports a rate limit (`rateLimitLimit !== null`), so
-	 * a run that was cut off mid-crawl can resume where it stopped. For every
-	 * other source the value was written on every page and never once consulted.
-	 *
-	 * It is not a cheap write — a full OpenRegister object save of the
-	 * synchronization, inside the fetch loop, and SERIAL, so no amount of page
-	 * concurrency can overlap it.
-	 *
-	 * MEASURED 2026-08-14 against a static JSON source answering in 5.3 ms, so
-	 * that the only cost left was ours: 40 pages cost 297.9 ms EACH serially, and
-	 * widening the concurrency window to 10 bought 1.24x rather than the ~10x the
-	 * window implies — because this write sat in the middle of it. Writing it only
-	 * when it is read: 297.9 -> 156.9 ms serial, 239.4 -> 131.2 ms at a window of
-	 * 5. Against a real API the whole overhead was invisible, hidden under a
-	 * source answering in 700 ms.
-	 *
-	 * @param array $synchronization The synchronization, carrying `currentPage`.
-	 * @param array $source The source, whose rate-limit fields decide this.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
-	 */
-	/**
-	 * Whether this run is close enough to PHP's memory limit to stop fetching.
-	 *
-	 * Configurable per source via `maxMemoryPercent`, defaulting to
-	 * {@see self::DEFAULT_MAX_MEMORY_PERCENT}. Set it to 0 to disable the
-	 * ceiling for a source that legitimately needs the whole limit and runs
-	 * somewhere nothing else shares.
-	 *
-	 * Uses `memory_get_usage(true)` — real allocated memory, not PHP's
-	 * bookkeeping of what it thinks is in use — because the thing being guarded
-	 * against is the allocator hitting the ceiling, not the object graph's
-	 * nominal size.
-	 *
-	 * Returns false when the limit is unlimited (`-1`), which is the CLI default:
-	 * a cron run with no limit cannot exceed one, and inventing a ceiling for it
-	 * would stop background imports that are working.
-	 *
-	 * @param array $sourceConfig The source configuration.
-	 *
-	 * @return boolean True when fetching should stop.
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
-	 */
-	private function exceededMemoryCeiling(array $sourceConfig): bool {
-		$percent = (int)($sourceConfig['maxMemoryPercent'] ?? self::DEFAULT_MAX_MEMORY_PERCENT);
-		if ($percent <= 0) {
-			return false;
-		}
-
-		$limit = $this->phpMemoryLimitBytes();
-		if ($limit <= 0) {
-			return false;
-		}
-
-		return (memory_get_usage(true) > ($limit * ($percent / 100)));
-	}//end exceededMemoryCeiling()
-
-	/**
-	 * PHP's configured memory limit in bytes, or -1 when unlimited.
-	 *
-	 * `memory_limit` is a shorthand string (`512M`, `2G`, `-1`), so it cannot be
-	 * compared numerically without conversion — reading it as an int gives 512
-	 * for `512M`, which would make every run look like it had exceeded its
-	 * ceiling on the first page.
-	 *
-	 * @return int The limit in bytes, or -1 for unlimited.
-	 */
-	private function phpMemoryLimitBytes(): int {
-		$raw = trim((string)ini_get('memory_limit'));
-		if ($raw === '' || $raw === '-1') {
-			return -1;
-		}
-
-		$value = (int)$raw;
-		switch (strtolower(substr($raw, -1))) {
-			case 'g':
-				return ($value * 1024 * 1024 * 1024);
-			case 'm':
-				return ($value * 1024 * 1024);
-			case 'k':
-				return ($value * 1024);
-			default:
-				return $value;
-		}
-	}//end phpMemoryLimitBytes()
-
-	private function persistPageCursor(array $synchronization, array $source): void {
-		if (($source['rateLimitLimit'] ?? null) === null) {
-			return;
-		}
-
-		$this->persistSynchronization(synchronization: $synchronization);
-	}//end persistPageCursor()
-
 	private function persistSynchronization(array $synchronization): void {
 		$object = $synchronization;
 
@@ -896,22 +696,6 @@ class SynchronizationService {
 
 	/**
 	 * Origin ids for the pre-loop contract index, skipping what cannot resolve.
-	 *
-	 * 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL.
-	 *
-	 * That boundary is real and sits a few lines below the caller: the loop
-	 * catches per item, records the failure to the dead-letter service and
-	 * carries on, which is what `testOneBadItemDoesNotAbortTheSyncPass` asserts —
-	 * one bad item out of three leaves `invalid: 1, skipped: 2, found: 3`.
-	 * Batching the contract lookup for speed moved the resolution OUT of that
-	 * boundary and the isolation guarantee went with it; keeping the batch and
-	 * skipping the unreadable row keeps both.
-	 *
-	 * Skipping is safe because this index is an OPTIMISATION, not a source of
-	 * truth: an item missing from it resolves its own contract in the loop
-	 * exactly as it did before the batch existed — and an item whose origin id
-	 * cannot be read will fail there, on its own, and be dead-lettered with a
-	 * message naming the item rather than killing the page.
 	 *
 	 * Deliberately total. `getOriginId()` throws when an item carries no id at
 	 * the configured position, and this runs before the per-item try/catch — so
@@ -2259,17 +2043,74 @@ class SynchronizationService {
 			// ONE contract read for the whole page, before the loop. The loop
 			// below is unchanged; it resolves each item's contract from this
 			// index rather than issuing its own query.
+			// PER-ITEM ISOLATION HOLDS HERE TOO. `getOriginId()` THROWS for an item
+			// that carries no id at the configured position, and this index runs
+			// BEFORE the loop — outside the per-item try/catch that exists so one
+			// malformed record cannot end the pass. An `array_map` over it meant a
+			// single bad item aborted the whole synchronization from a line whose
+			// only job is to warm a cache.
 			//
-			// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL. The
-			// reasoning lives on {@see self::originIdsForIndex()}, which this and
-			// origin/development arrived at independently and identically; the
-			// only thing merged here was whether it is written inline or extracted.
-			// Extracted, because this method is already long enough that phpmd
-			// counts it, and forty lines of pre-pass would be forty lines between
-			// the reader and the loop the pre-pass exists to serve.
+			// An item with no resolvable origin simply is not indexed. Nothing is
+			// lost: the loop calls `getOriginId()` again for each item and the
+			// existing handler dead-letters that one item, exactly as it did
+			// before this index existed.
 			$contractIndex = $this->indexContractsByOrigin(
 				synchronizationId: (string)($synchronization['id'] ?? ''),
+<<<<<<< HEAD
 				originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
+=======
+				// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL.
+				//
+				// `getOriginId()` throws for an item with no id, and this map
+				// runs over the WHOLE PAGE before the per-item loop starts —
+				// so without this catch a single malformed row aborts the
+				// entire synchronisation from OUTSIDE the boundary that exists
+				// to contain exactly that.
+				//
+				// That boundary is real and is a few lines below: the loop
+				// catches per item, records the failure to the dead-letter
+				// service and carries on, which is what
+				// `testOneBadItemDoesNotAbortTheSyncPass` asserts — one bad
+				// item out of three leaves `invalid: 1, skipped: 2, found: 3`.
+				// Batching the contract lookup for speed moved the resolution
+				// OUT of that boundary and the isolation guarantee went with
+				// it; keeping the batch and skipping the unreadable row keeps
+				// both.
+				//
+				// Skipping is safe because this index is an OPTIMISATION, not
+				// a source of truth: an item missing from it resolves its own
+				// contract in the loop exactly as it did before the batch
+				// existed — and an item whose origin id cannot be read will
+				// fail there, on its own, and be dead-lettered with a message
+				// naming the item rather than killing the page.
+				originIds: array_values(
+					array_filter(
+						array_map(
+							function ($item) use ($synchronization): ?string {
+								$asArray = ['id' => $item];
+								if (is_array($item) === true) {
+									$asArray = $item;
+								}
+
+								try {
+									return $this->getOriginId(synchronization: $synchronization, object: $asArray);
+								} catch (\Throwable $e) {
+									// ⚠️ FULLY QUALIFIED ON PURPOSE. This file
+									// imports `Exception` and not `Throwable`,
+									// so a bare `Throwable` here resolves to
+									// `OCA\OpenConnector\Service\Throwable`,
+									// which does not exist — the catch compiles,
+									// matches nothing, and the exception sails
+									// through exactly as if it were not written.
+									return null;
+								}
+							},
+							$objectList
+						),
+						static fn (?string $originId): bool => ($originId !== null && $originId !== '')
+					)
+				),
+>>>>>>> origin/development
 				justByOriginId: (
 					isset($sourceConfig['findContractByOriginIdOnly']) === true
 					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
@@ -2297,31 +2138,7 @@ class SynchronizationService {
 			$this->bufferWrites = ($isTest === false);
 
 			try {
-				$progressProcessed = 0;
 				foreach ($objectList as $object) {
-					// Called EVERY object; the service's time throttle decides
-					// what actually reaches the database. Deliberately not
-					// throttled by object count here — a per-N-objects rule
-					// writes 200x more on a 20,000-object corpus than on a 100
-					// one, whereas a time rule costs the same either way.
-					//
-					// Counted from the LOOP, not from `$log->getResult()`: the
-					// run-log's object tallies are only filled in once the run
-					// finishes, so reading them here reported `found=0
-					// processed=0` for the entire run — a progress record that
-					// showed `running` and never moved.
-					$progressProcessed++;
-					$this->runProgressService?->tick(
-						counters: [
-							'found' => count($objectList),
-							'processed' => $progressProcessed,
-							'created' => (int)($result['objects']['created'] ?? 0),
-							'updated' => (int)($result['objects']['updated'] ?? 0),
-							'deleted' => (int)($result['objects']['deleted'] ?? 0),
-							'invalid' => (int)($result['objects']['invalid'] ?? 0),
-						]
-					);
-
 					// Bare-scalar source item coercion (synchronization-engine
 					// spec REQ-002/REQ-008, change sync-engine-scalar-items):
 					// getOriginId() and processSynchronizationObject() are
@@ -2682,7 +2499,7 @@ class SynchronizationService {
 		}
 
 		$result['timing']['summary'] = [
-			'slowest_stage' => $this->getSlowestInternship(stages: $result['timing']['stages']),
+			'slowest_stage' => $this->getSlowestStage(stages: $result['timing']['stages']),
 			'efficiency_ratio' => $this->calculateEfficiencyRatio(stages: $result['timing']['stages']),
 			'objects_per_second' => $objectsPerSecond,
 		];
@@ -3043,17 +2860,6 @@ class SynchronizationService {
 		// contract logs; the append-only row is persisted once at the end.
 		$log = $this->synchronizationLogService->createFromArray(object: $log);
 
-		// OPEN THE PROGRESS RECORD BEFORE ANY WORK. The run-log above is
-		// in-memory until the very end and its schema is appendOnly+immutable,
-		// so until this row exists the run is invisible for its whole duration.
-		$this->runProgressService?->start(
-			synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? ''),
-			// Opt-out per synchronization. Defaults ON: a run nobody can watch
-			// is the defect being fixed, so invisibility should be the choice,
-			// not the default. Also the arm-switch for the overhead control.
-			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true)
-		);
-
 		// Handle full extern-to-intern sync.
 		$log = $this->synchronizeExternToIntern(
 			synchronization: $synchronization,
@@ -3073,14 +2879,6 @@ class SynchronizationService {
 		// `pending_approval` message and made no writes — do not overwrite it
 		// with 'Success' (synchronization-engine REQ-015).
 		if ($log->getMessage() === 'pending_approval') {
-			// Terminal for this run even though no work happened — leaving it
-			// `running` would show as hung forever.
-			$this->runProgressService?->finish(
-				status: 'success',
-				counters: $this->progressCountersFromLog(log: $log),
-				message: 'pending_approval'
-			);
-
 			if ($ownsTrace === true) {
 				$this->persistOwnedTrace(trace: $trace, status: 'short_circuited');
 			}
@@ -3096,45 +2894,12 @@ class SynchronizationService {
 
 		$log = $this->synchronizationLogService->update(log: $log);
 
-		// NOT throttled — the terminal write must always land, or a finished run
-		// stays `running` and every watcher reads it as hung.
-		$this->runProgressService?->finish(
-			status: 'success',
-			counters: $this->progressCountersFromLog(log: $log)
-		);
-
 		if ($ownsTrace === true) {
 			$this->persistOwnedTrace(trace: $trace, status: 'success');
 		}
 
 		return $log->jsonSerialize();
 	}//end synchronize()
-
-	/**
-	 * Project a run-log's object counters onto the progress record's scalars.
-	 *
-	 * Kept in one place so the live counters and the final ones cannot drift
-	 * into describing the same run differently.
-	 *
-	 * @param SynchronizationRunLog $log The run log to read counters from.
-	 *
-	 * @return array<string, int> The progress counters.
-	 */
-	private function progressCountersFromLog(SynchronizationRunLog $log): array {
-		// No `?? []`: getResult() is declared `: array` and cannot be null, so
-		// the coalesce was dead code phpstan correctly refused.
-		$result = $log->getResult();
-		$objects = ($result['objects'] ?? []);
-
-		return [
-			'found' => (int)($objects['found'] ?? 0),
-			'processed' => (int)($objects['found'] ?? 0),
-			'created' => (int)($objects['created'] ?? 0),
-			'updated' => (int)($objects['updated'] ?? 0),
-			'deleted' => (int)($objects['deleted'] ?? 0),
-			'invalid' => (int)($objects['invalid'] ?? 0),
-		];
-	}//end progressCountersFromLog()
 
 	/**
 	 * Best-effort persist of a `sync`-entryPoint trace this method minted
@@ -5720,33 +5485,15 @@ class SynchronizationService {
 		}
 
 		// Fetch all pages recursively.
-		//
-		// Call logs are BUFFERED for the duration of the fetch. One page is one
-		// call is one CallLog, and that save — even stripped of RBAC, audit and
-		// validation — costs ~55 ms and runs SERIALLY inside the page fan-out,
-		// which is why widening the concurrency window barely moved the per-page
-		// number. Buffered, the logs are written once at the end instead of
-		// between every pair of pages.
-		//
-		// The flush is in a `finally`: a fetch that throws still made those calls,
-		// and losing their logs would make the failure harder to diagnose than
-		// not buffering at all.
-		$this->callService->bufferCallLogs(enabled: true);
-
-		try {
-			$pageResult = $this->fetchAllPages(
-				source: $source,
-				endpoint: $endpoint,
-				config: $config,
-				synchronization: $synchronization,
-				currentPage: $currentPage,
-				isTest: $isTest,
-				usesPagination: $usesPagination
-			);
-		} finally {
-			$this->callService->bufferCallLogs(enabled: false);
-			$this->callService->flushCallLogs();
-		}
+		$pageResult = $this->fetchAllPages(
+			source: $source,
+			endpoint: $endpoint,
+			config: $config,
+			synchronization: $synchronization,
+			currentPage: $currentPage,
+			isTest: $isTest,
+			usesPagination: $usesPagination
+		);
 
 		$objects = $pageResult['objects'];
 		$fetchInfo = [
@@ -6027,11 +5774,9 @@ class SynchronizationService {
 			$currentPage = $nextInfo['page'];
 			$usesNextEndpoint = $nextInfo['usesNextEndpoint'];
 
-			// Update synchronization current page — persisted only when something
-			// will read it back ({@see self::persistPageCursor()}, which carries
-			// the measurements).
+			// Update synchronization current page.
 			$synchronization['currentPage'] = $currentPage;
-			$this->persistPageCursor(synchronization: $synchronization, source: $source);
+			$this->persistSynchronization(synchronization: $synchronization);
 
 			// A next page is known to exist, but this was the last iteration
 			// the DEFAULT_MAX_PAGES safety cap allows — an unknown amount of
@@ -6040,38 +5785,6 @@ class SynchronizationService {
 			if (($i + 1) >= $maxPages) {
 				$complete = false;
 				$failureReason = 'max_pages_reached';
-			}
-
-			// A CEILING ON MEMORY, not just on pages.
-			//
-			// `maxPages` bounds how many REQUESTS a run makes; nothing bounded how
-			// much it holds. A crawl accumulates every fetched page in memory
-			// before the item loop starts, so a source with large records reaches
-			// the PHP memory limit while still well inside its page budget — and
-			// what happens then is a fatal, mid-run, with no log line and no
-			// synchronization_log row, because the process dies before writing
-			// either. MEASURED 2026-08-14: a 19,822-object crawl held 1.4 GB
-			// resident on a container with 44 other apps sharing it.
-			//
-			// Stopping deliberately is strictly better than being killed. It uses
-			// the SAME `complete = false` path as the page cap, which already
-			// blocks the deletion pass — so a run that stopped early can never be
-			// read as "the source no longer has these records".
-			if ($this->exceededMemoryCeiling(sourceConfig: $sourceConfig) === true) {
-				$complete = false;
-				$failureReason = 'memory_ceiling_reached';
-				$this->logger->warning(
-					'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
-					. 'limit is in use. The pages already fetched are processed; deletion is '
-					. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
-					. 'page size, or narrow the query.',
-					[
-						'pages' => ($i + 1),
-						'used' => round(memory_get_usage(true) / 1048576),
-						'limit' => round($this->phpMemoryLimitBytes() / 1048576),
-					]
-				);
-				break;
 			}
 		}//end for
 
@@ -6239,25 +5952,6 @@ class SynchronizationService {
 		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
 		if ($window < 1) {
 			$window = 1;
-		}
-
-		// CLAMPED AT BOTH ENDS. This is a per-source number in hand-written JSON,
-		// and it decides how many HTTP connections one synchronization opens at
-		// once — a fat-fingered 500 is 500 sockets from one apache worker, against
-		// an upstream that did nothing to deserve it.
-		//
-		// The ceiling is not conservatism: measured 2026-08-14, wider windows are
-		// SLOWER well before this limit. data.overheid.nl over 40 pages took 14.0 s
-		// at a window of 5 and 28.8 s at 40, and against a source answering in
-		// 5.3 ms a window of 10 bought 1.24x rather than the ~10x it implies. There
-		// is no configuration above this worth having.
-		if ($window > self::MAX_PREFETCH_WINDOW) {
-			$this->logger->warning(
-				'prefetchConcurrency of {asked} is above the ceiling of {max} and has been '
-				. 'clamped. Wider windows measured SLOWER, not faster.',
-				['asked' => $window, 'max' => self::MAX_PREFETCH_WINDOW]
-			);
-			$window = self::MAX_PREFETCH_WINDOW;
 		}
 
 		$until = min($last, ($fromPage + $window - 1));
@@ -6481,11 +6175,7 @@ class SynchronizationService {
 		// sniffing, results position — then runs identically whether the page
 		// arrived serially or in the fan-out, so concurrency cannot change how a
 		// page is interpreted. That matters for REQ-009 in particular.
-		// The page NUMBER, which is what the prefetch cache is keyed by — not the
-		// value substituted into the request, which for an offset-paginated
-		// source is a record offset. `index` is absent only for a config built
-		// before this method ran, where the two are the same thing anyway.
-		$page = (int)($config['pagination']['index'] ?? ($config['pagination']['page'] ?? 0));
+		$page = (int)($config['pagination']['page'] ?? 0);
 		if ($page > 0 && array_key_exists($page, $this->pagePrefetch) === true) {
 			$callLog = $this->pagePrefetch[$page];
 			unset($this->pagePrefetch[$page]);
@@ -7360,14 +7050,7 @@ class SynchronizationService {
 			$sourceIdentifier = (string)($source['id'] ?? '');
 		}
 
-		$key = (string)$sourceIdentifier;
-		if (isset($this->resolvedSourceObjects[$key]) === true) {
-			return $this->resolvedSourceObjects[$key];
-		}
-
-		$this->resolvedSourceObjects[$key] = $this->findSourceObject(id: $key);
-
-		return $this->resolvedSourceObjects[$key];
+		return $this->findSourceObject(id: (string)$sourceIdentifier);
 	}//end resolveSourceObjectForCall()
 
 	/**
@@ -7449,16 +7132,7 @@ class SynchronizationService {
 		$config['pagination'] = [
 			'paginationQuery' => $sourceConfig['paginationQuery'] ?? 'page',
 			'paginationIn' => $sourceConfig['paginationIn'] ?? 'query',
-			// What the SOURCE is sent: a page index, or an offset.
 			'page' => $this->paginationValueFor(sourceConfig: $sourceConfig, currentPage: $currentPage),
-			// What WE call this page. Identical to `page` for an index-paginated
-			// source, and deliberately separate for an offset one: the prefetch
-			// cache is keyed by page NUMBER, and once `page` started carrying an
-			// offset the producer stored key 2 while the consumer looked up key
-			// 100. Nothing matched, so every prefetched page was fetched a second
-			// time serially — the fan-out did not merely fail to help, it added a
-			// wasted request per page, which is why enabling it measured SLOWER.
-			'index' => $currentPage,
 		];
 
 		return $config;
@@ -8055,30 +7729,9 @@ class SynchronizationService {
 				// Update data with rule result.
 				$data = $result;
 
-				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
-				// `processFetchFileRule()` catches its own per-file failures so
-				// one bad attachment cannot abort the object, which meant this
-				// line said "Successfully applied" for a rule that wrote ZERO
-				// files — and nothing downstream could tell that from 40. The
-				// tally is the only thing that discriminates.
-				$outcome = '';
-				if (($rule['type'] ?? null) === 'fetch_file') {
-					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
-
-					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
-						$this->logger->warning(
-							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
-							. $tally['failed'] . ' failed) for synchronization '
-							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
-						);
-					}
-				}
-
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
 					. ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? '')
-					. $outcome
 				);
 			}//end foreach
 
@@ -8899,30 +8552,8 @@ class SynchronizationService {
 			return $dataDot->jsonSerialize();
 		}
 
-		// SYNC OR TRULY ASYNC, per source. `sync` (the default) is exactly the
-		// existing behaviour: fetch and save inline, inside the caller's
-		// request. `async` defers the whole thing to a QueuedJob so the
-		// synchronization returns as soon as its objects are written —
-		// measured, files more than DOUBLE a sync's wall clock even with the
-		// fetch window fully parallel (7,507 ms → 17,256 ms for 40 files),
-		// because the saves are serial by design.
-		//
-		// ⚠️ In `async` the files are NOT present when the sync finishes.
-		// Anything reasoning about a missing file — a deletion sweep above all
-		// — must treat "not fetched yet" and "gone from the source" as
-		// different facts.
-		$fetchMode = (string)(($source['configuration']['fileFetchMode'] ?? 'sync'));
-		if ($fetchMode === 'async') {
-			$this->enqueueFileFetch(
-				config: $config,
-				endpoint: $endpoint,
-				objectId: (string)$objectId,
-				ruleId: (int)($rule['id'] ?? 0)
-			);
-		} else {
-			// Start fire-and-forget file fetching based on endpoint type.
-			$this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: (int)($rule['id'] ?? 0), objectId: $objectId);
-		}
+		// Start fire-and-forget file fetching based on endpoint type.
+		$this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: (int)($rule['id'] ?? 0), objectId: $objectId);
 
 		// Return data immediately with placeholder values.
 		if (isset($config['setPlaceholder']) === false || $config['setPlaceholder'] !== false) {
@@ -8948,72 +8579,6 @@ class SynchronizationService {
 	 *
 	 * @psalm-param array<string, mixed> $config
 	 */
-	/**
-	 * Queue one object's file fetching for the cron worker.
-	 *
-	 * The SOURCE IS NOT PASSED, only `$config['source']` — a job argument is
-	 * serialised into `oc_jobs`, and a source carries credentials (even as
-	 * placeholders) plus enough configuration to make the row large. The job
-	 * re-resolves it through the same {@see findSource()} the inline path uses,
-	 * so a rotated credential is picked up at run time rather than frozen at
-	 * queue time.
-	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
-	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
-	 *
-	 * @return void
-	 */
-	private function enqueueFileFetch(array $config, mixed $endpoint, string $objectId, int $ruleId): void {
-		try {
-			$this->containerInterface->get(\OCP\BackgroundJob\IJobList::class)->add(
-				\OCA\OpenConnector\Cron\FetchFilesJob::class,
-				[
-					'config' => $config,
-					'endpoint' => $endpoint,
-					'objectId' => $objectId,
-					'ruleId' => $ruleId,
-				]
-			);
-		} catch (\Throwable $exception) {
-			// Failing to QUEUE is not the same as a failed fetch and must be
-			// loud: the files will never arrive, and unlike the inline path
-			// there is no later error to notice.
-			$this->logger->error(
-				'[SynchronizationService] could not queue deferred file fetch for object '
-				. $objectId . '; its files will NOT be fetched: ' . $exception->getMessage(),
-				['exception' => $exception]
-			);
-		}//end try
-	}//end enqueueFileFetch()
-
-	/**
-	 * Public entry point for {@see \OCA\OpenConnector\Cron\FetchFilesJob}.
-	 *
-	 * Re-resolves the source and runs the SAME fetch path the inline mode uses,
-	 * so `sync` and `async` cannot drift into fetching differently — the only
-	 * intended difference is when the work happens, never what it does.
-	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
-	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
-	 *
-	 * @return void
-	 */
-	public function fetchFilesForObject(array $config, mixed $endpoint, string $objectId, int $ruleId = 0): void {
-		$source = $this->findSource(id: $config['source']);
-
-		$this->executeAsyncFileFetching(
-			source: $source,
-			config: $config,
-			endpoint: $endpoint,
-			ruleId: $ruleId,
-			objectId: $objectId
-		);
-	}//end fetchFilesForObject()
-
 	private function startAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void {
 		// Execute file fetching immediately but with error isolation.
 		// This provides "fire-and-forget" behavior without complex ReactPHP setup.
@@ -9146,35 +8711,11 @@ class SynchronizationService {
 				published: $published,
 				registerId: $registerId
 			);
-			$this->fileFetchSucceeded++;
 		} catch (Exception $e) {
-			// COUNTED, not just logged. Swallowing here is deliberate — one
-			// file's failure must not abort its siblings or the object — but it
-			// is why the rule could report "Successfully applied" having written
-			// ZERO files: nothing downstream could tell 40 files from none.
-			$this->fileFetchFailed++;
-
 			// Log error with detailed information but don't throw.
 			$this->logger->error("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: " . $e->getMessage(), ['exception' => $e]);
 		}
 	}//end fetchFileSafely()
-
-	/**
-	 * Reset and read the per-rule file tally.
-	 *
-	 * @return array{succeeded: int, failed: int} The tally since the last reset.
-	 */
-	private function takeFileFetchTally(): array {
-		$tally = [
-			'succeeded' => $this->fileFetchSucceeded,
-			'failed' => $this->fileFetchFailed,
-		];
-
-		$this->fileFetchSucceeded = 0;
-		$this->fileFetchFailed = 0;
-
-		return $tally;
-	}//end takeFileFetchTally()
 
 	/**
 	 * Generates placeholder values for file paths based on endpoint type.
@@ -9639,7 +9180,7 @@ class SynchronizationService {
 		// on every single record and then discard the result, because the
 		// `conditions !== []` test came after they were built rather than before.
 		$conditions = ($synchronization['conditions'] ?? []);
-		$conditionsWith = true;
+		$conditionsMet = true;
 
 		if ($conditions !== []) {
 			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
@@ -9651,11 +9192,11 @@ class SynchronizationService {
 
 			// Take note, JsonLogic::apply() returns a range of return types, so
 			// checking it with '=== false' or '!== true' does not work properly.
-			$conditionsWith = (JsonLogic::apply($conditions, $conditionsObject) !== false);
+			$conditionsMet = (JsonLogic::apply($conditions, $conditionsObject) !== false);
 		}
 
 		// Check if object adheres to conditions.
-		if ($conditionsWith === false) {
+		if ($conditionsMet === false) {
 			// Increment skipped count in log since object doesn't meet conditions.
 			$result['objects']['skipped']++;
 			if ($trace !== null) {
@@ -9928,7 +9469,7 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function getSlowestInternship(array $stages): array {
+	private function getSlowestStage(array $stages): array {
 		if (empty($stages) === true) {
 			return [
 				'name' => 'none',
@@ -9937,20 +9478,20 @@ class SynchronizationService {
 			];
 		}
 
-		$slowestInternship = '';
+		$slowestStage = '';
 		$slowestDuration = 0.0;
 		$slowestDescription = '';
 
 		foreach ($stages as $stageName => $stageData) {
 			if ($stageData['duration_ms'] > $slowestDuration) {
 				$slowestDuration = $stageData['duration_ms'];
-				$slowestInternship = $stageName;
+				$slowestStage = $stageName;
 				$slowestDescription = $stageData['description'];
 			}
 		}
 
 		return [
-			'name' => $slowestInternship,
+			'name' => $slowestStage,
 			'duration_ms' => $slowestDuration,
 			'description' => $slowestDescription,
 		];
@@ -10188,8 +9729,7 @@ class SynchronizationService {
 	 *
 	 * @param array $source The source value object.
 	 *
-	 * @return array{concurrency: int, byteBudget: int, maxFileSize: int} The clamped cap, the in-flight
-	 *               byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
+	 * @return array{concurrency: int, byteBudget: int} The clamped cap and the byte budget (0 = count-only).
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
@@ -10217,25 +9757,9 @@ class SynchronizationService {
 			$byteBudget = 0;
 		}
 
-		// PER-FILE CEILING, distinct from the in-flight budget above: that one
-		// bounds how many bytes are moving AT ONCE, this one refuses a single
-		// oversized file outright. Without it the only file-size control in the
-		// stack is the schema's `maxSize`, and that is enforced by
-		// FilePropertyHandler at SAVE time — after the whole file has already
-		// been downloaded to disk. A 5 GB attachment was fetched in full and
-		// only then rejected.
-		//
-		// 0 = no ceiling, which is the default: a cap that silently drops
-		// legitimate large documents is worse than no cap, so this is opt-in.
-		$maxFileSize = (int)($sourceConfiguration['maxFileSize'] ?? self::FETCH_MAX_FILE_SIZE_DEFAULT);
-		if ($maxFileSize < 0) {
-			$maxFileSize = 0;
-		}
-
 		return [
 			'concurrency' => $concurrency,
 			'byteBudget' => $byteBudget,
-			'maxFileSize' => $maxFileSize,
 		];
 	}//end resolveFetchConcurrency()
 
@@ -10458,16 +9982,7 @@ class SynchronizationService {
 				method: $prepared['config']['method'] ?? 'GET',
 				config: $prepared['config']['sourceConfiguration'] ?? [],
 				sink: $prepared['sinkPath'],
-				// Resolved from the source here rather than threaded in: `$limits`
-				// belongs to settleFileFetches() and is NOT in scope in this
-				// method. Reading it as `$limits['maxFileSize']` from here is
-				// silently null — no warning, no error, cap quietly disabled —
-				// which is precisely the failure this ceiling exists to prevent.
-				onHeaders: $this->buildInFlightSizeRecorder(
-					slot: $slot,
-					state: $state,
-					maxFileSize: $this->resolveFetchConcurrency(source: $source)['maxFileSize']
-				)
+				onHeaders: $this->buildInFlightSizeRecorder(slot: $slot, state: $state)
 			);
 		} catch (\Throwable $exception) {
 			// A SYNCHRONOUS throw before dispatch — an unresolvable source, a Twig
@@ -10508,18 +10023,10 @@ class SynchronizationService {
 						registerId: $item['registerId']
 					);
 
-					// COUNTED HERE TOO. The concurrent path splits fetch from
-					// save and never goes through fetchFileSafely(), so a tally
-					// kept only there reported "saved: 0, failed: 0" for a run
-					// that had just written 6 files — a counter that is always
-					// zero is worse than none, because it reads as a finding.
-					$this->fileFetchSucceeded++;
-
 					$this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
 				} catch (\Throwable $exception) {
 					// A failed SAVE is isolated exactly like a failed fetch: the
 					// remaining files and the object continue.
-					$this->fileFetchFailed++;
 					$this->logger->error(
 						'Failed to save file from endpoint ' . $item['endpoint'] . ': ' . $exception->getMessage(),
 						['exception' => $exception]
@@ -10539,11 +10046,6 @@ class SynchronizationService {
 					$message = $reason->getMessage();
 					$exception = $reason;
 				}
-
-				// The REJECTION leg — a download that never arrived. Counted
-				// alongside failed saves so "failed" means "this file is not
-				// there", whichever half of the pipeline lost it.
-				$this->fileFetchFailed++;
 
 				$this->logger->error(
 					'Failed to fetch file from endpoint ' . $item['endpoint'] . ': ' . $message,
@@ -10569,23 +10071,18 @@ class SynchronizationService {
 	 * still useful for admission control. A source that omits `Content-Length`
 	 * records nothing, and that request is then gated by count alone.
 	 *
-	 * This must never throw ACCIDENTALLY: an exception raised from `on_headers`
-	 * rejects the request, which would turn a missing header into a failed file.
-	 * The ONE deliberate exception is the per-file ceiling — there, rejecting
-	 * before the body arrives is the entire point, and it is the only place in
-	 * the stack where an oversized file can be refused without first
-	 * downloading it (the schema's `maxSize` is checked at save time).
+	 * This must never throw: an exception raised from `on_headers` rejects the
+	 * request, which would turn a missing header into a failed file.
 	 *
 	 * @param int $slot The per-file slot index in the run state.
 	 * @param array $state Shared run state, mutated in place.
-	 * @param int $maxFileSize Per-file ceiling in bytes; 0 disables it.
 	 *
 	 * @return callable The on_headers callback.
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
-	private function buildInFlightSizeRecorder(int $slot, array &$state, int $maxFileSize = 0): callable {
-		return function ($response) use ($slot, &$state, $maxFileSize): void {
+	private function buildInFlightSizeRecorder(int $slot, array &$state): callable {
+		return function ($response) use ($slot, &$state): void {
 			$declared = 0;
 			if (is_object($response) === true && method_exists($response, 'getHeaderLine') === true) {
 				$declared = (int)$response->getHeaderLine('Content-Length');
@@ -10593,27 +10090,6 @@ class SynchronizationService {
 
 			if ($declared <= 0) {
 				return;
-			}
-
-			// Refuse BEFORE the body downloads. A source that omits
-			// Content-Length cannot be gated here — it falls through to the
-			// schema's save-time `maxSize`, which is the existing behaviour.
-			if ($maxFileSize > 0 && $declared > $maxFileSize) {
-				// LOG BEFORE THROWING. Guzzle replaces anything raised here with
-				// its own "An error was encountered during the on_headers
-				// event", so the reason never reaches the operator otherwise —
-				// a deliberate size refusal would be indistinguishable from a
-				// broken source.
-				$this->logger->warning(
-					'[SynchronizationService] file refused before download: declares ' . $declared
-					. ' bytes, exceeding the per-file ceiling of ' . $maxFileSize
-					. ' bytes (source configuration.maxFileSize).'
-				);
-
-				throw new Exception(
-					'File declares ' . $declared . ' bytes, which exceeds the per-file ceiling of '
-					. $maxFileSize . ' bytes (source configuration.maxFileSize); refused before download.'
-				);
 			}
 
 			$state['inFlightSize'][$slot] = $declared;

@@ -44,7 +44,7 @@
 				:loading="schemasLoading"
 				:placeholder="t('openconnector', 'No validation')"
 				:clearable="true"
-				:inputId="schemaInputId" />
+				:input-id="schemaInputId" />
 		</div>
 
 		<!-- Run status -->
@@ -126,7 +126,7 @@
 				:loading="registersLoading"
 				:placeholder="t('openconnector', 'Select a register')"
 				:clearable="true"
-				:inputId="registerInputId">
+				:input-id="registerInputId">
 				<template #option="{ label, description }">
 					<div class="cn-mapping-result__register-option">
 						<DatabaseOutlineIcon :size="22" />
@@ -154,10 +154,7 @@
 				}}
 			</p>
 
-			<NcButton
-				variant="primary"
-				:disabled="!canSaveResult"
-				@click="saveResult">
+			<NcButton type="primary" :disabled="!canSaveResult" @click="saveResult">
 				<template #icon>
 					<NcLoadingIcon v-if="savingResult" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
@@ -169,15 +166,15 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
-import debounce from 'lodash/debounce.js'
 import CheckCircleIcon from 'vue-material-design-icons/CheckCircle.vue'
 import CloseCircleIcon from 'vue-material-design-icons/CloseCircle.vue'
 import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseOutlineIcon from 'vue-material-design-icons/DatabaseOutline.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import debounce from 'lodash/debounce.js'
 
 /**
  * Per-instance suffix for the input ids. Two panels can be on screen at
@@ -210,31 +207,26 @@ export default {
 			type: Object,
 			default: null,
 		},
-
 		/** Test input — a raw JSON string from a textarea, or a parsed object. */
 		inputObject: {
 			type: [String, Object],
 			default: '',
 		},
-
 		/** Re-run automatically (debounced) whenever the mapping or input changes. */
 		auto: {
 			type: Boolean,
 			default: true,
 		},
-
 		/** Debounce window for the automatic re-run, in milliseconds. */
 		debounceMs: {
 			type: Number,
 			default: 400,
 		},
-
 		/** Offer the "save result as object" block. */
 		allowSaveToRegister: {
 			type: Boolean,
 			default: true,
 		},
-
 		/** Offer the validation-schema picker. */
 		showSchemaPicker: {
 			type: Boolean,
@@ -275,28 +267,23 @@ export default {
 		 * NcSelect's own input. Instance-scoped via `uid` because this panel
 		 * can be mounted more than once on a page, and duplicate ids would
 		 * point every label at the first input (WCAG 1.3.1 / 4.1.2).
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		schemaInputId() {
 			return `cn-mapping-result-schema-${this.uid}`
 		},
-
 		/**
 		 * The same label-association id for the register picker.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		registerInputId() {
 			return `cn-mapping-result-register-${this.uid}`
 		},
-
 		hasResult() {
 			return this.result !== null
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		formattedResult() {
 			try {
@@ -305,7 +292,6 @@ export default {
 				return String(this.result)
 			}
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		emptyText() {
 			return this.auto
@@ -315,7 +301,6 @@ export default {
 					)
 				: this.t('openconnector', 'Run the test to see the result here.')
 		},
-
 		/**
 		 * Flatten `validationErrors` into table rows. The backend returns a
 		 * `{ field: [message, …] }` map, but a bare string or a single-message
@@ -352,7 +337,6 @@ export default {
 				}
 			})
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		showSaveBlock() {
 			return (
@@ -361,7 +345,6 @@ export default {
 				&& this.hasResult
 			)
 		},
-
 		/**
 		 * A register alone is not enough: `MappingsController::saveObject()`
 		 * defaults `schema` to `'mapping'`, so saving without an explicit
@@ -386,7 +369,6 @@ export default {
 				&& this.validatedSchemaId === this.selectedSchema?.id
 			)
 		},
-
 		/**
 		 * Reactivity key for the automatic re-run. Recomputing it is what
 		 * fires the debounced request, so it must cover every input the

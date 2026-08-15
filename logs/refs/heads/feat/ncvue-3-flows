@@ -1,0 +1,8 @@
+0000000000000000000000000000000000000000 75ba5469fb67154e5b9efd770654c74636a20737 Ruben van der Linde <ruben@conduction.nl> 1785781010 +0200	branch: Created from origin/development
+75ba5469fb67154e5b9efd770654c74636a20737 69e9f99373e0fb129d3757c27e38b1c5b48d22d9 Ruben van der Linde <ruben@conduction.nl> 1785781699 +0200	commit: chore(deps): nc-vue 3.0.0-vue3.2, and unbundle a Vue 2 @nextcloud/dialogs
+69e9f99373e0fb129d3757c27e38b1c5b48d22d9 fdb11fce4d1f429fb67926a6f70d0a4996325efd Ruben van der Linde <ruben@conduction.nl> 1785782591 +0200	commit: fix(ui): NcSelect bindings use the v9 modelValue contract
+fdb11fce4d1f429fb67926a6f70d0a4996325efd 2ff0f775682e5b9617cfbbca64254d132f97832a Ruben van der Linde <ruben@conduction.nl> 1785783298 +0200	commit: fix(build): refuse to alias a Vue 2 nextcloud-vue checkout into a Vue 3 app
+2ff0f775682e5b9617cfbbca64254d132f97832a 5c18c4e4f5f21d304230873f954fb42d37f9608a Ruben van der Linde <ruben@conduction.nl> 1785783808 +0200	commit: fix(ui): convert the remaining 39 v8-idiom listeners to the v9 contract
+5c18c4e4f5f21d304230873f954fb42d37f9608a e658c021280f9392085f28c485cf01103993325f Ruben van der Linde <ruben@conduction.nl> 1785783855 +0200	commit: ci: build the frontend bundle in CI
+e658c021280f9392085f28c485cf01103993325f 891161ecd8c90eebdd392a5a77b55700277eb542 Ruben van der Linde <ruben@conduction.nl> 1785786517 +0200	commit: build: drop the USE_LOCAL_LIB source alias
+891161ecd8c90eebdd392a5a77b55700277eb542 56b9238ce08f01817498cfe9ae29e5d73376906b Ruben van der Linde <ruben@conduction.nl> 1785786658 +0200	commit: ci: correct the build-gate input name to frontend-checks

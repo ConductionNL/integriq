@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 a893ac1099fbd333166158081c80c1f0348db378 Ruben van der Linde <rubenvdlinde@gmail.com> 1784010653 +0200	branch: Created from origin/development
+a893ac1099fbd333166158081c80c1f0348db378 0207fa35416b0f8a7182472c6430cbfcca1241d9 Ruben van der Linde <rubenvdlinde@gmail.com> 1784029234 +0200	commit: feat(sync): safety guardrails — fetch-completeness gate, deletion-ratio guard, test-run no-write, transient ad-hoc sources (#1000 #1001 #1002 #1008 #1009 #1016 #1017)
+0207fa35416b0f8a7182472c6430cbfcca1241d9 795c5dedb291fdbeb2789ca7544278f176705dff Ruben van der Linde <rubenvdlinde@gmail.com> 1784029250 +0200	commit: test(sync): regression suites for the sync safety guardrails
+795c5dedb291fdbeb2789ca7544278f176705dff f1bbfd8086bb4d78f5c7584ba5a7d693751df587 Ruben van der Linde <rubenvdlinde@gmail.com> 1784029250 +0200	commit: docs(sync): document the deletion safety guards
+f1bbfd8086bb4d78f5c7584ba5a7d693751df587 e984385cb24d20a4f65d3ee1b440590aa24b8049 Ruben van der Linde <rubenvdlinde@gmail.com> 1784029251 +0200	commit: docs(openspec): archive sync-safety-guardrails; sync delta into synchronization-engine spec
+e984385cb24d20a4f65d3ee1b440590aa24b8049 489035cde291e4ba23ff4de98216ff371ab7e82c Ruben van der Linde <rubenvdlinde@gmail.com> 1784029300 +0200	merge origin/development: Merge made by the 'recursive' strategy.

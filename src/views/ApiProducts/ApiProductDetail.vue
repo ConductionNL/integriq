@@ -22,7 +22,7 @@
 -->
 <template>
 	<div class="apiProductDetail">
-		<NcButton variant="tertiary" class="apiProductDetail__back" @click="goBack">
+		<NcButton type="tertiary" class="apiProductDetail__back" @click="goBack">
 			{{ t('openconnector', 'Back to API Products') }}
 		</NcButton>
 
@@ -54,7 +54,7 @@
 					<li v-for="id in productEndpoints" :key="id">
 						{{ endpointLabel(id) }}
 						<NcButton
-							variant="tertiary"
+							type="tertiary"
 							:aria-label="t('openconnector', 'Remove endpoint')"
 							@click="removeEndpoint(id)">
 							{{ t('openconnector', 'Remove') }}
@@ -72,8 +72,8 @@
 				<NcSelect
 					:id="'apiProductDetail-endpoint-select-' + uid"
 					v-model="selectedEndpoints"
-					:inputId="'apiProductDetail-endpoint-select-input-' + uid"
-					:inputLabel="t('openconnector', 'Add endpoints')"
+					:input-id="'apiProductDetail-endpoint-select-input-' + uid"
+					:input-label="t('openconnector', 'Add endpoints')"
 					:aria-label-combobox="t('openconnector', 'Add endpoints')"
 					:options="availableEndpointOptions"
 					:loading="loadingEndpoints"
@@ -83,7 +83,7 @@
 						t('openconnector', 'Pick one or more endpoints')
 					" />
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="selectedEndpoints.length === 0 || saving"
 					@click="addSelectedEndpoints">
 					{{ t('openconnector', 'Add') }}
@@ -138,7 +138,7 @@
 							<td>{{ tier.approverGroup || '—' }}</td>
 							<td>
 								<NcButton
-									variant="tertiary"
+									type="tertiary"
 									:aria-label="t('openconnector', 'Remove tier')"
 									@click="removeTier(name)">
 									{{ t('openconnector', 'Remove') }}
@@ -235,13 +235,13 @@
 						{{ sub.consumer }} — {{ sub.tier }} — {{ sub.status }}
 						<template v-if="sub.status === 'pending_approval'">
 							<NcButton
-								variant="primary"
+								type="primary"
 								:disabled="busy"
 								@click="approveSubscription(sub)">
 								{{ t('openconnector', 'Approve') }}
 							</NcButton>
 							<NcButton
-								variant="error"
+								type="error"
 								:disabled="busy"
 								@click="rejectSubscription(sub)">
 								{{ t('openconnector', 'Reject') }}
@@ -270,9 +270,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 
@@ -317,21 +317,18 @@ export default {
 		productId() {
 			return this.$route?.params?.id
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
 		productEndpoints() {
 			return Array.isArray(this.product?.endpoints)
 				? this.product.endpoints
 				: []
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
 		productTiers() {
 			return this.product?.tiers && typeof this.product.tiers === 'object'
 				? this.product.tiers
 				: {}
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		availableEndpointOptions() {
 			const attached = new Set(this.productEndpoints)
@@ -365,7 +362,6 @@ export default {
 		goBack() {
 			this.$router.push('/products')
 		},
-
 		/**
 		 * Resolve an attached endpoint reference to a human-readable label.
 		 *
@@ -380,7 +376,6 @@ export default {
 			)
 			return match ? match.name || match.endpoint || id : id
 		},
-
 		/**
 		 * Render an analytics ratio as a percentage.
 		 *
@@ -393,7 +388,6 @@ export default {
 			if (typeof value !== 'number') return '—'
 			return `${(value * 100).toFixed(2)}%`
 		},
-
 		/**
 		 * Render a latency percentile as whole milliseconds.
 		 *
@@ -406,7 +400,6 @@ export default {
 			if (typeof value !== 'number') return '—'
 			return `${Math.round(value)} ms`
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
 		async load() {
 			this.loading = true
@@ -423,7 +416,6 @@ export default {
 				this.loading = false
 			}
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		async loadEndpoints() {
 			this.loadingEndpoints = true
@@ -449,7 +441,6 @@ export default {
 				this.loadingEndpoints = false
 			}
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007 */
 		async loadAnalytics() {
 			this.loadingAnalytics = true
@@ -466,7 +457,6 @@ export default {
 				this.loadingAnalytics = false
 			}
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004 */
 		async loadSubscriptions() {
 			try {
@@ -490,7 +480,6 @@ export default {
 				this.subscriptions = []
 			}
 		},
-
 		/**
 		 * PATCH a single property of the api_product object in OpenRegister,
 		 * then reload so the view reflects what was actually stored. Failures
@@ -522,7 +511,6 @@ export default {
 				this.saving = false
 			}
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		async addSelectedEndpoints() {
 			const merged = Array.from(
@@ -535,7 +523,6 @@ export default {
 			this.selectedEndpoints = []
 			showSuccess(t('openconnector', 'Endpoint(s) added'))
 		},
-
 		/**
 		 * Detach one endpoint from the product by persisting the remaining ids.
 		 *
@@ -550,7 +537,6 @@ export default {
 			)
 			await this.saveProductField('endpoints', remaining)
 		},
-
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002 */
 		async addTier() {
 			if (!this.newTier.name) return
@@ -560,7 +546,6 @@ export default {
 					requestsPerWindow: this.newTier.requestsPerWindow || undefined,
 					windowSeconds: this.newTier.windowSeconds || undefined,
 				},
-
 				requiresApproval: !!this.newTier.requiresApproval,
 				approverGroup: this.newTier.approverGroup || undefined,
 			}
@@ -574,7 +559,6 @@ export default {
 			}
 			showSuccess(t('openconnector', 'Tier added'))
 		},
-
 		/**
 		 * Delete one subscription tier and persist the remaining tiers.
 		 *
@@ -588,7 +572,6 @@ export default {
 			delete tiers[name]
 			await this.saveProductField('tiers', tiers)
 		},
-
 		/**
 		 * Approve a pending subscription through the HITL approval gate and
 		 * refresh the list so its status changes.
@@ -618,7 +601,6 @@ export default {
 				this.busy = false
 			}
 		},
-
 		/**
 		 * Reject a pending subscription through the HITL approval gate,
 		 * recording a fixed comment, and refresh the list.

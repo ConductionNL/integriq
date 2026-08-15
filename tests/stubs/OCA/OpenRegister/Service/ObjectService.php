@@ -118,7 +118,10 @@ class ObjectService {
 		bool $_multitenancy = true,
 		bool $_render = true,
 		bool $_audit = true,
+<<<<<<< HEAD
+=======
 		?array $_extend = [],
+>>>>>>> origin/development
 	): ?ObjectEntity {
 		return new ObjectEntity();
 	}
@@ -196,6 +199,31 @@ class ObjectService {
 	}
 
 	/**
+<<<<<<< HEAD
+	 * Bulk-save objects (OpenRegister's `ultraFastBulkSave` path).
+	 *
+	 * Present here because openconnector calls it — `SynchronizationContractService`
+	 * flushes buffered contracts through it — and a stub that omits a method the
+	 * caller uses fails at the call with "Unknown named parameter", which reads
+	 * like a bug in the caller rather than a gap in the double.
+	 *
+	 * `_audit` in particular must be here. The bulk path always wrote audit rows
+	 * where the single path's `silent` skipped them, so it was added to let a
+	 * caller decline; a stub without it turns that correct call into an error.
+	 *
+	 * @param array $objects
+	 * @param string|null $register
+	 * @param string|null $schema
+	 * @param bool $_rbac
+	 * @param bool $_multitenancy
+	 * @param bool $validation
+	 * @param bool $events
+	 * @param bool $deduplicateIds
+	 * @param bool $enrich
+	 * @param bool $_audit
+	 *
+	 * @return array
+=======
 	 * Bulk-save objects in one round trip.
 	 *
 	 * Added because `perf(sync)` moved the sync engine off one `saveObject()`
@@ -220,6 +248,7 @@ class ObjectService {
 	 * @param bool $_audit Record audit-trail rows for the batch.
 	 *
 	 * @return array The saved objects.
+>>>>>>> origin/development
 	 */
 	public function saveObjects(
 		array $objects,
@@ -233,7 +262,11 @@ class ObjectService {
 		bool $enrich = true,
 		bool $_audit = true,
 	): array {
+<<<<<<< HEAD
+		return ['saved' => [], 'errors' => [], 'statistics' => []];
+=======
 		return [];
+>>>>>>> origin/development
 	}
 
 	/**

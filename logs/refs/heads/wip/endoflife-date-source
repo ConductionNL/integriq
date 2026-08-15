@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 67e6b07177d501f497fcf88cfa820eecb551bbda Ruben van der Linde <ruben@conduction.nl> 1784829970 +0200	branch: Created from origin/development
+67e6b07177d501f497fcf88cfa820eecb551bbda b9d81fb3fadfd15e8ed805f78a087c67a460cc45 Ruben van der Linde <ruben@conduction.nl> 1784835841 +0200	commit: feat(sources): endoflife-date-source preset — seeded source + eolProduct/eolCycle schemas + admin docs
+b9d81fb3fadfd15e8ed805f78a087c67a460cc45 e0e8f33f57156270c70fbc63dbd77c5d7090377e Ruben van der Linde <ruben@conduction.nl> 1784835852 +0200	commit: test(stubs): OpenRegister ObjectEntity stub declares updated/created fields
+e0e8f33f57156270c70fbc63dbd77c5d7090377e 803ed9e5c6495bf8e349d2888974fc9e482d28c5 Ruben van der Linde <ruben@conduction.nl> 1784835869 +0200	commit: test(endoflife-date-source): unit coverage for mapping, sync regression, fragment fixtures, and Catalog visibility
+803ed9e5c6495bf8e349d2888974fc9e482d28c5 8364fb0afb6e852fe43580de9e689cb41a9a40e4 Ruben van der Linde <ruben@conduction.nl> 1784835882 +0200	commit: test(endoflife-date-source): live smoke test against the real public API
+8364fb0afb6e852fe43580de9e689cb41a9a40e4 293399c42cc992c1c032046289afdab556ef7e3f Ruben van der Linde <ruben@conduction.nl> 1784835913 +0200	commit: chore(openspec): archive endoflife-date-source

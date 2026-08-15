@@ -19,7 +19,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		labelId="notificaties-abonnement-form"
+		label-id="notificaties-abonnement-form"
 		data-testid="notificaties-abonnement-form-modal"
 		@close="$emit('close')">
 		<div class="abonnementForm">
@@ -32,9 +32,9 @@
 			</h2>
 
 			<NcTextField
-				v-model="model.name"
 				:label="t('openconnector', 'Name') + ' *'"
-				:helperText="errors.name"
+				v-model="model.name"
+				:helper-text="errors.name"
 				:error="!!errors.name" />
 
 			<div class="abonnementForm__field">
@@ -42,17 +42,17 @@
 					{{ t('openconnector', 'Source') }} *
 				</label>
 				<NcSelect
-					inputId="notificaties-abonnement-source"
-					:inputLabel="t('openconnector', 'Source')"
+					input-id="notificaties-abonnement-source"
+					:input-label="t('openconnector', 'Source')"
 					:aria-label-combobox="t('openconnector', 'Source')"
-					:modelValue="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:clearable="false"
 					:placeholder="
 						t('openconnector', 'Select the Notificaties API source')
 					"
-					@update:modelValue="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="abonnementForm__helper">
 					{{
 						t(
@@ -68,10 +68,10 @@
 					{{ t('openconnector', 'Kanalen') }} *
 				</label>
 				<NcSelect
-					inputId="notificaties-abonnement-kanalen"
-					:inputLabel="t('openconnector', 'Kanalen')"
+					input-id="notificaties-abonnement-kanalen"
+					:input-label="t('openconnector', 'Kanalen')"
 					:aria-label-combobox="t('openconnector', 'Kanalen')"
-					:modelValue="kanaalNames"
+					:model-value="kanaalNames"
 					:options="kanaalNames"
 					:taggable="true"
 					:multiple="true"
@@ -82,7 +82,7 @@
 							'Type a kanaal name and press enter (e.g. zaken)',
 						)
 					"
-					@update:modelValue="onKanalenChange">
+					@update:model-value="onKanalenChange">
 					<template #no-options>
 						{{ t('openconnector', 'Type to add a kanaal name') }}
 					</template>
@@ -95,9 +95,9 @@
 			</div>
 
 			<NcTextField
-				v-model="model.authHeaderName"
 				:label="t('openconnector', 'Auth header name')"
-				:helperText="
+				v-model="model.authHeaderName"
+				:helper-text="
 					t(
 						'openconnector',
 						'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.',
@@ -105,9 +105,9 @@
 				" />
 
 			<NcTextField
-				v-model="model.authScheme"
 				:label="t('openconnector', 'Auth scheme prefix')"
-				:helperText="
+				v-model="model.authScheme"
+				:helper-text="
 					t(
 						'openconnector',
 						'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.',
@@ -115,7 +115,7 @@
 				" />
 
 			<div class="abonnementForm__actions">
-				<NcButton variant="primary" :disabled="busy" @click="save">
+				<NcButton type="primary" :disabled="busy" @click="save">
 					{{ t('openconnector', 'Save') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="$emit('close')">
@@ -128,10 +128,10 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
+import { NcModal, NcButton, NcTextField, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'NotificatiesAbonnementForm',
@@ -148,7 +148,6 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		/** The abonnement being edited, or null when creating. */
 		abonnement: {
 			type: Object,
@@ -176,7 +175,6 @@ export default {
 				&& (this.abonnement.id || this.abonnement.uuid)
 			)
 		},
-
 		/**
 		 * The `NcSelect` model for the Source. Falls back to a synthetic
 		 * `{id, label: id}` when the stored sourceId is not in the fetched
@@ -228,7 +226,6 @@ export default {
 		t,
 		/**
 		 * A fresh, empty form model.
-		 *
 		 * @return {object}
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
 		 */
@@ -260,7 +257,6 @@ export default {
 					sourceId: this.abonnement.sourceId || '',
 					authHeaderName:
 						this.abonnement.authHeaderName || 'Authorization',
-
 					authScheme: this.abonnement.authScheme || '',
 				}
 				const kanalen = Array.isArray(this.abonnement.kanalen)
@@ -314,7 +310,6 @@ export default {
 
 		/**
 		 * Handle a Source pick.
-		 *
 		 * @param {object} option The picked NcSelect option.
 		 * @return {void}
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
@@ -325,7 +320,6 @@ export default {
 
 		/**
 		 * Handle a kanalen taggable-multi-select change.
-		 *
 		 * @param {Array<string>} value The updated list of kanaal names.
 		 * @return {void}
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008

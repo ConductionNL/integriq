@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 c34bfd336543393b7fca5ebe4d0bb13714706181 Ruben van der Linde <ruben@conduction.nl> 1784818325 +0200	branch: Created from origin/development
+c34bfd336543393b7fca5ebe4d0bb13714706181 7a51ca6488ef83c386832c5360199c5038b0f9c4 Ruben van der Linde <ruben@conduction.nl> 1784820442 +0200	commit: feat(sources): finish the 'Test connection' UI — wire the orphaned modal end-to-end
+7a51ca6488ef83c386832c5360199c5038b0f9c4 f5af2cac1517a4ca950607ad683c8733dc025de1 Ruben van der Linde <ruben@conduction.nl> 1784820460 +0200	commit (amend): feat(sources): finish the 'Test connection' UI — wire the orphaned modal end-to-end
+f5af2cac1517a4ca950607ad683c8733dc025de1 26e0d8270313b6da6871c43f454ebe7f3b8d08b2 Ruben van der Linde <ruben@conduction.nl> 1785389970 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into feat/finish-source-test-ui
+26e0d8270313b6da6871c43f454ebe7f3b8d08b2 b2de0082dc296f46a0e8b96c3cc780e485a807e3 Ruben van der Linde <ruben@conduction.nl> 1785390291 +0200	commit: test(source-test): use mitt .on/.off in the testSourceHandler spec (ADR-066)
+b2de0082dc296f46a0e8b96c3cc780e485a807e3 84434e8ac6af04a69ae0fe961f8e2f9b16d0d8b3 Ruben van der Linde <ruben@conduction.nl> 1785391659 +0200	commit: i18n(source-test): add TestSourceModal strings to en.json (l10n coverage)

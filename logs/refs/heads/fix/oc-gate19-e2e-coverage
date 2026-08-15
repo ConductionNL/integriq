@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 ab3a064d30ef6e912f2643ac9978abfa98a2489e Ruben van der Linde <ruben@conduction.nl> 1786449090 +0200	branch: Created from HEAD
+ab3a064d30ef6e912f2643ac9978abfa98a2489e 706e4582045badf8b058b22caa20ad49671094d9 Ruben van der Linde <ruben@conduction.nl> 1786451735 +0200	commit: test(gate-19): 11 real browser tests for the dead-letter and sync-editor UI
+706e4582045badf8b058b22caa20ad49671094d9 88f12da55452067a261e3a23de278ca273115baf Ruben van der Linde <ruben@conduction.nl> 1786451866 +0200	commit: ci(axe): enable gate-33 against a measured zero, and record the runner defect that caps it at one route
+88f12da55452067a261e3a23de278ca273115baf 96bdf0b8e4154f760f694e11901c41833d6e76c5 Ruben van der Linde <ruben@conduction.nl> 1786452979 +0200	commit: docs(ci): correct a coverage-line prediction that CI disproved
+96bdf0b8e4154f760f694e11901c41833d6e76c5 e0733ebccd0ac324ae4650ebe329f2797a53e49d Ruben van der Linde <ruben@conduction.nl> 1786467917 +0200	commit: fix(sources): honour a source's own headers instead of silently dropping them

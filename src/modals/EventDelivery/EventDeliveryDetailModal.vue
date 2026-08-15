@@ -20,7 +20,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		labelId="event-delivery-detail"
+		label-id="event-delivery-detail"
 		data-testid="event-delivery-detail-modal"
 		@close="$emit('close')">
 		<div class="deliveryDetail">
@@ -117,7 +117,7 @@
 									)
 						}}
 					</span>
-					<NcButton variant="primary" :disabled="busy" @click="commit">
+					<NcButton type="primary" :disabled="busy" @click="commit">
 						{{ t('openconnector', 'Confirm') }}
 					</NcButton>
 					<NcButton :disabled="busy" @click="confirming = null">
@@ -126,7 +126,7 @@
 				</template>
 				<template v-else>
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!canAct || busy"
 						@click="confirming = 'replay'">
 						{{ t('openconnector', 'Replay') }}
@@ -144,10 +144,10 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal } from '@nextcloud/vue'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
+import { NcModal, NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'EventDeliveryDetailModal',
@@ -159,7 +159,6 @@ export default {
 			type: Boolean,
 			default: false,
 		},
-
 		message: {
 			type: Object,
 			default: null,
@@ -178,17 +177,14 @@ export default {
 	computed: {
 		/**
 		 * The attempt audit trail for the timeline (REQ-DLR-002).
-		 *
 		 * @return {Array}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		attempts() {
 			return Array.isArray(this.message?.attempts) ? this.message.attempts : []
 		},
-
 		/**
 		 * Whether replay/discard verbs are permitted on this message.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
@@ -201,27 +197,22 @@ export default {
 		 * backend (`EventsController::deadLetterShow`); defaults to
 		 * 'webhook' when the backend field is absent (e.g. an older cached
 		 * row) mirroring the server's own REQ-008 default.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 		 */
 		actionKind() {
 			return this.message?.actionKind || 'webhook'
 		},
-
 		/**
 		 * Status-badge CSS modifier class.
-		 *
 		 * @return {string}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		badgeClass() {
 			return `deliveryDetail__badge--${this.message?.status || 'unknown'}`
 		},
-
 		/**
 		 * Pretty-printed CloudEvent payload for the viewer.
-		 *
 		 * @return {string}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
@@ -238,7 +229,6 @@ export default {
 		t,
 		/**
 		 * Commit the confirmed per-message verb (replay/discard).
-		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		async commit() {

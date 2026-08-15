@@ -1,0 +1,2 @@
+96c06934e80a7d4a95ff96927c7af094174bfb6d 96c06934e80a7d4a95ff96927c7af094174bfb6d Ruben van der Linde <ruben@conduction.nl> 1785694843 +0200	reset: moving to HEAD
+96c06934e80a7d4a95ff96927c7af094174bfb6d c3aa9a0e11443d1d735b931cac79e1bfb1e2a0fb Ruben van der Linde <ruben@conduction.nl> 1785699159 +0200	commit: chore(quality): make psalm + phpstan real in check:strict

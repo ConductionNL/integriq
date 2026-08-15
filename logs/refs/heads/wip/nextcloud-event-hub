@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 e95edcf722aed19bfd97306c617b464980d99055 Ruben van der Linde <rubenvdlinde@gmail.com> 1784028420 +0200	branch: Created from origin/development
+e95edcf722aed19bfd97306c617b464980d99055 ab60bdfe7b74ec10c2d446c50d10282a01ebd205 Ruben van der Linde <rubenvdlinde@gmail.com> 1784105092 +0200	commit: feat(events): Nextcloud event hub — file/calendar/Tables/Forms triggers + action-dispatch + jsonlogic
+ab60bdfe7b74ec10c2d446c50d10282a01ebd205 9eb2d333be6b5820bbcdecbbc7087e71aac9631a Ruben van der Linde <rubenvdlinde@gmail.com> 1784105265 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into wip/nextcloud-event-hub
+9eb2d333be6b5820bbcdecbbc7087e71aac9631a fd630019a943b8b9a2f850dc13a67de56a7b68ff Ruben van der Linde <rubenvdlinde@gmail.com> 1784113642 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into wip/nextcloud-event-hub

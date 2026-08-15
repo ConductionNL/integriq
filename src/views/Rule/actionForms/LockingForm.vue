@@ -13,16 +13,16 @@
 		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Lock action')"
-			:modelValue="selectedAction"
+			:model-value="selectedAction"
 			:options="actionOptions"
 			:clearable="false"
-			@update:modelValue="onActionPick" />
+			@update:model-value="onActionPick" />
 		<NcTextField
 			:label="t('openconnector', 'Duration (seconds, default 3600)')"
 			type="number"
-			:modelValue="value.duration != null ? String(value.duration) : ''"
+			:model-value="value.duration != null ? String(value.duration) : ''"
 			placeholder="3600"
-			@update:modelValue="onDurationInput" />
+			@update:model-value="onDurationInput" />
 		<span class="action-form__helper">
 			{{
 				t(
@@ -55,7 +55,6 @@ export default {
 				label: this.t('openconnector', row.label),
 			}))
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
 			return (
@@ -64,13 +63,11 @@ export default {
 			)
 		},
 	},
-
 	methods: {
 		patch: patchMethod(),
 		/**
 		 * Store the picked lock action; clearing the select stores an empty
 		 * string.
-		 *
 		 * @param {{id: string, label: string}|null} option The selected entry
 		 *   from `actionOptions` (`lock` or `unlock`).
 		 * @spec openspec/specs/rule-editor-ui/spec.md
@@ -78,12 +75,10 @@ export default {
 		onActionPick(option) {
 			this.patch('action', option?.id || '')
 		},
-
 		/**
 		 * Coerce the lock-duration field: an empty input removes the key
 		 * entirely (falling back to the backend default of 3600 seconds),
 		 * non-numeric input is ignored, anything else is stored as a number.
-		 *
 		 * @param {string|null} raw The raw text emitted by the number NcTextField.
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */

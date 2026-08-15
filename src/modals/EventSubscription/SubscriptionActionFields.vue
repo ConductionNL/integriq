@@ -69,24 +69,24 @@
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:modelValue="!!formData[field.key]"
+				:model-value="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:model-value="(value) => updateField(field.key, value)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField
 				v-else
 				:label="field.label + (field.required ? ' *' : '')"
-				:modelValue="
+				:model-value="
 					formData[field.key] != null ? String(formData[field.key]) : ''
 				"
-				:helperText="errors[field.key] || field.description"
+				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				:disabled="field.readOnly"
 				:placeholder="field.description"
-				@update:modelValue="(value) => updateField(field.key, value)" />
+				@update:model-value="(value) => updateField(field.key, value)" />
 		</div>
 
 		<!-- Delivery action block (REQ-008). -->
@@ -98,13 +98,13 @@
 				{{ t('openconnector', 'Delivery action') }}
 			</label>
 			<NcSelect
-				inputId="cn-subscription-action-kind"
-				:inputLabel="t('openconnector', 'Delivery action')"
+				input-id="cn-subscription-action-kind"
+				:input-label="t('openconnector', 'Delivery action')"
 				:aria-label-combobox="t('openconnector', 'Delivery action')"
-				:modelValue="selectedKindOption"
+				:model-value="selectedKindOption"
 				:options="kindOptions"
 				:clearable="false"
-				@update:modelValue="onKindPick" />
+				@update:model-value="onKindPick" />
 			<span class="cn-subscription-action-fields__helper">
 				{{
 					t(
@@ -121,15 +121,15 @@
 					{{ t('openconnector', 'Synchronization') }}
 				</label>
 				<NcSelect
-					inputId="cn-subscription-action-target"
-					:inputLabel="t('openconnector', 'Synchronization')"
+					input-id="cn-subscription-action-target"
+					:input-label="t('openconnector', 'Synchronization')"
 					:aria-label-combobox="t('openconnector', 'Synchronization')"
-					:modelValue="selectedSynchronization"
+					:model-value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select a synchronization')"
-					@update:modelValue="onSynchronizationPick" />
+					@update:model-value="onSynchronizationPick" />
 			</template>
 
 			<template v-else-if="actionKind === 'job'">
@@ -139,15 +139,15 @@
 					{{ t('openconnector', 'Job') }}
 				</label>
 				<NcSelect
-					inputId="cn-subscription-action-target"
-					:inputLabel="t('openconnector', 'Job')"
+					input-id="cn-subscription-action-target"
+					:input-label="t('openconnector', 'Job')"
 					:aria-label-combobox="t('openconnector', 'Job')"
-					:modelValue="selectedJob"
+					:model-value="selectedJob"
 					:options="jobOptions"
 					:loading="jobsLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select a job')"
-					@update:modelValue="onJobPick" />
+					@update:model-value="onJobPick" />
 			</template>
 		</div>
 
@@ -155,9 +155,9 @@
 		<div
 			class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
 			<NcCheckboxRadioSwitch
-				:modelValue="retryPolicyEnabled"
+				:model-value="retryPolicyEnabled"
 				type="switch"
-				@update:modelValue="onToggleRetryPolicy">
+				@update:model-value="onToggleRetryPolicy">
 				{{ t('openconnector', 'Custom retry policy') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-subscription-action-fields__helper">
@@ -173,30 +173,30 @@
 				<div class="cn-subscription-action-fields__retry-grid">
 					<NcTextField
 						:label="t('openconnector', 'Base seconds')"
-						:modelValue="retryPolicyValue('baseSeconds')"
+						:model-value="retryPolicyValue('baseSeconds')"
 						type="number"
-						@update:modelValue="
+						@update:model-value="
 							(value) => onRetryPolicyField('baseSeconds', value)
 						" />
 					<NcTextField
 						:label="t('openconnector', 'Factor')"
-						:modelValue="retryPolicyValue('factor')"
+						:model-value="retryPolicyValue('factor')"
 						type="number"
-						@update:modelValue="
+						@update:model-value="
 							(value) => onRetryPolicyField('factor', value)
 						" />
 					<NcTextField
 						:label="t('openconnector', 'Cap seconds')"
-						:modelValue="retryPolicyValue('capSeconds')"
+						:model-value="retryPolicyValue('capSeconds')"
 						type="number"
-						@update:modelValue="
+						@update:model-value="
 							(value) => onRetryPolicyField('capSeconds', value)
 						" />
 					<NcTextField
 						:label="t('openconnector', 'Max retries')"
-						:modelValue="retryPolicyValue('maxRetries')"
+						:model-value="retryPolicyValue('maxRetries')"
 						type="number"
-						@update:modelValue="
+						@update:model-value="
 							(value) => onRetryPolicyField('maxRetries', value)
 						" />
 				</div>
@@ -207,9 +207,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import { translate as t } from '@nextcloud/l10n'
+import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 
 const KIND_OPTIONS = [
 	{ id: 'webhook', label: 'Webhook' },
@@ -252,7 +252,6 @@ export default {
 	computed: {
 		/**
 		 * `types[]` rendered as one-per-line text for the textarea.
-		 *
 		 * @return {string}
 		 * @spec exclude presentation-only array<->textarea projection
 		 */
@@ -264,7 +263,6 @@ export default {
 		/**
 		 * The subscription's effective action kind, defaulting to 'webhook'
 		 * when `action` is absent (REQ-008 back-compat default).
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
@@ -274,7 +272,6 @@ export default {
 
 		/**
 		 * The three dispatch kinds REQ-008 fixes: webhook, synchronization, job.
-		 *
 		 * @return {Array<{id: string, label: string}>}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
@@ -287,7 +284,6 @@ export default {
 		 * option (webhook) rather than null, so the select is never rendered
 		 * unset for a subscription whose `action.kind` is absent — which is the
 		 * back-compat default REQ-008 assigns.
-		 *
 		 * @return {object}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
@@ -305,7 +301,6 @@ export default {
 		 * picker cannot currently list still shows its binding instead of
 		 * appearing unset — saving from an unset picker would silently drop the
 		 * dispatch target.
-		 *
 		 * @return {object|null}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
@@ -323,7 +318,6 @@ export default {
 		/**
 		 * The `NcSelect` model for a `job`-kind target, with the same
 		 * synthetic-fallback rule as {@link selectedSynchronization}.
-		 *
 		 * @return {object|null}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 		 */
@@ -340,7 +334,6 @@ export default {
 
 		/**
 		 * Whether the subscription declares a `retryPolicy` block at all.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
 		 */
@@ -397,7 +390,6 @@ export default {
 
 		/**
 		 * Parse the one-per-line `types` textarea back into an array.
-		 *
 		 * @param {string} raw The raw textarea value.
 		 * @return {void}
 		 * @spec exclude presentation-only textarea<->array projection
@@ -414,7 +406,6 @@ export default {
 		 * Write the picked action kind, seeding a minimal `action` block.
 		 * Switching to 'webhook' clears synchronizationId/jobId (they have
 		 * no effect for that kind).
-		 *
 		 * @param {object} option The picked kind option.
 		 * @return {void}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -434,7 +425,6 @@ export default {
 
 		/**
 		 * Write the picked synchronization target.
-		 *
 		 * @param {object} option The picked synchronization option.
 		 * @return {void}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -448,7 +438,6 @@ export default {
 
 		/**
 		 * Write the picked job target.
-		 *
 		 * @param {object} option The picked job option.
 		 * @return {void}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -463,7 +452,6 @@ export default {
 		/**
 		 * Toggle the custom retry-policy block. Turning it off clears the
 		 * field entirely (server falls back to the class defaults).
-		 *
 		 * @param {boolean} value The new switch state.
 		 * @return {void}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
@@ -474,7 +462,6 @@ export default {
 
 		/**
 		 * Current string value of one retryPolicy key for its NcTextField.
-		 *
 		 * @param {string} key The retryPolicy key.
 		 * @return {string}
 		 * @spec exclude presentation-only value projection
@@ -487,7 +474,6 @@ export default {
 		/**
 		 * Write one retryPolicy key; blank clears that key (falls back to
 		 * the server-side default) without disabling the whole block.
-		 *
 		 * @param {string} key The retryPolicy key.
 		 * @param {string} raw The raw text input value.
 		 * @return {void}
@@ -510,7 +496,6 @@ export default {
 
 		/**
 		 * Load synchronization options for the action target picker.
-		 *
 		 * @return {Promise<void>}
 		 * @spec exclude data-fetch helper — presentation only
 		 */
@@ -549,7 +534,6 @@ export default {
 
 		/**
 		 * Load job options for the action target picker.
-		 *
 		 * @return {Promise<void>}
 		 * @spec exclude data-fetch helper — presentation only
 		 */

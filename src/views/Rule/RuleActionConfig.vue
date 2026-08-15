@@ -34,13 +34,13 @@
 				{{ t('openconnector', 'Action type') }}
 			</label>
 			<NcSelect
-				:inputId="'rule-action-type-' + uid"
+				:input-id="'rule-action-type-' + uid"
 				:aria-label-combobox="t('openconnector', 'Action type')"
-				:modelValue="selectedTypeOption"
+				:model-value="selectedTypeOption"
 				:options="typeOptions"
 				:clearable="false"
 				:placeholder="t('openconnector', 'Pick an action type')"
-				@update:modelValue="onTypePick" />
+				@update:model-value="onTypePick" />
 			<p class="rule-action-config__hint">
 				{{
 					t(
@@ -87,7 +87,7 @@
 				:id="'rule-action-raw-' + uid"
 				class="rule-action-config__textarea rule-action-config__textarea--code"
 				:value="rawDraft"
-				placeholder="{ }"
+				:placeholder="'{ }'"
 				spellcheck="false"
 				rows="8"
 				@input="onRawInput($event.target.value)" />
@@ -109,23 +109,23 @@
 
 <script>
 import { NcSelect } from '@nextcloud/vue'
-import ApprovalForm from './actionForms/ApprovalForm.vue'
+import SynchronizationForm from './actionForms/SynchronizationForm.vue'
+import ErrorForm from './actionForms/ErrorForm.vue'
+import MappingForm from './actionForms/MappingForm.vue'
+import JavascriptForm from './actionForms/JavascriptForm.vue'
 import AuthenticationForm from './actionForms/AuthenticationForm.vue'
 import DownloadForm from './actionForms/DownloadForm.vue'
-import ErrorForm from './actionForms/ErrorForm.vue'
-import ExtendExternalInputForm from './actionForms/ExtendExternalInputForm.vue'
-import ExtendInputForm from './actionForms/ExtendInputForm.vue'
+import UploadForm from './actionForms/UploadForm.vue'
+import LockingForm from './actionForms/LockingForm.vue'
 import FetchFileForm from './actionForms/FetchFileForm.vue'
+import WriteFileForm from './actionForms/WriteFileForm.vue'
 import FilepartsCreateForm from './actionForms/FilepartsCreateForm.vue'
 import FilepartUploadForm from './actionForms/FilepartUploadForm.vue'
-import JavascriptForm from './actionForms/JavascriptForm.vue'
-import LockingForm from './actionForms/LockingForm.vue'
-import MappingForm from './actionForms/MappingForm.vue'
 import SaveObjectForm from './actionForms/SaveObjectForm.vue'
-import SynchronizationForm from './actionForms/SynchronizationForm.vue'
-import UploadForm from './actionForms/UploadForm.vue'
+import ExtendInputForm from './actionForms/ExtendInputForm.vue'
+import ExtendExternalInputForm from './actionForms/ExtendExternalInputForm.vue'
 import WebhookSignatureForm from './actionForms/WebhookSignatureForm.vue'
-import WriteFileForm from './actionForms/WriteFileForm.vue'
+import ApprovalForm from './actionForms/ApprovalForm.vue'
 import { ACTION_TYPES } from './ruleDraft.js'
 
 /**
@@ -237,7 +237,6 @@ export default {
 		actionType() {
 			return this.configuration?.type || this.type || ''
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		typeOptions() {
 			return ACTION_TYPES.map((entry) => ({
@@ -245,7 +244,6 @@ export default {
 				label: this.t('openconnector', entry.label),
 			}))
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTypeOption() {
 			return (
@@ -253,18 +251,15 @@ export default {
 				|| null
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formComponent() {
 			return ACTION_FORM_MAP[this.actionType] || null
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		slotValue() {
 			const raw = this.configuration?.[this.actionType]
 			return raw && typeof raw === 'object' ? raw : {}
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawDraft() {
 			const draft = this.rawDrafts[this.actionType]
@@ -278,7 +273,6 @@ export default {
 				return String(raw)
 			}
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawEditorLabel() {
 			return this.t('openconnector', 'Raw configuration for {type}', {

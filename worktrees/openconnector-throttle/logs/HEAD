@@ -1,0 +1,7 @@
+4c6de02436907cc63871a00cdcfab4f9f58e05ac 4c6de02436907cc63871a00cdcfab4f9f58e05ac Ruben van der Linde <ruben@conduction.nl> 1786702922 +0200	reset: moving to HEAD
+4c6de02436907cc63871a00cdcfab4f9f58e05ac d6a1a0ad7648ff377741eda1ff5648b8b67d64bf Ruben van der Linde <ruben@conduction.nl> 1786703066 +0200	commit: fix(security): brute-force throttle the EUDI wallet credential endpoints
+d6a1a0ad7648ff377741eda1ff5648b8b67d64bf c73cf5ef17aefe1d436c28ec2c0843eb1006fd33 Ruben van der Linde <ruben@conduction.nl> 1786719416 +0200	merge origin/development: Fast-forward
+c73cf5ef17aefe1d436c28ec2c0843eb1006fd33 cc2362ba068bb041ab39ada9e1367d4b093db69c Ruben van der Linde <ruben@conduction.nl> 1786719714 +0200	commit: fix(security): rate-limit the remaining 22 public endpoints
+cc2362ba068bb041ab39ada9e1367d4b093db69c a81aed923e97f1cb789599ee145e156b97f87f05 Ruben van der Linde <ruben@conduction.nl> 1786720840 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+a81aed923e97f1cb789599ee145e156b97f87f05 a81aed923e97f1cb789599ee145e156b97f87f05 Ruben van der Linde <ruben@conduction.nl> 1786720905 +0200	checkout: moving from fix/eudi-token-brute-force to fix/correct-login-throttle-comment
+a81aed923e97f1cb789599ee145e156b97f87f05 a6795b5aaa781938beb715ea9f7b3902d977990f Ruben van der Linde <ruben@conduction.nl> 1786720905 +0200	commit: docs: correct a comment that claimed login had no brute-force protection

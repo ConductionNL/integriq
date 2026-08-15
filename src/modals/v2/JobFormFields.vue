@@ -60,8 +60,10 @@
 			     its gap. That lets one widget switch serve grouped and ungrouped
 			     runs alike instead of duplicating it per branch. -->
 			<div
-				class="cn-job-form-fields__run"
-				:class="[{ 'cn-job-form-fields__run--grid': run.group }]">
+				:class="[
+					'cn-job-form-fields__run',
+					{ 'cn-job-form-fields__run--grid': run.group },
+				]">
 				<div
 					v-for="field in run.fields"
 					:key="field.key"
@@ -73,32 +75,32 @@
 							|| field.widget === 'url'
 						"
 						:label="field.label + (field.required ? ' *' : '')"
-						:modelValue="
+						:model-value="
 							formData[field.key] != null
 								? String(formData[field.key])
 								: ''
 						"
-						:helperText="errors[field.key] || field.description"
+						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						:type="textFieldType(field)"
 						:disabled="field.readOnly"
-						@update:modelValue="
+						@update:model-value="
 							(value) => updateField(field.key, value)
 						" />
 
 					<NcTextField
 						v-else-if="field.widget === 'number'"
 						:label="field.label + (field.required ? ' *' : '')"
-						:modelValue="
+						:model-value="
 							formData[field.key] != null
 								? String(formData[field.key])
 								: ''
 						"
-						:helperText="errors[field.key] || field.description"
+						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						type="number"
 						:disabled="field.readOnly"
-						@update:modelValue="
+						@update:model-value="
 							(value) => updateField(field.key, coerceNumber(value))
 						" />
 
@@ -124,10 +126,10 @@
 									: 'date'
 							"
 							:label="field.label"
-							:hideLabel="true"
-							:modelValue="dateValueFor(field)"
+							:hide-label="true"
+							:model-value="dateValueFor(field)"
 							:disabled="field.readOnly"
-							@update:modelValue="
+							@update:model-value="
 								(date) => onDateFieldInput(field, date)
 							" />
 						<CnFieldHelper
@@ -148,13 +150,13 @@
 							{{ field.label }}{{ field.required ? ' *' : '' }}
 						</label>
 						<NcSelect
-							:inputId="'cn-job-form-' + field.key"
+							:input-id="'cn-job-form-' + field.key"
 							:aria-label-combobox="field.label"
-							:modelValue="selectedEnumOption(field)"
+							:model-value="selectedEnumOption(field)"
 							:options="enumOptions(field)"
 							:clearable="!field.required"
 							:disabled="field.readOnly"
-							@update:modelValue="
+							@update:model-value="
 								(option) =>
 									updateField(field.key, option ? option.id : null)
 							" />
@@ -187,10 +189,10 @@
 
 					<NcCheckboxRadioSwitch
 						v-else-if="field.widget === 'checkbox'"
-						:modelValue="!!formData[field.key]"
+						:model-value="!!formData[field.key]"
 						:disabled="field.readOnly"
 						type="switch"
-						@update:modelValue="
+						@update:model-value="
 							(value) => updateField(field.key, value)
 						">
 						{{ field.label }}{{ field.required ? ' *' : '' }}
@@ -221,15 +223,15 @@
 					<NcTextField
 						v-else
 						:label="field.label + (field.required ? ' *' : '')"
-						:modelValue="
+						:model-value="
 							formData[field.key] != null
 								? String(formData[field.key])
 								: ''
 						"
-						:helperText="errors[field.key] || field.description"
+						:helper-text="errors[field.key] || field.description"
 						:error="!!errors[field.key]"
 						:disabled="field.readOnly"
-						@update:modelValue="
+						@update:model-value="
 							(value) => updateField(field.key, value)
 						" />
 				</div>
@@ -252,14 +254,14 @@
 					{{ t('openconnector', 'Synchronization') }} *
 				</label>
 				<NcSelect
-					inputId="cn-job-form-synchronization"
+					input-id="cn-job-form-synchronization"
 					:aria-label-combobox="t('openconnector', 'Synchronization')"
-					:modelValue="selectedSynchronization"
+					:model-value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select a synchronization')"
-					@update:modelValue="onSynchronizationPick" />
+					@update:model-value="onSynchronizationPick" />
 				<CnFieldHelper
 					:text="
 						t(
@@ -273,6 +275,12 @@
 </template>
 
 <script>
+import {
+	NcCheckboxRadioSwitch,
+	NcDateTimePickerNative,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 // Imported rather than leaning on the `t` global: main.js only puts it on
@@ -281,18 +289,12 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcCheckboxRadioSwitch,
-	NcDateTimePickerNative,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
-import {
+	SYNCHRONIZATION_ACTION_CLASS,
 	coerceNumber,
 	dateValueFromStored,
 	formatDateValue,
 	groupFieldRuns,
 	readSynchronizationId,
-	SYNCHRONIZATION_ACTION_CLASS,
 	writeSynchronizationId,
 } from './jobDraft.js'
 
@@ -420,10 +422,7 @@ export default {
 	watch: {
 		needsSynchronizationPicker: {
 			immediate: true,
-			/**
-			 * @param value
-			 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
-			 */
+			/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 			handler(value) {
 				if (value && this.synchronizationOptions.length === 0) {
 					this.fetchSynchronizations()

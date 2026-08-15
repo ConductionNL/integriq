@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 9bcd956d107b634f1ae07fd2554a94e49386ca1c Ruben van der Linde <ruben@conduction.nl> 1786528965 +0200	branch: Created from origin/development
+9bcd956d107b634f1ae07fd2554a94e49386ca1c 35b00153b997d3a3cf4d596715cb6bcf468fed26 Ruben van der Linde <ruben@conduction.nl> 1786529012 +0200	commit: chore: quote the stylelint globs, add .editorconfig

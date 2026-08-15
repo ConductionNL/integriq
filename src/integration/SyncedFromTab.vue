@@ -62,11 +62,11 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import SyncIcon from 'vue-material-design-icons/Sync.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'SyncedFromTab',

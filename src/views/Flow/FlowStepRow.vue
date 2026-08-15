@@ -31,43 +31,43 @@
 
 			<div class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-type-' + uid"
-					:inputLabel="t('openconnector', 'Step type')"
-					:modelValue="selectedType"
+					:input-id="'flow-step-type-' + uid"
+					:input-label="t('openconnector', 'Step type')"
+					:model-value="selectedType"
 					:options="typeOptions"
 					:clearable="false"
-					@update:modelValue="onTypePick" />
+					@update:model-value="onTypePick" />
 			</div>
 
 			<div v-if="showConfigRefPicker" class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-config-ref-' + uid"
-					:inputLabel="configRefLabel"
-					:modelValue="selectedConfigRef"
+					:input-id="'flow-step-config-ref-' + uid"
+					:input-label="configRefLabel"
+					:model-value="selectedConfigRef"
 					:options="configRefOptions"
 					:loading="configRefLoading"
 					:clearable="false"
 					:placeholder="
 						t('openconnector', 'Pick a {type}', { type: configRefLabel })
 					"
-					@update:modelValue="onConfigRefPick" />
+					@update:model-value="onConfigRefPick" />
 			</div>
 
 			<div class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-on-error-' + uid"
-					:inputLabel="t('openconnector', 'On error')"
-					:modelValue="selectedOnError"
+					:input-id="'flow-step-on-error-' + uid"
+					:input-label="t('openconnector', 'On error')"
+					:model-value="selectedOnError"
 					:options="onErrorOptions"
 					:clearable="false"
-					@update:modelValue="onOnErrorPick" />
+					@update:model-value="onOnErrorPick" />
 			</div>
 
 			<div class="flow-step-row__actions">
 				<NcButton
 					:disabled="isFirst"
 					:aria-label="t('openconnector', 'Move step up')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('move-up')">
 					<template #icon>
 						<ArrowUp :size="18" />
@@ -76,7 +76,7 @@
 				<NcButton
 					:disabled="isLast"
 					:aria-label="t('openconnector', 'Move step down')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('move-down')">
 					<template #icon>
 						<ArrowDown :size="18" />
@@ -84,7 +84,7 @@
 				</NcButton>
 				<NcButton
 					:aria-label="t('openconnector', 'Remove step')"
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('remove')">
 					<template #icon>
 						<Delete :size="18" />
@@ -97,43 +97,43 @@
 		<div v-if="step.type === 'call'" class="flow-step-row__config">
 			<NcTextField
 				:label="t('openconnector', 'Endpoint path')"
-				:modelValue="step.config.endpoint || ''"
-				@update:modelValue="(value) => updateConfig('endpoint', value)" />
+				:model-value="step.config.endpoint || ''"
+				@update:model-value="(value) => updateConfig('endpoint', value)" />
 			<NcTextField
 				:label="t('openconnector', 'HTTP method')"
-				:modelValue="step.config.method || 'GET'"
-				@update:modelValue="(value) => updateConfig('method', value)" />
+				:model-value="step.config.method || 'GET'"
+				@update:model-value="(value) => updateConfig('method', value)" />
 		</div>
 
 		<!-- event: type/source/subject -->
 		<div v-else-if="step.type === 'event'" class="flow-step-row__config">
 			<NcTextField
 				:label="t('openconnector', 'CloudEvent type') + '*'"
-				:modelValue="step.config.type || ''"
-				@update:modelValue="(value) => updateConfig('type', value)" />
+				:model-value="step.config.type || ''"
+				@update:model-value="(value) => updateConfig('type', value)" />
 			<NcTextField
 				:label="t('openconnector', 'CloudEvent source') + '*'"
-				:modelValue="step.config.source || ''"
-				@update:modelValue="(value) => updateConfig('source', value)" />
+				:model-value="step.config.source || ''"
+				@update:model-value="(value) => updateConfig('source', value)" />
 			<NcTextField
 				:label="t('openconnector', 'CloudEvent subject')"
-				:modelValue="step.config.subject || ''"
-				@update:modelValue="(value) => updateConfig('subject', value)" />
+				:model-value="step.config.subject || ''"
+				@update:model-value="(value) => updateConfig('subject', value)" />
 		</div>
 
 		<!-- approval: approverGroup/onReject/onTimeout/ttlSeconds -->
 		<div v-else-if="step.type === 'approval'" class="flow-step-row__config">
 			<NcTextField
 				:label="t('openconnector', 'Approver group') + '*'"
-				:modelValue="step.config.approverGroup || ''"
-				@update:modelValue="
+				:model-value="step.config.approverGroup || ''"
+				@update:model-value="
 					(value) => updateConfig('approverGroup', value)
 				" />
 			<div class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-on-reject-' + uid"
-					:inputLabel="t('openconnector', 'On reject')"
-					:modelValue="
+					:input-id="'flow-step-on-reject-' + uid"
+					:input-label="t('openconnector', 'On reject')"
+					:model-value="
 						resolveEnumOption(
 							ON_REJECT_OPTIONS,
 							step.config.onReject || 'error',
@@ -141,15 +141,15 @@
 					"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@update:modelValue="
+					@update:model-value="
 						(option) => updateConfig('onReject', option?.id || 'error')
 					" />
 			</div>
 			<div class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-on-timeout-' + uid"
-					:inputLabel="t('openconnector', 'On timeout')"
-					:modelValue="
+					:input-id="'flow-step-on-timeout-' + uid"
+					:input-label="t('openconnector', 'On timeout')"
+					:model-value="
 						resolveEnumOption(
 							ON_REJECT_OPTIONS,
 							step.config.onTimeout || 'error',
@@ -157,15 +157,15 @@
 					"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@update:modelValue="
+					@update:model-value="
 						(option) => updateConfig('onTimeout', option?.id || 'error')
 					" />
 			</div>
 			<NcTextField
 				:label="t('openconnector', 'TTL (seconds)')"
 				type="number"
-				:modelValue="String(step.config.ttlSeconds || 86400)"
-				@update:modelValue="
+				:model-value="String(step.config.ttlSeconds || 86400)"
+				@update:model-value="
 					(value) =>
 						updateConfig('ttlSeconds', parseInt(value, 10) || 86400)
 				" />
@@ -191,19 +191,19 @@
 					@update="(value) => updateBranchCondition(branchIndex, value)" />
 				<div class="flow-step-row__field">
 					<NcSelect
-						:inputId="
+						:input-id="
 							'flow-step-branch-target-' + uid + '-' + branchIndex
 						"
-						:inputLabel="t('openconnector', 'Then go to step')"
-						:modelValue="resolveOrderOption(branch.nextStepOrder)"
+						:input-label="t('openconnector', 'Then go to step')"
+						:model-value="resolveOrderOption(branch.nextStepOrder)"
 						:options="orderOptions"
 						:clearable="false"
-						@update:modelValue="
+						@update:model-value="
 							(option) => updateBranchTarget(branchIndex, option?.id)
 						" />
 				</div>
 				<NcButton
-					variant="tertiary"
+					type="tertiary"
 					:aria-label="t('openconnector', 'Remove branch')"
 					@click="removeBranch(branchIndex)">
 					<template #icon>
@@ -211,7 +211,7 @@
 					</template>
 				</NcButton>
 			</div>
-			<NcButton variant="secondary" @click="addBranch">
+			<NcButton type="secondary" @click="addBranch">
 				<template #icon>
 					<Plus :size="18" />
 				</template>
@@ -219,12 +219,12 @@
 			</NcButton>
 			<div class="flow-step-row__field">
 				<NcSelect
-					:inputId="'flow-step-default-target-' + uid"
-					:inputLabel="t('openconnector', 'Otherwise go to step')"
-					:modelValue="resolveOrderOption(step.defaultNextStepOrder)"
+					:input-id="'flow-step-default-target-' + uid"
+					:input-label="t('openconnector', 'Otherwise go to step')"
+					:model-value="resolveOrderOption(step.defaultNextStepOrder)"
 					:options="orderOptions"
 					:clearable="true"
-					@update:modelValue="
+					@update:model-value="
 						(option) =>
 							$emit('update', {
 								...step,
@@ -252,8 +252,8 @@
 
 <script>
 import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
-import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
+import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
@@ -309,7 +309,6 @@ export default {
 				{ id: 'approval', label: t('openconnector', 'Approval') },
 				{ id: 'branch', label: t('openconnector', 'Branch') },
 			],
-
 			onErrorOptions: [
 				{ id: 'stop', label: t('openconnector', 'Stop') },
 				{ id: 'continue', label: t('openconnector', 'Continue') },
@@ -321,7 +320,6 @@ export default {
 	computed: {
 		/**
 		 * The `NcSelect` model for the step's `type`.
-		 *
 		 * @return {object} The selected type option.
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -331,10 +329,8 @@ export default {
 				|| this.typeOptions[1]
 			)
 		},
-
 		/**
 		 * The `NcSelect` model for the step's `onError` policy.
-		 *
 		 * @return {object} The selected onError option.
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-per-step-onerror-policy-governs-failure-handling-req-006
 		 */
@@ -344,11 +340,9 @@ export default {
 				|| this.onErrorOptions[0]
 			)
 		},
-
 		/**
 		 * Whether this step type references a configured entity at all —
 		 * `branch`, `approval` and `condition` steps have no `configRef`.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -359,13 +353,11 @@ export default {
 				|| this.step.type === 'synchronization'
 			)
 		},
-
 		/**
 		 * The picker's `inputLabel`, named for the entity the step actually
 		 * references — REQ-009 requires an explicit label per WCAG 1.3.1/4.1.2,
 		 * and a generic "Config" would not tell a screen reader which entity
 		 * kind is being chosen.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -375,12 +367,10 @@ export default {
 				return t('openconnector', 'Synchronization')
 			return t('openconnector', 'Mapping')
 		},
-
 		/**
 		 * The config-ref options, scoped to the step's own entity type —
 		 * REQ-009's scenario requires a `mapping` step's picker to offer
 		 * Mappings only, not Sources or Synchronizations.
-		 *
 		 * @return {Array<{id: string, label: string}>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -390,12 +380,10 @@ export default {
 				return this.synchronizationOptions
 			return this.mappingOptions
 		},
-
 		/**
 		 * The `NcSelect` model for `configRef`; null when the stored id is not
 		 * in the scoped option set, so a stale reference shows as unset rather
 		 * than silently displaying another entity.
-		 *
 		 * @return {object|null}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -405,11 +393,9 @@ export default {
 				|| null
 			)
 		},
-
 		/**
 		 * Branch-target options: every other step's `order`, excluding this
 		 * step's own so a branch cannot be pointed at itself.
-		 *
 		 * @return {Array<{id: number, label: string}>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
@@ -418,10 +404,8 @@ export default {
 				.filter((order) => order !== this.step.order)
 				.map((order) => ({ id: order, label: '#' + order }))
 		},
-
 		/**
 		 * The step's `condition` as a JsonLogic group node for the editor.
-		 *
 		 * @return {object}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-step-condition-skips-a-step-when-it-evaluates-false-req-003
 		 */
@@ -435,7 +419,6 @@ export default {
 		 * Changes the step's type, clearing `configRef`/`config` because they
 		 * are type-specific — carrying a Mapping id onto a `call` step would
 		 * leave a reference the runner cannot resolve.
-		 *
 		 * @param {object} option The chosen type option.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -448,10 +431,8 @@ export default {
 			}
 			this.$emit('update', next)
 		},
-
 		/**
 		 * Sets the referenced entity, or clears it when the picker is emptied.
-		 *
 		 * @param {object|null} option The chosen entity option.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -459,12 +440,10 @@ export default {
 		onConfigRefPick(option) {
 			this.$emit('update', { ...this.step, configRef: option?.id || '' })
 		},
-
 		/**
 		 * Sets the step's failure policy. A cleared select is ignored rather
 		 * than written as empty — every step must carry an `onError`, since it
 		 * governs what the run does when the step throws.
-		 *
 		 * @param {object} option The chosen onError option.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-per-step-onerror-policy-governs-failure-handling-req-006
@@ -473,10 +452,8 @@ export default {
 			if (!option?.id) return
 			this.$emit('update', { ...this.step, onError: option.id })
 		},
-
 		/**
 		 * Merges one key into the step's type-specific `config` block.
-		 *
 		 * @param {string} key   The config key.
 		 * @param {*}      value The new value.
 		 * @return {void}
@@ -488,11 +465,9 @@ export default {
 				config: { ...(this.step.config || {}), [key]: value },
 			})
 		},
-
 		/**
 		 * Resolves a stored enum id to its option, falling back to the first so
 		 * an `NcSelect` never renders with a null model.
-		 *
 		 * @param {Array}  options The option set.
 		 * @param {string} id      The stored id.
 		 * @return {object}
@@ -501,13 +476,11 @@ export default {
 		resolveEnumOption(options, id) {
 			return options.find((opt) => opt.id === id) || options[0]
 		},
-
 		/**
 		 * Resolves a branch target to its option. A target that no longer
 		 * matches any step is shown as "(missing)" rather than blank — the
 		 * dangling reference is exactly what the page's save-time validation
 		 * blocks, so the row must make it visible rather than hide it.
-		 *
 		 * @param {number|null} order The stored target order.
 		 * @return {object|null}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
@@ -521,10 +494,8 @@ export default {
 				}
 			)
 		},
-
 		/**
 		 * Appends a branch with an empty condition and no target yet.
-		 *
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
 		 */
@@ -535,10 +506,8 @@ export default {
 			]
 			this.$emit('update', { ...this.step, branches })
 		},
-
 		/**
 		 * Removes one branch from the step.
-		 *
 		 * @param {number} index The branch's array index.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
@@ -547,12 +516,10 @@ export default {
 			const branches = (this.step.branches || []).filter((_, i) => i !== index)
 			this.$emit('update', { ...this.step, branches })
 		},
-
 		/**
 		 * Points one branch at a step `order`. An undefined pick is stored as
 		 * explicit null, so "no target" round-trips as a value rather than as
 		 * an absent key.
-		 *
 		 * @param {number}      index The branch's array index.
 		 * @param {number|null} order The target step's order.
 		 * @return {void}
@@ -564,10 +531,8 @@ export default {
 			)
 			this.$emit('update', { ...this.step, branches })
 		},
-
 		/**
 		 * Replaces one branch's JsonLogic condition.
-		 *
 		 * @param {number} index     The branch's array index.
 		 * @param {object} condition The new JsonLogic node.
 		 * @return {void}
@@ -579,10 +544,8 @@ export default {
 			)
 			this.$emit('update', { ...this.step, branches })
 		},
-
 		/**
 		 * One branch's condition as a group node for the condition editor.
-		 *
 		 * @param {object} branch The branch entry.
 		 * @return {object}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-branch-step-selects-the-next-step-via-jsonlogic-req-004
@@ -590,10 +553,8 @@ export default {
 		branchConditionGroup(branch) {
 			return this.normaliseConditions(branch.condition)
 		},
-
 		/**
 		 * Stores the step's own condition.
-		 *
 		 * @param {object} value The edited JsonLogic group.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-step-condition-skips-a-step-when-it-evaluates-false-req-003
@@ -606,7 +567,6 @@ export default {
 				value && Array.isArray(value.and) && value.and.length === 0
 			this.$emit('update', { ...this.step, condition: isEmpty ? null : value })
 		},
-
 		/**
 		 * Coerce a persisted condition (null/undefined/object) into a
 		 * JsonLogic group node for RuleConditionGroup — mirrors

@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 451d4b1c13706f69e5131d45fc28de53b4161d9b Ruben van der Linde <rubenvdlinde@gmail.com> 1784219543 +0200	branch: Created from origin/development
+451d4b1c13706f69e5131d45fc28de53b4161d9b bde5b1c077d6629bd6b708472e5028eda971c277 Ruben van der Linde <rubenvdlinde@gmail.com> 1784219925 +0200	commit: fix(spec): repoint broken @spec anchors to canonical specs
+bde5b1c077d6629bd6b708472e5028eda971c277 6555c54c36e069c9d39182111d922d962bd48161 Ruben van der Linde <rubenvdlinde@gmail.com> 1784220099 +0200	commit: docs(openspec): spec-anchor-repair change (proposal/design/tasks/residual)

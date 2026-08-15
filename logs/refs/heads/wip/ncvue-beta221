@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 9d159d723b693f55ecca26d1522a8dfa71d262dc Ruben van der Linde <ruben@conduction.nl> 1785049777 +0200	branch: Created from origin/development
+9d159d723b693f55ecca26d1522a8dfa71d262dc e11ac15972901c9e2e65cbf021059d244475eb12 Ruben van der Linde <ruben@conduction.nl> 1785050289 +0200	commit: chore(deps): @conduction/nextcloud-vue ^1.0.0-beta.221 — activate schema-label translation

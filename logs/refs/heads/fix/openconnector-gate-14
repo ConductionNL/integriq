@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 f981044bf20e681904dff2bd83361b16cb2e1206 Ruben van der Linde <ruben@conduction.nl> 1786083624 +0200	branch: Created from HEAD
+f981044bf20e681904dff2bd83361b16cb2e1206 1d4d82001914cc5a29324536681d9988fa5ac449 Ruben van der Linde <ruben@conduction.nl> 1786089921 +0200	commit: refactor(notificaties): read the callback credential where the denial is
+1d4d82001914cc5a29324536681d9988fa5ac449 42c55e5639a2017e0315ed48202fb9fef1be4910 Ruben van der Linde <ruben@conduction.nl> 1786091443 +0200	commit: test(notificaties): the inbound callback's API key had no test at all
+42c55e5639a2017e0315ed48202fb9fef1be4910 d9dcedc83e6b2fc54c0258a3c9f418f2e3aac472 Ruben van der Linde <ruben@conduction.nl> 1786093387 +0200	commit: test(stubs): ValidationException was missing, so two tests errored on stable31 only

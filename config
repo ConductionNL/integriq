@@ -1,0 +1,317 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = ../../../openconnector
+	hooksPath = .githooks
+[branch "main"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/main
+[branch "development"]
+	vscode-merge-base = origin/development
+	remote = origin
+	merge = refs/heads/development
+[branch "beta"]
+	vscode-merge-base = origin/beta
+[user]
+	email = ruben@conduction.nl
+	name = Ruben van der Linde
+[http]
+	postBuffer = 524288000
+	version = HTTP/1.1
+[branch "feat/ai-companion-opt-in"]
+	vscode-merge-base = origin/development
+[branch "chore/ncvue-beta190"]
+	vscode-merge-base = origin/feat/ai-companion-opt-in
+	remote = origin
+	merge = refs/heads/chore/ncvue-beta190
+[remote "origin"]
+	url = https://github.com/ConductionNL/openconnector.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "feat/finish-source-test-ui"]
+	remote = origin
+	merge = refs/heads/feat/finish-source-test-ui
+[branch "wip/or-integration-provider-spec"]
+	remote = origin
+	merge = refs/heads/wip/or-integration-provider-spec
+[branch "wip/endoflife-date-source-spec-2026-07-23"]
+	remote = origin
+	merge = refs/heads/wip/endoflife-date-source-spec-2026-07-23
+[branch "wip/endoflife-date-source"]
+	remote = origin
+	merge = refs/heads/wip/endoflife-date-source
+[branch "wip/dashboard-http-datasource-2026-07-23"]
+	remote = origin
+	merge = refs/heads/wip/dashboard-http-datasource-2026-07-23
+[branch "wip/build-oc-datasource-2026-07-23"]
+	remote = origin
+	merge = refs/heads/wip/build-oc-datasource-2026-07-23
+[branch "wip/sync-engine-scalar-and-spec-fix"]
+	remote = origin
+	merge = refs/heads/wip/sync-engine-scalar-and-spec-fix
+[branch "chore/ncvue-beta220-glyph"]
+	remote = origin
+	merge = refs/heads/development
+[branch "spec/native-data-gathering-provider"]
+	remote = origin
+	merge = refs/heads/spec/native-data-gathering-provider
+[branch "wip/schema-titles-en"]
+	remote = origin
+	merge = refs/heads/wip/schema-titles-en
+[branch "wip/ncvue-beta221"]
+	remote = origin
+	merge = refs/heads/wip/ncvue-beta221
+[branch "wip/l10n-coverage"]
+	remote = origin
+	merge = refs/heads/wip/l10n-coverage
+[branch "feature/openconnector-flow-migration"]
+	remote = origin
+	merge = refs/heads/feature/openconnector-flow-migration
+[branch "spec/openconnector-flow-nodes"]
+	remote = origin
+	merge = refs/heads/spec/openconnector-flow-nodes
+[branch "feat/oc-flow-phase2-leaves"]
+	remote = origin
+	merge = refs/heads/feature/openconnector-flow-migration
+[branch "fix/eventaction-is-a-noop"]
+	remote = origin
+	merge = refs/heads/fix/eventaction-is-a-noop
+[branch "fix/command-plane-endpoints"]
+	remote = origin
+	merge = refs/heads/fix/command-plane-endpoints
+[branch "perf/source-test-lightweight"]
+	remote = origin
+	merge = refs/heads/perf/source-test-lightweight
+[branch "wip/l10n-oc-fix"]
+	remote = origin
+	merge = refs/heads/wip/l10n-oc-fix
+[branch "docs/adr-065-req-009-canvas"]
+	remote = origin
+	merge = refs/heads/docs/adr-065-req-009-canvas
+[branch "docs/appside-injection-walkthrough"]
+	remote = origin
+	merge = refs/heads/docs/appside-injection-walkthrough
+[branch "wip/market-gap-specs"]
+	remote = origin
+	merge = refs/heads/wip/market-gap-specs
+[branch "wip/wave3-specs"]
+	remote = origin
+	merge = refs/heads/wip/wave3-specs
+[branch "wip/l10n-parity-optin"]
+	remote = origin
+	merge = refs/heads/wip/l10n-parity-optin
+[branch "fix/lint-dot-notation"]
+	remote = origin
+	merge = refs/heads/fix/lint-dot-notation
+[branch "fix/event-message-subscription-uuid-fk"]
+	remote = origin
+	merge = refs/heads/fix/event-message-subscription-uuid-fk
+[branch "feat/adr-077-semantic-icon-vocabulary"]
+	vscode-merge-base = origin/chore/ncvue-beta190
+	remote = origin
+	merge = refs/heads/feat/adr-077-semantic-icon-vocabulary
+[branch "adr077-oc-clean"]
+	remote = origin
+	merge = refs/heads/adr077-oc-clean
+[branch "fix/apexcharts-mit-pin"]
+	remote = origin
+	merge = refs/heads/fix/apexcharts-mit-pin
+[branch "adr077-all-icons"]
+	remote = origin
+	merge = refs/heads/adr077-all-icons
+[branch "chore/ncvue-vue3-16"]
+	remote = origin
+	merge = refs/heads/chore/ncvue-vue3-16
+[branch "chore/measure-strict-gate-2026-08-02"]
+	remote = origin
+	merge = refs/heads/chore/measure-strict-gate-2026-08-02
+[branch "fix/check-strict-can-fail"]
+	remote = origin
+	merge = refs/heads/fix/check-strict-can-fail
+[branch "fix/user-login-401-test"]
+	remote = origin
+	merge = refs/heads/fix/user-login-401-test
+[branch "ci/enable-shared-e2e"]
+	remote = origin
+	merge = refs/heads/ci/enable-shared-e2e
+[branch "fix/phpmd-ignore-namespaces"]
+	remote = origin
+	merge = refs/heads/fix/phpmd-ignore-namespaces
+[branch "feat/adr-079-080-store-and-settings"]
+	remote = origin
+	merge = refs/heads/feat/adr-079-080-store-and-settings
+[branch "fix/ci-newman-prometheus-syncedfrom"]
+	remote = origin
+	merge = refs/heads/fix/ci-newman-prometheus-syncedfrom
+[branch "fix/refresh-security-advisories-2026-08-03"]
+	remote = origin
+	merge = refs/heads/fix/refresh-security-advisories-2026-08-03
+[branch "ci/enable-phpunit-gate"]
+	remote = origin
+	merge = refs/heads/ci/enable-phpunit-gate
+[branch "feat/ncvue-3-flows"]
+	remote = origin
+	merge = refs/heads/feat/ncvue-3-flows
+	vscode-merge-base = origin/development
+[branch "feat/twig-to-openregister"]
+	remote = origin
+	merge = refs/heads/feat/twig-to-openregister
+	vscode-merge-base = origin/development
+[branch "hgm/measure55"]
+	remote = origin
+	merge = refs/heads/development
+[branch "fix/ncbutton-native-type-v9"]
+	remote = origin
+	merge = refs/heads/fix/ncbutton-native-type-v9
+[branch "chore/ncvue-2.2.0-vue3.1"]
+	remote = origin
+	merge = refs/heads/chore/ncvue-2.2.0-vue3.1
+[branch "chore/ncvue-2.2.0-vue3.3"]
+	remote = origin
+	merge = refs/heads/chore/ncvue-2.2.0-vue3.3
+[branch "lic-openconnector"]
+	remote = origin
+	merge = refs/heads/chore/eupl-license-normalisation-2026-08-05
+[branch "tmp/ratchet-merge"]
+	remote = origin
+	merge = refs/heads/ci/enable-coverage-ratchet
+[branch "fix/apphost-autoload-prelude"]
+	remote = origin
+	merge = refs/heads/fix/apphost-autoload-prelude
+[branch "ci/fix-coverage-check-concurrency"]
+	remote = origin
+	merge = refs/heads/ci/fix-coverage-check-concurrency
+[branch "unpin-work-openconnector"]
+	remote = origin
+	merge = refs/heads/chore/hydra-gates-ref-v1.4.0
+[branch "chore/remove-dead-tests-workflow-override"]
+	remote = origin
+	merge = refs/heads/development
+[branch "chore/unpin-hydra-gates"]
+	remote = origin
+	merge = refs/heads/development
+[branch "chore/dep-security-sweep"]
+	remote = origin
+	merge = refs/heads/chore/dep-security-sweep
+[branch "fix/phpcs-cve-2026-67434"]
+	remote = origin
+	merge = refs/heads/development
+[branch "chore/axe-core-devdep"]
+	remote = origin
+	merge = refs/heads/chore/axe-core-devdep
+[branch "fix/analytics-auth-posture"]
+	remote = origin
+	merge = refs/heads/fix/analytics-auth-posture
+[branch "fix/openconnector-gate-14"]
+	vscode-merge-base = origin/development
+	remote = origin
+	merge = refs/heads/fix/openconnector-gate-14
+[branch "fix/openconnector-gate-debt"]
+	remote = origin
+	merge = refs/heads/fix/openconnector-gate-debt
+	vscode-merge-base = origin/development
+[branch "fix/oc-debt-round2"]
+	remote = origin
+	merge = refs/heads/fix/oc-debt-round2
+	vscode-merge-base = origin/development
+[branch "test/oc-e2e-unblind-storage-migrated"]
+	remote = origin
+	merge = refs/heads/test/oc-e2e-unblind-storage-migrated
+[branch "fix/oc-debt-round3"]
+	remote = origin
+	merge = refs/heads/fix/oc-debt-round3
+	vscode-merge-base = origin/development
+[branch "fix/oc-spec-coverage"]
+	remote = origin
+	merge = refs/heads/development
+	vscode-merge-base = origin/development
+[branch "fix/countrows-error-must-not-drop-table"]
+	remote = origin
+	merge = refs/heads/development
+[branch "fix/spec-anchor-safexmlparser"]
+	remote = origin
+	merge = refs/heads/development
+[branch "fix/gate-5-57-and-nc-max-version"]
+	remote = origin
+	merge = refs/heads/fix/gate-5-57-and-nc-max-version
+[branch "test/gate-25-contract-coverage"]
+	remote = origin
+	merge = refs/heads/test/gate-25-contract-coverage
+[branch "docs/gate-16-spec-coverage"]
+	remote = origin
+	merge = refs/heads/docs/gate-16-spec-coverage
+[branch "fix/gate-16-20-54-sweep"]
+	remote = origin
+	merge = refs/heads/fix/gate-16-20-54-sweep
+[branch "feature/fixes-and-changes"]
+	remote = origin
+	merge = refs/heads/feature/fixes-and-changes
+[branch "chore/pin-ncvue-2.2.0-vue3.7"]
+	remote = origin
+	merge = refs/heads/chore/pin-ncvue-2.2.0-vue3.7
+[branch "chore/pin-ncvue-2.2.0-vue3.9"]
+	remote = origin
+	merge = refs/heads/chore/pin-ncvue-2.2.0-vue3.9
+[branch "docs/english-vocabulary-spec"]
+	remote = origin
+	merge = refs/heads/docs/english-vocabulary-spec
+[branch "fix/oc-gate19-e2e-coverage"]
+	vscode-merge-base = origin/development
+	remote = origin
+	merge = refs/heads/fix/oc-gate19-e2e-coverage
+[branch "feat/english-vocabulary"]
+	remote = origin
+	merge = refs/heads/feat/english-vocabulary
+[branch "fix/oc-gate19-round2"]
+	remote = origin
+	merge = refs/heads/fix/oc-gate19-round2
+[branch "fix/oc-idor-1217"]
+	remote = origin
+	merge = refs/heads/fix/oc-idor-1217
+[branch "fix/drop-deprecated-property-twitter"]
+	remote = origin
+	merge = refs/heads/development
+[branch "fix/phpcsutils-cve-2026-65954"]
+	remote = origin
+	merge = refs/heads/fix/phpcsutils-cve-2026-65954
+[branch "fix/oc-1180-storage-migrated-fresh-install"]
+	remote = origin
+	merge = refs/heads/fix/oc-1180-storage-migrated-fresh-install
+[branch "fix/oc-1183-database-platform"]
+	remote = origin
+	merge = refs/heads/fix/oc-1183-database-platform
+[branch "fix/oc-1190-sync-rejects-login-page"]
+	remote = origin
+	merge = refs/heads/fix/oc-1190-sync-rejects-login-page
+[branch "chore/editorconfig-and-stylelint-glob"]
+	remote = origin
+	merge = refs/heads/chore/editorconfig-and-stylelint-glob
+[branch "fix/brokered-source-never-dispatches-async"]
+	remote = origin
+	merge = refs/heads/fix/brokered-source-never-dispatches-async
+[branch "fix/broken-sync-tests"]
+	remote = origin
+	merge = refs/heads/fix/broken-sync-tests
+[extensions]
+	worktreeConfig = true
+[branch "perf/predicted-page-fanout"]
+	remote = origin
+	merge = refs/heads/perf/predicted-page-fanout
+[branch "fix/sync-behavioural-tests"]
+	remote = origin
+	merge = refs/heads/fix/sync-behavioural-tests
+[branch "fix/eudi-token-brute-force"]
+	remote = origin
+	merge = refs/heads/fix/eudi-token-brute-force
+[branch "fix/correct-login-throttle-comment"]
+	remote = origin
+	merge = refs/heads/fix/correct-login-throttle-comment
+[branch "chore/nc-vue-2.3"]
+	remote = origin
+	merge = refs/heads/development
+	vscode-merge-base = origin/development
+[branch "chore/ncvue-2.3.0"]
+	remote = origin
+	merge = refs/heads/development

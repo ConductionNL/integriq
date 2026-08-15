@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 9029fa1b7fe632f1f129443cf8754cbeee2727ea Ruben van der Linde <rubenvdlinde@gmail.com> 1784221830 +0200	branch: Created from origin/development
+9029fa1b7fe632f1f129443cf8754cbeee2727ea fca0d4e8a02da8c76fe019029696a427e56d7e0a Ruben van der Linde <rubenvdlinde@gmail.com> 1784222522 +0200	commit: feat(security): strip nested source auth secrets via openregister#459 write-only paths

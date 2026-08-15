@@ -1,8 +1,0 @@
-- add docblocks to all methods, classes, and properties
-- add return types to all methods
-- add type hints to all methods
-- add default values to all methods
-- add phpstan and psalm annotations to all methods
-- add phpunit tests to all methods
-- add inline comments to all logic explaining the steps being taken
-- use readonly properties where appropriate

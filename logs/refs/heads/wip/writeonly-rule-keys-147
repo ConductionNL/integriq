@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 020ff5299d38d8377606b49b138826fda694b9de Ruben van der Linde <rubenvdlinde@gmail.com> 1784311116 +0200	branch: Created from origin/development
+020ff5299d38d8377606b49b138826fda694b9de a515b49fb30591b71c2be134f1ee9ac9b4bb2374 Ruben van der Linde <rubenvdlinde@gmail.com> 1784312642 +0200	commit: fix(security): make rule inbound-apiKey impersonation map write-only (#147 last residual)
+a515b49fb30591b71c2be134f1ee9ac9b4bb2374 f84db3aa5b486643e2bfb3fd1a3971b4e37c4194 Ruben van der Linde <rubenvdlinde@gmail.com> 1784312648 +0200	rebase finished: returning to refs/heads/wip/writeonly-rule-keys-147

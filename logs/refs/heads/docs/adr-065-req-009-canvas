@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 e2c9a46b07cd21711d9892105238981a51e3860b Ruben van der Linde <rubenvdlinde@gmail.com> 1784238357 +0200	branch: Created from origin/development
+e2c9a46b07cd21711d9892105238981a51e3860b 4d5f40df0d67cfc13f8333d1f893f0dde10644ae Ruben van der Linde <rubenvdlinde@gmail.com> 1784238530 +0200	commit: docs(spec): withdraw REQ-009's no-canvas prohibition, require the shared canvas
+4d5f40df0d67cfc13f8333d1f893f0dde10644ae b10566e4d0739d2658ebc8917b574ed890c50858 Ruben van der Linde <rubenvdlinde@gmail.com> 1784238551 +0200	commit (amend): docs(spec): withdraw REQ-009's no-canvas prohibition, require the shared canvas

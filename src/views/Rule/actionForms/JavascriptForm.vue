@@ -37,7 +37,6 @@ export default {
 	props: {
 		code: { type: String, default: '' },
 	},
-
 	data() {
 		return { uid: ++uidCounter }
 	},

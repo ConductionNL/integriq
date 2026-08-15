@@ -1,3 +1,0 @@
-# openconnector-register-storage
-
-Migrate all 15 openconnector entities from oc_openconnector_* tables onto OpenRegister storage. Single openconnector register with 15 schemas (11 mutable config + 4 appendOnly+immutable logs). OR provisions all storage via ConfigurationService import; migrator copies data via INSERT...SELECT preserving existing uuids. Mappers kept as transitional facades over OR ObjectService. FK rewrite pass converts integer FKs to uuid relations and adds x-openregister-relation annotations to unlock OR's _relations/extend/inversedBy/cascade machinery. Old tables kept read-only one release, dropped in follow-up.

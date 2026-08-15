@@ -1,0 +1,7 @@
+10467d49d678566b68bb8e3fbd9b6b6078b5ea40 10467d49d678566b68bb8e3fbd9b6b6078b5ea40 Ruben van der Linde <ruben@conduction.nl> 1786613532 +0200	reset: moving to HEAD
+10467d49d678566b68bb8e3fbd9b6b6078b5ea40 10467d49d678566b68bb8e3fbd9b6b6078b5ea40 Ruben van der Linde <ruben@conduction.nl> 1786613856 +0200	reset: moving to HEAD
+10467d49d678566b68bb8e3fbd9b6b6078b5ea40 10467d49d678566b68bb8e3fbd9b6b6078b5ea40 Ruben van der Linde <ruben@conduction.nl> 1786614307 +0200	reset: moving to HEAD
+10467d49d678566b68bb8e3fbd9b6b6078b5ea40 5e8df7406a002e440f89e59142f43abbed38d132 Ruben van der Linde <ruben@conduction.nl> 1786614635 +0200	commit: fix(tests): the OpenRegister stub drifted, and 11 tests failed saying nothing about it
+5e8df7406a002e440f89e59142f43abbed38d132 cb8e4ab27b9e58ac711ebbbc4f4e01731cafe706 Ruben van der Linde <ruben@conduction.nl> 1786695159 +0200	checkout: moving from fix/broken-sync-tests to fix/sync-behavioural-tests
+cb8e4ab27b9e58ac711ebbbc4f4e01731cafe706 cb8e4ab27b9e58ac711ebbbc4f4e01731cafe706 Ruben van der Linde <ruben@conduction.nl> 1786695410 +0200	reset: moving to HEAD
+cb8e4ab27b9e58ac711ebbbc4f4e01731cafe706 d93c7ab54854596471193b90073008ec4f46c9d3 Ruben van der Linde <ruben@conduction.nl> 1786695526 +0200	commit: fix(sync): one unreadable row must not abort the page it is on

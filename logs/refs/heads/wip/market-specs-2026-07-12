@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 c2908221eb001864b2f91cf71a0b8299340bc816 Ruben van der Linde <rubenvdlinde@gmail.com> 1783875427 +0200	branch: Created from origin/development
+c2908221eb001864b2f91cf71a0b8299340bc816 dac8522b6cc92441e5bf9c28640ff9f3c6d21933 Ruben van der Linde <rubenvdlinde@gmail.com> 1783876039 +0200	commit: docs(openspec): peppol-access-point-connector — Peppol AP connectivity (lookup, event-driven transmission, inbound webhook)
+dac8522b6cc92441e5bf9c28640ff9f3c6d21933 913724089d9b68c257800875683859fc4c5dbdcd Ruben van der Linde <rubenvdlinde@gmail.com> 1783876308 +0200	commit: docs(openspec): psd2-ais-bank-feed-connector — PSD2 AIS bank feeds (SCA consent, scheduled sync, synced events)

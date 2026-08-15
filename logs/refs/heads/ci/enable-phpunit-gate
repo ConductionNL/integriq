@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 463b3dc9cbb99129b65f20f3bbe72d1b679ae687 Ruben van der Linde <ruben@conduction.nl> 1785775497 +0200	branch: Created from origin/development
+463b3dc9cbb99129b65f20f3bbe72d1b679ae687 2c903a7e8764e16af3519c562a72e999fe2572c0 Ruben van der Linde <ruben@conduction.nl> 1785775701 +0200	commit: ci: enable the PHPUnit job, which this caller never switched on
+2c903a7e8764e16af3519c562a72e999fe2572c0 40513036e3770dda46910e8a17c98532e6c690eb Ruben van der Linde <ruben@conduction.nl> 1785778269 +0200	commit: fix(tests): make the OC\\Hooks\\Emitter stub mirror core's real signature
+40513036e3770dda46910e8a17c98532e6c690eb e1fc530154b89a95a85296edc8b297dc0e400dd1 Ruben van der Linde <ruben@conduction.nl> 1785780194 +0200	commit: fix(tests): never register stand-in stubs inside a provisioned Nextcloud
+e1fc530154b89a95a85296edc8b297dc0e400dd1 f5b106e7aeeefb9e08b2d294f0955067d9fc3789 Ruben van der Linde <ruben@conduction.nl> 1785780837 +0200	commit: fix(tests): keep the unit suite hermetic instead of booting Nextcloud

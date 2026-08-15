@@ -1,0 +1,42 @@
+fix(sync): one unreadable row must not abort the page it is on
+
+`testOneBadItemDoesNotAbortTheSyncPass` says what the engine promises: three
+items, one of them malformed, leaves `invalid: 1, skipped: 2, found: 3`. It was
+failing because the whole synchronisation threw.
+
+The per-item boundary that keeps that promise is still there and still correct —
+it catches, records the failure to the dead-letter service, and carries on. What
+changed is that the origin-id resolution moved OUT of it. `indexContractsByOrigin`
+batches the contract lookup for the whole page, and to build its key list it maps
+`getOriginId()` over every item BEFORE the loop starts. `getOriginId()` throws for
+an item with no id. So one malformed row now killed the page from outside the
+guard that exists to contain exactly that.
+
+Batching the lookup is worth keeping; it is a real saving. Skipping an unreadable
+row in the pre-pass keeps both, because the index is an OPTIMISATION rather than
+a source of truth: an item missing from it resolves its own contract in the loop
+exactly as it did before the batch existed, and an item whose origin id cannot be
+read fails THERE, on its own, and is dead-lettered with a message naming the item
+instead of taking down everything around it.
+
+⚠️ The catch is written `\Throwable`, fully qualified, and that is load-bearing.
+This file imports `Exception` and not `Throwable`, so a bare `Throwable` resolves
+to `OCA\OpenConnector\Service\Throwable` — a class that does not exist. The catch
+compiles, matches nothing, and the exception sails through as if it were never
+written. Measured: with the bare name the test still failed, identically.
+
+Full suite: 80 broken before, 77 after. Three fixed by name — this test plus both
+SynchronizationScalarItemCoercion cases, which shared the cause — and NONE newly
+broken.
+
+Six failures remain and are deliberately not touched here, because they are not
+this bug. They encode the PRE-BATCHING WRITE PATTERN:
+
+  EndoflifeDateSyncTest x2   spy on `saveObject`, production now uses `saveObjects`
+  …OriginIdMatchingTest x4   expect two writes ("identity, then outcomes"), one now
+
+Both follow from the perf change deliberately, so rewriting the assertions to
+match would be asserting the new pattern is correct — and that is a question for
+whoever made the change. It is not obviously free: "identity, then outcomes"
+exists so a crash between the two leaves a recoverable state, and collapsing it
+to one write may preserve that or may not. Reported on ocon#1241.

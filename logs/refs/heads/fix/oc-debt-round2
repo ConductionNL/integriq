@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 3eba9ee400395e3b191f35b36ae0eb17c13bb082 Ruben van der Linde <ruben@conduction.nl> 1786096113 +0200	branch: Created from origin/development
+3eba9ee400395e3b191f35b36ae0eb17c13bb082 c6367daed168aea00fba0f4956b846df494c4c5d Ruben van der Linde <ruben@conduction.nl> 1786097710 +0200	commit: fix(specs): the ADR-023 spec this app never wrote, and three exception paths that 500'd
+c6367daed168aea00fba0f4956b846df494c4c5d f862c5e9fea68e04c69b4eba5bec1bdc51292be5 Ruben van der Linde <ruben@conduction.nl> 1786098945 +0200	commit: test(e2e): the admin action-matrix scenario the new spec promises
+f862c5e9fea68e04c69b4eba5bec1bdc51292be5 eeb92e0c64e80e65bf7107f7c43e062c06396aed Ruben van der Linde <ruben@conduction.nl> 1786099621 +0200	commit: fix(specs): the last two ADR-023 tags, and the e2e ref the new scenario actually has
+eeb92e0c64e80e65bf7107f7c43e062c06396aed 1c6dd25ef00aab204746a9290b1ea067a00a97b0 Ruben van der Linde <ruben@conduction.nl> 1786100541 +0200	commit: test(e2e): assert the matrix round-trip, not the instance's install history
+1c6dd25ef00aab204746a9290b1ea067a00a97b0 7c9ea012a4f02a0ded6b1a2a9a6f3c1af39c186d Ruben van der Linde <ruben@conduction.nl> 1786101899 +0200	commit: test(controllers): the 404 paths the gate-49 fix introduced had no tests

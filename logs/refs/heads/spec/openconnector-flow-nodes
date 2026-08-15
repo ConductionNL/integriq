@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 3654e35fa9bb10291dca68461e41564b9dcadb17 Ruben van der Linde <ruben@conduction.nl> 1785143899 +0200	branch: Created from origin/development
+3654e35fa9bb10291dca68461e41564b9dcadb17 b1ade5260660ee2a996a172e265e590df19c5f07 Ruben van der Linde <ruben@conduction.nl> 1785143929 +0200	commit: docs(openspec): openconnector-flow-nodes — source-call + synchronization-run nodes for the OR flow engine
+b1ade5260660ee2a996a172e265e590df19c5f07 a30de90656e189c58cbda5605d52fba08c29fcf2 Ruben van der Linde <ruben@conduction.nl> 1785148603 +0200	commit: feat(flow): contribute "Call a source" and "Run a synchronization" flow nodes

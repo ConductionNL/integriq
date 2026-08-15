@@ -70,9 +70,9 @@
 						column: column.title,
 					})
 				"
-				:modelValue="mappedValue(column.title)"
+				:model-value="mappedValue(column.title)"
 				:placeholder="t('openconnector', 'Source field or expression')"
-				@update:modelValue="
+				@update:model-value="
 					(value) => onMappingUpdate(column.title, value)
 				" />
 		</div>
@@ -80,13 +80,14 @@
 </template>
 
 <script>
+import { NcLoadingIcon, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcLoadingIcon, NcTextField } from '@nextcloud/vue'
+
 import {
-	columnTypeHint,
 	extractResults,
 	mapColumnDescriptors,
+	columnTypeHint,
 	mappedValueFor,
 	upsertColumnMapping,
 } from './tablesBridge.js'
@@ -124,7 +125,6 @@ export default {
 				this.fetchColumns()
 			},
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 		sourceId() {
 			this.fetchColumns()
@@ -144,7 +144,6 @@ export default {
 		typeHint(column) {
 			return columnTypeHint(column)
 		},
-
 		/**
 		 * Prefill a row's input with the expression already mapped to it.
 		 *
@@ -157,7 +156,6 @@ export default {
 		mappedValue(columnTitle) {
 			return mappedValueFor(this.config, columnTitle)
 		},
-
 		/**
 		 * Write one row's edit back into `targetConfig.columnMapping` and emit
 		 * the new config blob (the parent owns the config; this component never
@@ -175,7 +173,6 @@ export default {
 				upsertColumnMapping(this.config, columnTitle, value),
 			)
 		},
-
 		/**
 		 * Fetch the table's columns via the tables-bridge discovery endpoint.
 		 * Soft-fails to an empty list with an inline error so the helper

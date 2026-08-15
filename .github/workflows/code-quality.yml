@@ -2,32 +2,7 @@ name: Code Quality
 
 on:
   push:
-    # An ALLOW-LIST of prefixes is a gate with a hole in it, and the hole is
-    # silent: a branch whose name matches nothing simply gets no CI, and its last
-    # visible status is whatever it inherited. On 2026-08-14 a merge with
-    # unresolved conflict markers and 84 failing tests was pushed to
-    # `perf/predicted-page-fanout` — `perf/**` was not on this list, so nothing
-    # ran and nothing said so.
-    #
-    # Prefixes added rather than replaced with `**` because this workflow is not
-    # cheap (PHPUnit matrix, Newman, Playwright); running it on every scratch
-    # branch would be a real bill. The fast structural checks DO run on `**` —
-    # see merge-hygiene.yml, which exists because of that same incident.
-    #
-    # ⚠️ Adding a prefix here is not the durable fix. Anyone inventing a new one
-    # is uncovered again until someone remembers this file. The durable fix is
-    # branch protection requiring a PR into development, which is where the
-    # pull_request trigger below already gates properly.
-    branches:
-      - main
-      - development
-      - feature/**
-      - bugfix/**
-      - hotfix/**
-      - perf/**
-      - refactor/**
-      - chore/**
-      - fix/**
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
     # Spelled out rather than left to the default so the set is reviewable.
     # `synchronize` — a push to an open PR — is the load-bearing one: without

@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 7ed35411f15b00b8c353201525b8e93aa979f0db Ruben van der Linde <ruben@conduction.nl> 1785774243 +0200	branch: Created from refs/remotes/origin/fix/refresh-security-advisories-2026-08-03
+7ed35411f15b00b8c353201525b8e93aa979f0db 99f6031248ff984e3d162d9275a443eb409849a3 Ruben van der Linde <juan.claude@conduction.nl> 1785774333 +0200	commit: fix(deps): declare symfony/http-kernel explicitly

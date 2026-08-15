@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 6da5dfb4927b1ecc4fd6b9f36aa2c7c843f1da3b Ruben van der Linde <ruben@conduction.nl> 1786521420 +0200	branch: Created from origin/development
+6da5dfb4927b1ecc4fd6b9f36aa2c7c843f1da3b 8daba406e34fe994129666b559e2aafe7a2cbc8f Ruben van der Linde <ruben@conduction.nl> 1786522194 +0200	commit: fix(db): select the SQL dialect from getDatabaseProvider(), with MariaDB named

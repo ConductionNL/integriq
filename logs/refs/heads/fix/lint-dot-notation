@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 1ac3efa37428881fc11d9636587472ba9df9659a Ruben van der Linde <ruben@conduction.nl> 1785389229 +0200	branch: Created from origin/development
+1ac3efa37428881fc11d9636587472ba9df9659a 7fac13b6482f4cce9371b4373932f80109afb2e2 Ruben van der Linde <ruben@conduction.nl> 1785389367 +0200	commit: fix(lint): resolve 16 dot-notation errors blocking CI

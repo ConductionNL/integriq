@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 2ce6b3bb28de23a7b0b3412eb66ec1d346ffba02 Ruben van der Linde <ruben@conduction.nl> 1786015192 +0200	branch: Created from origin/development
+2ce6b3bb28de23a7b0b3412eb66ec1d346ffba02 42b6bea57555666e2167af016e789aa9e12742a7 Ruben van der Linde <ruben@conduction.nl> 1786016697 +0200	commit: chore(deps): clear the critical + high npm advisories and CVE-2026-67434

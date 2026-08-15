@@ -41,11 +41,11 @@
 			<template v-if="field.key === 'endpointArray'">
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="endpointArrayText"
+					:model-value="endpointArrayText"
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="placeholderFor(field.key)"
-					@update:modelValue="onEndpointArrayInput" />
+					@update:model-value="onEndpointArrayInput" />
 				<CnFieldHelper
 					:text="
 						field.description
@@ -68,14 +68,14 @@
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
-					:inputId="'cn-endpoint-form-' + field.key"
+					:input-id="'cn-endpoint-form-' + field.key"
 					:aria-label-combobox="field.label"
-					:modelValue="selectedEnumOption(field.key)"
+					:model-value="selectedEnumOption(field.key)"
 					:options="
 						field.key === 'method' ? methodOptions : targetTypeOptions
 					"
 					:clearable="!field.required"
-					@update:modelValue="
+					@update:model-value="
 						(option) => updateField(field.key, option?.id ?? null)
 					" />
 				<CnFieldHelper
@@ -110,14 +110,14 @@
 									{{ t('openconnector', 'Register') }} *
 								</label>
 								<NcSelect
-									inputId="cn-endpoint-form-register"
+									input-id="cn-endpoint-form-register"
 									:aria-label-combobox="
 										t('openconnector', 'Register')
 									"
-									:modelValue="selectedRegister"
+									:model-value="selectedRegister"
 									:options="registerOptions"
 									:loading="registersLoading"
-									@update:modelValue="onRegisterPick" />
+									@update:model-value="onRegisterPick" />
 							</div>
 
 							<div class="cn-endpoint-form-fields__col">
@@ -127,15 +127,15 @@
 									{{ t('openconnector', 'Schema') }} *
 								</label>
 								<NcSelect
-									inputId="cn-endpoint-form-schema"
+									input-id="cn-endpoint-form-schema"
 									:aria-label-combobox="
 										t('openconnector', 'Schema')
 									"
-									:modelValue="selectedSchema"
+									:model-value="selectedSchema"
 									:options="schemaOptions"
 									:disabled="!selectedRegister"
 									:loading="schemasLoading"
-									@update:modelValue="onSchemaPick" />
+									@update:model-value="onSchemaPick" />
 							</div>
 						</div>
 						<CnFieldHelper
@@ -159,14 +159,14 @@
 					{{ field.label }}
 				</label>
 				<NcSelect
-					inputId="cn-endpoint-form-configurations"
+					input-id="cn-endpoint-form-configurations"
 					:aria-label-combobox="field.label"
-					:modelValue="selectedConfigurations"
+					:model-value="selectedConfigurations"
 					:options="configurationOptions"
 					:loading="configurationsLoading"
 					:multiple="true"
-					:closeOnSelect="false"
-					@update:modelValue="onConfigurationsPick" />
+					:close-on-select="false"
+					@update:model-value="onConfigurationsPick" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
@@ -196,10 +196,10 @@
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:modelValue="!!formData[field.key]"
+				:model-value="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:model-value="(value) => updateField(field.key, value)">
 				{{ field.label }}
 			</NcCheckboxRadioSwitch>
 
@@ -208,7 +208,7 @@
 			<template v-else>
 				<NcTextField
 					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
+					:model-value="
 						formData[field.key] != null
 							? String(formData[field.key])
 							: ''
@@ -216,7 +216,7 @@
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="placeholderFor(field.key)"
-					@update:modelValue="(value) => updateField(field.key, value)" />
+					@update:model-value="(value) => updateField(field.key, value)" />
 				<CnFieldHelper
 					:text="field.description"
 					:more="field.descriptionLong"
@@ -227,10 +227,10 @@
 </template>
 
 <script>
+import { NcTextField, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 
 /** HTTP methods the original EditEndpoint modal offered, in its order. */
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({

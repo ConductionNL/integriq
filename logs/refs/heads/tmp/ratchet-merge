@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 423e5e1c0a3ea9cb0e5839db8c6179351220554b Ruben van der Linde <ruben@conduction.nl> 1785958940 +0200	branch: Created from origin/ci/enable-coverage-ratchet
+423e5e1c0a3ea9cb0e5839db8c6179351220554b e54f04b3e2ce795e568ca5d384329119581c2254 Ruben van der Linde <ruben@conduction.nl> 1785958940 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+e54f04b3e2ce795e568ca5d384329119581c2254 cd71ea22c3286a375cb3e1718ffd3d0726ee0c32 Ruben van der Linde <ruben@conduction.nl> 1785958966 +0200	commit: ci(coverage): set the baseline to the 60.65% CI actually measures

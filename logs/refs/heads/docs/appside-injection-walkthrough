@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 73f0e9c3c5bd6a7084a097bcf30e2ad93d626fb9 Ruben van der Linde <rubenvdlinde@gmail.com> 1784102205 +0200	branch: Created from origin/development
+73f0e9c3c5bd6a7084a097bcf30e2ad93d626fb9 7a960c99cd6d330354b67d8d93dace5bab700f05 Ruben van der Linde <rubenvdlinde@gmail.com> 1784111328 +0200	commit: docs(sources): document app-side credential injection + refresh add-source walkthrough
+7a960c99cd6d330354b67d8d93dace5bab700f05 94419916a4a0c4b788336642429bbdd8703b0104 Ruben van der Linde <ruben@conduction.nl> 1784802762 +0200	commit: docs(sources): real screenshot for the source detail step (credentialRef)
+94419916a4a0c4b788336642429bbdd8703b0104 17025bb0d5df5e63553996083e913d8a78735708 Ruben van der Linde <ruben@conduction.nl> 1784802808 +0200	merge origin/docs/appside-injection-walkthrough: Merge made by the 'recursive' strategy.

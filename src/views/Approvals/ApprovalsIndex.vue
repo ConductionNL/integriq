@@ -23,9 +23,9 @@
 			<div class="approvals__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:inputLabel="t('openconnector', 'Status')"
+					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					@update:modelValue="reload" />
+					@update:model-value="reload" />
 			</div>
 		</div>
 
@@ -71,7 +71,7 @@
 					<td>{{ row.createdAt || '—' }}</td>
 					<td>{{ row.expiresAt || '—' }}</td>
 					<td>
-						<NcButton variant="tertiary" @click="openDetail(row)">
+						<NcButton type="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Open') }}
 						</NcButton>
 					</td>
@@ -83,9 +83,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
 
@@ -123,17 +123,14 @@ export default {
 		t,
 		/**
 		 * Navigate to a request's detail page.
-		 *
 		 * @param {object} row Approval request row.
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		openDetail(row) {
 			this.$router.push(`/approvals/${row.id}`)
 		},
-
 		/**
 		 * Fetch the caller-visible approval requests from the two-layer-authorized endpoint.
-		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async reload() {

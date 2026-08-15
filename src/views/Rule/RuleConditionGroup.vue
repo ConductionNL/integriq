@@ -21,12 +21,12 @@
 		<div class="rule-condition-group__header">
 			<NcSelect
 				class="rule-condition-group__op"
-				:inputId="'rule-condition-group-op-' + uid"
-				:inputLabel="t('openconnector', 'Group operator')"
-				:modelValue="selectedOperator"
+				:input-id="'rule-condition-group-op-' + uid"
+				:input-label="t('openconnector', 'Group operator')"
+				:model-value="selectedOperator"
 				:options="operatorOptions"
 				:clearable="false"
-				@update:modelValue="onOperatorPick" />
+				@update:model-value="onOperatorPick" />
 			<span class="rule-condition-group__hint">
 				{{ operatorHint }}
 			</span>
@@ -34,7 +34,7 @@
 			<NcButton
 				v-if="removable"
 				:aria-label="t('openconnector', 'Remove group')"
-				variant="tertiary-no-background"
+				type="tertiary-no-background"
 				@click="$emit('remove')">
 				<template #icon>
 					<Close :size="18" />
@@ -72,13 +72,13 @@
 			</NcEmptyContent>
 		</div>
 		<div class="rule-condition-group__actions">
-			<NcButton variant="secondary" @click="addLeaf">
+			<NcButton type="secondary" @click="addLeaf">
 				<template #icon>
 					<Plus :size="18" />
 				</template>
 				{{ t('openconnector', 'Add condition') }}
 			</NcButton>
-			<NcButton variant="tertiary" @click="addGroup">
+			<NcButton type="tertiary" @click="addGroup">
 				<template #icon>
 					<FormatListGroup :size="18" />
 				</template>
@@ -144,13 +144,11 @@ export default {
 			const found = keys.find((key) => GROUP_OPERATORS.includes(key))
 			return found || 'and'
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		children() {
 			const value = this.node?.[this.currentOperator]
 			return Array.isArray(value) ? value : []
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorOptions() {
 			return [
@@ -158,7 +156,6 @@ export default {
 				{ id: 'or', label: this.t('openconnector', 'ANY of (OR)') },
 			]
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
 			return (
@@ -167,7 +164,6 @@ export default {
 				) ?? this.operatorOptions[0]
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorHint() {
 			return this.currentOperator === 'and'
@@ -199,7 +195,6 @@ export default {
 				&& Array.isArray(child[keys[0]])
 			)
 		},
-
 		/**
 		 * Re-key the group under the newly picked boolean operator, carrying the
 		 * existing children over unchanged, and emit the rewritten node.
@@ -214,7 +209,6 @@ export default {
 			if (!option) return
 			this.$emit('update', { [option.id]: this.children.slice() })
 		},
-
 		/**
 		 * Replace one child with the node its component just emitted and emit
 		 * the whole group upwards (the tree is edited immutably, top-down).
@@ -231,7 +225,6 @@ export default {
 			next[index] = value
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-
 		/**
 		 * Drop one child from the group and emit the shortened group upwards.
 		 *
@@ -245,14 +238,12 @@ export default {
 			next.splice(index, 1)
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addLeaf() {
 			const next = this.children.slice()
 			next.push({ '==': [{ var: '' }, ''] })
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addGroup() {
 			const next = this.children.slice()

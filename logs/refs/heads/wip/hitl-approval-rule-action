@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 4a4850d2c67d017db99de5993fb2a2ecbf66a8a6 Ruben van der Linde <rubenvdlinde@gmail.com> 1784029661 +0200	branch: Created from origin/development
+4a4850d2c67d017db99de5993fb2a2ecbf66a8a6 274a5d74049a702fd9e767659f2a8cd5a934755e Ruben van der Linde <rubenvdlinde@gmail.com> 1784116307 +0200	commit: feat(approvals): hitl-approval-rule-action — human-in-the-loop approval gate
+274a5d74049a702fd9e767659f2a8cd5a934755e c7ed9ccef7cfa899cd05d40f28032dbe75cb7e3f Ruben van der Linde <rubenvdlinde@gmail.com> 1784116323 +0200	commit: test(approvals): cover the register.d fragment, action-matrix seed, and notification dispatch
+c7ed9ccef7cfa899cd05d40f28032dbe75cb7e3f 840638627d8e333969f9f1593c90371b0169bf51 Ruben van der Linde <rubenvdlinde@gmail.com> 1784116343 +0200	commit: docs(openspec): archive hitl-approval-rule-action
+840638627d8e333969f9f1593c90371b0169bf51 6786c138ad4c4bfd3c3e4404b7fd5fbe1d2849bd Ruben van der Linde <rubenvdlinde@gmail.com> 1784116790 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into wip/hitl-approval-rule-action
+6786c138ad4c4bfd3c3e4404b7fd5fbe1d2849bd 425ca259168815cf78af4c89b6a61fb7b249b505 Ruben van der Linde <rubenvdlinde@gmail.com> 1784116978 +0200	commit: test(sync): pass ApprovalService mock to SynchronizationItemIsolationTest constructor

@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 e7a1ea96253af964621a5c9bbab1645c22c3cf39 Ruben van der Linde <ruben@conduction.nl> 1786182688 +0200	branch: Created from origin/development
+e7a1ea96253af964621a5c9bbab1645c22c3cf39 d153d41800469e4f9f6b7b7419b0840db970a6cb Ruben van der Linde <ruben@conduction.nl> 1786182764 +0200	commit: fix(migration): a FAILED row count dropped the table it was meant to protect
+d153d41800469e4f9f6b7b7419b0840db970a6cb 6ceb5e6fa7513b6c7a18884fbcff3127759577bb Ruben van der Linde <ruben@conduction.nl> 1786183870 +0200	merge origin/development: Merge made by the 'recursive' strategy.
+6ceb5e6fa7513b6c7a18884fbcff3127759577bb 32e031c66342932e7500c18bf20d42c8d0ac4a3b Ruben van der Linde <ruben@conduction.nl> 1786185114 +0200	commit: style(phpcs): replace the ternary with an if/else and add the //end if marker

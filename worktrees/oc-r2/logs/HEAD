@@ -1,0 +1,11 @@
+7c1d9c6ddd265d8644c6e5e8f9fa212c4e248869 7c1d9c6ddd265d8644c6e5e8f9fa212c4e248869 Ruben van der Linde <ruben@conduction.nl> 1786471027 +0200	reset: moving to HEAD
+7c1d9c6ddd265d8644c6e5e8f9fa212c4e248869 51ab54a84a80987fec6881d5ae0d182e1fb0d00b Ruben van der Linde <juan.claude@conduction.nl> 1786471156 +0200	commit: TEMP: gate-16 positive control plant (to be reverted)
+51ab54a84a80987fec6881d5ae0d182e1fb0d00b 7c1d9c6ddd265d8644c6e5e8f9fa212c4e248869 Ruben van der Linde <ruben@conduction.nl> 1786471185 +0200	reset: moving to HEAD~1
+7c1d9c6ddd265d8644c6e5e8f9fa212c4e248869 054df012f91f39d1e08c97611f588f4073a6a822 Ruben van der Linde <juan.claude@conduction.nl> 1786472874 +0200	commit: fix(pickers): every OpenRegister list picker was empty — `limit` is a property filter, `_limit` is the control param
+054df012f91f39d1e08c97611f588f4073a6a822 2a50b3d4f9bf09e7e310d141e8d05fa309785da5 Ruben van der Linde <juan.claude@conduction.nl> 1786472940 +0200	commit: TEMP: six inversion controls, one per test (to be reverted)
+2a50b3d4f9bf09e7e310d141e8d05fa309785da5 1712b0f55bdbd04b17ae93b5a01128a1163aaca8 Ruben van der Linde <ruben@conduction.nl> 1786473211 +0200	revert: Revert "TEMP: six inversion controls, one per test (to be reverted)"
+1712b0f55bdbd04b17ae93b5a01128a1163aaca8 2a50b3d4f9bf09e7e310d141e8d05fa309785da5 Ruben van der Linde <ruben@conduction.nl> 1786473211 +0200	reset: moving to HEAD~1
+2a50b3d4f9bf09e7e310d141e8d05fa309785da5 054df012f91f39d1e08c97611f588f4073a6a822 Ruben van der Linde <ruben@conduction.nl> 1786473225 +0200	reset: moving to 054df012
+054df012f91f39d1e08c97611f588f4073a6a822 7df40d39b482203886cd0ffbd12b217657133950 Ruben van der Linde <juan.claude@conduction.nl> 1786473441 +0200	commit: chore(docs): drop a stale duplicate JSDoc block above TraceTimelineWidget::formatJson
+7df40d39b482203886cd0ffbd12b217657133950 3ddbad70efd811605633597c3a8c64f31330e85a Ruben van der Linde <juan.claude@conduction.nl> 1786473590 +0200	commit: test(vitest): two unit tests were PINNING the #1215 defect, green the whole time
+3ddbad70efd811605633597c3a8c64f31330e85a 59d4bd7a69e142ae3cdbcfeb13114ee957c8d2e9 Ruben van der Linde <juan.claude@conduction.nl> 1786473743 +0200	commit: docs(ci): .github#364 has merged — gate-16 now says NOT APPLICABLE, not PASS

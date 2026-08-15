@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 bb162c6f73ec552be3c971466b4e4dbeb0697107 Ruben van der Linde <ruben@conduction.nl> 1786021190 +0200	branch: Created from origin/development
+bb162c6f73ec552be3c971466b4e4dbeb0697107 970b8b29bca9968743d664834e9c0310da3a5a6e Ruben van der Linde <ruben@conduction.nl> 1786021874 +0200	commit: chore(deps): axe-core is a testing library — move it to devDependencies

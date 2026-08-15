@@ -1,0 +1,12 @@
+docs(ci): .github#364 has merged — gate-16 now says NOT APPLICABLE, not PASS
+
+The gate-16 note added earlier in this branch described #364 as open. It
+merged in the meantime, so a full-repo run with no diff now reports
+`NOT APPLICABLE — full-repo run computed NO diff … This is NOT a pass.`
+rather than PASS.
+
+The measurement itself is unchanged and still worth keeping: it was taken
+with the canonical package @81c8c97, which still carried the old behaviour,
+so it records what the old PASS was standing over — 0 (development) / 0
+(beta) / 30 (main) / 30 (report). What changes is the instruction to the
+reader: a historical green gate-16 cell on this repo is not a measurement.

@@ -1,0 +1,59 @@
+chore(quality): make psalm + phpstan real in check:strict
+
+`check:strict` ran its 8 steps in a for-loop that already propagated exit
+codes, but `psalm` and `phpstan` each ended in `|| echo '... skipping ...'`
+so both always exited 0 — two of the three static analysers were dead.
+Removed the `|| echo` from both. `phpmd` was already real.
+
+`test:all` is deliberately left dead: measuring its cost needs a running
+Nextcloud environment, which this change does not have. Not flipped
+unmeasured.
+
+Findings the repaired gate surfaces (PHP 8.3.32, matching CI's pinned
+php-version, in nextcloud:32-apache):
+
+- check:no-legacy-types  PASS
+- check:routes           2 orphans -> FALSE POSITIVE, script fixed
+- lint                   0
+- phpcs                  0 errors / 288 warnings (non-fatal by ruleset)
+- phpmd                  0 (existing 306-entry baseline absorbs all)
+- psalm                  6  -> config entries, no baseline
+- phpstan                74 -> 2 general + 72 file; see below
+
+phpstan's 2 *general* errors ("cannot be ignored, use excludePaths
+instead") abort the run regardless of any baseline, so they had to be
+fixed in config: OpenConnectorMetricsProvider and
+AbstractCategoryAdapterProvider extend/implement OpenRegister types that
+exist only at runtime. Added to excludePaths, same pattern the file
+already uses for SynchronizationContractProvider.
+
+41 of the file errors were one systemic false positive: every
+`#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` resolves to a plain
+`string` because lib/Settings/OpenConnectorAdmin.php is itself excluded, so
+phpstan cannot see it implements IDelegatedSettings. Documented ignore
+rather than 41 opaque baseline lines. Plus the cross-app @throws ignore
+opencatalogi already carries.
+
+That leaves 24, baselined with the debt they represent stated in the
+tracking issue: 13 dead-code (unused constants / write-only properties /
+unused method in RuleService + CloudEventListener), 7 redundant-or-
+impossible `??` reads, and 4 misc. Two are worth fixing and are called out
+in the issue: three `/*` block comments in BankfeedSyncService that were
+meant to be `/**` docblocks (so their `@var` hints are inert, which is what
+produces 6 of the `??` findings), and an `is_array()` guard in
+SynchronizationService::processSyncRule() that can never fire because the
+value is `(string)`-cast on the line above — the intended "config is an
+array" error path is unreachable.
+
+Regenerating the baseline also dropped 17 stale entries, several of which
+only ever existed because symfony/expression-language and
+symfony/dom-crawler were missing from the analysis vendor tree.
+
+check:routes reported genericPreferences#get/setPreference as orphans. They
+are not: Application.php registers that controller as a DI service under the
+standard `OCA\OpenConnector\Controller\…` key (the class name NC synthesises
+from the plain route name), so it resolves at runtime with no file under
+lib/Controller/. The script was filesystem-only. Made it read
+registerService() aliases out of Application.php — whitelisting exactly one
+controller here, and still failing on a genuinely deleted controller
+(verified by removing JobsController.php: 3 orphans, exit 1).

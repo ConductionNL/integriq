@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 b73c335c26b5226f9a96d4621db138951c78402a Ruben van der Linde <rubenvdlinde@gmail.com> 1783880294 +0200	branch: Created from origin/development
+b73c335c26b5226f9a96d4621db138951c78402a 097a9c3a290f8511f4a0029a92a09e3f5be4a579 Ruben van der Linde <rubenvdlinde@gmail.com> 1783885936 +0200	commit: feat(bankfeed): add PSD2 AIS bank-feed connector
+097a9c3a290f8511f4a0029a92a09e3f5be4a579 221a77c7fbd70cc57e5a204de332bc1623264100 Ruben van der Linde <rubenvdlinde@gmail.com> 1783886341 +0200	merge origin/development: Fast-forward
+221a77c7fbd70cc57e5a204de332bc1623264100 155d20bb382ecaa3478722978c0b84e81cf6e914 Ruben van der Linde <rubenvdlinde@gmail.com> 1783886395 +0200	commit: docs(openspec): archive psd2-ais-bank-feed-connector

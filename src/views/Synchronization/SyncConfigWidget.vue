@@ -42,13 +42,13 @@
 					{{ kindLabel }} {{ t('openconnector', 'source (API)') }}
 				</label>
 				<NcSelect
-					:inputId="apiSourceId"
+					:input-id="apiSourceId"
 					:aria-label-combobox="t('openconnector', 'Source (API)')"
-					:modelValue="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@update:modelValue="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
@@ -62,11 +62,11 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Endpoint')"
-					:modelValue="configValue('endpoint')"
+					:model-value="configValue('endpoint')"
 					:placeholder="
 						t('openconnector', 'Path appended to the source URL')
 					"
-					@update:modelValue="
+					@update:model-value="
 						(value) => onConfigUpdate('endpoint', value)
 					" />
 			</div>
@@ -74,14 +74,14 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:modelValue="configValue('idPosition')"
+					:model-value="configValue('idPosition')"
 					:placeholder="
 						t(
 							'openconnector',
 							'Dot-path to the id field in the API response',
 						)
 					"
-					@update:modelValue="
+					@update:model-value="
 						(value) => onConfigUpdate('idPosition', value)
 					" />
 			</div>
@@ -89,11 +89,11 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Results position')"
-					:modelValue="configValue('resultsPosition')"
+					:model-value="configValue('resultsPosition')"
 					:placeholder="
 						t('openconnector', 'Dot-path to the list of items')
 					"
-					@update:modelValue="
+					@update:model-value="
 						(value) => onConfigUpdate('resultsPosition', value)
 					" />
 			</div>
@@ -106,13 +106,13 @@
 					{{ t('openconnector', 'Register') }}
 				</label>
 				<NcSelect
-					:inputId="registerSelectId"
+					:input-id="registerSelectId"
 					:aria-label-combobox="t('openconnector', 'Register')"
-					:modelValue="selectedRegister"
+					:model-value="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
 					:placeholder="t('openconnector', 'Pick a register')"
-					@update:modelValue="onRegisterPick" />
+					@update:model-value="onRegisterPick" />
 			</div>
 
 			<div class="sync-config__field">
@@ -120,23 +120,23 @@
 					{{ t('openconnector', 'Schema') }}
 				</label>
 				<NcSelect
-					:inputId="schemaSelectId"
+					:input-id="schemaSelectId"
 					:aria-label-combobox="t('openconnector', 'Schema')"
-					:modelValue="selectedSchema"
+					:model-value="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
 					:placeholder="
 						t('openconnector', 'Pick a schema in the register')
 					"
-					@update:modelValue="onSchemaPick" />
+					@update:model-value="onSchemaPick" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Object filter (optional)')"
-					:modelValue="configValue('filter')"
+					:model-value="configValue('filter')"
 					:placeholder="t('openconnector', 'JSON-encoded OR query filter')"
-					@update:modelValue="
+					@update:model-value="
 						(value) => onConfigUpdate('filter', value)
 					" />
 			</div>
@@ -150,15 +150,15 @@
 				</label>
 				<div class="sync-config__file-row">
 					<NcTextField
-						:inputId="filePathId"
+						:input-id="filePathId"
 						class="sync-config__file-field"
-						:modelValue="sourceIdValue"
-						placeholder="/example/path/*.json"
-						@update:modelValue="
+						:model-value="sourceIdValue"
+						:placeholder="'/example/path/*.json'"
+						@update:model-value="
 							(value) => $emit('update:sourceId', value)
 						" />
 					<NcButton
-						variant="secondary"
+						type="secondary"
 						:aria-label="t('openconnector', 'Browse Files app')"
 						:disabled="pickingFile"
 						@click="openFilePicker">
@@ -185,9 +185,9 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'File format')"
-					:modelValue="configValue('format')"
-					placeholder="json | xml | csv"
-					@update:modelValue="
+					:model-value="configValue('format')"
+					:placeholder="'json | xml | csv'"
+					@update:model-value="
 						(value) => onConfigUpdate('format', value)
 					" />
 			</div>
@@ -195,11 +195,11 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:modelValue="configValue('idPosition')"
+					:model-value="configValue('idPosition')"
 					:placeholder="
 						t('openconnector', 'Dot-path to the id field in each record')
 					"
-					@update:modelValue="
+					@update:model-value="
 						(value) => onConfigUpdate('idPosition', value)
 					" />
 			</div>
@@ -213,16 +213,16 @@
 					{{ t('openconnector', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
-					:inputId="tableSourceId"
+					:input-id="tableSourceId"
 					:aria-label-combobox="
 						t('openconnector', 'Source (Nextcloud instance)')
 					"
-					:modelValue="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
-					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
+					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@update:modelValue="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
@@ -238,17 +238,17 @@
 					{{ t('openconnector', 'Table') }}
 				</label>
 				<NcSelect
-					:inputId="tablePickerId"
+					:input-id="tablePickerId"
 					:aria-label-combobox="t('openconnector', 'Table')"
-					:modelValue="selectedTable"
+					:model-value="selectedTable"
 					:options="tableOptions"
 					:loading="tablesLoading"
 					:disabled="!sourceIdValue"
-					:inputLabel="t('openconnector', 'Table')"
+					:input-label="t('openconnector', 'Table')"
 					:placeholder="
 						t('openconnector', 'Pick a table the source can access')
 					"
-					@update:modelValue="onTablePick" />
+					@update:model-value="onTablePick" />
 				<span v-if="tablesError" class="sync-config__error">
 					{{ tablesError }}
 				</span>
@@ -265,8 +265,8 @@
 			<!-- Column-mapping helper (target only) -->
 			<TablesColumnMapping
 				v-if="kind === 'target' && configValue('tableId')"
-				:sourceId="sourceIdValue"
-				:tableId="configValue('tableId')"
+				:source-id="sourceIdValue"
+				:table-id="configValue('tableId')"
 				:config="config"
 				@update:config="(value) => $emit('update:config', value)" />
 		</template>
@@ -279,16 +279,16 @@
 					{{ t('openconnector', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
-					:inputId="formSourceId"
+					:input-id="formSourceId"
 					:aria-label-combobox="
 						t('openconnector', 'Source (Nextcloud instance)')
 					"
-					:modelValue="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
-					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
+					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@update:modelValue="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
@@ -304,17 +304,17 @@
 					{{ t('openconnector', 'Form') }}
 				</label>
 				<NcSelect
-					:inputId="formPickerId"
+					:input-id="formPickerId"
 					:aria-label-combobox="t('openconnector', 'Form')"
-					:modelValue="selectedForm"
+					:model-value="selectedForm"
 					:options="formOptions"
 					:loading="formsLoading"
 					:disabled="!sourceIdValue"
-					:inputLabel="t('openconnector', 'Form')"
+					:input-label="t('openconnector', 'Form')"
 					:placeholder="
 						t('openconnector', 'Pick a form the source can access')
 					"
-					@update:modelValue="onFormPick" />
+					@update:model-value="onFormPick" />
 				<span v-if="formsError" class="sync-config__error">
 					{{ formsError }}
 				</span>
@@ -331,8 +331,8 @@
 			<!-- Field-mapping (question reference) helper -->
 			<FormsFieldMapping
 				v-if="configValue('formId')"
-				:sourceId="sourceIdValue"
-				:formId="configValue('formId')" />
+				:source-id="sourceIdValue"
+				:form-id="configValue('formId')" />
 		</template>
 
 		<!-- Unknown / not set -->
@@ -347,15 +347,16 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { FilePickerType, getFilePickerBuilder } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { getFilePickerBuilder, FilePickerType } from '@nextcloud/dialogs'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
-import FormsFieldMapping from './FormsFieldMapping.vue'
+
 import TablesColumnMapping from './TablesColumnMapping.vue'
-import { mapFormOptions } from './formsBridge.js'
+import FormsFieldMapping from './FormsFieldMapping.vue'
 import { extractResults, mapTableOptions } from './tablesBridge.js'
+import { mapFormOptions } from './formsBridge.js'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -388,7 +389,6 @@ export default {
 			required: true,
 			validator: (value) => ['source', 'target'].includes(value),
 		},
-
 		/**
 		 * The type discriminator picked on the parent. Determines which
 		 * branch of the conditional template renders.
@@ -397,7 +397,6 @@ export default {
 			type: String,
 			default: '',
 		},
-
 		/**
 		 * The polymorphic id string. For `api` mode the Source UUID; for
 		 * `register/schema` mode `<registerId>/<schemaId>`; for `file`
@@ -407,7 +406,6 @@ export default {
 			type: [String, Number],
 			default: '',
 		},
-
 		/**
 		 * Type-specific config blob. Different keys are read/written
 		 * depending on `type`.
@@ -451,32 +449,26 @@ export default {
 				? t('openconnector', 'Source')
 				: t('openconnector', 'Target')
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		apiSourceId() {
 			return `sync-config-${this.widgetUid}-api-source`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSelectId() {
 			return `sync-config-${this.widgetUid}-register`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSelectId() {
 			return `sync-config-${this.widgetUid}-schema`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		filePathId() {
 			return `sync-config-${this.widgetUid}-file-path`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		sourceIdValue() {
 			return this.sourceId != null ? String(this.sourceId) : ''
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
@@ -487,7 +479,6 @@ export default {
 				}
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
@@ -498,7 +489,6 @@ export default {
 				) ?? null
 			)
 		},
-
 		/**
 		 * Schema options for the selected register.
 		 *
@@ -533,7 +523,6 @@ export default {
 				}
 			})
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSchema() {
 			const parts = this.sourceIdValue.split('/')
@@ -544,17 +533,14 @@ export default {
 				?? null
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		tableSourceId() {
 			return `sync-config-${this.widgetUid}-table-source`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		tablePickerId() {
 			return `sync-config-${this.widgetUid}-table`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		selectedTable() {
 			const tableId = this.configValue('tableId')
@@ -568,17 +554,14 @@ export default {
 				}
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		formSourceId() {
 			return `sync-config-${this.widgetUid}-form-source`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		formPickerId() {
 			return `sync-config-${this.widgetUid}-form`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		selectedForm() {
 			const formId = this.configValue('formId')
@@ -641,7 +624,6 @@ export default {
 				}
 			},
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		sourceId() {
 			// A source change under nextcloud-table invalidates the table list.
@@ -673,7 +655,6 @@ export default {
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
-
 		/**
 		 * Write one key into the `config` blob and emit the whole object
 		 * back to the parent. Copies before mutating so the prop is never
@@ -700,7 +681,6 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
 		/**
 		 * Handle a pick in the Source selector, emitting the Source UUID up
 		 * to the parent's `sourceId`/`targetId` field. Clearing the select
@@ -715,7 +695,6 @@ export default {
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
-
 		/**
 		 * Handle a pick in the Table selector under the `nextcloud-table`
 		 * kind.
@@ -743,7 +722,6 @@ export default {
 			delete next.columnMapping
 			this.$emit('update:config', next)
 		},
-
 		/**
 		 * Fetch the tables the selected Source can access via the tables-bridge
 		 * discovery endpoint. Soft-fails to an empty list with an inline error
@@ -777,7 +755,6 @@ export default {
 				this.tablesLoading = false
 			}
 		},
-
 		/**
 		 * Handle a pick in the Form selector under the `nextcloud-form`
 		 * source kind.
@@ -805,7 +782,6 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
 		/**
 		 * Fetch the forms the selected Source can access via the forms-bridge
 		 * discovery endpoint. Soft-fails to an empty list with an inline error
@@ -839,7 +815,6 @@ export default {
 				this.formsLoading = false
 			}
 		},
-
 		/**
 		 * Handle a pick in the Register selector of `register/schema` mode.
 		 * Emits the half-formed `<registerId>/` id — the schema half stays
@@ -865,7 +840,6 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
-
 		/**
 		 * Handle a pick in the Schema selector of `register/schema` mode,
 		 * emitting the combined `<registerId>/<schemaId>` id. Clearing the
@@ -885,7 +859,6 @@ export default {
 			}
 			this.$emit('update:sourceId', String(reg.id) + '/' + String(option.id))
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchSources() {
 			this.sourcesLoading = true
@@ -917,7 +890,6 @@ export default {
 				this.sourcesLoading = false
 			}
 		},
-
 		/**
 		 * Open the Nextcloud Files file picker and write the chosen path
 		 * back through the `update:sourceId` channel — same mutation path
@@ -962,7 +934,6 @@ export default {
 				this.pickingFile = false
 			}
 		},
-
 		/**
 		 * Build the schema id → name lookup the schema picker labels itself
 		 * with. `/apps/openregister/api/registers` returns each register's
@@ -999,7 +970,6 @@ export default {
 				this.schemaLabelsById = {}
 			}
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchRegisters() {
 			this.registersLoading = true

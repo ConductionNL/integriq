@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 2fe12a05e91cf34f0fb577546b50f9052c4fc3b0 Ruben van der Linde <ruben@conduction.nl> 1785236646 +0200	branch: Created from origin/development
+2fe12a05e91cf34f0fb577546b50f9052c4fc3b0 b3e90973427d0960357850505b7c53ad35d8db99 Ruben van der Linde <ruben@conduction.nl> 1785236674 +0200	commit: i18n(l10n): add missing CSRF-auth description string + gate PRs on l10n coverage

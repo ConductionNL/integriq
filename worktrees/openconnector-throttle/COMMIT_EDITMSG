@@ -1,0 +1,29 @@
+docs: correct a comment that claimed login had no brute-force protection
+
+#1250 shipped a comment on UserController::login saying brute-force
+protection was missing and left as follow-up. That was WRONG, and a wrong
+comment about a security control is worse than no comment: it tells the next
+reader to go build something that already exists, or to treat a protected
+endpoint as exposed.
+
+login() has had complete brute-force protection all along, implemented
+app-locally rather than through NC's IThrottler:
+
+  SecurityService::checkLoginRateLimit()  gates entry, with lockout + delay
+  recordFailedLoginAttempt()              on both failure paths
+  recordSuccessfulLogin()                 clears on success
+
+That is exactly the two-halves shape ADR-082 asks for -- and it is keyed on
+USERNAME + IP, finer-grained than the framework throttler's IP-only key.
+Adding #[BruteForceProtection] on top would be a second, coarser counter for
+the same event.
+
+I wrote the original note from the ABSENCE of an IThrottler call, which is
+the same mistake this sweep already made once: pass 2 of the fleet count
+declared launchpad's protection "decorative" because the counter lived in a
+service instead of the controller. Twice now, looking for one specific
+mechanism and concluding "unprotected" when a different one was doing the
+job.
+
+The AnonRateLimit stays: the volume ceiling is genuinely what app-local logic
+did not cover.

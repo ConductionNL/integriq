@@ -51,7 +51,7 @@
 							:key="`${action}-${group}`"
 							class="openconnector-admin__matrix-cell">
 							<NcCheckboxRadioSwitch
-								:modelValue="isChecked(action, group)"
+								:model-value="isChecked(action, group)"
 								:disabled="group === 'admin'"
 								:aria-label="
 									t(
@@ -60,7 +60,9 @@
 										{ group, action },
 									)
 								"
-								@update:modelValue="toggle(action, group, $event)" />
+								@update:model-value="
+									toggle(action, group, $event)
+								" />
 						</td>
 					</tr>
 				</tbody>
@@ -69,7 +71,7 @@
 
 		<div class="openconnector-admin__matrix-actions">
 			<NcButton
-				variant="primary"
+				type="primary"
 				data-testid="admin-action-matrix-save"
 				:disabled="loading || saving"
 				@click="save">
@@ -84,10 +86,10 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 /**
  * Admin editor for the ADR-023 action-authorization matrix.

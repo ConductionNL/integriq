@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 e95edcf722aed19bfd97306c617b464980d99055 Ruben van der Linde <rubenvdlinde@gmail.com> 1784028418 +0200	branch: Created from origin/development
+e95edcf722aed19bfd97306c617b464980d99055 a83c1a58ced2d7324f3fcaf683ef5c61a1df9e1a Ruben van der Linde <rubenvdlinde@gmail.com> 1784101898 +0200	commit: feat(reliability): retry policies, per-source circuit breaker, sync-item dead-letter
+a83c1a58ced2d7324f3fcaf683ef5c61a1df9e1a ee20f36fd6e803e38839585390d6923974b00912 Ruben van der Linde <rubenvdlinde@gmail.com> 1784102197 +0200	commit (merge): Merge remote-tracking branch 'origin/development' into wip/retry-and-circuit-breaker-policies

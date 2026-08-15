@@ -19,7 +19,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		labelId="addEndpointRuleModal"
+		label-id="addEndpointRuleModal"
 		size="normal"
 		@close="onClose">
 		<div class="cn-add-endpoint-rule-modal">
@@ -48,14 +48,14 @@
 				</label>
 				<NcSelect
 					id="cn-add-endpoint-rule-select"
-					v-model="selectedRules"
 					:aria-label-combobox="t('openconnector', 'Select rules to add')"
+					v-model="selectedRules"
 					:options="availableRules"
 					:loading="loadingRules"
 					:multiple="true"
 					:clearable="true"
 					:placeholder="t('openconnector', 'Pick one or more rules')"
-					inputId="cn-add-endpoint-rule-select" />
+					input-id="cn-add-endpoint-rule-select" />
 			</form>
 
 			<div class="cn-add-endpoint-rule-modal__actions">
@@ -67,7 +67,7 @@
 				</NcButton>
 				<NcButton
 					v-if="!success"
-					variant="primary"
+					type="primary"
 					:disabled="!canSave || saving"
 					@click="onSave">
 					<template #icon>
@@ -85,18 +85,18 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
-	NcButton,
-	NcLoadingIcon,
 	NcModal,
-	NcNoteCard,
+	NcButton,
 	NcSelect,
+	NcLoadingIcon,
+	NcNoteCard,
 } from '@nextcloud/vue'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'AddEndpointRuleModal',
@@ -134,17 +134,14 @@ export default {
 		endpointName() {
 			return this.endpoint?.name || this.endpoint?.title || ''
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		canSave() {
 			return this.selectedRules.length > 0
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		endpointId() {
 			return this.endpoint?.id || this.endpoint?.uuid
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		existingRuleIds() {
 			const raw = this.endpoint?.rules
@@ -159,10 +156,7 @@ export default {
 	},
 
 	watch: {
-		/**
-		 * @param value
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		open(value) {
 			if (value) {
 				this.resetState()

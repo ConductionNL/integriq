@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 7896b5be4a1f560f819540aaf32b47857d80fca2 Ruben van der Linde <ruben@conduction.nl> 1784841572 +0200	branch: Created from origin/development
+7896b5be4a1f560f819540aaf32b47857d80fca2 3ebeaeecb957ab74cd3d20631c6598f61c25995c Ruben van der Linde <ruben@conduction.nl> 1784845018 +0200	commit: feat(dashboard-http-datasource): governed read-only resolve facade for dashboard tiles
+3ebeaeecb957ab74cd3d20631c6598f61c25995c af36a420604e320b9682c9276a3214928d3cd1ac Ruben van der Linde <ruben@conduction.nl> 1784845415 +0200	commit (amend): feat(dashboard-http-datasource): governed read-only resolve facade for dashboard tiles
+af36a420604e320b9682c9276a3214928d3cd1ac 3da961e0507797538e72cf6502da64dd01909392 Ruben van der Linde <ruben@conduction.nl> 1784845470 +0200	commit (amend): feat(dashboard-http-datasource): governed read-only resolve facade for dashboard tiles
+3da961e0507797538e72cf6502da64dd01909392 bea04b473596bf4f53c6a550ecc97b981e2137da Ruben van der Linde <ruben@conduction.nl> 1784845722 +0200	commit: docs(dashboard-http-datasource): leaf-author guide; archive change

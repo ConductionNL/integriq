@@ -12,11 +12,11 @@
 		<NcSelect
 			data-testid="action-form-filepart-upload-mapping"
 			:aria-label-combobox="t('openconnector', 'Inbound mapping (required)')"
-			:modelValue="selectedInbound"
+			:model-value="selectedInbound"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@update:modelValue="
+			@update:model-value="
 				(option) => patch('mappingId', option?.id ? String(option.id) : '')
 			" />
 
@@ -25,11 +25,11 @@
 		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Outbound mapping (optional)')"
-			:modelValue="selectedOutbound"
+			:model-value="selectedOutbound"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@update:modelValue="
+			@update:model-value="
 				(option) =>
 					patch('mappingOutId', option?.id ? String(option.id) : '')
 			" />
@@ -55,7 +55,6 @@ export default {
 	data() {
 		return { mappingOptions: [], loading: false }
 	},
-
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedInbound() {
@@ -65,7 +64,6 @@ export default {
 				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
 			)
 		},
-
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOutbound() {
 			const id = String(this.value?.mappingOutId || '')
@@ -75,14 +73,12 @@ export default {
 			)
 		},
 	},
-
 	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.mappingOptions = await fetchOpenRegisterCollection('mapping')
 		this.loading = false
 	},
-
 	methods: { patch: patchMethod() },
 }
 </script>

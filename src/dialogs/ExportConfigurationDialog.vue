@@ -32,14 +32,14 @@
 			</p>
 
 			<NcSelect
-				:modelValue="selected"
+				:model-value="selected"
 				:options="options"
 				:loading="loading"
-				:inputLabel="t('openconnector', 'Configuration group')"
+				:input-label="t('openconnector', 'Configuration group')"
 				:placeholder="t('openconnector', 'Select a configuration group')"
 				label="label"
 				data-testid="export-configuration-select"
-				@update:modelValue="onSelect" />
+				@update:model-value="onSelect" />
 
 			<NcNoteCard v-if="options.length === 0 && !loading" type="info">
 				{{
@@ -55,11 +55,11 @@
 			</NcNoteCard>
 
 			<div class="oc-export-dialog__actions">
-				<NcButton variant="tertiary" @click="close">
+				<NcButton type="tertiary" @click="close">
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="!selected || exporting"
 					data-testid="export-configuration-confirm"
 					@click="runExport">
@@ -72,8 +72,8 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess } from '@nextcloud/dialogs'
 import { NcButton, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
 
 export default {

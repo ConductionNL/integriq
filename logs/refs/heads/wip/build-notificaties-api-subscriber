@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 40d88b6b48968f125efa20e698587db723ab74b2 Ruben van der Linde <rubenvdlinde@gmail.com> 1784134906 +0200	branch: Created from origin/development
+40d88b6b48968f125efa20e698587db723ab74b2 10e5e0d0e5c70b565902bc37c769a0b38bc06a9e Ruben van der Linde <rubenvdlinde@gmail.com> 1784137881 +0200	commit: feat(notificaties): ZGW Notificaties API subscriber + publisher
+10e5e0d0e5c70b565902bc37c769a0b38bc06a9e c3bab6070c8ae9dc7ba711eec3bf306a3854986d Ruben van der Linde <rubenvdlinde@gmail.com> 1784137926 +0200	merge origin/development: Merge made by the 'recursive' strategy.

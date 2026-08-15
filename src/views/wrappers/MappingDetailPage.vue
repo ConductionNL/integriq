@@ -45,10 +45,10 @@
 		:description="description"
 		:loading="loading"
 		:error="!!loadError"
-		:errorMessage="errorMessage"
-		:onRetry="reload"
-		:objectType="objectType"
-		:objectId="resolvedId"
+		:error-message="errorMessage"
+		:on-retry="reload"
+		:object-type="objectType"
+		:object-id="resolvedId"
 		:sidebar="sidebarConfig"
 		:subscribe="true">
 		<template #actions>
@@ -74,9 +74,9 @@
 					<dt>{{ t('openconnector', 'Pass through') }}</dt>
 					<dd>
 						<NcCheckboxRadioSwitch
-							:modelValue="!!mapping.passThrough"
+							:model-value="!!mapping.passThrough"
 							:disabled="saving"
-							@update:modelValue="onTogglePassThrough">
+							@update:model-value="onTogglePassThrough">
 							{{ passThroughLabel }}
 						</NcCheckboxRadioSwitch>
 						<p class="cn-mapping-detail__hint">
@@ -98,14 +98,14 @@
 						{{ t('openconnector', 'Transformation rules') }}
 					</h3>
 					<MappingRulesEditor
-						:mappingRules="mappingRules"
-						:castRules="castRules"
-						:unsetRules="unsetRules"
-						:passThrough="!!mapping.passThrough"
+						:mapping-rules="mappingRules"
+						:cast-rules="castRules"
+						:unset-rules="unsetRules"
+						:pass-through="!!mapping.passThrough"
 						:saving="saving"
-						@updateMapping="onUpdateMapping"
-						@updateCast="onUpdateCast"
-						@updateUnset="onUpdateUnset" />
+						@update-mapping="onUpdateMapping"
+						@update-cast="onUpdateCast"
+						@update-unset="onUpdateUnset" />
 				</section>
 
 				<section class="cn-mapping-detail__card cn-mapping-detail__preview">
@@ -113,7 +113,7 @@
 						<h3 class="cn-mapping-detail__section-title">
 							{{ t('openconnector', 'Live preview') }}
 						</h3>
-						<NcButton variant="tertiary" @click="resetPreview">
+						<NcButton type="tertiary" @click="resetPreview">
 							<template #icon>
 								<RestoreIcon :size="18" />
 							</template>
@@ -148,8 +148,8 @@
 					<MappingResultPanel
 						ref="result"
 						:mapping="mapping"
-						:inputObject="sampleInput"
-						@inputError="sampleParseError = $event" />
+						:input-object="sampleInput"
+						@input-error="sampleParseError = $event" />
 				</section>
 			</div>
 		</div>
@@ -158,16 +158,17 @@
 
 <script>
 import { CnDetailPage } from '@conduction/nextcloud-vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
-import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+
 import MappingRulesEditor from './MappingRulesEditor.vue'
+import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
-import { EVENT_OPEN_TEST_MAPPING, modalBus } from '../../handlers/modalBus.js'
-import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
-import { useObjectStore } from '../../store/objectStore.js'
+import { modalBus, EVENT_OPEN_TEST_MAPPING } from '../../handlers/modalBus.js'
 
 /** Default sample input shown until the user edits the textarea. */
 const DEFAULT_SAMPLE = '{}'
@@ -196,7 +197,6 @@ export default {
 			type: [String, Number],
 			default: '',
 		},
-
 		/**
 		 * Manifest-config: the OR register slug. Forwarded by
 		 * CnPageRenderer from `pages[].config.register`.
@@ -205,7 +205,6 @@ export default {
 			type: String,
 			default: 'openconnector',
 		},
-
 		/**
 		 * Manifest-config: the OR schema slug. Forwarded by
 		 * CnPageRenderer from `pages[].config.schema`.
@@ -234,56 +233,46 @@ export default {
 		store() {
 			return useObjectStore()
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		resolvedId() {
 			return this.id != null ? String(this.id) : ''
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mapping() {
 			if (!this.resolvedId) return {}
 			return this.store.getObject(this.objectType, this.resolvedId) || {}
 		},
-
 		hasMapping() {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loading() {
 			return !!this.store.loading?.[this.objectType] && !this.hasMapping
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loadError() {
 			return this.store.errors?.[this.objectType] || null
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
 			return err.message || this.t('openconnector', 'Failed to load mapping')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		title() {
 			return this.mapping?.name || this.t('openconnector', 'Mapping')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		description() {
 			return this.mapping?.description || ''
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		passThroughLabel() {
 			return this.mapping?.passThrough
 				? this.t('openconnector', 'Pass through enabled')
 				: this.t('openconnector', 'Pass through disabled')
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		sidebarConfig() {
 			return {
@@ -294,22 +283,18 @@ export default {
 				showMetadata: true,
 			}
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRules() {
 			return asObjectMap(this.mapping?.mapping)
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castRules() {
 			return asObjectMap(this.mapping?.cast)
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		unsetRules() {
 			return asUnsetList(this.mapping?.unset)
 		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		samplePlaceholder() {
 			return '{\n  "name": "hello"\n}'
@@ -413,7 +398,6 @@ export default {
 		onUpdateMapping(nextRules) {
 			return this.persistPatch({ mapping: nextRules })
 		},
-
 		/**
 		 * Persist the cast rules after an edit in MappingRulesEditor.
 		 *
@@ -426,7 +410,6 @@ export default {
 		onUpdateCast(nextRules) {
 			return this.persistPatch({ cast: nextRules })
 		},
-
 		/**
 		 * Persist the unset list after an edit in MappingRulesEditor.
 		 *
@@ -439,7 +422,6 @@ export default {
 		onUpdateUnset(nextList) {
 			return this.persistPatch({ unset: nextList })
 		},
-
 		/**
 		 * Persist the pass-through switch, which decides whether unmapped input
 		 * fields are copied into the output. Coerced to a strict boolean so the

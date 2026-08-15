@@ -26,7 +26,7 @@
 		<div v-else class="openconnector-admin__dso-pki-form">
 			<NcSelect
 				v-model="mode"
-				:inputLabel="t('openconnector', 'Signing mode')"
+				:input-label="t('openconnector', 'Signing mode')"
 				:options="modeOptions"
 				:reduce="(option) => option.value"
 				:clearable="false"
@@ -88,7 +88,7 @@
 
 		<div class="openconnector-admin__matrix-actions">
 			<NcButton
-				variant="primary"
+				type="primary"
 				data-testid="admin-dso-pki-save"
 				:disabled="loading || saving"
 				@click="save">
@@ -103,10 +103,10 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcPasswordField, NcSelect } from '@nextcloud/vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 /**
  * Admin editor for the DSO STAM PKIoverheid / HMAC signature verification
@@ -140,7 +140,6 @@ export default {
 						'openconnector',
 						'HMAC shared secret (pre-production)',
 					),
-
 					value: 'hmac',
 				},
 				{
@@ -148,7 +147,6 @@ export default {
 						'openconnector',
 						'PKIoverheid certificate chain (production)',
 					),
-
 					value: 'rsa',
 				},
 			],

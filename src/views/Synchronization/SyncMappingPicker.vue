@@ -31,13 +31,13 @@
 				{{ t('openconnector', 'Source → Target mapping *') }}
 			</label>
 			<NcSelect
-				:inputId="primaryId"
+				:input-id="primaryId"
 				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
-				:modelValue="selectedPrimary"
+				:model-value="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
 				:placeholder="t('openconnector', 'Pick a mapping')"
-				@update:modelValue="
+				@update:model-value="
 					(option) => $emit('update:value', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
@@ -48,7 +48,7 @@
 					)
 				}}
 			</span>
-			<SyncMappingPreview :mappingId="value" />
+			<SyncMappingPreview :mapping-id="value" />
 		</div>
 
 		<div class="sync-mapping__field">
@@ -56,16 +56,16 @@
 				{{ t('openconnector', 'Target → Source mapping') }}
 			</label>
 			<NcSelect
-				:inputId="reverseId"
+				:input-id="reverseId"
 				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
-				:modelValue="selectedReverse"
+				:model-value="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
 				:placeholder="
 					t('openconnector', 'Optional — for bidirectional sync')
 				"
-				@update:modelValue="
+				@update:model-value="
 					(option) => $emit('update:targetSourceValue', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
@@ -83,14 +83,14 @@
 				{{ t('openconnector', 'Hash mapping') }}
 			</label>
 			<NcSelect
-				:inputId="hashId"
+				:input-id="hashId"
 				:aria-label-combobox="t('openconnector', 'Hash mapping')"
-				:modelValue="selectedHash"
+				:model-value="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
 				:placeholder="t('openconnector', 'Optional — change detection')"
-				@update:modelValue="
+				@update:model-value="
 					(option) => $emit('update:hashValue', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
@@ -106,9 +106,10 @@
 </template>
 
 <script>
+import { NcSelect } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcSelect } from '@nextcloud/vue'
+
 import SyncMappingPreview from './SyncMappingPreview.vue'
 
 let pickerSeq = 0
@@ -144,27 +145,22 @@ export default {
 		primaryId() {
 			return `sync-mapping-${this.pickerUid}-primary`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		reverseId() {
 			return `sync-mapping-${this.pickerUid}-reverse`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		hashId() {
 			return `sync-mapping-${this.pickerUid}-hash`
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedPrimary() {
 			return this.resolveOption(this.value)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedReverse() {
 			return this.resolveOption(this.targetSourceValue)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedHash() {
 			return this.resolveOption(this.hashValue)
@@ -180,7 +176,6 @@ export default {
 		 * Turn a stored mapping slug into the option object NcSelect renders.
 		 * Falls back to a synthetic `{ id, label }` so a slug that is not in
 		 * the fetched list (or is still loading) still shows its own value.
-		 *
 		 * @param {string|number} id The stored mapping slug; falsy means "none
 		 *   selected".
 		 * @return {{id: string, label: string}|null} The matching option, a
@@ -196,7 +191,6 @@ export default {
 				}
 			)
 		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchMappings() {
 			this.loading = true

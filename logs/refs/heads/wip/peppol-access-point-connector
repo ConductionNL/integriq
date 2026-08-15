@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 497e52db6f23dedf7833b26b57b180e423cbc5e8 Ruben van der Linde <rubenvdlinde@gmail.com> 1783877718 +0200	branch: Created from origin/development
+497e52db6f23dedf7833b26b57b180e423cbc5e8 8e2bce6c060b3b3cd9efb677131a0ca77171ce6a Ruben van der Linde <rubenvdlinde@gmail.com> 1783879832 +0200	commit: feat(peppol): add Peppol Access Point connector
+8e2bce6c060b3b3cd9efb677131a0ca77171ce6a 0dd15d55cd6300ada2c2815b3fdbed55135728aa Ruben van der Linde <rubenvdlinde@gmail.com> 1783879956 +0200	merge origin/development: Fast-forward
+0dd15d55cd6300ada2c2815b3fdbed55135728aa 40d5dc1b365c5b790e45616060539d3ad45a3cf7 Ruben van der Linde <rubenvdlinde@gmail.com> 1783880052 +0200	commit: docs(openspec): archive peppol-access-point-connector

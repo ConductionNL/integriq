@@ -1,0 +1,33 @@
+fix(ui): NcButton `native-type` is inert on @nextcloud/vue 9 — the Add tier form never submitted
+
+`@nextcloud/vue` 9 renamed NcButton's visual prop `type` -> `variant` and
+repurposed `type` as the NATIVE button type, with `default: "button"`.
+`nativeType` was removed outright. The v8 spelling therefore fails silently:
+`native-type` is an undeclared prop, so it lands in the DOM as an inert
+attribute while the button keeps `type="button"` — and a `type="button"`
+inside a <form> raises no submit event, so `@submit.prevent` never runs.
+No console warning, no lint error, no failed request.
+
+ApiProductDetail's "Add tier" button carried BOTH v8 spellings
+(`type="primary" native-type="submit"`). Migrated to
+`variant="primary" type="submit"`, confirmed against the
+`@submit.prevent="addTier"` form it sits in.
+
+Adds tests/vitest/ncButtonSubmitType.spec.js, which mounts the REAL NcButton
+from the installed @nextcloud/vue 9.9.0 and asserts DOM behaviour rather than
+markup, including negative controls that pin the broken spellings:
+
+  • type="submit"            -> type=submit, submit handler fires  (the fix)
+  • native-type="submit"     -> type=button, handler fires NOTHING (the bug)
+  • type="primary" + n-t     -> still submits, but renders unstyled
+
+That third case is worth recording: "primary" is not a valid native button
+type, and HTML's invalid-value default for <button type> is the Submit
+Button state, so this shape still submits. Its damage is cosmetic — the
+value is consumed as the native type, so `variant` keeps its "secondary"
+default. It must not be conflated with the `native-type`-only shape, which
+is genuinely dead.
+
+vitest.config.js: @nextcloud/vue must be inlined rather than externalised,
+or Node's ESM loader dies on the package's side-effect CSS imports with
+ERR_UNKNOWN_FILE_EXTENSION. This is what unblocks component tests generally.

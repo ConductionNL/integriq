@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 4fa43faf590da559910e039c29e8e58b503a4691 Ruben van der Linde <ruben@conduction.nl> 1785170314 +0200	branch: Created from origin/development
+4fa43faf590da559910e039c29e8e58b503a4691 a6ae5dd7296edaa3faa47065a48987a3d6ad1369 Ruben van der Linde <ruben@conduction.nl> 1785170442 +0200	commit: fix(endpoints): authenticate a Nextcloud session and template the upstream path

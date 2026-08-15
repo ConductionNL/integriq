@@ -36,11 +36,11 @@
 		icon="Sitemap"
 		:loading="loading"
 		:error="hasError"
-		:errorMessage="errorMessage"
-		:onRetry="hasError ? loadObject : null"
-		:objectType="schemaSlug"
-		:objectId="objectIdString"
-		:sidebarProps="{ register: registerSlug, schema: schemaSlug }">
+		:error-message="errorMessage"
+		:on-retry="hasError ? loadObject : null"
+		:object-type="schemaSlug"
+		:object-id="objectIdString"
+		:sidebar-props="{ register: registerSlug, schema: schemaSlug }">
 		<template #actions>
 			<NcButton :disabled="running || !objectIdString" @click="runFlow">
 				<template #icon>
@@ -51,7 +51,7 @@
 			</NcButton>
 			<NcButton
 				v-if="dirty"
-				variant="primary"
+				type="primary"
 				:disabled="saving || !canSave"
 				@click="save">
 				<template #icon>
@@ -91,8 +91,8 @@
 				<h3>{{ t('openconnector', 'General') }}</h3>
 				<NcTextField
 					:label="t('openconnector', 'Name') + '*'"
-					:modelValue="draft.name"
-					@update:modelValue="(value) => updateDraft('name', value)" />
+					:model-value="draft.name"
+					@update:model-value="(value) => updateDraft('name', value)" />
 				<NcTextArea
 					v-model="draft.description"
 					resize="vertical"
@@ -121,18 +121,18 @@
 					v-for="(step, index) in draft.steps"
 					:key="step._key"
 					:step="step"
-					:stepOrders="stepOrders"
-					:sourceOptions="sourceOptions"
-					:mappingOptions="mappingOptions"
-					:synchronizationOptions="synchronizationOptions"
-					:configRefLoading="optionsLoading"
-					:isFirst="index === 0"
-					:isLast="index === draft.steps.length - 1"
+					:step-orders="stepOrders"
+					:source-options="sourceOptions"
+					:mapping-options="mappingOptions"
+					:synchronization-options="synchronizationOptions"
+					:config-ref-loading="optionsLoading"
+					:is-first="index === 0"
+					:is-last="index === draft.steps.length - 1"
 					@update="(value) => updateStep(index, value)"
 					@remove="removeStep(index)"
-					@moveUp="moveStep(index, -1)"
-					@moveDown="moveStep(index, 1)" />
-				<NcButton variant="secondary" @click="addStep">
+					@move-up="moveStep(index, -1)"
+					@move-down="moveStep(index, 1)" />
+				<NcButton type="secondary" @click="addStep">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -142,17 +142,13 @@
 
 			<section v-if="objectIdString" class="flow-detail__card">
 				<h3>{{ t('openconnector', 'Run history') }}</h3>
-				<FlowRunLog :flowId="objectIdString" />
+				<FlowRunLog :flow-id="objectIdString" />
 			</section>
 		</div>
 	</CnDetailPage>
 </template>
 
 <script>
-import { CnDetailPage } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -161,14 +157,19 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
-import FlowRunLog from './FlowRunLog.vue'
-import FlowStepRow from './FlowStepRow.vue'
-import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+
 import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+import FlowStepRow from './FlowStepRow.vue'
+import FlowRunLog from './FlowRunLog.vue'
 
 const SCHEMA_SLUG = 'flow'
 const REGISTER_SLUG = 'openconnector'
@@ -251,7 +252,6 @@ export default {
 	/**
 	 * Binds the shared object store and registers the `flow` schema against it,
 	 * so this page and `CnDetailPage` read the same persistence surface.
-	 *
 	 * @param {object} props The component props (register/schema slugs).
 	 * @return {object} The store exposed to the options API.
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -288,38 +288,31 @@ export default {
 	computed: {
 		/**
 		 * The routed object id as a string — `''` when this is a create form.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
 		},
-
 		/**
 		 * The register this page reads and writes `flow` objects in.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		registerSlug() {
 			return this.register || REGISTER_SLUG
 		},
-
 		/**
 		 * The schema this page reads and writes.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		schemaSlug() {
 			return this.schema || SCHEMA_SLUG
 		},
-
 		/**
 		 * The detail page heading — the in-flight draft name while editing, so
 		 * a rename is visible before it is saved.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -327,47 +320,38 @@ export default {
 			if (this.draft?.name) return this.draft.name
 			return this.original?.name || t('openconnector', 'Flow')
 		},
-
 		/**
 		 * The persisted description, shown as page subtitle.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		description() {
 			return this.original?.description || ''
 		},
-
 		hasError() {
 			return Boolean(this.loadError) && !this.draft
 		},
-
 		/**
 		 * The load-failure message shown in place of the editor.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		errorMessage() {
 			return this.loadError || t('openconnector', 'Failed to load flow')
 		},
-
 		/**
 		 * Every step's `order` value, passed to each row so move-up/move-down
 		 * can compute its neighbours.
-		 *
 		 * @return {number[]}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
 		stepOrders() {
 			return (this.draft?.steps || []).map((step) => step.order)
 		},
-
 		/**
 		 * Save is blocked while the flow is unnamed or fails branch/order
 		 * validation — REQ-009's rule that a flow the runner would fail on at
 		 * execution time must not be persisted.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -377,11 +361,9 @@ export default {
 				&& this.validationErrors.length === 0
 			)
 		},
-
 		/**
 		 * Whether the draft differs from the loaded object, comparing serialized
 		 * steps so key-only differences do not read as edits.
-		 *
 		 * @return {boolean}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -396,12 +378,10 @@ export default {
 				|| this.draft.isEnabled !== originalNormalized.isEnabled
 			)
 		},
-
 		/**
 		 * Maps the most recent run's terminal status onto the note styling —
 		 * `failed`/`stopped`/`dead_letter` are errors and `suspended` (an
 		 * approval step awaiting a decision) is a warning, not a failure.
-		 *
 		 * @return {string}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-runs-are-persisted-with-a-per-step-trace-req-008
 		 */
@@ -415,7 +395,6 @@ export default {
 			if (this.lastRunStatus === 'suspended') return 'warning'
 			return 'success'
 		},
-
 		/**
 		 * Task 18 / design.md branch-target risk mitigation: block save when
 		 * step `order` values collide, or a `branch` step's `nextStepOrder`/
@@ -486,7 +465,6 @@ export default {
 			/**
 			 * Reloads when the routed id changes, so navigating between two
 			 * flows does not leave the previous flow's draft on screen.
-			 *
 			 * @return {void}
 			 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 			 */
@@ -504,7 +482,6 @@ export default {
 		/**
 		 * Loads the routed `flow` into `original` and seeds the editable draft,
 		 * or produces an empty draft when this is a create form.
-		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -545,7 +522,6 @@ export default {
 		/**
 		 * Accepts a live-subscription push, but never over an in-flight edit —
 		 * overwriting a dirty draft would discard the admin's unsaved steps.
-		 *
 		 * @param {object} fresh The pushed `flow` object.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -560,7 +536,6 @@ export default {
 		 * Projects a persisted `flow` onto the draft shape so `dirty` compares
 		 * like with like — without this, defaults absent from the stored object
 		 * would read as edits the moment the page loaded.
-		 *
 		 * @param {object} obj The persisted `flow` object.
 		 * @return {object} The normalized draft.
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -581,7 +556,6 @@ export default {
 		 * picker to be scoped to the step's own entity type, which is only
 		 * possible because these three lists are fetched separately rather than
 		 * as one pool.
-		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -634,7 +608,6 @@ export default {
 		/**
 		 * Normalizes an OpenRegister list response — which arrives as an
 		 * envelope, not a bare array — into `{id, label}` picker options.
-		 *
 		 * @param {object|Array} data The OR list response.
 		 * @return {Array<{id: string, label: string}>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -654,7 +627,6 @@ export default {
 		/**
 		 * Writes one metadata field (name/description/isEnabled) into the
 		 * draft — the inline edit flow this page uses instead of an Edit modal.
-		 *
 		 * @param {string} key   The draft field to set.
 		 * @param {*}      value The new value.
 		 * @return {void}
@@ -669,7 +641,6 @@ export default {
 		 * The `order` for a newly added step. Steps are spaced by 10 so a step
 		 * can later be moved between two neighbours without renumbering every
 		 * `branches[].nextStepOrder` that references them by value.
-		 *
 		 * @return {number}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -680,7 +651,6 @@ export default {
 
 		/**
 		 * Appends a step — REQ-009's "add" control.
-		 *
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -697,7 +667,6 @@ export default {
 		/**
 		 * Merges one row's emitted changes into the draft, replacing the array
 		 * rather than mutating in place so the diff against `original` is seen.
-		 *
 		 * @param {number} index The step's array index.
 		 * @param {object} value The partial step update.
 		 * @return {void}
@@ -713,7 +682,6 @@ export default {
 		 * Removes a step — REQ-009's "remove" control. Existing `order` values
 		 * are deliberately left untouched, because branch targets reference
 		 * them by value and renumbering would silently repoint them.
-		 *
 		 * @param {number} index The step's array index.
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
@@ -752,7 +720,6 @@ export default {
 		 * The manual trigger — REQ-007's fourth entry point, alongside cron,
 		 * endpoint rule and event. A non-2xx or a terminal failure status is
 		 * surfaced to the admin rather than reported as a successful trigger.
-		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
 		 */
@@ -795,7 +762,6 @@ export default {
 		 * Persists the draft. Re-checks `canSave` rather than trusting the
 		 * button's disabled state, so a flow that fails branch/order validation
 		 * cannot be stored by any other path.
-		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */
@@ -834,7 +800,6 @@ export default {
 		 * Discards the draft back to the last persisted state — the "Discard"
 		 * half of the draft/Save/Discard flow this page shares with the other
 		 * custom detail pages.
-		 *
 		 * @return {void}
 		 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flows-index-and-detail-ui-provide-a-typed-step-list-editor-req-009
 		 */

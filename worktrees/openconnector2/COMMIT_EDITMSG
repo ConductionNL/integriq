@@ -1,0 +1,30 @@
+docs(spec): withdraw REQ-009's no-canvas prohibition, require the shared canvas
+
+REQ-009 read "the editor MUST NOT implement drag-and-drop or a node-graph
+canvas in this version", and the Purpose excluded a canvas outright. That was a
+defensible v1 scope constraint, but it now contradicts ADR-065, which makes a
+shared canvas the fleet-standard flow-authoring surface. A per-app opt-out
+defeats a fleet standard, so the prohibition is withdrawn rather than kept.
+
+Replaced by a uniformity rule instead of a licence to build anything:
+- OpenConnector MUST NOT hand-roll a canvas; graph editing MUST consume
+  CnGraphCanvas from @conduction/nextcloud-vue (ADR-065).
+- A canvas MUST NOT be the sole authoring surface — the typed step list stays as
+  the keyboard-operable path (WCAG 2.1 AA 2.1.1; a drag-only editor is not
+  keyboard-operable).
+- A canvas MUST NOT ship against the current model until edges are explicit:
+  `order` is step identity, execution sequence, and the implicit edge set all at
+  once, and `branches[].nextStepOrder` / `defaultNextStepOrder` reference it BY
+  VALUE — so a dragged edge can silently invalidate every branch target.
+
+The engine exclusion is kept and hardened: ADR-065 relocates execution to
+OpenRegister, so no general-purpose engine grows here (ADR-022). Parallel/loops
+stay out of scope for the `order`-indexed model and are delivered by the OR
+engine's Petri-net core, which supports parallel splits and synchronising joins.
+
+The scenario "reordering uses move controls, not drag-and-drop" asserted that
+drag-and-drop was absent, which the rewrite contradicts; it now asserts the real
+underlying requirement (reorder achievable by keyboard alone). Adds a scenario
+for canvas reuse, marked @e2e exclude until a graph view exists.
+
+openspec validate flow-orchestration --strict: valid.

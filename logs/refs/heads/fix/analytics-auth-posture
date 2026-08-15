@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 bb162c6f73ec552be3c971466b4e4dbeb0697107 Ruben van der Linde <ruben@conduction.nl> 1786021174 +0200	branch: Created from HEAD
+bb162c6f73ec552be3c971466b4e4dbeb0697107 90c84fae8815db0f88c89719a40f0ee8c0391ef2 Ruben van der Linde <ruben@conduction.nl> 1786021605 +0200	commit: docs(gateway): state that product analytics is admin-only
+90c84fae8815db0f88c89719a40f0ee8c0391ef2 e60883fffaadaaa9b4c852b9e8dbd5302d6faa5b Ruben van der Linde <ruben@conduction.nl> 1786022689 +0200	commit: chore: re-run gates with the opt-outs recorded in the PR body
+e60883fffaadaaa9b4c852b9e8dbd5302d6faa5b 0b2e7c0b3b67db7e4d7477a17473efd7857d93cd Ruben van der Linde <ruben@conduction.nl> 1786023934 +0200	commit: fix(gateway): translate a failed activation, and pin analytics as admin-only
+0b2e7c0b3b67db7e4d7477a17473efd7857d93cd 1b86bf4a0d54686256e9ec7e5f763d069601ea81 Ruben van der Linde <ruben@conduction.nl> 1786024753 +0200	commit: test(gateway): cover the 400 translation the coverage ratchet asked for
+1b86bf4a0d54686256e9ec7e5f763d069601ea81 84dbbf044a1c46874685f7b20dcbab2425545900 Ruben van der Linde <ruben@conduction.nl> 1786025702 +0200	commit: docs(gateway): say why the analytics lookup swallows everything

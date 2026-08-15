@@ -31,11 +31,11 @@
 // modal renders each `kind` generically.
 
 import { translate as t } from '@nextcloud/l10n'
-// Same table the "View logs" row action resolves against — see logTargets.js.
-import { logsLocation } from '../../handlers/logTargets.js'
 // Shared with handlers/actionHandlers.js — the two copies of this had already
 // drifted apart. See handlers/rowId.js.
 import { rowId } from '../../handlers/rowId.js'
+// Same table the "View logs" row action resolves against — see logTargets.js.
+import { logsLocation } from '../../handlers/logTargets.js'
 
 /**
  * Count the real entries of a uuid list.
@@ -655,4 +655,4 @@ export function visibleOptions(descriptor, values) {
 	})
 }
 
-export { countUuids, formatMs, rowId }
+export { rowId, formatMs, countUuids }
