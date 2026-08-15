@@ -476,6 +476,20 @@ class SynchronizationService {
 	 */
 	private ?SynchronizationRunProgressService $runProgressService = null;
 
+	/**
+	 * Files successfully fetched and saved since the last tally reset.
+	 *
+	 * @var int
+	 */
+	private int $fileFetchSucceeded = 0;
+
+	/**
+	 * Files whose fetch or save failed since the last tally reset.
+	 *
+	 * @var int
+	 */
+	private int $fileFetchFailed = 0;
+
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
 	// lookup is dropped in W5. See findContract*() / persistContract() /
@@ -8039,9 +8053,30 @@ class SynchronizationService {
 				// Update data with rule result.
 				$data = $result;
 
+				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
+				// `processFetchFileRule()` catches its own per-file failures so
+				// one bad attachment cannot abort the object, which meant this
+				// line said "Successfully applied" for a rule that wrote ZERO
+				// files — and nothing downstream could tell that from 40. The
+				// tally is the only thing that discriminates.
+				$outcome = '';
+				if (($rule['type'] ?? null) === 'fetch_file') {
+					$tally = $this->takeFileFetchTally();
+					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
+
+					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
+						$this->logger->warning(
+							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
+							. $tally['failed'] . ' failed) for synchronization '
+							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
+						);
+					}
+				}
+
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
 					. ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? '')
+					. $outcome
 				);
 			}//end foreach
 
@@ -9109,11 +9144,35 @@ class SynchronizationService {
 				published: $published,
 				registerId: $registerId
 			);
+			$this->fileFetchSucceeded++;
 		} catch (Exception $e) {
+			// COUNTED, not just logged. Swallowing here is deliberate — one
+			// file's failure must not abort its siblings or the object — but it
+			// is why the rule could report "Successfully applied" having written
+			// ZERO files: nothing downstream could tell 40 files from none.
+			$this->fileFetchFailed++;
+
 			// Log error with detailed information but don't throw.
 			$this->logger->error("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: " . $e->getMessage(), ['exception' => $e]);
 		}
 	}//end fetchFileSafely()
+
+	/**
+	 * Reset and read the per-rule file tally.
+	 *
+	 * @return array{succeeded: int, failed: int} The tally since the last reset.
+	 */
+	private function takeFileFetchTally(): array {
+		$tally = [
+			'succeeded' => $this->fileFetchSucceeded,
+			'failed' => $this->fileFetchFailed,
+		];
+
+		$this->fileFetchSucceeded = 0;
+		$this->fileFetchFailed = 0;
+
+		return $tally;
+	}//end takeFileFetchTally()
 
 	/**
 	 * Generates placeholder values for file paths based on endpoint type.
@@ -10447,10 +10506,18 @@ class SynchronizationService {
 						registerId: $item['registerId']
 					);
 
+					// COUNTED HERE TOO. The concurrent path splits fetch from
+					// save and never goes through fetchFileSafely(), so a tally
+					// kept only there reported "saved: 0, failed: 0" for a run
+					// that had just written 6 files — a counter that is always
+					// zero is worse than none, because it reads as a finding.
+					$this->fileFetchSucceeded++;
+
 					$this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
 				} catch (\Throwable $exception) {
 					// A failed SAVE is isolated exactly like a failed fetch: the
 					// remaining files and the object continue.
+					$this->fileFetchFailed++;
 					$this->logger->error(
 						'Failed to save file from endpoint ' . $item['endpoint'] . ': ' . $exception->getMessage(),
 						['exception' => $exception]
@@ -10470,6 +10537,11 @@ class SynchronizationService {
 					$message = $reason->getMessage();
 					$exception = $reason;
 				}
+
+				// The REJECTION leg — a download that never arrived. Counted
+				// alongside failed saves so "failed" means "this file is not
+				// there", whichever half of the pipeline lost it.
+				$this->fileFetchFailed++;
 
 				$this->logger->error(
 					'Failed to fetch file from endpoint ' . $item['endpoint'] . ': ' . $message,
