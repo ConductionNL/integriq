@@ -17,6 +17,6 @@ const APP = '/index.php/apps/openconnector'
 
 test.describe('OpenConnector — visual baselines', () => {
 	test('dashboard', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/`, 'dashboard.png')
+		await shootSurface(page, `${APP}/`, 'dashboard.png')
 	})
 })

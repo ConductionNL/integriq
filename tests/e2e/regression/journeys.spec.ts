@@ -77,17 +77,17 @@ async function resolveAppBase(page: Page): Promise<string> {
 /**
  * Deep-link to an in-app route.
  *
- * ⚠️ The `#` is not decoration. The in-app router is hash-mode
- * (`createWebHashHistory()`, src/main.js), so a PATH-form deep-link such as
- * `<base>/sources` is served by the SPA shell — status 200, `openconnector` in
- * the HTML, everything a smoke check looks at — and then ignored by the
- * router, which renders the dashboard instead.
+ * ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A HASH-form
+ * deep-link such as `<base>/#/sources` would now be served by the SPA shell —
+ * status 200, `openconnector` in the HTML, everything a smoke check looks
+ * at — and then ignored by the router, which reads `location.pathname`, not
+ * `location.hash`, and renders the dashboard instead. The plain path form
+ * used below is correct for this router mode; do not add a `#` back in.
  *
- * Journeys J1–J6 did exactly that, and reported it as
- * `Add Synchronization button must be visible on the index page`. Perfectly
- * true: they were looking at the dashboard. The `UI smoke` block lower down
- * deliberately does NOT use this helper — it asserts the SERVER routes return
- * 200, for which the path form is the right URL.
+ * The `UI smoke` block lower down deliberately does NOT use this helper — it
+ * asserts the SERVER routes return 200, for which the path form is also the
+ * right URL, for the unrelated reason that it's a raw HTTP check bypassing
+ * the client router entirely.
  *
  * @param page  the Playwright page.
  * @param route In-app route beginning with `/`, e.g. `/sources`.
@@ -96,7 +96,7 @@ async function resolveAppBase(page: Page): Promise<string> {
  */
 async function gotoRoute(page: Page, route: string): Promise<void> {
 	const base = await resolveAppBase(page)
-	await page.goto(`${base}/#${route}`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
 }
 
 /**

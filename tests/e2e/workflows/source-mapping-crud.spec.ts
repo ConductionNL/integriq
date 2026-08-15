@@ -82,15 +82,15 @@ test.afterAll(async () => {
  */
 async function gotoIndex(page: Page, route: string): Promise<void> {
 	// Two things this URL has to get right:
-	//   * HASH router (`createWebHashHistory()`, src/main.js): a path-form
-	//     deep-link is ignored and lands on the dashboard, so the index list
-	//     never renders. Hence the `#`.
+	//   * PATH router (`createWebHistory()`, src/main.js): a hash-form
+	//     deep-link (`#/<route>`) sets location.hash, which the router never
+	//     reads, and is ignored — the index list never renders. Hence NO `#`.
 	//   * The `/index.php/` prefix: CI serves Nextcloud with `php -S` and no
 	//     router script, where `/apps/openconnector/` is a real directory with
 	//     no index.php inside and 404s outright (measured). The pretty form
 	//     only resolves behind Apache + `.htaccess`; the `/index.php/` form
 	//     works in both.
-	await page.goto(`/index.php/apps/openconnector/#/${route}`, {
+	await page.goto(`/index.php/apps/openconnector/${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	// ADR-074 rule 4: networkidle never settles on Nextcloud — this only ever
