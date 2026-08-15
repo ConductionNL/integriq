@@ -682,6 +682,63 @@ class CallServiceTest extends TestCase {
 	}//end testRenderedSourceStillDispatchesWithCredential()
 
 	/**
+	 * A credential containing `&` must reach the outbound request byte-for-byte.
+	 *
+	 * The Twig environment rendering `configuration` values was constructed with
+	 * no options, which inherits Twig's default HTML autoescape — `&` silently
+	 * became `&amp;` on every call whose resolved secret contained one. Found
+	 * live against openwoo.zaaksysteem.net: a real xxllnc API key with one `&`
+	 * was corrupted on every request, producing a 401 that looked exactly like a
+	 * server-side auth-mechanism mismatch (a Digest challenge) rather than a
+	 * client-side rendering bug — the credential broker itself was correct at
+	 * every layer (write, encrypt, decrypt, resolveInjectable()); only the
+	 * template render corrupted it.
+	 *
+	 * `<`/`>`/`"`/`'` are the same class of defect (any HTML-special character
+	 * Twig's default autoescape rewrites) but `&` is the one a real generated API
+	 * key actually contained, so it is the one asserted here.
+	 *
+	 * @return void
+	 */
+	public function testCredentialWithAmpersandReachesRequestUnescaped(): void {
+		$double = new RenderBoundarySimulatingObjectService();
+		$double->stored['src-uuid-amp'] = [
+			'name' => 'amp-source',
+			'isEnabled' => true,
+			'location' => 'https://api.example.invalid',
+			'apikey' => 'AB&CD"EF<GH>IJ',
+			'configuration' => [
+				'headers' => ['X-Api-Key' => '{{ source.apikey }}'],
+			],
+		];
+
+		$capturedConfig = null;
+		$service = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+		$rendered = new ObjectEntity();
+		$rendered->setUuid('src-uuid-amp');
+		$rendered->setObject(
+			[
+				'name' => 'amp-source',
+				'isEnabled' => true,
+				'location' => 'https://api.example.invalid',
+				'configuration' => [
+					'headers' => ['X-Api-Key' => '{{ source.apikey }}'],
+				],
+			]
+		);
+
+		$service->call(source: $rendered, endpoint: '/v1/items');
+
+		$this->assertNotNull($capturedConfig, 'The outbound Guzzle request must have been dispatched.');
+		$this->assertSame(
+			'AB&CD"EF<GH>IJ',
+			$capturedConfig['headers']['X-Api-Key'],
+			'A credential containing HTML-special characters must reach the outbound request unescaped — HTML entities in an HTTP header are a different (wrong) credential, not a formatting choice.'
+		);
+	}//end testCredentialWithAmpersandReachesRequestUnescaped()
+
+	/**
 	 * ocon#215 — an unpersisted / in-memory source (no uuid) falls back to the
 	 * passed entity and NEVER throws or dispatches an empty source.
 	 *
