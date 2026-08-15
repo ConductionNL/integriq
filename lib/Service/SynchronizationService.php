@@ -10340,7 +10340,7 @@ class SynchronizationService {
 			// Refuse BEFORE the body downloads. A source that omits
 			// Content-Length cannot be gated here — it falls through to the
 			// schema's save-time `maxSize`, which is the existing behaviour.
-			if (false) {
+			if ($maxFileSize > 0 && $declared > $maxFileSize) {
 				// LOG BEFORE THROWING. Guzzle replaces anything raised here with
 				// its own "An error was encountered during the on_headers
 				// event", so the reason never reaches the operator otherwise —
