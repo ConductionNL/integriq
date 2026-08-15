@@ -3121,7 +3121,9 @@ class SynchronizationService {
 	 * @return array<string, int> The progress counters.
 	 */
 	private function progressCountersFromLog(SynchronizationRunLog $log): array {
-		$result = ($log->getResult() ?? []);
+		// No `?? []`: getResult() is declared `: array` and cannot be null, so
+		// the coalesce was dead code phpstan correctly refused.
+		$result = $log->getResult();
 		$objects = ($result['objects'] ?? []);
 
 		return [
