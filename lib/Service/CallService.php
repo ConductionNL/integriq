@@ -209,7 +209,15 @@ class CallService {
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
 	) {
 		$this->client = new Client([]);
-		$this->twig = new Environment($loader);
+		// NO AUTOESCAPE: this environment renders headers/query/body values for
+		// an HTTP call, never HTML. Left at Twig's default (HTML) for a long
+		// time — `&` in a credential was silently rewritten to `&amp;`, so a
+		// resolved secret containing an ampersand went out wrong on every call
+		// while every layer below (the credential broker, its encrypt/decrypt,
+		// its storage) was provably correct. `$this->pathTwig` below already
+		// sets this explicitly, with the same reasoning; it was never applied
+		// here.
+		$this->twig = new Environment($loader, ['autoescape' => false]);
 
 		// Sandbox the call Twig environment — authentication templates should
 		// only need to call the declared auth-helper functions; no PHP method
