@@ -48,6 +48,8 @@ import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
+import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
+import FlowsIndex from './views/Flow/FlowsIndex.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -281,6 +283,8 @@ export const registry = {
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
 	FlowDetailPage: { kind: 'page', component: FlowDetailPage },
+	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
+	FlowsIndex: { kind: 'page', component: FlowsIndex },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },
 }
