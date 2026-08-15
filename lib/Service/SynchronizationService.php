@@ -464,6 +464,18 @@ class SynchronizationService {
 	 */
 	private readonly SynchronizationLogService $synchronizationLogService;
 
+	/**
+	 * Live progress recorder for the current run.
+	 *
+	 * Nullable and NOT readonly: it is resolved in the constructor body behind a
+	 * container guard, so a bare container (the unit suite's default) simply
+	 * leaves progress recording off rather than failing. Every call site must
+	 * therefore use `?->` — a run must never fail because nobody was watching.
+	 *
+	 * @var SynchronizationRunProgressService|null
+	 */
+	private ?SynchronizationRunProgressService $runProgressService = null;
+
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
 	// lookup is dropped in W5. See findContract*() / persistContract() /
@@ -581,6 +593,16 @@ class SynchronizationService {
 		$eventDispatcher = $this->containerInterface->get(IEventDispatcher::class);
 		if ($eventDispatcher instanceof IEventDispatcher) {
 			$this->eventDispatcher = $eventDispatcher;
+		}
+
+		// Resolved in the BODY, not added to the signature: 84 tests were once
+		// pinned to this constructor's shape, and a run-progress recorder is not
+		// worth breaking them for. The null-guard is what lets a bare container
+		// mock (the unit suite's default) leave progress recording switched off
+		// rather than fatal.
+		$runProgressService = $this->containerInterface->get(SynchronizationRunProgressService::class);
+		if ($runProgressService instanceof SynchronizationRunProgressService) {
+			$this->runProgressService = $runProgressService;
 		}
 
 		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -2261,7 +2283,31 @@ class SynchronizationService {
 			$this->bufferWrites = ($isTest === false);
 
 			try {
+				$progressProcessed = 0;
 				foreach ($objectList as $object) {
+					// Called EVERY object; the service's time throttle decides
+					// what actually reaches the database. Deliberately not
+					// throttled by object count here — a per-N-objects rule
+					// writes 200x more on a 20,000-object corpus than on a 100
+					// one, whereas a time rule costs the same either way.
+					//
+					// Counted from the LOOP, not from `$log->getResult()`: the
+					// run-log's object tallies are only filled in once the run
+					// finishes, so reading them here reported `found=0
+					// processed=0` for the entire run — a progress record that
+					// showed `running` and never moved.
+					$progressProcessed++;
+					$this->runProgressService?->tick(
+						counters: [
+							'found' => count($objectList),
+							'processed' => $progressProcessed,
+							'created' => (int)($result['objects']['created'] ?? 0),
+							'updated' => (int)($result['objects']['updated'] ?? 0),
+							'deleted' => (int)($result['objects']['deleted'] ?? 0),
+							'invalid' => (int)($result['objects']['invalid'] ?? 0),
+						]
+					);
+
 					// Bare-scalar source item coercion (synchronization-engine
 					// spec REQ-002/REQ-008, change sync-engine-scalar-items):
 					// getOriginId() and processSynchronizationObject() are
@@ -2983,6 +3029,17 @@ class SynchronizationService {
 		// contract logs; the append-only row is persisted once at the end.
 		$log = $this->synchronizationLogService->createFromArray(object: $log);
 
+		// OPEN THE PROGRESS RECORD BEFORE ANY WORK. The run-log above is
+		// in-memory until the very end and its schema is appendOnly+immutable,
+		// so until this row exists the run is invisible for its whole duration.
+		$this->runProgressService?->start(
+			synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? ''),
+			// Opt-out per synchronization. Defaults ON: a run nobody can watch
+			// is the defect being fixed, so invisibility should be the choice,
+			// not the default. Also the arm-switch for the overhead control.
+			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true)
+		);
+
 		// Handle full extern-to-intern sync.
 		$log = $this->synchronizeExternToIntern(
 			synchronization: $synchronization,
@@ -3002,6 +3059,14 @@ class SynchronizationService {
 		// `pending_approval` message and made no writes — do not overwrite it
 		// with 'Success' (synchronization-engine REQ-015).
 		if ($log->getMessage() === 'pending_approval') {
+			// Terminal for this run even though no work happened — leaving it
+			// `running` would show as hung forever.
+			$this->runProgressService?->finish(
+				status: 'success',
+				counters: $this->progressCountersFromLog(log: $log),
+				message: 'pending_approval'
+			);
+
 			if ($ownsTrace === true) {
 				$this->persistOwnedTrace(trace: $trace, status: 'short_circuited');
 			}
@@ -3017,12 +3082,43 @@ class SynchronizationService {
 
 		$log = $this->synchronizationLogService->update(log: $log);
 
+		// NOT throttled — the terminal write must always land, or a finished run
+		// stays `running` and every watcher reads it as hung.
+		$this->runProgressService?->finish(
+			status: 'success',
+			counters: $this->progressCountersFromLog(log: $log)
+		);
+
 		if ($ownsTrace === true) {
 			$this->persistOwnedTrace(trace: $trace, status: 'success');
 		}
 
 		return $log->jsonSerialize();
 	}//end synchronize()
+
+	/**
+	 * Project a run-log's object counters onto the progress record's scalars.
+	 *
+	 * Kept in one place so the live counters and the final ones cannot drift
+	 * into describing the same run differently.
+	 *
+	 * @param SynchronizationRunLog $log The run log to read counters from.
+	 *
+	 * @return array<string, int> The progress counters.
+	 */
+	private function progressCountersFromLog(SynchronizationRunLog $log): array {
+		$result = ($log->getResult() ?? []);
+		$objects = ($result['objects'] ?? []);
+
+		return [
+			'found' => (int)($objects['found'] ?? 0),
+			'processed' => (int)($objects['found'] ?? 0),
+			'created' => (int)($objects['created'] ?? 0),
+			'updated' => (int)($objects['updated'] ?? 0),
+			'deleted' => (int)($objects['deleted'] ?? 0),
+			'invalid' => (int)($objects['invalid'] ?? 0),
+		];
+	}//end progressCountersFromLog()
 
 	/**
 	 * Best-effort persist of a `sync`-entryPoint trace this method minted
