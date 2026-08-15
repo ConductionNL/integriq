@@ -118,12 +118,22 @@ class StaleRunSweepJob extends TimedJob {
 			// Fall back to startedAt: a run killed before its first tick has no
 			// updatedAt at all, and those are exactly the ones that hang around.
 			$last = ($object['updatedAt'] ?? $object['startedAt'] ?? null);
-			$lastAt = ($last === null) ? null : strtotime((string)$last);
+			$lastAt = ($last === null) ? null : $this->toTimestamp(value: $last);
 
 			// No timestamp we can trust — use the record's own created stamp
 			// rather than either closing it blindly or leaving it for ever.
-			if ($lastAt === false || $lastAt === null) {
-				$lastAt = strtotime((string)($entity->getCreated() ?? 'now'));
+			if ($lastAt === null) {
+				$lastAt = $this->toTimestamp(value: $entity->getCreated());
+			}
+
+			// Still nothing usable: leave it alone and say so. Closing a record
+			// whose age cannot be established would be guessing.
+			if ($lastAt === null) {
+				$this->logger->warning(
+					'[StaleRunSweepJob] run ' . $entity->getUuid()
+					. ' has no usable timestamp; not closing it.'
+				);
+				continue;
 			}
 
 			if (($now - (int)$lastAt) < self::STALE_AFTER_SECONDS) {
@@ -161,4 +171,40 @@ class StaleRunSweepJob extends TimedJob {
 			$this->logger->info('[StaleRunSweepJob] closed ' . $closed . ' abandoned synchronization run(s).');
 		}
 	}//end run()
+
+	/**
+	 * Coerce a stored timestamp to a unix time, whatever shape it arrives in.
+	 *
+	 * ⚠️ `ObjectEntity::getCreated()` returns a **DateTime**, and the first
+	 * version of this job did `strtotime((string) $entity->getCreated())`. That
+	 * is a FATAL — "Object of class DateTime could not be converted to string" —
+	 * and it aborted the whole sweep: the job closed the first record it saw
+	 * (which happened to carry a valid timestamp), then hit one with a null
+	 * `updatedAt`, died, and never reached the remaining seven. From outside it
+	 * looked like two separate bugs — a broken null-fallback AND records with
+	 * good timestamps being skipped — when it was one crash partway through a
+	 * loop.
+	 *
+	 * @param mixed $value A DateTimeInterface, a parseable string, or anything else.
+	 *
+	 * @return int|null The unix timestamp, or null when nothing usable was given.
+	 */
+	private function toTimestamp(mixed $value): ?int {
+		if ($value instanceof \DateTimeInterface) {
+			return $value->getTimestamp();
+		}
+
+		if (is_int($value) === true) {
+			return $value;
+		}
+
+		if (is_string($value) === true && $value !== '') {
+			$parsed = strtotime($value);
+			if ($parsed !== false) {
+				return $parsed;
+			}
+		}
+
+		return null;
+	}//end toTimestamp()
 }//end class
