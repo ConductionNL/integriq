@@ -174,7 +174,9 @@ class EventServiceNotificatiesActionTest extends TestCase {
 
 		$this->assertSame('/notificaties', $capturedCall['endpoint']);
 		$this->assertSame('POST', $capturedCall['method']);
-		$this->assertSame('zaken', $capturedCall['config']['json']['channel']);
+		// The POSTed JSON is the statutory ZGW wire body, so the key is
+		// `kanaal` — the action CONFIG above uses our internal `channel`.
+		$this->assertSame('zaken', $capturedCall['config']['json']['kanaal']);
 		$this->assertSame('delivered', $this->capturedMessage['status']);
 
 	}//end testActionKindNotificatiesPublishesBodyOn2xx()
