@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
+use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -157,13 +158,20 @@ class SynchronizationRunProgressService {
 	 *                                  later tick/finish a no-op.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$enabled` is the caller's
+	 *   feature switch for progress recording, not a mode selector that makes this
+	 *   method do two different jobs — false means "record nothing", which is the
+	 *   early return below and the same no-op every later tick/finish takes.
+	 *   Splitting it into two methods would push the same `if` to every call site
+	 *   and hand callers a way to start a run they then never tick.
 	 */
 	public function start(string $synchronizationId, bool $enabled = true): void {
 		if ($enabled === false) {
 			return;
 		}
 
-		$now = (new \DateTime())->format('c');
+		$now = (new DateTime())->format('c');
 
 		$this->counters = [
 			'synchronizationId' => $synchronizationId,
@@ -213,7 +221,7 @@ class SynchronizationRunProgressService {
 			return;
 		}
 
-		$this->counters['updatedAt'] = (new \DateTime())->format('c');
+		$this->counters['updatedAt'] = (new DateTime())->format('c');
 		$this->write(object: $this->counters, uuid: $this->runUuid);
 		$this->lastWrite = microtime(true);
 	}//end tick()
@@ -236,7 +244,7 @@ class SynchronizationRunProgressService {
 
 		$this->counters = array_merge($this->counters, $counters);
 		$this->counters['status'] = $status;
-		$this->counters['finishedAt'] = (new \DateTime())->format('c');
+		$this->counters['finishedAt'] = (new DateTime())->format('c');
 		$this->counters['updatedAt'] = $this->counters['finishedAt'];
 		$this->counters['progressWriteFailures'] = $this->failures;
 		$this->counters['progressWrites'] = $this->writes;
