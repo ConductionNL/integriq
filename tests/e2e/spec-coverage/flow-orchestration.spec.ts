@@ -44,11 +44,7 @@ import type { Browser, Page } from '@playwright/test'
 import type { ApiClient } from '../workflows/_fixture'
 
 import { expect, test } from '@playwright/test'
-import {
-	createObject,
-	deleteObject,
-	makeApiClient,
-} from '../workflows/_fixture'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture'
 import { APP_BASE } from './_helpers'
 
 /** OpenRegister's native flow store — a different backend than OR_BASE/OC_API in _fixture.ts, which target openconnector's legacy `flow` schema. */
@@ -154,7 +150,10 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
 let _root: string | null = null
 async function resolveRoot(page: Page): Promise<string> {
 	if (_root) return _root
-	for (const candidate of ['/apps/openconnector', '/index.php/apps/openconnector']) {
+	for (const candidate of [
+		'/apps/openconnector',
+		'/index.php/apps/openconnector',
+	]) {
 		const res = await page.request.get(`${candidate}/flows`, {
 			failOnStatusCode: false,
 		})
@@ -163,7 +162,9 @@ async function resolveRoot(page: Page): Promise<string> {
 			return candidate
 		}
 	}
-	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 /* ===========================================================================
