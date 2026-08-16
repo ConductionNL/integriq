@@ -37,12 +37,23 @@ use Psr\Log\LoggerInterface;
  * my sync still going?" answers it wrongly — the same class of defect as a rule
  * that logs success while writing nothing.
  *
- * THE DISCRIMINATOR IS `updatedAt`, NOT `status`. A live run refreshes
- * `updatedAt` at least every {@see SynchronizationRunProgressService::THROTTLE_SECONDS}
- * seconds; an abandoned one stops. The stale threshold is therefore expressed as
- * a large MULTIPLE of the throttle, so a merely slow run — one stuck on a single
- * enormous object, or throttled by an upstream — is never mistaken for a dead
- * one.
+ * THE DISCRIMINATOR IS `updatedAt`, NOT `status`. A run that keeps calling
+ * {@see SynchronizationRunProgressService::tick()} refreshes `updatedAt`; an
+ * abandoned one stops. The stale threshold is therefore expressed as a large
+ * multiple of {@see SynchronizationRunProgressService::THROTTLE_SECONDS}, so a
+ * run that is merely slow BETWEEN units of work is not mistaken for a dead one.
+ *
+ * ⚠️ That is write recency, NOT liveness, and the difference is load-bearing.
+ * `THROTTLE_SECONDS` is a CEILING on write frequency, not a floor on refresh:
+ * `tick()` is caller-driven and returns early when less than two seconds have
+ * elapsed, but nothing advances `updatedAt` while no call is made. A run blocked
+ * INSIDE a single unit of work — one enormous object, a hung upstream call —
+ * therefore stops advancing `updatedAt` and will be closed as `failed` after
+ * {@see self::STALE_AFTER_SECONDS}, while its process is still alive. An earlier
+ * version of this comment claimed such a run "is never mistaken for a dead one";
+ * that is only true while the engine keeps ticking. See the spec's REQ-006 notes.
+ *
+ * @spec openspec/specs/job-scheduling/spec.md#requirement-abandoned-synchronization-runs-are-swept-to-a-terminal-state-req-006
  */
 class StaleRunSweepJob extends TimedJob {
 
@@ -84,6 +95,8 @@ class StaleRunSweepJob extends TimedJob {
 	 * @param mixed $argument Unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md#requirement-abandoned-synchronization-runs-are-swept-to-a-terminal-state-req-006
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$argument` is Nextcloud's own
 	 *   `TimedJob::run()` signature (OCP\BackgroundJob\Job::run($argument)); it is

@@ -377,3 +377,158 @@ The task is registered with:
   be retried every minute forever with zero operator visibility.
   Documented as observed.
 
+### Requirement: Abandoned synchronization runs are swept to a terminal state (REQ-006)
+
+A `synchronization_run` record is opened with `status: running` by
+`SynchronizationRunProgressService::start()` and closed by its `finish()`. If the
+process dies in between — a killed worker, a PHP fatal, a request timeout, a
+container restart — nothing closes it and the record reads `running` for ever. A
+permanently-`running` row is indistinguishable from a genuinely live one, so the
+UI built to answer *"is my sync still going?"* answers it wrongly.
+
+`StaleRunSweepJob` (registered in `appinfo/info.xml` as
+`OCA\OpenConnector\Cron\StaleRunSweepJob`) MUST close such records.
+
+**Trigger.** An `OCP\BackgroundJob\TimedJob` with `setInterval(seconds: 300)` —
+every five minutes. It sets neither `setTimeSensitivity()` nor
+`setAllowParallelRuns()`, so Nextcloud's defaults apply (unlike REQ-005's
+`LogCleanUpTask`, which sets both).
+
+**Selection.** `run()` MUST query OR with
+`findAll(config: ['filters' => ['register' => 'openconnector', 'schema' =>
+'synchronization_run', 'status' => 'running']], _rbac: false, _multitenancy:
+false)` and read `$result['results'] ?? $result`. Because the filter names
+`status: running`, records already in a terminal state (`success` or `failed`)
+are never selected and are never modified — including records this job itself
+closed on an earlier tick, which makes the sweep idempotent. The read runs with
+RBAC and multi-tenancy disabled, so it sweeps across all tenants.
+
+**What counts as stale.** The discriminator is **write recency, not status**. For
+each selected record the job resolves a "last progress" timestamp in this order:
+
+1. `updatedAt` from the object body, else `startedAt` from the object body
+   (null-coalescing: the first key that is *present*, not the first that parses);
+2. if that value is absent or does not parse, the entity's own `getCreated()`;
+3. if neither parses, the record is **left alone** and a warning is logged.
+
+`toTimestamp()` accepts a `DateTimeInterface` (via `getTimestamp()`), an `int`
+verbatim, or a non-empty string via `strtotime()`; anything else yields `null`.
+
+A record is stale when `time() - lastProgress >= StaleRunSweepJob::STALE_AFTER_SECONDS`,
+a public constant of **1800** (30 minutes).
+
+**Transition applied.** For a stale record the job MUST set, on the object body:
+
+- `status` to `failed`
+- `finishedAt` to the current time as ISO-8601 (`(new DateTime())->format('c')`)
+- `message` to a fixed string naming the threshold in minutes and stating that
+  the record was closed by `StaleRunSweepJob` and **not** by the run itself, so
+  its counters are the last ones observed rather than a final tally.
+
+The counter properties (`found`, `processed`, `created`, `updated`, `deleted`,
+`invalid`, `currentPage`, `filesPending`, …) are **not** recomputed or reset —
+they keep their last-observed values, which is what the `message` warns about.
+
+The write MUST be
+`saveObject(object: …, register: 'openconnector', schema: 'synchronization_run',
+uuid: $entity->getUuid(), _rbac: false, _multitenancy: false, silent: true,
+_validation: false)`.
+
+**Failure handling.**
+
+- A failure of the *initial query* is caught, logged at `warning`, and the whole
+  tick returns — no record is examined.
+- A failure of an *individual* `saveObject` is caught, logged at `warning` naming
+  the run uuid, and the loop continues with the next record.
+- A record with no usable timestamp is logged at `warning` and skipped.
+
+**Logging.** An `info` line naming the count is emitted **only when at least one
+record was closed**. A sweep that closes nothing logs nothing.
+
+#### Scenario: an abandoned run is closed as failed
+
+- **GIVEN** a `synchronization_run` with `status: running` whose `updatedAt` is
+  45 minutes old
+- **WHEN** `run()` is invoked
+- **THEN** `saveObject` is called for that uuid with `status: failed`
+- **AND** `finishedAt` is set to the current time in ISO-8601
+- **AND** `message` states the record was closed by the sweep, not by the run
+- **AND** an `info` line reports `closed 1 abandoned synchronization run(s).`
+
+#### Scenario: a recently-updated run is left alone
+
+- **GIVEN** a `running` record whose `updatedAt` is 60 seconds old
+- **WHEN** `run()` is invoked
+- **THEN** `saveObject` is NOT called for it
+- **AND** nothing is logged
+
+#### Scenario: a run killed before its first progress tick falls back
+
+- **GIVEN** a `running` record with no `updatedAt`, a `startedAt` 40 minutes old
+- **WHEN** `run()` is invoked
+- **THEN** `startedAt` is used as the last-progress timestamp
+- **AND** the record is closed as `failed`
+
+#### Scenario: a record whose age cannot be established is not closed
+
+- **GIVEN** a `running` record with no parseable `updatedAt`, `startedAt` or
+  `created`
+- **WHEN** `run()` is invoked
+- **THEN** `saveObject` is NOT called for it
+- **AND** a `warning` names the uuid and says it is not being closed
+
+#### Scenario: one unwritable record does not abort the sweep
+
+- **GIVEN** three stale records and `saveObject` throws on the second
+- **WHEN** `run()` is invoked
+- **THEN** `saveObject` is attempted for all three
+- **AND** a `warning` names the failing uuid
+- **AND** the `info` line reports `closed 2`
+
+#### Scenario: a failed query aborts the tick without touching anything
+
+- **GIVEN** `findAll` throws
+- **WHEN** `run()` is invoked
+- **THEN** a `warning` is logged and `run()` returns
+- **AND** `saveObject` is never called
+
+#### Scenario: terminal runs are never re-opened or re-closed
+
+- **GIVEN** records with `status: success` and `status: failed`
+- **WHEN** `run()` is invoked
+- **THEN** neither is selected by the query and neither is modified
+
+#### Notes
+
+- ⚠️ **MEDIUM (liveness is inferred from write recency, not from the process).**
+  The class docblock states that a merely slow run "is never mistaken for a dead
+  one" because the threshold is a large multiple of
+  `SynchronizationRunProgressService::THROTTLE_SECONDS` (2.0). That holds only
+  while the engine keeps *calling* `tick()`. `tick()` is caller-driven and its
+  throttle is a **ceiling on write frequency, not a floor on refresh** — it
+  returns early when less than 2 seconds have elapsed, but nothing refreshes
+  `updatedAt` when no call is made. A run blocked inside a single long unit of
+  work — one enormous object, a hung upstream HTTP call — therefore stops
+  advancing `updatedAt` and **will be closed as `failed` after 30 minutes while
+  its process is still alive**, after which the still-running process may
+  continue writing to a record now marked terminal. Documented as observed; the
+  code detects write recency, not liveness.
+- **LOW (a malformed `updatedAt` skips `startedAt`).** The fallback chain uses
+  `??`, which tests presence, not parseability. A record whose `updatedAt` is
+  present but empty or unparseable makes `$last` non-null, so `startedAt` is
+  never consulted and the job falls straight through to the entity's `created`.
+  Harmless in practice (`created` precedes `startedAt`, so the record is aged
+  slightly *more* and swept no later), but it is not the order the fallback
+  comment describes.
+- **LOW (the closing write bypasses validation and events).** `_validation: false`
+  means the written `status` is not checked against the schema's
+  `enum: [running, success, failed]` — it happens to be a member — and
+  `silent: true` suppresses the update event, so anything watching
+  `synchronization_run` for changes does not observe the sweep. Both are
+  deliberate for a system job; recorded so neither reads as an oversight.
+- **LOW (a zero-close sweep is invisible).** Nothing is logged when the job runs
+  and finds nothing stale, so "swept, nothing to do" and "did not run" are
+  indistinguishable in the log.
+- `STALE_AFTER_SECONDS` is `public`, so a test may assert against it rather than
+  hard-coding 1800.
+
