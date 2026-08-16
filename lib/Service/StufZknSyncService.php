@@ -201,11 +201,11 @@ class StufZknSyncService {
 				reason: 'validation_failed',
 				crossRefnummer: '',
 				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: ''
+				ontvangerOrg: ''
 			);
 		}//end try
 
-		$ontvangerOrganisation = $translated['senderOrganisatie'];
+		$ontvangerOrg = $translated['senderOrganisatie'];
 
 		// Idempotency: a redelivery of an already-fully-processed
 		// referentienummer never touches the OR object again — just
@@ -216,7 +216,7 @@ class StufZknSyncService {
 			return $this->ackBuilder->buildBv03(
 				crossRefnummer: $translated['referentienummer'],
 				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: $ontvangerOrganisation
+				ontvangerOrg: $ontvangerOrg
 			);
 		}
 
@@ -246,14 +246,14 @@ class StufZknSyncService {
 				reason: 'processing_failed',
 				crossRefnummer: $translated['referentienummer'],
 				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: $ontvangerOrganisation
+				ontvangerOrg: $ontvangerOrg
 			);
 		}
 
 		return $this->ackBuilder->buildBv03(
 			crossRefnummer: $translated['referentienummer'],
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			ontvangerOrg: $ontvangerOrg
 		);
 
 	}//end receiveInbound()
@@ -279,7 +279,7 @@ class StufZknSyncService {
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		[$zenderOrganisation, $ontvangerOrganisation] = $this->resolveOrganisationCodes();
+		[$zenderOrganisation, $ontvangerOrg] = $this->resolveOrganisationCodes();
 
 		// Translation failures never reach the transport and never get an
 		// audit record — no referentienummer exists yet to key one on.
@@ -287,7 +287,7 @@ class StufZknSyncService {
 			case: $case,
 			processingKind: $processingKind,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		$status = 'sent';

@@ -78,13 +78,13 @@ class StufZknAcknowledgementBuilder {
 	 *
 	 * @param string $crossRefnummer The inbound message's `stuurgegevens.referentienummer`.
 	 * @param string $zenderOrganisation This bridge's own organisatie code (reply `zender`).
-	 * @param string $ontvangerOrganisation The original sender's organisatie code (reply `ontvanger`).
+	 * @param string $ontvangerOrg The original sender's organisatie code (reply `ontvanger`).
 	 *
 	 * @return string The rendered `Bv03Bericht` SOAP envelope XML.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-successfully-processed-zaklk01-replies-with-a-bv03
 	 */
-	public function buildBv03(string $crossRefnummer, string $zenderOrganisation, string $ontvangerOrganisation): string {
+	public function buildBv03(string $crossRefnummer, string $zenderOrganisation, string $ontvangerOrg): string {
 		[$document, $body] = $this->skeleton();
 
 		$message = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Bv03Bericht');
@@ -96,7 +96,7 @@ class StufZknAcknowledgementBuilder {
 			berichtcode: 'Bv03',
 			crossRefnummer: $crossRefnummer,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		return (string)$document->saveXML();
@@ -112,7 +112,7 @@ class StufZknAcknowledgementBuilder {
 	 *                               or an empty string when the inbound envelope itself
 	 *                               could not be correlated (e.g. malformed XML).
 	 * @param string $zenderOrganisation This bridge's own organisatie code (reply `zender`).
-	 * @param string $ontvangerOrganisation The original sender's organisatie code, or an empty string
+	 * @param string $ontvangerOrg The original sender's organisatie code, or an empty string
 	 *                                     when unknown.
 	 *
 	 * @return string The rendered `Fo03Bericht` SOAP envelope XML.
@@ -123,7 +123,7 @@ class StufZknAcknowledgementBuilder {
 		string $reason,
 		string $crossRefnummer,
 		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $ontvangerOrg,
 	): string {
 		$fault = (self::FAULT_CATALOGUE[$reason] ?? self::FAULT_CATALOGUE['processing_failed']);
 
@@ -138,7 +138,7 @@ class StufZknAcknowledgementBuilder {
 			berichtcode: 'Fo03',
 			crossRefnummer: $crossRefnummer,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		$faultBody = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:body');
@@ -176,7 +176,7 @@ class StufZknAcknowledgementBuilder {
 	 * @param string $berichtcode `Bv03` or `Fo03`.
 	 * @param string $crossRefnummer The inbound message's referentienummer (may be empty).
 	 * @param string $zenderOrganisation This bridge's own organisatie code.
-	 * @param string $ontvangerOrganisation The original sender's organisatie code (may be empty).
+	 * @param string $ontvangerOrg The original sender's organisatie code (may be empty).
 	 *
 	 * @return void
 	 */
@@ -186,7 +186,7 @@ class StufZknAcknowledgementBuilder {
 		string $berichtcode,
 		string $crossRefnummer,
 		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $ontvangerOrg,
 	): void {
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
@@ -199,7 +199,7 @@ class StufZknAcknowledgementBuilder {
 
 		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
 		$stuurgegevens->appendChild($ontvanger);
-		$this->appendText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisation);
+		$this->appendText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrg);
 
 		$this->appendText(
 			document: $document,
