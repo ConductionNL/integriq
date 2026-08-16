@@ -146,6 +146,15 @@ class RegisterDescriptorTest extends TestCase {
 		'NotificatiesAbonnement' => 'notificaties_abonnement',
 		// StUF-ZKN (StUF-ZKN 3.10) bridge — added by stuf-zkn-bridge spec.
 		'StufMessage' => 'stuf_message',
+		// Per-item synchronization dead-letter — added by the retry/circuit-breaker
+		// change (#170). It was declared in components.schemas but never listed
+		// here nor in register.openconnector.schemas[], so the schema existed on
+		// the instance while every read and write through
+		// /api/objects/openconnector/sync_item_dead_letter answered
+		// "Schema not found" — declaring a schema is not attaching it.
+		// SyncItemDeadLetterService and SyncDeadLetterController both address it
+		// by that slug, so the capture path was inert in production.
+		'SyncItemDeadLetter' => 'sync_item_dead_letter',
 	];
 
 	/**
@@ -229,6 +238,36 @@ class RegisterDescriptorTest extends TestCase {
 		}
 
 	}//end testAllSchemasAreDefined()
+
+	/**
+	 * Asserts components.schemas declares NOTHING beyond SCHEMA_SLUGS.
+	 *
+	 * testAllSchemasAreDefined() only walks SCHEMA_SLUGS -> components.schemas, so a
+	 * schema added to components.schemas and forgotten in SCHEMA_SLUGS is invisible
+	 * to it, and it is then equally invisible to testRegisterDeclaresAllSchemaSlugs()
+	 * for as long as it is ALSO missing from register.openconnector.schemas[]. Both
+	 * guards stay green while the schema is unreachable through
+	 * /api/objects/openconnector/{slug}. That is not hypothetical: sync_item_dead_letter
+	 * shipped in that state and the dead-letter capture path was inert. This closes
+	 * the direction the other two do not cover.
+	 *
+	 * @return void
+	 */
+	public function testNoSchemaIsDeclaredOutsideTheSlugList(): void {
+		$declared = array_keys($this->descriptor['components']['schemas'] ?? []);
+		$known = array_values(self::SCHEMA_SLUGS);
+
+		sort(array: $declared);
+		sort(array: $known);
+
+		$this->assertSame(
+			expected: $known,
+			actual:   $declared,
+			message:  'components.schemas MUST declare exactly the slugs in SCHEMA_SLUGS — '
+				. 'a schema present here but absent there is unattached and unreachable'
+		);
+
+	}//end testNoSchemaIsDeclaredOutsideTheSlugList()
 
 	/**
 	 * Asserts each schema declares a non-empty properties block.

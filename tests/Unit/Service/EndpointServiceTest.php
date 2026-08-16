@@ -83,6 +83,19 @@ class EndpointServiceTest extends TestCase {
 	private $consumerScopeService;
 
 	/**
+	 * The OpenRegister schema mapper the subject under test actually holds.
+	 *
+	 * Kept as a property because ADR-083 rule 1 made this a CONSTRUCTOR
+	 * dependency: the subject no longer resolves it through the PSR container,
+	 * so configuring a container double reaches nothing and the injected mapper
+	 * answers `null` from its unconfigured default. Any test that needs a schema
+	 * back from `find()` must configure THIS instance.
+	 *
+	 * @var \OCA\OpenRegister\Db\SchemaMapper|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $schemaMapper;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -140,7 +153,7 @@ class EndpointServiceTest extends TestCase {
 		// ADR-083 rule 1: the OpenRegister schema mapper and file service are
 		// constructor-injected rather than pulled from the PSR container, so they
 		// are explicit here too.
-		$schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$this->schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 		$orFileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$this->service = new EndpointService(
 			$this->objectService,
@@ -164,7 +177,7 @@ class EndpointServiceTest extends TestCase {
 			$requestId,
 			$flowRunnerService,
 			$this->consumerScopeService,
-			$schemaMapper,
+			$this->schemaMapper,
 			$orFileService,
 		);
 	}//end setUp()
@@ -535,10 +548,11 @@ class EndpointServiceTest extends TestCase {
 				return ['name', 'email'];
 			}
 		};
-		$schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-		$schemaMapper->method('find')->willReturn($schema);
-
-		$this->container->method('get')->with('OCA\OpenRegister\Db\SchemaMapper')->willReturn($schemaMapper);
+		// Configure the INJECTED mapper, not a container lookup: ADR-083 rule 1
+		// moved SchemaMapper into the constructor, so `$this->container` is never
+		// consulted here any more and a container stub would leave the subject
+		// holding an unconfigured mapper whose find() returns null.
+		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$missing = $this->service->checkPutMandatoryFields(['name' => 'x'], $mapper);
 
@@ -562,10 +576,9 @@ class EndpointServiceTest extends TestCase {
 				return ['name'];
 			}
 		};
-		$schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-		$schemaMapper->method('find')->willReturn($schema);
-
-		$this->container->method('get')->with('OCA\OpenRegister\Db\SchemaMapper')->willReturn($schemaMapper);
+		// See the sibling test: the subject holds the constructor-injected mapper,
+		// so this must configure $this->schemaMapper rather than the container.
+		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$missing = $this->service->checkPutMandatoryFields(['name' => 'x'], $mapper);
 
@@ -615,6 +628,12 @@ class EndpointServiceTest extends TestCase {
 					$requestId,
 					$this->createMock(FlowRunnerService::class),
 					$this->consumerScopeService,
+					// ADR-083 rule 1 additions. This is a setConstructorArgs()
+					// ARRAY, not a `new EndpointService(` call, so a sweep for the
+					// constructor call site does not reach it — it has to be
+					// updated by hand alongside every real construction site.
+					$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+					$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 				]
 			)
 			->onlyMethods(['handleRequest'])
