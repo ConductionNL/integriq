@@ -149,8 +149,22 @@
 					{{ t('openconnector', 'File path or glob') }}
 				</label>
 				<div class="sync-config__file-row">
+					<!-- `:id`, NOT `:inputId`. `inputId` is a real prop on
+					     NcSelect (used above) but NOT on NcTextField /
+					     NcInputField: nc-vue 9.9.0 declares `id`, `label`,
+					     `placeholder`, `inputClass`, `helperText` and
+					     `modelValue`, and `grep -ril inputid` over
+					     dist/components/NcTextField|NcInputField returns
+					     nothing. So `:inputId` fell through $attrs onto the
+					     <input> as a literal `inputid="…"` attribute that no
+					     browser or screen reader consumes — the `<label for>`
+					     above pointed at an id that never existed, and this
+					     field had no accessible name (WCAG 2.2 AA SC 1.3.1 /
+					     3.3.2). `id` is what NcInputField puts on the real
+					     <input>, so the existing visible label now associates
+					     for real. -->
 					<NcTextField
-						:inputId="filePathId"
+						:id="filePathId"
 						class="sync-config__file-field"
 						:modelValue="sourceIdValue"
 						placeholder="/example/path/*.json"
@@ -417,6 +431,15 @@ export default {
 			default: () => ({}),
 		},
 	},
+
+	// The two model channels documented at the top of this file. Declaring
+	// them is not bookkeeping: an UNDECLARED emitted event also falls through
+	// as a native listener onto the component's root element, so the parent's
+	// `@update:sourceId` was being bound twice — once as a component event and
+	// once on the wrapping <div>. Declaring them removes the stray native
+	// binding and is what `vue/require-explicit-emits` was reporting (11
+	// warnings on this file).
+	emits: ['update:sourceId', 'update:config'],
 
 	data() {
 		const seq = ++widgetSeq
