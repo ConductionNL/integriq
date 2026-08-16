@@ -291,11 +291,15 @@ fi
 # loop skipped everything. Verify against OpenRegister directly, by the same
 # slugs the fixtures resolve by.
 verify() {
-	python3 - "$1" "$2" <<'PY'
+	python3 - "$1" "$2" "$APP_DIR" <<'PY'
 import json
+import os
 import sys
 
-path, kind = sys.argv[1], sys.argv[2]
+path, kind, app_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+
+# The hand-maintained floor: what the fixtures and workflow specs create and
+# read through /objects/openconnector/<schema>.
 required = {
     'registers': ['openconnector'],
     # tests/e2e/workflows/_fixture.ts creates Sources / Mappings /
@@ -305,6 +309,66 @@ required = {
     'schemas': ['source', 'mapping', 'synchronization', 'job', 'rule',
                 'endpoint', 'consumer', 'event'],
 }[kind]
+
+
+def manifest_schemas():
+    """Every schema a manifest page BINDS A ROUTE TO.
+
+    🔴 THE HAND-MAINTAINED LIST ABOVE CANNOT KEEP UP WITH THE MANIFEST, and on
+    2026-08-16 it did not: `SynchronizationRuns` (`/synchronization-runs`,
+    schema `synchronization_run`, shipped by the `sync-run-progress.json`
+    register fragment) was never in it. When that binding did not resolve on
+    the CI instance, the seed said `schemas OK` and the failure surfaced two
+    jobs later as a console assertion reading
+
+        Error fetching openconnector-synchronization_run collection: Proxy(Object)
+
+    — which names neither the schema nor the seed. A page whose route is
+    declared but whose collection cannot be fetched is a seeding failure, and
+    it belongs here, by name, before any spec runs.
+
+    Derived from the manifest rather than listed, so a page added tomorrow is
+    covered without anyone remembering this file.
+    """
+    manifest_path = os.path.join(app_dir, 'src', 'manifest.json')
+    try:
+        with open(manifest_path, encoding='utf-8') as handle:
+            pages = json.load(handle).get('pages') or []
+    except (OSError, json.JSONDecodeError) as exc:
+        # Not fatal: this is an ADDITION to the floor above, and a manifest we
+        # cannot read must not take the checks that do work down with it.
+        print(f'::warning::could not read src/manifest.json for schema '
+              f'verification ({exc}); falling back to the hand-listed slugs.')
+        return []
+
+    found = []
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        config = page.get('config')
+        if not isinstance(config, dict):
+            continue
+        # Only pages bound to THIS register — a page pointing at another app's
+        # register is that app's to provision.
+        if config.get('register') != 'openconnector':
+            continue
+        schema = config.get('schema')
+        if isinstance(schema, str) and schema:
+            found.append(schema)
+    return found
+
+
+# ⚠️ ADVISORY, NOT A GATE — deliberately.
+#
+# The hand-listed floor stays a hard error: those slugs are what the fixtures
+# CREATE, so without them the suite cannot run at all. The manifest-derived set
+# is reported as a warning instead, because promoting it would turn today's ONE
+# failing spec into a failed seed and take the other 165 passing specs with it.
+# The job's verdict should keep coming from the specs; this exists so the log
+# NAMES the schema instead of leaving `Proxy(Object)` to be reverse-engineered.
+advisory = []
+if kind == 'schemas':
+    advisory = sorted(set(manifest_schemas()) - set(required))
 
 with open(path, encoding='utf-8') as handle:
     raw = handle.read()
@@ -318,7 +382,33 @@ except json.JSONDecodeError:
 items = body if isinstance(body, list) else body.get('results', [])
 slugs = {item.get('slug') for item in items if isinstance(item, dict)}
 missing = [slug for slug in required if slug not in slugs]
-print(f'[ci-seed] {kind} present ({len(slugs)}): {sorted(s for s in slugs if s)[:60]}')
+
+# ⚠️ PRINT THE REQUIRED SLUGS, NOT A TRUNCATED DUMP OF EVERYTHING PRESENT.
+# This used to print `sorted(slugs)[:60]` beside a `len(slugs)` of 71 — an
+# instrument whose evidence disagreed with its own count, cut off alphabetically
+# at 'rule'. `synchronization_run` sorts after that, so the one slug in question
+# could not be seen either way, and reading the line gave a false answer in both
+# directions. The full count still gets printed; what gets ENUMERATED is the set
+# this check is actually about.
+present_required = [slug for slug in required if slug in slugs]
+print(f'[ci-seed] {kind}: {len(slugs)} present on the instance; '
+      f'{len(present_required)}/{len(required)} required -> {present_required}')
+
+if advisory:
+    unbound = [slug for slug in advisory if slug not in slugs]
+    if unbound:
+        print(f'::warning::{len(unbound)} manifest page(s) bind a route to a schema '
+              f'that is NOT on this instance: {unbound}')
+        print('::warning::Each one\'s index page will fail to fetch its collection, '
+              'and the spec failure reads "Error fetching openconnector-<schema> '
+              'collection: Proxy(Object)" — which names neither the schema nor the '
+              'seed. That is what this warning is for.')
+        print('::warning::Check that the register.d fragment declaring it is merged '
+              'into the descriptor AND that the import attached it to the '
+              'openconnector register.')
+    else:
+        print(f'[ci-seed] all {len(advisory)} manifest-bound schema(s) resolve.')
+
 if missing:
     print(f'::error::OpenConnector {kind} missing after import: {missing}')
     sys.exit(1)
