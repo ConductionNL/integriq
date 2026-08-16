@@ -71,11 +71,11 @@ class StaleRunSweepJob extends TimedJob {
 		private readonly OrObjectService $objectService,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct($time);
+		parent::__construct(time: $time);
 		// Every five minutes: frequent enough that a dead run is not shown as
 		// live for long, cheap enough to be irrelevant — it reads only the
 		// handful of records still marked `running`.
-		$this->setInterval(300);
+		$this->setInterval(seconds: 300);
 	}//end __construct()
 
 	/**
@@ -93,9 +93,9 @@ class StaleRunSweepJob extends TimedJob {
 	 */
 	protected function run($argument): void {
 		try {
-			// findAll() takes ONE `$config` array — register and schema are
-			// filters inside it, not named arguments. Passing them as named
-			// arguments is a fatal TypeError, not a soft failure.
+			// The findAll() method takes ONE `$config` array — register and
+			// schema are filters inside it, not named arguments. Passing them
+			// as named arguments is a fatal TypeError, not a soft failure.
 			$result = $this->objectService->findAll(
 				config: [
 					'filters' => [
@@ -125,7 +125,10 @@ class StaleRunSweepJob extends TimedJob {
 			// Fall back to startedAt: a run killed before its first tick has no
 			// updatedAt at all, and those are exactly the ones that hang around.
 			$last = ($object['updatedAt'] ?? $object['startedAt'] ?? null);
-			$lastAt = ($last === null) ? null : $this->toTimestamp(value: $last);
+			$lastAt = null;
+			if ($last !== null) {
+				$lastAt = $this->toTimestamp(value: $last);
+			}
 
 			// No timestamp we can trust — use the record's own created stamp
 			// rather than either closing it blindly or leaving it for ever.

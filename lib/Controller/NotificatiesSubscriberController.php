@@ -242,6 +242,10 @@ class NotificatiesSubscriberController extends Controller {
 	 * of any kind runs before {@see AuthorizationService::authorizeApiKey()}
 	 * passes.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): Notificaties API callback. The publisher
+	 * fans out to every subscriber and retries on failure, so bursts are the
+	 * norm rather than abuse.
+	 *
 	 * @param string $abonnementId The abonnement UUID from the route.
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on auth failure, 400 on a malformed body.
@@ -251,8 +255,6 @@ class NotificatiesSubscriberController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// Notificaties API callback. The publisher fans out to every subscriber
-	// and retries on failure, so bursts are the norm rather than abuse.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function callback(string $abonnementId): JSONResponse {
 		$abonnement = $this->subscriberService->findAbonnement(abonnementId: $abonnementId);

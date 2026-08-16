@@ -91,7 +91,7 @@ class OutboundNotificationTranslator {
 	 * @param string $processingKind `T` (create), `W` (update/status change), or `V` (vervallen).
 	 * @param string $zenderOrganisation This bridge's own organisatie code (`stuurgegevens.zender`).
 	 * @param string $ontvangerOrg The subscribed StUF consumer's organisatie code
-	 *                                     (`stuurgegevens.ontvanger`).
+	 *                             (`stuurgegevens.ontvanger`).
 	 *
 	 * @return array{referentienummer: string, xml: string} The generated correlation reference and
 	 *                                                      the rendered envelope XML.

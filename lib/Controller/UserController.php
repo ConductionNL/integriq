@@ -431,6 +431,22 @@ class UserController extends Controller {
 	 * - Security event logging
 	 * - Security headers in response
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082). A LOGIN endpoint, so much tighter than
+	 * anything else in this app: this is the one public surface here where the
+	 * caller presents a credential a stranger could guess.
+	 *
+	 * Brute-force protection is ALREADY COMPLETE here, and deliberately not via
+	 * NC's IThrottler: SecurityService::checkLoginRateLimit() gates entry (with
+	 * a lockout and a delay), recordFailedLoginAttempt() feeds it on both
+	 * failure paths, and recordSuccessfulLogin() clears it. That is the
+	 * two-halves shape ADR-082 asks for, keyed on USERNAME + IP rather than IP
+	 * alone — finer-grained than the framework throttler, so adding
+	 * BruteForceProtection on top would be a second, coarser counter for the
+	 * same event.
+	 *
+	 * The AnonRateLimit ceiling below is the volume half, which app-local logic
+	 * did not cover.
+	 *
 	 * @return JSONResponse A JSON response containing login result and user information
 	 *
 	 * @psalm-return   JSONResponse
@@ -440,21 +456,6 @@ class UserController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// A LOGIN endpoint, so much tighter than anything else in this app: this
-	// is the one public surface here where the caller presents a credential a
-	// stranger could guess.
-	//
-	// Brute-force protection is ALREADY COMPLETE here, and deliberately not
-	// via NC's IThrottler: SecurityService::checkLoginRateLimit() gates entry
-	// (with a lockout and a delay), recordFailedLoginAttempt() feeds it on
-	// both failure paths, and recordSuccessfulLogin() clears it. That is the
-	// two-halves shape ADR-082 asks for, keyed on USERNAME + IP rather than IP
-	// alone — finer-grained than the framework throttler, so adding
-	// #[BruteForceProtection] on top would be a second, coarser counter for
-	// the same event.
-	//
-	// The ceiling below is the volume half, which app-local logic did not
-	// cover.
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {

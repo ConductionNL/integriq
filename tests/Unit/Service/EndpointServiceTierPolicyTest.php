@@ -144,6 +144,8 @@ class EndpointServiceTierPolicyTest extends TestCase {
 			$requestId,
 			$flowRunnerService,
 			$consumerScopeService,
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 		);
 	}//end setUp()
 

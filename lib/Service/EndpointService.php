@@ -40,7 +40,9 @@ use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -144,6 +146,12 @@ class EndpointService {
 	 * @param FlowRunnerService $flowRunnerService Executes the `flow` rule action type (REQ-RULE-009).
 	 * @param ConsumerScopeService $consumerScopeService Enforces the resolved consumer's source allowlist
 	 *                                                   (`ips`/`domains`, REQ-CON-SCOPE-001).
+	 * @param SchemaMapper $schemaMapper OpenRegister schema mapper. Injected rather than pulled from the
+	 *                                   PSR container (ADR-083 rule 1): this class already declares an
+	 *                                   unconditional OpenRegister dependency one line above
+	 *                                   (`ORObjectService`), so a string lookup hid a dependency that was
+	 *                                   never optional in the first place.
+	 * @param ORFileService $orFileService OpenRegister file service, injected for the same reason.
 	 * @param ExecutionTraceService|null $executionTraceService Assembles/persists the per-execution trace
 	 *                                                          (execution-trace REQ-001/REQ-004).
 	 *                                                          Nullable + defaulted so pre-existing
@@ -175,6 +183,8 @@ class EndpointService {
 		private readonly IRequestId $requestId,
 		private readonly FlowRunnerService $flowRunnerService,
 		private readonly ConsumerScopeService $consumerScopeService,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ORFileService $orFileService,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 	) {
 	}//end __construct()
@@ -1459,9 +1469,7 @@ class EndpointService {
 		$useUrls = [];
 
 		$uuidToUrlMap = [];
-		// Initiate schemaMapper here once for performance.
-		$schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
-		$schema = $schemaMapper->find($object->getSchema());
+		$schema = $this->schemaMapper->find($object->getSchema());
 
 		// Find property names that are uris.
 		$validUriProperties = [];
@@ -1500,7 +1508,7 @@ class EndpointService {
 			}
 
 			try {
-				$generatedUrl = $this->generateEndpointUrl(id: $useId, parentIds: [$object->getUuid()], schemaMapper: $schemaMapper);
+				$generatedUrl = $this->generateEndpointUrl(id: $useId, parentIds: [$object->getUuid()], schemaMapper: $this->schemaMapper);
 				$uuidToUrlMap[$useId] = $generatedUrl;
 				$useUrls[] = $generatedUrl;
 			} catch (Exception $exception) {
@@ -1510,11 +1518,11 @@ class EndpointService {
 
 		// @TODO: correct rewriting self url. This has to be fixed with issue CONNECTOR-314.
 		// Add self object URI mapping.
-		// $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);.
-		$uuidToUrlMap[$object->getUri()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
+		// $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $this->schemaMapper);.
+		$uuidToUrlMap[$object->getUri()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $this->schemaMapper);
 
 		// @TODO: temporary fix for download endpoints. This has to be fixed with issue CONNECTOR-314.
-		$uuidToUrlMap[$object->getUri() . '/download'] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper) . '/download';
+		$uuidToUrlMap[$object->getUri() . '/download'] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $this->schemaMapper) . '/download';
 
 		// Replace UUIDs in serializedObject recursively.
 		$serializedObject = $this->replaceUuidsInArray(
@@ -1660,8 +1668,7 @@ class EndpointService {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	private function rewriteExternalReferences(array $parameters, ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper): array {
-		$schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
-		$schema = $schemaMapper->find($mapper->getSchema());
+		$schema = $this->schemaMapper->find($mapper->getSchema());
 
 		$rewriteParameters = array_intersect(array_keys($parameters), array_keys($schema->getProperties()));
 
@@ -2050,8 +2057,7 @@ class EndpointService {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	public function checkPutMandatoryFields(array $parameters, QBMapper|ORObjectService|ObjectServiceMapperAdapter $mapper): array {
-		$schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
-		$schema = $schemaMapper->find($mapper->getSchema());
+		$schema = $this->schemaMapper->find($mapper->getSchema());
 
 		$required = [];
 		if (method_exists($schema, 'getRequired') === true) {
@@ -2421,8 +2427,7 @@ class EndpointService {
 			$data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
 		}
 
-		$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-		$data['body'] = $objectService->saveObject(register: $register, schema: $schema, object: $data['body']);
+		$data['body'] = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data['body']);
 
 		return $data;
 	}//end processSaveObjectRule()
@@ -3935,8 +3940,7 @@ class EndpointService {
 			$filename = $dot->get($config['filenamePosition']);
 		}
 
-		$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-		$files = $fileService->getFiles(object: $object, sharedFilesOnly: false);
+		$files = $this->orFileService->getFiles(object: $object, sharedFilesOnly: false);
 
 		// Try to get filename from object its files (only works when object has 1 file).
 		if (isset($filename) === false && count($object->getFiles()) === 1) {
@@ -3958,7 +3962,7 @@ class EndpointService {
 			 */
 
 			// OpenRegister beta FileService::getFile() has no version argument yet.
-			$file = $fileService->getFile(object: $object, file: $filename);
+			$file = $this->orFileService->getFile(object: $object, file: $filename);
 		} elseif (isset($data['parameters']['versie']) === true) {
 			/*
 			 * @var File $file
@@ -3967,13 +3971,13 @@ class EndpointService {
 			 */
 
 			// OpenRegister beta FileService::getFile() has no versie argument yet.
-			$file = $fileService->getFile(object: $object, file: $filename);
+			$file = $this->orFileService->getFile(object: $object, file: $filename);
 		} else {
 			/*
 			 * @var File $file
 			 */
 
-			$file = $fileService->getFile(object: $object, file: $filename);
+			$file = $this->orFileService->getFile(object: $object, file: $filename);
 		}//end if
 
 		$response = new DataDownloadResponse(data: $file->getContent(), filename: $file->getName(), contentType: $file->getMimeType());

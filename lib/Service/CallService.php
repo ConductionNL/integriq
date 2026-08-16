@@ -1851,6 +1851,18 @@ class CallService {
 		return count($batch);
 	}//end flushCallLogs()
 
+	/**
+	 * Build an in-memory call-log entity for the write buffer.
+	 *
+	 * The entity is deliberately NOT persisted here: it is handed to the
+	 * buffered flush path, which writes the whole batch in one call.
+	 *
+	 * @param ObjectEntity               $source The source the call was made against.
+	 * @param array                      $data   The call payload (`request` / `response` sub-arrays).
+	 * @param ExecutionTraceContext|null $trace  The active execution trace, when one is running.
+	 *
+	 * @return ObjectEntity The unsaved call-log entity.
+	 */
 	private function buildTransientCallLog(
 		ObjectEntity $source,
 		array $data,

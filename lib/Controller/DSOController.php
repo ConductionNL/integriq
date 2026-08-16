@@ -117,15 +117,17 @@ class DSOController extends Controller {
 	 * semantic-auth gate (`public-page-annotation-with-auth-body`) is
 	 * satisfied because the signature check IS the auth body for this route.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): standards receiver — the caller is the DSO,
+	 * authenticating with its own credential and retrying on its own schedule.
+	 * Generous ceiling: a tight one drops statutory submissions on the sender's
+	 * side.
+	 *
 	 * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-4
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// Standards receiver: the caller is the DSO, authenticating with its own
-	// credential and retrying on its own schedule. Generous ceiling — a tight
-	// one drops statutory submissions on the sender's side.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function receiveRequest(): JSONResponse {
 		$rawBody = $this->getRawContent();

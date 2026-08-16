@@ -113,7 +113,7 @@ class StufZknAcknowledgementBuilder {
 	 *                               could not be correlated (e.g. malformed XML).
 	 * @param string $zenderOrganisation This bridge's own organisatie code (reply `zender`).
 	 * @param string $ontvangerOrg The original sender's organisatie code, or an empty string
-	 *                                     when unknown.
+	 *                             when unknown.
 	 *
 	 * @return string The rendered `Fo03Bericht` SOAP envelope XML.
 	 *
