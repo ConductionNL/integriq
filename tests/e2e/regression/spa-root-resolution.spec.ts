@@ -48,10 +48,15 @@ test.describe('SPA root resolution (path-mode router base)', () => {
 			`resolved root ${root} is neither prefix Nextcloud serves this app under`,
 		).toContain(root)
 
-		// Read it a second time, from the page the resolver left us on, and
-		// require agreement. `OC.generateUrl` is the exact call `src/main.js`
-		// makes to build the router base, so this is the app's own answer and
-		// not a transcription of it.
+		// Read it a second time, independently, and require agreement.
+		// `OC.generateUrl` is the exact call `src/main.js` makes to build the
+		// router base, so this is the app's own answer and not a transcription
+		// of it. The resolver probes on its own throwaway page and leaves this
+		// one untouched, so navigate explicitly here.
+		await page.goto('/index.php/apps/openconnector/', {
+			waitUntil: 'domcontentloaded',
+			timeout: 30_000,
+		})
 		const fromApp = await page.evaluate(() => {
 			const oc = (
 				window as unknown as { OC?: { generateUrl?: (p: string) => string } }

@@ -68,8 +68,15 @@ let cached: string | null = null
 /**
  * Resolve the prefix an in-app deep link must carry.
  *
- * @param page A Playwright page. It is navigated to the app root on the first
- *   call of a worker; later calls return the cached value and navigate nothing.
+ * ⚠️ The probe runs on a SEPARATE page in the caller's context, which is then
+ * closed. Two reasons, both learned from this suite:
+ *  1. several callers attach a console spy and later assert `errors` is empty —
+ *     a probe navigation on their own page would charge that page load's
+ *     console output to whichever test happened to run first;
+ *  2. the caller's page is left exactly where it was, so `resolveAppRoot()` has
+ *     no side effect on the test that calls it.
+ *
+ * @param page A Playwright page, used only for its browser context.
  *
  * @return The router base, without a trailing slash — e.g.
  *   `/index.php/apps/openconnector` on CI, `/apps/openconnector` on a
@@ -80,35 +87,43 @@ export async function resolveAppRoot(page: Page): Promise<string> {
 		return cached
 	}
 
-	await page.goto(PROBE_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+	const probe = await page.context().newPage()
+	try {
+		await probe.goto(PROBE_URL, {
+			waitUntil: 'domcontentloaded',
+			timeout: 30_000,
+		})
 
-	const resolved = await page.evaluate((appId) => {
-		const oc = (
-			window as unknown as { OC?: { generateUrl?: (p: string) => string } }
-		).OC
-		return oc?.generateUrl?.(`/apps/${appId}`) ?? null
-	}, APP_ID)
+		const resolved = await probe.evaluate((appId) => {
+			const oc = (
+				window as unknown as { OC?: { generateUrl?: (p: string) => string } }
+			).OC
+			return oc?.generateUrl?.(`/apps/${appId}`) ?? null
+		}, APP_ID)
 
-	// An unreadable answer is "I could not tell", never a default. Silently
-	// falling back to a hardcoded prefix here would reintroduce exactly the
-	// guess this module exists to delete, and it would do it invisibly.
-	if (typeof resolved !== 'string' || resolved === '') {
-		throw new Error(
-			`OC.generateUrl is unavailable at ${PROBE_URL}, so the router base cannot be resolved. `
-				+ 'That means Nextcloud core JS did not load — do not guess a prefix, fix the page load.',
-		)
+		// An unreadable answer is "I could not tell", never a default. Silently
+		// falling back to a hardcoded prefix here would reintroduce exactly the
+		// guess this module exists to delete, and it would do it invisibly.
+		if (typeof resolved !== 'string' || resolved === '') {
+			throw new Error(
+				`OC.generateUrl is unavailable at ${PROBE_URL}, so the router base cannot be resolved. `
+					+ 'That means Nextcloud core JS did not load — do not guess a prefix, fix the page load.',
+			)
+		}
+
+		const root = resolved.replace(/\/+$/, '')
+		if (root.endsWith(`/apps/${APP_ID}`) === false) {
+			throw new Error(
+				`OC.generateUrl('/apps/${APP_ID}') returned ${JSON.stringify(resolved)}, `
+					+ `which does not end in /apps/${APP_ID}. Refusing to deep-link against it.`,
+			)
+		}
+
+		cached = root
+		return root
+	} finally {
+		await probe.close()
 	}
-
-	const root = resolved.replace(/\/+$/, '')
-	if (root.endsWith(`/apps/${APP_ID}`) === false) {
-		throw new Error(
-			`OC.generateUrl('/apps/${APP_ID}') returned ${JSON.stringify(resolved)}, `
-				+ `which does not end in /apps/${APP_ID}. Refusing to deep-link against it.`,
-		)
-	}
-
-	cached = root
-	return root
 }
 
 /**
