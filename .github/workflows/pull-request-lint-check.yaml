@@ -18,6 +18,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # This job had NO setup-node at all, so it inherited the runner default —
+      # currently Node 22, which bundles npm 10. npm 10 cannot install from the
+      # npm 11 lockfile this repo now ships: it exits EUSAGE with
+      # "Missing: <pkg> from lock file". Node 24 bundles npm 11.
+      #
+      # Nothing in this file named a Node version, so nothing looked wrong.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Install dependencies
         run: npm ci
 
