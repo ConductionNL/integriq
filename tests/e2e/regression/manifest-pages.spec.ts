@@ -196,6 +196,7 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'index',
 	},
 	{ id: 'SynchronizationLogs', route: '/synchronizations/logs', type: 'logs' },
+	{ id: 'SynchronizationRuns', route: '/synchronization-runs', type: 'index' },
 	{
 		id: 'SynchronizationDetail',
 		route: '/synchronizations/:id',
@@ -211,7 +212,12 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'ApprovalsIndex',
 	},
-	{ id: 'Flows', route: '/flows', type: 'index' },
+	{
+		id: 'Flows',
+		route: '/flows',
+		type: 'custom',
+		component: 'FlowsIndex',
+	},
 	{
 		id: 'FlowDetail',
 		route: '/flows/:id',
