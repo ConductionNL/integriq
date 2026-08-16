@@ -35,6 +35,7 @@
 import { test, expect, Page } from '@playwright/test'
 import { BASE_URL } from '../support/baseUrl'
 import { appDialog } from '../support/dialogs'
+import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
 
 const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
@@ -55,23 +56,16 @@ const OR = '/index.php/apps/openregister/api/objects/openconnector'
  * returns `/index.php/apps/openconnector` and routes must include the
  * `/index.php/` prefix.
  *
- * Probing once per test file keeps the spec portable between both
- * environments without having to thread the base through every helper.
+ * 🔴 The probe that used to live here requested each candidate and took the
+ * first that served the SPA shell. Nextcloud serves the IDENTICAL shell under
+ * both, so it always returned `/apps/openconnector` — the wrong one on CI —
+ * and every `gotoRoute()` below landed on the Dashboard. That is why journeys
+ * J1–J6 all failed with "Add <X> button must be visible on the index page":
+ * the button is genuinely absent, from the dashboard. Resolution now comes
+ * from `OC.generateUrl` via tests/e2e/support/appRoot.ts.
  */
 async function resolveAppBase(page: Page): Promise<string> {
-	const candidates = ['/apps/openconnector', '/index.php/apps/openconnector']
-	for (const base of candidates) {
-		const probe = await page.request.get(`${base}/sources`, {
-			failOnStatusCode: false,
-		})
-		const body = await probe.text()
-		if (probe.ok() && body.includes('openconnector-main.js')) {
-			return base
-		}
-	}
-	throw new Error(
-		'Could not determine openconnector URL base — neither /apps nor /index.php form returns the SPA shell',
-	)
+	return await resolveAppRoot(page)
 }
 
 /**
@@ -97,6 +91,10 @@ async function resolveAppBase(page: Page): Promise<string> {
 async function gotoRoute(page: Page, route: string): Promise<void> {
 	const base = await resolveAppBase(page)
 	await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
+	// Prove the router MATCHED before any selector runs. Every "Add <X> button
+	// must be visible" failure in this file was really "the router fell through
+	// to the Dashboard", and the selector timeout said nothing about that.
+	await expectRouteMatched(page, route)
 }
 
 /**
