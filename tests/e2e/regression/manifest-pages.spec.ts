@@ -111,22 +111,23 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 // base, so no route matches and the page renders empty. In CI's php -S
 // install (no htaccess processing) the inverse is true and only the
 // `/index.php/...` form works. Resolve at runtime via a HEAD probe.
-const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
-let _root: string | null = null
+// 🔴 The candidate-probe that used to live here could not answer that
+// question. Nextcloud serves the IDENTICAL SPA shell under both prefixes, so
+// `res.ok() && body.includes('openconnector-main.js')` is true for the first
+// candidate every time — and on CI that is the prefix the router does NOT
+// honour. Every one of the 36 mount tests below therefore navigated to a URL
+// outside the router base, fell through the `'/:pathMatch(.*)*'` catch-all,
+// landed on the DASHBOARD, and then passed: they asserted only
+// "innerHTML.length > 100 and no console errors", which the dashboard
+// satisfies. 36 green tests photographing one page.
+//
+// Resolution now comes from `OC.generateUrl` — the function src/main.js itself
+// calls to build the router base — and each test asserts the router MATCHED
+// before looking at anything.
+import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
+
 async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
+	return await resolveAppRoot(page)
 }
 
 /** One manifest page, transcribed verbatim from src/manifest.json. */
@@ -329,10 +330,18 @@ test.describe('manifest pages — schema-driven render', () => {
 			// `networkidle` always times out. The SPA mounts after DOM
 			// ready, and the `#app-content` + content-length assertions
 			// below verify the mount completed.
-			await page.goto(`${root}${navigableRoute(pg)}`, {
+			const route = navigableRoute(pg)
+			await page.goto(`${root}${route}`, {
 				waitUntil: 'domcontentloaded',
 				timeout: 30_000,
 			})
+
+			// FIRST, and before any content assertion: did the router actually
+			// MATCH this route? The catch-all redirects an unmatched path to
+			// `/`, so the address bar is an exact test — and its absence is
+			// what let all 36 of these tests pass against the dashboard.
+			// Everything below is only meaningful once this holds.
+			await expectRouteMatched(page, route)
 
 			// The Nextcloud SPA shell mounts inside #app-content.
 			await expect(

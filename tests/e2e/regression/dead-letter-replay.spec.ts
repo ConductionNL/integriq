@@ -5,8 +5,21 @@
  * Dead-letter-replay regression: the "Event deliveries" operations view.
  *
  * This spec navigates to the admin-only dead-letter queue surface
- * (`EventDeliveriesPage`, custom manifest page at `/cloud-events/deliveries`)
- * and asserts the SPA shell mounts the page without fatal console errors. It
+ * (`EventDeliveriesPage`) and asserts the SPA shell mounts the page without
+ * fatal console errors. It
+ *
+ * ⚠️ CORRECTED 2026-08-16, and the cause was NOT the route. This file navigated
+ * to `/cloud-events/deliveries`, which is still a valid router entry — a
+ * redirect to `/dead-letters?queue=events` since the ADR-080 navigation merge.
+ * What was wrong was the URL PREFIX in front of it: the private probe this file
+ * used always chose `/apps/openconnector`, which CI's path-mode router does not
+ * honour, so the navigation fell through the catch-all onto the DASHBOARD. The
+ * second test reported "rendered no dead-letter operations vocabulary" and then
+ * dumped the dashboard's own text; the FIRST test, asserting only
+ * `innerHTML.length > 100`, passed against that same dashboard. One wrong
+ * prefix, one honest failure and one invisible pass. The prefix now comes from
+ * `tests/e2e/support/appRoot.ts`, and the navigation targets the canonical
+ * `/dead-letters` (the legacy redirect is covered by dead-letters-merged). It
  * is the browser companion to the PHPUnit coverage in
  * `tests/Unit/Service/EventServiceTest.php` (replay/discard state guards,
  * attempts[] preservation, bulk partial outcomes) and
@@ -42,27 +55,12 @@
  */
 
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
+import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
 
-// Resolve the SPA root the same way manifest-pages.spec.ts does: apache dev
-// containers serve `/apps/openconnector`, the `php -S` CI install serves the
-// `/index.php/` form. Probe once with a HEAD-ish GET.
-const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
-let _root: string | null = null
-async function rootUrl(page: Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
-}
+/**
+ * The route that actually mounts `EventDeliveriesPage` (ADR-080 merge).
+ */
+const DEAD_LETTERS_ROUTE = '/dead-letters'
 
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	/Deprecation/i,
@@ -90,22 +88,17 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 }
 
 test.describe('dead-letter-replay — Event deliveries view', () => {
-	test('EventDeliveries page mounts at /cloud-events/deliveries', async ({
-		page,
-	}) => {
+	test('EventDeliveries page mounts at /dead-letters', async ({ page }) => {
 		const { errors } = attachConsoleSpy(page)
 
-		const root = await rootUrl(page)
 		// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
 		// here would be WRONG — it sets `location.hash`, which the router never
-		// reads, and this URL would then render the DASHBOARD, which is exactly
-		// what the second test in this file was reporting when it said the view
-		// "rendered no dead-letter operations vocabulary" and then dumped the
-		// dashboard's own text.
-		await page.goto(`${root}/cloud-events/deliveries`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		// reads, and the URL would render the DASHBOARD instead.
+		await gotoAppRoute(page, DEAD_LETTERS_ROUTE)
+
+		// FIRST: the router matched. Without this the assertions below are
+		// satisfied by the dashboard, which is what this test used to do.
+		await expectRouteMatched(page, DEAD_LETTERS_ROUTE)
 
 		// SPA shell mounts inside #app-content.
 		await expect(
@@ -114,16 +107,13 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 				.first(),
 		).toBeVisible({ timeout: 10_000 })
 
-		// The custom EventDeliveriesPage resolved and rendered content beyond a
-		// bare spinner — either the dead-letter table/header or the empty state.
-		const rendered = await page
-			.locator('#app-content, .app-content')
-			.first()
-			.innerHTML()
-		expect(
-			rendered.length,
-			'EventDeliveries rendered no content inside app-content',
-		).toBeGreaterThan(100)
+		// The queue shell mounted, and the EVENTS queue — which is
+		// EventDeliveriesPage — is the one actually rendered, not merely
+		// offered. `innerHTML.length > 100` alone was the invisible pass.
+		await expect(
+			page.locator('[data-testid="dead-letters-events"]'),
+			'the events queue (EventDeliveriesPage) must be the mounted surface',
+		).toBeVisible({ timeout: 15_000 })
 
 		// No fatal console errors during mount.
 		expect(
@@ -135,17 +125,8 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 	test('EventDeliveries view exposes the dead-letter operations surface', async ({
 		page,
 	}) => {
-		const root = await rootUrl(page)
-		// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
-		// here would be WRONG — it sets `location.hash`, which the router never
-		// reads, and this URL would then render the DASHBOARD, which is exactly
-		// what the second test in this file was reporting when it said the view
-		// "rendered no dead-letter operations vocabulary" and then dumped the
-		// dashboard's own text.
-		await page.goto(`${root}/cloud-events/deliveries`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoAppRoute(page, DEAD_LETTERS_ROUTE)
+		await expectRouteMatched(page, DEAD_LETTERS_ROUTE)
 		await expect(
 			page
 				.locator('#app-content, [data-cy=app-content], .app-content')

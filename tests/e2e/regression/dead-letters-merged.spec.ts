@@ -30,47 +30,30 @@
  * - src/views/Synchronization/SyncDeadLetterPage.vue
  */
 
-import { test, expect, type Page } from '@playwright/test'
-
-const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
-let _root: string | null = null
+import { test, expect } from '@playwright/test'
+import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
 
 /**
- * Resolve the SPA root the same way the sibling regression specs do: apache
- * dev containers serve `/apps/openconnector`, the `php -S` CI install serves
- * the `/index.php/` form.
+ * The merged operations surface.
  *
- * @param page The Playwright page.
- * @return The serving root path.
+ * ⚠️ This file used to resolve the URL prefix itself, by requesting each
+ * candidate and taking the first that served the SPA shell. Both candidates
+ * serve the identical shell, so it always chose `/apps/openconnector` — the
+ * prefix CI's path-mode router does NOT honour — and every navigation below
+ * fell through the catch-all onto the Dashboard. See
+ * tests/e2e/support/appRoot.ts, which asks `OC.generateUrl` instead.
  */
-async function rootUrl(page: Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
-}
+const DEAD_LETTERS_ROUTE = '/dead-letters'
 
 test.describe('ADR-080 — merged Dead letters operations surface', () => {
 	test('DeadLetters page mounts at /dead-letters with both queues offered', async ({
 		page,
 	}) => {
-		const root = await rootUrl(page)
 		// ⚠️ Path-mode router (createWebHistory, src/main.js) — a `#` here
 		// would be WRONG: it would serve the SPA shell and land on the
 		// Dashboard, since the router never reads location.hash.
-		await page.goto(`${root}/dead-letters`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoAppRoute(page, DEAD_LETTERS_ROUTE)
+		await expectRouteMatched(page, DEAD_LETTERS_ROUTE)
 
 		await expect(
 			page.locator('[data-testid="dead-letters-queue-events"]'),
@@ -92,11 +75,8 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 	test('switching queue swaps the mounted surface and reflects it in the URL', async ({
 		page,
 	}) => {
-		const root = await rootUrl(page)
-		await page.goto(`${root}/dead-letters`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoAppRoute(page, DEAD_LETTERS_ROUTE)
+		await expectRouteMatched(page, DEAD_LETTERS_ROUTE)
 
 		await page.locator('[data-testid="dead-letters-queue-sync"]').click()
 
@@ -118,21 +98,13 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 	test('the two legacy routes each land on the queue their bookmark meant', async ({
 		page,
 	}) => {
-		const root = await rootUrl(page)
-
-		await page.goto(`${root}/cloud-events/deliveries`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoAppRoute(page, '/cloud-events/deliveries')
 		await expect(
 			page.locator('[data-testid="dead-letters-events"]'),
 		).toBeVisible({ timeout: 15_000 })
 		expect(page.url()).toContain('/dead-letters')
 
-		await page.goto(`${root}/synchronizations/dead-letters`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoAppRoute(page, '/synchronizations/dead-letters')
 		await expect(page.locator('[data-testid="dead-letters-sync"]')).toBeVisible({
 			timeout: 15_000,
 		})
