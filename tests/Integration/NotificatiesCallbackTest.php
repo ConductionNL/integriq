@@ -188,13 +188,15 @@ class NotificatiesCallbackTest extends TestCase {
 		);
 		$request->method('getParams')->willReturn(
 			[
-				'channel' => 'zaken',
+				// STATUTORY WIRE SHAPE — an inbound ZGW notification carries
+				// `kanaal` and `kenmerken`, not their English translations.
+				'kanaal' => 'zaken',
 				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'resource' => 'zaak',
 				'resourceUrl' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'actie' => 'create',
 				'aanmaakdatum' => '2026-07-15T10:00:00Z',
-				'characteristics' => ['bronorganisatie' => '123443210'],
+				'kenmerken' => ['bronorganisatie' => '123443210'],
 			]
 		);
 

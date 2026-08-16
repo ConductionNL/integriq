@@ -208,21 +208,6 @@
       "count": 1
     }
   },
-  "src/views/Flow/FlowDetailPage.vue": {
-    "eqeqeq": {
-      "count": 1
-    }
-  },
-  "src/views/Flow/FlowRunLog.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/views/Flow/FlowStepRow.vue": {
-    "vue/custom-event-name-casing": {
-      "count": 2
-    }
-  },
   "src/views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1

@@ -96,13 +96,13 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 		const { errors } = attachConsoleSpy(page)
 
 		const root = await rootUrl(page)
-		// ⚠️ The `#` is required — the in-app router is hash-mode
-		// (`createWebHashHistory()`, src/main.js). Without it this URL serves
-		// the SPA shell and then renders the DASHBOARD, which is exactly what
-		// the second test in this file was reporting when it said the view
+		// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
+		// here would be WRONG — it sets `location.hash`, which the router never
+		// reads, and this URL would then render the DASHBOARD, which is exactly
+		// what the second test in this file was reporting when it said the view
 		// "rendered no dead-letter operations vocabulary" and then dumped the
 		// dashboard's own text.
-		await page.goto(`${root}/#/cloud-events/deliveries`, {
+		await page.goto(`${root}/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -136,13 +136,13 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 		page,
 	}) => {
 		const root = await rootUrl(page)
-		// ⚠️ The `#` is required — the in-app router is hash-mode
-		// (`createWebHashHistory()`, src/main.js). Without it this URL serves
-		// the SPA shell and then renders the DASHBOARD, which is exactly what
-		// the second test in this file was reporting when it said the view
+		// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
+		// here would be WRONG — it sets `location.hash`, which the router never
+		// reads, and this URL would then render the DASHBOARD, which is exactly
+		// what the second test in this file was reporting when it said the view
 		// "rendered no dead-letter operations vocabulary" and then dumped the
 		// dashboard's own text.
-		await page.goto(`${root}/#/cloud-events/deliveries`, {
+		await page.goto(`${root}/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})

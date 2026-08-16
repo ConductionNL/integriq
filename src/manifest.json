@@ -2504,46 +2504,10 @@
     {
       "id": "Flows",
       "route": "/flows",
-      "type": "index",
+      "type": "custom",
+      "component": "FlowsIndex",
       "title": "Flows",
-      "config": {
-        "register": "openconnector",
-        "schema": "flow",
-        "columns": [
-          "name",
-          "isEnabled",
-          "description"
-        ],
-        "includeFields": [
-          "name",
-          "description"
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": true
-        },
-        "rowAction": {
-          "id": "edit",
-          "handler": "navigate",
-          "route": "FlowDetail"
-        },
-        "actions": [
-          {
-            "id": "edit",
-            "label": "Open editor",
-            "icon": "PencilOutline",
-            "handler": "navigate",
-            "route": "FlowDetail"
-          },
-          {
-            "id": "run",
-            "label": "Run now",
-            "icon": "PlayOutline",
-            "handler": "runFlowHandler"
-          }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
+      "_note": "Custom page rather than type:index (flow-engine-unification task 6.2): a flow lives in the shared native flow store, not a register/schema, so the object-backed index cannot address it. The body is CnFlowIndexPage scoped app=\"openconnector\" — same component OpenRegister and hermiq use, so list/status semantics stay identical fleet-wide. Mirrors openregister/src/manifest.json:flows."
     },
     {
       "id": "FlowDetail",
@@ -2551,11 +2515,8 @@
       "type": "custom",
       "title": "Flow",
       "component": "FlowDetailPage",
-      "_note": "Custom page: the ordered, reorderable step-list editor (typed rows: type/configRef/condition/onError, plus branch sub-targets) and the manual Run action + run-log tab cannot be expressed by the generic detail page. See visual-flow-orchestration REQ-009. No separate Edit modal — flow metadata (name/description/isEnabled) is edited inline on this page, matching the current RuleDetailPage/SynchronizationDetailPage/MappingDetailPage convention (the legacy src/modals/<Entity>/Edit*.vue modal pattern design.md referenced is unwired dead code post chain-C, per src/handlers/actionHandlers.js's own docblock).",
-      "config": {
-        "register": "openconnector",
-        "schema": "flow"
-      }
+      "_note": "Custom page (flow-engine-unification task 6.2): the shared CnFlowDetail node/edge canvas, over the same native flow store OpenRegister and hermiq use — not an app-owned editor. Controls live in the NcAppSidebar (sidebarComponent) so the canvas gets full width; canvas and sidebar share useFlowStore. Mirrors openregister/src/manifest.json:flowDetail.",
+      "sidebarComponent": "FlowDetailSidebar"
     },
     {
       "id": "ApprovalDetail",

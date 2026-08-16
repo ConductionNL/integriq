@@ -2,60 +2,53 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/specs/flow-orchestration/spec.md (REQ-009/010/011)
+ * Spec coverage: openspec/specs/flow-orchestration/spec.md (legacy backend,
+ *                                                            REQ-001–008 only)
  *                openspec/specs/execution-trace/spec.md    (REQ-007)
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * WHY THESE SIX AND NOT THE OTHERS
+ * REQ-009/010/011 REMOVED 2026-08-16 — flow-engine-unification task 6.2
  * ─────────────────────────────────────────────────────────────────────────────
- * Four of the six scenarios below are ABSENCE claims in one direction:
- * "no Save control is offered", "Save is disabled", "the picker's options are
- * scoped to Mappings ONLY". An absence assertion is satisfied for free by a
- * page that failed to mount, by a selector that never opened, and by a locator
- * that matches nothing — so on its own it is worth approximately zero.
+ * This file used to cover REQ-009 (the typed step-list editor: FlowStepRow,
+ * keyboard reorder, config-ref picker scoped by step type) and REQ-010/011
+ * (the draft/dirty Save-Discard contract on that same editor). That UI no
+ * longer exists: FlowDetailPage.vue now renders only the shared
+ * `CnFlowDetail` canvas from @conduction/nextcloud-vue over OpenRegister's
+ * native flow store (nodes[]/edges[]), not this app's own `flow`/`steps[]`
+ * schema the old editor was built on. See
+ * openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note and
+ * openconnector#1255 for the full backend-state writeup.
  *
- * Every one of them is therefore written as a DIFFERENTIAL over the SAME
- * locator, driven by a real behaviour of the editor:
- *
- *   - Save/Discard are `v-if="dirty"`, so the same button locator must be
- *     absent on load and PRESENT after one keystroke in the Name field.
- *   - Save is `:disabled="!canSave"` where canSave requires a non-empty name,
- *     so the same button must be ENABLED after a rename and DISABLED after the
- *     name is cleared — in the same page, seconds apart.
- *   - The config-ref picker's options are scoped by the picked step type, so
- *     the same picker must list the seeded Mapping and not the seeded Source
- *     when type=mapping, and the inverse when type=call.
- *
- * A dead selector, an unmounted page or a wrong URL cannot produce a
- * DIFFERENCE. It can only produce the same (empty) answer twice, which fails
- * the positive half of every pair. That is the only reason these are worth
- * counting as coverage.
+ * The shared canvas's own editor behaviour (dirty tracking, node palette,
+ * keyboard operability) is `@conduction/nextcloud-vue`'s to test — duplicating
+ * it per consuming app is exactly the kind of coverage that silently drifts
+ * from what the shared component actually does. What THIS app still owns and
+ * must keep proving: the `/flows` and `/flows/:id` routes exist, resolve to
+ * the shared components with the right `app="openconnector"` scoping, and
+ * survive a real reload — see the new describe block below.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT IS DELIBERATELY *NOT* COVERED HERE
  * ─────────────────────────────────────────────────────────────────────────────
- * `flow-orchestration::flows-index-page-mounts-and-lists-flows` stays
- * UNCOVERED on purpose. The index does mount and does list flows, but the
- * scenario also requires each flow's LAST-RUN STATUS to be shown, and the
- * rendered table's columns are Name / Enabled / Description and nothing else
- * (measured: `th` texts are `['', 'Name', 'Enabled', 'Description', '']`).
- * Tagging this file for that scenario would credit coverage for a column that
- * does not exist. The honest state is an uncovered scenario describing a UI
- * gap — filed as openconnector#1214.
+ * The index list's exact columns (Name / Trigger / Status, measured
+ * 2026-08-16 — a different shape than the old Name/Enabled/Description table
+ * openconnector#1214 was filed against) are not pinned here. `CnFlowIndexPage`
+ * owns that presentation; pinning its column set from a consumer app couples
+ * this file to a shared-library layout choice it doesn't control.
  *
- * ⚠️ The `#` in APP_BASE is required — the in-app router is hash-mode
- * (`createWebHashHistory()`, src/main.js). Without it the URL serves the SPA
- * shell and renders the DASHBOARD, which looks like the page failing to render
- * its own content.
+ * REQ-007 (execution-trace, Trace detail / Replay) is UNRELATED to this
+ * migration — the trace surface never used the old step-list editor — and is
+ * unchanged below.
  */
-import { test, expect, type Page, type Locator } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import type { ApiClient } from '../workflows/_fixture'
+
+import { expect, test } from '@playwright/test'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture'
 import { APP_BASE } from './_helpers'
-import {
-	makeApiClient,
-	createObject,
-	deleteObject,
-	type ApiClient,
-} from '../workflows/_fixture'
+
+/** OpenRegister's native flow store — a different backend than OR_BASE/OC_API in _fixture.ts, which target openconnector's legacy `flow` schema. */
+const FLOWS_API = '/index.php/apps/openregister/api/flows'
 
 /** Unique per-run marker so every assertion can scope to this run's rows. */
 const runId = `flow-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
@@ -75,14 +68,10 @@ class Fixtures {
 	api!: ApiClient
 	private created: Array<{ schema: string; id: string }> = []
 
-	async open(
-		browser: import('@playwright/test').Browser,
-		baseURL: string,
-	): Promise<void> {
+	async open(browser: Browser, baseURL: string): Promise<void> {
 		this.api = await makeApiClient(browser, baseURL)
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	async make(schema: string, data: Record<string, any>): Promise<any> {
 		const obj = await createObject(this.api, schema, data)
 		const id = obj.id ?? obj.uuid
@@ -106,7 +95,6 @@ class Fixtures {
 	 * ignore teardown errors, which is how a real leak gets missed. The row is
 	 * left to the retention task, which is the mechanism the schema documents.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	async makeUntracked(schema: string, data: Record<string, any>): Promise<any> {
 		return createObject(this.api, schema, data)
 	}
@@ -121,437 +109,158 @@ class Fixtures {
 }
 
 /**
- * Open a flow's detail page and wait for the step-list editor to mount.
- *
- * Waiting on the editor's own row testid — not on a network call — is what
- * tells us the page rendered its own content rather than the dashboard.
- * `networkidle` is not used: it never settles on Nextcloud and it hides the
- * race it appears to fix (ADR-074).
+ * Create a flow in OpenRegister's NATIVE flow store — a different backend
+ * than `Fixtures.make('flow', …)` above, which targets openconnector's
+ * legacy `register=openconnector, schema=flow` schema. `/flows/:id` now
+ * renders the shared canvas over this store, not that one.
  */
-async function openFlow(page: Page, id: string): Promise<void> {
-	await page.goto(`${APP_BASE}/flows/${id}`, { waitUntil: 'domcontentloaded' })
-	await expect(
-		page.getByTestId('flow-step-row').first(),
-		'the step-list editor must mount — if this times out the page rendered the dashboard, not the flow',
-	).toBeVisible({ timeout: 25_000 })
+async function createFlow(api: ApiClient, data: Record<string, any>): Promise<any> {
+	const resp = await api.request.post(FLOWS_API, { data, failOnStatusCode: false })
+	if (!resp.ok()) {
+		throw new Error(`createFlow failed: ${resp.status()} ${await resp.text()}`)
+	}
+	return resp.json()
 }
 
-/** The Name field of the General card (the only NcTextField labelled `Name*`). */
-function nameField(page: Page): Locator {
-	return page.getByRole('textbox', { name: /^Name/ }).first()
-}
-
-/** The Save control. `v-if="dirty"` — absent entirely while the draft is clean. */
-function saveButton(page: Page): Locator {
-	return page.getByRole('button', { name: 'Save changes' })
-}
-
-/** The Discard control. Same `v-if="dirty"`. */
-function discardButton(page: Page): Locator {
-	return page.getByRole('button', { name: 'Discard' })
+/** Delete a flow from the native store by id. Best-effort — used only in teardown. */
+async function deleteFlow(api: ApiClient, id: string): Promise<void> {
+	await api.request.delete(`${FLOWS_API}/${id}`, { failOnStatusCode: false })
 }
 
 /**
- * The step-type NcSelect of one step row, by row index.
+ * Resolve the app root URL by probing, rather than trusting the shared
+ * `APP_BASE` constant (which hardcodes `/index.php/`, correct for CI's
+ * router-less `php -S` server).
  *
- * FlowStepRow gives each select a stable `input-id` (`flow-step-type-<uid>`),
- * but the uid is assigned per component instance and does NOT track array
- * position — which is precisely what the reorder test needs to observe. So
- * rows are addressed positionally through the row testid and the select is
- * found by its `inputLabel`, which nc-vue renders as the combobox's
- * accessible name.
+ * Measured 2026-08-16: on this Apache-based dev container, a DEEP path
+ * under `/index.php/apps/openconnector/<route>` (e.g. `/traces/<id>`)
+ * redirects to the bare `/apps/openconnector/` app root, discarding the
+ * route — a real, pre-existing Nextcloud redirect that path-mode routing
+ * now exposes (hash-mode was accidentally immune: a fragment with no
+ * `#` of its own in the redirect's Location header is re-appended by the
+ * browser, so the OLD hash deep-links survived this redirect by luck, not
+ * because it didn't happen). `${APP_BASE}/traces/${id}` in the REQ-007
+ * block below still uses the shared constant and is expected to fail
+ * locally for this reason — pre-existing, unrelated to this migration, and
+ * NOT reproduced in CI, which has no such redirect. This local prober
+ * exists so the NEW tests below don't inherit that failure. Matches the
+ * same probe already used in tests/e2e/regression/{dead-letters-merged,
+ * manifest-pages,webhook-signing}.spec.ts.
  */
-function stepRow(page: Page, index: number): Locator {
-	return page.getByTestId('flow-step-row').nth(index)
-}
-
-/**
- * The label of the option currently selected in a step row's type picker.
- *
- * TWO measured traps are encoded here, and both produce an assertion that
- * cannot fail rather than one that fails loudly:
- *
- * 1. `.vs__selected` is vue-select's display node for the chosen option. The
- *    `<input>` inside an NcSelect is the SEARCH box and is EMPTY when nothing
- *    is being typed (measured: `flow-step-type-1` has `value=""` on a row
- *    whose type plainly reads `Call`). Reading the input would have compared
- *    "" to "" for every row and passed regardless of the reorder.
- *
- * 2. nc-vue renders each option through `NcEllipsisedOption`, which SPLITS any
- *    label of ~10 characters or more into two spans — `Synchronization` comes
- *    back from `innerText()` as `"Synchron ization"` (measured on the first
- *    run of this spec). That is an upstream accessible-name defect
- *    (ConductionNL/.github#350, `nextcloud-libraries/nextcloud-vue`), and
- *    loosening the expected string to absorb it would HIDE the defect. The
- *    component keeps the unsplit text in a `title` attribute, so read that and
- *    fall back to the rendered text — a row where neither exists still fails.
- */
-async function stepTypeLabel(page: Page, index: number): Promise<string> {
-	const selected = stepRow(page, index).locator('.vs__selected').first()
-	const titled = selected.locator('xpath=descendant-or-self::*[@title]').first()
-	if ((await titled.count()) > 0) {
-		const title = (await titled.getAttribute('title'))?.trim()
-		if (title) {
-			return title
+let _root: string | null = null
+async function resolveRoot(page: Page): Promise<string> {
+	if (_root) return _root
+	for (const candidate of [
+		'/apps/openconnector',
+		'/index.php/apps/openconnector',
+	]) {
+		const res = await page.request.get(`${candidate}/flows`, {
+			failOnStatusCode: false,
+		})
+		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
+			_root = candidate
+			return candidate
 		}
 	}
-	return (await selected.innerText()).replace(/\s+/g, ' ').trim()
-}
-
-/**
- * Open an NcSelect's dropdown and return its option labels, normalised.
- *
- * ⚠️ Two things this deliberately does NOT do:
- *
- *  - It does not treat "no options came back" as an empty list. vue-select
- *    renders a `li.vs__dropdown-option--disabled` ("Sorry, no matching
- *    options") rather than nothing at all, and a picker that is still LOADING
- *    renders the same way. Returning `[]` there would make every
- *    `not.toContain(...)` assertion in this file pass for free — the exact
- *    failure mode these tests exist to rule out. So the no-options row is
- *    detected explicitly and raised.
- *  - It does not normalise away vue-select's line WRAPS by accident: long
- *    option text is wrapped by the renderer and `allInnerTexts()` returns what
- *    is RENDERED, not the source string (`Register/Schema` comes back as
- *    `"Register\n/Schema"`). Whitespace is collapsed, nothing else.
- */
-async function optionLabels(page: Page, select: Locator): Promise<string[]> {
-	await select.locator('.vs__dropdown-toggle').click()
-	const menu = page.locator('.vs__dropdown-menu')
-	await expect(menu.first(), 'the dropdown must actually open').toBeVisible({
-		timeout: 10_000,
-	})
-
-	const options = menu.locator('li[role="option"]')
-	// The list is fetched (`configRefLoading`), so give it a moment to arrive
-	// before deciding it is empty. Polling on the count is the honest wait:
-	// a picker that never populates fails on the explicit check below rather
-	// than silently yielding an empty array.
-	await expect
-		.poll(async () => await options.count(), {
-			timeout: 15_000,
-			message: 'the picker never populated',
-		})
-		.toBeGreaterThan(0)
-		.catch(async () => {
-			const rendered = (await menu.first().innerText())
-				.replace(/\s+/g, ' ')
-				.trim()
-			throw new Error(
-				`the dropdown opened but offered no selectable option — it rendered: ${JSON.stringify(rendered)}`,
-			)
-		})
-
-	const labels: string[] = []
-	for (const opt of await options.all()) {
-		const titled = opt.locator('xpath=descendant-or-self::*[@title]').first()
-		const title =
-			(await titled.count()) > 0
-				? (await titled.getAttribute('title'))?.trim()
-				: undefined
-		labels.push(title || (await opt.innerText()).replace(/\s+/g, ' ').trim())
-	}
-	await page.keyboard.press('Escape')
-	return labels
+	throw new Error(
+		'Neither /apps nor /index.php form serves the openconnector SPA shell',
+	)
 }
 
 /* ===========================================================================
- * REQ-010 — the draft/dirty contract
+ * flow-engine-unification task 6.2 — the shared canvas, scoped to this app
  * ======================================================================== */
-test.describe('Flow detail — the draft is only saveable once it differs (REQ-010/011)', () => {
-	const fx = new Fixtures()
+test.describe('Flows — the shared canvas, scoped to app=openconnector', () => {
+	let api: ApiClient
 	let flowId = ''
+	const FLOW_NAME = `${runId} canvas smoke`
 
 	test.beforeAll(async ({ browser, baseURL }) => {
-		await fx.open(browser, baseURL!)
-		const flow = await fx.make('flow', {
-			name: `${runId} draft contract`,
-			description: 'fixture for the dirty/canSave differentials',
-			isEnabled: false,
-			// `config: {}` is REJECTED by OpenRegister for a nested object
-			// property ("expects object but got empty"); the key is omitted
-			// instead. Seeding a readable marker into every field is not an
-			// option here either — see the dead-letter spec's note on
-			// `required: []` not meaning "validates nothing".
-			steps: [
+		api = await makeApiClient(browser, baseURL!)
+		const flow = await createFlow(api, {
+			name: FLOW_NAME,
+			description: 'flow-orchestration spec-coverage fixture — safe to delete',
+			app: 'openconnector',
+			enabled: true,
+			trigger: 'manual',
+			nodes: [
 				{
-					order: 1,
-					type: 'event',
-					onError: 'stop',
-					config: { type: 'com.example.seed', source: `urn:${runId}` },
+					id: 'trigger1',
+					type: 'openregister.trigger-manual',
+					config: [],
+					position: { x: 80, y: 160 },
+				},
+				{
+					id: 'step1',
+					type: 'openconnector.synchronization-run',
+					// A syntactically valid config (validateConfig() only requires a
+					// non-empty string) — this test proves the CANVAS renders the
+					// seeded graph, not that the referenced synchronization exists.
+					config: { synchronization: runId },
+					position: { x: 320, y: 160 },
 				},
 			],
+			edges: [{ id: 'e1', from: 'trigger1', to: 'step1', title: 'start' }],
 		})
 		flowId = flow.id ?? flow.uuid
 	})
 	test.afterAll(async () => {
-		await fx.close()
+		if (flowId) await deleteFlow(api, flowId)
+		await api?.dispose()
 	})
 
-	// @e2e flow-orchestration::an-untouched-flow-offers-nothing-to-save
-	test('a freshly loaded flow offers no Save or Discard, and one keystroke offers both', async ({
+	// @e2e flow-orchestration::flows-index-page-mounts-and-lists-flows
+	test('the flows index lists this app-scoped flow by name', async ({
 		page,
+	}: {
+		page: Page
 	}) => {
-		await openFlow(page, flowId)
-
-		// THE REQUIREMENT (an absence claim — worthless alone).
+		const root = await resolveRoot(page)
+		await page.goto(`${root}/flows`, { waitUntil: 'domcontentloaded' })
 		await expect(
-			saveButton(page),
-			'a flow that has just loaded must not offer Save — a page that reports itself dirty on load teaches its user to ignore the indicator',
-		).toHaveCount(0)
-		await expect(discardButton(page), 'nor Discard').toHaveCount(0)
-
-		// THE CONTROL, over the SAME locators. `dirty` is a real computed over
-		// a normalised diff, so a single keystroke in the Name field must make
-		// both controls appear. If the page were broken, unmounted, or if these
-		// locators were wrong, this half fails — which is what makes the half
-		// above mean anything.
-		await nameField(page).fill(`${runId} draft contract EDITED`)
-		await expect(
-			saveButton(page),
-			'one real edit must offer Save — if this fails, the absence above proves nothing',
-		).toBeVisible({ timeout: 10_000 })
-		await expect(discardButton(page), 'and Discard').toBeVisible()
-
-		// And the diff is computed against a NORMALISED copy, so restoring the
-		// original value must retract the offer again rather than latching
-		// dirty forever.
-		await nameField(page).fill(`${runId} draft contract`)
-		await expect(
-			saveButton(page),
-			'restoring the loaded value must retract the Save offer — a latched dirty flag is the same defect in the other direction',
-		).toHaveCount(0)
+			page.getByText(FLOW_NAME),
+			'the seeded flow must appear in the openconnector-scoped list',
+		).toBeVisible({ timeout: 20_000 })
 	})
 
-	// @e2e flow-orchestration::a-flow-with-no-name-cannot-be-saved
-	test('clearing the name leaves Save offered but disabled, and restoring it re-enables', async ({
+	// @e2e flow-engine-unification::flow-detail-renders-the-shared-canvas
+	test('flow detail renders the shared canvas with the seeded nodes, and survives a hard reload', async ({
 		page,
+	}: {
+		page: Page
 	}) => {
-		await openFlow(page, flowId)
+		const root = await resolveRoot(page)
+		await page.goto(`${root}/flows/${flowId}`, { waitUntil: 'domcontentloaded' })
 
-		// Make the draft dirty with a VALID name first, so that the disabled
-		// state below is attributable to the empty name and not to the control
-		// simply not being rendered. This ordering is the whole point: without
-		// it, "Save is not clickable" and "Save does not exist" are the same
-		// observation.
-		await nameField(page).fill(`${runId} renamed`)
-		const save = saveButton(page)
+		// The Name field mirrors the loaded flow — proves the canvas mounted
+		// bound to THIS flow, not an empty "new flow" shell.
 		await expect(
-			save,
-			'a dirty draft with a valid name offers Save',
-		).toBeVisible({ timeout: 10_000 })
-		await expect(save, 'and it is ENABLED — this is the control').toBeEnabled()
+			page.getByRole('textbox', { name: /^Name/ }).first(),
+			'the canvas must mount and load the seeded flow, not an empty shell',
+		).toHaveValue(FLOW_NAME, { timeout: 25_000 })
 
-		// THE REQUIREMENT. `canSave` requires a non-empty trimmed name.
-		await nameField(page).fill('')
+		// The two seeded nodes render as placed canvas nodes. Nodes' accessible
+		// name IS their node id ("trigger1"/"step1") — the Steps palette's own
+		// list items are never named this way, so this can't accidentally match
+		// the palette instead of the canvas.
 		await expect(
-			save,
-			'an unnamed flow must not be submittable — the runner rejects it',
-		).toBeDisabled({ timeout: 10_000 })
-
-		// Whitespace is not a name either — `canSave` trims.
-		await nameField(page).fill('   ')
-		await expect(save, 'whitespace is not a name').toBeDisabled()
-
-		// Back to enabled, proving the disable is driven by the value and not
-		// by some sticky state the first fill introduced.
-		await nameField(page).fill(`${runId} renamed again`)
-		await expect(save, 'a valid name re-enables Save').toBeEnabled({
-			timeout: 10_000,
-		})
-	})
-})
-
-/* ===========================================================================
- * REQ-009 — the typed step-list editor
- * ======================================================================== */
-test.describe('Flow detail — the typed step list is the keyboard-operable editor (REQ-009)', () => {
-	const fx = new Fixtures()
-	let flowId = ''
-	const MAPPING_NAME = `${runId} Mapping Beta`
-	const SOURCE_NAME = `${runId} Source Alpha`
-
-	test.beforeAll(async ({ browser, baseURL }) => {
-		await fx.open(browser, baseURL!)
-		// Two config-ref candidates of DIFFERENT entity types. The picker test
-		// below is only meaningful because both exist at the same moment: a
-		// picker that lists nothing would satisfy "no Sources are offered"
-		// trivially.
-		await fx.make('source', {
-			name: SOURCE_NAME,
-			description: 'flow picker fixture',
-			location: 'https://example.invalid/alpha',
-			type: 'api',
-			isEnabled: true,
-		})
-		await fx.make('mapping', {
-			name: MAPPING_NAME,
-			description: 'flow picker fixture',
-			mapping: { a: 'b' },
-		})
-		const flow = await fx.make('flow', {
-			name: `${runId} three steps`,
-			description: 'fixture for the reorder + picker scenarios',
-			isEnabled: false,
-			steps: [
-				{
-					order: 1,
-					type: 'call',
-					onError: 'stop',
-					config: { endpoint: '/alpha', method: 'GET' },
-				},
-				{
-					order: 2,
-					type: 'event',
-					onError: 'continue',
-					config: { type: 'com.example.beta', source: `urn:${runId}` },
-				},
-				{ order: 3, type: 'synchronization', onError: 'dead_letter' },
-			],
-		})
-		flowId = flow.id ?? flow.uuid
-	})
-	test.afterAll(async () => {
-		await fx.close()
-	})
-
-	// @e2e flow-orchestration::reordering-is-possible-without-a-pointer-drag
-	test('Move up swaps two steps by keyboard alone, with no pointer drag', async ({
-		page,
-	}) => {
-		await openFlow(page, flowId)
-		await expect(page.getByTestId('flow-step-row')).toHaveCount(3)
-
-		// The three seeded steps carry three DIFFERENT types, which is what
-		// makes a swap observable at all. Read the order as rendered rather
-		// than assuming the seed order survived load.
-		const before = [
-			await stepTypeLabel(page, 0),
-			await stepTypeLabel(page, 1),
-			await stepTypeLabel(page, 2),
-		]
-		expect(
-			before,
-			'the three seeded steps must render as three distinguishable rows',
-		).toEqual(['Call', 'Event', 'Synchronization'])
-
-		// The first row's "Move step up" is disabled and the last row's "Move
-		// step down" is disabled — the editor knows where the ends are. This
-		// is a cheap control on the locator itself: if `Move step up` matched
-		// nothing, `toHaveCount(3)` below would fail rather than the reorder
-		// silently no-op'ing.
-		const moveUp = page.getByRole('button', { name: 'Move step up' })
-		await expect(moveUp).toHaveCount(3)
-		await expect(moveUp.nth(0), 'the first step cannot move up').toBeDisabled()
+			page.getByRole('button', { name: 'trigger1' }),
+			'the seeded trigger node must render on the canvas',
+		).toBeVisible()
 		await expect(
-			page.getByRole('button', { name: 'Move step down' }).nth(2),
-			'the last step cannot move down',
-		).toBeDisabled()
+			page.getByRole('button', { name: 'step1' }),
+			'the seeded synchronization-run node must render on the canvas',
+		).toBeVisible()
 
-		// KEYBOARD ONLY. `.focus()` + Enter is a real keyboard activation of
-		// the button; no drag, no pointer. WCAG 2.1 AA 2.1.1 is the reason the
-		// spec forbids a drag-only editor, so exercising the pointer path here
-		// would test the wrong thing.
-		await moveUp.nth(1).focus()
+		// A hard reload (not client-side nav) must still resolve to the same
+		// flow. This is the router-history-mode conversion's own guarantee
+		// (createWebHistory + the appinfo/routes.php catch-all) — only a real
+		// document reload, not an in-app link click, proves it.
+		await page.reload({ waitUntil: 'domcontentloaded' })
 		await expect(
-			moveUp.nth(1),
-			'the control must be reachable by focus for the keyboard path to exist',
-		).toBeFocused()
-		await page.keyboard.press('Enter')
-
-		const after = [
-			await stepTypeLabel(page, 0),
-			await stepTypeLabel(page, 1),
-			await stepTypeLabel(page, 2),
-		]
-		expect(
-			after,
-			'Move up on step 2 must swap it with step 1 — order is the step identity, so the ROWS move and the `order` values stay 1,2,3',
-		).toEqual(['Event', 'Call', 'Synchronization'])
-
-		// The `#order` badges stay 1..3 — moveStep swaps the two `order`
-		// VALUES and re-sorts, it does not renumber. Asserting this pins the
-		// behaviour the branch targets depend on: `nextStepOrder` references
-		// `order` BY VALUE, so a reorder that renumbered would silently
-		// invalidate every branch target in the flow.
-		await expect(stepRow(page, 0).locator('.flow-step-row__order')).toHaveText(
-			'#1',
-		)
-		await expect(stepRow(page, 2).locator('.flow-step-row__order')).toHaveText(
-			'#3',
-		)
-
-		// A reorder is an edit, so the draft must now be dirty. Same
-		// differential shape as the REQ-010 tests: the swap above is only
-		// believable if the page agrees something changed.
-		await expect(
-			saveButton(page),
-			'a reorder is an edit and must offer Save',
-		).toBeVisible({ timeout: 10_000 })
-	})
-
-	// @e2e flow-orchestration::the-step-list-editor-adds-a-step-with-a-typed-config-picker
-	test('Add step yields a row whose config-ref picker is scoped to the picked type', async ({
-		page,
-	}) => {
-		await openFlow(page, flowId)
-		await expect(page.getByTestId('flow-step-row')).toHaveCount(3)
-
-		await page.getByRole('button', { name: 'Add step' }).click()
-		const rows = page.getByTestId('flow-step-row')
-		await expect(rows, 'Add step must append a fourth row').toHaveCount(4)
-
-		const newRow = rows.nth(3)
-		const typeSelect = newRow.locator('.flow-step-row__field').first()
-
-		// Pick `mapping` through the type NcSelect exactly as an operator would.
-		await typeSelect.locator('.vs__dropdown-toggle').click()
-		await page
-			.locator('.vs__dropdown-menu li[role="option"]', {
-				hasText: /^Mapping$/,
-			})
-			.first()
-			.click()
-
-		// THE REQUIREMENT: the config-ref picker is now scoped to Mappings.
-		const configRef = newRow.locator('.flow-step-row__field').nth(1)
-		await expect(
-			configRef.locator('.vs__dropdown-toggle'),
-			'picking `mapping` must reveal a config-ref picker',
-		).toBeVisible({ timeout: 10_000 })
-
-		const mappingOptions = await optionLabels(page, configRef)
-		// POSITIVE half — the seeded Mapping IS offered. Without this, the
-		// negative half below is satisfied by a picker that lists nothing.
-		expect(
-			mappingOptions,
-			`the config-ref picker must offer the seeded mapping. Got: ${JSON.stringify(mappingOptions.slice(0, 12))}`,
-		).toContain(MAPPING_NAME)
-		// NEGATIVE half — the seeded Source is NOT offered, in the same
-		// dropdown, at the same moment.
-		expect(
-			mappingOptions,
-			'a mapping step must not offer Sources as its config ref',
-		).not.toContain(SOURCE_NAME)
-
-		// THE INVERSE, over the SAME locator. Switching the type to `call`
-		// must flip both memberships. A dead selector cannot produce this
-		// difference; only the scoping rule actually working can.
-		await typeSelect.locator('.vs__dropdown-toggle').click()
-		await page
-			.locator('.vs__dropdown-menu li[role="option"]', { hasText: /^Call$/ })
-			.first()
-			.click()
-
-		const callOptions = await optionLabels(page, configRef)
-		expect(
-			callOptions,
-			`a call step must offer the seeded source. Got: ${JSON.stringify(callOptions.slice(0, 12))}`,
-		).toContain(SOURCE_NAME)
-		expect(
-			callOptions,
-			'a call step must not offer Mappings as its config ref',
-		).not.toContain(MAPPING_NAME)
+			page.getByRole('textbox', { name: /^Name/ }).first(),
+			'a hard reload of the flow detail URL must resolve to the same flow, not the dashboard',
+		).toHaveValue(FLOW_NAME, { timeout: 25_000 })
 	})
 })
 

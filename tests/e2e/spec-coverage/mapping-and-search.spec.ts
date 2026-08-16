@@ -83,11 +83,11 @@ test.describe('REQ-UI-001: Mapping detail page', () => {
 	}) => {
 		// Known bug #996: table cells all "—", so navigate directly to detail URL.
 		// SPA gracefully handles nonexistent IDs (shows detail shell or not-found).
-		// Hash-mode router (src/main.js — fleet #133): address the detail route via
-		// the URL hash. The mapping-detail surface keeps polling an OR fetch for the
-		// (nonexistent) id, so `networkidle` never settles — wait for DOM + main
-		// instead of network silence.
-		await page.goto(`${APP_BASE}/#/mappings/__nonexistent__`, {
+		// Path-mode router (src/main.js, router-history-mode convention): address
+		// the detail route directly, no hash. The mapping-detail surface keeps
+		// polling an OR fetch for the (nonexistent) id, so `networkidle` never
+		// settles — wait for DOM + main instead of network silence.
+		await page.goto(`${APP_BASE}/mappings/__nonexistent__`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })

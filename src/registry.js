@@ -48,6 +48,8 @@ import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
+import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
+import FlowsIndex from './views/Flow/FlowsIndex.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -60,7 +62,6 @@ import {
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
 	openPromotionHandler,
-	runFlowHandler,
 	runJobHandler,
 	runSynchronizationHandler,
 	testJobHandler,
@@ -72,8 +73,6 @@ import {
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
-	// Flows index row action (visual-flow-orchestration): manual run trigger.
-	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testSourceHandler,
@@ -185,9 +184,9 @@ export default {
 	RuleDetailPage,
 	SynchronizationDetailPage,
 
-	// Flow detail (custom page): the ordered step-list editor + manual Run +
-	// run-log tab that a generic detail page cannot express. See
-	// visual-flow-orchestration REQ-009.
+	// Flow detail (custom page): renders the shared CnFlowDetail canvas over
+	// OpenRegister's native flow store. See flow-engine-unification task 6.2
+	// and openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note.
 	FlowDetailPage,
 
 	// Dead-letter operations view (custom page): a filtered event_message
@@ -281,6 +280,8 @@ export const registry = {
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
 	FlowDetailPage: { kind: 'page', component: FlowDetailPage },
+	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
+	FlowsIndex: { kind: 'page', component: FlowsIndex },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },
 }

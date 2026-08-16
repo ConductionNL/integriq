@@ -196,6 +196,7 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'index',
 	},
 	{ id: 'SynchronizationLogs', route: '/synchronizations/logs', type: 'logs' },
+	{ id: 'SynchronizationRuns', route: '/synchronization-runs', type: 'index' },
 	{
 		id: 'SynchronizationDetail',
 		route: '/synchronizations/:id',
@@ -211,7 +212,12 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'ApprovalsIndex',
 	},
-	{ id: 'Flows', route: '/flows', type: 'index' },
+	{
+		id: 'Flows',
+		route: '/flows',
+		type: 'custom',
+		component: 'FlowsIndex',
+	},
 	{
 		id: 'FlowDetail',
 		route: '/flows/:id',
@@ -312,17 +318,18 @@ test.describe('manifest pages — schema-driven render', () => {
 			const { errors } = attachConsoleSpy(page)
 
 			const root = await rootUrl(page)
-			// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`),
-			// so the route must be a hash fragment (`/apps/openconnector/#/sources`).
-			// A path-form deep-link (`/apps/openconnector/sources`) is ignored by
-			// the router and silently lands on the dashboard, so each page would
-			// be smoke-tested against the dashboard rather than its own component.
+			// The in-app router runs in PATH mode (`createWebHistory()`,
+			// src/main.js), so the route is a plain path
+			// (`/apps/openconnector/sources`) — a hash fragment
+			// (`/apps/openconnector/#/sources`) would now be ignored by the
+			// router and silently land on the dashboard, so each page would be
+			// smoke-tested against the dashboard rather than its own component.
 			// Use `domcontentloaded` rather than `networkidle` — NC's
 			// notification poll keeps the network busy indefinitely, so
 			// `networkidle` always times out. The SPA mounts after DOM
 			// ready, and the `#app-content` + content-length assertions
 			// below verify the mount completed.
-			await page.goto(`${root}/#${navigableRoute(pg)}`, {
+			await page.goto(`${root}${navigableRoute(pg)}`, {
 				waitUntil: 'domcontentloaded',
 				timeout: 30_000,
 			})

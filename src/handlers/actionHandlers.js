@@ -16,18 +16,11 @@
 // below. What remains fire-and-forget here is only what has no result worth
 // rendering.
 //
-// Endpoints still called directly from this file, declared in appinfo/routes.php:
-//   POST /api/flows/{id}/run                — flows#run
-//
 // Endpoints moved into modals (this file only opens them now):
 //   POST /api/sources/test/{id}             — TestSourceModal
 //   POST /api/jobs/{run,test}/{id}          — RunActionModal
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
 import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
@@ -44,24 +37,6 @@ import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
 
 /**
- * Build the toast detail suffix from an axios error. Surfaces the server's
- * `message` when available so the user gets actionable feedback rather than
- * a bare "request failed".
- *
- * @param {unknown} err Axios error or anything throwable.
- * @return {string} Empty when nothing useful to show.
- */
-function errorDetail(err) {
-	const detail = err?.response?.data?.message || err?.message || ''
-	return detail ? `: ${detail}` : ''
-}
-
-// Each handler keeps the t() argument a literal string so the
-// translation extractor picks it up. A `makePostHandler` factory
-// would lose that — at the cost of ~5 lines per handler, this stays
-// extractable.
-
-/**
  * Test a source's connection by POSTing to /api/sources/test/{id}.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
@@ -70,38 +45,6 @@ export function testSourceHandler({ item }) {
 	// Open the interactive Test-connection modal (method + endpoint + body input,
 	// live request, full response panel) instead of the old fire-and-forget POST.
 	modalBus.emit(EVENT_OPEN_TEST_SOURCE, { source: item })
-}
-
-/**
- * Trigger a flow run via POST /api/flows/{id}/run (visual-flow-orchestration
- * REQ-007d — the manual trigger surface, wired to the Flows index page's
- * row action here; the Flow detail page's own "Run" header action calls the
- * same endpoint directly).
- *
- * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- */
-export async function runFlowHandler({ item }) {
-	try {
-		const response = await axios.post(
-			generateUrl(`/apps/openconnector/api/flows/${rowId(item)}/run`),
-		)
-		const status = response.data?.status || 'completed'
-		if (
-			status === 'failed'
-			|| status === 'stopped'
-			|| status === 'dead_letter'
-		) {
-			showError(
-				t('openconnector', 'Flow run ended with status: {status}', {
-					status,
-				}),
-			)
-			return
-		}
-		showSuccess(t('openconnector', 'Flow run triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Flow run failed') + errorDetail(err))
-	}
 }
 
 // Modal-opening handlers — see src/modals/v2/ModalHost.vue. These do NOT

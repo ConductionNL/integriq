@@ -107,13 +107,15 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 
 async function gotoSpaPage(page: Page, path: string): Promise<void> {
 	const root = await rootUrl(page)
-	// ⚠️ The `#` is required. The in-app router is hash-mode
-	// (`createWebHashHistory()`, src/main.js), so `<root>/webhooks` serves the
-	// SPA shell and is then IGNORED by the router, which renders the dashboard.
-	// The `#app-content` assertion below passes on the dashboard just as
-	// happily as on the target page, so without the `#` these specs were green
-	// while never once looking at the page they name.
-	await page.goto(`${root}/#${path}`, {
+	// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
+	// here would be WRONG — it sets location.hash, which the router never
+	// reads, so `<root>/#/webhooks` would be IGNORED by the router and render
+	// the dashboard instead. The `#app-content` assertion below passes on the
+	// dashboard just as happily as on the target page, so a wrong URL here
+	// would make these specs green while never once looking at the page they
+	// name — the exact failure mode this comment used to warn about, in the
+	// opposite direction.
+	await page.goto(`${root}${path}`, {
 		waitUntil: 'domcontentloaded',
 		timeout: 30_000,
 	})

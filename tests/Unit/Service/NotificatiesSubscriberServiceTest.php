@@ -401,20 +401,20 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 				$this->equalTo('nl.conduction.zgw.notificatie.zaak'),
 				$this->equalTo('/notificaties-api/zaken'),
 				$this->equalTo('https://zaken.example/api/v1/zaken/uuid-1'),
-				$this->callback(fn ($data) => $data['abonnementId'] === 'abon-1' && $data['channel'] === 'zaken')
+				$this->callback(fn ($data) => $data['abonnementId'] === 'abon-1' && $data['kanaal'] === 'zaken')
 			)
 			->willReturn([]);
 
 		$this->service->handleInboundNotification(
 			'abon-1',
 			[
-				'channel' => 'zaken',
+				'kanaal' => 'zaken',
 				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'resource' => 'zaak',
 				'resourceUrl' => 'https://zaken.example/api/v1/zaken/uuid-1',
 				'actie' => 'create',
 				'aanmaakdatum' => '2026-07-15T10:00:00Z',
-				'characteristics' => ['bronorganisatie' => '123443210'],
+				'kenmerken' => ['bronorganisatie' => '123443210'],
 			]
 		);
 
@@ -472,7 +472,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		$this->assertSame('uuid-1', $body['hoofdObject']);
 		$this->assertSame('2026-07-15T09:00:00Z', $body['aanmaakdatum']);
 		$this->assertSame('object', $body['resource']);
-		$this->assertSame('zaken', $body['channel']);
+		$this->assertSame('zaken', $body['kanaal']);
 
 	}//end testBuildNotificationBodyMapsUpdateEvent()
 
@@ -511,7 +511,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 				'bronorganisatie' => '123443210',
 				'zaaktype' => 'https://zaken.example/zaaktypen/1',
 			],
-			$body['characteristics']
+			$body['kenmerken']
 		);
 
 	}//end testBuildNotificationBodyKenmerkenMergeEventWins()

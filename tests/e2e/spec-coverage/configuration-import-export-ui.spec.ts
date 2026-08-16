@@ -29,7 +29,7 @@ const APP_BASE = '/index.php/apps/openconnector'
 async function gotoCatalog(page: Page): Promise<void> {
 	// Hash-routed SPA (createWebHashHistory): deep-link via the hash fragment,
 	// else a bare `/catalog` path resolves to the default Dashboard route.
-	await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 	await expect(page.getByTestId('catalog-item-card').first()).toBeVisible({
 		timeout: 15_000,
 	})
@@ -228,7 +228,7 @@ test.describe.skip('REQ-007/REQ-008: Import preview + confirmation', () => {
 		)
 
 		// The imported source appears on the Sources index (REQ-008 written-check).
-		await page.goto(`${APP_BASE}/#/sources`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 		await expect(
 			page.getByText('E2E imported source', { exact: false }).first(),
 		).toBeVisible({ timeout: 15_000 })

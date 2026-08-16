@@ -49,17 +49,28 @@ import { appDialog } from '../support/dialogs'
 //    Apache: `/index.php/apps/openconnector/#/sources` renders `main` with the
 //    "Add Source" button), so this is one form everywhere rather than a probe.
 //
-// 2. THE `#` IS NOT OPTIONAL EITHER.
+// 2. THE `#` IS NOW WRONG — REMOVED 2026-08-16.
 //
-//    The in-app router runs in HASH mode (`createWebHashHistory()`,
-//    src/main.js), so a path-form deep-link such as `…/openconnector/sources`
-//    is ignored by the router and silently lands on the dashboard. Only the
-//    hash form renders the target page. APP_BASE carries the `/#` so
-//    `${APP_BASE}/<route>` is a valid hash deep-link.
+//    The in-app router ran in HASH mode (`createWebHashHistory()`) when this
+//    comment was written, so a path-form deep-link such as
+//    `…/openconnector/sources` was ignored by the router and silently landed
+//    on the dashboard — only the hash form rendered the target page.
+//
+//    openconnector switched to `createWebHistory()` in src/main.js
+//    (flow-engine-unification / router-history-mode convention,
+//    docs/claude/frontend-standards.md#routing-history-mode), backed by the
+//    `ui#dashboard` `/{path}` catch-all in appinfo/routes.php, verified live
+//    via a genuine hard reload of a deep path. The failure mode is now the
+//    MIRROR of the one above: a URL carrying `#/<route>` sets
+//    `location.hash`, which the path-mode router never reads, and every such
+//    deep-link now silently lands on the dashboard instead of the target
+//    page — the same "main exists but shows the wrong content" symptom, for
+//    the opposite reason. `${APP_BASE}/<route>` (no `#`) is the correct
+//    path-mode deep link.
 //
 // Every spec-coverage file imports this rather than redeclaring it — nine of
 // them used to keep private copies of the wrong string.
-export const APP_BASE = '/index.php/apps/openconnector/#'
+export const APP_BASE = '/index.php/apps/openconnector'
 
 /**
  * The openconnector app root, without the router hash.

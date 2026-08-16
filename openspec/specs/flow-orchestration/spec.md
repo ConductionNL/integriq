@@ -33,6 +33,25 @@ Petri-net core supports parallel splits and synchronising joins natively.
 adapters inside Nextcloud core's own `files_workflowengine` UI). Both use
 the word "flow"; neither touches the other's code.
 
+**Scope note (2026-08-16, flow-engine-unification task 6.2).** The frontend
+described by REQ-009 (the step-list editor UI, `FlowStepRow`, the
+dirty/canSave contract) no longer exists in OpenConnector. `#/flows` now
+renders the shared `CnFlowIndexPage`/`CnFlowDetail`/`CnFlowSidebar`
+components from `@conduction/nextcloud-vue`, reading and writing
+OpenRegister's own native flow store (`nodes[]`/`edges[]` via
+`/apps/openregister/api/flows`) — a **different store** from the `flow`
+schema REQ-001 describes below. `FlowRunnerService`, the `flows#run` route,
+and the `register=openconnector, schema=flow` schema are **still live in
+the backend** (REQ-001 through REQ-008 remain accurate for that backend
+in isolation) but are no longer reachable through any UI, and no
+automated migration exists between the two stores. This is tracked, not
+silently accepted — see openconnector#1255 for the current state, what
+was hand-migrated, and what is still open. Treat REQ-001–008 as
+describing a legacy, UI-unreachable backend; treat REQ-009–011 as
+superseded and no longer testable against this app's own UI (the shared
+canvas's own editor behaviour is covered by `@conduction/nextcloud-vue`'s
+own test suite, not duplicated here).
+
 ## Requirements
 ### Requirement: Flow steps execute sequentially in `order` (REQ-001)
 

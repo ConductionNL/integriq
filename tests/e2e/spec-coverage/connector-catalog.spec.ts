@@ -115,7 +115,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const cards = page.getByTestId('catalog-item-card')
 		await expect(
@@ -151,7 +151,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const pdokCard = page
 			.getByTestId('catalog-item-card')
@@ -174,7 +174,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const brpCard = page
 			.getByTestId('catalog-item-card')
@@ -197,7 +197,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const cards = page.getByTestId('catalog-item-card')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
@@ -237,7 +237,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const pdokCard = page
 			.getByTestId('catalog-item-card')
@@ -273,7 +273,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 
 		// xWiki seeds with isEnabled:false → dormant → Instantiate offered.
 		const card = page
@@ -291,7 +291,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		})
 
 		// The Source now appears in the Sources index.
-		await page.goto(`${APP_BASE}/#/sources`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 		await expect(page.getByText('xWiki', { exact: false }).first()).toBeVisible({
 			timeout: 15_000,
 		})

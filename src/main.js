@@ -15,7 +15,7 @@ import {
 } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { createApp, h } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import { setRouter } from './handlers/routerRef.js'
 import appIcons from './icons.js'
@@ -170,7 +170,13 @@ function routesFromManifest(manifest) {
 }
 
 const router = createRouter({
-	history: createWebHashHistory(generateUrl('/apps/openconnector')),
+	// Path-based history, not hash. The server-side half of this was already
+	// built (ui#dashboard's `/{path}` catch-all in appinfo/routes.php, from the
+	// unfinished "chain-C" cutover — excludes `/api/*` so deleted API routes
+	// still 404 correctly) and verified live before this line changed: a
+	// never-before-hit deep path returned 200/text-html. This was the only
+	// missing piece.
+	history: createWebHistory(generateUrl('/apps/openconnector')),
 	routes: routesFromManifest(mergedManifest),
 })
 

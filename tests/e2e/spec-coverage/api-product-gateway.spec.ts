@@ -15,15 +15,18 @@
  * pair while each test passed alone. Left uncovered and visible rather than
  * shipped flaky.
  *
- * ⚠️ The `#` is required — the in-app router is hash-mode
- * (`createWebHashHistory()`, src/main.js). Without it the URL serves the SPA
- * shell and renders the DASHBOARD, which looks like the page failing to
- * render its own content.
+ * ⚠️ The router is now path-mode (`createWebHistory()`, src/main.js,
+ * router-history-mode convention — docs/claude/frontend-standards.md
+ * #routing-history-mode). A `#` in the URL is now WRONG — it sets
+ * `location.hash`, which the router never reads, and the deep-link silently
+ * lands on the DASHBOARD instead, which looks like the page failing to
+ * render its own content — the same symptom the old hash-mode note warned
+ * about, for the opposite reason.
  */
 
 import { test, expect, type Page } from '@playwright/test'
 
-const APP_BASE = '/index.php/apps/openconnector/#'
+const APP_BASE = '/index.php/apps/openconnector'
 
 async function openPage(page: Page, route: string): Promise<void> {
 	await page.goto(`${APP_BASE}${route}`, {

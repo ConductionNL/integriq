@@ -64,9 +64,10 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 		page,
 	}) => {
 		const root = await rootUrl(page)
-		// ⚠️ Hash-mode router (createWebHashHistory, src/main.js) — without the
-		// `#` this serves the SPA shell and renders the Dashboard instead.
-		await page.goto(`${root}/#/dead-letters`, {
+		// ⚠️ Path-mode router (createWebHistory, src/main.js) — a `#` here
+		// would be WRONG: it would serve the SPA shell and land on the
+		// Dashboard, since the router never reads location.hash.
+		await page.goto(`${root}/dead-letters`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -92,7 +93,7 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 		page,
 	}) => {
 		const root = await rootUrl(page)
-		await page.goto(`${root}/#/dead-letters`, {
+		await page.goto(`${root}/dead-letters`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -119,7 +120,7 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 	}) => {
 		const root = await rootUrl(page)
 
-		await page.goto(`${root}/#/cloud-events/deliveries`, {
+		await page.goto(`${root}/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -128,7 +129,7 @@ test.describe('ADR-080 — merged Dead letters operations surface', () => {
 		).toBeVisible({ timeout: 15_000 })
 		expect(page.url()).toContain('/dead-letters')
 
-		await page.goto(`${root}/#/synchronizations/dead-letters`, {
+		await page.goto(`${root}/synchronizations/dead-letters`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
