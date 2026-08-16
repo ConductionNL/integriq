@@ -845,6 +845,19 @@ class SynchronizationService {
 		}
 	}//end phpMemoryLimitBytes()
 
+	/**
+	 * Persist the synchronization's page cursor, but only for a rate-limited source.
+	 *
+	 * The early return is the point: a source that advertises no rate limit is
+	 * paged straight through, so there is no cursor worth a write per page.
+	 *
+	 * @param array $synchronization The synchronization to persist.
+	 * @param array $source The source, read for its `rateLimitLimit`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
 	private function persistPageCursor(array $synchronization, array $source): void {
 		if (($source['rateLimitLimit'] ?? null) === null) {
 			return;
@@ -853,6 +866,15 @@ class SynchronizationService {
 		$this->persistSynchronization(synchronization: $synchronization);
 	}//end persistPageCursor()
 
+	/**
+	 * Upsert a synchronization through OpenRegister.
+	 *
+	 * @param array $synchronization The synchronization payload to save.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
 	private function persistSynchronization(array $synchronization): void {
 		$object = $synchronization;
 
@@ -9054,6 +9076,25 @@ class SynchronizationService {
 		);
 	}//end fetchFilesForObject()
 
+	/**
+	 * Kick off file fetching for an object without blocking the caller.
+	 *
+	 * "Async" here means FIRE-AND-FORGET WITH ERROR ISOLATION, not a real event
+	 * loop — the work runs immediately and its failures are contained so one
+	 * object's files cannot abort the synchronization. The body's own comment
+	 * says so; this docblock exists partly so the name does not promise more
+	 * than the implementation delivers.
+	 *
+	 * @param string|array $source The source to fetch from.
+	 * @param array $config The fetch configuration.
+	 * @param mixed $endpoint The endpoint to fetch.
+	 * @param int $ruleId The rule that triggered the fetch.
+	 * @param string|null $objectId The object the files belong to, when known.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 */
 	private function startAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void {
 		// Execute file fetching immediately but with error isolation.
 		// This provides "fire-and-forget" behavior without complex ReactPHP setup.
