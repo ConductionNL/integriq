@@ -9085,7 +9085,7 @@ class SynchronizationService {
 	 * says so; this docblock exists partly so the name does not promise more
 	 * than the implementation delivers.
 	 *
-	 * @param string|array $source The source to fetch from.
+	 * @param array $source The source to fetch from.
 	 * @param array $config The fetch configuration.
 	 * @param mixed $endpoint The endpoint to fetch.
 	 * @param int $ruleId The rule that triggered the fetch.

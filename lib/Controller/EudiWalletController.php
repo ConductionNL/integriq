@@ -87,6 +87,7 @@ class EudiWalletController extends Controller {
 	 * @param EudiIssuerKeyService $keyService Issuer signing-key service (metadata JWKS).
 	 * @param EudiStatusListService $statusListService Status-list token publish.
 	 * @param AuthorizationService $authorizationService Reused consumer JWT bearer verification (REQ-001).
+	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
 	public function __construct(
@@ -237,14 +238,16 @@ class EudiWalletController extends Controller {
 	/**
 	 * OpenID4VCI Credential Issuer Metadata.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): discovery document — wallets are SUPPOSED
+	 * to fetch this, and it carries no credential, so it gets a volume ceiling
+	 * and no brute-force counter.
+	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// Discovery document — wallets are SUPPOSED to fetch this, and it carries
-	// no credential, so it gets a volume ceiling and no brute-force counter.
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function issuerMetadata(): JSONResponse {
 		$organisationId = $this->offerService->resolveOrganisationId();
@@ -432,6 +435,9 @@ class EudiWalletController extends Controller {
 	/**
 	 * Publish an OAuth Status List Token.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): the status list is a published artefact
+	 * verifiers poll; volume ceiling only.
+	 *
 	 * @param string $id The status list row uuid.
 	 *
 	 * @return DataDisplayResponse|JSONResponse The raw compact JWT
@@ -441,7 +447,6 @@ class EudiWalletController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// Status list is a published artefact verifiers poll; volume ceiling only.
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function statusList(string $id): DataDisplayResponse|JSONResponse {
 		$token = $this->statusListService->getPublishedToken($id);

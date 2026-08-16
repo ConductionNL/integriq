@@ -131,7 +131,9 @@ class EndpointServiceConsumerScopeTest extends TestCase {
 			$this->createMock(ApprovalService::class),
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
-			$this->consumerScopeService
+			$this->consumerScopeService,
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\FileService::class)
 		);
 	}//end setUp()
 

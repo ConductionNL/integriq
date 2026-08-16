@@ -86,13 +86,15 @@ class HealthController extends Controller {
 	 * dependency (REQ-ADM-003) without referencing any OpenRegister class.
 	 * Otherwise delegates to the AppHost engine.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): liveness probe — no credential, so a
+	 * ceiling (AnonRateLimit) and no failure counter.
+	 *
 	 * @return JSONResponse `{status, app, version, checks}` per statusCodePolicy, or 503 when OpenRegister is missing.
 	 *
 	 * @spec openspec/specs/app-distribution-metadata/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Liveness probe — no credential, so a ceiling and no counter.
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {

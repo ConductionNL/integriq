@@ -137,6 +137,11 @@ class EndpointServiceTest extends TestCase {
 		// surfaced once #1015 unblocked the suite from crashing in setUp.
 		unset($appConfig);
 		$requestId = $this->createMock(IRequestId::class);
+		// ADR-083 rule 1: the OpenRegister schema mapper and file service are
+		// constructor-injected rather than pulled from the PSR container, so they
+		// are explicit here too.
+		$schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$orFileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$this->service = new EndpointService(
 			$this->objectService,
 			$callService,
@@ -159,6 +164,8 @@ class EndpointServiceTest extends TestCase {
 			$requestId,
 			$flowRunnerService,
 			$this->consumerScopeService,
+			$schemaMapper,
+			$orFileService,
 		);
 	}//end setUp()
 
@@ -501,6 +508,8 @@ class EndpointServiceTest extends TestCase {
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
 			$this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class),
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 		);
 
 		$resultB = $otherService->renderSelfUrlAndHal(['id' => '1'], $endpoint);
@@ -677,6 +686,8 @@ class EndpointServiceTest extends TestCase {
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
 			$this->consumerScopeService,
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 		);
 	}//end buildServiceForTraceTests()
 

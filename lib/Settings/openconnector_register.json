@@ -53,6 +53,7 @@
           "sms_message",
           "source",
           "stuf_message",
+          "sync_item_dead_letter",
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",

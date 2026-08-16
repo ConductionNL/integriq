@@ -62,7 +62,7 @@ class FetchFilesJob extends QueuedJob {
 		private readonly SynchronizationService $syncService,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct($time);
+		parent::__construct(time: $time);
 	}//end __construct()
 
 	/**

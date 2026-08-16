@@ -147,13 +147,15 @@ class IwmoIjwController extends Controller {
 	 * authenticates via webhook signature, not NC session — the signature
 	 * check IS the auth body for this route (mirrors `PeppolController::inbound()`).
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): iWmo/iJw receiver — same posture as every
+	 * standards receiver here.
+	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// iWmo/iJw receiver — same posture as every standards receiver here.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();

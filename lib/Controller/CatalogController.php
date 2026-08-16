@@ -57,7 +57,11 @@ class CatalogController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param CatalogRegistryService $registryService The catalog registry service.
-	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param OrObjectService $objectService OpenRegister's object-service facade. Every catalog read and
+	 *                                       write goes through it, so per-object authorization is
+	 *                                       OpenRegister's register RBAC (ADR-022) — which is why the
+	 *                                       property carries the fleet's canonical name rather than an
+	 *                                       `or`-prefixed alias: the delegation has to be legible.
 	 * @param IAppConfig $appConfig App config, used to flip flag-gated items.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
@@ -69,7 +73,7 @@ class CatalogController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly CatalogRegistryService $registryService,
-		private readonly OrObjectService $orObjectService,
+		private readonly OrObjectService $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
@@ -241,7 +245,7 @@ class CatalogController extends Controller {
 			}
 
 			$existingData['isEnabled'] = true;
-			$saved = $this->orObjectService->saveObject(
+			$saved = $this->objectService->saveObject(
 				object: $existingData,
 				register: 'openconnector',
 				schema: 'source',
@@ -265,7 +269,7 @@ class CatalogController extends Controller {
 		}
 
 		$seedPayload['isEnabled'] = true;
-		$created = $this->orObjectService->saveObject(
+		$created = $this->objectService->saveObject(
 			object: $seedPayload,
 			register: 'openconnector',
 			schema: 'source'
@@ -293,7 +297,7 @@ class CatalogController extends Controller {
 	 */
 	private function findCatalogItem(string $id): ?ObjectEntity {
 		try {
-			return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'catalog_item');
+			return $this->objectService->find(id: $id, register: 'openconnector', schema: 'catalog_item');
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
@@ -308,7 +312,7 @@ class CatalogController extends Controller {
 	 * @return ObjectEntity|null
 	 */
 	private function findSourceBySlug(string $slug): ?ObjectEntity {
-		$result = $this->orObjectService->findAll(
+		$result = $this->objectService->findAll(
 			config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'slug' => $slug]]
 		);
 		$items = ($result['results'] ?? $result);

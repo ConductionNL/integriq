@@ -144,6 +144,13 @@ class LtiController extends Controller {
 	/**
 	 * OIDC third-party-initiated login initiation.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082). LTI 1.3 (IMS Global). These URLs are
+	 * registered with the platform out-of-band, so they cannot move (ADR-081)
+	 * and the platform drives the call rate: a class of students launching at
+	 * the start of a lesson is a legitimate burst. Ceilings only — the platform
+	 * authenticates with its own signed JWT, so there is no guessable secret to
+	 * count failures on.
+	 *
 	 * @param string $deployment The `lti_deployment` UUID route parameter.
 	 *
 	 * @return RedirectResponse|JSONResponse 302 to the platform on success; 400 on an unregistered issuer (no redirect, no nonce persisted).
@@ -152,11 +159,6 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// LTI 1.3 (IMS Global). These URLs are registered with the platform
-	// out-of-band, so they cannot move (ADR-081) and the platform drives the
-	// call rate: a class of students launching at the start of a lesson is a
-	// legitimate burst. Ceilings only — the platform authenticates with its
-	// own signed JWT, so there is no guessable secret to count failures on.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function login(string $deployment): Response {
 		$launchUrl = $this->request->getServerProtocol() . '://' . $this->request->getServerHost()
@@ -277,6 +279,9 @@ class LtiController extends Controller {
 	/**
 	 * Inbound AGS score POST.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): AGS score posting — one call per learner
+	 * per graded item, so a class being marked is a legitimate burst.
+	 *
 	 * @param string $deployment The `lti_deployment` UUID route parameter.
 	 * @param string $lineItemId The AGS line item identifier.
 	 *
@@ -286,8 +291,6 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// AGS score posting — one call per learner per graded item, so a class
-	// being marked is a legitimate burst.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function agsScore(string $deployment, string $lineItemId): JSONResponse {
 		$token = $this->extractBearerToken();
@@ -382,6 +385,10 @@ class LtiController extends Controller {
 	/**
 	 * Publish a registration's JWKS document.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): the JWKS is a PUBLISHED key set — platforms
+	 * fetch it to verify our signatures and re-fetch on key rotation. Publishing
+	 * it is the point, so the ceiling is the loosest here.
+	 *
 	 * @param string $registrationType `lti_platform` or `lti_tool`.
 	 * @param string $registrationUuid The registration's UUID.
 	 *
@@ -391,9 +398,6 @@ class LtiController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// The JWKS is a PUBLISHED key set — platforms fetch it to verify our
-	// signatures and re-fetch on key rotation. Publishing it is the point, so
-	// the ceiling is the loosest here.
 	#[AnonRateLimit(limit: 480, period: 60)]
 	public function jwks(string $registrationType, string $registrationUuid): JSONResponse {
 		try {

@@ -426,6 +426,77 @@ curl -sS -u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
 	"${BASE}/index.php/apps/openregister/api/schemas?_limit=1000" -o "$SCH_BODY"
 verify "$SCH_BODY" schemas
 
+# ── 3a. PROBE THE COLLECTION ENDPOINT THE PAGES ACTUALLY CALL ────────────────
+# 🔴 A SLUG BEING PRESENT IN /api/schemas IS NOT THE SAME AS ITS COLLECTION
+# BEING FETCHABLE, and on 2026-08-16 the two disagreed. `synchronization_run`
+# was in the 71 slugs the check above enumerates — so it printed
+# `all 11 manifest-bound schema(s) resolve` — while
+#
+#     GET /apps/openregister/api/objects/openconnector/synchronization_run
+#
+# returned 404 `{"message":"Schema not found: 'synchronization_run'"}`, because
+# declaring a schema in `components.schemas` does NOT attach it to the register:
+# the register's own `schemas` list is what binds it, and the fragment shipping
+# the schema had not added itself there. The check above cannot see that, and it
+# read as a pass.
+#
+# So probe the endpoint itself. This is the same request CnIndexPage makes, so a
+# 200 here is evidence about the thing that failed rather than about a
+# neighbouring list. Advisory (like the check above) — the specs keep the
+# verdict — but the log now names the schema AND the status code.
+echo "[ci-seed] probing the object collection endpoint for every manifest-bound schema"
+PROBE_SCHEMAS="$(
+	python3 - "$APP_DIR" <<'PY'
+import json
+import os
+import sys
+
+manifest = os.path.join(sys.argv[1], 'src', 'manifest.json')
+try:
+    with open(manifest, encoding='utf-8') as handle:
+        pages = json.load(handle).get('pages') or []
+except (OSError, json.JSONDecodeError):
+    pages = []
+
+slugs = []
+for page in pages:
+    if not isinstance(page, dict):
+        continue
+    config = page.get('config')
+    if not isinstance(config, dict) or config.get('register') != 'openconnector':
+        continue
+    schema = config.get('schema')
+    if isinstance(schema, str) and schema and schema not in slugs:
+        slugs.append(schema)
+print(' '.join(slugs))
+PY
+)"
+
+PROBE_TOTAL=0
+PROBE_BAD=0
+for SLUG in $PROBE_SCHEMAS; do
+	PROBE_TOTAL=$((PROBE_TOTAL + 1))
+	PROBE_CODE="$(
+		curl -sS -o /dev/null -w '%{http_code}' \
+			-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
+			"${BASE}/index.php/apps/openregister/api/objects/openconnector/${SLUG}?_limit=1" \
+			|| echo 000
+	)"
+	if [ "$PROBE_CODE" = "200" ]; then
+		echo "[ci-seed]   ${SLUG}: ${PROBE_CODE}"
+	else
+		PROBE_BAD=$((PROBE_BAD + 1))
+		echo "::warning::objects/openconnector/${SLUG} returned HTTP ${PROBE_CODE} — its index page will log 'Error fetching openconnector-${SLUG} collection' and the spec will fail on the console gate. Attach the schema to the openconnector register (components.registers.openconnector.schemas), not just components.schemas."
+	fi
+done
+
+# ⚠️ A ZERO-PROBE RUN MUST NOT READ AS A CLEAN ONE.
+if [ "$PROBE_TOTAL" -eq 0 ]; then
+	echo "::warning::NOT ONE collection endpoint was probed — src/manifest.json yielded no openconnector-bound page. This says nothing about the instance."
+else
+	echo "[ci-seed] probed ${PROBE_TOTAL} collection endpoint(s); ${PROBE_BAD} not fetchable."
+fi
+
 echo "[ci-seed] OpenConnector register + schemas provisioned."
 
 # ── 3b. Stop here for API-only consumers (SEED_SCOPE=register) ───────────────

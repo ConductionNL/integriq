@@ -125,6 +125,11 @@ class EndpointsController extends Controller {
 	 * This method checks if the current path matches any registered endpoint patterns
 	 * and forwards the request to the appropriate endpoint service if found.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): the dynamic endpoint router — every
+	 * configured integration endpoint is served through here, so this is the
+	 * busiest public path in the app and the ceiling has to accommodate all of
+	 * them at once.
+	 *
 	 * @param string $_path The path component appended after /api/endpoint/.
 	 *
 	 * @return JSONResponse|XMLResponse|Response The response from the endpoint service or 404 if no match.
@@ -135,9 +140,6 @@ class EndpointsController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// The dynamic endpoint router — every configured integration endpoint is
-	// served through here, so this is the busiest public path in the app and
-	// the ceiling has to accommodate all of them at once.
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function handlePath(string $_path): Response {
 		try {
@@ -192,6 +194,9 @@ class EndpointsController extends Controller {
 	/**
 	 * Implements a preflighted CORS response for OPTIONS requests.
 	 *
+	 * RATE-LIMIT RATIONALE (ADR-082): CORS preflight — the browser sends one
+	 * before each cross-origin call, so it is looser than the call it precedes.
+	 *
 	 * @return Response The CORS response.
 	 *
 	 * @NoAdminRequired
@@ -204,8 +209,6 @@ class EndpointsController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
-	// CORS preflight — the browser sends one before each cross-origin call,
-	// so it is looser than the call it precedes.
 	#[AnonRateLimit(limit: 480, period: 60)]
 	public function preflightedCors(): Response {
 		// Determine the origin.

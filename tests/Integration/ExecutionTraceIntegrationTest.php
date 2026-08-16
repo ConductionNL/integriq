@@ -303,6 +303,8 @@ class ExecutionTraceIntegrationTest extends TestCase {
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
 			$consumerScopeService,
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 		);
 
 		// ONE context, threaded through both layers.
