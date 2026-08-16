@@ -54,12 +54,12 @@ class FetchFilesJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory           $time                   The time factory.
-	 * @param SynchronizationService $synchronizationService The engine that owns the fetch path.
+	 * @param SynchronizationService $syncService The engine that owns the fetch path.
 	 * @param LoggerInterface        $logger                 The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationService $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct($time);
@@ -92,7 +92,7 @@ class FetchFilesJob extends QueuedJob {
 		}
 
 		try {
-			$this->synchronizationService->fetchFilesForObject(
+			$this->syncService->fetchFilesForObject(
 				config: $config,
 				endpoint: $endpoint,
 				objectId: (string)$objectId,

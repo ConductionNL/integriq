@@ -90,7 +90,7 @@ class OutboundNotificationTranslator {
 	 *                    field table for the full assumed vocabulary.
 	 * @param string $processingKind `T` (create), `W` (update/status change), or `V` (vervallen).
 	 * @param string $zenderOrganisation This bridge's own organisatie code (`stuurgegevens.zender`).
-	 * @param string $ontvangerOrganisation The subscribed StUF consumer's organisatie code
+	 * @param string $ontvangerOrg The subscribed StUF consumer's organisatie code
 	 *                                     (`stuurgegevens.ontvanger`).
 	 *
 	 * @return array{referentienummer: string, xml: string} The generated correlation reference and
@@ -106,7 +106,7 @@ class OutboundNotificationTranslator {
 		array $case,
 		string $processingKind,
 		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $ontvangerOrg,
 	): array {
 		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
 			throw new StufZknTranslationException(
@@ -136,7 +136,7 @@ class OutboundNotificationTranslator {
 			parent: $zakLk01,
 			referenceNumber: $referenceNumber,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		$parameters = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
@@ -193,7 +193,7 @@ class OutboundNotificationTranslator {
 	 * @param DOMElement $parent The `zakLk01` element to append into.
 	 * @param string $referenceNumber The generated correlation reference.
 	 * @param string $zenderOrganisation This bridge's own organisatie code.
-	 * @param string $ontvangerOrganisation The subscribed consumer's organisatie code.
+	 * @param string $ontvangerOrg The subscribed consumer's organisatie code.
 	 *
 	 * @return void
 	 */
@@ -202,7 +202,7 @@ class OutboundNotificationTranslator {
 		DOMElement $parent,
 		string $referenceNumber,
 		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $ontvangerOrg,
 	): void {
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
@@ -215,7 +215,7 @@ class OutboundNotificationTranslator {
 
 		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
 		$stuurgegevens->appendChild($ontvanger);
-		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisation);
+		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrg);
 
 		$this->appendStufText(
 			document: $document,
