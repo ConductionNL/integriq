@@ -88,6 +88,15 @@
                 <referencedClass name="OCA\OpenRegister\Exception\HandoffException"/>
                 <referencedClass name="OCA\OpenRegister\Exception\NotAuthorizedException"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!-- ADR-078 actor-forwarded deferral contract. ViewDeletedEventListener
+                     hands its cascade to DeferredViewCascadeJob through
+                     ListenerDeferralService instead of running it inside the user's
+                     delete request; both types live in OpenRegister and are resolved
+                     at runtime, exactly like ObjectService above. -->
+                <referencedClass name="OCA\OpenRegister\Service\Deferral\ListenerDeferralService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Deferral\DeferredListenerContext"/>
+                <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
+                <referencedClass name="OCA\OpenRegister\BackgroundJob\ActorForwardedJob"/>
                 <!-- OpenRegister flow-engine types. Present only at runtime, and only on an
                      OpenRegister that ships the flow engine — which is exactly what the
                      class_exists() guard in Application::registerFlowNodes() is for. The
