@@ -6,7 +6,7 @@
   openregister/src/views/flows/FlowDetailSidebar.vue exactly — one shared store,
   every app's sidebar behaves identically.
 
-  @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+  @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
 	<CnFlowSidebar @save="onSave" @run="onRun" />
@@ -26,7 +26,7 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 		 * @return {Promise<void>}
 		 */
 		async onSave() {
@@ -39,7 +39,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 		 * @return {Promise<void>}
 		 */
 		async onRun() {
