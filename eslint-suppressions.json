@@ -116,9 +116,6 @@
     }
   },
   "src/modals/v2/EndpointFormFields.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "eqeqeq": {
       "count": 5
     }

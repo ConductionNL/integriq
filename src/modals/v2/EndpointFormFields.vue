@@ -165,7 +165,7 @@
 					:options="configurationOptions"
 					:loading="configurationsLoading"
 					:multiple="true"
-					:closeOnSelect="false"
+					:keepOpen="true"
 					@update:modelValue="onConfigurationsPick" />
 				<CnFieldHelper
 					:text="field.description"
