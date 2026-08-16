@@ -184,9 +184,18 @@ export default {
 	RuleDetailPage,
 	SynchronizationDetailPage,
 
-	// Flow detail (custom page): renders the shared CnFlowDetail canvas over
-	// OpenRegister's native flow store. See flow-engine-unification task 6.2
-	// and openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note.
+	// Flow index + detail (custom pages): render the shared CnFlowIndexPage /
+	// CnFlowDetail surfaces over OpenRegister's native flow store. See
+	// flow-engine-unification task 6.2 and openspec/specs/flow-orchestration/
+	// spec.md's 2026-08-16 scope note.
+	//
+	// FlowsIndex is listed HERE as well as in the v2 `registry` below, exactly
+	// like its twelve sibling custom pages. It shipped registered only in the v2
+	// map, which left the two registration sources disagreeing about the same
+	// component; every reader (and gate-53's registry cross-reference) that goes
+	// by the legacy map saw the Flows page as naming a component nobody
+	// registers.
+	FlowsIndex,
 	FlowDetailPage,
 
 	// Dead-letter operations view (custom page): a filtered event_message
