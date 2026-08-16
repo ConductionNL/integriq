@@ -197,6 +197,13 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
 		}
 
+		// ADR-078 deferral contract (gate-61). ViewDeletedEventListener injects
+		// ListenerDeferralService so its cascade runs in a background job under
+		// the captured actor rather than inside the user's delete request.
+		if (class_exists('OCA\\OpenRegister\\Service\\Deferral\\ListenerDeferralService') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Deferral/ListenerDeferralService.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
 		}
