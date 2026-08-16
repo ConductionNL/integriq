@@ -58,27 +58,14 @@
  */
 
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
+import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
 
-// Resolve the SPA root the same way manifest-pages.spec.ts does: apache dev
-// containers serve `/apps/openconnector`, the `php -S` CI install serves the
-// `/index.php/` form. Probe once with a HEAD-ish GET.
-const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
-let _root: string | null = null
-async function rootUrl(page: Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
-}
+// The candidate-probe that used to live here always returned the FIRST prefix,
+// because Nextcloud serves the identical SPA shell under both — so on CI these
+// specs navigated outside the router base and mounted the DASHBOARD. The
+// `gotoSpaPage()` comment below already named that exact failure mode as the
+// thing to avoid; the probe was causing it. Resolution now comes from
+// `OC.generateUrl` via tests/e2e/support/appRoot.ts.
 
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	/Deprecation/i,
@@ -106,7 +93,6 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 }
 
 async function gotoSpaPage(page: Page, path: string): Promise<void> {
-	const root = await rootUrl(page)
 	// ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A `#`
 	// here would be WRONG — it sets location.hash, which the router never
 	// reads, so `<root>/#/webhooks` would be IGNORED by the router and render
@@ -115,10 +101,10 @@ async function gotoSpaPage(page: Page, path: string): Promise<void> {
 	// would make these specs green while never once looking at the page they
 	// name — the exact failure mode this comment used to warn about, in the
 	// opposite direction.
-	await page.goto(`${root}${path}`, {
-		waitUntil: 'domcontentloaded',
-		timeout: 30_000,
-	})
+	await gotoAppRoute(page, path)
+	// The router matched — assert it before the `#app-content` check, which the
+	// dashboard satisfies just as happily as the target page.
+	await expectRouteMatched(page, path)
 	await expect(
 		page.locator('#app-content, [data-cy=app-content], .app-content').first(),
 	).toBeVisible({ timeout: 10_000 })

@@ -46,6 +46,7 @@ import type { ApiClient } from '../workflows/_fixture'
 import { expect, test } from '@playwright/test'
 import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture'
 import { APP_BASE } from './_helpers'
+import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
 
 /** OpenRegister's native flow store — a different backend than OR_BASE/OC_API in _fixture.ts, which target openconnector's legacy `flow` schema. */
 const FLOWS_API = '/index.php/apps/openregister/api/flows'
@@ -143,28 +144,20 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  * block below still uses the shared constant and is expected to fail
  * locally for this reason — pre-existing, unrelated to this migration, and
  * NOT reproduced in CI, which has no such redirect. This local prober
- * exists so the NEW tests below don't inherit that failure. Matches the
- * same probe already used in tests/e2e/regression/{dead-letters-merged,
- * manifest-pages,webhook-signing}.spec.ts.
+ * exists so the NEW tests below don't inherit that failure.
+ *
+ * 🔴 The probe it originally used (try each candidate, take the first that
+ * serves the SPA shell) could not do that job: BOTH prefixes serve the
+ * identical shell, so it always returned `/apps/openconnector` — right for
+ * this dev container by luck, wrong for CI, where the router base is the
+ * `/index.php/` form. The two tests in this file that used it failed in CI
+ * while the two that use `APP_BASE` passed, in the same run — a controlled
+ * comparison inside one file. Resolution now comes from `OC.generateUrl` via
+ * tests/e2e/support/appRoot.ts, which is correct in both environments because
+ * it is the function `src/main.js` itself calls to build the router base.
  */
-let _root: string | null = null
 async function resolveRoot(page: Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of [
-		'/apps/openconnector',
-		'/index.php/apps/openconnector',
-	]) {
-		const res = await page.request.get(`${candidate}/flows`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
+	return await resolveAppRoot(page)
 }
 
 /* ===========================================================================
@@ -210,6 +203,7 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 	})
 
 	// @e2e flow-orchestration::flows-index-page-mounts-and-lists-flows
+	// @e2e flow-orchestration::the-flows-index-lists-only-this-apps-flows
 	test('the flows index lists this app-scoped flow by name', async ({
 		page,
 	}: {
@@ -217,13 +211,18 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 	}) => {
 		const root = await resolveRoot(page)
 		await page.goto(`${root}/flows`, { waitUntil: 'domcontentloaded' })
+		await expectRouteMatched(page, '/flows')
 		await expect(
 			page.getByText(FLOW_NAME),
 			'the seeded flow must appear in the openconnector-scoped list',
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	// @e2e flow-engine-unification::flow-detail-renders-the-shared-canvas
+	// `flow-engine-unification` is an OpenRegister change name, not a capability
+	// in this repository — the anchor resolved to nothing here. The scenario it
+	// meant is `flow-orchestration` REQ-017, which is where this app's own
+	// adoption of the shared canvas is written down.
+	// @e2e flow-orchestration::flow-detail-renders-the-shared-canvas-and-survives-a-hard-reload
 	test('flow detail renders the shared canvas with the seeded nodes, and survives a hard reload', async ({
 		page,
 	}: {
@@ -231,6 +230,7 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 	}) => {
 		const root = await resolveRoot(page)
 		await page.goto(`${root}/flows/${flowId}`, { waitUntil: 'domcontentloaded' })
+		await expectRouteMatched(page, `/flows/${flowId}`)
 
 		// The Name field mirrors the loaded flow — proves the canvas mounted
 		// bound to THIS flow, not an empty "new flow" shell.

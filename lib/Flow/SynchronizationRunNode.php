@@ -461,7 +461,7 @@ class SynchronizationRunNode implements IFlowNode {
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
 	 */
 	private function suspendUntilTheLimitLifts(
 		TooManyRequestsHttpException $exception,
