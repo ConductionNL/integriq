@@ -26,7 +26,12 @@ return [
 		// request now MUST carry an `X-DSO-Signature` header that
 		// cryptographically verifies before the payload is parsed; the
 		// previous string-presence-only placeholder has been removed.
-		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// The target is `receiveRequest`, not the former `receiveVerzoek`: the
+		// method was renamed under the English-code rule and the route name was
+		// left pointing at the old one, so the router matched, the reflector
+		// found no such method, and every STAM push died as a 500. The URL is
+		// unchanged — `verzoeken` there is the DSO/STAM wire path, not code.
+		['name' => 'dSO#receiveRequest', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
 		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
 		// surface completing the STAM koppelvlak above (which previously
@@ -72,15 +77,26 @@ return [
 		// Push is an authenticated NC-session call (production binding for sibling
 		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
 		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
-		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+		//
+		// The target is `createCustomerContact`, not the former
+		// `createKlantcontact`: the method was renamed under the English-code
+		// rule and the route name was left behind, so the route resolved to no
+		// method and every push died as a 500. The URL keeps `klantcontacten`
+		// — that is the KISS wire path, not code.
+		['name' => 'kiss#createCustomerContact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
 
 		// iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0) bridge
 		// (openspec/changes/iwmo-ijw-adapter). Push is an authenticated NC-session
 		// call (production binding for sibling apps' own social-domain case
-		// modules) — mirrors kiss#createKlantcontact. The inbound retour receiver
-		// is gated by webhook signature (HMAC), not an NC session; see
+		// modules) — mirrors kiss#createCustomerContact. The inbound retour
+		// receiver is gated by webhook signature (HMAC), not an NC session; see
 		// IwmoIjwController::inbound().
-		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
+		//
+		// The target is `createMessage`, not the former `createBericht`: the
+		// method was renamed under the English-code rule and the route name was
+		// left behind, so the route resolved to no method and every push died as
+		// a 500. The URL keeps `berichten` — that is the iWMO/iJW wire path.
+		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
@@ -91,7 +107,7 @@ return [
 		// Bv03/Fo03 StUF body — see StufZknController::inbound(). The outbound
 		// push endpoint is an authenticated NC-session call (production
 		// binding for sibling apps' own zaak modules) — mirrors
-		// iwmoIjw#createBericht.
+		// iwmoIjw#createMessage.
 		['name' => 'stufZkn#inbound', 'url' => '/api/stuf-zkn/inbound', 'verb' => 'POST'],
 		['name' => 'stufZkn#outbound', 'url' => '/api/stuf-zkn/kennisgevingen', 'verb' => 'POST'],
 
