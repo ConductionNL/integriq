@@ -35,11 +35,6 @@
       "count": 1
     }
   },
-  "src/main.js": {
-    "no-undef": {
-      "count": 1
-    }
-  },
   "src/mixins/liveObjectSubscription.js": {
     "no-console": {
       "count": 1
