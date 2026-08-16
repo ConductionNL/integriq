@@ -13,7 +13,12 @@
   the manifest's `sidebarComponent`, so the canvas keeps the full width —
   mirrors openregister/src/views/flows/FlowDetailPage.vue exactly.
 
-  @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+  The requirement is `flow-orchestration` REQ-017 — this app's own adoption of
+  the shared canvas. OpenRegister's `flow-engine-unification` change, which the
+  tag here used to name, lives in OpenRegister's repository and cannot be
+  reached by a repository-relative `@spec` path from here.
+
+  @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
 	<CnFlowDetail :id="$route.params.id" app="openconnector" />

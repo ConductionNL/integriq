@@ -473,6 +473,72 @@ before it begins failing.
 - THEN 10000 output items are returned
 - AND a warning naming the item count, step id and synchronization was logged
 
+### Requirement: A rate-limited synchronization suspends the run instead of ending it
+
+When the source refuses the synchronization with `TooManyRequestsHttpException`, the
+synchronization-run node MUST raise a `FlowSuspension` rather than let the run finish. The
+engine does not advance the marking for a suspended step, so on resume this node runs again
+while the steps that already completed do not — which is what makes starvation impossible
+rather than merely less likely.
+
+This is the OpenConnector-side use of OpenRegister's "a node MUST be able to resume from where
+it stopped" engine requirement (`openregister/openspec/specs/flow-engine/spec.md`). That
+requirement lives in OpenRegister's repository and cannot be named by a repository-relative
+`@spec` path from here; this requirement is its consumer-side counterpart and is what
+OpenConnector's own code is annotated against.
+
+The mechanism matters more than it looks. `checkRateLimit()` throws BEFORE the first request
+of a synchronisation, so a refused shard never starts and has no page to resume from — the
+engine's per-synchronisation `currentPage` was never the missing piece. What was missing is
+that the run ENDED. Measured 2026-08-13 on a twelve-shard publiccode crawl: the first three
+shards spent the whole `code_search` budget, the remaining nine were refused at entry, and the
+run reported success. Re-running did not catch up; the completed shards ran again, spent the
+budget again, and the same nine starved. Three runs 65 s apart each returned the same 641
+repositories.
+
+The suspension's `resumeAt` MUST come from the source's own `X-RateLimit-Reset`, which
+`CallService::sourceRateLimit()` already reads and stores, and MUST be clamped at both ends
+against a header OpenConnector does not control: a reset already in the past MUST be floored to
+a real wait rather than making the run due immediately and spinning against a source that is
+still refusing it, and an absurd reset — the shape an epoch/milliseconds mix-up takes — MUST be
+capped rather than parking the run effectively forever. A source that reports no usable reset
+MUST still get a wake-up time: a suspension with no `resumeAt` waits for a signal nothing sends.
+
+The suspension's reason MUST name both the rate limit and the synchronization. "Suspended" with
+no cause is the thing an operator cannot act on, and a crawl that is rate limited looks
+identical to one that is merely slow.
+
+#### Scenario: The source's own reset time is honoured
+
+- GIVEN a refusal carrying `X-RateLimit-Reset` some minutes out
+- WHEN the node turns it into a suspension
+- THEN `resumeAt` is that reset time
+- AND the run is not ended
+
+#### Scenario: A reset in the past is floored rather than spun on
+
+- GIVEN a refusal whose `X-RateLimit-Reset` is already in the past
+- WHEN the node turns it into a suspension
+- THEN `resumeAt` is at least the minimum wait, not "now"
+
+#### Scenario: A source with no reset still gets a wake-up time
+
+- GIVEN a refusal carrying no usable `X-RateLimit-Reset`
+- WHEN the node turns it into a suspension
+- THEN `resumeAt` is the minimum wait rather than absent
+
+#### Scenario: An absurd reset is capped
+
+- GIVEN a refusal whose reset reads tens of thousands of years out
+- WHEN the node turns it into a suspension
+- THEN `resumeAt` is no further out than the maximum wait
+
+#### Scenario: The suspension says why it is waiting
+
+- GIVEN any rate-limit refusal
+- WHEN the node turns it into a suspension
+- THEN the suspension's reason names the rate limit and the synchronization reference
+
 ## Non-Functional Requirements
 
 - **Performance:** the node adds no measurable overhead beyond the outbound call

@@ -210,6 +210,7 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 	})
 
 	// @e2e flow-orchestration::flows-index-page-mounts-and-lists-flows
+	// @e2e flow-orchestration::the-flows-index-lists-only-this-apps-flows
 	test('the flows index lists this app-scoped flow by name', async ({
 		page,
 	}: {
@@ -223,7 +224,11 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	// @e2e flow-engine-unification::flow-detail-renders-the-shared-canvas
+	// `flow-engine-unification` is an OpenRegister change name, not a capability
+	// in this repository — the anchor resolved to nothing here. The scenario it
+	// meant is `flow-orchestration` REQ-017, which is where this app's own
+	// adoption of the shared canvas is written down.
+	// @e2e flow-orchestration::flow-detail-renders-the-shared-canvas-and-survives-a-hard-reload
 	test('flow detail renders the shared canvas with the seeded nodes, and survives a hard reload', async ({
 		page,
 	}: {
