@@ -3322,6 +3322,14 @@ class CallService {
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 105 lines against a threshold of
+	 *   100. The body is one flat sequence reading the several rate-limit header
+	 *   dialects servers actually send (`X-RateLimit-*`, `RateLimit-*`, `Retry-After`)
+	 *   and folding them onto the source. Every branch is a header spelling, not a
+	 *   decision, so extracting them would produce private helpers that are each read
+	 *   once and hide which dialects are covered — the one thing a reader comes here
+	 *   for. Worth revisiting if a fourth dialect pushes this well past the threshold.
 	 */
 	private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array {
 		$changed = false;

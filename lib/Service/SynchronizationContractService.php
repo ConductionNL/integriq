@@ -36,6 +36,11 @@ use Symfony\Component\Uid\Uuid;
  * Read/write lifecycle for synchronization contracts.
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) 11 against a threshold of 10, and the
+ *   eleventh is not a design smell: this class is the contract's CRUD surface, so its
+ *   public methods are one-per-lifecycle-operation rather than a grab bag. Splitting it
+ *   to satisfy the count would put half the lifecycle behind a second collaborator that
+ *   every caller of the first also needs, which is a worse shape than the number.
  */
 class SynchronizationContractService {
 

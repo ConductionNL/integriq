@@ -76,6 +76,13 @@ use Twig\Error\SyntaxError;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
  * @link      https://github.com/ConductionNL/OpenConnector
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) 21 against a threshold of 15. Every field is
+ *   an injected collaborator — this class is the synchronization ENGINE, and the
+ *   count is the number of subsystems a sync legitimately touches (sources, mappings,
+ *   contracts, rules, targets, files, logging, events). Grouping them behind facades
+ *   purely to reach 15 would hide the dependency surface rather than reduce it. The
+ *   real reduction is splitting the engine, which is a design change and not a lint fix.
  */
 class SynchronizationService {
 
@@ -4409,6 +4416,13 @@ class SynchronizationService {
 	 *
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface If an error occurs while interacting
 	 *                                                                with the object service or data.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 167 lines. This is the single
+	 *   write path into OpenRegister and it is long because the TARGET shapes are
+	 *   many (register/schema resolution, id strategies, soft-delete, file handling,
+	 *   contract bookkeeping), not because it branches deeply. Splitting it is a real
+	 *   refactor of the engine's write side with real regression risk, and is tracked
+	 *   as such rather than done under a lint sweep.
 	 */
 	private function updateTargetOpenRegister(
 		array $synchronizationContract,
@@ -5872,6 +5886,17 @@ class SynchronizationService {
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 204 lines.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) 15 against a threshold of 10.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) 1445 against a threshold of 200.
+	 *   All three are the same cause: remote APIs paginate in mutually incompatible
+	 *   ways (`next` links, page counters, cursors, total-count headers, and servers
+	 *   that report none of them), and this method has to recognise whichever one it
+	 *   is looking at and still know when it has seen every page — REQ-009's
+	 *   completeness guarantee. The branches are a dialect table, and the NPath
+	 *   number is what a table looks like to a path counter. Splitting per dialect is
+	 *   the right eventual shape and is a design change, not an annotation.
 	 */
 	private function fetchAllPagesOptimized(
 		array $source,
@@ -6213,6 +6238,13 @@ class SynchronizationService {
 	 * @see self::predictLastPage() for where the count comes from before any page has been fetched.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) 11 against a threshold of 10.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) 256 against a threshold of 200.
+	 *   Both are one over, and for the same reason as `fetchAllPagesOptimized()`
+	 *   above: this is its concurrent half, so it carries the same pagination-dialect
+	 *   branches plus the in-flight bookkeeping. Fixing it means fixing that method,
+	 *   and the two should move together.
 	 */
 	private function prefetchRemainingPages(
 		array $source,
@@ -6452,11 +6484,11 @@ class SynchronizationService {
 		}
 
 		// <https://api.github.com/...?page=4>; rel="last"
-		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $m) !== 1) {
+		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $matches) !== 1) {
 			return null;
 		}
 
-		$last = (int)$m[2];
+		$last = (int)$matches[2];
 		if ($last > 0) {
 			return $last;
 		}
@@ -7979,6 +8011,14 @@ class SynchronizationService {
 	 * @throws GuzzleException
 	 * @throws NotFoundExceptionInterface
 	 * @throws Exception
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 110 lines.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) 11 against a threshold of 10.
+	 *   One `switch` over the rule ACTION types the engine supports, with each arm
+	 *   handling one action. The complexity is the size of that vocabulary, and a
+	 *   reader needs the arms side by side to see which actions exist — dispatching
+	 *   to one handler class per action is the right shape once the list grows, and
+	 *   is a design change rather than something to do inside a lint pass.
 	 */
 	private function processRules(
 		array $synchronization,
@@ -9569,6 +9609,12 @@ class SynchronizationService {
 	 * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null].
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) 10 parameters, threshold 10.
+	 *   This is the engine's per-object inner loop and every parameter is state the
+	 *   loop carries rather than re-derives per object — bundling them into a context
+	 *   object is the obvious cleanup, but it is a signature change across the engine
+	 *   and its tests, so it belongs in its own change where it can be verified.
 	 */
 	private function processSynchronizationObject(
 		array $synchronization,
@@ -10440,6 +10486,13 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 118 lines. A promise chain, and
+	 *   the length is the chain's `then`/`otherwise` handlers written inline where the
+	 *   flow reads top to bottom. The second spec above — one file's failure must not
+	 *   abort the others or the object — lives entirely in those handlers, so pulling
+	 *   them into named callbacks moves the guarantee away from the chain that
+	 *   implements it without shortening anything that matters.
 	 */
 	private function fetchFileAsync(array $source, array $config, array $item, array &$state): PromiseInterface {
 		$slot = null;
