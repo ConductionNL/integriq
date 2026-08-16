@@ -567,6 +567,69 @@ class DeferredViewCascadeJobTest extends TestCase {
 	}//end malformedEntries()
 
 	/**
+	 * A poisoned entry that survives the guards degrades to a logged no-op,
+	 * it does not throw out of the job.
+	 *
+	 * `DeferredListenerContext` is deliberately tolerant of a malformed
+	 * `oc_jobs.argument` "so a poisoned job row degrades to a logged no-op
+	 * instead of a crash loop in cron". A non-scalar `register` passes the
+	 * entry guard (it is not null) and reaches the delete call, so the
+	 * containment has to hold there. Typing the batch helper `string|int`
+	 * moves that failure to a TypeError BEFORE the try/catch and the job
+	 * throws — which is what this test refuses.
+	 *
+	 * @return void
+	 */
+	public function testANonScalarRegisterIsContainedRatherThanThrown(): void {
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($this->user('alice'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message): void {
+				$this->trace[] = 'warning:' . $message;
+			}
+		);
+
+		$openRegister = $this->createMock(ObjectService::class);
+		$openRegister->method('findAll')->willReturn([$this->row('ev-1')]);
+		$openRegister->method('deleteObject')->willReturnCallback(
+			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
+				$this->trace[] = 'deleteObject:' . $uuid;
+
+				return true;
+			}
+		);
+
+		$sourceMapping = $this->createMock(SourceMappingService::class);
+		$sourceMapping->method('getOpenRegisters')->willReturn($openRegister);
+
+		$job = new DeferredViewCascadeJob(
+			$this->createMock(ITimeFactory::class),
+			$this->tracingSession(),
+			$userManager,
+			$this->createMock(OrganisationService::class),
+			$logger,
+			$sourceMapping
+		);
+
+		$this->runVia(
+			$job,
+			$this->argument(
+				'alice',
+				[['identifier' => 'gemma-view-1', 'register' => ['not', 'a', 'scalar'], 'schema' => 42]]
+			)
+		);
+
+		$this->assertContains(
+			'warning:OpenConnector: failed to delete an extended view during cascade',
+			$this->trace
+		);
+		// And the session was still restored — the job completed normally.
+		$this->assertSame('setUser:null', end($this->trace));
+	}//end testANonScalarRegisterIsContainedRatherThanThrown()
+
+	/**
 	 * GUARD TEST — the captured actor no longer resolves, so the job REFUSES.
 	 *
 	 * This is the behaviour that only exists on the ActorForwardedJob path. A

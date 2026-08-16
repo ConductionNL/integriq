@@ -175,11 +175,20 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * Per-row containment is deliberate. Delivery is at-least-once, so one
 	 * locked or already-removed row must not strand the rest of the batch.
 	 *
+	 * `$register` and `$schema` are `mixed` ON PURPOSE. They come out of a
+	 * JSON-decoded `oc_jobs.argument`, and `DeferredListenerContext` is
+	 * explicitly tolerant of a malformed payload so "a poisoned job row
+	 * degrades to a logged no-op instead of a crash loop in cron". Declaring
+	 * them `string|int` would move that failure to a TypeError on the way IN to
+	 * this method, outside the per-row try/catch, and throw it out of the job.
+	 * Left `mixed`, an unusable value fails at the `deleteObject()` call inside
+	 * the catch and is logged per row, which is the documented behaviour.
+	 *
 	 * @param \OCA\OpenRegister\Service\ObjectService $openRegister The OR object service.
 	 * @param array<int, mixed>                       $rows         Rows returned by findAll().
 	 * @param string                                  $identifier   The view identifier, for logging.
-	 * @param string|int                              $register     Register the rows belong to.
-	 * @param string|int                              $schema       Schema the rows belong to.
+	 * @param mixed                                   $register     Register the rows belong to.
+	 * @param mixed                                   $schema       Schema the rows belong to.
 	 *
 	 * @return void
 	 */
@@ -187,8 +196,8 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 		\OCA\OpenRegister\Service\ObjectService $openRegister,
 		array $rows,
 		string $identifier,
-		string|int $register,
-		string|int $schema
+		mixed $register,
+		mixed $schema
 	): void {
 		foreach ($rows as $row) {
 			$uuid = $this->deletableUuid(row: $row);
