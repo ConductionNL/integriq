@@ -148,13 +148,26 @@ export async function gotoAppRoute(page: Page, route: string): Promise<void> {
 }
 
 /**
+ * How long the address bar must hold still before it is believed.
+ */
+const URL_SETTLE_MS = 1_500
+
+/**
  * Assert the router actually MATCHED the route, rather than falling through.
  *
  * The catch-all is `{ path: '/:pathMatch(.*)*', redirect: '/' }`, so an
  * unmatched deep link rewrites the address bar to the app root. Comparing the
- * final URL against the requested route is therefore an exact, cheap test of
- * "did the router resolve this page" — and it is the assertion whose absence
- * let 36 `manifest-pages` tests photograph the Dashboard and report green.
+ * final URL against the requested route is therefore an exact test of "did the
+ * router resolve this page" — and it is the assertion whose absence let 36
+ * `manifest-pages` tests photograph the Dashboard and report green.
+ *
+ * ⚠️ WHY IT WAITS. Callers navigate with `waitUntil: 'domcontentloaded'`, which
+ * resolves BEFORE Vue mounts and therefore before the router performs its
+ * initial resolution. Reading `page.url()` at that instant returns the
+ * REQUESTED path every time, whether or not the router is about to throw it
+ * away — a guard that could never fail, which is precisely the defect this
+ * module exists to remove. So the pathname must hold still across a settle
+ * window before it is believed.
  *
  * @param page  A Playwright page that has already navigated.
  * @param route The in-app route that was requested, beginning with `/`.
@@ -166,12 +179,23 @@ export async function expectRouteMatched(page: Page, route: string): Promise<voi
 		return
 	}
 
-	const url = new URL(page.url())
+	let pathname = new URL(page.url()).pathname
+	const deadline = Date.now() + 10_000
+	for (;;) {
+		await page.waitForTimeout(URL_SETTLE_MS)
+		const next = new URL(page.url()).pathname
+		if (next === pathname || Date.now() > deadline) {
+			pathname = next
+			break
+		}
+		pathname = next
+	}
+
 	expect(
-		url.pathname,
-		`the router did not match ${route}: the address bar reads ${url.pathname}. `
+		pathname,
+		`the router did not match ${route}: the address bar settled on ${pathname}. `
 			+ 'A path outside the router base falls through the catch-all and redirects to the '
-			+ 'Dashboard, so every "something rendered" assertion below would pass against the '
-			+ 'wrong page.',
+			+ 'app root, so every "something rendered" assertion below would pass against the '
+			+ 'Dashboard.',
 	).toContain(route)
 }
