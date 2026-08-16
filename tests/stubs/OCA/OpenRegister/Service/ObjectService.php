@@ -239,12 +239,23 @@ class ObjectService {
 	/**
 	 * Delete an object by uuid.
 	 *
-	 * @param string|null $uuid
-	 * @param string|null $register
-	 * @param string|null $schema
+	 * `$register` / `$schema` are widened to `string|int|null` to mirror the
+	 * real signature, which is
+	 * `deleteObject(string $uuid, Register|string|int|null $register = null, Schema|string|int|null $schema = null, ...)`.
+	 * They are routinely passed as INTEGER row ids (`$register->getId()`), and
+	 * the previous `?string` declaration TypeError'd on exactly that call — a
+	 * stub disagreeing with the class it stands in for.
+	 *
+	 * NOTE FOR ANYONE LOOKING FOR `delete()`: there is no such method on the
+	 * real OCA\OpenRegister\Service\ObjectService, and no __call() either. This
+	 * stub deliberately does not invent one.
+	 *
+	 * @param string|null     $uuid
+	 * @param string|int|null $register
+	 * @param string|int|null $schema
 	 * @return bool
 	 */
-	public function deleteObject(?string $uuid = null, ?string $register = null, ?string $schema = null): bool {
+	public function deleteObject(?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
 		return true;
 	}
 

@@ -204,6 +204,22 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Deferral/ListenerDeferralService.php';
 		}
 
+		// The other half of the ADR-078 deferral contract: the context value
+		// object the job list hands back, and the QueuedJob base class that
+		// re-establishes the captured actor around runDeferred(). Without
+		// these, DeferredViewCascadeJob cannot be loaded at all — which is
+		// exactly why it shipped with zero executed statements.
+		//
+		// Order matters: ActorForwardedJob references DeferredListenerContext
+		// in its abstract method signature.
+		if (class_exists('OCA\\OpenRegister\\Service\\Deferral\\DeferredListenerContext') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Deferral/DeferredListenerContext.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\BackgroundJob\\ActorForwardedJob') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/BackgroundJob/ActorForwardedJob.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
 		}

@@ -18,6 +18,7 @@ namespace OCA\OpenConnector\Cron;
 
 use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -154,8 +155,29 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 		}
 
 		foreach ($extendedViews as $extendedView) {
+			// `findAll()` returns rendered ObjectEntity rows. Anything else is
+			// not something this cascade can address, and passing it on would
+			// only surface as a swallowed TypeError below.
+			if (($extendedView instanceof ObjectEntity) === false) {
+				continue;
+			}
+
+			$uuid = $extendedView->getUuid();
+			if (is_string($uuid) === false || $uuid === '') {
+				continue;
+			}
+
 			try {
-				$openRegister->delete($extendedView);
+				// deleteObject(), NOT delete(). OpenRegister's ObjectService has
+				// no delete() method and no __call(), so the previous
+				// `$openRegister->delete($entity)` raised
+				// `Error: Call to undefined method` on EVERY row — and `Error`
+				// implements \Throwable, so the catch below turned the whole
+				// cascade into a logged no-op that reported success. Verified
+				// against openregister origin/development: the only delete
+				// entry points are deleteObject/deleteObjects/
+				// deleteObjectsBySchema/deleteObjectsByRegister.
+				$openRegister->deleteObject(uuid: $uuid, register: $register, schema: $schema);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					'OpenConnector: failed to delete an extended view during cascade',
