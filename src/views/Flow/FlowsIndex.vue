@@ -8,7 +8,7 @@
   is the fleet-wide one; this is the leaf-app one). Mirrors
   openregister/src/views/flows/FlowsIndex.vue exactly.
 
-  @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+  @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
 	<CnFlowIndexPage app="openconnector" @open="openFlow" @create="createFlow" />
@@ -25,7 +25,7 @@ export default {
 	methods: {
 		/**
 		 * @param {object} flow The activated flow.
-		 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 		 * @return {void}
 		 */
 		openFlow(flow) {
@@ -33,7 +33,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 		 * @return {void}
 		 */
 		createFlow() {

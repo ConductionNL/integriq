@@ -658,3 +658,43 @@ the editor holds unsaved state.
 - **WHEN** the engine asks this node for its actions
 - **THEN** no links are returned, rather than links built from absent ids
 - @e2e exclude covered by `tests/Unit/Flow/SourceCallNodeTest.php`
+
+### Requirement: OpenConnector's Flow pages are the shared canvas over the one native flow store (REQ-017)
+
+OpenConnector MUST NOT own a second flow-authoring surface. Its Flow pages are thin scopings of
+the components `@conduction/nextcloud-vue` already ships over OpenRegister's one native flow
+store (ADR-065): `CnFlowIndexPage` for the index, `CnFlowDetail` for the canvas, and
+`CnFlowSidebar` for the controls. This supersedes REQ-009's bespoke ordered step-list editor
+**for this app's own pages** — REQ-009's uniformity and keyboard-operability rules continue to
+bind whatever those shared components render.
+
+The index page MUST pass `app="openconnector"` so this app sees only its own flows.
+OpenRegister's Flows page passes no app filter and is the fleet-wide surface; this is the
+leaf-app one, and the two MUST NOT be conflated.
+
+The controls MUST live in a separate `FlowDetailSidebar` component rendered into Nextcloud's app
+sidebar via the manifest's `sidebarComponent`, not inside the canvas page, so the canvas keeps
+the full width. The sidebar and the canvas MUST share state through `useFlowStore` rather than
+through props: one store is what makes every app's sidebar behave identically.
+
+Save and run MUST go through that shared store — `store.save()` and `store.run({})` — and
+OpenConnector MUST add no flow-writing path of its own. After a save that CREATES a flow, the
+route MUST be replaced with the server-assigned id: the create route is `/flows/new`, and
+leaving it there would send a reload back to an empty new-flow shell instead of the flow the
+operator just created.
+
+#### Scenario: The flows index lists only this app's flows
+
+- **GIVEN** a flow seeded with `app: "openconnector"`
+- **WHEN** an admin opens the app's `/flows` route
+- **THEN** that flow is listed by name
+- @e2e flow-orchestration::the-flows-index-lists-only-this-apps-flows
+
+#### Scenario: Flow detail renders the shared canvas and survives a hard reload
+
+- **GIVEN** a seeded flow with a trigger node and a `openconnector.synchronization-run` node
+- **WHEN** an admin opens `/flows/<id>`
+- **THEN** the shared canvas mounts bound to that flow, showing its name and both placed nodes
+- **AND** a hard document reload of the same URL resolves to the same flow rather than the
+  dashboard
+- @e2e flow-orchestration::flow-detail-renders-the-shared-canvas
