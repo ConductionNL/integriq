@@ -154,22 +154,51 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 			);
 		}
 
-		foreach ($extendedViews as $extendedView) {
-			// `findAll()` returns rendered ObjectEntity rows. Anything else is
-			// not something this cascade can address, and passing it on would
-			// only surface as a swallowed TypeError below.
-			if (($extendedView instanceof ObjectEntity) === false) {
-				continue;
-			}
+		$this->deleteRows(
+			openRegister: $openRegister,
+			rows: $extendedViews,
+			identifier: $identifier,
+			register: $register,
+			schema: $schema
+		);
+	}//end cascadeOne()
 
-			$uuid = $extendedView->getUuid();
-			if (is_string($uuid) === false || $uuid === '') {
+	/**
+	 * Delete one batch of extended-view rows, one row at a time.
+	 *
+	 * Extracted from cascadeOne() because the row loop's guards plus its
+	 * per-row try/catch pushed that method through two phpmd ceilings at once
+	 * (Cyclomatic 12/10, NPath 260/200) while the lookup half stayed clean —
+	 * the same shape S2 recorded on the fleet board: a defensive try/catch is
+	 * not complexity-free.
+	 *
+	 * Per-row containment is deliberate. Delivery is at-least-once, so one
+	 * locked or already-removed row must not strand the rest of the batch.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService $openRegister The OR object service.
+	 * @param array<int, mixed>                       $rows         Rows returned by findAll().
+	 * @param string                                  $identifier   The view identifier, for logging.
+	 * @param string|int                              $register     Register the rows belong to.
+	 * @param string|int                              $schema       Schema the rows belong to.
+	 *
+	 * @return void
+	 */
+	private function deleteRows(
+		\OCA\OpenRegister\Service\ObjectService $openRegister,
+		array $rows,
+		string $identifier,
+		string|int $register,
+		string|int $schema
+	): void {
+		foreach ($rows as $row) {
+			$uuid = $this->deletableUuid(row: $row);
+			if ($uuid === null) {
 				continue;
 			}
 
 			try {
-				// deleteObject(), NOT delete(). OpenRegister's ObjectService has
-				// no delete() method and no __call(), so the previous
+				// Use deleteObject(), NOT delete(). OpenRegister's ObjectService
+				// has no delete() method and no __call(), so the previous
 				// `$openRegister->delete($entity)` raised
 				// `Error: Call to undefined method` on EVERY row — and `Error`
 				// implements \Throwable, so the catch below turned the whole
@@ -185,5 +214,29 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 				);
 			}
 		}
-	}//end cascadeOne()
+	}//end deleteRows()
+
+	/**
+	 * The uuid a findAll() row can be deleted by, or null if it has none.
+	 *
+	 * `findAll()` returns rendered ObjectEntity rows. Anything else is not
+	 * something this cascade can address, and passing it on would only surface
+	 * as a swallowed TypeError.
+	 *
+	 * @param mixed $row One row as returned by findAll().
+	 *
+	 * @return string|null The uuid, or null when the row cannot be addressed.
+	 */
+	private function deletableUuid(mixed $row): ?string {
+		if (($row instanceof ObjectEntity) === false) {
+			return null;
+		}
+
+		$uuid = $row->getUuid();
+		if (is_string($uuid) === false || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end deletableUuid()
 }//end class
