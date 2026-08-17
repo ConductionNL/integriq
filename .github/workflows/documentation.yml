@@ -17,10 +17,15 @@ jobs:
     #   deploy contents: write   (peaceiris/actions-gh-pages pushes to gh-pages)
     #   image  contents: read, packages: write  (buildx push to GHCR)
     #
-    # ⚠️ `packages: write` stays even though `build-image` is not set here, so
-    # the `image` job never runs. GitHub validates the callee's DECLARED job
-    # permissions against this ceiling before dispatch — including jobs an `if:`
-    # will skip — so dropping it makes the whole call fail to start.
+    # ⚠️ `packages: write` is load-bearing at RUNTIME, not merely statically:
+    # the callee's `build-image` input DEFAULTS TO TRUE, so the `image` job
+    # really does run on a push to `documentation` and really does push to
+    # GHCR. Dropping it 403s that push.
+    #
+    # It would be required even if that job were disabled, because GitHub
+    # validates the callee's DECLARED job permissions against this ceiling
+    # before dispatch — including for jobs an `if:` will skip — so a too-low
+    # ceiling makes the whole call fail to start rather than run with less.
     permissions:
       contents: write
       packages: write
