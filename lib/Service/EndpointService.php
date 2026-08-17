@@ -1522,7 +1522,10 @@ class EndpointService {
 		$uuidToUrlMap[$object->getUri()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $this->schemaMapper);
 
 		// @TODO: temporary fix for download endpoints. This has to be fixed with issue CONNECTOR-314.
-		$uuidToUrlMap[$object->getUri() . '/download'] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $this->schemaMapper) . '/download';
+		$uuidToUrlMap[$object->getUri() . '/download'] = $this->generateEndpointUrl(
+			id: $object->getUuid(),
+			schemaMapper: $this->schemaMapper
+		) . '/download';
 
 		// Replace UUIDs in serializedObject recursively.
 		$serializedObject = $this->replaceUuidsInArray(
