@@ -512,6 +512,37 @@ function resolveJs(expr, locals) {
 }
 
 /**
+ * Build the same-file `const NAME = { … }` table, keyed to the OBJECT LITERAL
+ * TEXT rather than a resolved scalar.
+ *
+ * `jsLocalConsts` below resolves constants to VALUES, and for a `{` it only
+ * reads to end-of-line, so a multi-line descriptor object never lands in its
+ * table. That is fine for `id: SOME_CONST`, but it cannot serve a registration
+ * whose whole descriptor is passed by name:
+ *
+ *   export const decisionsLeafDescriptor = { id: …, renderMode: 'mount', … }
+ *   …
+ *   OCA.OpenRegister.integrations.register(decisionsLeafDescriptor)
+ *
+ * The member parser in `collectJsRegistrations` needs the literal's TEXT, so
+ * this table keeps the balanced `{ … }` body verbatim for that one purpose.
+ *
+ * @param {string} src JS source text.
+ *
+ * @return {Object<string, string>} Constant name to object-literal inner text.
+ */
+function jsLocalObjectLiterals(src) {
+	const table = {}
+	const re = /\bconst\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{/g
+	let m
+	while ((m = re.exec(src)) !== null) {
+		const brace = m.index + m[0].length - 1
+		table[m[1]] = balanced(src, brace)
+	}
+	return table
+}
+
+/**
  * Build the same-file `const NAME = …` table for a JS/Vue source.
  *
  * @param {string} src JS source text.
@@ -560,12 +591,29 @@ function collectJsRegistrations() {
 		} catch (e) {
 			continue
 		}
-		if (src.includes('registerIntegration') === false) {
+		// BOTH SUPPORTED REGISTRATION APIs, NOT ONE.
+		//
+		// `registerIntegration(descriptor)` is the convenience wrapper exported
+		// from @conduction/nextcloud-vue. The registry object it wraps is
+		// equally canonical and is called directly as
+		// `OCA.OpenRegister.integrations.register(descriptor)` — including by
+		// nextcloud-vue's OWN built-in leaves. Matching only the wrapper made
+		// this checker report ZERO registrations for a repo that plainly has
+		// one, which the wrapper script then correctly refused to call a pass.
+		// gate-24's own selector probe was fixed for exactly this and reads
+		// both forms; this checker was a generation behind it.
+		if (
+			src.includes('registerIntegration') === false
+			&& src.includes('integrations.register') === false
+		) {
 			continue
 		}
 		const rel = path.relative(REPO_ROOT, file)
 		const locals = jsLocalConsts(src)
-		const re = /registerIntegration\s*\(/g
+		const objects = jsLocalObjectLiterals(src)
+		// `\s*\(` anchors both alternatives to a CALL, so neither
+		// `registerIntegrationIcons(` nor `installIntegrationRegistry(` matches.
+		const re = /(?:\bregisterIntegration|\bintegrations\s*\.\s*register)\s*\(/g
 		let m
 		while ((m = re.exec(src)) !== null) {
 			const before = src.slice(Math.max(0, m.index - 20), m.index)
@@ -573,9 +621,15 @@ function collectJsRegistrations() {
 				continue // the library's own `export function registerIntegration(`
 			}
 			const open = src.indexOf('(', m.index)
-			const argText = balanced(src, open).trim()
+			let argText = balanced(src, open).trim()
 			if (argText.startsWith('{') === false) {
-				continue
+				// A descriptor passed BY NAME is the same registration as an
+				// inline literal; resolve it to the literal's text or skip.
+				const ident = /^([A-Za-z_$][A-Za-z0-9_$]*)$/.exec(argText)
+				if (ident === null || objects[ident[1]] === undefined) {
+					continue
+				}
+				argText = '{' + objects[ident[1]] + '}'
 			}
 			const reg = { file: rel, fields: {}, keys: [], spreads: [] }
 			for (const member of splitTopLevel(balanced(argText, 0))) {
