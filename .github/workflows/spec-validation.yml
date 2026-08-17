@@ -23,6 +23,12 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    # Checkout + `npm ci` + `npm run check:specs`. Read-only: no repo write, no
+    # PR comment, no artifact upload. `packages: read` is deliberately absent —
+    # .npmrc points at the public registry and package-lock.json contains zero
+    # npm.pkg.github.com entries.
+    permissions:
+      contents: read
     # Observed: n=113 runs, median 0.6 min, max 2.6 min. Bounded loosely so
     # normal runner contention can never trip it.
     timeout-minutes: 20

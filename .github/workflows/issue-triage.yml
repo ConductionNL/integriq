@@ -12,6 +12,15 @@ on:
 
 jobs:
   triage:
+    # Permission CEILING for the called workflow, not a grant. All three jobs in
+    # the callee (triage-single, triage-decision, backlog-triage) already declare
+    # exactly `issues: write` + `contents: read` for themselves, so this restates
+    # the grant the token has today and changes nothing that runs. `issues: write`
+    # is the label-and-assign step; the ProjectsV2 board step is disabled because
+    # GITHUB_TOKEN cannot reach it at any permission level (ConductionNL/.github#432).
+    permissions:
+      issues: write
+      contents: read
     # `@main`, not `@feature/openspec-project-sync` — that branch no longer
     # exists on ConductionNL/.github, so the reference was unresolvable.
     uses: ConductionNL/.github/.github/workflows/issue-triage.yml@main

@@ -10,6 +10,13 @@ on:
 jobs:
   lint-check:
     runs-on: ubuntu-latest
+    # Checkout + `npm ci` + `npm run lint`. Nothing here writes to the repo,
+    # comments on the PR, or uploads an artifact, so read is the whole need.
+    # `packages: read` is deliberately absent: .npmrc points at the public
+    # registry and package-lock.json contains zero npm.pkg.github.com entries,
+    # so the install never authenticates to GitHub Packages.
+    permissions:
+      contents: read
     # Observed: n=28 runs, median 0.6 min, max 1.2 min. Bounded loosely so
     # normal runner contention can never trip it.
     timeout-minutes: 15

@@ -29,6 +29,17 @@ concurrency:
 
 jobs:
   release:
+    # Permission CEILING for the called release workflow, not a grant. The
+    # callee's `release` job already declares `contents: write` for itself, so
+    # this restates today's effective token and changes nothing that runs.
+    # `contents: write` cuts the tag and publishes the prerelease + .tar.gz that
+    # the App Versions app installs from. This channel never touches the App
+    # Store, so nothing else is needed.
+    #
+    # ⚠️ Not `contents: read`. A caller block CAPS the callee, so a lower ceiling
+    # makes the call fail to START rather than run with less.
+    permissions:
+      contents: write
     uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
     with:
       app-name: openconnector
