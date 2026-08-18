@@ -40,9 +40,6 @@
         "test:unit": "./vendor/bin/phpunit --colors=always --no-coverage",
         "test:all": "./vendor/bin/phpunit --colors=always --no-coverage",
         "openapi": "generate-spec",
-        "phpqa": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa",
-        "phpqa:full": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs:0,phpmd:0,phploc:0,phpmetrics,phpcpd:0,parallel-lint:0",
-        "phpqa:ci": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs,phpmd,phploc,phpmetrics,phpcpd,parallel-lint",
         "phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G",
         "check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
         "check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
@@ -51,12 +48,6 @@
         "check:no-legacy-types": "if grep -rEn 'use OCA\\\\\\\\OpenConnector\\\\\\\\Db\\\\\\\\(Source|Consumer|Endpoint|Event|EventMessage|EventSubscription|Job|JobLog|Mapping|Rule|Synchronization|SynchronizationContract|SynchronizationContractLog|SynchronizationLog|CallLog|SourceMapper|ConsumerMapper|EndpointMapper|EventMapper|EventMessageMapper|EventSubscriptionMapper|JobMapper|JobLogMapper|MappingMapper|RuleMapper|SynchronizationMapper|SynchronizationContractMapper|SynchronizationContractLogMapper|SynchronizationLogMapper|CallLogMapper)( |;|\\\\\\\\)' lib/ tests/ 2>/dev/null; then echo 'FAIL: deleted OCA\\\\OpenConnector\\\\Db\\\\* type import found above. The 15 entity + 15 mapper classes were deleted in chain C; use \\\\OCA\\\\OpenRegister\\\\Service\\\\ObjectService with register/schema named parameters instead.'; exit 1; else echo 'check:no-legacy-types: PASS'; fi",
         "fix": [
             "@cs:fix"
-        ],
-        "qa:check": [
-            "@phpqa"
-        ],
-        "qa:full": [
-            "@phpqa:full"
         ],
         "test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
         "coverage:check": "php tests/scripts/check-coverage.php",
@@ -103,7 +94,6 @@
         "conduction/coding-standard": "^1.0",
         "conduction/hydra-gates": "^1.0",
         "cyclonedx/cyclonedx-php-composer": "^6.2",
-        "edgedesign/phpqa": "^1.9",
         "nextcloud/ocp": "^34.0",
         "phpcsstandards/phpcsextra": "^1.5",
         "phpmd/phpmd": "^2.15",
