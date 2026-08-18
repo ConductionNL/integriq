@@ -9,48 +9,15 @@
   @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
-	<CnFlowSidebar @save="onSave" @run="onRun" />
+	<CnFlowSidebar />
 </template>
 
 <script>
-import { CnFlowSidebar, useFlowStore } from '@conduction/nextcloud-vue'
+import { CnFlowSidebar } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'FlowDetailSidebar',
 
 	components: { CnFlowSidebar },
-
-	/**
-	 * Expose the shared flow store to the sidebar canvas.
-	 *
-	 * @return {object} The setup bindings.
-	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
-	 */
-	setup() {
-		return { store: useFlowStore() }
-	},
-
-	methods: {
-		/**
-		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
-		 * @return {Promise<void>}
-		 */
-		async onSave() {
-			const saved = await this.store.save()
-			// A newly created flow gets its id from the server, so the route has
-			// to catch up or a reload would land back on `new`.
-			if (saved?.id && this.$route.params.id === 'new') {
-				this.$router.replace(`/flows/${saved.id}`)
-			}
-		},
-
-		/**
-		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
-		 * @return {Promise<void>}
-		 */
-		async onRun() {
-			await this.store.run({})
-		},
-	},
 }
 </script>
