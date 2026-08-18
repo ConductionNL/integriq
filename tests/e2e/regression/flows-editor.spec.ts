@@ -23,7 +23,7 @@
 import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { expectRouteMatched, gotoAppRoute } from '../support/appRoot'
+import { expectRouteMatched, gotoAppRoute } from '../support/appRoot.ts'
 
 const RUN_ID = `e2e-ocflow-${Date.now().toString(36)}`
 
