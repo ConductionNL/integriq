@@ -21,7 +21,11 @@
   @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
-	<CnFlowDetail :id="$route.params.id" app="openconnector" @save="onSave" @run="onRun" />
+	<CnFlowDetail
+		:id="$route.params.id"
+		app="openconnector"
+		@save="onSave"
+		@run="onRun" />
 </template>
 
 <script>
@@ -31,6 +35,12 @@ export default {
 	name: 'FlowDetailPage',
 	components: { CnFlowDetail },
 
+	/**
+	 * Share the one flow store with the toolbar's save/run handlers.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},

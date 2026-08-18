@@ -20,7 +20,12 @@
 <template>
 	<CnIndexPage
 		:title="t('openconnector', 'Flows')"
-		:description="t('openconnector', 'A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself.')"
+		:description="
+			t(
+				'openconnector',
+				'A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself.',
+			)
+		"
 		:columns="columns"
 		:objects="rows"
 		:loading="store.loading"
@@ -59,6 +64,12 @@ export default {
 		Plus,
 	},
 
+	/**
+	 * Share the one flow store with the editor pages.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},
@@ -85,7 +96,10 @@ export default {
 		columns() {
 			return [
 				{ key: 'name', label: this.t('openconnector', 'Name') },
-				{ key: 'description', label: this.t('openconnector', 'Description') },
+				{
+					key: 'description',
+					label: this.t('openconnector', 'Description'),
+				},
 				{ key: 'trigger', label: this.t('openconnector', 'Trigger') },
 				{ key: 'cron', label: this.t('openconnector', 'Schedule') },
 				{ key: 'statusLabel', label: this.t('openconnector', 'Status') },
@@ -125,7 +139,10 @@ export default {
 				return this.t('openconnector', 'Disabled')
 			}
 			if (!flow.owner) {
-				return this.t('openconnector', 'Enabled, but has no owner — it will not start')
+				return this.t(
+					'openconnector',
+					'Enabled, but has no owner — it will not start',
+				)
 			}
 
 			return this.t('openconnector', 'Enabled')
