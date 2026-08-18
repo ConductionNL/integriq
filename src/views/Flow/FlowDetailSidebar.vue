@@ -20,6 +20,9 @@ export default {
 
 	components: { CnFlowSidebar },
 
+	/**
+	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},

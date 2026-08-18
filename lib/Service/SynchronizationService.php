@@ -9063,6 +9063,8 @@ class SynchronizationService {
 	 * @param int    $ruleId   The rule id, for error attribution.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	public function fetchFilesForObject(array $config, mixed $endpoint, string $objectId, int $ruleId = 0): void {
 		$source = $this->findSource(id: $config['source']);

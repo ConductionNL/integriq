@@ -170,6 +170,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+		 */
 		isEdit() {
 			return !!(
 				this.abonnement
