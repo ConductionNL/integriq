@@ -170,6 +170,12 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the form is editing an existing abonnement rather than adding one.
+		 *
+		 * @return {boolean} True when an abonnement id is present.
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008
+		 */
 		isEdit() {
 			return !!(
 				this.abonnement

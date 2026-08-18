@@ -20,6 +20,12 @@ export default {
 
 	components: { CnFlowSidebar },
 
+	/**
+	 * Expose the shared flow store to the sidebar canvas.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},
