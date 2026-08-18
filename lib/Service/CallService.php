@@ -478,12 +478,28 @@ class CallService
 
 		$body = $response->getBody()->getContents();
 
+		// Multipart parts (e.g. file uploads) can carry raw binary content, which is not valid UTF-8
+		// and cannot be JSON-encoded for storage as-is. Base64-encode any such part before logging,
+		// mirroring how the response body below is protected against the same issue.
+		$loggableConfig = $config;
+		if (isset($loggableConfig['multipart']) === true && is_array($loggableConfig['multipart']) === true) {
+			foreach ($loggableConfig['multipart'] as $partIndex => $part) {
+				if (isset($part['contents']) === true
+					&& is_string($part['contents']) === true
+					&& mb_check_encoding($part['contents'], 'UTF-8') === false
+				) {
+					$loggableConfig['multipart'][$partIndex]['contents'] = base64_encode($part['contents']);
+					$loggableConfig['multipart'][$partIndex]['contentsEncoding'] = 'base64';
+				}
+			}
+		}
+
 		// Let's create the data array
 		$data = [
 			'request' => [
 				'url' => $url,
 				'method' => $method,
-				...$config
+				...$loggableConfig
 			],
 			'response' => [
 				'statusCode' => $response->getStatusCode(),
