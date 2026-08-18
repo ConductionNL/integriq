@@ -23,6 +23,7 @@
 import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { expectRouteMatched, gotoAppRoute } from '../support/appRoot'
 
 const RUN_ID = `e2e-ocflow-${Date.now().toString(36)}`
 
@@ -64,11 +65,13 @@ test.describe('the Flows surface', () => {
 	test('the list is an ordinary index page with a New flow action (ADR-096)', async ({
 		page,
 	}) => {
-		// `networkidle` never settles on Nextcloud — the chrome assertions
-		// below are the readiness signal.
-		await page.goto('/apps/openconnector/flows', {
-			waitUntil: 'domcontentloaded',
-		})
+		// `gotoAppRoute`, not a literal path: on a stack without pretty URLs
+		// the router's base is `/index.php/apps/openconnector`, and a literal
+		// `/apps/openconnector/flows` mounts the SPA whose router then cannot
+		// match the path — the catch-all lands it on the Dashboard, which is
+		// exactly what this spec's first CI run photographed.
+		await gotoAppRoute(page, '/flows')
+		await expectRouteMatched(page, '/flows')
 
 		// CnIndexPage chrome, not the deprecated bespoke table.
 		await expect(page.locator('.cn-index-page')).toBeVisible({ timeout: 20000 })
@@ -84,9 +87,8 @@ test.describe('the Flows surface', () => {
 			!NEW_EDITOR,
 			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
 		)
-		await page.goto('/apps/openconnector/flows/new', {
-			waitUntil: 'domcontentloaded',
-		})
+		await gotoAppRoute(page, '/flows/new')
+		await expectRouteMatched(page, '/flows/new')
 
 		// The toolbar is the editor's identity — the actions that concern the
 		// graph, on the graph.
@@ -122,9 +124,8 @@ test.describe('the Flows surface', () => {
 			!NEW_EDITOR,
 			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
 		)
-		await page.goto('/apps/openconnector/flows/new', {
-			waitUntil: 'domcontentloaded',
-		})
+		await gotoAppRoute(page, '/flows/new')
+		await expectRouteMatched(page, '/flows/new')
 
 		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
 		await expect(toolbar.getByRole('button', { name: 'Save' })).toBeEnabled({
