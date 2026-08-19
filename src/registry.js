@@ -32,6 +32,7 @@
 //   2. Built-in widget types        (version-info, register-mapping, …)
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
+import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
@@ -105,6 +106,15 @@ export default {
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
 	// Clicking a card opens CatalogItemDetailDialog through the modal bus.
 	CatalogItemCard,
+
+	// The four legacy automation index pages (Jobs, Rules, Mappings,
+	// Synchronizations) wire `below-header` to this notice — CnIndexPage
+	// renders that slot between the page header and the actions bar, which
+	// is where a page-level statement belongs; it is deliberately not an
+	// error state. flow-native-synchronization task 3.2. The three bespoke
+	// detail pages import the same component directly rather than through
+	// this map, because they own their own template.
+	AutomationDeprecationNotice,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the

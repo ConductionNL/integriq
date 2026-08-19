@@ -5,6 +5,7 @@ import {
 	buildManifest,
 	CnPageRenderer,
 	defaultPageTypes,
+	registerFlowNodeEditor,
 	registerIcons,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
@@ -14,7 +15,7 @@ import {
 	translate as t,
 } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { createApp, h } from 'vue'
+import { createApp, defineAsyncComponent, h } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import { setRouter } from './handlers/routerRef.js'
@@ -61,6 +62,15 @@ import './assets/app.css'
 
 // Register library-side icon set + lib translations once at bootstrap.
 registerIcons(appIcons)
+
+// A synchronization-run step opens the REAL Synchronization dialog instead of
+// the generic key-per-field editor: a step whose configuration IS a
+// synchronization deserves that surface (flow-native-synchronization 0.4).
+// Async so the wide dialog and its sync widgets stay out of the entry bundle.
+registerFlowNodeEditor(
+	'openconnector.synchronization-run',
+	defineAsyncComponent(() => import('./modals/v2/SynchronizationNodeEditor.vue')),
+)
 try {
 	registerTranslations()
 } catch (e) {

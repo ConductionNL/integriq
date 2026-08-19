@@ -21,14 +21,51 @@
   @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
-	<CnFlowDetail :id="$route.params.id" app="openconnector" />
+	<CnFlowDetail
+		:id="$route.params.id"
+		app="openconnector"
+		@save="onSave"
+		@run="onRun" />
 </template>
 
 <script>
-import { CnFlowDetail } from '@conduction/nextcloud-vue'
+import { CnFlowDetail, useFlowStore } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'FlowDetailPage',
 	components: { CnFlowDetail },
+
+	/**
+	 * Share the one flow store with the toolbar's save/run handlers.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+	 */
+	setup() {
+		return { store: useFlowStore() }
+	},
+
+	methods: {
+		/**
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+		 * @return {Promise<void>}
+		 */
+		async onSave() {
+			const saved = await this.store.save()
+			// A newly created flow gets its id from the server, so the route has
+			// to catch up or a reload would land back on `new`.
+			if (saved?.id && this.$route.params.id === 'new') {
+				this.$router.replace(`/flows/${saved.id}`)
+			}
+		},
+
+		/**
+		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
+		 * @return {Promise<void>}
+		 */
+		async onRun() {
+			await this.store.run({})
+		},
+	},
 }
 </script>

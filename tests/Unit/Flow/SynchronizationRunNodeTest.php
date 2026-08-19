@@ -135,6 +135,47 @@ class SynchronizationRunNodeTest extends TestCase {
 
 	}//end testPaletteMetadata()
 
+
+	/**
+	 * The declared vocabulary is what the node actually reads.
+	 *
+	 * The preflight refuses keys outside this list and the flow editor renders
+	 * one field per entry, so a key the node reads but does not declare becomes
+	 * unreachable through both — this pins the two against each other.
+	 *
+	 * @return void
+	 */
+	public function testConfigKeysNameTheVocabularyTheNodeReads(): void {
+		$this->assertSame(
+			['synchronization', 'force', 'output', 'maxItems', 'onError'],
+			$this->node->configKeys()
+		);
+
+	}//end testConfigKeysNameTheVocabularyTheNodeReads()
+
+	/**
+	 * Every form field edits a key the node reads, and `synchronization` is a
+	 * picker fed by the app's own listing — never a bare uuid box.
+	 *
+	 * @return void
+	 */
+	public function testConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		$this->assertSame('select', $byKey['synchronization']['type']);
+		$this->assertTrue($byKey['synchronization']['required']);
+		$this->assertNotSame('', (string) ($byKey['synchronization']['optionsFrom'] ?? ''));
+
+	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
+
 	/**
 	 * An inline synchronization definition is rejected at save.
 	 *

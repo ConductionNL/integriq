@@ -48,6 +48,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Flow;
 
+use OCP\IL10N;
+use UnexpectedValueException;
+
 /**
  * Reads the step id and the `onError` policy a node needs but is not handed.
  *
@@ -145,4 +148,77 @@ final class FlowNodeSupport {
 
 		return 'stop';
 	}//end onErrorPolicy()
+
+	/**
+	 * Reject an `onError` value outside the known policies, at flow-save time.
+	 *
+	 * Shared by every node that mirrors the step's `onError` policy into its
+	 * config vocabulary, so the accepted spellings cannot drift between nodes.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param IL10N $l10n Translations for the rejection message.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the value is not a known policy.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public static function assertOnError(array $config, IL10N $l10n): void {
+		if (array_key_exists('onError', $config) === false) {
+			return;
+		}
+
+		$policy = strtolower(trim((string)$config['onError']));
+		if (in_array($policy, self::ON_ERROR_POLICIES, true) === false) {
+			throw new UnexpectedValueException(
+				$l10n->t(
+					'The "onError" field must be one of %1$s.',
+					[implode(', ', self::ON_ERROR_POLICIES)]
+				)
+			);
+		}
+
+	}//end assertOnError()
+
+	/**
+	 * Reject a reference field that is inline or empty, at flow-save time.
+	 *
+	 * Every page-level sync node names an ALREADY-CONFIGURED object — a
+	 * mapping, a synchronization — and never accepts an inline definition:
+	 * an object edited through its own surface is versioned, reviewable and
+	 * shared; one buried in a flow document is none of those.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param string $key The config key carrying the reference.
+	 * @param IL10N $l10n Translations for the rejection message.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the reference is inline or empty.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public static function assertReference(array $config, string $key, IL10N $l10n): void {
+		$reference = ($config[$key] ?? null);
+		if (is_array($reference) === true) {
+			throw new UnexpectedValueException(
+				$l10n->t(
+					'The "%1$s" field must reference an existing %1$s; an inline definition '
+					. 'is not accepted and this step never creates one.',
+					[$key]
+				)
+			);
+		}
+
+		if (trim((string)($reference ?? '')) === '') {
+			throw new UnexpectedValueException(
+				$l10n->t(
+					'The "%1$s" field must name a configured %1$s (its uuid, slug or reference).',
+					[$key]
+				)
+			);
+		}
+
+	}//end assertReference()
 }//end class

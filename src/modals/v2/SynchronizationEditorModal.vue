@@ -363,6 +363,15 @@
 					</CnTabs>
 				</div>
 			</section>
+
+			<!--
+			  Extra content a HOST appends below the three stages. Empty for
+			  the Synchronizations index; the flow editor's node adapter fills
+			  it with the step-level options (force, output, maxItems,
+			  onError) so one dialog edits both the synchronization and the
+			  step that runs it.
+			-->
+			<slot name="hostExtras" />
 		</div>
 
 		<template #actions>

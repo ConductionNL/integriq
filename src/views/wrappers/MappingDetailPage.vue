@@ -60,6 +60,15 @@
 			</NcButton>
 		</template>
 
+		<!-- Deprecation context, first in the body so it reads as page-level
+		     framing rather than an error against the mapping being edited.
+		     flow-native-synchronization task 3.2: the Mappings page retires in
+		     favour of the mapping editor opened FROM a flow step dialog;
+		     MappingService and the Mapping entities stay. Rendered outside the
+		     `hasMapping` guard so the notice is present while the object
+		     loads. -->
+		<AutomationDeprecationNotice />
+
 		<div v-if="hasMapping" class="cn-mapping-detail">
 			<!-- General info card -->
 			<section class="cn-mapping-detail__card">
@@ -162,6 +171,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from './MappingRulesEditor.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
@@ -176,6 +186,7 @@ export default {
 	name: 'MappingDetailPage',
 
 	components: {
+		AutomationDeprecationNotice,
 		CnDetailPage,
 		MappingRulesEditor,
 		MappingResultPanel,

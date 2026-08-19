@@ -66,6 +66,8 @@ use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
@@ -80,7 +82,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
-class SourceCallNode implements IFlowNode, IFlowNodeLogActions {
+class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
 
 	/**
 	 * The step type this node answers to.
@@ -257,6 +259,73 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions {
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * The config vocabulary of a source call.
+	 *
+	 * Only `source` is required (validateConfig below enforces that); the rest
+	 * shape the request. Naming the vocabulary is what lets the preflight
+	 * refuse a key this node would silently ignore — and what lets the flow
+	 * editor's step dialog render one field per option instead of a JSON box.
+	 *
+	 * @return array<int, string> The accepted top-level config keys.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configKeys(): array {
+		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'];
+	}//end configKeys()
+
+	/**
+	 * The fields this node is edited through.
+	 *
+	 * `source` is the field that matters most: it is a picker fed by the
+	 * app's OWN sources listing, so an author chooses "CKAN production" by
+	 * name instead of pasting a uuid into a JSON pane. `query`, `headers`
+	 * and `body` are structured values whose shape depends on the source
+	 * being called, and the editor's JSON pane represents them honestly
+	 * where a flat text field would not — so they are deliberately absent.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'source',
+				'label' => $this->l10n->t('Source'),
+				'type' => 'select',
+				'help' => $this->l10n->t('The configured source this step calls. The call inherits its base URL, authentication and rate limits.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/objects/openconnector/source',
+			],
+			[
+				'key' => 'endpoint',
+				'label' => $this->l10n->t('Endpoint'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Path appended to the source\'s base URL. It must stay within the source — a path that escapes it is refused.'),
+			],
+			[
+				'key' => 'method',
+				'label' => $this->l10n->t('Method'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The HTTP verb: GET, POST, PUT, PATCH or DELETE. GET when empty.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->l10n->t('Field to store the response in'),
+				'type' => 'text',
+				'help' => $this->l10n->t('With a field name, the incoming item is preserved and the response is added under it. Empty means the response replaces the item.'),
+			],
+			[
+				'key' => 'concurrency',
+				'label' => $this->l10n->t('Concurrent calls'),
+				'type' => 'number',
+				'help' => $this->l10n->t('How many items are called at once, between 1 and 20. The default of 5 suits most sources; raising it multiplies load on the other side.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
