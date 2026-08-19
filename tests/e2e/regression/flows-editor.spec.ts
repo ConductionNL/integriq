@@ -21,32 +21,9 @@
  * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
  */
 import { expect, test } from '@playwright/test'
-import * as fs from 'fs'
-import * as path from 'path'
 import { expectRouteMatched, gotoAppRoute } from '../support/appRoot.ts'
 
 const RUN_ID = `e2e-ocflow-${Date.now().toString(36)}`
-
-// Whether the INSTALLED library carries the consolidated editor (toolbar +
-// seeded start node). Feature-detected on the source the bundle was built
-// from, not on a version number: the transition window installs 2.3.x from
-// npm while dev instances may run a synced pre-release tree, and a version
-// string cannot tell those apart. Self-clears on the lockfile bump.
-const NEW_EDITOR = (() => {
-	try {
-		return fs
-			.readFileSync(
-				path.resolve(
-					__dirname,
-					'../../../node_modules/@conduction/nextcloud-vue/src/components/CnFlowDetail/CnFlowDetail.vue',
-				),
-				'utf8',
-			)
-			.includes('cn-flow-detail__toolbar')
-	} catch {
-		return false
-	}
-})()
 
 // Flows persist in OpenRegister's one flow store; cleanup goes to its API.
 // `OCS-APIRequest` is what lets an API call through the CSRF check that a
@@ -83,10 +60,6 @@ test.describe('the Flows surface', () => {
 	test('a new flow is the SAME editor holding only a starting point', async ({
 		page,
 	}) => {
-		test.skip(
-			!NEW_EDITOR,
-			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
-		)
 		await gotoAppRoute(page, '/flows/new')
 		await expectRouteMatched(page, '/flows/new')
 
@@ -120,10 +93,6 @@ test.describe('the Flows surface', () => {
 		page,
 		request,
 	}) => {
-		test.skip(
-			!NEW_EDITOR,
-			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
-		)
 		await gotoAppRoute(page, '/flows/new')
 		await expectRouteMatched(page, '/flows/new')
 

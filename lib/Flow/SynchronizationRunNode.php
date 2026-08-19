@@ -70,6 +70,7 @@ use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -83,7 +84,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-4-synchronizationrunnode-with-bounded-fan-out-seed-data-and-a-live-end-to-end-run
  */
-class SynchronizationRunNode implements IFlowNode {
+class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys {
 
 	/**
 	 * The step type this node answers to.
@@ -221,6 +222,22 @@ class SynchronizationRunNode implements IFlowNode {
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * The config vocabulary of a synchronization run.
+	 *
+	 * Only `synchronization` is required (validateConfig below enforces
+	 * that). Naming the vocabulary is what lets the preflight refuse a key
+	 * this node would silently ignore — and what lets the flow editor's step
+	 * dialog render one field per option instead of a JSON box.
+	 *
+	 * @return array<int, string> The accepted top-level config keys.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configKeys(): array {
+		return ['synchronization', 'force', 'output', 'maxItems', 'onError'];
+	}//end configKeys()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.

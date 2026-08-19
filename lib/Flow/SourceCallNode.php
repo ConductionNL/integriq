@@ -66,6 +66,7 @@ use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
@@ -80,7 +81,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
-class SourceCallNode implements IFlowNode, IFlowNodeLogActions {
+class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeLogActions {
 
 	/**
 	 * The step type this node answers to.
@@ -257,6 +258,22 @@ class SourceCallNode implements IFlowNode, IFlowNodeLogActions {
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * The config vocabulary of a source call.
+	 *
+	 * Only `source` is required (validateConfig below enforces that); the rest
+	 * shape the request. Naming the vocabulary is what lets the preflight
+	 * refuse a key this node would silently ignore — and what lets the flow
+	 * editor's step dialog render one field per option instead of a JSON box.
+	 *
+	 * @return array<int, string> The accepted top-level config keys.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configKeys(): array {
+		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'];
+	}//end configKeys()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
