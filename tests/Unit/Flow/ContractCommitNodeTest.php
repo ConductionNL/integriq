@@ -126,7 +126,7 @@ class ContractCommitNodeTest extends TestCase {
 	 */
 	public function testConfigVocabularyIsPinned(): void {
 		$this->assertSame(
-			['synchronization', 'contractPosition', 'targetIdPosition', 'onError'],
+			['synchronization', 'contractPosition', 'targetIdPosition', 'targetHashPosition', 'onError'],
 			$this->node->configKeys()
 		);
 
@@ -426,6 +426,210 @@ class ContractCommitNodeTest extends TestCase {
 		$this->assertTrue($out[1]['json']['contract']['committed']);
 
 	}//end testUpdateWithoutContractUuidContinuesWithErrorState()
+
+	/**
+	 * An empty `targetHashPosition` is rejected at save, like its siblings.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsEmptyTargetHashPosition(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/targetHashPosition/');
+
+		$this->node->validateConfig(['synchronization' => 'demo-sync', 'targetHashPosition' => ' ']);
+
+	}//end testValidateRejectsEmptyTargetHashPosition()
+
+	/**
+	 * With a `targetHashPosition` set, the committed contract carries the
+	 * legacy engine's hash of the MAPPED object — and nothing else.
+	 *
+	 * The expected value is built the way `SynchronizationService::updateTarget()`
+	 * builds it: `md5(serialize(...))` over the value AS IT STANDS. The test
+	 * also pins that the recipe does NOT key-sort, by asserting the stored hash
+	 * differs from the sorted variant — without that second assertion the first
+	 * one passes for either recipe, and the whole point is byte parity with
+	 * contracts the legacy engine wrote.
+	 *
+	 * @return void
+	 */
+	public function testTargetHashIsTheLegacyHashOfTheMappedObject(): void {
+		$this->givenOwner();
+
+		// Deliberately NOT in key order, so sorted and unsorted differ.
+		$mapped = ['title' => 'A tender', 'cycle' => '8.5', 'archived' => false];
+		$sorted = $mapped;
+		ksort($sorted);
+
+		$batches = [];
+		$this->contractService->expects($this->once())
+			->method('persistBulk')
+			->willReturnCallback(
+				static function (array $contracts) use (&$batches): array {
+					$batches[] = $contracts;
+
+					return $contracts;
+				}
+			);
+
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'target' => $mapped,
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+			],
+			[
+				'synchronization' => 'demo-sync',
+				'targetHashPosition' => 'target',
+			],
+			$this->context()
+		);
+
+		$this->assertSame(md5(serialize($mapped)), $batches[0][0]['targetHash']);
+		$this->assertNotSame(md5(serialize($sorted)), $batches[0][0]['targetHash']);
+
+	}//end testTargetHashIsTheLegacyHashOfTheMappedObject()
+
+	/**
+	 * A nested `targetHashPosition` resolves, and hashing the WRITTEN object
+	 * instead of the mapped one is what the key exists to avoid.
+	 *
+	 * The second assertion is the guard rail: a written object carries
+	 * `@self.updated`, so its hash moves on every pass. Pinning that the two
+	 * hashes differ keeps a future edit from quietly repointing the path at
+	 * `written` and reintroducing the never-skips defect.
+	 *
+	 * @return void
+	 */
+	public function testNestedPathResolvesAndDiffersFromTheWrittenObject(): void {
+		$this->givenOwner();
+
+		$mapped = ['title' => 'A tender'];
+		$written = ['title' => 'A tender', '@self' => ['updated' => '2026-08-19T17:27:50+00:00']];
+
+		$batches = [];
+		$this->contractService->expects($this->once())
+			->method('persistBulk')
+			->willReturnCallback(
+				static function (array $contracts) use (&$batches): array {
+					$batches[] = $contracts;
+
+					return $contracts;
+				}
+			);
+
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'payload' => ['mapped' => $mapped],
+						'written' => $written,
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+			],
+			[
+				'synchronization' => 'demo-sync',
+				'targetHashPosition' => 'payload.mapped',
+			],
+			$this->context()
+		);
+
+		$this->assertSame(md5(serialize($mapped)), $batches[0][0]['targetHash']);
+		$this->assertNotSame(md5(serialize($written)), $batches[0][0]['targetHash']);
+
+	}//end testNestedPathResolvesAndDiffersFromTheWrittenObject()
+
+	/**
+	 * No `targetHashPosition` means no `targetHash` key at all — the behaviour
+	 * every flow authored before this key existed keeps.
+	 *
+	 * @return void
+	 */
+	public function testNoTargetHashPositionCommitsNoTargetHash(): void {
+		$this->givenOwner();
+
+		$batches = [];
+		$this->contractService->expects($this->once())
+			->method('persistBulk')
+			->willReturnCallback(
+				static function (array $contracts) use (&$batches): array {
+					$batches[] = $contracts;
+
+					return $contracts;
+				}
+			);
+
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'target' => ['title' => 'A tender'],
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+			],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+		$this->assertArrayNotHasKey('targetHash', $batches[0][0]);
+
+	}//end testNoTargetHashPositionCommitsNoTargetHash()
+
+	/**
+	 * A path that resolves to nothing, or to a scalar, stores NO hash.
+	 *
+	 * Storing `md5(serialize(null))` would be a constant every item shares, so
+	 * the match step would read "unchanged" off objects it has never compared.
+	 * Omitting the key is the honest answer.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvableOrScalarTargetHashPathStoresNoHash(): void {
+		$this->givenOwner();
+
+		$batches = [];
+		$this->contractService->expects($this->once())
+			->method('persistBulk')
+			->willReturnCallback(
+				static function (array $contracts) use (&$batches): array {
+					$batches[] = $contracts;
+
+					return $contracts;
+				}
+			);
+
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+				[
+					'json' => [
+						'uuid' => 'obj-2',
+						'target' => 'not-an-array',
+						'contract' => ['outcome' => 'create', 'originId' => 'o-2', 'originHash' => 'h-2'],
+					],
+				],
+			],
+			['synchronization' => 'demo-sync', 'targetHashPosition' => 'target'],
+			$this->context()
+		);
+
+		$this->assertArrayNotHasKey('targetHash', $batches[0][0]);
+		$this->assertArrayNotHasKey('targetHash', $batches[0][1]);
+
+	}//end testUnresolvableOrScalarTargetHashPathStoresNoHash()
 
 	/**
 	 * A run context naming an owner and a step.

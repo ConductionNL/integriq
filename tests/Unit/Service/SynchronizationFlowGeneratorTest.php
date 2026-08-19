@@ -405,6 +405,38 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 	}//end testTargetUuidIsComputedWithAnEmptyDefault()
 
 	/**
+	 * The commit step hashes the MAPPED object, and the three keys agree.
+	 *
+	 * `map` writes its result under `target`, `write` reads `{{target.…}}`, and
+	 * `commit` hashes `target`. If those ever disagree the flow still validates
+	 * and still runs — it just writes empty objects, or hashes something that
+	 * changes every pass — so the agreement is asserted here rather than left
+	 * to a reader comparing three node configs by eye.
+	 *
+	 * `written` is asserted NOT to be the hash source on purpose: it carries
+	 * server-assigned `@self` fields including `updated`, so hashing it would
+	 * produce a fresh hash every run and `skip` would stay unreachable.
+	 *
+	 * @return void
+	 */
+	public function testCommitStepHashesTheMappedObjectNotTheWrittenOne(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$mapOutput = $this->node(flow: $flow, id: 'map')['config']['output'];
+		$commit = $this->node(flow: $flow, id: 'commit')['config'];
+
+		$this->assertSame('target', $mapOutput);
+		$this->assertSame($mapOutput, $commit['targetHashPosition']);
+		$this->assertSame('written.uuid', $commit['targetIdPosition']);
+		$this->assertNotSame('written', $commit['targetHashPosition']);
+
+		foreach ($this->node(flow: $flow, id: 'write')['config']['fields'] as $template) {
+			$this->assertStringStartsWith('{{' . $mapOutput . '.', (string)$template);
+		}
+
+	}//end testCommitStepHashesTheMappedObjectNotTheWrittenOne()
+
+	/**
 	 * The contract step reads the origin id where the legacy engine reads it.
 	 *
 	 * @return void
