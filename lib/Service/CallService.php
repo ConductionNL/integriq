@@ -3388,28 +3388,7 @@ class CallService {
 		}
 
 		if ($changed === true) {
-			// System context (ocon#147) — see checkAndResetRateLimit(): the engine writes
-			// back to its own admin-owned source config on behalf of any caller.
-			$this->objectService->saveObject(
-				object: $sourceData,
-				register: 'openconnector',
-				schema: 'source',
-				uuid: $source->getUuid(),
-				_rbac: false,
-				_multitenancy: false
-			);
-
-			// ...and keep the ENTITY we were handed in step with what was just
-			// persisted. It carried the pre-decrement `rateLimitRemaining`, so the
-			// only way a caller saw the new value was to throw this object away and
-			// re-read the row — which is exactly what the fetch loop did, once per
-			// page, for every source whether rate-limited or not.
-			//
-			// Without this line an in-memory source cannot be reused: cache it and
-			// the counter silently stops advancing, which is a rate limiter that
-			// never trips. With it, the object is as current as the database, and
-			// re-reading buys nothing.
-			$source->setObject($sourceData);
+			$this->persistRateLimitState(source: $source, sourceData: $sourceData);
 		}
 
 		if ($rateLimitLimit !== null || $rateLimitWindow !== null) {
@@ -3428,6 +3407,48 @@ class CallService {
 
 		return $headers;
 	}//end sourceRateLimit()
+
+	/**
+	 * Write the recomputed rate-limit counters back to the source, in both places.
+	 *
+	 * Extracted from {@see self::sourceRateLimit()} — persisting is a separate
+	 * concern from deriving, and sourceRateLimit() had grown past the
+	 * ExcessiveMethodLength threshold. No behaviour change: it is called on
+	 * exactly the same `$changed === true` condition, with the same arguments.
+	 *
+	 * @param ObjectEntity $source     The source entity handed to us by the caller.
+	 * @param array        $sourceData The recomputed source data to persist.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function persistRateLimitState(ObjectEntity $source, array $sourceData): void {
+		// System context (ocon#147) — see checkAndResetRateLimit(): the engine writes
+		// back to its own admin-owned source config on behalf of any caller.
+		$this->objectService->saveObject(
+			object: $sourceData,
+			register: 'openconnector',
+			schema: 'source',
+			uuid: $source->getUuid(),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		// ...and keep the ENTITY we were handed in step with what was just
+		// persisted. It carried the pre-decrement `rateLimitRemaining`, so the
+		// only way a caller saw the new value was to throw this object away and
+		// re-read the row — which is exactly what the fetch loop did, once per
+		// page, for every source whether rate-limited or not.
+		//
+		// Without this line an in-memory source cannot be reused: cache it and
+		// the counter silently stops advancing, which is a rate limiter that
+		// never trips. With it, the object is as current as the database, and
+		// re-reading buys nothing.
+		$source->setObject($sourceData);
+	}//end persistRateLimitState()
 
 	/**
 	 * Uses Adbar Dot to place the values of keys with a dot in it in the $config array

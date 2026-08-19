@@ -587,10 +587,10 @@ class NotificatiesSubscriberService {
 		$suffix = self::typeSuffix(type: (string)($eventData['type'] ?? ''));
 		$actionName = (string)($actionMap[$suffix] ?? $suffix);
 
-		$staticCharacteristics = (array)($action['characteristics'] ?? []);
+		$baseCharacteristics = (array)($action['characteristics'] ?? []);
 		$eventCharacteristics = (array)($dot->get('characteristics') ?? []);
 		// Event-supplied values win on key collision (REQ-005).
-		$characteristics = array_merge($staticCharacteristics, $eventCharacteristics);
+		$characteristics = array_merge($baseCharacteristics, $eventCharacteristics);
 
 		// STATUTORY WIRE SHAPE — these keys are the ZGW Notificaties API
 		// contract, not our vocabulary. `$body` is POSTed verbatim as JSON by

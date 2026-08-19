@@ -3046,13 +3046,17 @@ class SynchronizationService {
 		// OPEN THE PROGRESS RECORD BEFORE ANY WORK. The run-log above is
 		// in-memory until the very end and its schema is appendOnly+immutable,
 		// so until this row exists the run is invisible for its whole duration.
-		$this->runProgressService?->start(
-			synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? ''),
-			// Opt-out per synchronization. Defaults ON: a run nobody can watch
-			// is the defect being fixed, so invisibility should be the choice,
-			// not the default. Also the arm-switch for the overhead control.
-			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true)
-		);
+		// Opt-out per synchronization. Defaults ON: a run nobody can watch is the
+		// defect being fixed, so invisibility should be the choice, not the
+		// default. Also the arm-switch for the overhead control. The decision is
+		// made HERE rather than passed in as a flag — `start()` no longer takes
+		// one; skipping the call leaves `runUuid` null, and `tick()`/`finish()`
+		// already no-op on that, so an opted-out run records nothing either way.
+		if ((bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true) === true) {
+			$this->runProgressService?->start(
+				synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? '')
+			);
+		}
 
 		// Handle full extern-to-intern sync.
 		$log = $this->synchronizeExternToIntern(
@@ -4461,31 +4465,7 @@ class SynchronizationService {
 
 				$targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
-				// Bulk path: hand the row to the run's write buffer instead of
-				// writing it here, so a whole page of objects goes to the database
-				// as one batched upsert. Measured on a 374-record GitHub sync:
-				// 374 target writes at ~20-25ms each is 8.8s of a 16.1s run, and
-				// every one of them re-resolves the same register and schema.
-				//
-				// Three conditions have to hold, and each of them is a thing that
-				// reads the object back before the buffer would be flushed:
-				//
-				// - `$this->bufferWrites` — only the batch loop in
-				// synchronizeExternToIntern() sets it, and it always flushes
-				// afterwards. Anywhere else a buffered write has no flush to
-				// reach and would simply be dropped.
-				// - no `subObjects` — that branch calls renderEntity() on the
-				// returned entity a few lines below, which needs a real write.
-				// - no `actions` — the `after` rules in synchronizeContract() run
-				// against `targetId` and may fetch the object. This is the same
-				// condition that already gates the pre-rules contract persist, so
-				// a synchronization WITH rules keeps today's behaviour end to end
-				// rather than being half-buffered.
-				$canBufferWrite = ($this->bufferWrites === true
-					&& isset($sourceConfig['subObjects']) === false
-					&& empty($synchronization['actions'] ?? []) === true);
-
-				if ($canBufferWrite === true) {
+				if ($this->canBufferTargetWrite(sourceConfig: $sourceConfig, synchronization: $synchronization) === true) {
 					return $this->bufferTargetSave(
 						synchronizationContract: $synchronizationContract,
 						synchronization: $synchronization,
@@ -4497,74 +4477,15 @@ class SynchronizationService {
 					);
 				}
 
-				// `events: false` on the synchronization runs the write inside
-				// OpenRegister's SystemOperationContext, which is what actually
-				// withholds the object lifecycle event — MagicMapper checks that
-				// context, and it is the mechanism config imports and repair steps
-				// already use. saveObject()'s `silent` flag is NOT the lever here:
-				// it gates the audit row and inverse-relation work in SaveObject,
-				// while the ObjectCreated/Updated dispatch lives a layer lower in
-				// MagicMapper and never sees it. Measured that mistake — writes
-				// stayed at exactly 1,090 with `silent` set.
-				//
-				// Why it is worth a switch at all: a THIRD of every sync write on
-				// this instance was DocuDesk's MetadataService::saveEnrichedMetadata
-				// reacting to the save event and writing its own object per record.
-				//
-				// Defaults to events ON, so a sync whose objects must trigger
-				// downstream flows is untouched.
-				// `logs: false` skips the object's audit row; `validation: false`
-				// skips re-validating a row against its schema. Both default to
-				// today's behaviour and are per-synchronization, because the
-				// trade-off is per-synchronization: a bulk backfill of rows a
-				// source has already validated is a different proposition from a
-				// user-facing write, and only the author of the sync knows which
-				// one this is.
-				$writeTarget = fn (): mixed => $objectService->saveObject(
+				return $this->finishTargetSave(
+					synchronizationContract: $synchronizationContract,
+					synchronization: $synchronization,
+					sourceConfig: $sourceConfig,
+					targetObject: $targetObject,
 					register: $register,
 					schema: $schema,
-					object: $targetObject,
-					uuid: ($synchronizationContract['targetId'] ?? null),
-					silent: (($sourceConfig['logs'] ?? true) === false),
-					_validation: (($sourceConfig['validation'] ?? true) !== false)
+					hadTargetId: $hadTargetId
 				);
-
-				if (($sourceConfig['events'] ?? true) === false) {
-					$target = \OCA\OpenRegister\Service\SystemOperationContext::run($writeTarget);
-				} else {
-					$target = $writeTarget();
-				}
-				// Get the id form the target object.
-				$synchronizationContract['targetId'] = $target->getUuid();
-
-				// NOTE: Orphan cleanup is handled by the fetch-file rule path
-				// (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
-				// The duplicate per-attachment cleanup that used to live here was
-				// removed after the fetch-rule path was verified.
-				// Handle sub-objects synchronization if sourceConfig is defined.
-				if (isset($sourceConfig['subObjects']) === true) {
-					$targetObject = $objectService->renderEntity($target, ['all']);
-					$this->updateContractsForSubObjects(
-						subObjectsConfig: $sourceConfig['subObjects'],
-						synchronizationId: ($synchronization['id'] ?? null),
-						targetObject: $targetObject
-					);
-				}
-
-				// Set target last action based on whether we're creating or updating.
-				// Keyed on the contract's targetId BEFORE the write: the check
-				// used to run afterwards, against a field assigned from the saved
-				// entity a dozen lines up, so it was true for every record and the
-				// 'create' branch was unreachable. Every synchronization on this
-				// instance reported `targetLastAction: update`, including the ones
-				// that had just created the object — which is what the flow node's
-				// `outcome` and the contract provider both read.
-				if ($hadTargetId === true) {
-					$synchronizationContract['targetLastAction'] = 'update';
-				} else {
-					$synchronizationContract['targetLastAction'] = 'create';
-				}
-				break;
 			case 'delete':
 				if (empty($synchronizationContract['targetId'] ?? null) === false) {
 					$objectService->deleteObject(uuid: (string)$synchronizationContract['targetId']);
@@ -4577,6 +4498,227 @@ class SynchronizationService {
 
 		return $synchronizationContract;
 	}//end updateTargetOpenRegister()
+
+	/**
+	 * Do the inline (non-buffered) target write and close out the contract.
+	 *
+	 * The counterpart of {@see self::bufferTargetSave()} — same inputs, same
+	 * returned contract shape, one goes to the write buffer and this one to the
+	 * database now. Extracted from {@see self::updateTargetOpenRegister()}
+	 * unchanged, which keeps that method inside ExcessiveMethodLength and puts
+	 * the two write paths side by side under names that say which is which.
+	 *
+	 * ⚠️ `$targetObject` stays BY REFERENCE — {@see self::reconcileSubObjectContracts()}
+	 * replaces it with the rendered entity and {@see self::updateTarget()}'s
+	 * caller sees that.
+	 *
+	 * @param array      $synchronizationContract The contract being updated.
+	 * @param array      $synchronization         The synchronization being run.
+	 * @param array      $sourceConfig            The dot-expanded source config.
+	 * @param array|null $targetObject            The mapped object, BY REFERENCE.
+	 * @param string     $register                The target register id.
+	 * @param string     $schema                  The target schema id.
+	 * @param bool       $hadTargetId             Whether the contract already pointed at a
+	 *                                            target BEFORE this write.
+	 *
+	 * @return array The contract, with `targetId` and `targetLastAction` set.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function finishTargetSave(
+		array $synchronizationContract,
+		array $synchronization,
+		array $sourceConfig,
+		?array &$targetObject,
+		string $register,
+		string $schema,
+		bool $hadTargetId,
+	): array {
+		$target = $this->writeTargetObject(
+			targetObject: $targetObject,
+			sourceConfig: $sourceConfig,
+			register: $register,
+			schema: $schema,
+			uuid: ($synchronizationContract['targetId'] ?? null)
+		);
+
+		// Get the id form the target object.
+		$synchronizationContract['targetId'] = $target->getUuid();
+
+		$this->reconcileSubObjectContracts(
+			sourceConfig: $sourceConfig,
+			synchronization: $synchronization,
+			target: $target,
+			targetObject: $targetObject
+		);
+
+		// Set target last action based on whether we're creating or updating.
+		// Keyed on the contract's targetId BEFORE the write: the check used to
+		// run afterwards, against a field assigned from the saved entity a dozen
+		// lines up, so it was true for every record and the 'create' branch was
+		// unreachable. Every synchronization on this instance reported
+		// `targetLastAction: update`, including the ones that had just created
+		// the object — which is what the flow node's `outcome` and the contract
+		// provider both read.
+		$synchronizationContract['targetLastAction'] = 'create';
+		if ($hadTargetId === true) {
+			$synchronizationContract['targetLastAction'] = 'update';
+		}
+
+		return $synchronizationContract;
+	}//end finishTargetSave()
+
+	/**
+	 * Re-point the sub-object contracts at the ids the target write just assigned.
+	 *
+	 * A no-op unless the synchronization declares `subObjects`. When it does, the
+	 * saved entity is rendered with `['all']` first, because the sub-object ids
+	 * only exist after the write.
+	 *
+	 * ⚠️ `$targetObject` stays BY REFERENCE all the way from
+	 * {@see self::updateTarget()}: the render replaces the caller's array, and a
+	 * by-value parameter here would silently strip that. Extracted from
+	 * {@see self::updateTargetOpenRegister()} otherwise unchanged.
+	 *
+	 * NOTE: Orphan cleanup is handled by the fetch-file rule path
+	 * (see SynchronizationService::fetchAndRegisterFileFromEndpoint). The
+	 * duplicate per-attachment cleanup that used to live here was removed after
+	 * the fetch-rule path was verified.
+	 *
+	 * @param array      $sourceConfig    The dot-expanded source config.
+	 * @param array      $synchronization The synchronization being run.
+	 * @param mixed      $target          The entity the target write returned.
+	 * @param array|null $targetObject    The mapped object, BY REFERENCE.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function reconcileSubObjectContracts(
+		array $sourceConfig,
+		array $synchronization,
+		mixed $target,
+		?array &$targetObject,
+	): void {
+		if (isset($sourceConfig['subObjects']) === false) {
+			return;
+		}
+
+		$targetObject = $this->orObjectService->renderEntity($target, ['all']);
+		$this->updateContractsForSubObjects(
+			subObjectsConfig: $sourceConfig['subObjects'],
+			synchronizationId: ($synchronization['id'] ?? null),
+			targetObject: $targetObject
+		);
+	}//end reconcileSubObjectContracts()
+
+	/**
+	 * Write one mapped row to its OpenRegister target, honouring the sync's
+	 * events/logs/validation policy.
+	 *
+	 * Extracted from {@see self::updateTargetOpenRegister()} verbatim, including
+	 * the closure: the `events: false` branch has to be able to run the SAME
+	 * write inside `SystemOperationContext`, which is what actually withholds the
+	 * object lifecycle event.
+	 *
+	 * ⚠️ `$this->orObjectService` is read here rather than passed in — it is the
+	 * same object the caller held in a local, and threading it through as an
+	 * argument would only add a parameter to a method the ExcessiveParameterList
+	 * ceiling also watches.
+	 *
+	 * @param array       $targetObject The mapped object to write.
+	 * @param array       $sourceConfig The dot-expanded source config.
+	 * @param string      $register     The target register id.
+	 * @param string      $schema       The target schema id.
+	 * @param string|null $uuid         The contract's existing targetId, if any.
+	 *
+	 * @return mixed The saved OpenRegister entity.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function writeTargetObject(
+		array $targetObject,
+		array $sourceConfig,
+		string $register,
+		string $schema,
+		?string $uuid,
+	): mixed {
+		// `events: false` on the synchronization runs the write inside
+		// OpenRegister's SystemOperationContext, which is what actually
+		// withholds the object lifecycle event — MagicMapper checks that
+		// context, and it is the mechanism config imports and repair steps
+		// already use. saveObject()'s `silent` flag is NOT the lever here:
+		// it gates the audit row and inverse-relation work in SaveObject,
+		// while the ObjectCreated/Updated dispatch lives a layer lower in
+		// MagicMapper and never sees it. Measured that mistake — writes
+		// stayed at exactly 1,090 with `silent` set.
+		//
+		// Why it is worth a switch at all: a THIRD of every sync write on
+		// this instance was DocuDesk's MetadataService::saveEnrichedMetadata
+		// reacting to the save event and writing its own object per record.
+		//
+		// Defaults to events ON, so a sync whose objects must trigger
+		// downstream flows is untouched.
+		// `logs: false` skips the object's audit row; `validation: false`
+		// skips re-validating a row against its schema. Both default to
+		// today's behaviour and are per-synchronization, because the
+		// trade-off is per-synchronization: a bulk backfill of rows a
+		// source has already validated is a different proposition from a
+		// user-facing write, and only the author of the sync knows which
+		// one this is.
+		$writeTarget = fn (): mixed => $this->orObjectService->saveObject(
+			register: $register,
+			schema: $schema,
+			object: $targetObject,
+			uuid: $uuid,
+			silent: (($sourceConfig['logs'] ?? true) === false),
+			_validation: (($sourceConfig['validation'] ?? true) !== false)
+		);
+
+		if (($sourceConfig['events'] ?? true) === false) {
+			return \OCA\OpenRegister\Service\SystemOperationContext::run($writeTarget);
+		}
+
+		return $writeTarget();
+	}//end writeTargetObject()
+
+	/**
+	 * May this target write go to the run's write buffer instead of the database?
+	 *
+	 * Bulk path: hand the row to the run's write buffer instead of writing it
+	 * inline, so a whole page of objects goes to the database as one batched
+	 * upsert. Measured on a 374-record GitHub sync: 374 target writes at
+	 * ~20-25ms each is 8.8s of a 16.1s run, and every one of them re-resolves
+	 * the same register and schema.
+	 *
+	 * Three conditions have to hold, and each of them is a thing that reads the
+	 * object back before the buffer would be flushed:
+	 *
+	 * - `$this->bufferWrites` — only the batch loop in
+	 *   synchronizeExternToIntern() sets it, and it always flushes afterwards.
+	 *   Anywhere else a buffered write has no flush to reach and would simply be
+	 *   dropped.
+	 * - no `subObjects` — that branch calls renderEntity() on the returned
+	 *   entity, which needs a real write.
+	 * - no `actions` — the `after` rules in synchronizeContract() run against
+	 *   `targetId` and may fetch the object. This is the same condition that
+	 *   already gates the pre-rules contract persist, so a synchronization WITH
+	 *   rules keeps today's behaviour end to end rather than being half-buffered.
+	 *
+	 * Extracted from {@see self::updateTargetOpenRegister()} unchanged.
+	 *
+	 * @param array $sourceConfig    The dot-expanded source config.
+	 * @param array $synchronization The synchronization being run.
+	 *
+	 * @return bool True when the row may be buffered.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function canBufferTargetWrite(array $sourceConfig, array $synchronization): bool {
+		return ($this->bufferWrites === true
+			&& isset($sourceConfig['subObjects']) === false
+			&& empty($synchronization['actions'] ?? []) === true);
+	}//end canBufferTargetWrite()
 
 	/**
 	 * Queue a mapped target row for the run's bulk write instead of writing it now.
@@ -5859,6 +6001,22 @@ class SynchronizationService {
 	 * This method eliminates the recursive overhead of the original implementation
 	 * and uses a simple iterative approach that's much faster and more reliable.
 	 *
+	 * TWO REQ-009 INVARIANTS LIVE IN THE LOOP BELOW, and both are about the
+	 * difference between "the source ended" and "we stopped early":
+	 *
+	 * - **A failed page is checked BEFORE the empty-page check.** A non-2xx or
+	 *   unclassifiable response, or a connect failure, comes back with no
+	 *   objects — so testing emptiness first would treat a
+	 *   failed-and-therefore-empty page exactly like a genuinely empty final
+	 *   page, and report the fetch complete.
+	 * - **Reaching the `maxPages`/`DEFAULT_MAX_PAGES` cap with a next page known
+	 *   to exist is NOT completion.** An unknown amount of the source was never
+	 *   seen, which is exactly as dangerous as a mid-pagination failure.
+	 *
+	 * Both therefore set `complete = false`, which is what blocks the deletion
+	 * pass downstream: a run that stopped early must never be read as "the source
+	 * no longer has these records".
+	 *
 	 * @param array $source The data source configuration
 	 * @param string $endpoint The API endpoint to fetch from
 	 * @param array $config The request configuration
@@ -5890,60 +6048,14 @@ class SynchronizationService {
 		$complete = true;
 		$failureReason = null;
 
-		// Both of these are per-fetch state on a SHARED service instance, which
-		// re-enters itself through `synchronization` rules and `followUps`, so
-		// they have to start empty for every paginated fetch.
-		//
-		// Leaving them was not merely untidy. A stale `lastPageFromLink` from a
-		// previous synchronization would stop THIS one early — silently dropping
-		// pages, which is the failure REQ-009 exists to prevent — and a
-		// `pagePrefetch` left populated by an aborted run would both block this
-		// run's fan-out (it refuses to issue a second one) and serve it another
-		// synchronization's cached pages.
-		$this->lastPageFromLink = null;
-		$this->pagePrefetch = [];
-		$this->predictedLastPage = null;
-
-		// Predict the page count from the last run's contracts so page ONE can
-		// go out concurrently with the rest instead of being fetched alone to
-		// discover how many pages there are. Skipped for a `next`-link source,
-		// whose pages are only reachable one at a time by construction.
-		if ($usesNextEndpoint !== true) {
-			$dotSourceConfig = $this->callService->applyConfigDot($sourceConfig);
-			$this->predictedLastPage = $this->predictLastPage(
-				synchronization: $synchronization,
-				sourceConfig: $dotSourceConfig
-			);
-
-			// `$currentPage >= 1` because a prefetched page is matched by the page
-			// number in the request config, and page 0 is that lookup's "no
-			// pagination info" sentinel. A source numbering from zero would fetch
-			// its first page twice, so it keeps the sequential path instead.
-			if ($this->predictedLastPage !== null && $this->predictedLastPage > 1 && $currentPage >= 1) {
-				// Page one's request has to be built the SAME way the fan-out
-				// builds pages two onward, or the two will not agree on the cache
-				// key and page one gets fetched a second time. This is the only
-				// behaviour change: the first request now carries an explicit
-				// page number where it previously relied on the source's default.
-				// For any source that paginates at all these are the same page —
-				// and only a synchronization that has already run successfully
-				// reaches this branch, so the shape is one the source has served
-				// before.
-				$config = $this->getNextPage(
-					config: $config,
-					sourceConfig: $sourceConfig,
-					currentPage: $currentPage
-				);
-
-				$this->prefetchRemainingPages(
-					source: $source,
-					endpoint: $endpoint,
-					config: $config,
-					synchronization: $synchronization,
-					fromPage: $currentPage
-				);
-			}
-		}
+		$config = $this->primePagination(
+			source: $source,
+			endpoint: $endpoint,
+			config: $config,
+			synchronization: $synchronization,
+			currentPage: $currentPage,
+			usesNextEndpoint: $usesNextEndpoint
+		);
 
 		for ($i = 0; $i < $maxPages; $i++) {
 			// Fetch the current page.
@@ -5956,20 +6068,16 @@ class SynchronizationService {
 			$pageObjects = $pageData['objects'];
 			$pageCount++;
 
-			// A failed page (non-2xx/unclassifiable response, or a connect
-			// failure) must never be conflated with a natural end of
-			// pagination — checked BEFORE the empty($pageObjects) check
-			// below, which would otherwise treat a failed-and-therefore-empty
-			// page exactly like a genuinely empty final page (REQ-009).
+			// BEFORE the empty-page check below — see this method's docblock.
 			if (($pageData['failed'] ?? false) === true) {
 				$complete = false;
 				$failureReason = 'page_fetch_failed';
 				break;
 			}
 
-			// If test mode is enabled, return only the first object from the first page.
-			if ($isTest === true && empty($pageObjects) === false) {
-				return ['objects' => [$pageObjects[0]], 'complete' => true, 'failureReason' => null, 'pagesFetched' => $pageCount];
+			$testResult = $this->testModeResult(isTest: $isTest, pageObjects: $pageObjects, pageCount: $pageCount);
+			if ($testResult !== null) {
+				return $testResult;
 			}
 
 			// If no objects found, we've reached the end.
@@ -5980,38 +6088,17 @@ class SynchronizationService {
 			// Add objects to our collection.
 			$allObjects = array_merge($allObjects, $pageObjects);
 
-			// The source told us how many pages it has, so stop on the last one
-			// rather than spending a whole extra request discovering that page
-			// N+1 is empty. Only when the header was present — without it this is
-			// null and the empty-page rule above still decides.
-			if ($this->lastPageFromLink !== null && $pageCount >= $this->lastPageFromLink) {
+			if ($this->reachedLinkedLastPage(pageCount: $pageCount) === true) {
 				break;
 			}
 
-			// Page one told us the total, so the rest can go out together instead
-			// of one round trip at a time. Fetching was 58% of a 374-record sync
-			// after the write-side work — 4 GitHub pages at ~2.5s each, latency
-			// the engine was paying serially for no reason.
-			//
-			// Only fans out when the count is KNOWN. A source paginating by
-			// `next` link or by "page until empty" cannot be fanned out — its
-			// page count is unknowable until the end — and falls through to the
-			// sequential path untouched.
-			$this->prefetchRemainingPages(
-				source: $source,
-				endpoint: $currentEndpoint,
-				config: $config,
-				synchronization: $synchronization,
-				fromPage: ($pageCount + 1)
-			);
-
-			// Determine the next page URL/config.
-			$nextInfo = $this->getNextPageInfo(
+			$nextInfo = $this->advanceToNextPage(
 				source: $source,
 				currentEndpoint: $currentEndpoint,
 				config: $config,
 				synchronization: $synchronization,
 				currentPage: $currentPage,
+				pageCount: $pageCount,
 				result: $pageData['result'],
 				usesNextEndpoint: $usesNextEndpoint
 			);
@@ -6021,62 +6108,286 @@ class SynchronizationService {
 				break;
 			}
 
-			// Update for next iteration.
 			$currentEndpoint = $nextInfo['endpoint'];
 			$config = $nextInfo['config'];
 			$currentPage = $nextInfo['page'];
 			$usesNextEndpoint = $nextInfo['usesNextEndpoint'];
 
-			// Update synchronization current page — persisted only when something
-			// will read it back ({@see self::persistPageCursor()}, which carries
-			// the measurements).
-			$synchronization['currentPage'] = $currentPage;
-			$this->persistPageCursor(synchronization: $synchronization, source: $source);
-
-			// A next page is known to exist, but this was the last iteration
-			// the DEFAULT_MAX_PAGES safety cap allows — an unknown amount of
-			// the source was never seen, which is exactly as dangerous as a
-			// mid-pagination failure (REQ-009).
+			// A next page exists but the page budget is spent — see the docblock.
 			if (($i + 1) >= $maxPages) {
 				$complete = false;
 				$failureReason = 'max_pages_reached';
 			}
 
-			// A CEILING ON MEMORY, not just on pages.
-			//
-			// `maxPages` bounds how many REQUESTS a run makes; nothing bounded how
-			// much it holds. A crawl accumulates every fetched page in memory
-			// before the item loop starts, so a source with large records reaches
-			// the PHP memory limit while still well inside its page budget — and
-			// what happens then is a fatal, mid-run, with no log line and no
-			// synchronization_log row, because the process dies before writing
-			// either. MEASURED 2026-08-14: a 19,822-object crawl held 1.4 GB
-			// resident on a container with 44 other apps sharing it.
-			//
-			// Stopping deliberately is strictly better than being killed. It uses
-			// the SAME `complete = false` path as the page cap, which already
-			// blocks the deletion pass — so a run that stopped early can never be
-			// read as "the source no longer has these records".
-			if ($this->exceededMemoryCeiling(sourceConfig: $sourceConfig) === true) {
+			if ($this->stopForMemoryCeiling(sourceConfig: $sourceConfig, pagesFetched: ($i + 1)) === true) {
 				$complete = false;
 				$failureReason = 'memory_ceiling_reached';
-				$this->logger->warning(
-					'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
-					. 'limit is in use. The pages already fetched are processed; deletion is '
-					. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
-					. 'page size, or narrow the query.',
-					[
-						'pages' => ($i + 1),
-						'used' => round(memory_get_usage(true) / 1048576),
-						'limit' => round($this->phpMemoryLimitBytes() / 1048576),
-					]
-				);
 				break;
 			}
 		}//end for
 
 		return ['objects' => $allObjects, 'complete' => $complete, 'failureReason' => $failureReason, 'pagesFetched' => $pageCount];
 	}//end fetchAllPagesOptimized()
+
+	/**
+	 * Test mode's early exit: the first object of the first non-empty page.
+	 *
+	 * Extracted from {@see self::fetchAllPagesOptimized()} unchanged — returning
+	 * null for "keep going" is what lets the caller spend one branch here instead
+	 * of two.
+	 *
+	 * @param bool  $isTest      Whether this is a test run.
+	 * @param array $pageObjects The objects the current page returned.
+	 * @param int   $pageCount   Pages fetched so far.
+	 *
+	 * @return array|null The fetch result to return immediately, or null to continue.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function testModeResult(bool $isTest, array $pageObjects, int $pageCount): ?array {
+		if ($isTest === false || empty($pageObjects) === true) {
+			return null;
+		}
+
+		return [
+			'objects' => [$pageObjects[0]],
+			'complete' => true,
+			'failureReason' => null,
+			'pagesFetched' => $pageCount,
+		];
+	}//end testModeResult()
+
+	/**
+	 * Fan out the next window, work out where the next page lives, and record the
+	 * cursor.
+	 *
+	 * Three steps that always ran together at the foot of
+	 * {@see self::fetchAllPagesOptimized()}'s loop, extracted unchanged and in
+	 * the same order:
+	 *
+	 * 1. Page one told us the total, so the rest can go out together instead of
+	 *    one round trip at a time — see {@see self::prefetchRemainingPages()},
+	 *    which no-ops unless the count is KNOWN. A source paginating by `next`
+	 *    link, or by "page until empty", cannot be fanned out and falls through
+	 *    to the sequential path untouched.
+	 * 2. {@see self::getNextPageInfo()} decides whether there IS a next page.
+	 * 3. The cursor is persisted only when something will read it back — see
+	 *    {@see self::persistPageCursor()}, which carries the measurements.
+	 *
+	 * ⚠️ `$synchronization` is BY REFERENCE. `currentPage` is written onto it here
+	 * and the loop passes the same array to the next iteration's fetch; a
+	 * by-value parameter would quietly drop the cursor from every subsequent
+	 * request.
+	 *
+	 * @param array     $source           The data source configuration.
+	 * @param string    $currentEndpoint  The endpoint the current page came from.
+	 * @param array     $config           The current request configuration.
+	 * @param array     $synchronization  The synchronization context, BY REFERENCE.
+	 * @param int       $currentPage      The current page number.
+	 * @param int       $pageCount        Pages fetched so far.
+	 * @param array     $result           The decoded result of the current page.
+	 * @param bool|null $usesNextEndpoint Whether the API uses next-endpoint URLs.
+	 *
+	 * @return array|null The next page's endpoint/config/page/usesNextEndpoint,
+	 *                    or null when there is no next page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function advanceToNextPage(
+		array $source,
+		string $currentEndpoint,
+		array $config,
+		array &$synchronization,
+		int $currentPage,
+		int $pageCount,
+		array $result,
+		?bool $usesNextEndpoint,
+	): ?array {
+		$this->prefetchRemainingPages(
+			source: $source,
+			endpoint: $currentEndpoint,
+			config: $config,
+			synchronization: $synchronization,
+			fromPage: ($pageCount + 1)
+		);
+
+		$nextInfo = $this->getNextPageInfo(
+			source: $source,
+			currentEndpoint: $currentEndpoint,
+			config: $config,
+			synchronization: $synchronization,
+			currentPage: $currentPage,
+			result: $result,
+			usesNextEndpoint: $usesNextEndpoint
+		);
+
+		if ($nextInfo === null) {
+			return null;
+		}
+
+		$synchronization['currentPage'] = $nextInfo['page'];
+		$this->persistPageCursor(synchronization: $synchronization, source: $source);
+
+		return $nextInfo;
+	}//end advanceToNextPage()
+
+	/**
+	 * Reset per-fetch pagination state and, when the count can be predicted, put
+	 * page one on the wire together with the rest.
+	 *
+	 * Both `lastPageFromLink` and `pagePrefetch` are per-fetch state on a SHARED
+	 * service instance, which re-enters itself through `synchronization` rules
+	 * and `followUps`, so they have to start empty for every paginated fetch.
+	 *
+	 * Leaving them was not merely untidy. A stale `lastPageFromLink` from a
+	 * previous synchronization would stop THIS one early — silently dropping
+	 * pages, which is the failure REQ-009 exists to prevent — and a
+	 * `pagePrefetch` left populated by an aborted run would both block this run's
+	 * fan-out (it refuses to issue a second one) and serve it another
+	 * synchronization's cached pages.
+	 *
+	 * The prediction comes from the last run's contracts, so page ONE can go out
+	 * concurrently with the rest instead of being fetched alone to discover how
+	 * many pages there are. Skipped for a `next`-link source, whose pages are
+	 * only reachable one at a time by construction.
+	 *
+	 * Extracted from {@see self::fetchAllPagesOptimized()} unchanged. It returns
+	 * `$config` because the fan-out may rewrite it — see the note below on why
+	 * page one has to be built the same way as pages two onward.
+	 *
+	 * @param array     $source           The data source configuration.
+	 * @param string    $endpoint         The API endpoint to fetch from.
+	 * @param array     $config           The request configuration.
+	 * @param array     $synchronization  The synchronization context.
+	 * @param int       $currentPage      The starting page number.
+	 * @param bool|null $usesNextEndpoint Whether the API uses next-endpoint URLs.
+	 *
+	 * @return array The request configuration the loop should start from.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function primePagination(
+		array $source,
+		string $endpoint,
+		array $config,
+		array $synchronization,
+		int $currentPage,
+		?bool $usesNextEndpoint,
+	): array {
+		$this->lastPageFromLink = null;
+		$this->pagePrefetch = [];
+		$this->predictedLastPage = null;
+
+		if ($usesNextEndpoint === true) {
+			return $config;
+		}
+
+		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		$this->predictedLastPage = $this->predictLastPage(
+			synchronization: $synchronization,
+			sourceConfig: $this->callService->applyConfigDot($sourceConfig)
+		);
+
+		// `$currentPage >= 1` because a prefetched page is matched by the page
+		// number in the request config, and page 0 is that lookup's "no
+		// pagination info" sentinel. A source numbering from zero would fetch
+		// its first page twice, so it keeps the sequential path instead.
+		if ($this->predictedLastPage === null || $this->predictedLastPage <= 1 || $currentPage < 1) {
+			return $config;
+		}
+
+		// Page one's request has to be built the SAME way the fan-out builds
+		// pages two onward, or the two will not agree on the cache key and page
+		// one gets fetched a second time. This is the only behaviour change: the
+		// first request now carries an explicit page number where it previously
+		// relied on the source's default. For any source that paginates at all
+		// these are the same page — and only a synchronization that has already
+		// run successfully reaches this branch, so the shape is one the source
+		// has served before.
+		$config = $this->getNextPage(
+			config: $config,
+			sourceConfig: $sourceConfig,
+			currentPage: $currentPage
+		);
+
+		$this->prefetchRemainingPages(
+			source: $source,
+			endpoint: $endpoint,
+			config: $config,
+			synchronization: $synchronization,
+			fromPage: $currentPage
+		);
+
+		return $config;
+	}//end primePagination()
+
+	/**
+	 * Stop on the last page the source's `Link` header advertised.
+	 *
+	 * Extracted from {@see self::fetchAllPagesOptimized()} unchanged.
+	 *
+	 * @param int $pageCount Pages fetched so far in this run.
+	 *
+	 * @return bool True when the advertised last page has been reached.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function reachedLinkedLastPage(int $pageCount): bool {
+		// The source told us how many pages it has, so stop on the last one
+		// rather than spending a whole extra request discovering that page
+		// N+1 is empty. Only when the header was present — without it this is
+		// null and the caller's empty-page rule still decides.
+		if ($this->lastPageFromLink === null) {
+			return false;
+		}
+
+		return ($pageCount >= $this->lastPageFromLink);
+	}//end reachedLinkedLastPage()
+
+	/**
+	 * A CEILING ON MEMORY, not just on pages — and the warning that explains it.
+	 *
+	 * `maxPages` bounds how many REQUESTS a run makes; nothing bounded how much
+	 * it holds. A crawl accumulates every fetched page in memory before the item
+	 * loop starts, so a source with large records reaches the PHP memory limit
+	 * while still well inside its page budget — and what happens then is a fatal,
+	 * mid-run, with no log line and no synchronization_log row, because the
+	 * process dies before writing either. MEASURED 2026-08-14: a 19,822-object
+	 * crawl held 1.4 GB resident on a container with 44 other apps sharing it.
+	 *
+	 * Stopping deliberately is strictly better than being killed. The caller uses
+	 * the SAME `complete = false` path as the page cap, which already blocks the
+	 * deletion pass — so a run that stopped early can never be read as "the
+	 * source no longer has these records".
+	 *
+	 * Extracted from {@see self::fetchAllPagesOptimized()} unchanged.
+	 *
+	 * @param array $sourceConfig The source configuration.
+	 * @param int   $pagesFetched Pages fetched so far, for the warning.
+	 *
+	 * @return bool True when the run must stop here.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function stopForMemoryCeiling(array $sourceConfig, int $pagesFetched): bool {
+		if ($this->exceededMemoryCeiling(sourceConfig: $sourceConfig) === false) {
+			return false;
+		}
+
+		$this->logger->warning(
+			'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
+			. 'limit is in use. The pages already fetched are processed; deletion is '
+			. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
+			. 'page size, or narrow the query.',
+			[
+				'pages' => $pagesFetched,
+				'used' => round(memory_get_usage(true) / 1048576),
+				'limit' => round($this->phpMemoryLimitBytes() / 1048576),
+			]
+		);
+
+		return true;
+	}//end stopForMemoryCeiling()
 
 	/**
 	 * Gets information for the next page in pagination.
@@ -6235,32 +6546,7 @@ class SynchronizationService {
 			return;
 		}
 
-		// Only a WINDOW of pages, never the whole remainder — see PREFETCH_WINDOW.
-		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
-		if ($window < 1) {
-			$window = 1;
-		}
-
-		// CLAMPED AT BOTH ENDS. This is a per-source number in hand-written JSON,
-		// and it decides how many HTTP connections one synchronization opens at
-		// once — a fat-fingered 500 is 500 sockets from one apache worker, against
-		// an upstream that did nothing to deserve it.
-		//
-		// The ceiling is not conservatism: measured 2026-08-14, wider windows are
-		// SLOWER well before this limit. data.overheid.nl over 40 pages took 14.0 s
-		// at a window of 5 and 28.8 s at 40, and against a source answering in
-		// 5.3 ms a window of 10 bought 1.24x rather than the ~10x it implies. There
-		// is no configuration above this worth having.
-		if ($window > self::MAX_PREFETCH_WINDOW) {
-			$this->logger->warning(
-				'prefetchConcurrency of {asked} is above the ceiling of {max} and has been '
-				. 'clamped. Wider windows measured SLOWER, not faster.',
-				['asked' => $window, 'max' => self::MAX_PREFETCH_WINDOW]
-			);
-			$window = self::MAX_PREFETCH_WINDOW;
-		}
-
-		$until = min($last, ($fromPage + $window - 1));
+		$until = min($last, ($fromPage + $this->resolvePrefetchWindow(sourceConfig: $sourceConfig) - 1));
 
 		$promises = [];
 		for ($page = $fromPage; $page <= $until; $page++) {
@@ -6287,6 +6573,51 @@ class SynchronizationService {
 			}
 		}
 	}//end prefetchRemainingPages()
+
+	/**
+	 * How many pages one fan-out may request at once — clamped at BOTH ends.
+	 *
+	 * Only a WINDOW of pages is ever requested, never the whole remainder — see
+	 * PREFETCH_WINDOW.
+	 *
+	 * This is a per-source number in hand-written JSON, and it decides how many
+	 * HTTP connections one synchronization opens at once — a fat-fingered 500 is
+	 * 500 sockets from one apache worker, against an upstream that did nothing to
+	 * deserve it.
+	 *
+	 * The ceiling is not conservatism: measured 2026-08-14, wider windows are
+	 * SLOWER well before this limit. data.overheid.nl over 40 pages took 14.0 s
+	 * at a window of 5 and 28.8 s at 40, and against a source answering in
+	 * 5.3 ms a window of 10 bought 1.24x rather than the ~10x it implies. There
+	 * is no configuration above this worth having.
+	 *
+	 * Extracted from {@see self::prefetchRemainingPages()} unchanged — the two
+	 * clamps were most of that method's branching and none of its subject.
+	 *
+	 * @param array $sourceConfig The dot-resolved source configuration.
+	 *
+	 * @return int A window of at least 1 and at most MAX_PREFETCH_WINDOW.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function resolvePrefetchWindow(array $sourceConfig): int {
+		$window = (int)($sourceConfig['prefetchConcurrency'] ?? self::PREFETCH_WINDOW);
+		if ($window < 1) {
+			return 1;
+		}
+
+		if ($window > self::MAX_PREFETCH_WINDOW) {
+			$this->logger->warning(
+				'prefetchConcurrency of {asked} is above the ceiling of {max} and has been '
+				. 'clamped. Wider windows measured SLOWER, not faster.',
+				['asked' => $window, 'max' => self::MAX_PREFETCH_WINDOW]
+			);
+
+			return self::MAX_PREFETCH_WINDOW;
+		}
+
+		return $window;
+	}//end resolvePrefetchWindow()
 
 	/**
 	 * How far this RUN will read, which is not how many pages the source has.
@@ -6452,11 +6783,11 @@ class SynchronizationService {
 		}
 
 		// <https://api.github.com/...?page=4>; rel="last"
-		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $m) !== 1) {
+		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $matches) !== 1) {
 			return null;
 		}
 
-		$last = (int)$m[2];
+		$last = (int)$matches[2];
 		if ($last > 0) {
 			return $last;
 		}
@@ -8030,22 +8361,13 @@ class SynchronizationService {
 				);
 
 				// Process rule based on type.
-				$result = match ($rule['type'] ?? null) {
-					'error' => $this->processErrorRule(rule: $rule),
-					'mapping' => $this->processMappingRule(rule: $rule, data: $data),
-					'synchronization' => $this->processSyncRule(rule: $rule, data: $data),
-					'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
-					'fetch_file' => $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId),
-					'write_file' => $this->processWriteFileRule(
-						rule: $rule,
-						data: $data,
-						objectId: $objectId,
-						registerId: $registerId,
-						schemaId: $schemaId
-					),
-					'extend_input' => $this->processExtendInputRule(config: ($rule['configuration'] ?? []), data: $data),
-					default => throw new Exception('Unsupported rule type: ' . ($rule['type'] ?? '')),
-				};
+				$result = $this->dispatchRule(
+					rule: $rule,
+					data: $data,
+					objectId: $objectId,
+					registerId: $registerId,
+					schemaId: $schemaId
+				);
 
 				// If result is JSONResponse, return error immediately.
 				if ($result instanceof JSONResponse) {
@@ -8055,25 +8377,7 @@ class SynchronizationService {
 				// Update data with rule result.
 				$data = $result;
 
-				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
-				// `processFetchFileRule()` catches its own per-file failures so
-				// one bad attachment cannot abort the object, which meant this
-				// line said "Successfully applied" for a rule that wrote ZERO
-				// files — and nothing downstream could tell that from 40. The
-				// tally is the only thing that discriminates.
-				$outcome = '';
-				if (($rule['type'] ?? null) === 'fetch_file') {
-					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
-
-					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
-						$this->logger->warning(
-							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
-							. $tally['failed'] . ' failed) for synchronization '
-							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
-						);
-					}
-				}
+				$outcome = $this->ruleOutcomeSuffix(rule: $rule, synchronization: $synchronization);
 
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
@@ -8090,6 +8394,91 @@ class SynchronizationService {
 			return new JSONResponse(['error' => 'Rule processing failed: ' . $e->getMessage()], 500);
 		}//end try
 	}//end processRules()
+
+	/**
+	 * Run ONE rule, selected by its `type`.
+	 *
+	 * Extracted verbatim from {@see self::processRules()}: the eight-arm `match`
+	 * was most of that method's cyclomatic complexity while contributing nothing
+	 * to its logic, which is "iterate the rules, honour the result". No arm, no
+	 * argument and no order changed.
+	 *
+	 * @param array       $rule       The OR rule payload.
+	 * @param array       $data       The data the rule transforms.
+	 * @param string|null $objectId   The object being synchronized, for file rules.
+	 * @param int|null    $registerId The target register, for write_file.
+	 * @param int|null    $schemaId   The target schema, for write_file.
+	 *
+	 * @return array|JSONResponse The transformed data, or an error response the
+	 *                            caller must return immediately.
+	 *
+	 * @throws Exception When the rule declares a type no processor handles.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function dispatchRule(
+		array $rule,
+		array $data,
+		?string $objectId,
+		?int $registerId,
+		?int $schemaId,
+	): array|JSONResponse {
+		return match ($rule['type'] ?? null) {
+			'error' => $this->processErrorRule(rule: $rule),
+			'mapping' => $this->processMappingRule(rule: $rule, data: $data),
+			'synchronization' => $this->processSyncRule(rule: $rule, data: $data),
+			'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
+			'fetch_file' => $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId),
+			'write_file' => $this->processWriteFileRule(
+				rule: $rule,
+				data: $data,
+				objectId: $objectId,
+				registerId: $registerId,
+				schemaId: $schemaId
+			),
+			'extend_input' => $this->processExtendInputRule(config: ($rule['configuration'] ?? []), data: $data),
+			default => throw new Exception('Unsupported rule type: ' . ($rule['type'] ?? '')),
+		};
+	}//end dispatchRule()
+
+	/**
+	 * Describe what a rule actually DID, for the "successfully applied" log line.
+	 *
+	 * A fetch_file rule reports WHAT IT DID, not merely that it ran.
+	 * `processFetchFileRule()` catches its own per-file failures so one bad
+	 * attachment cannot abort the object, which meant the caller's log line said
+	 * "Successfully applied" for a rule that wrote ZERO files — and nothing
+	 * downstream could tell that from 40. The tally is the only thing that
+	 * discriminates.
+	 *
+	 * ⚠️ NOT SIDE-EFFECT FREE, and it must not be: `takeFileFetchTally()` CLEARS
+	 * the tally, so this may be called at most once per rule. Extracted from
+	 * {@see self::processRules()} unchanged, at the same point in the loop.
+	 *
+	 * @param array $rule            The rule that just ran.
+	 * @param array $synchronization The synchronization it ran for, for the warning text.
+	 *
+	 * @return string A suffix for the log line — empty for every non-file rule.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function ruleOutcomeSuffix(array $rule, array $synchronization): string {
+		if (($rule['type'] ?? null) !== 'fetch_file') {
+			return '';
+		}
+
+		$tally = $this->takeFileFetchTally();
+
+		if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
+			$this->logger->warning(
+				'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
+				. $tally['failed'] . ' failed) for synchronization '
+				. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
+			);
+		}
+
+		return ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
+	}//end ruleOutcomeSuffix()
 
 	/**
 	 * Get a rule by its ID directly from OpenRegister.
@@ -10491,74 +10880,128 @@ class SynchronizationService {
 			return new FulfilledPromise(null);
 		}//end try
 
+		// ⚠️ `function () use (…, &$state)`, NOT an arrow function. `$state` is the
+		// SHARED pool state and is taken by reference all the way down; an `fn ()`
+		// captures by value, so the slot releases and byte-budget updates below
+		// would land on a private copy and the pool would deadlock at its
+		// concurrency ceiling with every slot apparently still in flight.
 		return $promise->then(
 			function ($callLog) use ($prepared, $item, $slot, &$state) {
-				try {
-					// Runs on the single-threaded promise task queue, so this
-					// OpenRegister write is serialized against every sibling
-					// save even though the fetches overlapped.
-					$filename = $item['filename'];
-					$this->saveFetchedFile(
-						prepared: $prepared,
-						callLog: $callLog,
-						objectId: $item['objectId'],
-						tags: $item['tags'],
-						filename: $filename,
-						published: $item['published'],
-						registerId: $item['registerId']
-					);
-
-					// COUNTED HERE TOO. The concurrent path splits fetch from
-					// save and never goes through fetchFileSafely(), so a tally
-					// kept only there reported "saved: 0, failed: 0" for a run
-					// that had just written 6 files — a counter that is always
-					// zero is worse than none, because it reads as a finding.
-					$this->fileFetchSucceeded++;
-
-					$this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
-				} catch (\Throwable $exception) {
-					// A failed SAVE is isolated exactly like a failed fetch: the
-					// remaining files and the object continue.
-					$this->fileFetchFailed++;
-					$this->logger->error(
-						'Failed to save file from endpoint ' . $item['endpoint'] . ': ' . $exception->getMessage(),
-						['exception' => $exception]
-					);
-
-					// The filename is still tracked: cleanup must not delete a
-					// file whose save merely failed this run.
-					$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
-				} finally {
-					$this->releaseFetchSlot(slot: $slot, state: $state);
-				}//end try
+				$this->saveFetchedFileOrIsolate(
+					prepared: $prepared,
+					callLog: $callLog,
+					item: $item,
+					slot: $slot,
+					state: $state
+				);
 			},
 			function ($reason) use ($item, $slot, &$state) {
-				$message = $reason;
-				$exception = null;
-				if ($reason instanceof \Throwable === true) {
-					$message = $reason->getMessage();
-					$exception = $reason;
-				}
-
-				// The REJECTION leg — a download that never arrived. Counted
-				// alongside failed saves so "failed" means "this file is not
-				// there", whichever half of the pipeline lost it.
-				$this->fileFetchFailed++;
-
-				$this->logger->error(
-					'Failed to fetch file from endpoint ' . $item['endpoint'] . ': ' . $message,
-					['exception' => $exception]
+				$this->recordFileFetchRejection(
+					reason: $reason,
+					item: $item,
+					slot: $slot,
+					state: $state
 				);
-
-				// Note: we still keep the filename in the tracking array even if
-				// the fetch fails. This prevents cleanup from deleting files that
-				// should exist.
-				$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
-
-				$this->releaseFetchSlot(slot: $slot, state: $state);
 			}
 		);
 	}//end fetchFileAsync()
+
+	/**
+	 * The FULFILMENT leg of {@see self::fetchFileAsync()} — the download arrived.
+	 *
+	 * Extracted unchanged from the `then()` closure so that method stays inside
+	 * ExcessiveMethodLength; the two legs are independent outcomes and read
+	 * better named than nested.
+	 *
+	 * @param array $prepared The prepared fetch (endpoint, config, sink path).
+	 * @param mixed $callLog  Whatever the async call resolved with.
+	 * @param array $item     The queued file item.
+	 * @param int   $slot     This download's concurrency slot, always released.
+	 * @param array $state    The shared pool state, BY REFERENCE.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function saveFetchedFileOrIsolate(array $prepared, mixed $callLog, array $item, int $slot, array &$state): void {
+		try {
+			// Runs on the single-threaded promise task queue, so this
+			// OpenRegister write is serialized against every sibling
+			// save even though the fetches overlapped.
+			$filename = $item['filename'];
+			$this->saveFetchedFile(
+				prepared: $prepared,
+				callLog: $callLog,
+				objectId: $item['objectId'],
+				tags: $item['tags'],
+				filename: $filename,
+				published: $item['published'],
+				registerId: $item['registerId']
+			);
+
+			// COUNTED HERE TOO. The concurrent path splits fetch from
+			// save and never goes through fetchFileSafely(), so a tally
+			// kept only there reported "saved: 0, failed: 0" for a run
+			// that had just written 6 files — a counter that is always
+			// zero is worse than none, because it reads as a finding.
+			$this->fileFetchSucceeded++;
+
+			$this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
+		} catch (\Throwable $exception) {
+			// A failed SAVE is isolated exactly like a failed fetch: the
+			// remaining files and the object continue.
+			$this->fileFetchFailed++;
+			$this->logger->error(
+				'Failed to save file from endpoint ' . $item['endpoint'] . ': ' . $exception->getMessage(),
+				['exception' => $exception]
+			);
+
+			// The filename is still tracked: cleanup must not delete a
+			// file whose save merely failed this run.
+			$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+		} finally {
+			$this->releaseFetchSlot(slot: $slot, state: $state);
+		}//end try
+	}//end saveFetchedFileOrIsolate()
+
+	/**
+	 * The REJECTION leg of {@see self::fetchFileAsync()} — the download never arrived.
+	 *
+	 * Extracted unchanged from the `then()` closure. Counted alongside failed
+	 * saves so "failed" means "this file is not there", whichever half of the
+	 * pipeline lost it.
+	 *
+	 * @param mixed $reason The rejection reason — a Throwable, or a bare message.
+	 * @param array $item   The queued file item.
+	 * @param int   $slot   This download's concurrency slot, always released.
+	 * @param array $state  The shared pool state, BY REFERENCE.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function recordFileFetchRejection(mixed $reason, array $item, int $slot, array &$state): void {
+		$message = $reason;
+		$exception = null;
+		if ($reason instanceof \Throwable === true) {
+			$message = $reason->getMessage();
+			$exception = $reason;
+		}
+
+		$this->fileFetchFailed++;
+
+		$this->logger->error(
+			'Failed to fetch file from endpoint ' . $item['endpoint'] . ': ' . $message,
+			['exception' => $exception]
+		);
+
+		// Note: we still keep the filename in the tracking array even if
+		// the fetch fails. This prevents cleanup from deleting files that
+		// should exist.
+		$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+
+		$this->releaseFetchSlot(slot: $slot, state: $state);
+	}//end recordFileFetchRejection()
 
 	/**
 	 * Build the `on_headers` callback that records one in-flight download's

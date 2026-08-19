@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
+use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -152,18 +153,20 @@ class SynchronizationRunProgressService {
 	 * for its entire duration, which is the defect being fixed. It is still
 	 * guarded — an unavailable register must not stop a synchronization.
 	 *
+	 * ⚠️ THE OPT-OUT IS THE CALLER'S, AND DELIBERATELY SO. This used to take an
+	 * `$enabled` flag and return early on false — a boolean argument whose only
+	 * job is to switch the method off, which is the shape PHPMD's
+	 * BooleanArgumentFlag names. Not calling a method is a clearer way to not
+	 * call a method. Behaviour is unchanged: with no `start()` there is no
+	 * `runUuid`, and `tick()`/`finish()` both already no-op on a null one, so
+	 * the whole run stays unrecorded exactly as before.
+	 *
 	 * @param string $synchronizationId The synchronization being run.
-	 * @param bool   $enabled           False leaves the run unrecorded, and every
-	 *                                  later tick/finish a no-op.
 	 *
 	 * @return void
 	 */
-	public function start(string $synchronizationId, bool $enabled = true): void {
-		if ($enabled === false) {
-			return;
-		}
-
-		$now = (new \DateTime())->format('c');
+	public function start(string $synchronizationId): void {
+		$now = (new DateTime())->format('c');
 
 		$this->counters = [
 			'synchronizationId' => $synchronizationId,
@@ -213,7 +216,7 @@ class SynchronizationRunProgressService {
 			return;
 		}
 
-		$this->counters['updatedAt'] = (new \DateTime())->format('c');
+		$this->counters['updatedAt'] = (new DateTime())->format('c');
 		$this->write(object: $this->counters, uuid: $this->runUuid);
 		$this->lastWrite = microtime(true);
 	}//end tick()
@@ -236,7 +239,7 @@ class SynchronizationRunProgressService {
 
 		$this->counters = array_merge($this->counters, $counters);
 		$this->counters['status'] = $status;
-		$this->counters['finishedAt'] = (new \DateTime())->format('c');
+		$this->counters['finishedAt'] = (new DateTime())->format('c');
 		$this->counters['updatedAt'] = $this->counters['finishedAt'];
 		$this->counters['progressWriteFailures'] = $this->failures;
 		$this->counters['progressWrites'] = $this->writes;

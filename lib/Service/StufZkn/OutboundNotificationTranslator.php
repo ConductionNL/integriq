@@ -89,8 +89,8 @@ class OutboundNotificationTranslator {
 	 * @param array $case The OR/ZGW zaak object fields — see design.md's outbound
 	 *                    field table for the full assumed vocabulary.
 	 * @param string $processingKind `T` (create), `W` (update/status change), or `V` (vervallen).
-	 * @param string $zenderOrganisation This bridge's own organisatie code (`stuurgegevens.zender`).
-	 * @param string $ontvangerOrganisation The subscribed StUF consumer's organisatie code
+	 * @param string $zenderOrg This bridge's own organisatie code (`stuurgegevens.zender`).
+	 * @param string $ontvangerOrg The subscribed StUF consumer's organisatie code
 	 *                                     (`stuurgegevens.ontvanger`).
 	 *
 	 * @return array{referentienummer: string, xml: string} The generated correlation reference and
@@ -105,8 +105,8 @@ class OutboundNotificationTranslator {
 	public function translate(
 		array $case,
 		string $processingKind,
-		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $zenderOrg,
+		string $ontvangerOrg,
 	): array {
 		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
 			throw new StufZknTranslationException(
@@ -135,8 +135,8 @@ class OutboundNotificationTranslator {
 			document: $document,
 			parent: $zakLk01,
 			referenceNumber: $referenceNumber,
-			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			zenderOrg: $zenderOrg,
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		$parameters = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
@@ -192,8 +192,8 @@ class OutboundNotificationTranslator {
 	 * @param DOMDocument $document The owning document.
 	 * @param DOMElement $parent The `zakLk01` element to append into.
 	 * @param string $referenceNumber The generated correlation reference.
-	 * @param string $zenderOrganisation This bridge's own organisatie code.
-	 * @param string $ontvangerOrganisation The subscribed consumer's organisatie code.
+	 * @param string $zenderOrg This bridge's own organisatie code.
+	 * @param string $ontvangerOrg The subscribed consumer's organisatie code.
 	 *
 	 * @return void
 	 */
@@ -201,8 +201,8 @@ class OutboundNotificationTranslator {
 		DOMDocument $document,
 		DOMElement $parent,
 		string $referenceNumber,
-		string $zenderOrganisation,
-		string $ontvangerOrganisation,
+		string $zenderOrg,
+		string $ontvangerOrg,
 	): void {
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
@@ -211,11 +211,11 @@ class OutboundNotificationTranslator {
 
 		$zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
 		$stuurgegevens->appendChild($zender);
-		$this->appendStufText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisation);
+		$this->appendStufText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrg);
 
 		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
 		$stuurgegevens->appendChild($ontvanger);
-		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrganisation);
+		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrg);
 
 		$this->appendStufText(
 			document: $document,

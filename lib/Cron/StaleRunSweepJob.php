@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Cron;
 
+use DateTime;
 use OCA\OpenConnector\Service\SynchronizationRunProgressService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -141,7 +142,7 @@ class StaleRunSweepJob extends TimedJob {
 			}
 
 			$object['status'] = 'failed';
-			$object['finishedAt'] = (new \DateTime())->format('c');
+			$object['finishedAt'] = (new DateTime())->format('c');
 			$object['message'] = 'Abandoned: no progress recorded for over '
 				. (int)(self::STALE_AFTER_SECONDS / 60) . ' minutes; the run\'s process is presumed dead. '
 				. 'This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are '

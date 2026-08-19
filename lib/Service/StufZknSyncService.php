@@ -181,7 +181,7 @@ class StufZknSyncService {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
 	 */
 	public function receiveInbound(string $soapXml): string {
-		[$zenderOrganisation] = $this->resolveOrganisationCodes();
+		[$zenderOrg] = $this->resolveOrganisationCodes();
 
 		try {
 			$translated = $this->inboundTranslator->translate(soapXml: $soapXml);
@@ -200,12 +200,12 @@ class StufZknSyncService {
 			return $this->ackBuilder->buildFo03(
 				reason: 'validation_failed',
 				crossRefnummer: '',
-				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: ''
+				zenderOrg: $zenderOrg,
+				ontvangerOrg: ''
 			);
 		}//end try
 
-		$ontvangerOrganisation = $translated['senderOrganisatie'];
+		$ontvangerOrg = $translated['senderOrganisatie'];
 
 		// Idempotency: a redelivery of an already-fully-processed
 		// referentienummer never touches the OR object again — just
@@ -215,8 +215,8 @@ class StufZknSyncService {
 		if ($existing !== null && ($existing->getObject()['status'] ?? null) === 'processed') {
 			return $this->ackBuilder->buildBv03(
 				crossRefnummer: $translated['referentienummer'],
-				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: $ontvangerOrganisation
+				zenderOrg: $zenderOrg,
+				ontvangerOrg: $ontvangerOrg
 			);
 		}
 
@@ -245,15 +245,15 @@ class StufZknSyncService {
 			return $this->ackBuilder->buildFo03(
 				reason: 'processing_failed',
 				crossRefnummer: $translated['referentienummer'],
-				zenderOrganisation: $zenderOrganisation,
-				ontvangerOrganisation: $ontvangerOrganisation
+				zenderOrg: $zenderOrg,
+				ontvangerOrg: $ontvangerOrg
 			);
 		}
 
 		return $this->ackBuilder->buildBv03(
 			crossRefnummer: $translated['referentienummer'],
-			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			zenderOrg: $zenderOrg,
+			ontvangerOrg: $ontvangerOrg
 		);
 
 	}//end receiveInbound()
@@ -279,15 +279,15 @@ class StufZknSyncService {
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		[$zenderOrganisation, $ontvangerOrganisation] = $this->resolveOrganisationCodes();
+		[$zenderOrg, $ontvangerOrg] = $this->resolveOrganisationCodes();
 
 		// Translation failures never reach the transport and never get an
 		// audit record — no referentienummer exists yet to key one on.
 		$translated = $this->outboundTranslator->translate(
 			case: $case,
 			processingKind: $processingKind,
-			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrganisation: $ontvangerOrganisation
+			zenderOrg: $zenderOrg,
+			ontvangerOrg: $ontvangerOrg
 		);
 
 		$status = 'sent';
