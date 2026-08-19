@@ -13,9 +13,9 @@
  *
  * The listener is registered from `Application::register()` behind a
  * `class_exists()` guard on the EVENT class, and registration is a lazy
- * SERVICE listener. Together that means neither this class nor the two node
+ * SERVICE listener. Together that means neither this class nor the node
  * classes are ever loaded on an instance whose OpenRegister has no flow engine
- * — which matters, because both nodes `implements IFlowNode` and a
+ * — which matters, because every node `implements IFlowNode` and a
  * compile-time reference to an absent interface is a fatal error, not a
  * missing feature. The guard is not a caught-and-ignored error at call time;
  * it prevents the reference from being resolved at all.
@@ -58,16 +58,24 @@ class FlowNodeListener implements IEventListener {
 	 *
 	 * @param SourceCallNode $sourceCallNode The governed outbound-call node.
 	 * @param SynchronizationRunNode $synchronizationRunNode The synchronisation-run node.
+	 * @param ApplyMappingNode $applyMappingNode The page-level mapping node.
+	 * @param ContractMatchNode $contractMatchNode The page-level contract-decision node.
+	 * @param ContractCommitNode $contractCommitNode The page-level contract-upsert node.
+	 * @param ContractSweepNode $contractSweepNode The guarded stale-object sweep node.
 	 */
 	public function __construct(
 		private readonly SourceCallNode $sourceCallNode,
 		private readonly SynchronizationRunNode $synchronizationRunNode,
+		private readonly ApplyMappingNode $applyMappingNode,
+		private readonly ContractMatchNode $contractMatchNode,
+		private readonly ContractCommitNode $contractCommitNode,
+		private readonly ContractSweepNode $contractSweepNode,
 	) {
 
 	}//end __construct()
 
 	/**
-	 * Contribute both node types.
+	 * Contribute every node type.
 	 *
 	 * Node ids are app-namespaced, so `FlowNodeRegistry` refuses a collision at
 	 * registration rather than resolving it by load order — a clash is a
@@ -86,6 +94,10 @@ class FlowNodeListener implements IEventListener {
 
 		$event->registerNode(node: $this->sourceCallNode);
 		$event->registerNode(node: $this->synchronizationRunNode);
+		$event->registerNode(node: $this->applyMappingNode);
+		$event->registerNode(node: $this->contractMatchNode);
+		$event->registerNode(node: $this->contractCommitNode);
+		$event->registerNode(node: $this->contractSweepNode);
 
 	}//end handle()
 }//end class
