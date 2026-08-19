@@ -662,26 +662,7 @@ class SynchronizationFlowGenerator {
 					'skipWhen' => self::KEY_CONTRACT . '.outcome',
 				],
 			],
-			[
-				// The sweep's id source has to survive a skip. A written item
-				// has `written.uuid`; a skipped one does not, but it does have
-				// the contract's own targetId (a `skip` decision requires one).
-				// Collapsing both into one field is what keeps an unchanged
-				// object inside the synced set instead of on the delete list.
-				'id' => 'synced-id',
-				'type' => 'openregister.set-fields',
-				'config' => [
-					'compute' => [
-						self::KEY_SYNCED_ID => [
-							'if' => [
-								['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
-								['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
-								['var' => ['json.' . self::KEY_TARGET_UUID, '']],
-							],
-						],
-					],
-				],
-			],
+			$this->syncedIdNode(),
 			[
 				'id' => 'commit',
 				'type' => ContractCommitNode::NODE_ID,
@@ -705,6 +686,42 @@ class SynchronizationFlowGenerator {
 		];
 
 	}//end nodesFor()
+
+	/**
+	 * The step that names the target id this pass REACHED, written or skipped.
+	 *
+	 * `contract-sweep` deletes whatever its items do not name, and a skipped
+	 * item has no `written` block at all — `object-write` passed it through
+	 * untouched. Reading the sweep's ids from the write output alone would
+	 * therefore drop every unchanged object out of the synced set, and the
+	 * sweep would delete exactly the objects that were fine.
+	 *
+	 * So both cases collapse into one field: the written uuid when there is
+	 * one, the contract's own targetId otherwise — a `skip` decision requires
+	 * a targetId, which is what makes the fallback sound.
+	 *
+	 * @return array<string, mixed> The set-fields node.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function syncedIdNode(): array {
+		return [
+			'id' => 'synced-id',
+			'type' => 'openregister.set-fields',
+			'config' => [
+				'compute' => [
+					self::KEY_SYNCED_ID => [
+						'if' => [
+							['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+							['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+							['var' => ['json.' . self::KEY_TARGET_UUID, '']],
+						],
+					],
+				],
+			],
+		];
+
+	}//end syncedIdNode()
 
 	/**
 	 * Chain the nodes together, one edge per consecutive pair.
