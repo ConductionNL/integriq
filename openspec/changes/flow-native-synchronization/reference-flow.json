@@ -1,0 +1,14 @@
+{"name":"GovData.de tenders — decomposed synchronization (reference)",
+ "description":"Reference flow for flow-native-synchronization task 2.1, mirroring synchronization cad5d34c-21e8-403e-9ddd-2b0df22bb609 as explicit steps.",
+ "nodes":[
+  {"id":"start","type":"openregister.trigger-manual","config":{},"start":true},
+  {"id":"pages","type":"openconnector.source-paginate","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","output":"page"}},
+  {"id":"each","type":"openregister.explode","config":{"path":"page.results"}},
+  {"id":"map","type":"openconnector.apply-mapping","config":{"mapping":"germany-bund-to-tender"}},
+  {"id":"decide","type":"openconnector.contract","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","idPosition":"id","output":"contract"}},
+  {"id":"target","type":"openregister.set-fields","config":{"compute":{"matchId":{"var":["json.contract.targetId",""]}}}},
+  {"id":"write","type":"openregister.object-write","config":{"register":"spectr","schema":"tender","operation":"upsert","match":{"@self.uuid":"{{matchId}}"},"fields":{"title":"{{title}}"},"output":"written"}},
+  {"id":"commit","type":"openconnector.contract-commit","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","contractPosition":"contract","targetIdPosition":"written.uuid"}},
+  {"id":"sweep","type":"openconnector.contract-sweep","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","targetIdsPosition":"written.uuid","fetchComplete":true}},
+  {"id":"end","type":"openregister.end","config":{}}],
+ "edges":[{"from":"start","to":"pages"},{"from":"pages","to":"each"},{"from":"each","to":"map"},{"from":"map","to":"decide"},{"from":"decide","to":"target"},{"from":"target","to":"write"},{"from":"write","to":"commit"},{"from":"commit","to":"sweep"},{"from":"sweep","to":"end"}]}
