@@ -55,21 +55,14 @@
 					</NcCheckboxRadioSwitch>
 					<NcTextField
 						:modelValue="stepDraft.output || ''"
-						:label="
-							t(
-								'openconnector',
-								'Field to store the summary in',
-							)
-						"
+						:label="t('openconnector', 'Field to store the summary in')"
 						:helperText="
 							t(
 								'openconnector',
 								'Empty means the summary replaces the item.',
 							)
 						"
-						@update:modelValue="
-							(value) => setStep('output', value)
-						" />
+						@update:modelValue="(value) => setStep('output', value)" />
 					<NcTextField
 						:modelValue="
 							stepDraft.maxItems == null
@@ -102,8 +95,7 @@
 							:clearable="false"
 							label="label"
 							@update:modelValue="
-								(option) =>
-									setStep('onError', option && option.id)
+								(option) => setStep('onError', option && option.id)
 							" />
 					</div>
 				</div>
@@ -115,11 +107,7 @@
 <script>
 import { useFlowStore } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcCheckboxRadioSwitch,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import SynchronizationEditorModal from '../../modals/v2/SynchronizationEditorModal.vue'
 import { useObjectStore } from '../../store/objectStore.js'
 
@@ -141,11 +129,7 @@ export default {
 		// Same registration the detail page performs: fetchObject/saveObject
 		// resolve the schema → register pair for URL building through it.
 		if (typeof objectStore.registerObjectType === 'function') {
-			objectStore.registerObjectType(
-				SCHEMA_SLUG,
-				SCHEMA_SLUG,
-				REGISTER_SLUG,
-			)
+			objectStore.registerObjectType(SCHEMA_SLUG, SCHEMA_SLUG, REGISTER_SLUG)
 		}
 		return { flowStore: useFlowStore(), objectStore }
 	},
@@ -167,9 +151,7 @@ export default {
 				force: config.force === true,
 				output: typeof config.output === 'string' ? config.output : '',
 				maxItems:
-					typeof config.maxItems === 'number'
-						? config.maxItems
-						: null,
+					typeof config.maxItems === 'number' ? config.maxItems : null,
 
 				onError:
 					typeof config.onError === 'string' && config.onError !== ''
@@ -189,10 +171,7 @@ export default {
 				{ id: 'stop', label: t('openconnector', 'Stop the flow') },
 				{
 					id: 'continue',
-					label: t(
-						'openconnector',
-						'Record the error and continue',
-					),
+					label: t('openconnector', 'Record the error and continue'),
 				},
 				{
 					id: 'dead_letter',
@@ -252,10 +231,7 @@ export default {
 		 * @return {Promise<void>} Resolves once both commits landed.
 		 */
 		async persist(payload) {
-			const saved = await this.objectStore.saveObject(
-				SCHEMA_SLUG,
-				payload,
-			)
+			const saved = await this.objectStore.saveObject(SCHEMA_SLUG, payload)
 			if (!saved) {
 				throw new Error(
 					this.objectStore.errors?.[SCHEMA_SLUG]

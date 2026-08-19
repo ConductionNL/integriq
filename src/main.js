@@ -69,9 +69,7 @@ registerIcons(appIcons)
 // Async so the wide dialog and its sync widgets stay out of the entry bundle.
 registerFlowNodeEditor(
 	'openconnector.synchronization-run',
-	defineAsyncComponent(
-		() => import('./views/Flow/SynchronizationNodeEditor.vue'),
-	),
+	defineAsyncComponent(() => import('./views/Flow/SynchronizationNodeEditor.vue')),
 )
 try {
 	registerTranslations()
