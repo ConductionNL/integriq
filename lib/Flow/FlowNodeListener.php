@@ -58,6 +58,7 @@ class FlowNodeListener implements IEventListener {
 	 *
 	 * @param SourceCallNode $sourceCallNode The governed outbound-call node.
 	 * @param SynchronizationRunNode $synchronizationRunNode The synchronisation-run node.
+	 * @param SourcePaginateNode $sourcePaginateNode The page-level source-fetch node.
 	 * @param ApplyMappingNode $applyMappingNode The page-level mapping node.
 	 * @param ContractMatchNode $contractMatchNode The page-level contract-decision node.
 	 * @param ContractCommitNode $contractCommitNode The page-level contract-upsert node.
@@ -66,6 +67,7 @@ class FlowNodeListener implements IEventListener {
 	public function __construct(
 		private readonly SourceCallNode $sourceCallNode,
 		private readonly SynchronizationRunNode $synchronizationRunNode,
+		private readonly SourcePaginateNode $sourcePaginateNode,
 		private readonly ApplyMappingNode $applyMappingNode,
 		private readonly ContractMatchNode $contractMatchNode,
 		private readonly ContractCommitNode $contractCommitNode,
@@ -94,6 +96,7 @@ class FlowNodeListener implements IEventListener {
 
 		$event->registerNode(node: $this->sourceCallNode);
 		$event->registerNode(node: $this->synchronizationRunNode);
+		$event->registerNode(node: $this->sourcePaginateNode);
 		$event->registerNode(node: $this->applyMappingNode);
 		$event->registerNode(node: $this->contractMatchNode);
 		$event->registerNode(node: $this->contractCommitNode);

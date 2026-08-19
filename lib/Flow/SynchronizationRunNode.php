@@ -64,7 +64,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Flow;
 
-use DateTime;
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -98,30 +97,6 @@ class SynchronizationRunNode implements IFlowNode {
 	 * @var string
 	 */
 	private const DEFAULT_OUTPUT_KEY = 'syncResult';
-
-	/**
-	 * The shortest a rate-limit suspension may last, in seconds.
-	 *
-	 * A reset already in the past — a clock skew, a source that reports the
-	 * window it just closed — would make the run due immediately and spin
-	 * against a source still refusing it. The floor turns that into one wasted
-	 * minute rather than a hot loop.
-	 *
-	 * @var int
-	 */
-	private const MIN_RATE_LIMIT_WAIT_SECONDS = 60;
-
-	/**
-	 * The longest, in seconds.
-	 *
-	 * An epoch/milliseconds mix-up in a source's `X-RateLimit-Reset` reads as a
-	 * reset tens of thousands of years out, and parking a run on it would look
-	 * exactly like the run having quietly died. An hour is long enough for any
-	 * real window and short enough to be visibly a wait.
-	 *
-	 * @var int
-	 */
-	private const MAX_RATE_LIMIT_WAIT_SECONDS = 3600;
 
 	/**
 	 * The default fan-out ceiling.
@@ -456,6 +431,11 @@ class SynchronizationRunNode implements IFlowNode {
 	 * default, because suspending with no `resumeAt` at all would leave the run
 	 * waiting for a signal nothing sends.
 	 *
+	 * The bounds and the reset arithmetic themselves live in
+	 * {@see FlowRateLimit} — `source-paginate` inherits the identical failure
+	 * mode the moment it makes the fetch, and two copies of a clamp are two
+	 * clamps. This method keeps what is this node's own: the log line.
+	 *
 	 * @param TooManyRequestsHttpException $exception The refusal, carrying the rate-limit headers.
 	 * @param string $reference The authored synchronization reference.
 	 *
@@ -467,7 +447,7 @@ class SynchronizationRunNode implements IFlowNode {
 		TooManyRequestsHttpException $exception,
 		string $reference,
 	): FlowSuspension {
-		$resumeAt = $this->resetTimeFrom(exception: $exception);
+		$suspension = FlowRateLimit::suspensionFor(exception: $exception, subject: $reference);
 
 		$this->logger->info(
 			'[openconnector.synchronization-run] Rate limited; suspending until the limit lifts.',
@@ -475,49 +455,13 @@ class SynchronizationRunNode implements IFlowNode {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'synchronization' => $reference,
-				'resumeAt' => $resumeAt->format('c'),
+				'resumeAt' => $suspension->getResumeAt()?->format('c'),
 			]
 		);
 
-		return new FlowSuspension(
-			resumeAt: $resumeAt,
-			reason: sprintf(
-				'rate limited by the source; waiting until %s to continue "%s"',
-				$resumeAt->format('c'),
-				$reference
-			)
-		);
+		return $suspension;
 
 	}//end suspendUntilTheLimitLifts()
-
-	/**
-	 * When the source says its limit lifts.
-	 *
-	 * Clamped at both ends against a header we do not control. A reset already
-	 * in the past would make the run due immediately and spin against a source
-	 * that is still refusing it; an absurd one — a misconfigured source
-	 * returning a reset years out, which is what an epoch/milliseconds mix-up
-	 * looks like — would park the run effectively forever.
-	 *
-	 * @param TooManyRequestsHttpException $exception The refusal.
-	 *
-	 * @return DateTime When to try again.
-	 */
-	private function resetTimeFrom(TooManyRequestsHttpException $exception): DateTime {
-		$reset = (int)(($exception->getHeaders()['X-RateLimit-Reset'] ?? 0));
-		$now = time();
-
-		$seconds = ($reset - $now);
-		if ($reset <= 0 || $seconds < self::MIN_RATE_LIMIT_WAIT_SECONDS) {
-			$seconds = self::MIN_RATE_LIMIT_WAIT_SECONDS;
-		}
-
-		if ($seconds > self::MAX_RATE_LIMIT_WAIT_SECONDS) {
-			$seconds = self::MAX_RATE_LIMIT_WAIT_SECONDS;
-		}
-
-		return (new DateTime())->setTimestamp($now + $seconds);
-	}//end resetTimeFrom()
 
 	/**
 	 * Run the synchronisation, turning any failure into a raised node failure.
