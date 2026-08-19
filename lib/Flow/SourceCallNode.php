@@ -316,13 +316,19 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'key' => 'output',
 				'label' => $this->l10n->t('Field to store the response in'),
 				'type' => 'text',
-				'help' => $this->l10n->t('With a field name, the incoming item is preserved and the response is added under it. Empty means the response replaces the item.'),
+				'help' => $this->l10n->t(
+					'With a field name, the incoming item is preserved and the response is '
+					. 'added under it. Empty means the response replaces the item.'
+				),
 			],
 			[
 				'key' => 'concurrency',
 				'label' => $this->l10n->t('Concurrent calls'),
 				'type' => 'number',
-				'help' => $this->l10n->t('How many items are called at once, between 1 and 20. The default of 5 suits most sources; raising it multiplies load on the other side.'),
+				'help' => $this->l10n->t(
+					'How many items are called at once, between 1 and 20. The default of 5 '
+					. 'suits most sources; raising it multiplies load on the other side.'
+				),
 			],
 		];
 	}//end configForm()
