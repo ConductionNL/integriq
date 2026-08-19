@@ -358,6 +358,39 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/RegisterFlowNodesEvent.php';
 		}
+
+		// flow-native-synchronization: the page-level sync nodes additionally
+		// `implements IFlowNodeConfigKeys, IFlowNodeConfigForm` and build their
+		// output through FlowItems — same compile-time-reference reasoning as
+		// IFlowNode above. These three are verbatim copies of the real
+		// OpenRegister files, so bare mode parses exactly what a server runs.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNodeConfigKeys.php';
+		}
+
+		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNodeConfigForm.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowItems') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowItems.php';
+		}
+
+		// Pre-existing bare-mode gap, closed while wiring the three above:
+		// SourceCallNode `implements IFlowNodeLogActions` and takes a real
+		// FlowConcurrency in FlowNodeListenerTest, so without these two the
+		// listener tests errored in bare mode while passing in-server.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNodeLogActions') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNodeLogActions.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowConcurrency') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowConcurrency.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowSuspension') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowSuspension.php';
+		}
 	}
 }
 

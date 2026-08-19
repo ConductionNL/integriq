@@ -102,6 +102,12 @@
                      class_exists() guard in Application::registerFlowNodes() is for. The
                      same three files are already excluded from PHPStan for this reason. -->
                 <referencedClass name="OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent"/>
+                <!-- FlowSuspension is the engine's "pause this run" signal, raised by the
+                     nodes that a source can rate-limit. FlowRateLimit builds it and is the
+                     one flow helper that references an OpenRegister flow type WITHOUT also
+                     implementing IFlowNode, so it is analysed rather than skipped and needs
+                     the suppression named explicitly. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\FlowSuspension"/>
                 <!-- Same reasoning for mapping: the engine is OpenRegister's and this app
                      only CONTRIBUTES the three functions needing its own services. The
                      addServiceListener registration is lazy, so the class is never touched

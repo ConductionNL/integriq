@@ -71,6 +71,15 @@
 			</NcButton>
 		</template>
 
+		<!-- Deprecation context, first in the body so it reads as page-level
+		     framing rather than an error against the synchronization being
+		     edited. flow-native-synchronization task 3.2: the Synchronizations
+		     page is replaced by the Flows list of generated flows; every
+		     synchronization service and the contract tables stay. Rendered
+		     outside the `draft` guard so the notice is present while the
+		     object loads. -->
+		<AutomationDeprecationNotice />
+
 		<div v-if="!loading && draft" class="sync-detail">
 			<!-- Source / General / Target row -->
 			<div class="sync-detail__row">
@@ -466,6 +475,7 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
+import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
@@ -495,6 +505,7 @@ export default {
 	name: 'SynchronizationDetailPage',
 
 	components: {
+		AutomationDeprecationNotice,
 		CnDetailPage,
 		NcButton,
 		NcSelect,

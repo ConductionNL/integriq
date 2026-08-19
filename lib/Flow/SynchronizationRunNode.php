@@ -64,12 +64,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Flow;
 
-use DateTime;
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -82,8 +83,14 @@ use UnexpectedValueException;
  * Runs a configured Synchronization as one flow step, fanning out its objects.
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-4-synchronizationrunnode-with-bounded-fan-out-seed-data-and-a-live-end-to-end-run
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class sat at the
+ *   threshold before `configKeys()` — a one-line vocabulary declaration —
+ *   tipped it over. The complexity is the count of distinct ways a run
+ *   config and its fan-out can be wrong; splitting the class would move
+ *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode {
+class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 
 	/**
 	 * The step type this node answers to.
@@ -98,30 +105,6 @@ class SynchronizationRunNode implements IFlowNode {
 	 * @var string
 	 */
 	private const DEFAULT_OUTPUT_KEY = 'syncResult';
-
-	/**
-	 * The shortest a rate-limit suspension may last, in seconds.
-	 *
-	 * A reset already in the past — a clock skew, a source that reports the
-	 * window it just closed — would make the run due immediately and spin
-	 * against a source still refusing it. The floor turns that into one wasted
-	 * minute rather than a hot loop.
-	 *
-	 * @var int
-	 */
-	private const MIN_RATE_LIMIT_WAIT_SECONDS = 60;
-
-	/**
-	 * The longest, in seconds.
-	 *
-	 * An epoch/milliseconds mix-up in a source's `X-RateLimit-Reset` reads as a
-	 * reset tens of thousands of years out, and parking a run on it would look
-	 * exactly like the run having quietly died. An hour is long enough for any
-	 * real window and short enough to be visibly a wait.
-	 *
-	 * @var int
-	 */
-	private const MAX_RATE_LIMIT_WAIT_SECONDS = 3600;
 
 	/**
 	 * The default fan-out ceiling.
@@ -221,6 +204,70 @@ class SynchronizationRunNode implements IFlowNode {
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * The config vocabulary of a synchronization run.
+	 *
+	 * Only `synchronization` is required (validateConfig below enforces
+	 * that). Naming the vocabulary is what lets the preflight refuse a key
+	 * this node would silently ignore — and what lets the flow editor's step
+	 * dialog render one field per option instead of a JSON box.
+	 *
+	 * @return array<int, string> The accepted top-level config keys.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configKeys(): array {
+		return ['synchronization', 'force', 'output', 'maxItems', 'onError'];
+	}//end configKeys()
+
+	/**
+	 * The fields this node is edited through.
+	 *
+	 * `synchronization` is a picker fed by the app's OWN synchronizations
+	 * listing, so an author chooses one by name instead of pasting a uuid
+	 * into a JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'synchronization',
+				'label' => $this->l10n->t('Synchronization'),
+				'type' => 'select',
+				'help' => $this->l10n->t('The configured synchronization this step runs, with its own source, mapping and target.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+			],
+			[
+				'key' => 'force',
+				'label' => $this->l10n->t('Force a full pass'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Ignores the unchanged-object skip and re-processes everything the source returns. Slower; use it after changing a mapping.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->l10n->t('Field to store the summary in'),
+				'type' => 'text',
+				'help' => $this->l10n->t('With a field name, the incoming item is preserved and the run summary is added under it. Empty means the summary replaces the item.'),
+			],
+			[
+				'key' => 'maxItems',
+				'label' => $this->l10n->t('Item ceiling'),
+				'type' => 'number',
+				'help' => $this->l10n->t('The most synchronised objects this step may emit as items. The summary always reports the full run.'),
+			],
+			[
+				'key' => 'onError',
+				'label' => $this->l10n->t('When the run fails'),
+				'type' => 'text',
+				'help' => $this->l10n->t('"stop" (default) fails the step; "continue" records the error on the item and carries on; "dead_letter" routes the item to the flow\'s dead-letter handling.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
@@ -456,6 +503,11 @@ class SynchronizationRunNode implements IFlowNode {
 	 * default, because suspending with no `resumeAt` at all would leave the run
 	 * waiting for a signal nothing sends.
 	 *
+	 * The bounds and the reset arithmetic themselves live in
+	 * {@see FlowRateLimit} — `source-paginate` inherits the identical failure
+	 * mode the moment it makes the fetch, and two copies of a clamp are two
+	 * clamps. This method keeps what is this node's own: the log line.
+	 *
 	 * @param TooManyRequestsHttpException $exception The refusal, carrying the rate-limit headers.
 	 * @param string $reference The authored synchronization reference.
 	 *
@@ -467,7 +519,7 @@ class SynchronizationRunNode implements IFlowNode {
 		TooManyRequestsHttpException $exception,
 		string $reference,
 	): FlowSuspension {
-		$resumeAt = $this->resetTimeFrom(exception: $exception);
+		$suspension = FlowRateLimit::suspensionFor(exception: $exception, subject: $reference);
 
 		$this->logger->info(
 			'[openconnector.synchronization-run] Rate limited; suspending until the limit lifts.',
@@ -475,49 +527,13 @@ class SynchronizationRunNode implements IFlowNode {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'synchronization' => $reference,
-				'resumeAt' => $resumeAt->format('c'),
+				'resumeAt' => $suspension->getResumeAt()?->format('c'),
 			]
 		);
 
-		return new FlowSuspension(
-			resumeAt: $resumeAt,
-			reason: sprintf(
-				'rate limited by the source; waiting until %s to continue "%s"',
-				$resumeAt->format('c'),
-				$reference
-			)
-		);
+		return $suspension;
 
 	}//end suspendUntilTheLimitLifts()
-
-	/**
-	 * When the source says its limit lifts.
-	 *
-	 * Clamped at both ends against a header we do not control. A reset already
-	 * in the past would make the run due immediately and spin against a source
-	 * that is still refusing it; an absurd one — a misconfigured source
-	 * returning a reset years out, which is what an epoch/milliseconds mix-up
-	 * looks like — would park the run effectively forever.
-	 *
-	 * @param TooManyRequestsHttpException $exception The refusal.
-	 *
-	 * @return DateTime When to try again.
-	 */
-	private function resetTimeFrom(TooManyRequestsHttpException $exception): DateTime {
-		$reset = (int)(($exception->getHeaders()['X-RateLimit-Reset'] ?? 0));
-		$now = time();
-
-		$seconds = ($reset - $now);
-		if ($reset <= 0 || $seconds < self::MIN_RATE_LIMIT_WAIT_SECONDS) {
-			$seconds = self::MIN_RATE_LIMIT_WAIT_SECONDS;
-		}
-
-		if ($seconds > self::MAX_RATE_LIMIT_WAIT_SECONDS) {
-			$seconds = self::MAX_RATE_LIMIT_WAIT_SECONDS;
-		}
-
-		return (new DateTime())->setTimestamp($now + $seconds);
-	}//end resetTimeFrom()
 
 	/**
 	 * Run the synchronisation, turning any failure into a raised node failure.

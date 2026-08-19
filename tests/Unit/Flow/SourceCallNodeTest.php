@@ -147,6 +147,47 @@ class SourceCallNodeTest extends TestCase {
 
 	}//end testPaletteMetadata()
 
+
+	/**
+	 * The declared vocabulary is what the node actually reads.
+	 *
+	 * The preflight refuses keys outside this list and the flow editor renders
+	 * one field per entry, so a key the node reads but does not declare becomes
+	 * unreachable through both — this pins the two against each other.
+	 *
+	 * @return void
+	 */
+	public function testConfigKeysNameTheVocabularyTheNodeReads(): void {
+		$this->assertSame(
+			['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'],
+			$this->node->configKeys()
+		);
+
+	}//end testConfigKeysNameTheVocabularyTheNodeReads()
+
+	/**
+	 * Every form field edits a key the node reads, and `source` is a picker
+	 * fed by the app's own sources listing — never a bare uuid box.
+	 *
+	 * @return void
+	 */
+	public function testConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		$this->assertSame('select', $byKey['source']['type']);
+		$this->assertTrue($byKey['source']['required']);
+		$this->assertNotSame('', (string) ($byKey['source']['optionsFrom'] ?? ''));
+
+	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
+
 	/**
 	 * Scope is answered with Nextcloud's constants and false for anything else.
 	 *

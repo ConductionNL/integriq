@@ -75,6 +75,8 @@ class SynchronizationContractService {
 	 * @param string|int $id The OpenRegister id/uuid of the contract.
 	 *
 	 * @return ObjectEntity|null The OR contract object or null when not found.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
 	 */
 	public function findObject(string|int $id): ?ObjectEntity {
 		// _audit: false — a synchronization contract is the engine's own
@@ -219,6 +221,8 @@ class SynchronizationContractService {
 	 * @param bool $ensureUuid When true, auto-assign a uuid if absent.
 	 *
 	 * @return array The persisted contract payload array.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
 	 */
 	public function persist(array $contract, bool $ensureUuid = false): array {
 		$object = $contract;
@@ -292,6 +296,8 @@ class SynchronizationContractService {
 	 * @param array<int, array> $contracts The contract payload arrays to persist.
 	 *
 	 * @return array The OpenRegister bulk-save result, or an empty array for an empty batch.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
 	 */
 	public function persistBulk(array $contracts): array {
 		$rows = [];

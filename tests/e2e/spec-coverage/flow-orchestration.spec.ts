@@ -232,12 +232,26 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 		await page.goto(`${root}/flows/${flowId}`, { waitUntil: 'domcontentloaded' })
 		await expectRouteMatched(page, `/flows/${flowId}`)
 
-		// The Name field mirrors the loaded flow — proves the canvas mounted
-		// bound to THIS flow, not an empty "new flow" shell.
+		// The SIDEBAR HEADER carries the loaded flow's name — proves the canvas
+		// mounted bound to THIS flow, not an empty "new flow" shell.
+		//
+		// This used to read the Name TEXTBOX. In the flow-editor consolidation
+		// (@conduction/nextcloud-vue 2.4+) the flow's settings — name,
+		// description, trigger, cron — moved into the sidebar's "Flow" tab, and
+		// `NcAppSidebarTab` renders its content only while that tab is active.
+		// The Steps tab opens first, so the textbox is legitimately absent from
+		// the DOM on load and the old locator found nothing.
+		//
+		// The header is the better assertion anyway: `CnFlowSidebar` binds
+		// `NcAppSidebar`'s `name` to the flow's name, so this is what a user
+		// actually sees on arrival, without driving a tab first.
 		await expect(
-			page.getByRole('textbox', { name: /^Name/ }).first(),
+			page
+				.locator('.cn-flow-sidebar')
+				.getByText(FLOW_NAME, { exact: true })
+				.first(),
 			'the canvas must mount and load the seeded flow, not an empty shell',
-		).toHaveValue(FLOW_NAME, { timeout: 25_000 })
+		).toBeVisible({ timeout: 25_000 })
 
 		// The two seeded nodes render as placed canvas nodes. Nodes' accessible
 		// name IS their node id ("trigger1"/"step1") — the Steps palette's own
@@ -258,9 +272,12 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 		// document reload, not an in-app link click, proves it.
 		await page.reload({ waitUntil: 'domcontentloaded' })
 		await expect(
-			page.getByRole('textbox', { name: /^Name/ }).first(),
+			page
+				.locator('.cn-flow-sidebar')
+				.getByText(FLOW_NAME, { exact: true })
+				.first(),
 			'a hard reload of the flow detail URL must resolve to the same flow, not the dashboard',
-		).toHaveValue(FLOW_NAME, { timeout: 25_000 })
+		).toBeVisible({ timeout: 25_000 })
 	})
 })
 

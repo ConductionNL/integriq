@@ -2,49 +2,21 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   The flow controls, in Nextcloud's app sidebar. Shares `useFlowStore` with the
-  canvas, which is why neither needs props from the other. Mirrors
-  openregister/src/views/flows/FlowDetailSidebar.vue exactly — one shared store,
-  every app's sidebar behaves identically.
+  canvas, which is why neither needs props from the other. Save/Run live on
+  CnFlowDetail's toolbar; the host page (FlowDetailPage) handles them.
 
   @spec openspec/specs/flow-orchestration/spec.md#REQ-017
 -->
 <template>
-	<CnFlowSidebar @save="onSave" @run="onRun" />
+	<CnFlowSidebar />
 </template>
 
 <script>
-import { CnFlowSidebar, useFlowStore } from '@conduction/nextcloud-vue'
+import { CnFlowSidebar } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'FlowDetailSidebar',
 
 	components: { CnFlowSidebar },
-
-	setup() {
-		return { store: useFlowStore() }
-	},
-
-	methods: {
-		/**
-		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
-		 * @return {Promise<void>}
-		 */
-		async onSave() {
-			const saved = await this.store.save()
-			// A newly created flow gets its id from the server, so the route has
-			// to catch up or a reload would land back on `new`.
-			if (saved?.id && this.$route.params.id === 'new') {
-				this.$router.replace(`/flows/${saved.id}`)
-			}
-		},
-
-		/**
-		 * @spec openspec/specs/flow-orchestration/spec.md#REQ-017
-		 * @return {Promise<void>}
-		 */
-		async onRun() {
-			await this.store.run({})
-		},
-	},
 }
 </script>

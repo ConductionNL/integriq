@@ -3,9 +3,9 @@
 /**
  * Unit tests for FlowNodeListener.
  *
- * Asserts the palette contribution itself: both node ids appear with non-empty
- * metadata, and a colliding id is REFUSED by the registry rather than silently
- * displacing the node already registered under it.
+ * Asserts the palette contribution itself: every node id appears with
+ * non-empty metadata, and a colliding id is REFUSED by the registry rather
+ * than silently displacing the node already registered under it.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Flow
@@ -19,11 +19,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Flow;
 
+use OCA\OpenConnector\Flow\ApplyMappingNode;
+use OCA\OpenConnector\Flow\ContractCommitNode;
+use OCA\OpenConnector\Flow\ContractMatchNode;
+use OCA\OpenConnector\Flow\ContractSweepNode;
 use OCA\OpenConnector\Flow\FlowNodeListener;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Flow\SourceCallNode;
+use OCA\OpenConnector\Flow\SourcePaginateNode;
 use OCA\OpenConnector\Flow\SynchronizationRunNode;
 use OCA\OpenConnector\Service\CallService;
+use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -102,17 +109,52 @@ class FlowNodeListenerTest extends TestCase {
 				l10n: $l10n,
 				urlGenerator: $urlGenerator,
 				logger: $this->createMock(LoggerInterface::class)
+			),
+			sourcePaginateNode: new SourcePaginateNode(
+				synchronizationService: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			applyMappingNode: new ApplyMappingNode(
+				mappingService: $this->createMock(MappingService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			contractMatchNode: new ContractMatchNode(
+				synchronizationContractService: $this->createMock(SynchronizationContractService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			contractCommitNode: new ContractCommitNode(
+				synchronizationContractService: $this->createMock(SynchronizationContractService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			contractSweepNode: new ContractSweepNode(
+				synchronizationService: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
 			)
 		);
 
 	}//end setUp()
 
 	/**
-	 * Both nodes appear in the palette with non-empty metadata.
+	 * Every node appears in the palette with non-empty metadata.
 	 *
 	 * @return void
 	 */
-	public function testBothNodesAppearInThePalette(): void {
+	public function testEveryNodeAppearsInThePalette(): void {
 		$registry = new FlowNodeRegistry();
 
 		$this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
@@ -121,6 +163,12 @@ class FlowNodeListenerTest extends TestCase {
 
 		$this->assertArrayHasKey('openconnector.source-call', $nodes);
 		$this->assertArrayHasKey('openconnector.synchronization-run', $nodes);
+		$this->assertArrayHasKey('openconnector.source-paginate', $nodes);
+		$this->assertArrayHasKey('openconnector.apply-mapping', $nodes);
+		$this->assertArrayHasKey('openconnector.contract', $nodes);
+		$this->assertArrayHasKey('openconnector.contract-commit', $nodes);
+		$this->assertArrayHasKey('openconnector.contract-sweep', $nodes);
+		$this->assertCount(7, $nodes);
 
 		foreach ($nodes as $node) {
 			$this->assertNotSame('', $node->getDisplayName());
@@ -128,7 +176,7 @@ class FlowNodeListenerTest extends TestCase {
 			$this->assertNotSame('', $node->getIcon());
 		}
 
-	}//end testBothNodesAppearInThePalette()
+	}//end testEveryNodeAppearsInThePalette()
 
 	/**
 	 * A colliding node id is refused, not silently displaced.

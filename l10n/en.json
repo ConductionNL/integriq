@@ -1308,7 +1308,11 @@
         "Dispatch an event": "Dispatch an event",
         "Ping a source": "Ping a source",
         "Run a flow": "Run a flow",
-        "Run a synchronization": "Run a synchronization"
+        "Run a synchronization": "Run a synchronization",
+        "Apply a mapping": "Apply a mapping",
+        "Match contracts": "Match contracts",
+        "Commit contracts": "Commit contracts",
+        "Sweep stale objects": "Sweep stale objects"
     },
     "plurals": {}
 }

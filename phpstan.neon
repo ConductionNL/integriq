@@ -43,6 +43,20 @@ parameters:
         - lib/Flow/FlowNodeListener.php
         - lib/Flow/SourceCallNode.php
         - lib/Flow/SynchronizationRunNode.php
+        # flow-native-synchronization: the four page-level sync nodes implement
+        # the same runtime-only OCA\OpenRegister\Service\Flow\* interfaces
+        # (IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm) and build their
+        # output through FlowItems — same limitation, same remedy.
+        - lib/Flow/ApplyMappingNode.php
+        - lib/Flow/ContractMatchNode.php
+        - lib/Flow/ContractCommitNode.php
+        - lib/Flow/ContractSweepNode.php
+        # flow-native-synchronization task 1.1: the page-fetch node implements the
+        # same runtime-only interfaces, and FlowRateLimit returns an
+        # OCA\OpenRegister\Service\Flow\FlowSuspension — same limitation, same
+        # remedy.
+        - lib/Flow/SourcePaginateNode.php
+        - lib/Flow/FlowRateLimit.php
         # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
