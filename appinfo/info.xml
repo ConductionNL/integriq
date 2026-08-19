@@ -171,6 +171,12 @@
 		     (XML comments must not contain a double hyphen, so the flags are not
 		     written with their leading dashes here.) -->
 		<command>OCA\OpenConnector\Command\AuthenticationConfig</command>
+		<!-- flow-native-synchronization task 3.1: renders one synchronization as a
+		     generated flow document, or names the features the decomposed flow
+		     cannot express yet. The command WRITES NOTHING: it creates no flow,
+		     enables nothing and touches no synchronization contract, because a
+		     generated flow ships disabled until a human has reviewed it. -->
+		<command>OCA\OpenConnector\Command\SynchronizationToFlow</command>
 	</commands>
 
 	<settings>
