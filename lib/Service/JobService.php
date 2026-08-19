@@ -335,6 +335,31 @@ class JobService {
 	public function executeJob(ObjectEntity $job, bool $forceRun = false, ?ExecutionTraceContext $trace = null): ?ObjectEntity {
 		$jobData = $job->getObject();
 
+		// READ THE SINGLE-RUN FLAG HERE, while $jobData is still the job as
+		// LOADED. Two reasons, both real:
+		//
+		//  - The schema declares `singleRun` — it is what job-form-fields.json
+		//    renders and what every seeded connector writes. This method used
+		//    to read `isSingleRun`, which NOTHING writes, so the flag was
+		//    declared, editable, and enforced nowhere: a job marked "run once"
+		//    ran on every tick, forever. `isSingleRun` is still accepted, as
+		//    the spelling this method has always used.
+		//  - Read further down, after the method has assigned lastRun/nextRun,
+		//    static analysis has narrowed $jobData to those keys alone and
+		//    reports the offset as non-existent. Reading it up here describes
+		//    the job as it arrived, which is what the flag actually means.
+		// The job AS LOADED, kept immutable. $jobData is mutated below
+		// (lastRun, nextRun, isEnabled), and every later `??` read of a key
+		// this method never assigns is reported by static analysis as an
+		// offset that "does not exist" on the narrowed shape — three such
+		// reads were carrying baseline entries whose text embedded that
+		// inferred shape, so they broke the moment the inference shifted.
+		// Reading configuration from the loaded job is both analysable and
+		// closer to what these values mean.
+		$jobConfig = $job->getObject();
+
+		$isSingleRun = (($jobConfig['singleRun'] ?? null) === true || ($jobConfig['isSingleRun'] ?? null) === true);
+
 		// Initialize stack trace for logging.
 		$stackTrace = [];
 		if ($forceRun === true) {
@@ -491,8 +516,8 @@ class JobService {
 			$jobData['nextRun'] = $nextRunDt->format('c');
 		}//end if
 
-		// Handle single run jobs by disabling them after execution.
-		$isSingleRun = ($jobData['isSingleRun'] ?? false);
+		// Handle single run jobs by disabling them after execution. The flag
+		// was captured at the top, from the job as loaded — see there for why.
 		if ($forceRun === false && $isSingleRun === true && $executionThrew === false) {
 			$jobData['isEnabled'] = false;
 		}
@@ -500,8 +525,8 @@ class JobService {
 		// M1: Build and write the job log BEFORE persisting lastRun/nextRun so
 		// that any DB failure writing the job row cannot leave the timeline
 		// advanced with no log entry as evidence.
-		$logRetention = (int)($jobData['logRetention'] ?? 0);
-		$errorRetention = (int)($jobData['errorRetention'] ?? 0);
+		$logRetention = (int)($jobConfig['logRetention'] ?? 0);
+		$errorRetention = (int)($jobConfig['errorRetention'] ?? 0);
 
 		if ($executionThrew === true && $thrownException !== null) {
 			// H3: write an error log for exceptions thrown during executeJob.

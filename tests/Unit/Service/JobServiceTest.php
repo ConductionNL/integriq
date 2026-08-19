@@ -403,6 +403,60 @@ class JobServiceTest extends TestCase {
 	}//end testExecuteJobRestoresPriorSessionUser()
 
 	/**
+	 * A job the schema calls `singleRun` must be DISABLED after it runs.
+	 *
+	 * The flag was declared and enforced nowhere: `job-form-fields.json`
+	 * renders `singleRun` and every seeded connector writes `singleRun`, while
+	 * executeJob() read `isSingleRun` — which nothing writes. A job marked
+	 * "run once" therefore ran on every tick, forever, and the only evidence
+	 * was that it was still enabled afterwards.
+	 *
+	 * @return void
+	 */
+	public function testSingleRunJobIsDisabledAfterRunning(): void {
+		$jobBody = [
+			'isEnabled' => true,
+			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'interval' => 300,
+			// The spelling the SCHEMA declares.
+			'singleRun' => true,
+			'arguments' => [],
+		];
+		$jobEntity = ObjectServiceMockBuilder::objectEntity($this, $jobBody, 'job-single');
+
+		$this->container->method('get')->willReturn(new class {
+			public function run(array $args): array {
+				return ['level' => 'SUCCESS', 'message' => 'ok'];
+			}
+		});
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved) {
+				if (isset($args[0]) === true && is_array($args[0]) === true) {
+					$saved[] = $args[0];
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, ['id' => 'x'], 'x');
+			}
+		);
+
+		$this->service->executeJob($jobEntity);
+
+		$disabled = false;
+		foreach ($saved as $payload) {
+			if (($payload['isEnabled'] ?? null) === false) {
+				$disabled = true;
+			}
+		}
+
+		$this->assertTrue(
+			$disabled,
+			'a job carrying the schema\'s `singleRun: true` must be disabled after it runs'
+		);
+
+	}//end testSingleRunJobIsDisabledAfterRunning()
+	/**
 	 * #1006 regression test — a job whose configured userId no longer exists
 	 * MUST be skipped with a WARNING log, NOT crash via setUser(null).
 	 *
