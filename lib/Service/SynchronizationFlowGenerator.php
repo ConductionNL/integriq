@@ -188,6 +188,42 @@ class SynchronizationFlowGenerator {
 	public const KEY_SYNCED_ID = 'syncedId';
 
 	/**
+	 * The node type both value-naming steps use.
+	 *
+	 * @var string
+	 */
+	private const NODE_SET_FIELDS = 'openregister.set-fields';
+
+	/**
+	 * The uuid the write step matches on: the contract's targetId, or ''.
+	 *
+	 * The empty string is load-bearing — it makes `object-write`'s match MISS
+	 * rather than throw, which is how one upsert node serves both create and
+	 * update on an engine that cannot branch per item.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const RULE_TARGET_UUID = ['var' => ['json.' . self::KEY_CONTRACT . '.targetId', '']];
+
+	/**
+	 * The target id this pass REACHED: the written uuid, else the contract's.
+	 *
+	 * `contract-sweep` deletes whatever its items do not name, and a skipped
+	 * item has no `written` block at all — `object-write` passed it through
+	 * untouched. Reading the sweep's ids from the write output alone would
+	 * drop every unchanged object out of the synced set, and the sweep would
+	 * delete precisely the objects that were fine. The fallback is sound
+	 * because a `skip` decision requires a targetId.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const RULE_SYNCED_ID = ['if' => [
+		['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+		['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+		['var' => ['json.' . self::KEY_TARGET_UUID, '']],
+	]];
+
+	/**
 	 * The source kind the decomposed fetch step can serve.
 	 *
 	 * `SourcePaginateNode` delegates to `getAllObjectsFromApi()` directly, not
@@ -630,17 +666,7 @@ class SynchronizationFlowGenerator {
 					'output' => self::KEY_CONTRACT,
 				],
 			],
-			[
-				'id' => 'target-uuid',
-				'type' => 'openregister.set-fields',
-				'config' => [
-					'compute' => [
-						self::KEY_TARGET_UUID => [
-							'var' => ['json.' . self::KEY_CONTRACT . '.targetId', ''],
-						],
-					],
-				],
-			],
+			['id' => 'target-uuid', 'type' => self::NODE_SET_FIELDS, 'config' => ['compute' => [self::KEY_TARGET_UUID => self::RULE_TARGET_UUID]]],
 			[
 				'id' => 'write',
 				'type' => 'openregister.object-write',
@@ -662,7 +688,7 @@ class SynchronizationFlowGenerator {
 					'skipWhen' => self::KEY_CONTRACT . '.outcome',
 				],
 			],
-			$this->syncedIdNode(),
+			['id' => 'synced-id', 'type' => self::NODE_SET_FIELDS, 'config' => ['compute' => [self::KEY_SYNCED_ID => self::RULE_SYNCED_ID]]],
 			[
 				'id' => 'commit',
 				'type' => ContractCommitNode::NODE_ID,
@@ -704,25 +730,6 @@ class SynchronizationFlowGenerator {
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function syncedIdNode(): array {
-		return [
-			'id' => 'synced-id',
-			'type' => 'openregister.set-fields',
-			'config' => [
-				'compute' => [
-					self::KEY_SYNCED_ID => [
-						'if' => [
-							['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
-							['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
-							['var' => ['json.' . self::KEY_TARGET_UUID, '']],
-						],
-					],
-				],
-			],
-		];
-
-	}//end syncedIdNode()
-
 	/**
 	 * Chain the nodes together, one edge per consecutive pair.
 	 *
