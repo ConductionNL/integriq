@@ -85,11 +85,9 @@
 								)
 						" />
 					<div class="oc-sync-node-step__on-error">
-						<label :for="onErrorSelectId">
-							{{ t('openconnector', 'When the run fails') }}
-						</label>
 						<NcSelect
 							:inputId="onErrorSelectId"
+							:inputLabel="t('openconnector', 'When the run fails')"
 							:modelValue="selectedOnError"
 							:options="onErrorOptions"
 							:clearable="false"
@@ -108,7 +106,7 @@
 import { useFlowStore } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
-import SynchronizationEditorModal from '../../modals/v2/SynchronizationEditorModal.vue'
+import SynchronizationEditorModal from './SynchronizationEditorModal.vue'
 import { useObjectStore } from '../../store/objectStore.js'
 
 const SCHEMA_SLUG = 'synchronization'
@@ -162,10 +160,12 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onErrorSelectId() {
 			return `oc-sync-node-on-error-${this.flowStore.editingNodeId}`
 		},
 
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onErrorOptions() {
 			return [
 				{ id: 'stop', label: t('openconnector', 'Stop the flow') },
@@ -180,6 +180,7 @@ export default {
 			]
 		},
 
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedOnError() {
 			return (
 				this.onErrorOptions.find(
@@ -189,6 +190,7 @@ export default {
 		},
 	},
 
+	/** @spec openspec/specs/sync-editor-ui/spec.md */
 	async created() {
 		const config = this.nodeConfig()
 		const reference =
@@ -209,11 +211,26 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * The step's configuration as the flow store currently holds it.
+		 *
+		 * @return {object} The node config, or an empty object.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		nodeConfig() {
 			const node = this.flowStore.editingNode
 			return (node && node.config) || {}
 		},
 
+		/**
+		 * Record one step option on the local draft. Never touches the node.
+		 *
+		 * @param {string} key The option key.
+		 * @param {*} value Its new value.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		setStep(key, value) {
 			this.stepDraft = { ...this.stepDraft, [key]: value }
 		},
@@ -229,6 +246,8 @@ export default {
 		 *
 		 * @param {object} payload The synchronization to persist.
 		 * @return {Promise<void>} Resolves once both commits landed.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		async persist(payload) {
 			const saved = await this.objectStore.saveObject(SCHEMA_SLUG, payload)
@@ -263,7 +282,11 @@ export default {
 			this.flowStore.setNodeConfigById(nodeId, config)
 		},
 
-		/** Close = Cancel for anything not yet saved, per the registry contract. */
+		/**
+		 * Close = Cancel for anything not yet saved, per the registry contract.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		closeEditor() {
 			this.flowStore.editingNodeId = null
 		},
