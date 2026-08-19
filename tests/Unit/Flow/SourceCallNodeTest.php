@@ -147,6 +147,24 @@ class SourceCallNodeTest extends TestCase {
 
 	}//end testPaletteMetadata()
 
+
+	/**
+	 * The declared vocabulary is what the node actually reads.
+	 *
+	 * The preflight refuses keys outside this list and the flow editor renders
+	 * one field per entry, so a key the node reads but does not declare becomes
+	 * unreachable through both — this pins the two against each other.
+	 *
+	 * @return void
+	 */
+	public function testConfigKeysNameTheVocabularyTheNodeReads(): void {
+		$this->assertSame(
+			['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'],
+			$this->node->configKeys()
+		);
+
+	}//end testConfigKeysNameTheVocabularyTheNodeReads()
+
 	/**
 	 * Scope is answered with Nextcloud's constants and false for anything else.
 	 *

@@ -83,6 +83,12 @@ use UnexpectedValueException;
  * Runs a configured Synchronization as one flow step, fanning out its objects.
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-4-synchronizationrunnode-with-bounded-fan-out-seed-data-and-a-live-end-to-end-run
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class sat at the
+ *   threshold before `configKeys()` — a one-line vocabulary declaration —
+ *   tipped it over. The complexity is the count of distinct ways a run
+ *   config and its fan-out can be wrong; splitting the class would move
+ *   that branching, not remove it.
  */
 class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys {
 
