@@ -1843,8 +1843,10 @@
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
       },
+      "_note": "flow-native-synchronization task 3.2: Jobs become trigger-schedule flows (task 3.3). The page, its actions and the job runner all stay — `below-header` renders AutomationDeprecationNotice between the header and the actions bar, stating the direction of travel and offering a way to the Flows index. Nothing is removed here; page removal is task 3.4, gated on the task-2.2 benchmark.",
       "slots": {
-        "form-fields": "JobFormFields"
+        "form-fields": "JobFormFields",
+        "below-header": "AutomationDeprecationNotice"
       }
     },
     {
@@ -1981,7 +1983,8 @@
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column MappingEditorModal. View still navigates to the MappingDetail page for a deep-linkable URL.",
       "slots": {
-        "form-dialog": "MappingEditorModal"
+        "form-dialog": "MappingEditorModal",
+        "below-header": "AutomationDeprecationNotice"
       }
     },
     {
@@ -2030,7 +2033,8 @@
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by RuleEditorModal. The `includeFields` list that used to sit here is gone with it: it produced free-text inputs for the enum-less `action`/`timing`/`type` strings and could reach neither `conditions` (a `type: object` property, dropped by fieldsFromSchema) nor `order` nor the nested `configuration.error.*` fields. Per-type parameters beyond `error` are authored on the RuleDetail page, which hosts all 18 views/Rule/actionForms/ components — that is what \"Open full editor\" navigates to.",
       "slots": {
-        "form-dialog": "RuleEditorModal"
+        "form-dialog": "RuleEditorModal",
+        "below-header": "AutomationDeprecationNotice"
       }
     },
     {
@@ -2125,7 +2129,8 @@
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column SynchronizationEditorModal. `open-editor` and the row click still navigate to the SynchronizationDetail page, which carries what the modal omits (cursor reset, live subscription).",
       "slots": {
-        "form-dialog": "SynchronizationEditorModal"
+        "form-dialog": "SynchronizationEditorModal",
+        "below-header": "AutomationDeprecationNotice"
       }
     },
     {

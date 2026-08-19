@@ -78,6 +78,13 @@
 			</NcButton>
 		</template>
 
+		<!-- Deprecation context, first in the body so it reads as page-level
+		     framing rather than an error against the rule being edited.
+		     flow-native-synchronization task 3.2: Rules become
+		     trigger-object + switch/filter steps (task 3.3); the rule
+		     evaluation service and this editor both stay. -->
+		<AutomationDeprecationNotice />
+
 		<!-- Basic fields -->
 		<CnDetailCard :title="t('openconnector', 'Basics')" icon="icon-info">
 			<div class="rule-detail-page__grid">
@@ -227,6 +234,7 @@ import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
+import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
 import RuleActionConfig from './RuleActionConfig.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
@@ -244,6 +252,7 @@ export default {
 	name: 'RuleDetailPage',
 
 	components: {
+		AutomationDeprecationNotice,
 		NcButton,
 		NcLoadingIcon,
 		NcSelect,
