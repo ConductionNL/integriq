@@ -25,6 +25,25 @@
  * turn "zero writes for an unchanged page" into a write per item, which is the
  * property the contract step exists to protect.
  *
+ * WHY `targetHashPosition` EXISTS, AND WHY IT NAMES THE *MAPPED* OBJECT
+ * ---------------------------------------------------------------------
+ * `ContractMatchNode::isUnchanged()` only decides `skip` for a contract that
+ * carries an origin hash, a `targetId` AND a `targetHash`. Until this key
+ * existed nothing in this pipeline ever wrote a `targetHash`, so that predicate
+ * could not hold for a contract this engine produced: `skip` was structurally
+ * unreachable and every re-run rewrote every object.
+ *
+ * The path must name the MAPPED object — the mapping's own output — and never
+ * the WRITTEN one. A written object carries server-assigned `@self` fields
+ * including `updated`, so hashing it would yield a fresh hash on every pass and
+ * never skip: the same defect in a new costume.
+ *
+ * The recipe is `md5(serialize(...))` over the value AS IT STANDS, without the
+ * recursive key sort `originHash` applies. That asymmetry is deliberate and
+ * copied from the legacy engine (`SynchronizationService::updateTarget()` and
+ * `updateTargetTable()`), so a contract written by either engine compares equal
+ * to one written by the other.
+ *
  * WHY AN UPDATE WITHOUT A CONTRACT UUID IS A FAILURE
  * --------------------------------------------------
  * An `update` decision names the contract it updates. Committing one without
@@ -205,6 +224,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			'synchronization',
 			'contractPosition',
 			'targetIdPosition',
+			'targetHashPosition',
 			'onError',
 		];
 	}//end configKeys()
@@ -243,6 +263,19 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 				),
 			],
 			[
+				'key' => 'targetHashPosition',
+				'label' => $this->l10n->t('Target hash path'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Dot-path to the MAPPED object on each item — the mapping\'s output, not the written '
+					. 'object. Its hash is stored on the contract as "targetHash", which is what lets a '
+					. 'later run decide "skip" for an unchanged object instead of rewriting it. Leave empty '
+					. 'to store no target hash, in which case every run rewrites every object. Never point '
+					. 'it at the written object: that carries a server-assigned "@self.updated", so its '
+					. 'hash changes on every pass and nothing is ever skipped.'
+				),
+			],
+			[
 				'key' => 'onError',
 				'label' => $this->l10n->t('On error'),
 				'type' => 'text',
@@ -270,6 +303,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 		$this->assertOptionalPath(config: $config, key: 'contractPosition');
 		$this->assertOptionalPath(config: $config, key: 'targetIdPosition');
+		$this->assertOptionalPath(config: $config, key: 'targetHashPosition');
 
 		FlowNodeSupport::assertOnError(config: $config, l10n: $this->l10n);
 
@@ -328,6 +362,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$reference = trim((string)$config['synchronization']);
 		$contractPosition = $this->pathOrDefault(config: $config, key: 'contractPosition', default: self::DEFAULT_CONTRACT_POSITION);
 		$targetIdPosition = $this->pathOrDefault(config: $config, key: 'targetIdPosition', default: self::DEFAULT_TARGET_ID_POSITION);
+		$targetHashPosition = trim((string)($config['targetHashPosition'] ?? ''));
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 		$now = (new DateTime())->format(DateTime::ATOM);
@@ -357,6 +392,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					json: $json,
 					reference: $reference,
 					targetIdPosition: $targetIdPosition,
+					targetHashPosition: $targetHashPosition,
 					outcome: $outcome,
 					now: $now
 				);
@@ -409,6 +445,8 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 * @param array $json The item's record.
 	 * @param string $reference The authored synchronization reference.
 	 * @param string $targetIdPosition Dot-path to the written object's uuid.
+	 * @param string $targetHashPosition Dot-path to the mapped object, or empty
+	 *        to store no target hash.
 	 * @param string $outcome The decision outcome (`create` or `update`).
 	 * @param string $now The commit timestamp, ISO 8601.
 	 *
@@ -423,6 +461,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		array $json,
 		string $reference,
 		string $targetIdPosition,
+		string $targetHashPosition,
 		string $outcome,
 		string $now,
 	): array {
@@ -457,7 +496,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			}
 		}
 
-		return [
+		$payload = [
 			'uuid' => $uuid,
 			'synchronizationId' => $reference,
 			'originId' => ($decision['originId'] ?? null),
@@ -468,7 +507,48 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			'sourceLastSynced' => $now,
 			'targetLastSynced' => $now,
 		];
+
+		$targetHash = $this->targetHash(json: $json, targetHashPosition: $targetHashPosition);
+		if ($targetHash !== null) {
+			$payload['targetHash'] = $targetHash;
+		}
+
+		return $payload;
 	}//end contractPayload()
+
+	/**
+	 * Hash the mapped object the authored path names, the legacy engine's way.
+	 *
+	 * Returns null — leaving the key off the payload entirely rather than
+	 * storing an empty one — when no path is authored, or when the path does
+	 * not resolve to an array. A hash of `null` would be a constant that every
+	 * item shares, which is worse than no hash at all: it would make the match
+	 * step skip objects it has never seen agree.
+	 *
+	 * The value is hashed AS IT STANDS. `originHash` recursively key-sorts
+	 * first; this deliberately does not, because
+	 * `SynchronizationService::updateTarget()` does not either, and a contract
+	 * must compare equal whichever engine wrote it.
+	 *
+	 * @param array $json The item's record.
+	 * @param string $targetHashPosition Dot-path to the mapped object, or empty.
+	 *
+	 * @return string|null The target hash, or null when there is none to store.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function targetHash(array $json, string $targetHashPosition): ?string {
+		if ($targetHashPosition === '') {
+			return null;
+		}
+
+		$mapped = FlowTemplate::lookup(path: $targetHashPosition, json: $json);
+		if (is_array($mapped) === false) {
+			return null;
+		}
+
+		return md5(serialize($mapped));
+	}//end targetHash()
 
 	/**
 	 * Persist the page's payloads in ONE bulk call, or raise.

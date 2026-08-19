@@ -389,6 +389,89 @@ class ContractMatchNodeTest extends TestCase {
 	}//end testEqualHashWithoutTargetIsUpdateNotSkip()
 
 	/**
+	 * `targetHash` ALONE decides between `skip` and `update`.
+	 *
+	 * This is the pair that names the defect. Everything else about the two
+	 * contracts is identical — same origin hash, same targetId — and only the
+	 * presence of a `targetHash` moves the verdict. Until
+	 * `ContractCommitNode` learned to write one, the second half of this pair
+	 * was unreachable for any contract the decomposed pipeline produced, so
+	 * every re-run rewrote every object.
+	 *
+	 * @return void
+	 */
+	public function testTargetHashAloneDecidesSkipVersusUpdate(): void {
+		$this->givenOwner();
+
+		$json = ['id' => 'o-1', 'value' => 'same'];
+
+		$payload = [
+			'uuid' => 'c-1',
+			'originId' => 'o-1',
+			'originHash' => $this->hashOf($json),
+			'targetId' => 't-1',
+		];
+
+		$this->contractService->method('findAllObjects')->willReturnOnConsecutiveCalls(
+			[$this->contractObject(uuid: 'c-1', payload: ($payload + ['targetHash' => null]))],
+			[$this->contractObject(uuid: 'c-1', payload: ($payload + ['targetHash' => 'th-1']))]
+		);
+
+		$withoutHash = $this->node->execute(
+			[['json' => $json]],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+		$withHash = $this->node->execute(
+			[['json' => $json]],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+		$this->assertSame('update', $withoutHash[0]['json']['contract']['outcome']);
+		$this->assertSame('skip', $withHash[0]['json']['contract']['outcome']);
+
+	}//end testTargetHashAloneDecidesSkipVersusUpdate()
+
+	/**
+	 * An EMPTY-string `targetHash` is as good as a missing one.
+	 *
+	 * A contract whose target hash is `''` never completed either, and the
+	 * predicate must not read the empty string as "present".
+	 *
+	 * @return void
+	 */
+	public function testEmptyTargetHashIsUpdateNotSkip(): void {
+		$this->givenOwner();
+
+		$json = ['id' => 'o-1', 'value' => 'same'];
+
+		$this->contractService->method('findAllObjects')->willReturn(
+			[
+				$this->contractObject(
+					uuid: 'c-1',
+					payload: [
+						'uuid' => 'c-1',
+						'originId' => 'o-1',
+						'originHash' => $this->hashOf($json),
+						'targetId' => 't-1',
+						'targetHash' => '',
+					]
+				),
+			]
+		);
+
+		$out = $this->node->execute(
+			[['json' => $json]],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+		$this->assertSame('update', $out[0]['json']['contract']['outcome']);
+
+	}//end testEmptyTargetHashIsUpdateNotSkip()
+
+	/**
 	 * `hashPosition` scopes the hash so volatile siblings cannot force updates.
 	 *
 	 * @return void
