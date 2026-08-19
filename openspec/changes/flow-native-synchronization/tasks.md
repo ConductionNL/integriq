@@ -47,8 +47,17 @@
 
 ## 3. Migration + deprecation
 
-- [ ] 3.1 Generator: Synchronization entity → generated flow (named,
+- [x] 3.1 Generator: Synchronization entity → generated flow (named,
       disabled-until-reviewed), task-6.2 precedent; contracts untouched.
+      `SynchronizationFlowGenerator` + `occ openconnector:synchronization-to-flow`.
+      It REFUSES anything the decomposed flow cannot express rather than
+      emitting a flow that would do less. Two gaps found and recorded on the
+      PR: the engine cannot branch per item (`FlowTokenRouter::takenExits()`
+      reads `$items[0]` and routes the whole token), so a mixed create/update
+      pass cannot use `object-write`'s BULK path — the generated flow uses the
+      single-object upsert; and `object-write` has no "write the record whole"
+      shorthand, so the written field list is enumerated from the mapping and
+      frozen at generation time.
 - [ ] 3.2 Deprecation banners + "open as flow" on Jobs, Rules, Mappings,
       Synchronizations pages; nav folds under Automation.
 - [ ] 3.3 Jobs → trigger-schedule flows; Rules → trigger-object + switch.
