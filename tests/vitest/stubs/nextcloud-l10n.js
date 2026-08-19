@@ -9,7 +9,7 @@
 function interpolate(text, vars) {
 	if (!vars) return text
 	return text.replace(/\{(\w+)\}/g, (match, key) =>
-		Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match,
+		Object.hasOwn(vars, key) ? String(vars[key]) : match,
 	)
 }
 

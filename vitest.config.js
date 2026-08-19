@@ -15,12 +15,24 @@
  *   • patchMethod — immutable `update:value` emit for action forms.
  *
  * These need no DOM, so the environment is `node`. The @nextcloud/* runtime
- * deps that aren't mocked per-test are aliased to deterministic stubs.
+ * deps that aren't mocked per-test are aliased to deterministic stubs; a spec
+ * that needs a DOM opts in per file with `// @vitest-environment jsdom`.
+ *
+ * `@vitejs/plugin-vue` is registered so a spec can import an app `.vue` SFC
+ * directly (tests/vitest/automationDeprecationNotice.spec.js mounts one).
+ * Without it Vite hands the SFC to its JS parser and the suite dies at
+ * import-analysis with "content contains invalid JS syntax" — the component
+ * under test is never reached, so the failure looks like a broken component
+ * rather than a missing transform. Specs that mount a PUBLISHED
+ * @nextcloud/vue component (ncButtonSubmitType) are unaffected either way:
+ * the library ships compiled ESM, not raw SFCs.
  */
 
+const vuePlugin = require('@vitejs/plugin-vue')
 const path = require('path')
 
 module.exports = {
+	plugins: [(vuePlugin.default ?? vuePlugin)()],
 	test: {
 		environment: 'node',
 		globals: false,
