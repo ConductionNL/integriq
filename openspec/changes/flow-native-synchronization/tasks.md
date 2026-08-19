@@ -36,14 +36,27 @@
 
 ## 2. The canonical flow, proven
 
-- [ ] 2.1 Author the reference flow (design.md) against the CKAN benchmark
-      source; page cursor in `flow-state`.
+- [x] 2.1 Author the reference flow (design.md) against the CKAN benchmark
+      source. `reference-flow.json` + `reference-flow.md`, validated live.
+      The draft WITHOUT `explode` passed preflight and was still wrong —
+      preflight validates vocabulary, not item SHAPE. NOT done: the page
+      cursor in `flow-state`; the generated flow delegates paging to
+      `source-paginate`, which keeps the cursor on the synchronization.
 - [ ] 2.2 Benchmark: decomposed flow vs `synchronization-run` on the 2000-
       dataset CKAN run — meet or beat, measured, before any deprecation.
-- [ ] 2.3 Re-run idempotency: second pass performs zero writes (contract hash
-      path), asserted.
-- [ ] 2.4 Playwright e2e: draw the flow in the editor, run it, assert objects
-      + contracts + resumability after a mid-run suspension.
+      NOT STARTED. This is what gates 3.4.
+- [x] 2.3 Re-run idempotency. `contract-commit` never wrote `targetHash`, so
+      `ContractMatchNode::isUnchanged()` could never hold and `skip` was
+      unreachable (#1297). Measured live: contracts went 18/18 rewritten to
+      0/18. Objects still moved, because a skipped item must keep reaching
+      `object-write` or `contract-sweep` deletes it — closed by
+      `object-write`'s `skipWhen` (openregister #2592) plus the `synced-id`
+      step (#1300), which keeps skipped objects inside the synced set.
+- [x] 2.4 Playwright e2e: the generated flow validates, runs, writes objects
+      and contracts, and re-runs (#1296). Resumability after a mid-run
+      suspension is SKIPPED with a reason — it needs a programmable stub
+      source reachable from the SERVER, or an occ seam forcing a
+      `FlowSuspension`.
 
 ## 3. Migration + deprecation
 
@@ -58,8 +71,13 @@
       single-object upsert; and `object-write` has no "write the record whole"
       shorthand, so the written field list is enumerated from the mapping and
       frozen at generation time.
-- [ ] 3.2 Deprecation banners + "open as flow" on Jobs, Rules, Mappings,
-      Synchronizations pages; nav folds under Automation.
+- [x] 3.2 Deprecation banners + a Flows affordance on Jobs, Rules, Mappings
+      and Synchronizations (#1292). The nav fold was DECLINED, deliberately:
+      `menu-layout.json` carries a written `_navigationRationale` (ADR-079/080)
+      grouping the menu by data DIRECTION, and Synchronizations sits in
+      Connections because it is outbound. Jobs, Rules, Mappings and Flows are
+      already under Automation. Reversing a documented decision to satisfy one
+      line of design.md — on pages 3.4 removes anyway — needs a human call.
 - [x] 3.3 Jobs → trigger-schedule flows; Rules → trigger-object + switch.
       `JobToFlowGenerator` + `occ openconnector:job-to-flow`, and
       `RuleToFlowGenerator` + `occ openconnector:rule-to-flow <rule> <endpoint>`.
