@@ -88,6 +88,8 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * @param DeferredListenerContext $context The captured dispatch-time context.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/software-catalogus-events/spec.md#requirement-view-deletion-cascades-to-extended-views-off-the-request-path-req-006
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
 		$openRegister = $this->objectService->getOpenRegisters();

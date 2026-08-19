@@ -283,3 +283,74 @@ updated / disabled, no VNG endpoint is called.
   REQ + scenario updates. Filling in the stubs without a REQ
   update would silently change the observable contract.
 
+
+---
+
+### Requirement: View deletion cascades to extended views, off the request path (REQ-006)
+
+Deleting a `view` object in the `vng-gemma` register MUST remove the
+`extendview` objects carrying the same `identifier`. That cascade MUST NOT
+run inside the delete request.
+
+`ViewDeletedEventListener::handle(Event $event): void` observes
+`ObjectDeletedEvent`, which is a POST event — the view is already gone and
+nothing the listener does can change that outcome (ADR-078). The listener
+therefore MUST do no cascade work itself. It MUST:
+
+- return immediately for any event that is not an `ObjectDeletedEvent`;
+- resolve the deleted object's register and schema and return unless they are
+  `vng-gemma` / `view`;
+- swallow an unresolvable register or schema — an instance without the
+  Software Catalog register MUST NOT have its deletes broken by this listener;
+- read `identifier` from the deleted object's payload and return when it is
+  absent or empty;
+- hand `{identifier, register, schema}` to `DeferredViewCascadeJob` via
+  OpenRegister's `ListenerDeferralService::defer()`, deduplicated on
+  `<register>|<schema>|<identifier>` so a bulk delete enqueues one entry per
+  distinct view.
+
+The `identifier` MUST travel in the entry payload. Re-resolving the deleted
+view inside the job is forbidden: `DeferredEntryObjectResolver` treats a
+soft-deleted object as a stale no-op and returns `null`, so a cascade that
+re-fetched its own subject would delete nothing and report success.
+
+`DeferredViewCascadeJob::runDeferred(DeferredListenerContext $context): void`
+MUST, for each entry, look up `extendview` objects matching the entry's
+register, schema and `identifier` with an explicit row limit, delete each one,
+and continue past a failure on any single row. It MUST log a warning when the
+row limit is reached, and MUST log and return when OpenRegister's object
+service is unavailable rather than inventing a fallback. The job extends
+`ActorForwardedJob`, so it runs under the user who performed the delete
+(ADR-078 Rule 6) and is a one-shot `QueuedJob` that cannot re-queue itself.
+
+#### Scenario: deleting a vng-gemma view enqueues the cascade
+
+- **GIVEN** an `ObjectDeletedEvent` whose object is in register `vng-gemma`, schema `view`, carrying `identifier: "gemma-view-1"`
+- **WHEN** `ViewDeletedEventListener::handle($event)` runs
+- **THEN** `ListenerDeferralService::defer()` is called once with `DeferredViewCascadeJob::class` and the entry `{identifier: "gemma-view-1", register: <vng-gemma id>, schema: <extendview id>}`
+- **AND** no `findAll` and no `delete` is issued during the request
+
+#### Scenario: a delete in another register is ignored
+
+- **GIVEN** an `ObjectDeletedEvent` whose object is in a register other than `vng-gemma`
+- **WHEN** the event is dispatched
+- **THEN** nothing is deferred
+
+#### Scenario: an unresolvable register does not break the delete
+
+- **GIVEN** `RegisterMapper::find()` throws for the deleted object's register
+- **WHEN** the event is dispatched
+- **THEN** the throwable is caught, a debug line is logged, nothing is deferred, and `handle()` returns normally
+
+#### Scenario: the job deletes every matching extended view
+
+- **GIVEN** a queued `DeferredViewCascadeJob` entry for `identifier: "gemma-view-1"` and three matching `extendview` objects
+- **WHEN** the job runs
+- **THEN** all three are deleted
+- **AND** a failure deleting one of them is logged and the remaining ones are still deleted
+
+#### Notes
+
+- The listener is still marked `@todo Remove this temporary listener once it
+  lives in the software catalog application`. Moving it does not change this
+  requirement — the placement rule travels with the behaviour.
