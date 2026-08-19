@@ -26,6 +26,7 @@ use OCA\OpenConnector\Flow\ContractSweepNode;
 use OCA\OpenConnector\Flow\FlowNodeListener;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Flow\SourceCallNode;
+use OCA\OpenConnector\Flow\SourcePaginateNode;
 use OCA\OpenConnector\Flow\SynchronizationRunNode;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
@@ -109,6 +110,13 @@ class FlowNodeListenerTest extends TestCase {
 				urlGenerator: $urlGenerator,
 				logger: $this->createMock(LoggerInterface::class)
 			),
+			sourcePaginateNode: new SourcePaginateNode(
+				synchronizationService: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
 			applyMappingNode: new ApplyMappingNode(
 				mappingService: $this->createMock(MappingService::class),
 				flowOwner: $flowOwner,
@@ -155,11 +163,12 @@ class FlowNodeListenerTest extends TestCase {
 
 		$this->assertArrayHasKey('openconnector.source-call', $nodes);
 		$this->assertArrayHasKey('openconnector.synchronization-run', $nodes);
+		$this->assertArrayHasKey('openconnector.source-paginate', $nodes);
 		$this->assertArrayHasKey('openconnector.apply-mapping', $nodes);
 		$this->assertArrayHasKey('openconnector.contract', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-commit', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-sweep', $nodes);
-		$this->assertCount(6, $nodes);
+		$this->assertCount(7, $nodes);
 
 		foreach ($nodes as $node) {
 			$this->assertNotSame('', $node->getDisplayName());
