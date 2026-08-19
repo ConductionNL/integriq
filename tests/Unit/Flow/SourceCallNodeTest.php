@@ -166,6 +166,29 @@ class SourceCallNodeTest extends TestCase {
 	}//end testConfigKeysNameTheVocabularyTheNodeReads()
 
 	/**
+	 * Every form field edits a key the node reads, and `source` is a picker
+	 * fed by the app's own sources listing — never a bare uuid box.
+	 *
+	 * @return void
+	 */
+	public function testConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		$this->assertSame('select', $byKey['source']['type']);
+		$this->assertTrue($byKey['source']['required']);
+		$this->assertNotSame('', (string) ($byKey['source']['optionsFrom'] ?? ''));
+
+	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
+
+	/**
 	 * Scope is answered with Nextcloud's constants and false for anything else.
 	 *
 	 * @return void

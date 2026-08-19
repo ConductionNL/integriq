@@ -154,6 +154,29 @@ class SynchronizationRunNodeTest extends TestCase {
 	}//end testConfigKeysNameTheVocabularyTheNodeReads()
 
 	/**
+	 * Every form field edits a key the node reads, and `synchronization` is a
+	 * picker fed by the app's own listing — never a bare uuid box.
+	 *
+	 * @return void
+	 */
+	public function testConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		$this->assertSame('select', $byKey['synchronization']['type']);
+		$this->assertTrue($byKey['synchronization']['required']);
+		$this->assertNotSame('', (string) ($byKey['synchronization']['optionsFrom'] ?? ''));
+
+	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
+
+	/**
 	 * An inline synchronization definition is rejected at save.
 	 *
 	 * @return void

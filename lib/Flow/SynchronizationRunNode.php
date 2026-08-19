@@ -70,6 +70,7 @@ use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
@@ -90,7 +91,7 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys {
+class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 
 	/**
 	 * The step type this node answers to.
@@ -244,6 +245,54 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys {
 	public function configKeys(): array {
 		return ['synchronization', 'force', 'output', 'maxItems', 'onError'];
 	}//end configKeys()
+
+	/**
+	 * The fields this node is edited through.
+	 *
+	 * `synchronization` is a picker fed by the app's OWN synchronizations
+	 * listing, so an author chooses one by name instead of pasting a uuid
+	 * into a JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'synchronization',
+				'label' => $this->l10n->t('Synchronization'),
+				'type' => 'select',
+				'help' => $this->l10n->t('The configured synchronization this step runs, with its own source, mapping and target.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+			],
+			[
+				'key' => 'force',
+				'label' => $this->l10n->t('Force a full pass'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Ignores the unchanged-object skip and re-processes everything the source returns. Slower; use it after changing a mapping.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->l10n->t('Field to store the summary in'),
+				'type' => 'text',
+				'help' => $this->l10n->t('With a field name, the incoming item is preserved and the run summary is added under it. Empty means the summary replaces the item.'),
+			],
+			[
+				'key' => 'maxItems',
+				'label' => $this->l10n->t('Item ceiling'),
+				'type' => 'number',
+				'help' => $this->l10n->t('The most synchronised objects this step may emit as items. The summary always reports the full run.'),
+			],
+			[
+				'key' => 'onError',
+				'label' => $this->l10n->t('When the run fails'),
+				'type' => 'text',
+				'help' => $this->l10n->t('"stop" (default) fails the step; "continue" records the error on the item and carries on; "dead_letter" routes the item to the flow\'s dead-letter handling.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
