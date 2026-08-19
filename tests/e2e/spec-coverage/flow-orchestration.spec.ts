@@ -246,7 +246,10 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 		// `NcAppSidebar`'s `name` to the flow's name, so this is what a user
 		// actually sees on arrival, without driving a tab first.
 		await expect(
-			page.locator('.cn-flow-sidebar').getByText(FLOW_NAME, { exact: true }).first(),
+			page
+				.locator('.cn-flow-sidebar')
+				.getByText(FLOW_NAME, { exact: true })
+				.first(),
 			'the canvas must mount and load the seeded flow, not an empty shell',
 		).toBeVisible({ timeout: 25_000 })
 
@@ -269,7 +272,10 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 		// document reload, not an in-app link click, proves it.
 		await page.reload({ waitUntil: 'domcontentloaded' })
 		await expect(
-			page.locator('.cn-flow-sidebar').getByText(FLOW_NAME, { exact: true }).first(),
+			page
+				.locator('.cn-flow-sidebar')
+				.getByText(FLOW_NAME, { exact: true })
+				.first(),
 			'a hard reload of the flow detail URL must resolve to the same flow, not the dashboard',
 		).toBeVisible({ timeout: 25_000 })
 	})
