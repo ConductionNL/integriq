@@ -35,6 +35,7 @@ use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -161,6 +162,101 @@ class ContractCommitNodeTest extends TestCase {
 		$this->node->validateConfig(['synchronization' => 'demo-sync', 'contractPosition' => ' ']);
 
 	}//end testValidateRejectsEmptyContractPosition()
+
+	/**
+	 * An empty input list persists nothing and returns nothing.
+	 *
+	 * @return void
+	 */
+	public function testEmptyInputCommitsNothing(): void {
+		$this->contractService->expects($this->never())->method('persistBulk');
+
+		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+
+	}//end testEmptyInputCommitsNothing()
+
+	/**
+	 * A failed bulk upsert raises — a half-persisted page must never report
+	 * itself committed.
+	 *
+	 * @return void
+	 */
+	public function testFailedBulkUpsertRaises(): void {
+		$this->givenOwner();
+
+		$this->contractService->method('persistBulk')
+			->willThrowException(new RuntimeException('database gone'));
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessageMatches('/bulk contract upsert/');
+
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+			],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+	}//end testFailedBulkUpsertRaises()
+
+	/**
+	 * Custom positions are honoured, and a create with no written uuid anywhere
+	 * commits a null targetId rather than an empty string.
+	 *
+	 * @return void
+	 */
+	public function testCustomPositionsAndMissingTargetId(): void {
+		$this->givenOwner();
+
+		$batches = [];
+		$this->contractService->expects($this->once())
+			->method('persistBulk')
+			->willReturnCallback(
+				static function (array $contracts) use (&$batches): array {
+					$batches[] = $contracts;
+
+					return $contracts;
+				}
+			);
+
+		$out = $this->node->execute(
+			[
+				[
+					'json' => [
+						'written' => ['id' => 'obj-9'],
+						'decision' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+				[
+					'json' => [
+						'decision' => ['outcome' => 'create', 'originId' => 'o-2', 'originHash' => 'h-2'],
+					],
+				],
+			],
+			[
+				'synchronization' => 'demo-sync',
+				'contractPosition' => 'decision',
+				'targetIdPosition' => 'written.id',
+			],
+			$this->context()
+		);
+
+		$this->assertCount(1, $batches);
+		$this->assertSame('obj-9', $batches[0][0]['targetId']);
+		$this->assertNull($batches[0][1]['targetId']);
+		$this->assertSame('created', $batches[0][1]['targetLastAction']);
+
+		$this->assertTrue($out[0]['json']['decision']['committed']);
+		$this->assertTrue($out[1]['json']['decision']['committed']);
+		$this->assertArrayNotHasKey('contract', $out[0]['json']);
+
+	}//end testCustomPositionsAndMissingTargetId()
 
 	/**
 	 * Creates and updates commit in ONE bulk call; skips pass through untouched.

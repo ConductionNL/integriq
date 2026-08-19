@@ -505,6 +505,9 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * FIRST item — the fetch step reports run-level facts there — and a path
 	 * that resolves to nothing reads as false: unknown completeness must not
 	 * sweep, and the guarded skip that follows is visible in the summary.
+	 * `validateConfig()` has already refused a blank path, so no empty-path
+	 * branch exists here; a blank would fall through the lookup to false,
+	 * which is the same fail-closed answer.
 	 *
 	 * @param array $items The input items.
 	 * @param array $config The step's authored configuration.
@@ -520,10 +523,6 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 		}
 
 		$path = trim((string)$setting);
-		if ($path === '') {
-			return true;
-		}
-
 		$first = (array)(($items[array_key_first($items)] ?? [])['json'] ?? []);
 
 		return (bool)FlowTemplate::lookup(path: $path, json: $first);

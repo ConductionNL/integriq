@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Flow;
 
+use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Flow\ContractMatchNode;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Service\SynchronizationContractService;
@@ -34,6 +35,7 @@ use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -172,6 +174,104 @@ class ContractMatchNodeTest extends TestCase {
 		$this->node->validateConfig(['synchronization' => 'demo-sync', 'apiKey' => 'nope']);
 
 	}//end testValidateRejectsForbiddenFields()
+
+	/**
+	 * A blank `idPosition` is rejected at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsEmptyIdPosition(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/idPosition/');
+
+		$this->node->validateConfig(['synchronization' => 'demo-sync', 'idPosition' => ' ']);
+
+	}//end testValidateRejectsEmptyIdPosition()
+
+	/**
+	 * An empty input list performs no lookup and returns nothing.
+	 *
+	 * @return void
+	 */
+	public function testEmptyInputMatchesNothing(): void {
+		$this->contractService->expects($this->never())->method('findAllObjects');
+
+		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+
+	}//end testEmptyInputMatchesNothing()
+
+	/**
+	 * A failed bulk lookup raises and stamps NO decisions — a page decided
+	 * against a half-read contract set would stamp `create` on rows that
+	 * have contracts.
+	 *
+	 * @return void
+	 */
+	public function testFailedBulkLookupRaisesAndStampsNothing(): void {
+		$this->givenOwner();
+
+		$this->contractService->method('findAllObjects')
+			->willThrowException(new RuntimeException('database gone'));
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessageMatches('/No decisions were stamped/');
+
+		$this->node->execute(
+			[['json' => ['id' => 'o-1']]],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+	}//end testFailedBulkLookupRaisesAndStampsNothing()
+
+	/**
+	 * The index keeps the FIRST contract per origin id and drops an id-less one.
+	 *
+	 * @return void
+	 */
+	public function testFirstContractPerOriginWinsAndIdlessOnesAreDropped(): void {
+		$this->givenOwner();
+
+		$this->contractService->method('findAllObjects')->willReturn(
+			[
+				$this->contractObject(
+					uuid: 'c-idless',
+					payload: ['uuid' => 'c-idless', 'originHash' => 'x']
+				),
+				$this->contractObject(
+					uuid: 'c-first',
+					payload: [
+						'uuid' => 'c-first',
+						'originId' => 'o-1',
+						'originHash' => 'stale-hash',
+						'targetId' => 't-1',
+						'targetHash' => 'th-1',
+					]
+				),
+				$this->contractObject(
+					uuid: 'c-second',
+					payload: [
+						'uuid' => 'c-second',
+						'originId' => 'o-1',
+						'originHash' => 'other-stale-hash',
+						'targetId' => 't-9',
+						'targetHash' => 'th-9',
+					]
+				),
+			]
+		);
+
+		$out = $this->node->execute(
+			[['json' => ['id' => 'o-1', 'value' => 'new']]],
+			['synchronization' => 'demo-sync'],
+			$this->context()
+		);
+
+		$this->assertSame('update', $out[0]['json']['contract']['outcome']);
+		$this->assertSame('c-first', $out[0]['json']['contract']['contractUuid']);
+		$this->assertSame('t-1', $out[0]['json']['contract']['targetId']);
+
+	}//end testFirstContractPerOriginWinsAndIdlessOnesAreDropped()
 
 	/**
 	 * ONE lookup for the page; create/update/skip/invalid decided per item.

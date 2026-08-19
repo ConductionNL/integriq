@@ -173,6 +173,74 @@ class ApplyMappingNodeTest extends TestCase {
 	}//end testValidateRejectsReservedOutputKey()
 
 	/**
+	 * A blank `input` path is rejected at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsEmptyInputPath(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/input/');
+
+		$this->node->validateConfig(['mapping' => 'demo-mapping', 'input' => ' ']);
+
+	}//end testValidateRejectsEmptyInputPath()
+
+	/**
+	 * An unknown `onError` policy is rejected at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsUnknownOnErrorPolicy(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/onError/');
+
+		$this->node->validateConfig(['mapping' => 'demo-mapping', 'onError' => 'explode']);
+
+	}//end testValidateRejectsUnknownOnErrorPolicy()
+
+	/**
+	 * An `input` path that resolves to no object raises — nothing is mapped.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvableInputPathRaises(): void {
+		$this->givenOwner();
+
+		$this->mappingService->expects($this->never())->method('executeMapping');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessageMatches('/did not resolve/');
+
+		$this->node->execute(
+			[['json' => ['name' => 'no payload key here']]],
+			['mapping' => 'demo-mapping', 'input' => 'payload.data'],
+			$this->context()
+		);
+
+	}//end testUnresolvableInputPathRaises()
+
+	/**
+	 * A run whose context names no step falls back to the node id in error state.
+	 *
+	 * @return void
+	 */
+	public function testUnnamedStepFallsBackToTheNodeId(): void {
+		$this->givenOwner();
+
+		$this->mappingService->method('executeMapping')
+			->willThrowException(new RuntimeException('unmappable'));
+
+		$out = $this->node->execute(
+			[['json' => ['name' => 'bad']]],
+			['mapping' => 'demo-mapping', 'onError' => 'continue'],
+			['triggeredBy' => 'alice']
+		);
+
+		$this->assertSame('openconnector.apply-mapping', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['step']);
+
+	}//end testUnnamedStepFallsBackToTheNodeId()
+
+	/**
 	 * Every item is mapped in one execution, and the result replaces the record.
 	 *
 	 * @return void

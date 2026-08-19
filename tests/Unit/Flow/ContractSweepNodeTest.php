@@ -26,6 +26,7 @@ namespace OCA\OpenConnector\Tests\Unit\Flow;
 
 use OCA\OpenConnector\Exception\FlowNodeException;
 use OCA\OpenConnector\Flow\ContractSweepNode;
+use OCA\OpenConnector\Flow\FlowNodeSupport;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -179,6 +180,51 @@ class ContractSweepNodeTest extends TestCase {
 		$this->node->validateConfig(['synchronization' => 'demo-sync', 'fetchComplete' => ' ']);
 
 	}//end testValidateRejectsEmptyFetchComplete()
+
+	/**
+	 * A blank `targetIdsPosition` is rejected at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsEmptyTargetIdsPosition(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/targetIdsPosition/');
+
+		$this->node->validateConfig(['synchronization' => 'demo-sync', 'targetIdsPosition' => '']);
+
+	}//end testValidateRejectsEmptyTargetIdsPosition()
+
+	/**
+	 * Under `continue` a failed sweep lands as ONE explicit error item, and a
+	 * failure that is already a node failure passes through unchanged.
+	 *
+	 * @return void
+	 */
+	public function testFailingSweepContinuesWithErrorItem(): void {
+		$this->givenOwner();
+
+		$this->synchronizationService->throwOnDelete = new FlowNodeException(
+			message: 'sweep exploded',
+			details: ['kind' => 'sweep']
+		);
+
+		$out = $this->node->execute(
+			[['json' => ['uuid' => 'u-1']]],
+			['synchronization' => 'demo-sync', 'onError' => 'continue'],
+			$this->context()
+		);
+
+		$this->assertCount(1, $out);
+		$this->assertArrayNotHasKey('sweep', $out[0]['json']);
+
+		$error = $out[0]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame('sweep', $error['kind']);
+		$this->assertSame('sweep exploded', $error['message']);
+		$this->assertSame('step-sweep', $error['step']);
+		$this->assertSame('openconnector.contract-sweep', $error['node']);
+		$this->assertSame('demo-sync', $error['synchronization']);
+
+	}//end testFailingSweepContinuesWithErrorItem()
 
 	/**
 	 * The collected ids and flags reach the guarded deletion; the summary
