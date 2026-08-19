@@ -176,6 +176,18 @@ class SynchronizationFlowGenerator {
 	public const KEY_TARGET_UUID = 'targetUuid';
 
 	/**
+	 * The field carrying the target id this pass REACHED, written or skipped.
+	 *
+	 * `contract-sweep` deletes whatever its items do not name. A skipped item
+	 * never gets a `written` block, so reading the sweep's ids from
+	 * `written.uuid` alone would drop every unchanged object out of the synced
+	 * set and the sweep would delete exactly the objects that were fine.
+	 *
+	 * @var string
+	 */
+	public const KEY_SYNCED_ID = 'syncedId';
+
+	/**
 	 * The source kind the decomposed fetch step can serve.
 	 *
 	 * `SourcePaginateNode` delegates to `getAllObjectsFromApi()` directly, not
@@ -642,6 +654,32 @@ class SynchronizationFlowGenerator {
 					],
 					'fields' => $this->fieldsFor(mapping: $mapping),
 					'output' => self::KEY_WRITTEN,
+					// An item the contract step decided is unchanged passes
+					// through UNWRITTEN. Without this the re-run rewrote every
+					// object it had just decided to skip, because
+					// SaveObject::updateObject() stamps `updated`
+					// unconditionally.
+					'skipWhen' => self::KEY_CONTRACT . '.outcome',
+				],
+			],
+			[
+				// The sweep's id source has to survive a skip. A written item
+				// has `written.uuid`; a skipped one does not, but it does have
+				// the contract's own targetId (a `skip` decision requires one).
+				// Collapsing both into one field is what keeps an unchanged
+				// object inside the synced set instead of on the delete list.
+				'id' => 'synced-id',
+				'type' => 'openregister.set-fields',
+				'config' => [
+					'compute' => [
+						self::KEY_SYNCED_ID => [
+							'if' => [
+								['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+								['var' => ['json.' . self::KEY_WRITTEN . '.uuid', '']],
+								['var' => ['json.' . self::KEY_TARGET_UUID, '']],
+							],
+						],
+					],
 				],
 			],
 			[
@@ -659,7 +697,7 @@ class SynchronizationFlowGenerator {
 				'type' => ContractSweepNode::NODE_ID,
 				'config' => [
 					'synchronization' => $reference,
-					'targetIdsPosition' => self::KEY_WRITTEN . '.uuid',
+					'targetIdsPosition' => self::KEY_SYNCED_ID,
 					'fetchComplete' => self::KEY_PAGE . '.fetchInfo.complete',
 				],
 			],
