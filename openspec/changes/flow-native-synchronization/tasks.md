@@ -60,7 +60,25 @@
       frozen at generation time.
 - [ ] 3.2 Deprecation banners + "open as flow" on Jobs, Rules, Mappings,
       Synchronizations pages; nav folds under Automation.
-- [ ] 3.3 Jobs → trigger-schedule flows; Rules → trigger-object + switch.
+- [x] 3.3 Jobs → trigger-schedule flows; Rules → trigger-object + switch.
+      `JobToFlowGenerator` + `occ openconnector:job-to-flow`, and
+      `RuleToFlowGenerator` + `occ openconnector:rule-to-flow <rule> <endpoint>`.
+      Both follow the 3.1 pattern: refusal-first, `enabled: false`, nothing
+      persisted, the source entity's id recorded in the description. A Job has
+      no cron — it has an `interval` in SECONDS measured from the END of the
+      previous run — so only intervals that divide the hour or the day evenly
+      are translated and the rest are refused rather than rounded. A Rule has
+      no register, schema or method of its own, so the endpoint that runs it is
+      a required argument; only `after`-timing rules of type `synchronization`
+      or `flow` have an object-event equivalent, and conditions are rewritten
+      from `body.*` onto `json.*` with every other envelope root refused by
+      name. Three engine gaps recorded on the PR: the flow preflight cannot
+      fail a TRIGGER config (`configRejection()` blocks only on
+      `UnexpectedValueException`, the trigger nodes throw
+      `InvalidArgumentException`); `job.singleRun` is declared on the schema
+      while `JobService::executeJob()` reads `isSingleRun`, so the flag never
+      fires today; and no node emits a CloudEvent or calls a Source's bare
+      root, which is why `EventAction` and `PingAction` jobs are refused.
 - [ ] 3.4 Page removal — LAST, after every live synchronization has a
       reviewed generated flow and 2.2 holds; `synchronization-run` deprecates
       with them.

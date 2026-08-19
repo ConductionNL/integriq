@@ -177,6 +177,17 @@
 		     enables nothing and touches no synchronization contract, because a
 		     generated flow ships disabled until a human has reviewed it. -->
 		<command>OCA\OpenConnector\Command\SynchronizationToFlow</command>
+		<!-- flow-native-synchronization task 3.3: renders one job as a generated
+		     trigger schedule flow document, or names the features no flow node can
+		     express. Same contract as the synchronization renderer above: the
+		     command WRITES NOTHING, and what it emits ships disabled. -->
+		<command>OCA\OpenConnector\Command\JobToFlow</command>
+		<!-- flow-native-synchronization task 3.3: renders one rule, as it runs on
+		     one named endpoint, as a generated trigger object plus switch flow
+		     document. The endpoint is required because a rule carries no register,
+		     schema or method of its own and an object trigger refuses a partial
+		     scope. WRITES NOTHING; the emitted document ships disabled. -->
+		<command>OCA\OpenConnector\Command\RuleToFlow</command>
 	</commands>
 
 	<settings>
