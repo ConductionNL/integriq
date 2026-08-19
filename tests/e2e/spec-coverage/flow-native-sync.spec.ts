@@ -1022,46 +1022,41 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 
 	// @e2e synchronization-engine::or-target-write-records-a-contract
 	//
-	// 🔴 KNOWN FAILING, DELIBERATELY LEFT ABLE TO FAIL — task 2.3's actual
-	// acceptance ("second pass performs zero writes") does NOT hold today, and
-	// `test.fail()` rather than `test.fixme` is the honest encoding: the body
-	// RUNS, so the day the defect is fixed this test reports "expected to fail
-	// but passed" and forces its own removal. A `fixme` body never executes and
-	// would quietly stay wrong in either direction.
+	// Task 2.3's actual acceptance: a second run of an unchanged
+	// synchronization writes NOTHING.
 	//
-	// MEASURED on the dev container, three unchanged records, two consecutive
-	// runs: object COUNT unchanged and identities unchanged (asserted above and
-	// passing), but all three `@self.updated` stamps moved — 16:22:49/50 ->
-	// 16:24:20. The run log shows why: the `contract` step decided
-	// `"outcome": "update"` for every item even though `originHash` was
-	// byte-identical to the stored contract.
+	// This was KNOWN FAILING and encoded as `test.fail()` — the body ran, so
+	// the day it started passing it reported "expected to fail but passed" and
+	// forced its own removal. That day has come; this is the removal.
 	//
-	// TWO independent causes, both real:
+	// It took two fixes, because there were two independent causes:
 	//
 	//  1. `ContractMatchNode::isUnchanged()` requires a non-empty `targetHash`
-	//     on the stored contract as well as an equal `originHash` (a contract
-	//     with no targetHash "never completed on the target side"). Nothing in
-	//     lib/Flow/ ever WRITES targetHash — `contract-commit` persists
-	//     originHash, targetId, and the sourceLast*/targetLast* stamps only —
-	//     so the predicate can never be true for a contract this pipeline
-	//     produced, and `skip` is UNREACHABLE in the decomposed flow. The
-	//     contract-hash short-circuit the design's point 4 relies on therefore
-	//     never fires.
-	//  2. Even if it did fire, the generated flow has nothing that drops a
-	//     `skip` item before the write. That omission is deliberate and
-	//     documented (SynchronizationFlowGenerator's "KNOWN DEVIATIONS":
-	//     filtering skips would also drop their target ids from
-	//     `contract-sweep`, and a sweep that cannot see an unchanged object
-	//     DELETES it) — so closing this needs the sweep to learn about skipped
-	//     items, not just a filter.
+	//     as well as an equal `originHash`, and NOTHING in lib/Flow/ ever wrote
+	//     targetHash — `contract-commit` persisted originHash, targetId and the
+	//     sourceLast*/targetLast* stamps only. So `skip` was UNREACHABLE and the
+	//     contract-hash short-circuit never fired. Fixed by
+	//     `contract-commit`'s `targetHashPosition`, which stores
+	//     md5(serialize(mapped)) — the legacy recipe, deliberately NOT ksorted,
+	//     so a contract written by either engine compares equal.
+	//  2. Even once `skip` fired, nothing stopped a skipped item reaching
+	//     `object-write`, and `SaveObject::updateObject()` stamps `updated`
+	//     unconditionally. Dropping those items was NOT an option: a skipped
+	//     item that never reaches the write also never reaches
+	//     `contract-sweep`, which deletes whatever its items do not name — so
+	//     filtering skips would have DELETED the unchanged objects. Fixed by
+	//     `object-write`'s `skipWhen` (pass through, do not drop) plus a
+	//     `synced-id` step that gives the sweep an id which survives a skip.
 	//
 	// The body deliberately touches no network: it compares two maps captured
 	// by the tests above. That keeps the only way to fail the assertion itself,
-	// so an infrastructure hiccup cannot masquerade as "failed as expected" —
-	// and an unpopulated capture makes it PASS, which under test.fail() is
-	// reported as a failure.
+	// so an infrastructure hiccup cannot masquerade as a pass.
 	test('task 2.3 — a second run performs ZERO writes: no target object is touched', async () => {
-		test.fail()
+		expect(
+			Object.keys(updatedAfterFirstRun).length,
+			'the first run must have captured at least one object, or this test proves nothing',
+		).toBeGreaterThan(0)
+
 		const moved = Object.keys(updatedAfterFirstRun).filter(
 			(uuid) => updatedAfterFirstRun[uuid] !== updatedAfterSecondRun[uuid],
 		)
