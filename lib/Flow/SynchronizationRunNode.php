@@ -246,13 +246,19 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 				'key' => 'force',
 				'label' => $this->l10n->t('Force a full pass'),
 				'type' => 'boolean',
-				'help' => $this->l10n->t('Ignores the unchanged-object skip and re-processes everything the source returns. Slower; use it after changing a mapping.'),
+				'help' => $this->l10n->t(
+					'Ignores the unchanged-object skip and re-processes everything the source '
+					. 'returns. Slower; use it after changing a mapping.'
+				),
 			],
 			[
 				'key' => 'output',
 				'label' => $this->l10n->t('Field to store the summary in'),
 				'type' => 'text',
-				'help' => $this->l10n->t('With a field name, the incoming item is preserved and the run summary is added under it. Empty means the summary replaces the item.'),
+				'help' => $this->l10n->t(
+					'With a field name, the incoming item is preserved and the run summary is '
+					. 'added under it. Empty means the summary replaces the item.'
+				),
 			],
 			[
 				'key' => 'maxItems',
@@ -264,7 +270,11 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 				'key' => 'onError',
 				'label' => $this->l10n->t('When the run fails'),
 				'type' => 'text',
-				'help' => $this->l10n->t('"stop" (default) fails the step; "continue" records the error on the item and carries on; "dead_letter" routes the item to the flow\'s dead-letter handling.'),
+				'help' => $this->l10n->t(
+					'"stop" (default) fails the step; "continue" records the error on the item '
+					. 'and carries on; "dead_letter" routes the item to the flow\'s dead-letter '
+					. 'handling.'
+				),
 			],
 		];
 	}//end configForm()
