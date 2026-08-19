@@ -492,7 +492,19 @@ class JobService {
 		}//end if
 
 		// Handle single run jobs by disabling them after execution.
-		$isSingleRun = ($jobData['isSingleRun'] ?? false);
+		//
+		// READ BOTH SPELLINGS. The job schema declares `singleRun` — it is what
+		// `job-form-fields.json` renders and what every seeded connector writes
+		// — while this line read `isSingleRun`, which NOTHING writes. So the
+		// flag was declared, editable, and enforced nowhere: a job marked
+		// "run once" ran on every tick, forever, and the only evidence was the
+		// job still being enabled afterwards.
+		//
+		// `isSingleRun` is kept as the second reading rather than deleted: it
+		// is the spelling this method has always used, and a job row written by
+		// something that matched the code instead of the schema would silently
+		// start re-running if it were dropped.
+		$isSingleRun = ($jobData['singleRun'] ?? $jobData['isSingleRun'] ?? false);
 		if ($forceRun === false && $isSingleRun === true && $executionThrew === false) {
 			$jobData['isEnabled'] = false;
 		}
