@@ -122,6 +122,13 @@ export default {
 		SynchronizationEditorModal,
 	},
 
+	/**
+	 * Resolve the flow store and the app's own object store.
+	 *
+	 * @return {object} The two stores this editor commits through.
+	 *
+	 * @spec openspec/specs/sync-editor-ui/spec.md
+	 */
 	setup() {
 		const objectStore = useObjectStore()
 		// Same registration the detail page performs: fetchObject/saveObject
@@ -132,6 +139,13 @@ export default {
 		return { flowStore: useFlowStore(), objectStore }
 	},
 
+	/**
+	 * Snapshot the step options into a draft the dialog edits in isolation.
+	 *
+	 * @return {object} The component's reactive state.
+	 *
+	 * @spec openspec/specs/sync-editor-ui/spec.md
+	 */
 	data() {
 		const node = useFlowStore().editingNode
 		const config = (node && node.config) || {}
