@@ -18,7 +18,8 @@
  *     -> openconnector.apply-mapping
  *     -> openconnector.contract          (create | update | skip | invalid)
  *     -> openregister.set-fields         (targetUuid, defaulted to "")
- *     -> openregister.object-write       (upsert, matched on @self.uuid)
+ *     -> openregister.object-write       (upsert; skipWhen contract.outcome)
+ *     -> openregister.set-fields         (syncedId: written uuid, else contract targetId)
  *     -> openconnector.contract-commit
  *     -> openconnector.contract-sweep
  *     -> openregister.end
@@ -762,6 +763,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'openconnector.contract',
 			'openregister.set-fields',
 			'openregister.object-write',
+			'openregister.set-fields',
 			'openconnector.contract-commit',
 			'openconnector.contract-sweep',
 			'openregister.end',
