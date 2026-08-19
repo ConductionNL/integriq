@@ -13,15 +13,70 @@ worked example the generator is checked against.
 ```
 trigger-manual
   → source-paginate   {synchronization, output: "page"}
-  → explode           {path: "page.results"}
-  → apply-mapping     {mapping}
-  → contract          {synchronization, idPosition, output: "contract"}
-  → set-fields        {compute: {matchId: contract.targetId ?? ""}}
-  → object-write      {register, schema, operation: upsert, match, fields}
-  → contract-commit   {synchronization, contractPosition, targetIdPosition}
+  → explode           {path: "page.results", as: "source", keepRecord: true}
+  → apply-mapping     {mapping, input: "source", output: "target"}
+  → contract          {synchronization, idPosition: "source.<id>",
+                       hashPosition: "source", output: "contract"}
+  → set-fields        {compute: {targetUuid: contract.targetId ?? ""}}
+  → object-write      {register, schema, operation: upsert, replace: true,
+                       match: [@self.uuid = "{{targetUuid}}"],
+                       fields: {…: "{{target.…}}"}, output: "written"}
+  → contract-commit   {synchronization, contractPosition, targetIdPosition,
+                       targetHashPosition: "target"}
   → contract-sweep    {synchronization, targetIdsPosition, fetchComplete}
   → end
 ```
+
+The key names are not decoration and they are not free to drift: they are
+what `SynchronizationFlowGenerator` emits, and this document is checked
+against the generator, not the other way round. The source record stays at
+`source`, the mapping's output lands at `target`, the written object comes
+back at `written`.
+
+Those names have to agree across three steps. `map` writes `target`, `write`
+reads `{{target.<property>}}`, `commit` hashes `target`. Change one and the
+flow still validates and still runs: a `{{title}}` template against a record
+whose title lives at `target.title` resolves to nothing, and the write
+silently stores an empty object. Preflight cannot catch that (see below).
+
+## Why `contract-commit` hashes the MAPPED object and not the WRITTEN one
+
+`contract` only decides `skip` for a contract that carries a matching
+`originHash`, a `targetId` AND a `targetHash`. Nothing in the decomposed
+pipeline ever wrote a `targetHash`, so that predicate could never hold for a
+contract this engine produced: `skip` was structurally unreachable and every
+re-run rewrote every object. `targetHashPosition` is what closes that.
+
+It must name `target`, the mapped object. The WRITTEN object — the one
+`object-write` returns under `written` — carries server-assigned `@self`
+fields, `updated` among them. Hashing that would produce a fresh hash on
+every single pass, so the compare would never match and `skip` would stay
+unreachable: the same defect wearing the costume of a fix. The mapped object
+is the only value on the item that is a pure function of the source, so it is
+the only one whose hash can mean "nothing changed".
+
+The recipe is `md5(serialize($mapped))` over the value as it stands, with NO
+recursive key sort — deliberately unlike `originHash`, which sorts first.
+That asymmetry is copied from the legacy engine
+(`SynchronizationService::updateTarget()`, `updateTargetTable()`) so that a
+contract written by either engine compares equal to one written by the other.
+
+## Why `skip` items still flow through to the write
+
+A `skip` item is NOT filtered out before `object-write`. Dropping it would
+also drop its target id from `contract-sweep`'s input, and a sweep that
+cannot see an unchanged object treats it as unreached and DELETES it.
+Re-writing an unchanged object is doing more than the legacy engine does;
+deleting it would be doing something else entirely.
+
+So what the fix buys is a zero-write CONTRACT commit: `contract-commit`
+passes skipped items through untouched, so an unchanged page costs one
+contract SELECT and no contract upsert. The object write is not conditional,
+and OpenRegister's `SaveObject` stamps `@self.updated` on every update it
+performs, so a re-run still moves the target objects' `updated` timestamps.
+Making the object write conditional as well requires the sweep to learn a
+second source of target ids — its own change, tracked separately rather than
+smuggled in here.
 
 ## Why `explode` is not optional
 

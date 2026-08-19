@@ -55,13 +55,34 @@
  * because a match value that is merely ABSENT is refused, while one that is
  * empty is a miss.
  *
+ * WHY THE COMMIT STEP HASHES `target` AND NOT `written`
+ * -----------------------------------------------------
+ * `contract-commit`'s `targetHashPosition` names the MAPPED object — the key
+ * `apply-mapping` wrote its result under — because that is the only value on
+ * the item that is a pure function of the source. The WRITTEN object carries
+ * server-assigned `@self` fields, `updated` among them, so hashing it would
+ * produce a different hash on every pass and `contract`'s `skip` would stay as
+ * unreachable as it was before the hash existed at all.
+ *
+ * The three keys have to agree or the flow writes empty objects: `map` names
+ * its output `target`, `write`'s `fields` templates read `{{target.<prop>}}`,
+ * and `commit` hashes `target`. The top-level record keeps the SOURCE, which
+ * is what `contract`'s `idPosition` (`source.<idPosition>`) reads.
+ *
  * KNOWN DEVIATIONS FROM THE LEGACY PASS (deliberate, not hidden)
  * -------------------------------------------------------------
- *  - `skip` decisions are re-written. The legacy engine performs zero writes
- *    for an unchanged object; here the item still passes through the upsert,
- *    because dropping it with a filter would also drop its target id from the
- *    stale sweep — and a sweep that cannot see an unchanged object DELETES it.
- *    Re-writing is doing more, never less; deleting would be the other way.
+ *  - `skip` decisions still reach the OBJECT write. The legacy engine performs
+ *    zero writes for an unchanged object; here the item still passes through
+ *    the upsert, because dropping it with a filter would also drop its target
+ *    id from the stale sweep — and a sweep that cannot see an unchanged object
+ *    DELETES it. Re-writing is doing more, never less; deleting would be the
+ *    other way. What a `skip` DOES buy is a zero-write CONTRACT commit: the
+ *    commit step passes skipped items through untouched, so an unchanged page
+ *    costs one contract SELECT and no contract upsert at all. The object write
+ *    itself is not conditional, and `SaveObject` stamps `@self.updated` on
+ *    every update it performs, so a re-run still moves the target objects'
+ *    `updated` timestamps. Making the object write conditional too needs the
+ *    sweep to learn a second source of target ids, which is its own change.
  *  - The written field list is frozen at generation time. `object-write` has no
  *    "write the whole record" shorthand — `buildPayload()` iterates the
  *    configured `fields` map only — so the generator enumerates the mapping's
@@ -630,6 +651,7 @@ class SynchronizationFlowGenerator {
 					'synchronization' => $reference,
 					'contractPosition' => self::KEY_CONTRACT,
 					'targetIdPosition' => self::KEY_WRITTEN . '.uuid',
+					'targetHashPosition' => self::KEY_TARGET,
 				],
 			],
 			[
