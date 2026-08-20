@@ -44,7 +44,28 @@
       `source-paginate`, which keeps the cursor on the synchronization.
 - [ ] 2.2 Benchmark: decomposed flow vs `synchronization-run` on the 2000-
       dataset CKAN run — meet or beat, measured, before any deprecation.
-      NOT STARTED. This is what gates 3.4.
+      HALF DONE — see `benchmark-2-2.md`. This is what gates 3.4.
+      LEGACY BASELINE MEASURED on a quiet box: 6.8 s steady state unmapped
+      (2000 found / 1854 skipped / 146 updated), 17.7 s once a mapping is
+      added (2000 updated, 0 skipped). Deletion GC never ran on any run
+      (`deletionGuard: fetch_incomplete`), so the flow it is compared
+      against must not sweep either.
+      DECOMPOSED SIDE BLOCKED: the generator emits the full 11-node chain,
+      but this instance serves openregister `chore/dedupe-ratelimit-prose`
+      (`3bc76ca`), which does NOT include `development` (`a1006a8`) and so
+      has no `skipWhen` — preflight refuses the generated flow, correctly.
+      Stripped of `skipWhen` and `sweep` it validates clean and saves, but
+      every run stalls at `running` with an empty log. Needs a box running
+      openregister >= a1006a8. That checkout belongs to another session and
+      was left alone.
+      TWO PRE-EXISTING LEGACY DEFECTS found while measuring, both of which
+      inflate the number the flow must beat: a mapped synchronization can
+      NEVER skip (a DateTime is compared against an ATOM string), and an
+      update mints a NEW contract instead of updating the existing one —
+      four distinct contract uuids for one (synchronization, originId) with
+      an IDENTICAL originHash. 528,656 contract rows on this instance.
+      Neither was changed: both alter engine behaviour on a half-million-row
+      table and want a human call.
 - [x] 2.3 Re-run idempotency. `contract-commit` never wrote `targetHash`, so
       `ContractMatchNode::isUnchanged()` could never hold and `skip` was
       unreachable (#1297). Measured live: contracts went 18/18 rewritten to
