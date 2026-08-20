@@ -1392,13 +1392,20 @@ class SynchronizationService {
 
 		$object = $contract;
 
-		if ($ensureUuid === true && empty($object['uuid']) === true) {
-			$object['uuid'] = (string)Uuid::v4();
-		}
-
 		// Read the identity BEFORE dropping `id` — for a contract loaded back from
 		// OpenRegister, `id` IS the uuid and is the only identifier present.
 		$uuidValue = $this->contractIdentity(object: $object);
+
+		// `ensureUuid` mints an identity for a contract that HAS none. It used to
+		// test `empty($object['uuid'])`, which is true for every contract ever
+		// loaded from OpenRegister — they carry `id`, never `uuid` — so it minted
+		// a fresh uuid on top of a perfectly good identity and the save created
+		// instead of updating. Both persists at the end of synchronizeContract
+		// pass `ensureUuid: true`, so that was EVERY update.
+		if ($ensureUuid === true && $uuidValue === null) {
+			$uuidValue = (string)Uuid::v4();
+			$object['uuid'] = $uuidValue;
+		}
 
 		// A legacy int `id` is not an OpenRegister identifier and would break OR's
 		// `trim($object['id'])` upsert probe, so drop it either way.
