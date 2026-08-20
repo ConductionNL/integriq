@@ -933,6 +933,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'contract',
 			'target-uuid',
 			'write',
+			'synced-id',
 			'commit',
 			'sweep',
 			'end',
