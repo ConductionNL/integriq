@@ -1329,6 +1329,44 @@ class SynchronizationService {
 	}//end toTimestamp()
 
 	/**
+	 * Give a contract a `uuid` to be written under, WITHOUT discarding the one it
+	 * already has.
+	 *
+	 * THIS IS WHERE THE DUPLICATE-PER-RERUN DEFECT ACTUALLY LIVED. Both call
+	 * sites read:
+	 *
+	 *     if (($contract['uuid'] ?? null) === null) {
+	 *         $contract['uuid'] = (string)Uuid::v4();
+	 *     }
+	 *
+	 * A contract loaded back from OpenRegister carries `id`, never `uuid` — so
+	 * that test was true on every rerun and minted a FRESH identity each time.
+	 * Everything downstream then faithfully upserted on that brand-new uuid and
+	 * created a row. Fixing `persist()`, `persistContract()`, `persistBulk()` and
+	 * `updateFromArray()` to derive identity correctly changed nothing measurable,
+	 * because the identity was already destroyed before any of them ran: three
+	 * successive live runs still added exactly one contract per updated object
+	 * (8237 -> 8334 -> 8431 -> 8528).
+	 *
+	 * `contractIdentity()` reads `uuid`, else a non-numeric `id`. Only when there
+	 * is genuinely neither is a uuid minted, which is what these sites were for.
+	 *
+	 * @param array $contract The contract payload, modified in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	private function assignContractIdentity(array &$contract): void {
+		$identity = $this->contractIdentity(object: $contract);
+		if ($identity === null) {
+			$identity = (string)Uuid::v4();
+		}
+
+		$contract['uuid'] = $identity;
+	}//end assignContractIdentity()
+
+	/**
 	 * The OpenRegister identifier to upsert a contract on.
 	 *
 	 * WHY THIS EXISTS. This used to read `$object['uuid']` alone and then drop
@@ -4466,9 +4504,7 @@ class SynchronizationService {
 		$hasAfterRules = empty($synchronization['actions'] ?? []) === false;
 
 		if (($synchronizationContract['targetId'] ?? null) !== null && $hasAfterRules === true) {
-			if (($synchronizationContract['uuid'] ?? null) === null) {
-				$synchronizationContract['uuid'] = (string)Uuid::v4();
-			}
+			$this->assignContractIdentity(contract: $synchronizationContract);
 
 			try {
 				$synchronizationContract = $this->persistContract(
@@ -4531,9 +4567,7 @@ class SynchronizationService {
 			}
 		}
 
-		if (($synchronizationContract['uuid'] ?? null) === null) {
-			$synchronizationContract['uuid'] = (string)Uuid::v4();
-		}
+		$this->assignContractIdentity(contract: $synchronizationContract);
 
 		if ($this->lastTargetWriteBuffered === true) {
 			// The object this contract maps is still sitting in the write buffer,

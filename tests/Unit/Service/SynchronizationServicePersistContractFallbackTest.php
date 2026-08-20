@@ -129,4 +129,79 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 		$this->assertNotNull($seen);
 		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$seen);
 	}//end testEnsureUuidStillMintsWhenThereIsNoIdentity()
+
+	/**
+	 * Call the private assignContractIdentity().
+	 *
+	 * @param array $contract The contract payload (by reference).
+	 *
+	 * @return array The mutated payload.
+	 */
+	private function assignContractIdentity(array $contract): array {
+		$method = new \ReflectionMethod(SynchronizationService::class, 'assignContractIdentity');
+		$method->setAccessible(true);
+
+		$instance = (new \ReflectionClass(SynchronizationService::class))->newInstanceWithoutConstructor();
+		$method->invokeArgs($instance, [&$contract]);
+
+		return $contract;
+	}//end assignContractIdentity()
+
+	/**
+	 * THE ROOT OF THE DUPLICATE-PER-RERUN DEFECT. Both sites in
+	 * synchronizeContract() read `if (($contract['uuid'] ?? null) === null)` and
+	 * minted. A contract loaded back from OpenRegister carries `id`, never
+	 * `uuid`, so that was true on EVERY rerun: a fresh identity each time, and
+	 * every downstream writer then faithfully created a row under it.
+	 *
+	 * Fixing persist(), persistContract(), persistBulk() and updateFromArray()
+	 * changed nothing measurable, because the identity was already gone before
+	 * any of them ran — three live runs still added one contract per updated
+	 * object (8237 -> 8334 -> 8431 -> 8528).
+	 *
+	 * @return void
+	 */
+	public function testExistingIdBecomesTheWriteIdentity(): void {
+		$out = $this->assignContractIdentity(
+			contract: ['id' => '2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33', 'originId' => 'o-1']
+		);
+
+		$this->assertSame('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33', $out['uuid']);
+	}//end testExistingIdBecomesTheWriteIdentity()
+
+	/**
+	 * An explicit uuid is left alone.
+	 *
+	 * @return void
+	 */
+	public function testAnExplicitUuidSurvives(): void {
+		$out = $this->assignContractIdentity(contract: ['uuid' => 'keep-me', 'id' => 'other']);
+
+		$this->assertSame('keep-me', $out['uuid']);
+	}//end testAnExplicitUuidSurvives()
+
+	/**
+	 * A contract with genuinely no identity still gets one — that is what these
+	 * sites exist for, and a first run must still be able to create.
+	 *
+	 * @return void
+	 */
+	public function testAContractWithNoIdentityStillGetsOne(): void {
+		$out = $this->assignContractIdentity(contract: ['originId' => 'o-2']);
+
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$out['uuid']);
+	}//end testAContractWithNoIdentityStillGetsOne()
+
+	/**
+	 * A legacy numeric id is not an OpenRegister identifier, so it must be
+	 * replaced by a minted uuid rather than written under.
+	 *
+	 * @return void
+	 */
+	public function testANumericIdIsReplacedNotAdopted(): void {
+		$out = $this->assignContractIdentity(contract: ['id' => 4438, 'originId' => 'o-3']);
+
+		$this->assertNotSame('4438', (string)$out['uuid']);
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$out['uuid']);
+	}//end testANumericIdIsReplacedNotAdopted()
 }//end class
