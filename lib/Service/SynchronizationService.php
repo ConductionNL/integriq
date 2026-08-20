@@ -27,6 +27,7 @@ namespace OCA\OpenConnector\Service;
 
 use Adbar\Dot;
 use DateTime;
+use DateTimeInterface;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\Each;
@@ -1228,16 +1229,158 @@ class SynchronizationService {
 	}//end findTargetIdByContractOrigin()
 
 	/**
+	 * Can the mapping be ruled out as a reason to re-map this object?
+	 *
+	 * True means "the mapping is not a reason to rewrite" — no mapping at all, or
+	 * a mapping demonstrably last touched before this contract was last checked.
+	 *
+	 * THE BUG THIS REPLACES. The clause read
+	 * `$mapping->getUpdated() < $contract['sourceLastChecked']`, comparing a
+	 * `DateTime` against an ATOM *string*. PHP does not order an object against a
+	 * string, so it was false for every mapping that HAD a timestamp, and the
+	 * skip branch could never be taken: a mapped synchronization rewrote every
+	 * object on every run. Measured on the 2000-dataset CKAN benchmark, identical
+	 * source data: 1854 skipped unmapped, 0 skipped mapped; 6.8 s against 17.7 s.
+	 *
+	 * THE DIRECTION EACH UNKNOWN FALLS, AND WHY THEY DIFFER. An absent mapping
+	 * timestamp is NOT evidence the mapping changed, so it must not block a skip —
+	 * `null < 'somestring'` was true under the old code and that behaviour is
+	 * deliberately kept. An absent `sourceLastChecked` is different: without a
+	 * previous check there is nothing to be newer than, so the run must fall
+	 * through and write.
+	 *
+	 * @param mixed $mapping     The resolved mapping, or null when none is set.
+	 * @param mixed $lastChecked The contract's `sourceLastChecked`.
+	 *
+	 * @return bool True when the mapping is no reason to rewrite.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-change-detection-is-independent-of-how-a-timestamp-is-typed-req-024
+	 */
+	private function mappingUnchangedSince(mixed $mapping, mixed $lastChecked): bool {
+		if ($mapping === null) {
+			return true;
+		}
+
+		$updated = $mapping->getUpdated();
+		if ($this->toTimestamp(value: $updated) === null) {
+			// Nothing says this mapping changed; it must not pin the object to
+			// the update path forever.
+			return true;
+		}
+
+		return $this->isBefore(moment: $updated, reference: $lastChecked);
+	}//end mappingUnchangedSince()
+
+	/**
+	 * Is `$moment` strictly earlier than `$reference`?
+	 *
+	 * WHY THIS EXISTS. The skip test compares a mapping's `getUpdated()` — a
+	 * `DateTime` — against a contract's `sourceLastChecked`, an ATOM *string*.
+	 * PHP does not order an object against a string, so `<` was false for every
+	 * mapped synchronization and the skip branch could never be taken: a
+	 * synchronization WITH a mapping rewrote every object on every run, forever.
+	 * Measured on the 2000-dataset CKAN benchmark: 1854 skipped without a
+	 * mapping, 0 skipped with one, and 6.8 s -> 17.7 s for identical data.
+	 *
+	 * Both sides are normalised to a Unix timestamp. An unparseable or absent
+	 * value returns false — "cannot prove it is older" must fall through to the
+	 * update path, never silently skip a write.
+	 *
+	 * @param mixed $moment    The earlier candidate (DateTimeInterface or string).
+	 * @param mixed $reference The later candidate (DateTimeInterface or string).
+	 *
+	 * @return bool True when both parse and `$moment` is strictly earlier.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-change-detection-is-independent-of-how-a-timestamp-is-typed-req-024
+	 */
+	private function isBefore(mixed $moment, mixed $reference): bool {
+		$momentStamp = $this->toTimestamp(value: $moment);
+		$referenceStamp = $this->toTimestamp(value: $reference);
+
+		if ($momentStamp === null || $referenceStamp === null) {
+			return false;
+		}
+
+		return ($momentStamp < $referenceStamp);
+	}//end isBefore()
+
+	/**
+	 * Normalise a timestamp-ish value to a Unix timestamp.
+	 *
+	 * @param mixed $value A DateTimeInterface, a parseable date string, or null.
+	 *
+	 * @return int|null The timestamp, or null when it cannot be established.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-change-detection-is-independent-of-how-a-timestamp-is-typed-req-024
+	 */
+	private function toTimestamp(mixed $value): ?int {
+		if ($value instanceof DateTimeInterface === true) {
+			return $value->getTimestamp();
+		}
+
+		if (is_string($value) === true && trim($value) !== '') {
+			$parsed = strtotime($value);
+			if ($parsed !== false) {
+				return $parsed;
+			}
+		}
+
+		return null;
+	}//end toTimestamp()
+
+	/**
+	 * The OpenRegister identifier to upsert a contract on.
+	 *
+	 * WHY THIS EXISTS. This used to read `$object['uuid']` alone and then drop
+	 * `$object['id']`, on the reasoning that `id` was a legacy *integer* and not
+	 * an OpenRegister identifier. A contract payload carries no `uuid` property
+	 * at all — its identity comes back from OpenRegister AS `id`, and that `id`
+	 * is a uuid string. So the upsert key was always null and every save CREATED:
+	 * four distinct contract objects for one (synchronizationId, originId), one
+	 * per run, each carrying an identical `originHash`. `synchronization_contract`
+	 * grew without bound — 528,656 rows on the dev instance.
+	 *
+	 * A numeric `id` is still refused, which is what the original comment was
+	 * actually protecting against.
+	 *
+	 * @param array $object The contract payload.
+	 *
+	 * @return string|null The uuid to upsert on, or null to create.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	private function contractIdentity(array $object): ?string {
+		$uuid = ($object['uuid'] ?? null);
+		if ($uuid !== null && (string)$uuid !== '') {
+			return (string)$uuid;
+		}
+
+		$id = ($object['id'] ?? null);
+		if ($id === null || is_numeric($id) === true) {
+			return null;
+		}
+
+		$id = (string)$id;
+		if ($id === '') {
+			return null;
+		}
+
+		return $id;
+	}//end contractIdentity()
+
+	/**
 	 * Persist a contract payload array to OpenRegister.
 	 *
-	 * Mirrors the previous SynchronizationContractMapper::persist() semantics:
-	 * keyed on `uuid` for upsert, dropping the legacy int `id` so OpenRegister's
-	 * upsert probe does not get confused.
+	 * Keyed for upsert on the contract's own identity (`uuid`, else a non-numeric
+	 * `id` — see {@see self::contractIdentity()}), dropping a legacy int `id` so
+	 * OpenRegister's upsert probe does not get confused.
 	 *
 	 * @param array $contract The contract payload array to persist.
 	 * @param bool $ensureUuid When true, auto-assign a uuid if absent.
 	 *
 	 * @return array The persisted contract payload array.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	private function persistContract(array $contract, bool $ensureUuid = false): array {
 		if ($this->synchronizationContractService !== null) {
@@ -1253,17 +1396,13 @@ class SynchronizationService {
 			$object['uuid'] = (string)Uuid::v4();
 		}
 
-		$uuid = ($object['uuid'] ?? null);
+		// Read the identity BEFORE dropping `id` — for a contract loaded back from
+		// OpenRegister, `id` IS the uuid and is the only identifier present.
+		$uuidValue = $this->contractIdentity(object: $object);
 
-		// OpenRegister owns object identity (it keys on the `uuid` parameter); the
-		// payload's legacy int `id` is not an OpenRegister identifier and would
-		// break OR's `trim($object['id'])` upsert probe, so drop it.
+		// A legacy int `id` is not an OpenRegister identifier and would break OR's
+		// `trim($object['id'])` upsert probe, so drop it either way.
 		unset($object['id']);
-
-		$uuidValue = null;
-		if ($uuid !== null && $uuid !== '') {
-			$uuidValue = (string)$uuid;
-		}
 
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
@@ -4173,8 +4312,10 @@ class SynchronizationService {
 		if ($force === false
 			&& $originHash === ($synchronizationContract['originHash'] ?? null)
 			&& ($synchronization['updated'] ?? null) < ($synchronizationContract['sourceLastChecked'] ?? null)
-			&& ($sourceTargetMapping === null
-			|| $sourceTargetMapping->getUpdated() < ($synchronizationContract['sourceLastChecked'] ?? null))
+			&& $this->mappingUnchangedSince(
+				mapping: $sourceTargetMapping,
+				lastChecked: ($synchronizationContract['sourceLastChecked'] ?? null)
+			) === true
 			&& ($synchronizationContract['targetId'] ?? null) !== null
 			&& ($synchronizationContract['targetHash'] ?? null) !== null
 		) {

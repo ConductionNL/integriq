@@ -211,11 +211,52 @@ class SynchronizationContractService {
 	}//end findTargetIdByOriginId()
 
 	/**
+	 * The OpenRegister identifier to upsert a contract on.
+	 *
+	 * WHY THIS EXISTS. `persist()` used to read `$object['uuid']` alone and then
+	 * drop `$object['id']`, on the reasoning that `id` was a legacy *integer* and
+	 * not an OpenRegister identifier. A contract payload carries no `uuid`
+	 * property at all — its identity comes back from OpenRegister AS `id`, and
+	 * that `id` is a uuid string. So the upsert key was always null and every
+	 * save CREATED: four distinct contract objects for one
+	 * (synchronizationId, originId), one per run, each carrying an identical
+	 * `originHash`. `synchronization_contract` grew without bound — 528,656 rows
+	 * on the dev instance.
+	 *
+	 * A numeric `id` is still refused, which is what the original comment was
+	 * actually protecting against.
+	 *
+	 * @param array $object The contract payload.
+	 *
+	 * @return string|null The uuid to upsert on, or null to create.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	public function contractIdentity(array $object): ?string {
+		$uuid = ($object['uuid'] ?? null);
+		if ($uuid !== null && (string)$uuid !== '') {
+			return (string)$uuid;
+		}
+
+		$id = ($object['id'] ?? null);
+		if ($id === null || is_numeric($id) === true) {
+			return null;
+		}
+
+		$id = (string)$id;
+		if ($id === '') {
+			return null;
+		}
+
+		return $id;
+	}//end contractIdentity()
+
+	/**
 	 * Persist a contract payload array to OpenRegister.
 	 *
-	 * Mirrors the previous SynchronizationContractMapper::persist() semantics:
-	 * keyed on `uuid` for upsert, dropping the legacy int `id` so OpenRegister's
-	 * upsert probe does not get confused.
+	 * Keyed for upsert on the contract's own identity — see
+	 * {@see self::contractIdentity()} for why reading `uuid` alone minted a new
+	 * contract on every run.
 	 *
 	 * @param array $contract The contract payload array to persist.
 	 * @param bool $ensureUuid When true, auto-assign a uuid if absent.
@@ -223,6 +264,7 @@ class SynchronizationContractService {
 	 * @return array The persisted contract payload array.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function persist(array $contract, bool $ensureUuid = false): array {
 		$object = $contract;
@@ -231,18 +273,14 @@ class SynchronizationContractService {
 			$object['uuid'] = (string)Uuid::v4();
 		}
 
-		$uuid = ($object['uuid'] ?? null);
+		// Read the identity BEFORE dropping `id`: a contract loaded back from
+		// OpenRegister carries no `uuid` property at all — its identity comes
+		// back AS `id`, and that `id` is a uuid string.
+		$uuidParam = $this->contractIdentity(object: $object);
 
-		// OpenRegister owns object identity (it keys on the `uuid` parameter);
-		// the payload's legacy int `id` is not an OpenRegister identifier and
-		// would break OR's `trim($object['id'])` upsert probe, so drop it.
+		// A legacy int `id` is not an OpenRegister identifier and would break OR's
+		// `trim($object['id'])` upsert probe, so drop it either way.
 		unset($object['id']);
-
-		if ($uuid !== null && $uuid !== '') {
-			$uuidParam = (string)$uuid;
-		} else {
-			$uuidParam = null;
-		}
 
 		// Wrapped in SystemOperationContext because `silent` is NOT enough on its
 		// own: it gates the audit row and inverse-relation work inside SaveObject,
@@ -386,14 +424,10 @@ class SynchronizationContractService {
 		}
 
 		$merged = array_merge($existing, $object);
-		unset($merged['id']);
 
-		$uuid = ($merged['uuid'] ?? null);
-		if ($uuid !== null && $uuid !== '') {
-			$uuidParam = (string)$uuid;
-		} else {
-			$uuidParam = null;
-		}
+		// Identity BEFORE dropping `id` — see contractIdentity().
+		$uuidParam = $this->contractIdentity(object: $merged);
+		unset($merged['id']);
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
