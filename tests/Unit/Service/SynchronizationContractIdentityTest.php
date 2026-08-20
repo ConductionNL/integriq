@@ -130,4 +130,70 @@ class SynchronizationContractIdentityTest extends TestCase {
 			'originHash' => '4da6d1cb78a5',
 		]);
 	}//end testPersistUpsertsRatherThanCreating()
+
+	/**
+	 * THE SECOND HALF OF THE DEFECT. `ensureUuid` is meant to mint an identity
+	 * for a contract that HAS none. It used to test `empty($object['uuid'])`,
+	 * which is true for EVERY contract loaded back from OpenRegister — they carry
+	 * `id`, never `uuid` — so it minted a fresh uuid on top of a perfectly good
+	 * identity and the save created instead of updating.
+	 *
+	 * Both persists at the end of synchronizeContract pass `ensureUuid: true`, so
+	 * this was every update. Measured live AFTER the first half of the fix landed:
+	 * a run that skipped 1903 of 2000 and updated 97 still added exactly 97
+	 * contract rows.
+	 *
+	 * @return void
+	 */
+	public function testEnsureUuidDoesNotOverrideAnExistingIdentity(): void {
+		$saved = ObjectServiceMockBuilder::objectEntity($this, ['originId' => 'o-1'], 'c-1');
+
+		$this->orObjectService->expects($this->once())
+			->method('saveObject')
+			->with(
+				$this->anything(),
+				$this->equalTo('openconnector'),
+				$this->equalTo('synchronization_contract'),
+				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
+			)
+			->willReturn($saved);
+
+		$this->service->persist(
+			contract: [
+				'id' => '2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33',
+				'synchronizationId' => 's-1',
+				'originId' => 'o-1',
+			],
+			ensureUuid: true
+		);
+	}//end testEnsureUuidDoesNotOverrideAnExistingIdentity()
+
+	/**
+	 * `ensureUuid` must still do its job for a contract that genuinely has no
+	 * identity: mint one rather than passing null and creating an unkeyed row.
+	 *
+	 * @return void
+	 */
+	public function testEnsureUuidStillMintsWhenThereIsNoIdentity(): void {
+		$saved = ObjectServiceMockBuilder::objectEntity($this, ['originId' => 'o-2'], 'c-2');
+		$seen = null;
+
+		$this->orObjectService->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(
+				function (...$args) use ($saved, &$seen): mixed {
+					$seen = ($args[3] ?? null);
+
+					return $saved;
+				}
+			);
+
+		$this->service->persist(
+			contract: ['synchronizationId' => 's-1', 'originId' => 'o-2'],
+			ensureUuid: true
+		);
+
+		$this->assertNotNull($seen, 'ensureUuid must mint an identity when there is none');
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$seen);
+	}//end testEnsureUuidStillMintsWhenThereIsNoIdentity()
 }//end class

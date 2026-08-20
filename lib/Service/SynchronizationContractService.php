@@ -269,14 +269,22 @@ class SynchronizationContractService {
 	public function persist(array $contract, bool $ensureUuid = false): array {
 		$object = $contract;
 
-		if ($ensureUuid === true && empty($object['uuid']) === true) {
-			$object['uuid'] = (string)Uuid::v4();
-		}
-
 		// Read the identity BEFORE dropping `id`: a contract loaded back from
 		// OpenRegister carries no `uuid` property at all — its identity comes
 		// back AS `id`, and that `id` is a uuid string.
 		$uuidParam = $this->contractIdentity(object: $object);
+
+		// `ensureUuid` mints an identity for a contract that HAS none. It used to
+		// test `empty($object['uuid'])`, which is true for every contract ever
+		// loaded from OpenRegister — they carry `id`, never `uuid` — so it minted
+		// a fresh uuid on top of a perfectly good identity and the save created
+		// instead of updating. Both persists at the end of synchronizeContract
+		// pass `ensureUuid: true`, so that was EVERY update: measured live, a run
+		// that skipped 1903 of 2000 and updated 97 still added exactly 97 rows.
+		if ($ensureUuid === true && $uuidParam === null) {
+			$uuidParam = (string)Uuid::v4();
+			$object['uuid'] = $uuidParam;
+		}
 
 		// A legacy int `id` is not an OpenRegister identifier and would break OR's
 		// `trim($object['id'])` upsert probe, so drop it either way.
@@ -408,6 +416,8 @@ class SynchronizationContractService {
 	 * @return array The persisted contract payload array.
 	 *
 	 * @throws DoesNotExistException When the contract does not exist.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function updateFromArray(string|int $id, array $object): array {
 		$existing = $this->find(id: $id);
