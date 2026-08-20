@@ -19,6 +19,19 @@ on:
 # asset — ncipollo/release-action and svenstaro/upload-release-action.
 permissions:
   contents: write
+  # REQUIRED, not optional. The called workflow's `release` job declares
+  # `pull-requests: write` because it routes the version bump through a PR
+  # rather than pushing at a protected branch. A caller block is a CEILING, so
+  # omitting this here caps the callee BELOW what it declares and the call
+  # fails to START — a `startup_failure` with zero jobs and no log to read.
+  #
+  # MEASURED 2026-08-20: every run of this workflow in this repo has ended in
+  # startup_failure, while apps whose callers declare NO permissions block at
+  # all (decidesk, procest) release normally — because with no block there is
+  # no ceiling to fall short of. openconnector was the only app in the fleet
+  # that stated one, and stating an incomplete ceiling is worse than stating
+  # none.
+  pull-requests: write
 
 jobs:
   unstable:
