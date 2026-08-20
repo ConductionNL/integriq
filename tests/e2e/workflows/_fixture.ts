@@ -40,7 +40,11 @@
  * `e2e-<runId>` prefix in its name/title so afterAll cleanup can find and
  * delete exactly the rows this run created and nothing else.
  */
-import { type APIRequestContext, type Browser, request as pwRequest } from '@playwright/test'
+import {
+	type APIRequestContext,
+	type Browser,
+	request as pwRequest,
+} from '@playwright/test'
 import * as path from 'path'
 
 export const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
@@ -63,12 +67,18 @@ async function fetchRequestToken(browser: Browser): Promise<string> {
 	const context = await browser.newContext({ storageState: STORAGE_STATE })
 	try {
 		const page = await context.newPage()
-		await page.goto('/index.php/apps/dashboard/', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/dashboard/', {
+			waitUntil: 'domcontentloaded',
+		})
 		// OC.requestToken is the canonical source; fall back to the <head> meta.
 		const token = await page.evaluate(() => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const oc = (window as any).OC
-			if (oc && typeof oc.requestToken === 'string' && oc.requestToken.length > 0) {
+			if (
+				oc
+				&& typeof oc.requestToken === 'string'
+				&& oc.requestToken.length > 0
+			) {
 				return oc.requestToken as string
 			}
 			const meta = document.querySelector('head[data-requesttoken]')
@@ -76,7 +86,9 @@ async function fetchRequestToken(browser: Browser): Promise<string> {
 		})
 		await page.close()
 		if (!token) {
-			throw new Error('Could not mint a Nextcloud requesttoken (OC.requestToken empty). The session may be stale; re-run global-setup.')
+			throw new Error(
+				'Could not mint a Nextcloud requesttoken (OC.requestToken empty). The session may be stale; re-run global-setup.',
+			)
 		}
 		return token
 	} finally {
@@ -95,7 +107,10 @@ export interface ApiClient {
  * carries a freshly-minted requesttoken on every request, so POST/PUT/DELETE
  * to the OR object API are accepted.
  */
-export async function makeApiClient(browser: Browser, baseURL: string): Promise<ApiClient> {
+export async function makeApiClient(
+	browser: Browser,
+	baseURL: string,
+): Promise<ApiClient> {
 	const token = await fetchRequestToken(browser)
 	const ctx = await pwRequest.newContext({
 		baseURL,
@@ -109,7 +124,9 @@ export async function makeApiClient(browser: Browser, baseURL: string): Promise<
 	return {
 		request: ctx,
 		token,
-		dispose: async () => { await ctx.dispose() },
+		dispose: async () => {
+			await ctx.dispose()
+		},
 	}
 }
 
@@ -135,19 +152,32 @@ export async function createObject(
 	data: Record<string, any>,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
-	const resp = await api.request.post(`${OR_BASE}/${schema}`, { data, failOnStatusCode: false })
+	const resp = await api.request.post(`${OR_BASE}/${schema}`, {
+		data,
+		failOnStatusCode: false,
+	})
 	if (!resp.ok()) {
-		throw new Error(`createObject(${schema}) failed: ${resp.status()} ${await resp.text()}`)
+		throw new Error(
+			`createObject(${schema}) failed: ${resp.status()} ${await resp.text()}`,
+		)
 	}
 	return unwrap(await resp.json())
 }
 
 /** find — GET a single object by id/uuid. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function find(api: ApiClient, schema: string, id: string): Promise<any> {
-	const resp = await api.request.get(`${OR_BASE}/${schema}/${id}`, { failOnStatusCode: false })
+export async function find(
+	api: ApiClient,
+	schema: string,
+	id: string,
+): Promise<any> {
+	const resp = await api.request.get(`${OR_BASE}/${schema}/${id}`, {
+		failOnStatusCode: false,
+	})
 	if (!resp.ok()) {
-		throw new Error(`find(${schema}/${id}) failed: ${resp.status()} ${await resp.text()}`)
+		throw new Error(
+			`find(${schema}/${id}) failed: ${resp.status()} ${await resp.text()}`,
+		)
 	}
 	return unwrap(await resp.json())
 }
@@ -159,13 +189,24 @@ export async function findAll(
 	query: Record<string, string | number> = {},
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any[]> {
-	const qs = new URLSearchParams({ _limit: '200', ...Object.fromEntries(Object.entries(query).map(([k, v]) => [k, String(v)])) })
-	const resp = await api.request.get(`${OR_BASE}/${schema}?${qs.toString()}`, { failOnStatusCode: false })
+	const qs = new URLSearchParams({
+		_limit: '200',
+		...Object.fromEntries(Object.entries(query).map(([k, v]) => [k, String(v)])),
+	})
+	const resp = await api.request.get(`${OR_BASE}/${schema}?${qs.toString()}`, {
+		failOnStatusCode: false,
+	})
 	if (!resp.ok()) {
-		throw new Error(`findAll(${schema}) failed: ${resp.status()} ${await resp.text()}`)
+		throw new Error(
+			`findAll(${schema}) failed: ${resp.status()} ${await resp.text()}`,
+		)
 	}
 	const body = await resp.json()
-	return Array.isArray(body.results) ? body.results : (Array.isArray(body) ? body : [])
+	return Array.isArray(body.results)
+		? body.results
+		: Array.isArray(body)
+			? body
+			: []
 }
 
 /** updateObject — PUT a full object by id. */
@@ -177,20 +218,33 @@ export async function updateObject(
 	data: Record<string, any>,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
-	const resp = await api.request.put(`${OR_BASE}/${schema}/${id}`, { data, failOnStatusCode: false })
+	const resp = await api.request.put(`${OR_BASE}/${schema}/${id}`, {
+		data,
+		failOnStatusCode: false,
+	})
 	if (!resp.ok()) {
-		throw new Error(`updateObject(${schema}/${id}) failed: ${resp.status()} ${await resp.text()}`)
+		throw new Error(
+			`updateObject(${schema}/${id}) failed: ${resp.status()} ${await resp.text()}`,
+		)
 	}
 	return unwrap(await resp.json())
 }
 
 /** deleteObject — DELETE an object by id. Swallows 404 (already gone). */
-export async function deleteObject(api: ApiClient, schema: string, id: string): Promise<void> {
-	const resp = await api.request.delete(`${OR_BASE}/${schema}/${id}`, { failOnStatusCode: false })
+export async function deleteObject(
+	api: ApiClient,
+	schema: string,
+	id: string,
+): Promise<void> {
+	const resp = await api.request.delete(`${OR_BASE}/${schema}/${id}`, {
+		failOnStatusCode: false,
+	})
 	if (!resp.ok() && resp.status() !== 404) {
 		// Cleanup must be best-effort; log but don't throw so afterAll keeps going.
 		// eslint-disable-next-line no-console
-		console.warn(`deleteObject(${schema}/${id}) returned ${resp.status()}: ${await resp.text()}`)
+		console.warn(
+			`deleteObject(${schema}/${id}) returned ${resp.status()}: ${await resp.text()}`,
+		)
 	}
 }
 
@@ -198,12 +252,20 @@ export async function deleteObject(api: ApiClient, schema: string, id: string): 
  * Best-effort cleanup: delete every object of `schema` whose name/title/slug
  * carries the run prefix. Used in afterAll for each seeded schema.
  */
-export async function cleanupByPrefix(api: ApiClient, schema: string, prefix: string): Promise<void> {
+export async function cleanupByPrefix(
+	api: ApiClient,
+	schema: string,
+	prefix: string,
+): Promise<void> {
 	let rows: unknown[] = []
 	try {
 		rows = await findAll(api, schema, { _search: prefix })
 	} catch {
-		try { rows = await findAll(api, schema) } catch { rows = [] }
+		try {
+			rows = await findAll(api, schema)
+		} catch {
+			rows = []
+		}
 	}
 	for (const row of rows as Array<Record<string, unknown>>) {
 		const hay = `${row.name ?? ''} ${row.title ?? ''} ${row.slug ?? ''} ${row.description ?? ''}`

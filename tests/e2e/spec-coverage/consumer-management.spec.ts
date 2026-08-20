@@ -21,13 +21,15 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
+// APP_BASE comes from _helpers.ts, the one place that knows both that the
+// router is hash-mode and that the URL needs the `/index.php/` prefix (without
+// it, PHP's built-in server on CI 404s the app directory and every assertion
+// below runs against a 404 page). This file used to keep a private copy of
+// that string that was missing the prefix.
+import { APP_BASE } from './_helpers'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
-// path-form deep-link (`/apps/openconnector/consumers`) is ignored and lands
-// on the dashboard; the hash form (`/apps/openconnector/#/consumers`) renders
-// the target page. APP_BASE carries the `/#`.
-const APP_BASE = '/apps/openconnector/#'
 
 // ---------------------------------------------------------------------------
 // REQ-CON-UI-001: Consumer Management UI
@@ -35,8 +37,10 @@ const APP_BASE = '/apps/openconnector/#'
 
 test.describe('REQ-CON-UI-001: Consumers list page mounts', () => {
 	// @e2e consumer-management::consumers-list-page-mounts-and-shows-content
-	test('Consumers index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'networkidle' })
+	test('Consumers index page renders inside main content area', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -45,15 +49,25 @@ test.describe('REQ-CON-UI-001: Consumers list page mounts', () => {
 
 test.describe('REQ-CON-UI-001: Add Consumer modal', () => {
 	// @e2e consumer-management::add-consumer-button-opens-the-creation-modal
-	test('Add Item button on Consumers page opens modal/dialog', async ({ page }) => {
+	test('Add Item button on Consumers page opens modal/dialog', async ({
+		page,
+	}) => {
 		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Consumer)/i })
-		await expect(addBtn, 'Add Item button must be visible on Consumers page').toBeVisible({ timeout: 20_000 })
+		await expect(
+			addBtn,
+			'Add Item button must be visible on Consumers page',
+		).toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
-		await expect(dialog, 'Modal must open after clicking Add Item on Consumers').toBeVisible({ timeout: 10_000 })
+		const dialog = appDialog(page)
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Item on Consumers',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -68,8 +82,10 @@ test.describe('REQ-CON-UI-001: Add Consumer modal', () => {
 
 test.describe('REQ-WBHK-UI-001: Webhooks list page mounts', () => {
 	// @e2e consumer-management::webhooks-list-page-mounts-and-shows-content
-	test('Webhooks index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'networkidle' })
+	test('Webhooks index page renders inside main content area', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
@@ -80,13 +96,23 @@ test.describe('REQ-WBHK-UI-001: Add Webhook modal', () => {
 	// @e2e consumer-management::add-webhook-button-opens-the-creation-modal
 	test('Add Item button on Webhooks page opens modal/dialog', async ({ page }) => {
 		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'domcontentloaded' })
-		const addBtn = page.getByRole('button', { name: /Add (Item|Webhook|Consumer)/i })
-		await expect(addBtn, 'Add Item button must be visible on Webhooks page').toBeVisible({ timeout: 20_000 })
+		const addBtn = page.getByRole('button', {
+			name: /Add (Item|Webhook|Consumer)/i,
+		})
+		await expect(
+			addBtn,
+			'Add Item button must be visible on Webhooks page',
+		).toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
-		await expect(dialog, 'Modal must open after clicking Add Item on Webhooks').toBeVisible({ timeout: 10_000 })
+		const dialog = appDialog(page)
+		await expect(
+			dialog,
+			'Modal must open after clicking Add Item on Webhooks',
+		).toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+		const cancelBtn = dialog
+			.getByRole('button', { name: /Cancel|Close/i })
+			.first()
 		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await cancelBtn.click()
 		} else {
@@ -100,7 +126,9 @@ test.describe('REQ-WBHK-UI-001: Add Webhook modal', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Consumers OR API — list', () => {
-	test('OR returns consumer objects for the openconnector register', async ({ request }) => {
+	test('OR returns consumer objects for the openconnector register', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/consumer?_limit=10`, {
 			failOnStatusCode: false,
 		})

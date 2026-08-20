@@ -1,0 +1,277 @@
+{
+  "$comment": "ADR-037 register fragment (visual-flow-orchestration). Declares the `flow` schema (an ordered, declarative multi-step pipeline of existing Source/Mapping/Synchronization/Endpoint/Approval references) plus its `flow_run`/`flow_run_log` execution-trace schemas, and additively extends `approval_request` (declared by hitl-approval-rule-action.json) with `flowRunId`/`resumeStepOrder` so an `approval` flow step can suspend/resume through the same approval_request state machine. See openspec/changes/archive/2026-07-15-visual-flow-orchestration/design.md Decisions 1/4/6. Deep-merge note: this fragment only adds the two new `approval_request` properties (InitializeRegister::deepMergeConfig unions `components.schemas.approval_request.properties` by key with hitl-approval-rule-action.json's — glob sort places this file after the `h...` fragment alphabetically, so the union always sees the base schema first); it does not repeat approval_request's existing properties/required/seed data.",
+  "components": {
+    "registers": {
+      "openconnector": {
+        "schemas": ["flow", "flow_run", "flow_run_log"]
+      }
+    },
+    "schemas": {
+      "flow": {
+        "slug": "flow",
+        "title": "Flow",
+        "icon": "Sitemap",
+        "version": "1.0.0",
+        "summary": "A declarative, ordered multi-step pipeline referencing existing Source/Mapping/Synchronization/Endpoint/Approval entities by id",
+        "description": "An ordered list of steps (call/mapping/synchronization/event/approval/branch), each a thin reference to an existing entity. Executed by FlowRunnerService, which calls the referenced entity's own existing service method — no step type reimplements that logic. See openspec/specs/flow-orchestration/spec.md REQ-001.",
+        "required": ["name", "steps"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable flow name",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this flow does",
+            "title": "Description"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "When false, cron/endpoint/event triggers skip this flow; a manual Run still executes it (matches job/synchronization isEnabled precedent)",
+            "title": "Enabled"
+          },
+          "steps": {
+            "type": "array",
+            "title": "Steps",
+            "description": "Ordered list of flow steps. Execution order is each item's own `order` field (a stable identifier), not array position, so `branch` targets (nextStepOrder/defaultNextStepOrder) stay valid across insert/delete/reorder edits in the step-list editor. `order` values MUST be unique within a flow — FlowRunnerService::run() rejects a flow with duplicate step `order` values as a fatal configuration error before executing any step, and the step-list editor validates the same rule client-side before save.",
+            "items": {
+              "type": "object",
+              "required": ["order", "type", "onError"],
+              "properties": {
+                "order": {
+                  "type": "integer",
+                  "description": "Stable step identifier and default execution sequence (ascending). branch steps' nextStepOrder/defaultNextStepOrder reference this value, not array position. MUST be unique within the flow.",
+                  "title": "Order"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["call", "mapping", "synchronization", "event", "approval", "branch"],
+                  "description": "Which existing service this step dispatches to: call -> CallService::call(), mapping -> MappingService::executeMapping(), synchronization -> SynchronizationService::synchronize(), event -> EventService::emitCloudEvent(), approval -> suspend/resume via ApprovalService, branch -> JsonLogic-selected next step (no service call).",
+                  "title": "Type"
+                },
+                "configRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Id of the existing Source (call) / Mapping (mapping) / Synchronization (synchronization) entity this step invokes. Not applicable to event/approval (config carries their parameters) or branch steps.",
+                  "title": "Config Reference"
+                },
+                "condition": {
+                  "type": "object",
+                  "description": "Optional JsonLogic run-if rule, evaluated via JWadhams\\JsonLogic::apply() against the current step context. Step runs only when this evaluates loosely true. Absent/empty = always run.",
+                  "title": "Condition"
+                },
+                "onError": {
+                  "type": "string",
+                  "enum": ["stop", "continue", "dead_letter"],
+                  "default": "stop",
+                  "description": "stop: flow_run.status becomes stopped, no later step runs. continue: the run proceeds to the next step. dead_letter: flow_run.status becomes dead_letter (distinct from stopped), no later step runs.",
+                  "title": "On Error"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "Type-specific parameters this step's dispatch needs beyond configRef: call={endpoint?, method?, requestConfig?}; event={source, subject?, type} (EventService::emitCloudEvent() args, design.md Decision 5); approval={approverGroup, onReject?, onTimeout?, ttlSeconds?} (mirrors the approval rule action's own config shape); synchronization={isTest?, force?, mutationType?} (optional overrides, default off so sync-safety guards are never bypassed by a flow step).",
+                  "title": "Step Configuration"
+                },
+                "branches": {
+                  "type": "array",
+                  "description": "branch steps only. Evaluated in array order via JsonLogic::apply(); the first matching entry's nextStepOrder is selected.",
+                  "title": "Branches",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "condition": {
+                        "type": "object",
+                        "description": "JsonLogic rule for this branch",
+                        "title": "Branch condition"
+                      },
+                      "nextStepOrder": {
+                        "type": "integer",
+                        "description": "The order of the step to jump to when this branch's condition matches",
+                        "title": "Next step order"
+                      }
+                    }
+                  }
+                },
+                "defaultNextStepOrder": {
+                  "type": "integer",
+                  "description": "branch steps only. Used when no branches[].condition matches. When absent, execution continues to the next step in order sequence.",
+                  "title": "Default Next Step Order"
+                }
+              }
+            }
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated"
+          }
+        },
+        "appendOnly": false,
+        "immutable": false
+      },
+      "flow_run": {
+        "slug": "flow_run",
+        "title": "Flow Run",
+        "icon": "PlayCircleOutline",
+        "version": "1.0.0",
+        "summary": "One FlowRunnerService::run() invocation, with the step-level trace in flow_run_log",
+        "description": "Minimal, self-contained execution-trace schema for v1 (design.md Decision 6). If execution-trace-observability lands a cross-cutting execution_trace schema, a follow-up change SHOULD converge flow_run_log onto it rather than maintaining both indefinitely.",
+        "required": ["flowId", "status"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "flowId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/flow",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the flow this run executed",
+            "title": "Flow"
+          },
+          "triggerSource": {
+            "type": "string",
+            "enum": ["cron", "endpoint", "event", "manual"],
+            "description": "Which of the four trigger surfaces started this run (flow-orchestration REQ-007)",
+            "title": "Trigger Source"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["running", "completed", "stopped", "dead_letter", "suspended", "failed"],
+            "default": "running",
+            "description": "running while steps execute; completed when every step finishes (or is skipped/continue-recovers); stopped on an onError:stop failure or a rejected approval step; dead_letter on an onError:dead_letter failure or a dead-lettered approval outcome; suspended while an approval step awaits sign-off; failed on a fatal configuration error (e.g. an unresolvable branch target, REQ-004) that is not an ordinary step failure.",
+            "title": "Status"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this run began",
+            "title": "Started At"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this run reached a terminal status (completed/stopped/dead_letter/failed). Null while running or suspended.",
+            "title": "Finished At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated"
+          }
+        },
+        "appendOnly": false,
+        "immutable": false
+      },
+      "flow_run_log": {
+        "slug": "flow_run_log",
+        "title": "Flow Run Log",
+        "icon": "TextBoxOutline",
+        "version": "1.0.0",
+        "summary": "One per-step trace entry for a flow_run",
+        "description": "Append-only per-step execution trace (flow-orchestration REQ-008), mirroring the job_log/synchronization_log append-only+immutable convention.",
+        "required": ["flowRunId", "stepOrder", "type", "status"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "flowRunId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/flow_run",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the owning flow_run; deleted along with it",
+            "title": "Flow Run"
+          },
+          "stepOrder": {
+            "type": "integer",
+            "description": "The step's `order` value (flow.steps[].order), not array position",
+            "title": "Step Order"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["call", "mapping", "synchronization", "event", "approval", "branch"],
+            "description": "The step's type",
+            "title": "Type"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "skipped", "failed"],
+            "description": "completed: the step's dispatch succeeded. skipped: the step's condition evaluated false (REQ-003). failed: the step's dispatch threw (REQ-006).",
+            "title": "Status"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this step began executing",
+            "title": "Started At"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this step stopped executing, whatever its outcome. Null while the step is still running.",
+            "title": "Finished At"
+          },
+          "error": {
+            "type": "string",
+            "description": "Present only when status=failed — the caught throwable's message",
+            "title": "Error"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created"
+          }
+        },
+        "appendOnly": true,
+        "immutable": true
+      },
+      "approval_request": {
+        "properties": {
+          "flowRunId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/flow_run",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the flow_run this request suspended (flow `approval` step case); set instead of endpointId/ruleId/synchronizationId. See flow-orchestration REQ-005.",
+            "title": "Flow Run"
+          },
+          "resumeStepOrder": {
+            "type": "integer",
+            "description": "The `order` of the flow step to resume at once this request is approved — the step immediately after the suspending `approval` step (flow-orchestration REQ-005). Not applicable to the endpoint-rule or Synchronization batch-gate cases.",
+            "title": "Resume Step Order"
+          }
+        }
+      }
+    }
+  }
+}

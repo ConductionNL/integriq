@@ -5,7 +5,7 @@
 // validate-manifest.js — schema-validates src/manifest.json against the
 // @conduction/nextcloud-vue app-manifest schema using Ajv.
 //
-// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-007
+// @spec openspec/specs/openconnector-app-manifest/spec.md#requirement-manifest-must-validate-against-the-canonical-schema-without-errors
 //   (Build gate validates the manifest — `npm run check:manifest` runs this CLI,
 //    is wired into CI via .github/workflows/spec-validation.yml → check:specs,
 //    Ajv-validates against the canonical schema, prints error paths, exits non-zero
@@ -41,7 +41,9 @@ const MANIFEST_PATH = path.join(REPO_ROOT, 'src', 'manifest.json')
 // hardcoding v1 — falling back to v1 when the manifest doesn't declare one.
 function schemaFileName() {
 	try {
-		const ref = String((JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) || {}).$schema || '')
+		const ref = String(
+			(JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) || {}).$schema || '',
+		)
 		if (ref.includes('app-manifest-v2')) {
 			return 'app-manifest-v2.schema.json'
 		}
@@ -55,7 +57,15 @@ const SCHEMA_FILE = schemaFileName()
 
 const SCHEMA_CANDIDATES = [
 	process.env.APP_MANIFEST_SCHEMA,
-	path.join(REPO_ROOT, 'node_modules', '@conduction', 'nextcloud-vue', 'src', 'schemas', SCHEMA_FILE),
+	path.join(
+		REPO_ROOT,
+		'node_modules',
+		'@conduction',
+		'nextcloud-vue',
+		'src',
+		'schemas',
+		SCHEMA_FILE,
+	),
 	path.join(REPO_ROOT, '..', 'nextcloud-vue', 'src', 'schemas', SCHEMA_FILE),
 ].filter(Boolean)
 
@@ -92,8 +102,12 @@ function loadAjv() {
 			Ajv2020 = require('ajv').default || require('ajv')
 		} catch (__) {
 			console.error('[validate-manifest] Ajv not installed in node_modules.')
-			console.error('[validate-manifest] Install with: npm i -D ajv ajv-formats')
-			console.error('[validate-manifest] Falling back to a structural lint pass.')
+			console.error(
+				'[validate-manifest] Install with: npm i -D ajv ajv-formats',
+			)
+			console.error(
+				'[validate-manifest] Falling back to a structural lint pass.',
+			)
 			return { Ajv: null, addFormats: null }
 		}
 	}
@@ -113,13 +127,28 @@ function structuralLint(manifest) {
 	if (!manifest.version || typeof manifest.version !== 'string') {
 		errors.push('top-level: version (string) is required')
 	}
-	if (!Array.isArray(manifest.menu)) errors.push('top-level: menu (array) is required')
-	if (!Array.isArray(manifest.pages)) errors.push('top-level: pages (array) is required')
+	if (!Array.isArray(manifest.menu))
+		errors.push('top-level: menu (array) is required')
+	if (!Array.isArray(manifest.pages))
+		errors.push('top-level: pages (array) is required')
 	// Mirror the v2 schema's `$defs.page.properties.type` enum
 	// (app-manifest-v2.schema.json). This fallback only runs when Ajv or the
 	// schema file can't be resolved; keeping the enum in sync avoids
 	// false-negative failures on valid v2 page types (roadmap/search/form/map).
-	const allowedTypes = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'map', 'roadmap', 'search', 'custom'])
+	const allowedTypes = new Set([
+		'index',
+		'detail',
+		'dashboard',
+		'logs',
+		'settings',
+		'chat',
+		'files',
+		'form',
+		'map',
+		'roadmap',
+		'search',
+		'custom',
+	])
 	const seenIds = new Set()
 	for (let i = 0; i < (manifest.pages || []).length; i++) {
 		const page = manifest.pages[i]
@@ -129,14 +158,17 @@ function structuralLint(manifest) {
 		}
 		for (const required of ['id', 'route', 'type', 'title']) {
 			if (!page[required] || typeof page[required] !== 'string') {
-				errors.push(`pages[${i}]: missing required string field "${required}"`)
+				errors.push(
+					`pages[${i}]: missing required string field "${required}"`,
+				)
 			}
 		}
 		if (page.type && !allowedTypes.has(page.type)) {
 			errors.push(`pages[${i}].type: "${page.type}" not in known enum`)
 		}
 		if (page.id) {
-			if (seenIds.has(page.id)) errors.push(`pages[${i}].id: duplicate "${page.id}"`)
+			if (seenIds.has(page.id))
+				errors.push(`pages[${i}].id: duplicate "${page.id}"`)
 			seenIds.add(page.id)
 		}
 	}
@@ -147,7 +179,9 @@ function main() {
 	if (!fs.existsSync(MANIFEST_PATH)) {
 		// openregister is the foundation app — no CnAppRoot manifest expected.
 		// Skip cleanly instead of failing CI.
-		console.log(`[validate-manifest] no src/manifest.json (foundation app) — skipping`)
+		console.log(
+			`[validate-manifest] no src/manifest.json (foundation app) — skipping`,
+		)
 		process.exit(0)
 	}
 
@@ -158,7 +192,9 @@ function main() {
 
 	const schemaPath = findSchemaPath()
 	if (!schemaPath) {
-		console.warn('[validate-manifest] no schema candidate resolved; falling back to structural lint.')
+		console.warn(
+			'[validate-manifest] no schema candidate resolved; falling back to structural lint.',
+		)
 		const errors = structuralLint(manifest)
 		if (errors.length === 0) {
 			console.log('[validate-manifest] structural lint: PASS (0 issues)')
@@ -176,7 +212,9 @@ function main() {
 	if (!Ajv) {
 		const errors = structuralLint(manifest)
 		if (errors.length === 0) {
-			console.log('[validate-manifest] structural lint (no Ajv): PASS (0 issues)')
+			console.log(
+				'[validate-manifest] structural lint (no Ajv): PASS (0 issues)',
+			)
 			process.exit(0)
 		}
 		console.error('[validate-manifest] structural lint (no Ajv): FAIL')
@@ -196,15 +234,21 @@ function main() {
 			try {
 				addFormats(ajv)
 			} catch (e) {
-				console.warn(`[validate-manifest] ajv-formats unavailable (${e.message}); continuing without format validation`)
+				console.warn(
+					`[validate-manifest] ajv-formats unavailable (${e.message}); continuing without format validation`,
+				)
 			}
 		}
 		validate = ajv.compile(schema)
 	} catch (e) {
-		console.warn(`[validate-manifest] Ajv could not compile the schema (${e.message}); falling back to structural lint`)
+		console.warn(
+			`[validate-manifest] Ajv could not compile the schema (${e.message}); falling back to structural lint`,
+		)
 		const errors = structuralLint(manifest)
 		if (errors.length === 0) {
-			console.log('[validate-manifest] structural lint (Ajv unavailable): PASS (0 issues)')
+			console.log(
+				'[validate-manifest] structural lint (Ajv unavailable): PASS (0 issues)',
+			)
 			process.exit(0)
 		}
 		console.error('[validate-manifest] structural lint (Ajv unavailable): FAIL')
@@ -218,7 +262,9 @@ function main() {
 	}
 	console.error('[validate-manifest] Ajv validation: FAIL')
 	for (const err of validate.errors || []) {
-		console.error(`  - ${err.instancePath || '(root)'} ${err.message} (keyword=${err.keyword})`)
+		console.error(
+			`  - ${err.instancePath || '(root)'} ${err.message} (keyword=${err.keyword})`,
+		)
 	}
 	process.exit(1)
 }

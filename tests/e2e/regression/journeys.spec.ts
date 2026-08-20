@@ -33,8 +33,11 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl'
+import { appDialog } from '../support/dialogs'
+import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
 
-const NEXTCLOUD = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
@@ -53,19 +56,45 @@ const OR = '/index.php/apps/openregister/api/objects/openconnector'
  * returns `/index.php/apps/openconnector` and routes must include the
  * `/index.php/` prefix.
  *
- * Probing once per test file keeps the spec portable between both
- * environments without having to thread the base through every helper.
+ * 🔴 The probe that used to live here requested each candidate and took the
+ * first that served the SPA shell. Nextcloud serves the IDENTICAL shell under
+ * both, so it always returned `/apps/openconnector` — the wrong one on CI —
+ * and every `gotoRoute()` below landed on the Dashboard. That is why journeys
+ * J1–J6 all failed with "Add <X> button must be visible on the index page":
+ * the button is genuinely absent, from the dashboard. Resolution now comes
+ * from `OC.generateUrl` via tests/e2e/support/appRoot.ts.
  */
 async function resolveAppBase(page: Page): Promise<string> {
-	const candidates = ['/apps/openconnector', '/index.php/apps/openconnector']
-	for (const base of candidates) {
-		const probe = await page.request.get(`${base}/sources`, { failOnStatusCode: false })
-		const body = await probe.text()
-		if (probe.ok() && body.includes('openconnector-main.js')) {
-			return base
-		}
-	}
-	throw new Error('Could not determine openconnector URL base — neither /apps nor /index.php form returns the SPA shell')
+	return await resolveAppRoot(page)
+}
+
+/**
+ * Deep-link to an in-app route.
+ *
+ * ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A HASH-form
+ * deep-link such as `<base>/#/sources` would now be served by the SPA shell —
+ * status 200, `openconnector` in the HTML, everything a smoke check looks
+ * at — and then ignored by the router, which reads `location.pathname`, not
+ * `location.hash`, and renders the dashboard instead. The plain path form
+ * used below is correct for this router mode; do not add a `#` back in.
+ *
+ * The `UI smoke` block lower down deliberately does NOT use this helper — it
+ * asserts the SERVER routes return 200, for which the path form is also the
+ * right URL, for the unrelated reason that it's a raw HTTP check bypassing
+ * the client router entirely.
+ *
+ * @param page  the Playwright page.
+ * @param route In-app route beginning with `/`, e.g. `/sources`.
+ *
+ * @return Nothing.
+ */
+async function gotoRoute(page: Page, route: string): Promise<void> {
+	const base = await resolveAppBase(page)
+	await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
+	// Prove the router MATCHED before any selector runs. Every "Add <X> button
+	// must be visible" failure in this file was really "the router fell through
+	// to the Dashboard", and the selector timeout said nothing about that.
+	await expectRouteMatched(page, route)
 }
 
 /**
@@ -82,34 +111,49 @@ async function createViaUi(
 	schemaTitle: string,
 	name: string,
 	extraFields: Record<string, string> = {},
+	selectFields: Record<string, string> = {},
 ): Promise<string> {
 	// Locate and click the Add button. CnActionsBar renders the primary
 	// action as `<NcButton type="primary">Add {schemaTitle}</NcButton>`
 	// (label derived from schema.title).
-	const addBtn = page.getByRole('button', { name: new RegExp(`Add\\s+${schemaTitle}`, 'i') })
-	await expect(addBtn, `Add ${schemaTitle} button must be visible on the index page`).toBeVisible()
+	const addBtn = page.getByRole('button', {
+		name: new RegExp(`Add\\s+${schemaTitle}`, 'i'),
+	})
+	await expect(
+		addBtn,
+		`Add ${schemaTitle} button must be visible on the index page`,
+	).toBeVisible()
 	await addBtn.click()
 
 	// CnFormDialog opens as an NcDialog. Wait for the dialog role.
-	const dialog = page.getByRole('dialog').first()
+	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
 	// Fill `name` first; every openconnector schema exposes a top-level
-	// `name` field as the title. CnFormDialog renders one NcTextField per
-	// schema property with the label slot rendering ` <property> <required-marker> `
-	// — NcTextField surrounds the property name with whitespace and appends
-	// `*` for required fields, so the actual label text reads ` name * `.
-	// Match via regex (start-of-string + required marker + end-of-string)
-	// so we don't pick up other fields like `authorizationHeader` or
-	// `lastSync` that contain "name" as a substring of their description.
+	// `name` field as the title.
+	//
+	// ⚠️ KEYS HERE ARE RENDERED LABELS, NOT PROPERTY NAMES. CnFormDialog
+	// labels each NcTextField from the schema property's `title`, falling back
+	// to the property name, and appends ` *` for required fields. That is
+	// invisible for most fields because their title is just the capitalised
+	// property name (`name` → "Name", which the case-insensitive match below
+	// still finds) — but the endpoint schema titles `endpoint` as "Endpoint
+	// Path" and `method` as "HTTP Method". J4 passed `endpoint` / `method` and
+	// failed with `endpoint input for Endpoint must be present in
+	// CnFormDialog`: the input was there, under a label the regex could not
+	// match.
+	//
+	// The anchored regex (start + optional required marker + end) is
+	// deliberate: an unanchored "name" would also match `authorizationHeader`
+	// and `lastSync`, whose descriptions contain the word.
 	const fields: Record<string, string> = { name, ...extraFields }
-	for (const [propName, value] of Object.entries(fields)) {
+	for (const [fieldLabel, value] of Object.entries(fields)) {
 		// Required marker may or may not be there depending on the schema.
-		const labelRegex = new RegExp(`^\\s*${propName}\\s*\\*?\\s*$`, 'i')
+		const labelRegex = new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i')
 		const field = dialog.getByLabel(labelRegex)
 		await expect(
 			field,
-			`${propName} input for ${schemaTitle} must be present in CnFormDialog`,
+			`"${fieldLabel}" input for ${schemaTitle} must be present in CnFormDialog`,
 		).toBeVisible({ timeout: 10_000 })
 		// pressSequentially + Tab fires the same keyboard / blur events
 		// the user does — Vue's reactive form validation marks the field
@@ -121,10 +165,76 @@ async function createViaUi(
 		await field.press('Tab')
 	}
 
+	// Fields the app renders as an NcSelect rather than a text input, which the
+	// loop above cannot drive: typing into a combobox filters its list but Tab
+	// commits nothing, so the field stays UNSET and CnFormDialog keeps Create
+	// disabled — with no clue as to which field is at fault. Open the listbox
+	// and click the option, the way the fleet's other NcSelect specs do.
+	//
+	// Endpoints need this because `EndpointFormFields` renders `method` (and
+	// `targetType`) as selects over a fixed vocabulary, where the plain schema
+	// form had a text input.
+	for (const [fieldLabel, value] of Object.entries(selectFields)) {
+		const combo = dialog
+			.getByRole('combobox', {
+				name: new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i'),
+			})
+			.first()
+		await expect(
+			combo,
+			`"${fieldLabel}" select for ${schemaTitle} must be present in CnFormDialog`,
+		).toBeVisible({ timeout: 10_000 })
+		await combo.click()
+
+		// Match on the option's text with ALL whitespace removed, rather than
+		// on its accessible name.
+		//
+		// An anchored `getByRole('option', { name: /^value$/ })` works for a
+		// short label like "GET" and CANNOT work for the Register list. The
+		// select renders a long label split across two elements so CSS can
+		// ellipsize the middle and still show the tail:
+		//
+		//   <span class="name-parts" title="OpenConnector">
+		//     <span class="name-parts__first">OpenCon</span>
+		//     <span class="name-parts__last">nector</span>
+		//   </span>
+		//
+		// Accessible-name computation joins those with a space, so the option
+		// is named "OpenCon nector" — and the CI run offered "Credentia l
+		// Broker", "Data-Subjec t Requests" and "Vocab ulary" alongside it.
+		// The split point depends on the rendered width, so no fixed regex
+		// survives it. Comparing the characters that carry the meaning is
+		// indifferent to where the break lands.
+		//
+		// (The split is a real accessibility defect in the shared select — a
+		// screen reader reads "OpenCon nector" — but it belongs to the
+		// component library, not to this app's journey test. The full name is
+		// intact in the wrapper's `title`.)
+		const want = value.replace(/\s+/g, '').toLowerCase()
+		const options = page.getByRole('option')
+		await expect(
+			options.first(),
+			`"${fieldLabel}" must offer at least one option`,
+		).toBeVisible({ timeout: 10_000 })
+
+		const offered = await options.allTextContents()
+		const index = offered.findIndex(
+			(t) => t.replace(/\s+/g, '').toLowerCase() === want,
+		)
+		expect(
+			index,
+			`"${value}" must be offered as an option for "${fieldLabel}" — offered: ${offered.map((t) => t.trim()).join(' | ')}`,
+		).toBeGreaterThanOrEqual(0)
+		await options.nth(index).click()
+	}
+
 	// Click the primary action — "Create" in create-mode (resolved by
 	// CnFormDialog when there's no item to edit).
 	const createBtn = dialog.getByRole('button', { name: /^Create$/ })
-	await expect(createBtn, 'Create button must be enabled in form dialog').toBeEnabled({ timeout: 10_000 })
+	await expect(
+		createBtn,
+		'Create button must be enabled in form dialog',
+	).toBeEnabled({ timeout: 10_000 })
 
 	// Register list-refresh listener BEFORE clicking Create so we don't
 	// miss a fast response. Then click and wait for both POST (create) and
@@ -133,21 +243,33 @@ async function createViaUi(
 	// We do NOT rely on DOM text visibility here because the table view
 	// renders all cells as "—" (known table bug: NcDataTable column-to-
 	// field mapping is broken). The GET response is reliable ground-truth.
-	const listResponsePromise = page.waitForResponse(r =>
-		r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-		r.request().method() === 'GET' &&
-		r.status() < 400,
-	{ timeout: 25_000 })
+	const listResponsePromise = page.waitForResponse(
+		(r) =>
+			r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+			&& r.request().method() === 'GET'
+			&& r.status() < 400,
+		{ timeout: 25_000 },
+	)
 
 	const [postResponse] = await Promise.all([
-		page.waitForResponse(r => {
-			const u = r.url()
-			const isObjects = u.includes(`/api/objects/openconnector/${schemaSlug}`)
-			return isObjects && r.request().method() === 'POST' && r.status() < 400
-		}, { timeout: 20_000 }),
+		page.waitForResponse(
+			(r) => {
+				const u = r.url()
+				const isObjects = u.includes(
+					`/api/objects/openconnector/${schemaSlug}`,
+				)
+				return (
+					isObjects && r.request().method() === 'POST' && r.status() < 400
+				)
+			},
+			{ timeout: 20_000 },
+		),
 		createBtn.click(),
 	])
-	expect([200, 201], `OR POST for ${schemaSlug} returned ${postResponse.status()}`).toContain(postResponse.status())
+	expect(
+		[200, 201],
+		`OR POST for ${schemaSlug} returned ${postResponse.status()}`,
+	).toContain(postResponse.status())
 
 	// Capture the newly-created item's ID from the POST response body.
 	// OR returns the full object in the POST response; the ID is used for
@@ -160,10 +282,37 @@ async function createViaUi(
 
 	// Now await the list refresh response that was already in-flight.
 	const listResponse = await listResponsePromise
-	const listBody = await listResponse.json().catch(() => ({}))
-	const results: Array<Record<string, unknown>> = listBody.results ?? (Array.isArray(listBody) ? listBody : [])
-	const found = results.some((item: Record<string, unknown>) => String(item.name ?? '') === name)
-	expect(found, `new ${schemaSlug} "${name}" must be present in the refreshed OR list response`).toBe(true)
+	// The list refresh having happened is what we waited for; its BODY is not
+	// a sound place to look for the new row.
+	//
+	// The index pages are paginated, and since the CI seed provisions the
+	// register's own shipped objects (~22 sources, 19 mappings, 18
+	// synchronizations from `lib/Settings/register.d/*.json`) a freshly-created
+	// row is very unlikely to be on page 1 of the default ordering. This
+	// assertion used to scan page 1 only, so it reported `new source "pw-j1-…"
+	// must be present in the refreshed OR list response` — the object existed
+	// and was listed, just not in the 20 rows it happened to look at.
+	//
+	// Ask OpenRegister for the row by name instead. That is ground truth, it is
+	// independent of page size and ordering, and it is a STRONGER check than
+	// the old one: it requires exactly one persisted object with this name, not
+	// merely its presence somewhere in a page of results.
+	void listResponse
+	const verify = await page.request.get(
+		`${OR}/${schemaSlug}?_search=${encodeURIComponent(name)}&_limit=50`,
+		{ failOnStatusCode: false },
+	)
+	expect(verify.status(), `OR list lookup for "${name}" must succeed`).toBe(200)
+	const verifyBody = await verify.json().catch(() => ({}))
+	const results: Array<Record<string, unknown>> =
+		verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+	const matches = results.filter(
+		(item: Record<string, unknown>) => String(item.name ?? '') === name,
+	)
+	expect(
+		matches.length,
+		`exactly one ${schemaSlug} named "${name}" must be persisted in OpenRegister`,
+	).toBe(1)
 
 	// Return the ID so callers can delete via API (reliable cleanup).
 	return createdId
@@ -182,27 +331,39 @@ async function createViaUi(
  */
 async function switchToCardsView(page: Page): Promise<void> {
 	// Check if the view toggle is present.
-	const hasToggle = await page.locator('input[type="radio"][value="cards"]').isVisible().catch(() => false)
+	const hasToggle = await page
+		.locator('input[type="radio"][value="cards"]')
+		.isVisible()
+		.catch(() => false)
 	if (!hasToggle) {
 		// Try by name attribute (nc-vue may use 'cn_view_mode' or similar).
-		const hasToggleByName = await page.locator('input[type="radio"][name*="view"]').count() > 0
+		const hasToggleByName =
+			(await page.locator('input[type="radio"][name*="view"]').count()) > 0
 		if (!hasToggleByName) return
 	}
 
 	// Use evaluate to select the Cards radio and trigger Vue's reactivity.
 	await page.evaluate(() => {
 		// Find the radio input for "cards" view.
-		const inputs = Array.from(document.querySelectorAll('input[type="radio"]')) as HTMLInputElement[]
-		const cardsInput = inputs.find(i =>
-			i.value === 'cards' || i.id?.toLowerCase().includes('cards') ||
-			i.closest('label')?.textContent?.trim().toLowerCase() === 'cards'
+		const inputs = Array.from(
+			document.querySelectorAll('input[type="radio"]'),
+		) as HTMLInputElement[]
+		const cardsInput = inputs.find(
+			(i) =>
+				i.value === 'cards'
+				|| i.id?.toLowerCase().includes('cards')
+				|| i.closest('label')?.textContent?.trim().toLowerCase() === 'cards',
 		)
 		if (cardsInput && !cardsInput.checked) {
 			cardsInput.checked = true
 			cardsInput.dispatchEvent(new Event('change', { bubbles: true }))
 			cardsInput.dispatchEvent(new Event('input', { bubbles: true }))
 			// Also click the parent label if it exists (for Vue reactivity).
-			const label = cardsInput.closest('label') || document.querySelector(`label[for="${cardsInput.id}"]`) as HTMLElement | null
+			const label =
+				cardsInput.closest('label')
+				|| (document.querySelector(
+					`label[for="${cardsInput.id}"]`,
+				) as HTMLElement | null)
 			if (label) (label as HTMLElement).click()
 		}
 	})
@@ -222,7 +383,12 @@ async function switchToCardsView(page: Page): Promise<void> {
  * to find the item, then deletes it. This handles the edge case where
  * the POST response did not include an id field.
  */
-async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: string) {
+async function deleteViaApi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	id: string,
+) {
 	let targetId = id
 	if (!targetId) {
 		// Fallback: look up by name.
@@ -232,8 +398,11 @@ async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: st
 		)
 		if (listResp.ok()) {
 			const body = await listResp.json().catch(() => ({}))
-			const results: Array<Record<string, unknown>> = body.results ?? (Array.isArray(body) ? body : [])
-			const match = results.find((item: Record<string, unknown>) => String(item.name ?? '') === name)
+			const results: Array<Record<string, unknown>> =
+				body.results ?? (Array.isArray(body) ? body : [])
+			const match = results.find(
+				(item: Record<string, unknown>) => String(item.name ?? '') === name,
+			)
 			targetId = String(match?.id ?? match?.['@id'] ?? '')
 		}
 	}
@@ -257,13 +426,80 @@ async function deleteViaApi(page: Page, schemaSlug: string, name: string, id: st
  * Used by J5 (create → edit → mass-delete) to exercise the mass-delete
  * code path end-to-end in at least one journey.
  */
-async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: string = '') {
+/**
+ * Locate an item by name, paging forward until it is on screen.
+ *
+ * The index lists are SERVER-paginated at 20/page, and a freshly created row
+ * is not on page 1 of the default ordering once the list is longer than a
+ * page. `createViaUi()` already refuses to look for it in the DOM for exactly
+ * this reason and asks OpenRegister by name instead — but edit and delete need
+ * the row itself, to click its Actions menu, so an API lookup cannot help
+ * them: the row has to be rendered.
+ *
+ * Sorting cannot substitute for this. `CnIndexPage`/`CnTable` sort CLIENT-SIDE
+ * over the already-loaded page and the in-list search box is not wired to a
+ * server `_search` (#996, and the fix lives in @conduction/nextcloud-vue), so
+ * a row the server placed on page 2 is not present to be sorted or filtered
+ * into view. The pager is the one control that re-queries.
+ *
+ * Same approach as `walkToRow()` in `workflows/source-mapping-crud.spec.ts`,
+ * adapted to Cards view: these journeys switch away from the table because its
+ * cells render as "—".
+ *
+ * ⚠️ This is not a CI-only nicety. A real install imports the register
+ * descriptor WITH its shipped objects — `InitializeRegister` does exactly that
+ * — so the Sources list starts past one page on any real instance. CI only
+ * looked short because `tests/e2e/ci-seed.sh` deliberately strips the demo
+ * objects before importing. These journeys were passing on a list kept
+ * artificially small, and measuring page size rather than the app.
+ *
+ * @param page The page, already on the index route in Cards view.
+ * @param name The exact item name to find.
+ *
+ * @returns A locator for the item's name text, on whichever page it landed.
+ */
+async function walkToItem(page: Page, name: string) {
+	// Bounded so a broken pager cannot spin forever. 40 pages at 20/page is
+	// far more than this suite can generate.
+	for (let hop = 0; hop < 40; hop++) {
+		const hit = page.getByText(name).first()
+		if (await hit.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			return hit
+		}
+
+		// `isEnabled()` is false on the last page (the button renders
+		// disabled) and throws when there is no pager at all — a single-page
+		// list. Both mean there is nowhere left to look, so return the locator
+		// and let the caller's expect() produce the real failure message.
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
+			return page.getByText(name).first()
+		}
+
+		await next.click()
+		await page.waitForTimeout(900)
+	}
+
+	return page.getByText(name).first()
+}
+
+async function deleteViaUi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	id: string = '',
+) {
 	// 1. Switch to Cards view so item names are visible.
 	await switchToCardsView(page)
 
-	// 2. Find the item card/row by visible name text.
-	const itemText = page.getByText(name).first()
-	await expect(itemText, `target item "${name}" must be visible in Cards view`).toBeVisible({ timeout: 10_000 })
+	// 2. Find the item card/row by visible name text, paging if needed.
+	const itemText = await walkToItem(page, name)
+	await expect(
+		itemText,
+		`target item "${name}" must be visible in Cards view`,
+	).toBeVisible({ timeout: 10_000 })
 
 	// 3. Find the row/card that contains the name text and tick its checkbox.
 	// CnIndexPage in Cards mode renders each item in a card; mass-delete
@@ -275,7 +511,10 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 		rowCheckbox = row.getByRole('checkbox').first()
 	} else {
 		// Cards layout — find checkbox closest to the name text.
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		rowCheckbox = card.getByRole('checkbox').first()
 	}
 	await rowCheckbox.check({ force: true })
@@ -283,23 +522,34 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 	// 4. Open the Actions menu and click "Delete selected".
 	await page.getByRole('button', { name: 'Actions' }).first().click()
 	const massDeleteItem = page.getByRole('menuitem', { name: /Delete selected/i })
-	await expect(massDeleteItem, '"Delete selected" menu item must be visible when a row is checked').toBeVisible()
+	await expect(
+		massDeleteItem,
+		'"Delete selected" menu item must be visible when a row is checked',
+	).toBeVisible()
 	await massDeleteItem.click()
 
 	// 5. CnMassDeleteDialog opens. Confirm with the destructive primary button.
-	const confirmDialog = page.getByRole('dialog').filter({ hasText: /Delete Items/i }).first()
+	const confirmDialog = page
+		.getByRole('dialog')
+		.filter({ hasText: /Delete Items/i })
+		.first()
 	await expect(confirmDialog, 'CnMassDeleteDialog opened').toBeVisible()
 	const confirmBtn = confirmDialog.getByRole('button', { name: /^Delete$/ })
 
 	// Wait for OR's DELETE on this schema to come back while we click.
 	const [response] = await Promise.all([
-		page.waitForResponse(r =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-			r.request().method() === 'DELETE'
-		, { timeout: 15_000 }),
+		page.waitForResponse(
+			(r) =>
+				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				&& r.request().method() === 'DELETE',
+			{ timeout: 15_000 },
+		),
 		confirmBtn.click(),
 	])
-	expect([200, 202, 204], `OR DELETE for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 202, 204],
+		`OR DELETE for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	// 6. Dialog dismisses.
 	await expect(confirmDialog).toBeHidden({ timeout: 10_000 })
@@ -314,8 +564,11 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 	)
 	if (verifyResp.ok()) {
 		const verifyBody = await verifyResp.json().catch(() => ({}))
-		const verifyResults: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
-		const stillPresent = verifyResults.some((item: Record<string, unknown>) => String(item.name ?? '') === name)
+		const verifyResults: Array<Record<string, unknown>> =
+			verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+		const stillPresent = verifyResults.some(
+			(item: Record<string, unknown>) => String(item.name ?? '') === name,
+		)
 		if (stillPresent) {
 			// UI delete did not remove the correct item — clean up via API
 			// and flag this as a known UI fragility (not a test failure).
@@ -323,7 +576,9 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
 			// Soft-warn; don't hard-fail since the UI DELETE round-trip itself
 			// succeeded (the response was 200/202/204) and this is a known
 			// intermittent issue with card-checkbox selection.
-			console.warn(`[deleteViaUi] UI mass-delete did not remove "${name}" — cleaned up via API`)
+			console.warn(
+				`[deleteViaUi] UI mass-delete did not remove "${name}" — cleaned up via API`,
+			)
 		}
 	}
 }
@@ -341,12 +596,19 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string, id: str
  * branch as the create path but routes through `saveObject` with an
  * `id` in `formData`.
  */
-async function editViaUi(page: Page, schemaSlug: string, name: string, newDescription: string) {
+async function editViaUi(
+	page: Page,
+	schemaSlug: string,
+	name: string,
+	newDescription: string,
+) {
 	// Switch to Cards so item names are visible.
 	await switchToCardsView(page)
 
-	const itemText = page.getByText(name).first()
-	await expect(itemText, `target item "${name}" must exist for edit`).toBeVisible({ timeout: 10_000 })
+	const itemText = await walkToItem(page, name)
+	await expect(itemText, `target item "${name}" must exist for edit`).toBeVisible({
+		timeout: 10_000,
+	})
 
 	// Find the card/row container and its Actions button.
 	// CnRowActions/CnCardItem renders an overflow-actions NcActions button.
@@ -357,7 +619,10 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {
 		// Cards layout — find the Actions button nearest to the name text.
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		actionsBtn = card.getByRole('button', { name: /Actions/i }).first()
 	}
 	await actionsBtn.click()
@@ -365,10 +630,12 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	await expect(editItem, 'Edit menu item visible').toBeVisible({ timeout: 5_000 })
 	await editItem.click()
 
-	const dialog = page.getByRole('dialog').first()
+	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible()
 	const descField = dialog.getByLabel(/^\s*description\s*\*?\s*$/i)
-	await expect(descField, 'description field present').toBeVisible({ timeout: 10_000 })
+	await expect(descField, 'description field present').toBeVisible({
+		timeout: 10_000,
+	})
 	await descField.click()
 	// fill() clears existing value before typing; for edit we want to replace
 	// the description rather than append, so use fill() then blur via Tab.
@@ -378,18 +645,28 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	// CnFormDialog's primary button is "Save" in edit mode (matches the
 	// `confirmLabel` default from CnFormDialog:554).
 	const saveBtn = dialog.getByRole('button', { name: /^Save$/ })
-	await expect(saveBtn, 'Save button enabled in edit dialog').toBeEnabled({ timeout: 10_000 })
+	await expect(saveBtn, 'Save button enabled in edit dialog').toBeEnabled({
+		timeout: 10_000,
+	})
 
 	const [response] = await Promise.all([
-		page.waitForResponse(r => {
-			const u = r.url()
-			return u.includes(`/api/objects/openconnector/${schemaSlug}`)
-				&& r.request().method() === 'PUT'
-				&& r.status() < 400
-		}, { timeout: 20_000 }),
+		page.waitForResponse(
+			(r) => {
+				const u = r.url()
+				return (
+					u.includes(`/api/objects/openconnector/${schemaSlug}`)
+					&& r.request().method() === 'PUT'
+					&& r.status() < 400
+				)
+			},
+			{ timeout: 20_000 },
+		),
 		saveBtn.click(),
 	])
-	expect([200, 201], `OR PUT for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 201],
+		`OR PUT for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	await expect(dialog).toBeHidden({ timeout: 10_000 })
 
@@ -400,9 +677,16 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	)
 	if (verifyResp.ok()) {
 		const verifyBody = await verifyResp.json().catch(() => ({}))
-		const verifyResults: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
-		const found = verifyResults.some((item: Record<string, unknown>) => String(item.description ?? '') === newDescription)
-		expect(found, `edited description "${newDescription}" must appear in the OR API after save`).toBe(true)
+		const verifyResults: Array<Record<string, unknown>> =
+			verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+		const found = verifyResults.some(
+			(item: Record<string, unknown>) =>
+				String(item.description ?? '') === newDescription,
+		)
+		expect(
+			found,
+			`edited description "${newDescription}" must appear in the OR API after save`,
+		).toBe(true)
 	}
 	// If API call fails, the PUT response already confirmed success above.
 }
@@ -418,8 +702,11 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	// Switch to Cards so item names are visible (table cells show "—").
 	await switchToCardsView(page)
 
-	const itemText = page.getByText(name).first()
-	await expect(itemText, `target item "${name}" must exist for single delete`).toBeVisible({ timeout: 10_000 })
+	const itemText = await walkToItem(page, name)
+	await expect(
+		itemText,
+		`target item "${name}" must exist for single delete`,
+	).toBeVisible({ timeout: 10_000 })
 
 	// Find and click the Actions button near the item name.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
@@ -428,26 +715,39 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	if (rowVisible) {
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {
-		const card = page.locator('[class*="card"], [class*="item"]').filter({ hasText: name }).first()
+		const card = page
+			.locator('[class*="card"], [class*="item"]')
+			.filter({ hasText: name })
+			.first()
 		actionsBtn = card.getByRole('button', { name: /Actions/i }).first()
 	}
 	await actionsBtn.click()
 	const deleteItem = page.getByRole('menuitem', { name: /^Delete$/ })
-	await expect(deleteItem, 'Delete row menu item visible').toBeVisible({ timeout: 5_000 })
+	await expect(deleteItem, 'Delete row menu item visible').toBeVisible({
+		timeout: 5_000,
+	})
 	await deleteItem.click()
 
-	const confirmDialog = page.getByRole('dialog').filter({ hasText: /Delete/i }).first()
+	const confirmDialog = page
+		.getByRole('dialog')
+		.filter({ hasText: /Delete/i })
+		.first()
 	await expect(confirmDialog, 'CnDeleteDialog opened').toBeVisible()
 	const confirmBtn = confirmDialog.getByRole('button', { name: /^Delete$/ })
 
 	const [response] = await Promise.all([
-		page.waitForResponse(r =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-			r.request().method() === 'DELETE'
-		, { timeout: 15_000 }),
+		page.waitForResponse(
+			(r) =>
+				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				&& r.request().method() === 'DELETE',
+			{ timeout: 15_000 },
+		),
 		confirmBtn.click(),
 	])
-	expect([200, 202, 204], `OR DELETE for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+	expect(
+		[200, 202, 204],
+		`OR DELETE for ${schemaSlug} returned ${response.status()}`,
+	).toContain(response.status())
 
 	await expect(confirmDialog).toBeHidden({ timeout: 10_000 })
 
@@ -480,22 +780,57 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 test.describe('UI journey J1 — visually create a Source; assert row in list', () => {
 	const name = `pw-j1-source-${Date.now()}`
 
-	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+	// `createViaUi` clicks the index page's Add action, then asserts the
+	// CnFormDialog became visible and carries the schema's "name" field —
+	// i.e. a schema-driven create form opened without leaving the page.
+	// @e2e openconnector-frontend-vue-rewrite::create-source-form-opens-from-cnindexpage
+	test('Add Source → Create → row appears in OR list response', async ({
+		page,
+	}) => {
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		// Cleanup via API — test focus is the create flow.
 		await deleteViaApi(page, 'source', name, id)
 	})
 })
 
-test.describe('UI journey J2 — visually create a Mapping; assert row in list', () => {
+test.describe('UI journey J2 — visually create a Mapping; assert it persists', () => {
 	const name = `pw-j2-mapping-${Date.now()}`
 
-	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/mappings`, { waitUntil: 'domcontentloaded' })
+	// Mappings are back on the generic create-dialog flow, so this journey is
+	// back on `createViaUi` like J1/J3/J4.
+	//
+	// It previously asserted the opposite — that clicking Add immediately
+	// POSTed an object called "New mapping" and routed to `#/mappings/<id>`.
+	// That was `createMappingAndOpen`, and it was the defect, not the contract:
+	// the button minted a persisted empty shell before the user had typed
+	// anything, and every abandoned click left one behind. The Mappings page
+	// now declares `slots["form-dialog"] = "MappingEditorModal"`, so Add opens
+	// the editor with an unsaved draft and nothing is written until Create.
+	//
+	// MappingEditorModal satisfies the same contract createViaUi drives: an
+	// NcDialog (role=dialog), a "Name *" NcTextField, and a primary button
+	// reading "Create" in create mode.
+	// Asserts BOTH halves of the scenario: the dialog opens, and it contains
+	// the creation form (a "Name *" field plus an enabled Create button).
+	// `mapping-and-search.spec.ts` also tags this scenario, but its
+	// `openAndDismissCreateModal` proves only that the dialog opened.
+	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
+	test('Add Mapping → Create → row appears in OR list response', async ({
+		page,
+	}) => {
+		await gotoRoute(page, '/mappings')
 		const id = await createViaUi(page, 'mapping', 'Mapping', name)
+
+		// Ground truth: the object really exists in OpenRegister.
+		const check = await page.request.get(`${OR}/mapping/${id}`, {
+			failOnStatusCode: false,
+		})
+		expect(
+			check.status(),
+			'the created mapping must be readable from OpenRegister',
+		).toBe(200)
+
 		await deleteViaApi(page, 'mapping', name, id)
 	})
 })
@@ -503,10 +838,16 @@ test.describe('UI journey J2 — visually create a Mapping; assert row in list',
 test.describe('UI journey J3 — visually create a Synchronization; assert row in list', () => {
 	const name = `pw-j3-sync-${Date.now()}`
 
-	test('Add Synchronization → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/synchronizations`, { waitUntil: 'domcontentloaded' })
-		const id = await createViaUi(page, 'synchronization', 'Synchronization', name)
+	test('Add Synchronization → Create → row appears in OR list response', async ({
+		page,
+	}) => {
+		await gotoRoute(page, '/synchronizations')
+		const id = await createViaUi(
+			page,
+			'synchronization',
+			'Synchronization',
+			name,
+		)
 		await deleteViaApi(page, 'synchronization', name, id)
 	})
 })
@@ -514,17 +855,47 @@ test.describe('UI journey J3 — visually create a Synchronization; assert row i
 test.describe('UI journey J4 — visually create an Endpoint; assert row in list', () => {
 	const name = `pw-j4-endpoint-${Date.now()}`
 
-	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/endpoints`, { waitUntil: 'domcontentloaded' })
-		// Endpoint schema's `required` list is ['name', 'endpoint',
-		// 'method'] — CnFormDialog keeps Create disabled until each
-		// required field is touched-and-valid. The other three journeys
-		// only require `name`, so they slip through with the default.
-		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
-			endpoint: '/pw-j4-endpoint',
-			method: 'GET',
-		})
+	test('Add Endpoint → Create → row appears in OR list response', async ({
+		page,
+	}) => {
+		await gotoRoute(page, '/endpoints')
+		// CnFormDialog keeps Create disabled until every required field holds
+		// a value. For an Endpoint that set has TWO sources, and missing the
+		// second is what made this journey fail:
+		//
+		//   1. the schema's own `required` — ['name', 'endpoint', 'method'];
+		//   2. the Endpoints PAGE MANIFEST, which additionally marks
+		//      `targetId` required (src/manifest.json). An endpoint with no
+		//      target routes nowhere, so the requirement is deliberate.
+		//
+		// Keys are the labels CnFormDialog renders, which come from each
+		// property's schema `title` — `endpoint` is titled "Endpoint Path" and
+		// `method` "HTTP Method". Passing the property names found no input.
+		//
+		// `method` sits in the select bucket: the Endpoints page declares the
+		// `form-fields` slot, and EndpointFormFields renders `method` as an
+		// NcSelect over a fixed vocabulary. Typing "GET" into a combobox and
+		// tabbing away selects nothing, which left `method` unset.
+		//
+		// `targetId` has NO input of its own — EndpointFormFields composes it
+		// from the Register + Schema pair and only writes it once BOTH halves
+		// are chosen. Register must be picked first: the Schema select stays
+		// disabled, and its options are scoped to the register, until then.
+		// Object key order is the iteration order, so this ordering matters.
+		const id = await createViaUi(
+			page,
+			'endpoint',
+			'Endpoint',
+			name,
+			{
+				'Endpoint Path': '/pw-j4-endpoint',
+			},
+			{
+				'HTTP Method': 'GET',
+				Register: 'OpenConnector',
+				Schema: 'Endpoint',
+			},
+		)
 		await deleteViaApi(page, 'endpoint', name, id)
 	})
 })
@@ -533,9 +904,10 @@ test.describe('UI journey J5 — edit a Source via row Actions → Edit; mass-de
 	const name = `pw-j5-source-${Date.now()}`
 	const newDescription = `edited via J5 at ${Date.now()}`
 
-	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+	test('create row → edit description via Actions → Save → description visible', async ({
+		page,
+	}) => {
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await editViaUi(page, 'source', name, newDescription)
 		// Cleanup via UI mass-delete to exercise that code path,
@@ -548,8 +920,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 	const name = `pw-j6-source-${Date.now()}`
 
 	test('create row → single-delete via Actions → row gone', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await singleDeleteViaUi(page, 'source', name)
 		// Fallback cleanup in case UI single-delete didn't remove the item.
@@ -562,10 +933,21 @@ test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => 
 	// app base WITHOUT a trailing slash — Nextcloud's PageController only
 	// matches `apps/openconnector`, not `apps/openconnector/` (the latter
 	// 404s through .htaccess rewriting). Use '' here, not '/'.
-	for (const route of ['', '/sources', '/endpoints', '/jobs', '/mappings', '/synchronizations', '/rules', '/cloud-events/events']) {
+	for (const route of [
+		'',
+		'/sources',
+		'/endpoints',
+		'/jobs',
+		'/mappings',
+		'/synchronizations',
+		'/rules',
+		'/cloud-events/events',
+	]) {
 		test(`GET ${route || '<root>'} serves the Vue app`, async ({ page }) => {
 			const base = await resolveAppBase(page)
-			const res = await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
+			const res = await page.goto(`${base}${route}`, {
+				waitUntil: 'domcontentloaded',
+			})
 			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
 			expect(html.toLowerCase()).toContain('openconnector')

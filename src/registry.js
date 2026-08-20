@@ -32,33 +32,58 @@
 //   2. Built-in widget types        (version-info, register-mapping, …)
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
+import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
+import CatalogItemCard from './components/CatalogItemCard.vue'
+import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
+import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
+import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
+import JobFormFields from './modals/v2/JobFormFields.vue'
+import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
+import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
+import SourceFormFields from './modals/v2/SourceFormFields.vue'
+import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
+import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
+import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
+import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
+import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
+import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
+import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
+import FlowsIndex from './views/Flow/FlowsIndex.vue'
+import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
+import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
+import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
+import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
+import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import {
-	testSourceHandler,
-	runJobHandler,
-	testJobHandler,
-	runSynchronizationHandler,
-	testSynchronizationHandler,
-	testMappingModalHandler,
 	addEndpointRuleHandler,
 	manageSigningHandler,
+	openConfigurationExportHandler,
+	openConfigurationImportHandler,
+	openPromotionHandler,
+	runJobHandler,
+	runSynchronizationHandler,
+	testJobHandler,
+	testMappingModalHandler,
+	testSourceHandler,
+	testSynchronizationHandler,
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
-import JobFormFields from './modals/v2/JobFormFields.vue'
-import SourceFormFields from './modals/v2/SourceFormFields.vue'
-import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
-import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
-import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
-import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
+	// Modal-opening row-action handlers — emit on the shared modal bus,
+	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testSourceHandler,
+	// The four run/test actions all open RunActionModal (REQ-SHELLUI-004), which
+	// owns the POST so the run can be gated behind the force flags the endpoints
+	// accept and the returned run log can be rendered rather than discarded.
 	runJobHandler,
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
-	// Modal-opening row-action handlers — emit on the shared modal bus,
-	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
@@ -69,6 +94,27 @@ export default {
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
 	// declarative `queryParam` field on the built-in `navigate` handler.
 	viewLogsHandler,
+	// Catalog page header actions (connector-catalog-ui): open the
+	// configuration import-preview / export dialogs via the modal bus.
+	openConfigurationImportHandler,
+	openConfigurationExportHandler,
+	// Environments page header action (environments-and-promotion): open the
+	// promote-configuration flow via the modal bus.
+	openPromotionHandler,
+
+	// Card component for the Catalog index page (connector-catalog-ui):
+	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
+	// Clicking a card opens CatalogItemDetailDialog through the modal bus.
+	CatalogItemCard,
+
+	// The four legacy automation index pages (Jobs, Rules, Mappings,
+	// Synchronizations) wire `below-header` to this notice — CnIndexPage
+	// renders that slot between the page header and the actions bar, which
+	// is where a page-level statement belongs; it is deliberately not an
+	// error state. flow-native-synchronization task 3.2. The three bespoke
+	// detail pages import the same component directly rather than through
+	// this map, because they own their own template.
+	AutomationDeprecationNotice,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
@@ -84,6 +130,61 @@ export default {
 	// hide the embedded-secret fields while brokered (openconnector#102).
 	SourceFormFields,
 
+	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
+	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// pickers composing the polymorphic `targetId`, `endpointArray` as a
+	// comma-separated list, method/targetType selects (the schema declares both
+	// as plain strings, no enum), and a configurations multiselect.
+	EndpointFormFields,
+
+	// The Webhooks (event_subscription) page wires `form-fields` to
+	// SubscriptionActionFields so the CnFormDialog offers a delivery-action
+	// kind picker (Webhook/Synchronization/Job) and an optional custom
+	// retry-policy block — neither is a declarative schema widget. See
+	// nextcloud-event-hub REQ-008/REQ-009.
+	SubscriptionActionFields,
+
+	// The Consumers page wires `form-dialog` to ConsumerEditorModal. Unlike the
+	// three below, NOT for width — this one has to own the submit PAYLOAD, which
+	// a `form-fields` slot cannot reach (initFormData and buildSubmitPayload both
+	// live in CnFormDialog, above the slot). `domains`/`ips` are bare
+	// `type: array`, so they resolve to the `tags` widget, and initFormData seeds
+	// every tags field to `[]` on create — which ConsumerScopeService::isAllowed()
+	// reads as "an allowlist admitting nobody" (it gates on is_array), so every
+	// consumer created through the generic dialog would have 403'd all inbound
+	// traffic. It also restores authorizationConfiguration, rateLimit and quota:
+	// all three are `type: object`, which fieldsFromSchema drops.
+	ConsumerEditorModal,
+
+	// The Mappings page wires `form-dialog` — not `form-fields` — to
+	// MappingEditorModal, restoring the wide three-column create/edit surface
+	// (input JSON | general + transform tabs | live output) the pre-manifest
+	// modal had. It has to replace the whole dialog rather than its content:
+	// CnIndexPage does not forward `size` to CnFormDialog, so a `form-fields`
+	// override can never be wider than NcDialog's `normal`.
+	MappingEditorModal,
+
+	// The Synchronizations page wires `form-dialog` to SynchronizationEditorModal
+	// for the same reason, restoring the source | transform | target modal the
+	// pre-manifest app had. It is a second host for the components
+	// SynchronizationDetailPage already uses (SyncConfigWidget,
+	// SyncMappingPicker, SyncReferenceList, RuleConditionGroup) — the shared
+	// draft/option/conditions logic lives in views/Synchronization/syncDraft.js.
+	SynchronizationEditorModal,
+
+	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
+	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
+	// value and whose operator select alone carries `min-width: 220px`, so the
+	// dialog has to be wider than NcDialog's `normal`. It restores the field set
+	// the pre-manifest EditRule modal had — conditions, order and the error
+	// response were all unreachable through the schema-driven form (enum-less
+	// `action`/`timing`/`type` strings, a `type: object` conditions property
+	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
+	// Per-type parameters beyond `error` stay on RuleDetailPage, which already
+	// hosts all 18 views/Rule/actionForms/ components; the shared option lists
+	// and conditions round-trip live in views/Rule/ruleDraft.js.
+	RuleEditorModal,
+
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below
 	// (Mapping #832, Rule #833, Synchronization #834) wrap CnDetailPage
@@ -93,8 +194,113 @@ export default {
 	RuleDetailPage,
 	SynchronizationDetailPage,
 
+	// Flow index + detail (custom pages): render the shared CnFlowIndexPage /
+	// CnFlowDetail surfaces over OpenRegister's native flow store. See
+	// flow-engine-unification task 6.2 and openspec/specs/flow-orchestration/
+	// spec.md's 2026-08-16 scope note.
+	//
+	// FlowsIndex is listed HERE as well as in the v2 `registry` below, exactly
+	// like its twelve sibling custom pages. It shipped registered only in the v2
+	// map, which left the two registration sources disagreeing about the same
+	// component; every reader (and gate-53's registry cross-reference) that goes
+	// by the legacy map saw the Flows page as naming a component nobody
+	// registers.
+	FlowsIndex,
+	FlowDetailPage,
+
 	// Dead-letter operations view (custom page): a filtered event_message
 	// surface backed by the admin-only /api/events/dead-letter endpoints with
 	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
 	EventDeliveriesPage,
+
+	// HITL Pending Approvals (custom pages): a filtered approval_request
+	// surface backed by the two-layer-authorized /api/approvals endpoints
+	// with per-row navigation and approve/reject verbs. Not expressible as a
+	// generic CnIndexPage. See hitl-approval-rule-action.
+	ApprovalsIndex,
+	ApprovalDetail,
+
+	// API Products gateway detail (custom page): endpoint picker, tier
+	// editor, gateway analytics panel, and pending-subscription approve/
+	// reject actions for one api_product. Not expressible as a generic
+	// CnIndexPage/detail page. See api-product-gateway.
+	ApiProductDetail,
+
+	// Sync-item dead-letter operations view (custom page): a filtered
+	// sync_item_dead_letter surface backed by the admin-only
+	// /api/sync-dead-letter endpoints with per-row + bulk Replay/Discard.
+	// See retry-and-circuit-breaker-policies (REQ-DLR-007..012).
+	SyncDeadLetterPage,
+
+	// Merged dead-letter operations surface (custom page): the ONE navigation
+	// entry under Operations. Owns the queue switch and delegates to the two
+	// components above — the queues stay separate underneath because they are
+	// different schemas behind different admin-only endpoints.
+	DeadLettersPage,
+
+	// Source detail circuit-breaker badge (declarative body section on
+	// SourceDetail via config.bodyWidgets): shows breaker state + failure
+	// count + cooldown countdown with a Reset action. See
+	// retry-and-circuit-breaker-policies (REQ-009).
+	CircuitBreakerBadge,
+
+	// ZGW Notificaties API Abonnementen (custom page): abonnement CRUD
+	// backed by the dedicated NotificatiesSubscriberController endpoints
+	// (create/update/delete also register/update/delete against the remote
+	// Notificaties API and provision/cascade-delete a companion consumer) —
+	// not the generic OR object CRUD a CnIndexPage drives. See
+	// notificaties-api-subscriber REQ-008.
+	NotificatiesAbonnementenPage,
+
+	// Execution trace detail (custom page): step-timeline + dry-run/forced
+	// Replay over one execution_trace, backed by the
+	// ExecutionTracesController REST surface. The list itself uses the
+	// generic `type: logs` CnLogsPage (Traces manifest page) — mirrors the
+	// SourceLogs/EndpointLogs/CloudEventLogs precedent — so only the detail
+	// view needs a bespoke component. See execution-trace-observability.
+	TraceDetailPage,
+}
+
+// V2 component registry (ADR-036). Under @conduction/nextcloud-vue@2, CnAppRoot
+// resolves a `type:"custom"` page's `component` string against the `registry`
+// prop, matching on `kind: 'page'` (CnPageRenderer.resolveCustomComponent with
+// requireKind='page'); the legacy `customComponents` string map above is
+// deprecated for v2 manifests and no longer drives page rendering — passing it
+// alone left CnAppRoot with zero resolvable pages and the shell rendered blank.
+//
+// Every entry below corresponds 1:1 to a manifest `type:"custom"` page's
+// `component` key (11 pages: ApiProductDetail, NotificatiesAbonnementen,
+// MappingDetail, RuleDetail, SynchronizationDetail, EventDeliveries, Approvals,
+// SyncDeadLetters, FlowDetail, ApprovalDetail, TraceDetail). The `page` kind
+// requires no metadata beyond `component`.
+//
+// The remaining registry-resolved surfaces — row-action HANDLERS (functions),
+// the Catalog card (`config.cardComponent`), the CnFormDialog `form-fields`
+// slot components, and the CircuitBreakerBadge body section — continue to
+// resolve through the legacy `customComponents` default export above:
+// CnPageRenderer resolves slot/card/section components and create-overrides by
+// name with no `kind` constraint (requireKind=null), so its legacy fallback
+// still applies to them. Only `type:"custom"` PAGES need the kind-tagged
+// registry, so only they are listed here.
+export const registry = {
+	ApiProductDetail: { kind: 'page', component: ApiProductDetail },
+	NotificatiesAbonnementenPage: {
+		kind: 'page',
+		component: NotificatiesAbonnementenPage,
+	},
+	MappingDetailPage: { kind: 'page', component: MappingDetailPage },
+	RuleDetailPage: { kind: 'page', component: RuleDetailPage },
+	SynchronizationDetailPage: {
+		kind: 'page',
+		component: SynchronizationDetailPage,
+	},
+	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
+	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
+	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
+	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
+	FlowDetailPage: { kind: 'page', component: FlowDetailPage },
+	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
+	FlowsIndex: { kind: 'page', component: FlowsIndex },
+	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
+	TraceDetailPage: { kind: 'page', component: TraceDetailPage },
 }

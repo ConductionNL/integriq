@@ -36,47 +36,91 @@
 			class="cn-source-form-fields__field">
 			<!-- Source `type` select (enum). Precedes the widget branches so a
 			     schema-declared widget='text' cannot short-circuit it. -->
-			<div v-if="field.key === 'type'" class="cn-source-form-fields__select-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
-					{{ field.label || t('openconnector', 'Type') }}{{ field.required ? ' *' : '' }}
+			<div
+				v-if="field.key === 'type'"
+				class="cn-source-form-fields__select-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
+					{{ field.label || t('openconnector', 'Type')
+					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
-					:input-id="'cn-source-form-' + field.key"
+					:inputId="'cn-source-form-' + field.key"
 					:aria-label-combobox="field.label || t('openconnector', 'Type')"
-					:value="selectedTypeOption"
+					:modelValue="selectedTypeOption"
 					:options="typeOptions"
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Pick a source type')"
-					@input="onTypePick" />
-				<span class="cn-source-form-fields__helper">
-					{{ field.description || t('openconnector', 'The transport used to reach this source.') }}
-				</span>
+					@update:modelValue="onTypePick" />
+				<CnFieldHelper
+					:text="
+						field.description
+						|| t(
+							'openconnector',
+							'The transport used to reach this source.',
+						)
+					"
+					:more="field.descriptionLong" />
 			</div>
 
-			<NcTextField
-				v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
-				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				:type="textFieldType(field)"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value)" />
+			<template
+				v-else-if="
+					field.widget === 'text'
+					|| field.widget === 'email'
+					|| field.widget === 'url'
+					|| field.widget === 'date'
+					|| field.widget === 'datetime'
+				">
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:modelValue="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
+					:error="!!errors[field.key]"
+					:type="textFieldType(field)"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:modelValue="(value) => updateField(field.key, value)" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 
-			<NcTextField
-				v-else-if="field.widget === 'number'"
-				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				type="number"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+			<template v-else-if="field.widget === 'number'">
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:modelValue="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
+					:error="!!errors[field.key]"
+					type="number"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:modelValue="
+						(value) =>
+							updateField(
+								field.key,
+								value !== '' ? Number(value) : null,
+							)
+					" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 
-			<div v-else-if="field.widget === 'textarea'" class="cn-source-form-fields__textarea-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
+			<div
+				v-else-if="field.widget === 'textarea'"
+				class="cn-source-form-fields__textarea-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -87,22 +131,27 @@
 					:placeholder="field.description"
 					rows="3"
 					@input="updateField(field.key, $event.target.value)" />
-				<span class="cn-source-form-fields__helper" :class="{ 'cn-source-form-fields__helper--error': errors[field.key] }">
-					{{ errors[field.key] || field.description }}
-				</span>
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
 			</div>
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:checked="!!formData[field.key]"
+				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:checked="(value) => updateField(field.key, value)">
+				@update:modelValue="(value) => updateField(field.key, value)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
-			<div v-else-if="field.widget === 'json'" class="cn-source-form-fields__textarea-wrapper">
-				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
+			<div
+				v-else-if="field.widget === 'json'"
+				class="cn-source-form-fields__textarea-wrapper">
+				<label
+					:for="'cn-source-form-' + field.key"
+					class="cn-source-form-fields__label">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -113,57 +162,96 @@
 					spellcheck="false"
 					rows="5"
 					@input="onJsonInput(field, $event.target.value)" />
-				<span class="cn-source-form-fields__helper" :class="{ 'cn-source-form-fields__helper--error': jsonErrors[field.key] || errors[field.key] }">
-					{{ jsonErrors[field.key] || errors[field.key] || field.description }}
-				</span>
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="jsonErrors[field.key] || errors[field.key]" />
 			</div>
 
-			<NcTextField
-				v-else
-				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value)" />
+			<template v-else>
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:modelValue="
+						formData[field.key] != null
+							? String(formData[field.key])
+							: ''
+					"
+					:error="!!errors[field.key]"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:modelValue="(value) => updateField(field.key, value)" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 		</div>
 
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
-				:checked="brokeredEnabled"
+				:modelValue="brokeredEnabled"
 				type="switch"
-				@update:checked="onToggleBrokered">
+				@update:modelValue="onToggleBrokered">
 				{{ t('openconnector', 'Brokered credential (OpenRegister)') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-source-form-fields__helper">
-				{{ t('openconnector', 'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.') }}
+				{{
+					t(
+						'openconnector',
+						'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.',
+					)
+				}}
 			</span>
 
 			<template v-if="brokeredEnabled">
-				<div v-if="brokerUnavailable" class="cn-source-form-fields__note cn-source-form-fields__note--warn">
-					{{ t('openconnector', 'The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.') }}
+				<div
+					v-if="brokerUnavailable"
+					class="cn-source-form-fields__note cn-source-form-fields__note--warn">
+					{{
+						t(
+							'openconnector',
+							'The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.',
+						)
+					}}
 				</div>
 				<template v-else>
-					<label for="cn-source-form-credentialref" class="cn-source-form-fields__label">
+					<label
+						for="cn-source-form-credentialref"
+						class="cn-source-form-fields__label">
 						{{ t('openconnector', 'Credential') }}
 					</label>
 					<NcSelect
-						input-id="cn-source-form-credentialref"
-						:input-label="t('openconnector', 'Brokered credential')"
-						:aria-label-combobox="t('openconnector', 'Brokered credential')"
-						:value="selectedCredential"
+						inputId="cn-source-form-credentialref"
+						:inputLabel="t('openconnector', 'Brokered credential')"
+						:aria-label-combobox="
+							t('openconnector', 'Brokered credential')
+						"
+						:modelValue="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
-						:placeholder="t('openconnector', 'Select a brokered credential')"
-						@input="onCredentialPick" />
+						:placeholder="
+							t('openconnector', 'Select a brokered credential')
+						"
+						@update:modelValue="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
-						{{ t('openconnector', 'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.') }}
+						{{
+							t(
+								'openconnector',
+								'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.',
+							)
+						}}
 					</span>
-					<div v-if="!credentialsLoading && credentialOptions.length === 0" class="cn-source-form-fields__note">
-						{{ t('openconnector', 'You have no brokered credentials yet. Create one in OpenRegister first.') }}
+					<div
+						v-if="!credentialsLoading && credentialOptions.length === 0"
+						class="cn-source-form-fields__note">
+						{{
+							t(
+								'openconnector',
+								'You have no brokered credentials yet. Create one in OpenRegister first.',
+							)
+						}}
 					</div>
 				</template>
 			</template>
@@ -172,21 +260,18 @@
 </template>
 
 <script>
-import {
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import {
-	EMBEDDED_SECRET_FIELDS,
-	readCredentialId,
-	isBrokered,
-	writeCredentialRef,
 	clearCredentialRef,
+	EMBEDDED_SECRET_FIELDS,
 	extractCredentialResults,
+	isBrokered,
 	mapCredentialOptions,
+	readCredentialId,
+	writeCredentialRef,
 } from './sourceCredentialRef.js'
 
 /**
@@ -209,6 +294,7 @@ export default {
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
+		CnFieldHelper,
 	},
 
 	props: {
@@ -245,12 +331,14 @@ export default {
 		 * while brokered so the mutually-exclusive state can never be authored.
 		 *
 		 * @return {object[]} The visible field descriptors.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			if (!this.brokeredEnabled) return this.fields
-			return this.fields.filter((field) => !EMBEDDED_SECRET_FIELDS.includes(field.key))
+			return this.fields.filter(
+				(field) => !EMBEDDED_SECRET_FIELDS.includes(field.key),
+			)
 		},
 
 		/**
@@ -272,19 +360,31 @@ export default {
 		selectedTypeOption() {
 			const current = this.formData?.type
 			if (!current) return null
-			return this.typeOptions.find((option) => option.id === current) ?? { id: current, label: current }
+			return (
+				this.typeOptions.find((option) => option.id === current) ?? {
+					id: current,
+					label: current,
+				}
+			)
 		},
 
 		/**
 		 * The credential option matching the written credentialId, if any.
 		 *
 		 * @return {object|null} The selected credential option.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
 			if (!id) return null
-			return this.credentialOptions.find((option) => option.id === id) ?? { id, label: id, name: id, provider: '' }
+			return (
+				this.credentialOptions.find((option) => option.id === id) ?? {
+					id,
+					label: id,
+					name: id,
+					provider: '',
+				}
+			)
 		},
 	},
 
@@ -305,7 +405,7 @@ export default {
 	 * the picker resolves its current selection to a labelled option.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	created() {
 		if (this.brokeredEnabled) {
@@ -346,12 +446,15 @@ export default {
 		 *
 		 * @param {boolean} value The new switch state.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onToggleBrokered(value) {
 			this.brokeredEnabled = value
 			if (!value) {
-				this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+				this.updateField(
+					'configuration',
+					clearCredentialRef(this.formData?.configuration),
+				)
 				return
 			}
 			if (this.credentialOptions.length === 0 && !this.brokerUnavailable) {
@@ -365,13 +468,22 @@ export default {
 		 *
 		 * @param {object} option The picked credential option.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onCredentialPick(option) {
 			if (option?.id) {
-				this.updateField('configuration', writeCredentialRef(this.formData?.configuration, String(option.id)))
+				this.updateField(
+					'configuration',
+					writeCredentialRef(
+						this.formData?.configuration,
+						String(option.id),
+					),
+				)
 			} else {
-				this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+				this.updateField(
+					'configuration',
+					clearCredentialRef(this.formData?.configuration),
+				)
 			}
 		},
 
@@ -380,14 +492,18 @@ export default {
 		 * brokerUnavailable) on 404 / broker absence — never crashes the editor.
 		 *
 		 * @return {Promise<void>} Resolves once the options are loaded.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
 		 */
 		async fetchCredentials() {
 			this.credentialsLoading = true
 			this.brokerUnavailable = false
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/credentials'))
-				this.credentialOptions = mapCredentialOptions(extractCredentialResults(response.data))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/credentials'),
+				)
+				this.credentialOptions = mapCredentialOptions(
+					extractCredentialResults(response.data),
+				)
 			} catch (err) {
 				// 404 → the broker (or the whole openregister app) isn't there;
 				// any other error also degrades to the soft-fail note rather than
@@ -395,7 +511,10 @@ export default {
 				this.brokerUnavailable = true
 				this.credentialOptions = []
 				// eslint-disable-next-line no-console
-				console.warn('[SourceFormFields] brokered-credential fetch failed', err)
+				console.warn(
+					'[SourceFormFields] brokered-credential fetch failed',
+					err,
+				)
 			} finally {
 				this.credentialsLoading = false
 			}
@@ -431,19 +550,23 @@ export default {
 		 * @spec exclude json-editor input parsing — presentation only
 		 */
 		onJsonInput(field, raw) {
-			this.$set(this.jsonDrafts, field.key, raw)
+			this.jsonDrafts[field.key] = raw
 			const trimmed = raw.trim()
 			if (trimmed.length === 0) {
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, null)
 				return
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.$set(this.jsonErrors, field.key, t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message }))
+				this.jsonErrors[field.key] = t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 	},

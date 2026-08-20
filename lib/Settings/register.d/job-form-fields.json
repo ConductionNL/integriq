@@ -1,0 +1,49 @@
+{
+	"_comment": "ADR-037 register fragment — job-form-fields. Declares the FORM/DISPLAY ORDER of the job schema's authorable properties, plus the two create-time defaults that are behaviour-neutral at the data layer. Why the schema and not the manifest: `fieldsFromSchema` sorts by `overrides[key].order` → `prop.order` → alphabetical, and until now `job` declared no order at all, so the Jobs create/edit dialog rendered its fields alphabetically (description, interval, isEnabled, jobClass, name) — a sequence nobody chose. Putting `order` here rather than in `pages[Jobs].config.fieldOverrides` keeps sequence with the schema that owns the properties, so every surface reading the schema (form dialog, object data widget, detail grid) agrees; the manifest is left holding only what is genuinely presentational (the jobClass dropdown list and the `group` key that lays the four scheduling flags out two-up). OpenRegister stores `properties` as a raw json column (Db/Schema.php addType 'properties' => 'json'), so the non-standard `order` key survives import verbatim and reaches the frontend as `prop.order`. DEFAULTS: `logRetention: 3600` only. It is provably neutral — JobService::executeJob falls back to `$this->successRetention = 3600000` ms when the per-job value is absent, which is the same hour. `errorRetention` and `interval` are deliberately NOT defaulted here and live as form-only prefills in the manifest instead, because a schema default reaches every API-, MCP- and seed-created job, not just the ones authored through the dialog. For `errorRetention` the per-job value is seconds→ms and the absent-value fallback is `$this->errorRetention = 2592000000` (30 days), so a schema default of 86400 would silently cut error-log retention from 30 days to 1 day. For `interval` the scheduler reads `$jobData['interval'] ?? 0` when computing `nextRun` (JobService::executeJob), so an absent interval currently means `re-eligible on the next tick` — a schema default of 3600 would silently reschedule every API-created intervalless job to hourly. Neither belongs in the schema; both belong in the form. `jobClass` gets no `enum` here for the same class of reason — an enum is enforced on save, which would make the three jobs seeded with the non-existent `OCA\\OpenConnector\\Cron\\Example*Job` classes unsaveable and would forbid Action classes registered by third-party apps, since jobClass is resolved through the DI container at run time. Version bumped 1.1.0 → 1.2.0 so OpenRegister's version-gated importFromApp takes the fast path rather than relying on its content-differs fallback.",
+	"components": {
+		"schemas": {
+			"job": {
+				"version": "1.2.0",
+				"properties": {
+					"name": {
+						"order": 10
+					},
+					"description": {
+						"order": 20
+					},
+					"jobClass": {
+						"order": 30
+					},
+					"interval": {
+						"order": 40
+					},
+					"timeSensitive": {
+						"order": 50
+					},
+					"allowParallelRuns": {
+						"order": 51
+					},
+					"isEnabled": {
+						"order": 52
+					},
+					"singleRun": {
+						"order": 53
+					},
+					"scheduleAfter": {
+						"order": 60
+					},
+					"userId": {
+						"order": 70
+					},
+					"logRetention": {
+						"order": 80,
+						"default": 3600
+					},
+					"errorRetention": {
+						"order": 90
+					}
+				}
+			}
+		}
+	}
+}

@@ -45,10 +45,10 @@
 		:description="description"
 		:loading="loading"
 		:error="!!loadError"
-		:error-message="errorMessage"
-		:on-retry="reload"
-		:object-type="objectType"
-		:object-id="resolvedId"
+		:errorMessage="errorMessage"
+		:onRetry="reload"
+		:objectType="objectType"
+		:objectId="resolvedId"
 		:sidebar="sidebarConfig"
 		:subscribe="true">
 		<template #actions>
@@ -59,6 +59,15 @@
 				{{ t('openconnector', 'Test mapping') }}
 			</NcButton>
 		</template>
+
+		<!-- Deprecation context, first in the body so it reads as page-level
+		     framing rather than an error against the mapping being edited.
+		     flow-native-synchronization task 3.2: the Mappings page retires in
+		     favour of the mapping editor opened FROM a flow step dialog;
+		     MappingService and the Mapping entities stay. Rendered outside the
+		     `hasMapping` guard so the notice is present while the object
+		     loads. -->
+		<AutomationDeprecationNotice />
 
 		<div v-if="hasMapping" class="cn-mapping-detail">
 			<!-- General info card -->
@@ -73,13 +82,19 @@
 					<dd>{{ mapping.description || '-' }}</dd>
 					<dt>{{ t('openconnector', 'Pass through') }}</dt>
 					<dd>
-						<NcCheckboxRadioSwitch :checked="!!mapping.passThrough"
+						<NcCheckboxRadioSwitch
+							:modelValue="!!mapping.passThrough"
 							:disabled="saving"
-							@update:checked="onTogglePassThrough">
+							@update:modelValue="onTogglePassThrough">
 							{{ passThroughLabel }}
 						</NcCheckboxRadioSwitch>
 						<p class="cn-mapping-detail__hint">
-							{{ t('openconnector', 'When enabled, fields from the input object are copied through unless explicitly unset.') }}
+							{{
+								t(
+									'openconnector',
+									'When enabled, fields from the input object are copied through unless explicitly unset.',
+								)
+							}}
 						</p>
 					</dd>
 				</dl>
@@ -92,14 +107,14 @@
 						{{ t('openconnector', 'Transformation rules') }}
 					</h3>
 					<MappingRulesEditor
-						:mapping-rules="mappingRules"
-						:cast-rules="castRules"
-						:unset-rules="unsetRules"
-						:pass-through="!!mapping.passThrough"
+						:mappingRules="mappingRules"
+						:castRules="castRules"
+						:unsetRules="unsetRules"
+						:passThrough="!!mapping.passThrough"
 						:saving="saving"
-						@update-mapping="onUpdateMapping"
-						@update-cast="onUpdateCast"
-						@update-unset="onUpdateUnset" />
+						@updateMapping="onUpdateMapping"
+						@updateCast="onUpdateCast"
+						@updateUnset="onUpdateUnset" />
 				</section>
 
 				<section class="cn-mapping-detail__card cn-mapping-detail__preview">
@@ -107,9 +122,7 @@
 						<h3 class="cn-mapping-detail__section-title">
 							{{ t('openconnector', 'Live preview') }}
 						</h3>
-						<NcButton type="tertiary"
-							:disabled="previewLoading"
-							@click="resetPreview">
+						<NcButton variant="tertiary" @click="resetPreview">
 							<template #icon>
 								<RestoreIcon :size="18" />
 							</template>
@@ -117,13 +130,21 @@
 						</NcButton>
 					</div>
 					<p class="cn-mapping-detail__hint">
-						{{ t('openconnector', 'Edit the sample input below; the output re-renders as you type and on every rule change.') }}
+						{{
+							t(
+								'openconnector',
+								'Edit the sample input below; the output re-renders as you type and on every rule change.',
+							)
+						}}
 					</p>
 
-					<label for="cn-mapping-detail__sample-input" class="cn-mapping-detail__field-label">
+					<label
+						for="cn-mapping-detail__sample-input"
+						class="cn-mapping-detail__field-label">
 						{{ t('openconnector', 'Sample input (JSON)') }}
 					</label>
-					<textarea id="cn-mapping-detail__sample-input"
+					<textarea
+						id="cn-mapping-detail__sample-input"
 						v-model="sampleInput"
 						class="cn-mapping-detail__textarea"
 						rows="8"
@@ -133,21 +154,11 @@
 						{{ sampleParseError }}
 					</p>
 
-					<div class="cn-mapping-detail__preview-output">
-						<div class="cn-mapping-detail__field-label cn-mapping-detail__preview-output-label">
-							<span>{{ t('openconnector', 'Output') }}</span>
-							<NcLoadingIcon v-if="previewLoading" :size="16" />
-						</div>
-						<NcNoteCard v-if="previewError" type="error">
-							<p>{{ previewError }}</p>
-						</NcNoteCard>
-						<pre v-else-if="previewOutput !== null"
-							class="cn-mapping-detail__pre"><!--
-							-->{{ formattedPreview }}</pre>
-						<p v-else class="cn-mapping-detail__preview-empty">
-							{{ t('openconnector', 'Output will appear here once a sample input and rules produce a result.') }}
-						</p>
-					</div>
+					<MappingResultPanel
+						ref="result"
+						:mapping="mapping"
+						:inputObject="sampleInput"
+						@inputError="sampleParseError = $event" />
 				</section>
 			</div>
 		</div>
@@ -155,85 +166,37 @@
 </template>
 
 <script>
-import { CnDetailPage, useObjectStore } from '@conduction/nextcloud-vue'
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import debounce from 'lodash/debounce.js'
-
+import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
+import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from './MappingRulesEditor.vue'
-import { modalBus, EVENT_OPEN_TEST_MAPPING } from '../../handlers/modalBus.js'
+import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
+import { EVENT_OPEN_TEST_MAPPING, modalBus } from '../../handlers/modalBus.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+import { useObjectStore } from '../../store/objectStore.js'
 
 /** Default sample input shown until the user edits the textarea. */
 const DEFAULT_SAMPLE = '{}'
-
-/** Debounce delay for preview requests, in milliseconds. */
-const PREVIEW_DEBOUNCE_MS = 400
-
-/**
- * Normalise the `mapping` field (Twig-template map) of a Mapping object to
- * a plain JS object regardless of the storage shape (string or object).
- *
- * @param {*} raw The raw value from the Mapping record.
- * @return {object} Object with `{ targetProperty: template }` shape.
- */
-function asObjectMap(raw) {
-	if (!raw) return {}
-	if (typeof raw === 'string') {
-		try {
-			const parsed = JSON.parse(raw)
-			return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-				? parsed
-				: {}
-		} catch (_e) {
-			return {}
-		}
-	}
-	if (typeof raw === 'object' && !Array.isArray(raw)) return raw
-	return {}
-}
-
-/**
- * Normalise the `unset` field of a Mapping object to a plain string array.
- *
- * The legacy storage shape was a comma-separated string; current OR shape
- * is a JSON array. Either is accepted here.
- *
- * @param {*} raw The raw value from the Mapping record.
- * @return {Array<string>} List of property names to unset.
- */
-function asUnsetList(raw) {
-	if (!raw) return []
-	if (Array.isArray(raw)) {
-		return raw.filter((entry) => typeof entry === 'string' && entry.length > 0)
-	}
-	if (typeof raw === 'string') {
-		return raw.split(/ *, */g).filter(Boolean)
-	}
-	return []
-}
 
 export default {
 	name: 'MappingDetailPage',
 
 	components: {
+		AutomationDeprecationNotice,
 		CnDetailPage,
 		MappingRulesEditor,
+		MappingResultPanel,
 		NcButton,
 		NcCheckboxRadioSwitch,
-		NcLoadingIcon,
-		NcNoteCard,
 		PlayOutlineIcon,
 		RestoreIcon,
 	},
+
+	mixins: [liveObjectSubscription],
 
 	props: {
 		/**
@@ -244,6 +207,7 @@ export default {
 			type: [String, Number],
 			default: '',
 		},
+
 		/**
 		 * Manifest-config: the OR register slug. Forwarded by
 		 * CnPageRenderer from `pages[].config.register`.
@@ -252,6 +216,7 @@ export default {
 			type: String,
 			default: 'openconnector',
 		},
+
 		/**
 		 * Manifest-config: the OR schema slug. Forwarded by
 		 * CnPageRenderer from `pages[].config.schema`.
@@ -268,9 +233,6 @@ export default {
 			saving: false,
 			sampleInput: DEFAULT_SAMPLE,
 			sampleParseError: '',
-			previewLoading: false,
-			previewError: '',
-			previewOutput: null,
 		}
 	},
 
@@ -278,53 +240,62 @@ export default {
 		/**
 		 * Pinia store instance.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		store() {
 			return useObjectStore()
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		resolvedId() {
 			return this.id != null ? String(this.id) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mapping() {
 			if (!this.resolvedId) return {}
 			return this.store.getObject(this.objectType, this.resolvedId) || {}
 		},
+
 		hasMapping() {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loading() {
 			return !!this.store.loading?.[this.objectType] && !this.hasMapping
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loadError() {
 			return this.store.errors?.[this.objectType] || null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
-			return err.message
-				|| this.t('openconnector', 'Failed to load mapping')
+			return err.message || this.t('openconnector', 'Failed to load mapping')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		title() {
 			return this.mapping?.name || this.t('openconnector', 'Mapping')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		description() {
 			return this.mapping?.description || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		passThroughLabel() {
 			return this.mapping?.passThrough
 				? this.t('openconnector', 'Pass through enabled')
 				: this.t('openconnector', 'Pass through disabled')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		sidebarConfig() {
 			return {
 				enabled: true,
@@ -334,78 +305,38 @@ export default {
 				showMetadata: true,
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRules() {
 			return asObjectMap(this.mapping?.mapping)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castRules() {
 			return asObjectMap(this.mapping?.cast)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		unsetRules() {
 			return asUnsetList(this.mapping?.unset)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		samplePlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
-		formattedPreview() {
-			try {
-				return JSON.stringify(this.previewOutput, null, 2)
-			} catch (_e) {
-				return String(this.previewOutput)
-			}
-		},
-		/**
-		 * Combined reactivity key for the preview watcher. Recomputing this
-		 * forces the debounced preview to refire whenever the rule shape or
-		 * sample input changes.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
-		 */
-		previewSignal() {
-			return JSON.stringify({
-				mapping: this.mappingRules,
-				cast: this.castRules,
-				unset: this.unsetRules,
-				passThrough: !!this.mapping?.passThrough,
-				input: this.sampleInput,
-			})
-		},
 	},
 
-	watch: {
-		previewSignal: {
-			immediate: false,
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
-			handler() {
-				this.schedulePreview()
-			},
-		},
-	},
-
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	mounted() {
 		this.ensureRegistered()
-		const fetch = this.reload()
-		// Trigger the first preview render once data lands.
-		Promise.resolve(fetch).finally(() => this.schedulePreview())
-	},
-
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
-	beforeDestroy() {
-		if (this.schedulePreview && this.schedulePreview.cancel) {
-			this.schedulePreview.cancel()
+		this.reload()
+		// Live updates: or-object-{uuid} events refetch this mapping into the
+		// store cache; the `mapping` computed reads the cache directly, so no
+		// bridge callback is needed — reactivity re-renders the page.
+		if (this.resolvedId) {
+			this.syncLiveSubscription(this.objectType, this.resolvedId)
 		}
-	},
-
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
-	created() {
-		// Bind the debounced function on the instance so each component gets
-		// its own timer and `.cancel()` works on teardown.
-		this.schedulePreview = debounce(this.runPreview, PREVIEW_DEBOUNCE_MS)
 	},
 
 	methods: {
@@ -415,7 +346,7 @@ export default {
 		 * same arguments is a no-op modulo Vue reactivity churn, but we
 		 * gate on `objectTypeRegistry` anyway.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		ensureRegistered() {
 			const registry = this.store.objectTypeRegistry || {}
@@ -435,7 +366,7 @@ export default {
 		/**
 		 * Force a server-side re-fetch of the current mapping.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		reload() {
 			if (!this.resolvedId) return Promise.resolve(null)
@@ -446,11 +377,11 @@ export default {
 		 * Emit the bus event picked up by ModalHost (`src/modals/v2/ModalHost.vue`)
 		 * to mount TestMappingModal with the current mapping pre-loaded.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		openTestModal() {
 			if (!this.hasMapping) return
-			modalBus.$emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
+			modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
 		},
 
 		/**
@@ -460,7 +391,7 @@ export default {
 		 *
 		 * @param {object} patch Fields to merge over the current mapping.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		async persistPatch(patch) {
 			if (!this.hasMapping) return
@@ -469,7 +400,8 @@ export default {
 				const merged = { ...this.mapping, ...patch }
 				const result = await this.store.saveObject(this.objectType, merged)
 				if (!result) {
-					const message = this.store.errors?.[this.objectType]?.message
+					const message =
+						this.store.errors?.[this.objectType]?.message
 						|| this.t('openconnector', 'Failed to save mapping')
 					showError(message)
 					return
@@ -480,85 +412,70 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/**
+		 * Persist the transformation rules after an edit in MappingRulesEditor.
+		 *
+		 * @param {object} nextRules The complete replacement `mapping` object —
+		 *   target field path → source field path / Twig expression.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateMapping(nextRules) {
 			return this.persistPatch({ mapping: nextRules })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Persist the cast rules after an edit in MappingRulesEditor.
+		 *
+		 * @param {object} nextRules The complete replacement `cast` object —
+		 *   field path → cast type applied after the mapping runs.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateCast(nextRules) {
 			return this.persistPatch({ cast: nextRules })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Persist the unset list after an edit in MappingRulesEditor.
+		 *
+		 * @param {string[]} nextList The complete replacement `unset` list — the
+		 *   field paths stripped from the output, already de-duplicated.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateUnset(nextList) {
 			return this.persistPatch({ unset: nextList })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+
+		/**
+		 * Persist the pass-through switch, which decides whether unmapped input
+		 * fields are copied into the output. Coerced to a strict boolean so the
+		 * stored mapping never carries a truthy non-boolean.
+		 *
+		 * @param {boolean} value The new switch state from NcCheckboxRadioSwitch.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
 		},
 
 		/**
-		 * Issue the live-preview request against `/api/mappings/test`. The
-		 * inflight indicator is shown next to the Output label so it
-		 * doesn't block edits in the rules table on the left.
+		 * Clear sample input and result, and cancel any pending request. The
+		 * request lifecycle itself belongs to MappingResultPanel, so this
+		 * only resets the input this page owns and asks the panel to clear.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
-		 */
-		async runPreview() {
-			if (!this.hasMapping) return
-			let parsed
-			const raw = (this.sampleInput || '').trim()
-			try {
-				parsed = raw.length > 0 ? JSON.parse(raw) : {}
-			} catch (parseErr) {
-				this.sampleParseError = this.t(
-					'openconnector',
-					'Sample input is not valid JSON: {message}',
-					{ message: parseErr.message },
-				)
-				this.previewLoading = false
-				return
-			}
-			this.sampleParseError = ''
-			this.previewLoading = true
-			this.previewError = ''
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openconnector/api/mappings/test'),
-					{
-						inputObject: parsed,
-						mapping: this.mapping,
-					},
-				)
-				this.previewOutput = response.data?.resultObject ?? response.data ?? null
-			} catch (err) {
-				const status = err?.response?.status
-				const message = err?.response?.data?.message
-					|| err?.response?.data?.error
-					|| err?.message
-					|| ''
-				this.previewError = this.t('openconnector', 'Preview failed')
-					+ (status ? ` (${status})` : '')
-					+ (message ? `: ${message}` : '')
-			} finally {
-				this.previewLoading = false
-			}
-		},
-
-		/**
-		 * Clear sample input + output and cancel any pending request.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		resetPreview() {
-			if (this.schedulePreview && this.schedulePreview.cancel) {
-				this.schedulePreview.cancel()
-			}
 			this.sampleInput = DEFAULT_SAMPLE
 			this.sampleParseError = ''
-			this.previewOutput = null
-			this.previewError = ''
-			this.previewLoading = false
+			this.$refs.result?.reset()
 		},
 	},
 }
@@ -650,12 +567,6 @@ export default {
 	margin-top: 8px;
 }
 
-.cn-mapping-detail__preview-output-label {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
 .cn-mapping-detail__textarea {
 	width: 100%;
 	font-family: var(--font-face-monospace, monospace);
@@ -672,37 +583,5 @@ export default {
 	color: var(--color-error);
 	font-size: 12px;
 	margin: 4px 0 0 0;
-}
-
-.cn-mapping-detail__preview-output {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	margin-top: 4px;
-}
-
-.cn-mapping-detail__pre {
-	background: var(--color-background-dark);
-	color: var(--color-main-text);
-	padding: 12px;
-	border-radius: var(--border-radius);
-	overflow: auto;
-	max-height: 360px;
-	font-family: var(--font-face-monospace, monospace);
-	font-size: 12px;
-	white-space: pre-wrap;
-	word-break: break-word;
-	margin: 0;
-}
-
-.cn-mapping-detail__preview-empty {
-	margin: 0;
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-maxcontrast);
-	border: 1px dashed var(--color-border);
-	border-radius: var(--border-radius);
-	font-style: italic;
-	font-size: 13px;
 }
 </style>

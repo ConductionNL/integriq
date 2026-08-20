@@ -19,14 +19,15 @@
  */
 
 import { test, expect } from '@playwright/test'
+// APP_BASE comes from _helpers.ts, the one place that knows both that the
+// router is hash-mode and that the URL needs the `/index.php/` prefix (without
+// it, PHP's built-in server on CI 404s the app directory and every assertion
+// below runs against a 404 page). This file used to keep a private copy of
+// that string that was missing the prefix.
+import { APP_BASE, openAndDismissCreateModal } from './_helpers'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 const API_BASE = '/index.php/apps/openconnector/api'
-// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
-// path-form deep-link (`/apps/openconnector/mappings`) is ignored and lands on
-// the dashboard; the hash form (`/apps/openconnector/#/mappings`) renders the
-// target page. APP_BASE carries the `/#`.
-const APP_BASE = '/apps/openconnector/#'
 
 // ---------------------------------------------------------------------------
 // REQ-UI-001: Mapping Management UI
@@ -34,43 +35,61 @@ const APP_BASE = '/apps/openconnector/#'
 
 test.describe('REQ-UI-001: Mappings list page mounts', () => {
 	// @e2e mapping-and-search::mappings-list-page-mounts-and-shows-content
-	test('Mappings index page renders inside main content area', async ({ page }) => {
-		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'networkidle' })
+	test('Mappings index page renders inside main content area', async ({
+		page,
+	}) => {
+		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(100)
 	})
 })
 
-test.describe('REQ-UI-001: Add Mapping modal', () => {
+test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
+	// The editor is a modal again, so this asserts a modal again.
+	//
+	// It has now been both, because the app has been both. Originally it
+	// expected a dialog and failed once `createMappingAndOpen` replaced that
+	// with "POST an empty object, then route to MappingDetail"; it was rewritten
+	// to assert the routing instead. That behaviour was itself the defect —
+	// clicking Add minted a persisted "New mapping" shell before the user typed
+	// anything — and the Mappings page now declares
+	// `slots["form-dialog"] = "MappingEditorModal"`, so Add opens the editor
+	// over an unsaved draft and writes nothing until Create.
+	//
+	// Opening and dismissing is the whole contract here: this spec covers the
+	// creation SURFACE. That the surface actually persists is J2's job in
+	// tests/e2e/regression/journeys.spec.ts, which drives the dialog to Create
+	// and reads the object back out of OpenRegister.
+	//
+	// The slug here read `...-creation-surface` for as long as the tag has
+	// existed. No scenario has ever had that slug — the heading in
+	// mapping-and-search/spec.md:35 is "Add Mapping button opens the creation
+	// MODAL". So this anchor resolved to nothing and the scenario counted as
+	// uncovered while a running test sat directly beneath the tag. A tag that
+	// names no scenario is indistinguishable from no tag at all, and nothing
+	// warns about it: gate-19 reports the scenario missing, not the tag dangling.
 	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
-	test('Add Mapping button opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'networkidle' })
-		const addBtn = page.getByRole('button', { name: 'Add Mapping' })
-		await expect(addBtn, 'Add Mapping button must be visible').toBeVisible({ timeout: 20_000 })
-		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
-		await expect(dialog, 'Modal must open after clicking Add Mapping').toBeVisible({ timeout: 10_000 })
-		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
-		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await cancelBtn.click()
-		} else {
-			await page.keyboard.press('Escape')
-		}
+	test('Add Mapping opens the mapping editor modal', async ({ page }) => {
+		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'domcontentloaded' })
+		await openAndDismissCreateModal(page, /Add Mapping/i)
 	})
 })
 
 test.describe('REQ-UI-001: Mapping detail page', () => {
 	// @e2e mapping-and-search::mapping-detail-page-renders-for-an-existing-mapping
-	test('Mapping detail URL renders app-content without crashing', async ({ page }) => {
+	test('Mapping detail URL renders app-content without crashing', async ({
+		page,
+	}) => {
 		// Known bug #996: table cells all "—", so navigate directly to detail URL.
 		// SPA gracefully handles nonexistent IDs (shows detail shell or not-found).
-		// Hash-mode router (src/main.js — fleet #133): address the detail route via
-		// the URL hash. The mapping-detail surface keeps polling an OR fetch for the
-		// (nonexistent) id, so `networkidle` never settles — wait for DOM + main
-		// instead of network silence.
-		await page.goto(`${APP_BASE}/#/mappings/__nonexistent__`, { waitUntil: 'domcontentloaded' })
+		// Path-mode router (src/main.js, router-history-mode convention): address
+		// the detail route directly, no hash. The mapping-detail surface keeps
+		// polling an OR fetch for the (nonexistent) id, so `networkidle` never
+		// settles — wait for DOM + main instead of network silence.
+		await page.goto(`${APP_BASE}/mappings/__nonexistent__`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)
@@ -82,7 +101,9 @@ test.describe('REQ-UI-001: Mapping detail page', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Mappings OR API — list', () => {
-	test('GET mappings list from OR returns mapping objects', async ({ request }) => {
+	test('GET mappings list from OR returns mapping objects', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${OR_BASE}/mapping?_limit=20`, {
 			failOnStatusCode: false,
 		})

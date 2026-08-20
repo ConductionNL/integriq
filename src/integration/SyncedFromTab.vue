@@ -28,7 +28,12 @@
 		</div>
 
 		<div v-else-if="rows.length === 0" class="oc-synced-from__empty">
-			{{ t('openconnector', 'This object was not created by a synchronization.') }}
+			{{
+				t(
+					'openconnector',
+					'This object was not created by a synchronization.',
+				)
+			}}
 		</div>
 
 		<ul v-else class="oc-synced-from__list">
@@ -37,18 +42,18 @@
 					<SyncIcon :size="20" />
 				</div>
 				<div class="oc-synced-from__row-body">
-					<a
-						v-if="row.url"
-						:href="row.url"
-						class="oc-synced-from__title">
+					<a v-if="row.url" :href="row.url" class="oc-synced-from__title">
 						{{ row.title || t('openconnector', 'Synchronization') }}
 					</a>
 					<span v-else class="oc-synced-from__title">
 						{{ row.title || t('openconnector', 'Synchronization') }}
 					</span>
-					<span v-if="row.subtitle" class="oc-synced-from__subtitle">{{ row.subtitle }}</span>
+					<span v-if="row.subtitle" class="oc-synced-from__subtitle">{{
+						row.subtitle
+					}}</span>
 					<span v-if="row.originId" class="oc-synced-from__origin">
-						{{ t('openconnector', 'Origin id:') }} <code>{{ row.originId }}</code>
+						{{ t('openconnector', 'Origin id:') }}
+						<code>{{ row.originId }}</code>
 					</span>
 				</div>
 			</li>
@@ -57,11 +62,11 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import SyncIcon from 'vue-material-design-icons/Sync.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'SyncedFromTab',
@@ -117,7 +122,14 @@ export default {
 	},
 
 	watch: {
-		objectId: { immediate: true, handler(id) { if (id) { this.fetchRows() } } },
+		objectId: {
+			immediate: true,
+			handler(id) {
+				if (id) {
+					this.fetchRows()
+				}
+			},
+		},
 	},
 
 	methods: {
@@ -138,7 +150,9 @@ export default {
 			try {
 				const res = await axios.get(this.endpoint)
 				const data = res.data
-				this.rows = Array.isArray(data) ? data : (data.results || data.rows || [])
+				this.rows = Array.isArray(data)
+					? data
+					: data.results || data.rows || []
 			} catch (e) {
 				this.unavailable = true
 				this.rows = []

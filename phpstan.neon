@@ -1,20 +1,18 @@
+# OpenConnector — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
 includes:
-    # Per-app tracked lint debt lives here (auto-generated via `phpstan --generate-baseline`).
-    # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
-    # across the fleet.
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
     - phpstan-baseline.neon
 
 parameters:
-    level: 5
-    paths:
-        - lib
-    bootstrapFiles:
-        - phpstan-bootstrap.php
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
-        - vendor
-        - vendor-bin
-        # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuilt).
-        - lib/Resources/template
         # Extends AbstractIntegrationProvider from OCA\OpenRegister which is only
         # available at runtime (registered via IntegrationRegistry at app boot).
         # PHPStan cannot baseline "extends unknown class" errors — exclusion is required.
@@ -25,51 +23,92 @@ parameters:
         # errors — exclusion is required (same pattern as SynchronizationContractProvider).
         - lib/Controller/HealthController.php
         - lib/Controller/MetricsController.php
-    scanDirectories:
-        - vendor/nextcloud/ocp
-    reportUnmatchedIgnoredErrors: false
+        # adopt-apphost: Settings/OpenConnectorAdmin, Sections/OpenConnectorAdmin
+        # and Repair/InitializeActions extend OCA\OpenRegister\AppHost generics
+        # (GenericAdminSettings / GenericSettingsSection / GenericInitializeActions)
+        # which are only available at runtime. Same "extends unknown class"
+        # PHPStan limitation as HealthController/MetricsController above.
+        - lib/Settings/OpenConnectorAdmin.php
+        - lib/Sections/OpenConnectorAdmin.php
+        - lib/Repair/InitializeActions.php
+        # The contributed flow nodes and their registration listener implement /
+        # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
+        # RegisterFlowNodesEvent), which exists only at runtime and only on an
+        # OpenRegister that ships the flow engine — that is precisely what the
+        # class_exists() guard in Application::registerFlowNodes() is for.
+        # "implements unknown interface" cannot be baselined, so exclusion is
+        # required (same pattern as SynchronizationContractProvider above). The
+        # flow helpers that do NOT touch OpenRegister types (FlowConfigGuard,
+        # FlowNodeSupport, FlowOwner, FlowTemplate) stay analysed.
+        - lib/Flow/FlowNodeListener.php
+        - lib/Flow/SourceCallNode.php
+        - lib/Flow/SynchronizationRunNode.php
+        # flow-native-synchronization: the four page-level sync nodes implement
+        # the same runtime-only OCA\OpenRegister\Service\Flow\* interfaces
+        # (IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm) and build their
+        # output through FlowItems — same limitation, same remedy.
+        - lib/Flow/ApplyMappingNode.php
+        - lib/Flow/ContractMatchNode.php
+        - lib/Flow/ContractCommitNode.php
+        - lib/Flow/ContractSweepNode.php
+        # flow-native-synchronization task 1.1: the page-fetch node implements the
+        # same runtime-only interfaces, and FlowRateLimit returns an
+        # OCA\OpenRegister\Service\Flow\FlowSuspension — same limitation, same
+        # remedy.
+        - lib/Flow/SourcePaginateNode.php
+        - lib/Flow/FlowRateLimit.php
+        # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
+        # and AbstractCategoryAdapterProvider extends
+        # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
+        # types that exist only at runtime. PHPStan reports these as *general* errors
+        # ("cannot be ignored, use excludePaths instead"), which no baseline can absorb:
+        # they abort the run regardless of ignoreErrors. Same pattern as
+        # SynchronizationContractProvider above and opencatalogi's metrics provider.
+        - lib/Observability/OpenConnectorMetricsProvider.php
+        - lib/Service/Adapter/AbstractCategoryAdapterProvider.php
+        # DeferredViewCascadeJob extends OCA\OpenRegister\BackgroundJob\ActorForwardedJob,
+        # the ADR-078 actor-forwarding deferral base, which exists only at runtime.
+        # "extends unknown class" is a *general* error PHPStan refuses to baseline —
+        # same limitation, same remedy, as SynchronizationContractProvider above.
+        - lib/Cron/DeferredViewCascadeJob.php
+
     ignoreErrors:
-        # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
-        - '#Call to an undefined method OC::#'
-        - '#Class OC not found#'
-        - '#Access to static property \$server on an unknown class OC#'
-        - '#unknown class OC\\#'
-        - '#Caught class OC\\#'
-        - '#unknown class OC_App#'
-        - '#Class OC_App not found#'
-        # OCA\DAV is server-internal and not in nextcloud/ocp stubs
-        - '#unknown class OCA\\DAV\\#'
-        - '#Class OCA\\DAV\\#'
-        # OCA classes from other apps (OpenRegister) not available during static analysis
-        - '#unknown class OCA\\OpenRegister\\#'
-        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCA\\OpenRegister\\#'
-        - '#has invalid return type OCA\\OpenRegister\\#'
-        - '#has invalid type OCA\\OpenRegister\\#'
-        - '#implements unknown interface OCA\\OpenRegister\\#'
-        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
-        - '#unknown class GuzzleHttp\\#'
-        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class GuzzleHttp\\#'
-        - '#invalid type GuzzleHttp\\#'
-        - '#Caught class GuzzleHttp\\#'
-        # Doctrine\DBAL is shipped by Nextcloud server but not stubbed in nextcloud/ocp
-        - '#unknown class Doctrine\\DBAL\\#'
-        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class Doctrine\\DBAL\\#'
-        # Dynamic HTTP status codes from business rule validation results
-        # (matches both `Parameter $statusCode` and `Parameter #N $statusCode` forms emitted by phpstan)
-        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
-        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
-        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
-        # OCP stub gaps for methods that exist at runtime
-        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
-        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
-        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
-        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
+        # flow-workflowengine-integration: NC's concrete IRequest implementation
+        # (\OC\AppFramework\Http\Request), synthesized by
+        # EndpointService::buildSyntheticRequest() (design.md Decision 5) — a
+        # real, present-at-runtime NC core class not stubbed in nextcloud/ocp.
+        - '#Instantiated class OC\\AppFramework\\Http\\Request not found#'
+        - '#should return OCP\\IRequest but returns OC\\AppFramework\\Http\\Request#'
+        # flow-workflowengine-integration: NC core's only bundled WorkflowEngine
+        # IEntity, referenced only as a compile-time ::class string by the three
+        # operation classes' getEntityId() (no autoload triggered).
+        - '#Class OCA\\WorkflowEngine\\Entity\\File not found#'
+        # nextcloud-event-hub: optional-app event classes (Tables, Forms) referenced
+        # only via ::class / instanceof, safe when the app is absent.
+        - '#unknown class OCA\\Tables\\#'
+        - '#Class OCA\\Tables\\#'
+        - '#unknown class OCA\\Forms\\#'
+        - '#Class OCA\\Forms\\#'
+        - '#on an unknown class OCA\\Forms\\#'
+        # @throws referencing an OpenRegister exception class. PHPStan cannot resolve the
+        # class to verify it is Throwable because OCA\OpenRegister is not on the analysis
+        # path (see the base's OpenRegister ignores).
+        - '#PHPDoc tag @throws with type OCA\\OpenRegister\\.*is not subtype of Throwable#'
         # HealthController and MetricsController are excluded from analysis (they extend
         # unknown OR classes) — Application.php registers them via DI without knowing
         # the parent constructor. The "does not have a constructor" error in Application.php
         # is a downstream effect of the excludePaths exclusion.
         - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
         - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
+        # Downstream effect of the lib/Settings/OpenConnectorAdmin.php exclusion above.
+        # Every #[AuthorizedAdminSetting(OpenConnectorAdmin::class)] attribute resolves to
+        # a plain `string` for PHPStan because the class is excluded from analysis, so it
+        # cannot see that OpenConnectorAdmin -> GenericAdminSettings implements
+        # OCP\Settings\IDelegatedSettings. The attribute IS correct at runtime; this is an
+        # artifact of excluding the class, not a real type error. 41 occurrences.
+        - '#Parameter \#1 \$settings of attribute class OCP\\AppFramework\\Http\\Attribute\\AuthorizedAdminSetting constructor expects class-string<OCP\\Settings\\IDelegatedSettings>, string given\.#'
+        # adopt-apphost: same downstream effect for Settings/OpenConnectorAdmin,
+        # Sections/OpenConnectorAdmin and Repair/InitializeActions (see excludePaths above).
+        - '#Class OCA\\OpenConnector\\Settings\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Sections\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Repair\\InitializeActions does not have a constructor#'

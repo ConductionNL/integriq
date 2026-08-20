@@ -634,7 +634,7 @@
       "description": "HTTP-contract assertions migrated from the API-direct Playwright spec tests/e2e/regression/or-cutover-smoke.spec.ts (Playwright is UI-only per ADR/policy; API contract belongs in Newman). Asserts the post chain-B/C OR-cutover state: register schema count, graceful 4xx on a non-existent source uuid, and that deleted legacy routes 404.",
       "item": [
         {
-          "name": "GET /api/registers — openconnector register references 15 schemas",
+          "name": "GET /api/registers — openconnector register references its entity schemas",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php", "apps", "openregister", "api", "registers"] },
@@ -646,7 +646,15 @@
             "const registers = body.results || body;",
             "const oc = (Array.isArray(registers) ? registers : []).find(r => r.slug === 'openconnector');",
             "pm.test('openconnector register exists', () => pm.expect(oc, 'openconnector register').to.be.ok);",
-            "pm.test('openconnector register references 15 schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.eql(15));"
+            "// The register referenced exactly 15 schemas when this smoke test was written — the 15 chain-C entities.",
+            "// It now references 53: lib/Settings/register.d/ has grown to 40 fragments that add Peppol Transmission,",
+            "// Payment Intent, Bankfeed Connection/Batch, Cardfeed Account/Batch, LTI 1.3, KISS Klantcontact, iWMO/iJW,",
+            "// FSC Service/Call and 4 log schemas — all listed in the register's own description. An installed instance",
+            "// gets the same merged set, so 15 is a stale snapshot, not a defect. An exact count is the wrong invariant",
+            "// here: it re-breaks on every new sub-domain while never checking that the RIGHT schemas are referenced.",
+            "// The core entity schemas are covered by identity elsewhere — folder 01 creates an object in each of",
+            "// source/mapping/endpoint/job/synchronization/consumer/rule/event, which only passes if that slug resolves.",
+            "pm.test('openconnector register references at least the 15 core entity schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.be.at.least(15));"
           ] }}]
         },
         {
@@ -998,6 +1006,42 @@
               ] }}]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "14 — Execution traces",
+      "description": "execution-trace-observability: list/detail/replay over execution_trace (ExecutionTracesController).",
+      "item": [
+        {
+          "name": "GET /execution-traces",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/execution-traces", "host": ["{{ocBase}}"], "path": ["execution-traces"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "if (b.results && b.results.length) pm.collectionVariables.set('fxTraceId', b.results[0].traceId || b.results[0].uuid);"
+          ] }}]
+        },
+        {
+          "name": "GET /execution-traces/{fxTraceId}",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/execution-traces/{{fxTraceId}}", "host": ["{{ocBase}}"], "path": ["execution-traces", "{{fxTraceId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/404)', () => pm.expect([200, 404]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) { const b = pm.response.json(); pm.test('has steps array', () => pm.expect(b).to.have.property('steps')); }"
+          ] }}]
+        },
+        {
+          "name": "POST /execution-traces/{fxTraceId}/replay — dry-run",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/execution-traces/{{fxTraceId}}/replay", "host": ["{{ocBase}}"], "path": ["execution-traces", "{{fxTraceId}}", "replay"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"force\":false}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/404)', () => pm.expect([200, 404]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) { const b = pm.response.json(); pm.test('dry-run replay flags set', () => { pm.expect(b.isReplay).to.eql(true); pm.expect(b.dryRun).to.eql(true); }); }"
+          ] }}]
         }
       ]
     },

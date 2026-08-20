@@ -4,6 +4,22 @@ on:
   push:
     branches: [main, beta, development]
 
+# Permission CEILING for the called release workflow, not a grant. All three
+# jobs below call the same `ConductionNL/.github/.github/workflows/release.yml@main`,
+# whose `release` job already declares `contents: write` for itself — so this
+# block RESTATES the grant the token already has today and changes nothing about
+# what runs. It is stated here only because CodeQL (actions/missing-workflow-permissions)
+# reads the caller, not the callee, and an unstated block means "whatever the
+# repo default happens to be".
+#
+# ⚠️ Do not "tighten" this to `contents: read`. A caller block caps the callee:
+# GitHub validates the called workflow's declared job permissions against this
+# grant, so a lower ceiling makes the call fail to START (zero jobs) rather than
+# run with less. `contents: write` is what cuts the tag and uploads the release
+# asset — ncipollo/release-action and svenstaro/upload-release-action.
+permissions:
+  contents: write
+
 jobs:
   unstable:
     if: false # unstable builds are disabled

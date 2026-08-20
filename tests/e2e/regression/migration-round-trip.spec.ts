@@ -32,9 +32,15 @@
  * synced-from-leaf.spec.ts) rather than producing a false failure.
  */
 
-import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as pwRequest,
+	APIRequestContext,
+} from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl'
 
-const NEXTCLOUD = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
@@ -69,17 +75,61 @@ async function apiContext(): Promise<APIRequestContext> {
 }
 
 /**
- * Read openconnector.storage_migrated via the app's settings endpoint, falling
- * back to "false" when the endpoint is unavailable so the test skips cleanly.
+ * Read `openconnector.storage_migrated`.
+ *
+ * ⚠️ This used to probe `GET /index.php/apps/openconnector/api/settings` and
+ * fall back to `false` "when the endpoint is unavailable so the test skips
+ * cleanly". That route DOES NOT EXIST in this repo — appinfo/routes.php
+ * records it as deliberately deleted ("GET /api/settings + PUT /api/settings —
+ * replaced by OR's /api/settings/* surface"); the only surviving settings
+ * route is `POST /api/settings/rebase`. So the probe 404'd on every run, the
+ * fallback turned that into `false`, and all three specs below reported
+ * "skipped" for a reason with nothing to do with the migration. Measured
+ * against the dev container: `GET .../api/settings` → 404, while the flag
+ * itself was `true`. A guard that cannot observe its own precondition is
+ * indistinguishable from a suite that passes.
+ *
+ * Read the flag itself instead, via Nextcloud core's provisioning API — a
+ * shipped, always-enabled app, and the authoritative store for an app-config
+ * value.
+ *
+ * ⚠️ An OCS HTTP 200 is the status of the ENVELOPE, not of the call. The real
+ * result is `ocs.meta.statuscode`, which is checked separately below.
+ *
+ * The measured values are logged unconditionally: when this returns false the
+ * three specs skip, and a skip whose cause is not written down is exactly the
+ * failure mode this function already had once.
  */
 async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
-	const res = await ctx.get('/index.php/apps/openconnector/api/settings').catch(() => null)
-	if (res === null || res.status() !== 200) {
+	const url =
+		'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openconnector/storage_migrated'
+	const res = await ctx
+		.get(url, {
+			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+		})
+		.catch(() => null)
+
+	if (res === null) {
+		// eslint-disable-next-line no-console
+		console.warn('[migration-round-trip] storage_migrated probe: request threw')
 		return false
 	}
-	const body = await res.json().catch(() => ({}))
-	const value = body?.storage_migrated ?? body?.storageMigrated ?? body?.settings?.storage_migrated
-	return value === true || value === 'true'
+
+	const body = await res.json().catch(() => null)
+	const ocsStatus = body?.ocs?.meta?.statuscode
+	const value = body?.ocs?.data?.data
+
+	// eslint-disable-next-line no-console
+	console.info(
+		`[migration-round-trip] storage_migrated probe: HTTP ${res.status()},`
+			+ ` ocs.meta.statuscode=${String(ocsStatus)}, value=${JSON.stringify(value)}`,
+	)
+
+	if (res.status() !== 200 || ocsStatus !== 200) {
+		return false
+	}
+
+	return value === 'true' || value === true
 }
 
 /**
@@ -107,7 +157,6 @@ async function countSchema(ctx: APIRequestContext, schema: string): Promise<numb
 }
 
 test.describe('Migration round-trip — post chain-B invariants', () => {
-
 	let storageMigrated = false
 
 	test.beforeAll(async () => {
@@ -117,25 +166,37 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 	})
 
 	test('chain-B migration completed (storage_migrated === true)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
-		expect(storageMigrated, 'migration flag must be true after a clean migration').toBe(true)
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
+		expect(
+			storageMigrated,
+			'migration flag must be true after a clean migration',
+		).toBe(true)
 	})
 
 	test('every migrated schema is queryable without page regression', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
 		const ctx = await apiContext()
 		for (const schema of MIGRATED_SCHEMAS) {
 			const count = await countSchema(ctx, schema)
 			expect(
 				count,
-				`schema "${schema}" must return a 200 + array body (got sentinel -1 means error/non-array)`
+				`schema "${schema}" must return a 200 + array body (got sentinel -1 means error/non-array)`,
 			).toBeGreaterThanOrEqual(0)
 		}
 		await ctx.dispose()
 	})
 
 	test('object counts are stable across consecutive reads (round-trip invariant)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(
+			!storageMigrated,
+			'openconnector.storage_migrated is not true on this instance',
+		)
 		const ctx = await apiContext()
 
 		const first: Record<string, number> = {}
@@ -149,11 +210,10 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 			const second = await countSchema(ctx, schema)
 			expect(
 				second,
-				`schema "${schema}" count must be stable across reads (was ${first[schema]}, now ${second})`
+				`schema "${schema}" count must be stable across reads (was ${first[schema]}, now ${second})`,
 			).toBe(first[schema])
 		}
 
 		await ctx.dispose()
 	})
-
 })

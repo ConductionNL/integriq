@@ -20,7 +20,12 @@
 			:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
 			@input="(event) => $emit('update:code', event.target.value)" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Sandboxed script that runs against the request data. Stored as configuration.javascript.') }}
+			{{
+				t(
+					'openconnector',
+					'Sandboxed script that runs against the request data. Stored as configuration.javascript.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -32,22 +37,43 @@ export default {
 	props: {
 		code: { type: String, default: '' },
 	},
-	data() { return { uid: ++uidCounter } },
+
+	data() {
+		return { uid: ++uidCounter }
+	},
 }
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
-
-.action-form__label { font-weight: bold; }
-
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
-
-.action-form__textarea {
-	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
-	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
-	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
-.action-form__textarea--code { font-family: var(--font-face-monospace, monospace); font-size: 13px; }
+.action-form__label {
+	font-weight: bold;
+}
+
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
+
+.action-form__textarea {
+	width: 100%;
+	padding: 8px;
+	font-family: var(--font-face, sans-serif);
+	font-size: 14px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	resize: vertical;
+}
+
+.action-form__textarea--code {
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 13px;
+}
 </style>

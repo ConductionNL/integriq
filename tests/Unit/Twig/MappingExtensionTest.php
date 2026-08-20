@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for the mapping Twig extension.
  *
@@ -20,24 +21,22 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests the mapping Twig function surface.
  */
-class MappingExtensionTest extends TestCase
-{
+class MappingExtensionTest extends TestCase {
 
-    /**
-     * Test that executeMapping is available to mapping templates.
-     *
-     * @return void
-     */
-    public function testRegistersExecuteMappingFunction(): void
-    {
-        $extension = new MappingExtension();
+	/**
+	 * Test that executeMapping is available to mapping templates.
+	 *
+	 * @return void
+	 */
+	public function testRegistersExecuteMappingFunction(): void {
+		$extension = new MappingExtension();
 
-        $functionNames = array_map(
-            static fn($function): string => $function->getName(),
-            $extension->getFunctions()
-        );
+		$functionNames = array_map(
+			static fn ($function): string => $function->getName(),
+			$extension->getFunctions()
+		);
 
-        self::assertContains('executeMapping', $functionNames);
+		self::assertContains('executeMapping', $functionNames);
 
-    }//end testRegistersExecuteMappingFunction()
+	}//end testRegistersExecuteMappingFunction()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector LogCleanUpTask.
  *
@@ -20,6 +21,7 @@
 
 namespace OCA\OpenConnector\Cron;
 
+use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -35,98 +37,95 @@ use OCP\BackgroundJob\TimedJob;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class LogCleanUpTask extends TimedJob
-{
-    /**
-     * Constructor.
-     *
-     * Initializes the log cleanup task with required dependencies and
-     * configures the background job settings.
-     *
-     * @param ITimeFactory    $time            Time factory for job scheduling.
-     * @param OrObjectService $orObjectService OR object service for log operations.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly OrObjectService $orObjectService
-    ) {
-        parent::__construct(time: $time);
+class LogCleanUpTask extends TimedJob {
+	/**
+	 * Constructor.
+	 *
+	 * Initializes the log cleanup task with required dependencies and
+	 * configures the background job settings.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling.
+	 * @param OrObjectService $orObjectService OR object service for log operations.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly OrObjectService $orObjectService,
+	) {
+		parent::__construct(time: $time);
 
-        // Run every minute. @todo change to hour.
-        $this->setInterval(seconds: 60);
+		// Run every minute. @todo change to hour.
+		$this->setInterval(seconds: 60);
 
-        // Delay until low-load time.
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+		// Delay until low-load time.
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
-        // Only run one instance of this job at a time.
-        $this->setAllowParallelRuns(allow: true);
+		// Only run one instance of this job at a time.
+		$this->setAllowParallelRuns(allow: true);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Delete expired objects for a given schema in the openconnector register.
-     *
-     * Finds all objects with a non-null `expires` field that is in the past,
-     * then deletes them one by one via OR ObjectService.
-     *
-     * @param string $schema The schema slug to clean up.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
-     */
-    private function cleanupSchema(string $schema): void
-    {
-        $now     = (new \DateTime())->format('Y-m-d H:i:s');
-        $matches = $this->orObjectService->findAll(
-                config: [
-                    'filters' => [
-                        'register'    => 'openconnector',
-                        'schema'      => $schema,
-                        'expires[lt]' => $now,
-                    ],
-                ]
-                );
+	/**
+	 * Delete expired objects for a given schema in the openconnector register.
+	 *
+	 * Finds all objects with a non-null `expires` field that is in the past,
+	 * then deletes them one by one via OR ObjectService.
+	 *
+	 * @param string $schema The schema slug to clean up.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function cleanupSchema(string $schema): void {
+		$now = (new DateTime())->format('Y-m-d H:i:s');
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => [
+					'register' => 'openconnector',
+					'schema' => $schema,
+					'expires[lt]' => $now,
+				],
+			]
+		);
 
-        $objects = $matches['results'] ?? $matches;
-        foreach ($objects as $object) {
-            try {
-                $this->orObjectService->deleteObject(uuid: $object->getUuid());
-            } catch (\Exception $e) {
-                // Continue with remaining objects even if one deletion fails.
-            }
-        }
+		$objects = $matches['results'] ?? $matches;
+		foreach ($objects as $object) {
+			try {
+				$this->orObjectService->deleteObject(uuid: $object->getUuid());
+			} catch (\Exception $e) {
+				// Continue with remaining objects even if one deletion fails.
+			}
+		}
 
-    }//end cleanupSchema()
+	}//end cleanupSchema()
 
-    /**
-     * Execute the log cleanup task.
-     *
-     * This method removes expired logs from all log schemas to maintain
-     * database performance and prevent storage bloat.
-     *
-     * @param mixed $argument Task arguments (not used in this implementation).
-     *
-     * @return void
-     *
-     * @psalm-param   mixed $argument
-     * @phpstan-param mixed $argument
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
-     */
-    public function run(mixed $argument): void
-    {
-        // Clear expired call logs.
-        $this->cleanupSchema(schema: 'call_log');
+	/**
+	 * Execute the log cleanup task.
+	 *
+	 * This method removes expired logs from all log schemas to maintain
+	 * database performance and prevent storage bloat.
+	 *
+	 * @param mixed $argument Task arguments (not used in this implementation).
+	 *
+	 * @return void
+	 *
+	 * @psalm-param   mixed $argument
+	 * @phpstan-param mixed $argument
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	public function run(mixed $argument): void {
+		// Clear expired call logs.
+		$this->cleanupSchema(schema: 'call_log');
 
-        // Clear expired job logs.
-        $this->cleanupSchema(schema: 'job_log');
+		// Clear expired job logs.
+		$this->cleanupSchema(schema: 'job_log');
 
-        // Clear expired synchronization contract logs.
-        $this->cleanupSchema(schema: 'synchronization_contract_log');
+		// Clear expired synchronization contract logs.
+		$this->cleanupSchema(schema: 'synchronization_contract_log');
 
-        // Clear expired synchronization logs.
-        $this->cleanupSchema(schema: 'synchronization_log');
+		// Clear expired synchronization logs.
+		$this->cleanupSchema(schema: 'synchronization_log');
 
-    }//end run()
+	}//end run()
 }//end class

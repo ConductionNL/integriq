@@ -38,45 +38,44 @@ namespace OCA\OpenConnector\Adapters\Pdok;
  * PostalAddress documented in
  * `hydra/openspec/changes/shared-pdok-via-openconnector/design.md`.
  */
-abstract class PdokGeocodingClient
-{
-    /**
-     * Free-text autocomplete suggest call.
-     *
-     * @param string $query Free-text query (street, postcode, place).
-     * @param int    $rows  Maximum rows to return (PDOK Locatieserver default: 10).
-     *
-     * @return array<int,array<string,mixed>> Normalised PostalAddress entries.
-     */
-    abstract public function suggest(string $query, int $rows=10): array;
+abstract class PdokGeocodingClient {
+	/**
+	 * Free-text autocomplete suggest call.
+	 *
+	 * @param string $query Free-text query (street, postcode, place).
+	 * @param int $rows Maximum rows to return (PDOK Locatieserver default: 10).
+	 *
+	 * @return array<int,array<string,mixed>> Normalised PostalAddress entries.
+	 */
+	abstract public function suggest(string $query, int $rows = 10): array;
 
-    /**
-     * Lookup a specific PDOK identifier.
-     *
-     * Resolves `adres-…` / `weg-…` / `woonplaats-…` ids to a single canonical
-     * PostalAddress.
-     *
-     * @param string $pdokId PDOK Locatieserver id.
-     *
-     * @return array<string,mixed>|null Normalised PostalAddress, or null if not found.
-     */
-    abstract public function lookup(string $pdokId): ?array;
+	/**
+	 * Lookup a specific PDOK identifier.
+	 *
+	 * Resolves `adres-…` / `weg-…` / `woonplaats-…` ids to a single canonical
+	 * PostalAddress.
+	 *
+	 * @param string $pdokId PDOK Locatieserver id.
+	 *
+	 * @return array<string,mixed>|null Normalised PostalAddress, or null if not found.
+	 */
+	abstract public function lookup(string $pdokId): ?array;
 
-    /**
-     * Reverse-geocode a lat/lng pair to candidate addresses.
-     *
-     * @param float $latitude  Latitude (WGS84).
-     * @param float $longitude Longitude (WGS84).
-     *
-     * @return array<int,array<string,mixed>> Normalised candidate PostalAddress entries.
-     */
-    abstract public function reverse(float $latitude, float $longitude): array;
+	/**
+	 * Reverse-geocode a lat/lng pair to candidate addresses.
+	 *
+	 * @param float $latitude Latitude (WGS84).
+	 * @param float $longitude Longitude (WGS84).
+	 *
+	 * @return array<int,array<string,mixed>> Normalised candidate PostalAddress entries.
+	 */
+	abstract public function reverse(float $latitude, float $longitude): array;
 
-    /**
-     * Flavour identifier (mock | http) — surfaced in the source descriptor
-     * and logged on every dormant Source-facade call.
-     *
-     * @return string
-     */
-    abstract public function flavour(): string;
+	/**
+	 * Flavour identifier (mock | http) — surfaced in the source descriptor
+	 * and logged on every dormant Source-facade call.
+	 *
+	 * @return string
+	 */
+	abstract public function flavour(): string;
 }//end class

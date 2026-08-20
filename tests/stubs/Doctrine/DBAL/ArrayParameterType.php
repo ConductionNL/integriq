@@ -15,9 +15,8 @@ namespace Doctrine\DBAL;
 /**
  * Minimal stub for Doctrine\DBAL\ArrayParameterType.
  */
-class ArrayParameterType
-{
-    public const INTEGER = 101;
-    public const STRING  = 102;
-    public const ASCII   = 103;
+class ArrayParameterType {
+	public const INTEGER = 101;
+	public const STRING = 102;
+	public const ASCII = 103;
 }

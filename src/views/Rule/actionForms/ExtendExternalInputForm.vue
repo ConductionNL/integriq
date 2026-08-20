@@ -9,25 +9,27 @@
 	<div class="action-form">
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.validate"
-			@update:checked="onValidateToggle">
+			:modelValue="!!value.validate"
+			@update:modelValue="onValidateToggle">
 			{{ t('openconnector', 'Validate fetched object against schema') }}
 		</NcCheckboxRadioSwitch>
 
-		<label class="action-form__label">{{ t('openconnector', 'Properties to fetch') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Properties to fetch')
+		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:value="row.property"
+				:modelValue="row.property"
 				placeholder="body.relations.contact"
-				@update:value="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="t('openconnector', 'Schema ID')"
-				:value="row.schema"
+				:modelValue="row.schema"
 				placeholder="contact"
-				@update:value="(next) => onSchemaInput(index, next)" />
+				@update:modelValue="(next) => onSchemaInput(index, next)" />
 			<NcButton
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
@@ -35,7 +37,7 @@
 				</template>
 			</NcButton>
 		</div>
-		<NcButton type="secondary" @click="addRow">
+		<NcButton variant="secondary" @click="addRow">
 			<template #icon>
 				<Plus :size="18" />
 			</template>
@@ -55,44 +57,94 @@ export default {
 	components: { NcButton, NcCheckboxRadioSwitch, NcTextField, Close, Plus },
 	props: { ...valueProp },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
-			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
+			const props = Array.isArray(this.value?.properties)
+				? this.value.properties
+				: []
 			return props.map((entry) => ({
 				property: String(entry?.property || ''),
 				schema: String(entry?.schema || ''),
 			}))
 		},
 	},
+
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Serialise the edited rows back into the action config and emit it.
+		 * Rows without a property path are dropped, so a freshly added empty
+		 * row never reaches the backend.
+		 *
+		 * @param {Array<{property: string, schema: string}>} rows The full row
+		 *   list after the edit, in display order.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		emitRows(rows) {
-			const next = { ...(this.value || {}), properties: rows.filter((row) => row.property) }
+			const next = {
+				...(this.value || {}),
+				properties: rows.filter((row) => row.property),
+			}
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Persist the "validate fetched object against schema" switch, which
+		 * drives RuleService::extendExternalUrl's schema validation.
+		 *
+		 * @param {boolean} checked New switch state emitted by NcCheckboxRadioSwitch.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onValidateToggle(checked) {
-			this.$emit('update:value', { ...(this.value || {}), validate: !!checked })
+			this.$emit('update:value', {
+				...(this.value || {}),
+				validate: !!checked,
+			})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Update the dot-path of one row as the user types.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value New dot path on the payload (e.g. `body.relations.contact`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Update the schema a row's fetched object is validated against.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value OpenRegister schema ID/slug (e.g. `contact`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSchemaInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], schema: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', schema: '' })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Drop one property row from the list.
+		 *
+		 * @param {number} index Zero-based position of the row to remove.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)
@@ -103,10 +155,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
-@media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
+.action-form__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr auto;
+	gap: 8px;
+	align-items: end;
+}
+@media (max-width: 720px) {
+	.action-form__row {
+		grid-template-columns: 1fr;
+	}
+}
 </style>

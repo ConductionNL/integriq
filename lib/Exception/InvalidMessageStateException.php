@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Invalid Message State Exception.
  *
@@ -27,7 +28,6 @@ use Exception;
  *
  * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
  */
-class InvalidMessageStateException extends Exception
-{
+class InvalidMessageStateException extends Exception {
 
 }//end class

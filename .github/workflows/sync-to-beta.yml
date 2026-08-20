@@ -6,4 +6,15 @@ on:
 
 jobs:
   sync:
-    uses: Conduction/.github/.github/workflows/sync-to-beta.yml@main
+    # Permission CEILING for the called workflow, not a grant. The callee's
+    # `create-pr` job already declares exactly these two, so this restates
+    # today's effective token. It runs `gh pr list` / `gh pr create` to keep the
+    # standing development -> beta release PR open, which needs
+    # `pull-requests: write`; `contents: write` is the checkout it pushes from.
+    #
+    # ⚠️ `contents: read` alone would leave the PR step 403-ing at runtime — a
+    # red release-sync that looks like a merge conflict.
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ConductionNL/.github/.github/workflows/sync-to-beta.yml@main

@@ -1,14 +1,22 @@
 {
-	"_meta": {
-		"spdx-license": "EUPL-1.2",
-		"spdx-copyright": "2026 Conduction B.V.",
-		"description": "Canonical navigation layout applied AFTER all manifest.d fragments merge (see mergeManifestFragments in main.js). Fragments stay the source of WHAT exists in the menu (ADR-037); this file is the single place deciding WHERE entries live. relocations: sourceId -> targetGroupId (groups dissolve into the target, leaves move under it). sections: menu-entry id -> section name. settingsSection: top-level config/definition/admin ids lifted into Nextcloud's settings foldout (NcAppNavigationSettings gear, outside the scrollable nav) — see applySettingsSection in main.js; operational/report/dashboard items (Dashboard, Connections, Automation) stay in the main nav. removals: leaf menu-entry ids retired as duplicate navigation — their PAGES stay routable for deep links and e2e specs."
-	},
-	"relocations": {},
-	"sections": {},
-	"settingsSection": [
-		"Settings"
-	],
-	"_settingsSectionNote": "Promoted into the NC settings foldout (the bottom-left gear, OUTSIDE the scrollable nav) by applySettingsSection in main.js. Settings is the app's configuration page (type:'settings' AppSettings) — genuinely-admin/config, so it lives under the gear rather than as a top-level leaf. The operational surfaces (Dashboard, Connections: Sources/Endpoints/Consumers/Webhooks, Automation: Jobs/Mappings/Rules/Synchronizations/CloudEvents/EventDeliveries) stay top-level. Documentation and FeaturesRoadmap stay in the footer section (help links, not settings).",
-	"removals": []
+    "_meta": {
+        "spdx-license": "EUPL-1.2",
+        "spdx-copyright": "2026 Conduction B.V.",
+        "description": "Canonical navigation layout applied AFTER all manifest.d fragments merge. Fragments stay the source of WHAT exists in the menu (ADR-037); this file decides WHERE entries live and records WHY. relocations: sourceId -> targetGroupId. sections: menu-entry id -> section name. settingsSection: ids lifted into the NC settings foldout. removals: leaf ids retired as duplicate navigation — their PAGES stay routable."
+    },
+    "relocations": {},
+    "sections": {},
+    "settingsSection": [],
+    "_settingsSectionNote": "ADR-079: EMPTY on purpose. App-level configuration lives in Nextcloud's settings framework at /settings/admin/openconnector (lib/Settings/OpenConnectorAdmin.php), which authorizes it server-side. The in-app `type: settings` AppSettings page is deleted and /settings redirects there. The gear foldout is per-user only: 'Personal settings' plus the admin-gated 'Admin settings' link CnAppNav renders fleet-wide. Previously this listed ['Settings'], which produced a foldout reading Settings > Settings — a child labelled with its own parent's name.",
+    "removals": [],
+    "_navigationRationale": {
+        "_why": "Menu entries are additionalProperties:false in app-manifest-v2, so per-entry rationale cannot live on the entry itself (gate 53). It lives here.",
+        "structure": "Grouped by DATA DIRECTION rather than by subsystem. The old two-group split (Connections / Automation) mixed inbound with outbound and definitions with runtime, so 'Automation' had drifted to mean 'everything that is not a connection'.",
+        "GatewayGroup": "INBOUND — what this instance EXPOSES. Endpoints, API products, Consumers, Approvals. This is the surface OpenBuild manifests consume via dataSource.connector (openconnector-api-sources REQ-OCAS-001): an API product is the governed, versioned, tier-gated packaging of the endpoints an OpenBuild app binds to.",
+        "ConnectionsGroup": "OUTBOUND — systems this instance CALLS. Sources, Synchronizations, Abonnementen. Environments are deliberately absent: an environment is metadata plus a sourceRef, so it renders as a widget on SourceDetail.",
+        "EventsGroup": "Cloud events and Webhooks — the event plane, previously buried inside Automation.",
+        "AutomationGroup": "DEFINITIONS only: Flows, Jobs, Rules, Mappings. Anything that merely runs moved to Operations.",
+        "OperationsGroup": "RUNTIME only: Traces plus the merged Dead letters queue. Approvals moved OUT to Gateway — approval_request gates API-product subscriptions, which is not automation.",
+        "iconBijection": "Three ADR-077 rule-5 collisions were fixed: TransitConnectionVariant (Connections group AND Flows), VectorPolylinePlus (Automation group AND Synchronizations), EmailAlertOutline (Event deliveries AND Sync dead letters). Approvals also moved off CheckboxMarkedCircleOutline, which the vocabulary assigns to 'task', onto the 'approval' glyph CheckDecagramOutline."
+    }
 }

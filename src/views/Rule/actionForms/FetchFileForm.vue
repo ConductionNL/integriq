@@ -14,61 +14,61 @@
 		<NcSelect
 			data-testid="action-form-fetch-source"
 			:aria-label-combobox="t('openconnector', 'Source')"
-			:value="selectedSource"
+			:modelValue="selectedSource"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:placeholder="t('openconnector', 'Select a source')"
-			@input="onSourcePick" />
+			@update:modelValue="onSourcePick" />
 
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path)')"
-			:value="value.filePath || ''"
+			:modelValue="value.filePath || ''"
 			placeholder="body.attachment.url"
-			@update:value="(next) => patch('filePath', next)" />
+			@update:modelValue="(next) => patch('filePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Endpoint (optional)')"
-			:value="value.endpoint || ''"
+			:modelValue="value.endpoint || ''"
 			placeholder="https://upstream/file/123"
-			@update:value="(next) => patch('endpoint', next)" />
+			@update:modelValue="(next) => patch('endpoint', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Object ID path (optional)')"
-			:value="value.objectIdPath || ''"
+			:modelValue="value.objectIdPath || ''"
 			placeholder="body.id"
-			@update:value="(next) => patch('objectIdPath', next)" />
+			@update:modelValue="(next) => patch('objectIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Origin ID path (optional)')"
-			:value="value.originIdPath || ''"
+			:modelValue="value.originIdPath || ''"
 			placeholder="body.origin.id"
-			@update:value="(next) => patch('originIdPath', next)" />
+			@update:modelValue="(next) => patch('originIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Content path (optional)')"
-			:value="value.contentPath || ''"
+			:modelValue="value.contentPath || ''"
 			placeholder="body.attachment.content"
-			@update:value="(next) => patch('contentPath', next)" />
+			@update:modelValue="(next) => patch('contentPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filename path (optional)')"
-			:value="value.filenamePath || ''"
+			:modelValue="value.filenamePath || ''"
 			placeholder="body.attachment.name"
-			@update:value="(next) => patch('filenamePath', next)" />
+			@update:modelValue="(next) => patch('filenamePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File extension (optional)')"
-			:value="value.fileExtension || ''"
+			:modelValue="value.fileExtension || ''"
 			placeholder="pdf"
-			@update:value="(next) => patch('fileExtension', next)" />
+			@update:modelValue="(next) => patch('fileExtension', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Sub-object filepath (optional)')"
-			:value="value.subObjectFilepath || ''"
+			:modelValue="value.subObjectFilepath || ''"
 			placeholder="body.objects.0.url"
-			@update:value="(next) => patch('subObjectFilepath', next)" />
+			@update:modelValue="(next) => patch('subObjectFilepath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Tags (comma-separated)')"
-			:value="csv(value.tags)"
+			:modelValue="csv(value.tags)"
 			placeholder="invoice,inbox"
-			@update:value="(next) => patch('tags', toArray(next))" />
+			@update:modelValue="(next) => patch('tags', toArray(next))" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.autoShare"
-			@update:checked="(next) => patch('autoShare', !!next)">
+			:modelValue="!!value.autoShare"
+			@update:modelValue="(next) => patch('autoShare', !!next)">
 			{{ t('openconnector', 'Auto-share fetched files') }}
 		</NcCheckboxRadioSwitch>
 
@@ -83,7 +83,9 @@
 			rows="5"
 			placeholder="[]"
 			@input="onSourceConfigInput" />
-		<span v-if="sourceConfigError" class="action-form__helper action-form__helper--error">
+		<span
+			v-if="sourceConfigError"
+			class="action-form__helper action-form__helper--error">
 			{{ sourceConfigError }}
 		</span>
 	</div>
@@ -108,52 +110,112 @@ export default {
 			sourceConfigError: '',
 		}
 	},
+
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSource() {
 			const id = String(this.value?.source || '')
 			if (!id) return null
-			return this.sourceOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.sourceOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
+
 	watch: {
 		// Keep textarea in sync if parent feeds in a value from a remote
 		// fetch. Drift is rare because the rule loads once.
-		'value.sourceConfiguration'(next) {
+		'value.sourceConfiguration': function (next) {
 			const serialized = this.serialiseSourceConfig(next)
 			if (serialized !== this.sourceConfigDraft) {
 				this.sourceConfigDraft = serialized
 			}
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.sourcesLoading = true
 		this.sourceOptions = await fetchOpenRegisterCollection('source')
 		this.sourcesLoading = false
-		this.sourceConfigDraft = this.serialiseSourceConfig(this.value?.sourceConfiguration)
+		this.sourceConfigDraft = this.serialiseSourceConfig(
+			this.value?.sourceConfiguration,
+		)
 	},
+
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Store the picked OpenConnector source on the action config. Clearing
+		 * the picker writes an empty string rather than dropping the key.
+		 *
+		 * @param {?{id: string, label: string, raw: object}} option The option
+		 *   chosen in NcSelect, or null/undefined when the selection is cleared.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSourcePick(option) {
 			this.patch('source', option?.id ? String(option.id) : '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Render the stored `tags` list for the comma-separated text field.
+		 *
+		 * @param {string[]|string|undefined} value The persisted tags — an array
+		 *   in the canonical shape, but tolerated as a bare string or missing.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		csv(value) {
-			return Array.isArray(value) ? value.join(',') : (value || '')
+			return Array.isArray(value) ? value.join(',') : value || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Parse the tags text field back into the stored array, trimming each
+		 * entry and dropping empties so trailing commas are harmless.
+		 *
+		 * @param {string} text Comma-separated tags as typed (e.g. `invoice,inbox`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		toArray(text) {
-			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
+			return (text || '')
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter(Boolean)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Render the persisted `sourceConfiguration` as pretty-printed JSON for
+		 * the textarea. Strings pass through untouched (the user's own text) and
+		 * anything unserialisable falls back to its string coercion.
+		 *
+		 * @param {*} value The stored source configuration — normally an object
+		 *   or array, but also handled when absent or already raw text.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		serialiseSourceConfig(value) {
 			if (value === undefined || value === null) return ''
 			if (typeof value === 'string') return value
-			try { return JSON.stringify(value, null, 2) } catch (_e) { return String(value) }
+			try {
+				return JSON.stringify(value, null, 2)
+			} catch (_e) {
+				return String(value)
+			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Handle typing in the source-configuration textarea: keep the draft
+		 * text verbatim, drop the key entirely when the field is emptied, and
+		 * only commit parsed JSON. A parse failure surfaces in
+		 * `sourceConfigError` and leaves the last valid value stored.
+		 *
+		 * @param {InputEvent} event The native textarea `input` event; its
+		 *   `target.value` holds the raw JSON text.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSourceConfigInput(event) {
 			const raw = event.target.value
 			this.sourceConfigDraft = raw
@@ -169,7 +231,11 @@ export default {
 				this.sourceConfigError = ''
 				this.patch('sourceConfiguration', parsed)
 			} catch (parseErr) {
-				this.sourceConfigError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.sourceConfigError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
 	},
@@ -177,19 +243,39 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
-
-.action-form__label { font-weight: bold; }
-
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
-
-.action-form__helper--error { color: var(--color-error); }
-
-.action-form__textarea {
-	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
-	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
-	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
-.action-form__textarea--code { font-family: var(--font-face-monospace, monospace); font-size: 12px; }
+.action-form__label {
+	font-weight: bold;
+}
+
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
+
+.action-form__helper--error {
+	color: var(--color-error);
+}
+
+.action-form__textarea {
+	width: 100%;
+	padding: 8px;
+	font-family: var(--font-face, sans-serif);
+	font-size: 14px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	resize: vertical;
+}
+
+.action-form__textarea--code {
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 12px;
+}
 </style>

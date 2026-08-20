@@ -17,15 +17,22 @@
   user can attach several rules in one trip.
 -->
 <template>
-	<NcModal v-if="open"
-		label-id="addEndpointRuleModal"
+	<NcModal
+		v-if="open"
+		labelId="addEndpointRuleModal"
 		size="normal"
 		@close="onClose">
 		<div class="cn-add-endpoint-rule-modal">
 			<h2>{{ t('openconnector', 'Add rule to endpoint') }}</h2>
 
 			<NcNoteCard v-if="endpointName" type="info">
-				<p>{{ t('openconnector', 'Endpoint: {name}', { name: endpointName }) }}</p>
+				<p>
+					{{
+						t('openconnector', 'Endpoint: {name}', {
+							name: endpointName,
+						})
+					}}
+				</p>
 			</NcNoteCard>
 
 			<NcNoteCard v-if="success" type="success">
@@ -41,14 +48,14 @@
 				</label>
 				<NcSelect
 					id="cn-add-endpoint-rule-select"
-					:aria-label-combobox="t('openconnector', 'Select rules to add')"
 					v-model="selectedRules"
+					:aria-label-combobox="t('openconnector', 'Select rules to add')"
 					:options="availableRules"
 					:loading="loadingRules"
 					:multiple="true"
 					:clearable="true"
 					:placeholder="t('openconnector', 'Pick one or more rules')"
-					input-id="cn-add-endpoint-rule-select" />
+					inputId="cn-add-endpoint-rule-select" />
 			</form>
 
 			<div class="cn-add-endpoint-rule-modal__actions">
@@ -58,8 +65,9 @@
 					</template>
 					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
-				<NcButton v-if="!success"
-					type="primary"
+				<NcButton
+					v-if="!success"
+					variant="primary"
 					:disabled="!canSave || saving"
 					@click="onSave">
 					<template #icon>
@@ -77,18 +85,18 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcModal,
 	NcButton,
-	NcSelect,
 	NcLoadingIcon,
+	NcModal,
 	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'AddEndpointRuleModal',
@@ -122,31 +130,39 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		endpointName() {
 			return this.endpoint?.name || this.endpoint?.title || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		canSave() {
 			return this.selectedRules.length > 0
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		endpointId() {
 			return this.endpoint?.id || this.endpoint?.uuid
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		existingRuleIds() {
 			const raw = this.endpoint?.rules
 			if (!Array.isArray(raw)) return []
 			return raw
-				.map((r) => (typeof r === 'object' && r !== null ? (r.id || r.uuid) : r))
+				.map((r) =>
+					typeof r === 'object' && r !== null ? r.id || r.uuid : r,
+				)
 				.filter((id) => id !== undefined && id !== null)
 				.map((id) => String(id))
 		},
 	},
 
 	watch: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/**
+		 * @param value
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -156,12 +172,12 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onClose() {
 			this.$emit('close')
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		resetState() {
 			this.selectedRules = []
 			this.saving = false
@@ -169,13 +185,16 @@ export default {
 			this.error = ''
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async fetchRules() {
 			this.loadingRules = true
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/objects/openconnector/rule'),
-					{ params: { limit: 500 } },
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = response.data
 				const list = Array.isArray(data?.results)
@@ -202,26 +221,28 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async onSave() {
 			if (!this.canSave || !this.endpointId) return
 			this.saving = true
 			this.error = ''
 			try {
 				const newIds = this.selectedRules.map((rule) => String(rule.id))
-				const merged = Array.from(new Set([
-					...this.existingRuleIds,
-					...newIds,
-				]))
+				const merged = Array.from(
+					new Set([...this.existingRuleIds, ...newIds]),
+				)
 				await axios.patch(
-					generateUrl(`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`),
+					generateUrl(
+						`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`,
+					),
 					{ rules: merged },
 				)
 				this.success = true
 				showSuccess(t('openconnector', 'Rule(s) added to endpoint.'))
 			} catch (err) {
 				const detail = err?.response?.data?.message || err?.message || ''
-				this.error = t('openconnector', 'Failed to add rule to endpoint')
+				this.error =
+					t('openconnector', 'Failed to add rule to endpoint')
 					+ (detail ? `: ${detail}` : '')
 				showError(this.error)
 			} finally {

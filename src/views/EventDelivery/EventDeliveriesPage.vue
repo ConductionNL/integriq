@@ -25,23 +25,43 @@
 		<div class="eventDeliveries__header">
 			<h2>{{ t('openconnector', 'Event deliveries') }}</h2>
 			<div class="eventDeliveries__filters">
-				<NcSelect :input-label="t('openconnector', 'Status')"
+				<NcSelect
+					v-model="statusFilter"
+					:inputLabel="t('openconnector', 'Status')"
 					:options="statusOptions"
-					:value.sync="statusFilter"
-					@input="reload" />
-				<NcTextField :label="t('openconnector', 'Subscription')"
-					:value.sync="subscriptionFilter"
-					@update:value="reloadDebounced" />
+					@update:modelValue="reload" />
+				<NcTextField
+					v-model="subscriptionFilter"
+					:label="t('openconnector', 'Subscription')"
+					@update:modelValue="reloadDebounced" />
+				<NcCheckboxRadioSwitch
+					:modelValue="nextcloudOnly"
+					type="switch"
+					data-testid="nextcloud-event-filter"
+					@update:modelValue="(value) => (nextcloudOnly = value)">
+					{{ t('openconnector', 'Nextcloud event') }}
+				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
-		<div v-if="selected.length" class="eventDeliveries__bulk" data-testid="bulk-bar">
-			<span>{{ t('openconnector', '{count} selected', { count: selected.length }) }}</span>
+		<div
+			v-if="selected.length"
+			class="eventDeliveries__bulk"
+			data-testid="bulk-bar">
+			<span>{{
+				t('openconnector', '{count} selected', { count: selected.length })
+			}}</span>
 			<template v-if="bulkConfirm">
-				<span>{{ bulkConfirm === 'replay'
-					? t('openconnector', 'Replay {count} messages now?', { count: selected.length })
-					: t('openconnector', 'Discard {count} messages?', { count: selected.length }) }}</span>
-				<NcButton type="primary" :disabled="busy" @click="commitBulk">
+				<span>{{
+					bulkConfirm === 'replay'
+						? t('openconnector', 'Replay {count} messages now?', {
+								count: selected.length,
+							})
+						: t('openconnector', 'Discard {count} messages?', {
+								count: selected.length,
+							})
+				}}</span>
+				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
 					{{ t('openconnector', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
@@ -49,7 +69,10 @@
 				</NcButton>
 			</template>
 			<template v-else>
-				<NcButton type="primary" :disabled="busy" @click="bulkConfirm = 'replay'">
+				<NcButton
+					variant="primary"
+					:disabled="busy"
+					@click="bulkConfirm = 'replay'">
 					{{ t('openconnector', 'Replay selected') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
@@ -60,7 +83,10 @@
 
 		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
 
-		<p v-else-if="!rows.length" class="eventDeliveries__empty" data-testid="empty-state">
+		<p
+			v-else-if="!filteredRows.length"
+			class="eventDeliveries__empty"
+			data-testid="empty-state">
 			{{ t('openconnector', 'No dead-lettered event deliveries') }}
 		</p>
 
@@ -68,31 +94,47 @@
 			<thead>
 				<tr>
 					<th />
-					<th>{{ t('openconnector', 'Event') }}</th>
-					<th>{{ t('openconnector', 'Subscription') }}</th>
-					<th>{{ t('openconnector', 'Status') }}</th>
-					<th>{{ t('openconnector', 'Retries') }}</th>
-					<th>{{ t('openconnector', 'Last attempt') }}</th>
+					<th scope="col">{{ t('openconnector', 'Event') }}</th>
+					<th scope="col">{{ t('openconnector', 'Subscription') }}</th>
+					<th scope="col">{{ t('openconnector', 'Action') }}</th>
+					<th scope="col">{{ t('openconnector', 'Status') }}</th>
+					<th scope="col">{{ t('openconnector', 'Retries') }}</th>
+					<th scope="col">{{ t('openconnector', 'Last attempt') }}</th>
 					<th />
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="row in rows" :key="row.uuid || row.id">
+				<tr v-for="row in filteredRows" :key="row.uuid || row.id">
 					<td>
-						<NcCheckboxRadioSwitch :checked="isSelected(row)"
-							@update:checked="toggleSelect(row)" />
+						<NcCheckboxRadioSwitch
+							:modelValue="isSelected(row)"
+							:aria-label="
+								t('openconnector', 'Select delivery {id}', {
+									id: row.uuid || row.id,
+								})
+							"
+							@update:modelValue="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
-					<td>{{ row.subscriptionId }}</td>
+					<td>{{ row.subscription }}</td>
 					<td>
-						<span class="eventDeliveries__badge" :class="`eventDeliveries__badge--${row.status}`">
+						<span
+							class="eventDeliveries__actionBadge"
+							data-testid="action-kind-badge">
+							{{ row.actionKind || 'webhook' }}
+						</span>
+					</td>
+					<td>
+						<span
+							class="eventDeliveries__badge"
+							:class="`eventDeliveries__badge--${row.status}`">
 							{{ row.status }}
 						</span>
 					</td>
 					<td>{{ row.retryCount || 0 }}</td>
 					<td>{{ row.lastAttempt }}</td>
 					<td>
-						<NcButton type="tertiary" @click="openDetail(row)">
+						<NcButton variant="tertiary" @click="openDetail(row)">
 							{{ t('openconnector', 'Inspect') }}
 						</NcButton>
 					</td>
@@ -100,7 +142,8 @@
 			</tbody>
 		</table>
 
-		<EventDeliveryDetailModal :open="detail.open"
+		<EventDeliveryDetailModal
+			:open="detail.open"
 			:message="detail.message"
 			@close="closeDetail"
 			@changed="reload" />
@@ -109,9 +152,9 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -140,12 +183,33 @@ export default {
 			statusFilter: 'failed,abandoned',
 			subscriptionFilter: '',
 			statusOptions: ['failed,abandoned', 'failed', 'abandoned', 'discarded'],
+			// Nextcloud-event provenance filter (dead-letter-replay REQ-DLR-007):
+			// client-side toggle over the already-fetched page — the backend
+			// enriches every row with `nextcloudEvent` (derived from
+			// `event.source` starting with `/nextcloud/`, NOT `event.type`,
+			// because the pre-existing OR-object producer shares the
+			// `com.nextcloud.` type prefix with these new producers).
+			nextcloudOnly: false,
 			selected: [],
 			detail: { open: false, message: null },
 			bulkConfirm: null,
 			busy: false,
 			reloadTimer: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * The visible rows after applying the Nextcloud-event provenance
+		 * filter on top of the server-side status/subscription filters.
+		 *
+		 * @return {object[]}
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+		 */
+		filteredRows() {
+			if (!this.nextcloudOnly) return this.rows
+			return this.rows.filter((row) => row.nextcloudEvent === true)
+		},
 	},
 
 	mounted() {
@@ -156,6 +220,7 @@ export default {
 		t,
 		/**
 		 * Resolve a row's CloudEvent type for the list column.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @return {string}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
@@ -163,11 +228,14 @@ export default {
 		rowEventType(row) {
 			return row?.payload?.type || row?.payload?.data?.type || '—'
 		},
+
 		isSelected(row) {
 			return this.selected.includes(row.uuid || row.id)
 		},
+
 		/**
 		 * Toggle a row in the bulk-selection set.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
@@ -179,31 +247,39 @@ export default {
 				this.selected = [...this.selected, id]
 			}
 		},
+
 		/**
 		 * Open the per-message detail modal.
+		 *
 		 * @param {object} row Dead-letter message row.
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		openDetail(row) {
 			this.detail = { open: true, message: row }
 		},
+
 		/**
 		 * Close the detail modal.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		closeDetail() {
 			this.detail = { open: false, message: null }
 		},
+
 		/**
 		 * Debounced reload used by the subscription filter field.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		reloadDebounced() {
 			clearTimeout(this.reloadTimer)
 			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
+
 		/**
 		 * Fetch the dead-letter listing from the admin-only endpoint.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		async reload() {
@@ -214,7 +290,10 @@ export default {
 				if (this.subscriptionFilter) {
 					params.subscriptionId = this.subscriptionFilter
 				}
-				const res = await axios.get(generateUrl('/apps/openconnector/api/events/dead-letter'), { params })
+				const res = await axios.get(
+					generateUrl('/apps/openconnector/api/events/dead-letter'),
+					{ params },
+				)
 				this.rows = res.data?.results || []
 			} catch (err) {
 				showError(t('openconnector', 'Failed to load event deliveries'))
@@ -223,8 +302,10 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
+		 *
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
 		async commitBulk() {
@@ -235,21 +316,33 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/events/dead-letter/${verb}`),
+					generateUrl(
+						`/apps/openconnector/api/events/dead-letter/${verb}`,
+					),
 					{ ids: this.selected },
 				)
 				const results = res.data?.results || {}
 				const ok = Object.values(results).filter((r) => r === 'ok').length
 				const failed = Object.keys(results).length - ok
 				if (failed > 0) {
-					showError(t('openconnector', '{ok} processed, {failed} failed', { ok, failed }))
+					showError(
+						t('openconnector', '{ok} processed, {failed} failed', {
+							ok,
+							failed,
+						}),
+					)
 				} else {
-					showSuccess(t('openconnector', '{ok} messages processed', { ok }))
+					showSuccess(
+						t('openconnector', '{ok} messages processed', { ok }),
+					)
 				}
 				await this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
-				showError(t('openconnector', 'Bulk action failed') + (detail ? `: ${detail}` : ''))
+				showError(
+					t('openconnector', 'Bulk action failed')
+						+ (detail ? `: ${detail}` : ''),
+				)
 			} finally {
 				this.busy = false
 				this.bulkConfirm = null
@@ -305,6 +398,14 @@ export default {
 	padding: 2px 10px;
 	border-radius: var(--border-radius-pill);
 	background: var(--color-background-dark);
+}
+
+.eventDeliveries__actionBadge {
+	padding: 2px 10px;
+	border-radius: var(--border-radius-pill);
+	background: var(--color-background-darker, var(--color-background-dark));
+	color: var(--color-text-maxcontrast);
+	text-transform: capitalize;
 }
 
 .eventDeliveries__badge--failed {

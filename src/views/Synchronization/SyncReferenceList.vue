@@ -21,15 +21,15 @@
 <template>
 	<div class="sync-ref-list">
 		<NcSelect
-			:input-id="inputId"
-			:input-label="inputLabel"
-			:value="selectedOptions"
+			:inputId="inputId"
+			:inputLabel="inputLabel"
+			:modelValue="selectedOptions"
 			:options="options"
 			:loading="loading"
 			multiple
-			closeable-chips
+			closeableChips
 			:placeholder="placeholder"
-			@input="onChange" />
+			@update:modelValue="onChange" />
 
 		<p v-if="!selectedOptions.length" class="sync-ref-list__empty">
 			{{ emptyLabel }}
@@ -38,10 +38,10 @@
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { NcSelect } from '@nextcloud/vue'
 
 let listSeq = 0
 
@@ -71,7 +71,10 @@ export default {
 		placeholder: { type: String, default: '' },
 		emptyLabel: { type: String, default: '' },
 		/** Accessible label for the combobox input. */
-		inputLabel: { type: String, default: () => t('openconnector', 'References') },
+		inputLabel: {
+			type: String,
+			default: () => t('openconnector', 'References'),
+		},
 	},
 
 	data() {
@@ -84,24 +87,28 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		inputId() {
 			return `sync-ref-list-${this.listUid}`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedOptions() {
 			if (!Array.isArray(this.value)) return []
-			return this.value.map((id) => this.options.find((opt) => opt.id === String(id)) ?? {
-				id: String(id),
-				label: String(id),
-			})
+			return this.value.map(
+				(id) =>
+					this.options.find((opt) => opt.id === String(id)) ?? {
+						id: String(id),
+						label: String(id),
+					},
+			)
 		},
 	},
 
 	watch: {
 		schema: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler() {
 				this.fetchOptions()
 			},
@@ -109,21 +116,45 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/**
+		 * Flatten the multi-select's option objects back to the array of slug
+		 * strings the parent binds, dropping entries without an id.
+		 *
+		 * @param {Array<{id: string, label: string}>|null} picked The options
+		 *   currently selected in the NcSelect; a non-array means "none".
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onChange(picked) {
 			const list = Array.isArray(picked) ? picked : []
-			this.$emit('input', list.map((option) => option?.id).filter(Boolean).map(String))
+			this.$emit(
+				'input',
+				list
+					.map((option) => option?.id)
+					.filter(Boolean)
+					.map(String),
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchOptions() {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/' + this.schema),
-					{ params: { limit: 500 } },
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/'
+							+ this.schema,
+					),
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.options = list
 					.map((row) => ({
 						// Standardise on slug as the canonical reference
@@ -131,9 +162,17 @@ export default {
 						// `followUps[]` description). Fall back to id/uuid
 						// for legacy rows without a slug.
 						id: String(row.slug || row.id || row.uuid),
-						label: row[this.labelKey] || row.title || row.name || row.slug || row.id,
+						label:
+							row[this.labelKey]
+							|| row.title
+							|| row.name
+							|| row.slug
+							|| row.id,
 					}))
-					.filter((opt) => !this.excludeId || opt.id !== String(this.excludeId))
+					.filter(
+						(opt) =>
+							!this.excludeId || opt.id !== String(this.excludeId),
+					)
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn(`[SyncReferenceList] ${this.schema} fetch failed`, err)

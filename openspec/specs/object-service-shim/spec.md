@@ -7,7 +7,7 @@ status: done
 ## Purpose
 Provides a MongoDB Data API CRUD shim that translates caller arrays into insertOne/findOne/find/updateOne/deleteOne/aggregate requests over a Guzzle client built from caller-supplied configuration, minting a fresh UUIDv4 as both `id` and `_id` on insert. It also resolves the OpenRegister ObjectService opportunistically — returning null when the app is absent or the container cannot bind it — and resolves mappers by register and schema, throwing on unknown object types.
 
-@e2e exclude backend MongoDB Data API CRUD shim service (no browser UI) — covered by PHPUnit
+@e2e exclude backend MongoDB Data API CRUD shim service (no browser UI) — all 10 scenarios below are asserted by `OCA\OpenConnector\Tests\Unit\Service\SourceMappingServiceShimTest` (tests/Unit/Service/SourceMappingServiceShimTest.php), which drives the real `SourceMappingService` through a Guzzle `MockHandler` injected via the caller-supplied config and asserts the outgoing Data API requests; the `openregister app is not installed` scenario is additionally covered by `SourceMappingServiceTest::testGetOpenRegistersReturnsNullWhenNotInstalled`. Both run in the `tests/Unit` PHPUnit suite on every CI leg.
 
 ## Requirements
 ### Requirement: MongoDB Data API CRUD wrapper (REQ-001)

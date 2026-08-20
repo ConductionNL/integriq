@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector StUF Field Mapper
  *
@@ -20,7 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
-
 /**
  * Service for mapping StUF fields to/from OpenRegister object properties.
  *
@@ -29,177 +29,165 @@ namespace OCA\OpenConnector\Service;
  *
  * @spec openspec/changes/stuf-adapter/tasks.md#task-2
  */
-class StUFFieldMapper
-{
+class StUFFieldMapper {
 
-    /**
-     * Default BRP-to-StUF-BG field mapping.
-     *
-     * Maps OpenRegister property names to StUF-BG XML element names.
-     *
-     * @var array
-     */
-    private const DEFAULT_BRP_MAPPING = [
-        'burgerservicenummer' => 'inp.bsn',
-        'geslachtsnaam'       => 'geslachtsnaam',
-        'voorvoegsel'         => 'voorvoegselGeslachtsnaam',
-        'voornamen'           => 'voornamen',
-        'geboortedatum'       => 'geboortedatum',
-        'geslachtsaanduiding' => 'geslachtsaanduiding',
-    ];
+	/**
+	 * Default BRP-to-StUF-BG field mapping.
+	 *
+	 * Maps OpenRegister property names to StUF-BG XML element names.
+	 *
+	 * @var array
+	 */
+	private const DEFAULT_BRP_MAPPING = [
+		'burgerservicenummer' => 'inp.bsn',
+		'geslachtsnaam' => 'geslachtsnaam',
+		'voorvoegsel' => 'voorvoegselGeslachtsnaam',
+		'voornamen' => 'voornamen',
+		'geboortedatum' => 'geboortedatum',
+		'geslachtsaanduiding' => 'geslachtsaanduiding',
+	];
 
-    /**
-     * Default address field mapping.
-     *
-     * @var array
-     */
-    private const DEFAULT_ADDRESS_MAPPING = [
-        'straatnaam' => 'gor.straatnaam',
-        'huisnummer' => 'aoa.huisnummer',
-        'postcode'   => 'aoa.postcode',
-        'woonplaats' => 'wpl.woonplaatsNaam',
-    ];
+	/**
+	 * Default address field mapping.
+	 *
+	 * @var array
+	 */
+	private const DEFAULT_ADDRESS_MAPPING = [
+		'straatnaam' => 'gor.straatnaam',
+		'huisnummer' => 'aoa.huisnummer',
+		'postcode' => 'aoa.postcode',
+		'woonplaats' => 'wpl.woonplaatsNaam',
+	];
 
-    /**
-     * StUFFieldMapper constructor.
-     */
-    public function __construct()
-    {
+	/**
+	 * StUFFieldMapper constructor.
+	 */
+	public function __construct() {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Map an OpenRegister person object to StUF-BG field values.
-     *
-     * @param array      $person  The OpenRegister person object properties.
-     * @param array|null $mapping Custom field mapping (null uses defaults).
-     *
-     * @return array Array of StUF field name to value pairs.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
-     */
-    public function mapPersonToStUF(array $person, ?array $mapping=null): array
-    {
-        $fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
-        $result       = [];
+	/**
+	 * Map an OpenRegister person object to StUF-BG field values.
+	 *
+	 * @param array $person The OpenRegister person object properties.
+	 * @param array|null $mapping Custom field mapping (null uses defaults).
+	 *
+	 * @return array Array of StUF field name to value pairs.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function mapPersonToStUF(array $person, ?array $mapping = null): array {
+		$fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
+		$result = [];
 
-        foreach ($fieldMapping as $registerField => $stufField) {
-            if (isset($person[$registerField]) === true) {
-                $value = $person[$registerField];
+		foreach ($fieldMapping as $registerField => $stufField) {
+			if (isset($person[$registerField]) === true) {
+				$value = $person[$registerField];
 
-                // Transform dates from ISO 8601 to StUF YYYYMMDD format.
-                if ($stufField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->isoDateToStUF(isoDate: $value);
-                }
+				// Transform dates from ISO 8601 to StUF YYYYMMDD format.
+				if ($stufField === 'geboortedatum' && is_string($value) === true) {
+					$value = $this->isoDateToStUF(isoDate: $value);
+				}
 
-                $result[$stufField] = $value;
-            }
-        }
+				$result[$stufField] = $value;
+			}
+		}
 
-        // Map nested verblijfsadres.
-        if (isset($person['verblijfsadres']) === true && is_array($person['verblijfsadres']) === true) {
-            $result['verblijfsadres'] = $this->mapAddressToStUF(address: $person['verblijfsadres']);
-        }
+		// Map nested verblijfsadres.
+		if (isset($person['verblijfsadres']) === true && is_array($person['verblijfsadres']) === true) {
+			$result['verblijfsadres'] = $this->mapAddressToStUF(address: $person['verblijfsadres']);
+		}
 
-        return $result;
+		return $result;
+	}//end mapPersonToStUF()
 
-    }//end mapPersonToStUF()
+	/**
+	 * Map a StUF-BG person response to OpenRegister object properties.
+	 *
+	 * @param array $stufData The StUF-BG response data.
+	 * @param array|null $mapping Custom field mapping (null uses defaults).
+	 *
+	 * @return array Array of OpenRegister property name to value pairs.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function mapStUFToPerson(array $stufData, ?array $mapping = null): array {
+		$fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
+		$reversed = array_flip($fieldMapping);
+		$result = [];
 
-    /**
-     * Map a StUF-BG person response to OpenRegister object properties.
-     *
-     * @param array      $stufData The StUF-BG response data.
-     * @param array|null $mapping  Custom field mapping (null uses defaults).
-     *
-     * @return array Array of OpenRegister property name to value pairs.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
-     */
-    public function mapStUFToPerson(array $stufData, ?array $mapping=null): array
-    {
-        $fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
-        $reversed     = array_flip($fieldMapping);
-        $result       = [];
+		foreach ($reversed as $stufField => $registerField) {
+			if (isset($stufData[$stufField]) === true) {
+				$value = $stufData[$stufField];
 
-        foreach ($reversed as $stufField => $registerField) {
-            if (isset($stufData[$stufField]) === true) {
-                $value = $stufData[$stufField];
+				// Transform dates from StUF YYYYMMDD to ISO 8601 format.
+				if ($registerField === 'geboortedatum' && is_string($value) === true) {
+					$value = $this->stufDateToISO(stufDate: $value);
+				}
 
-                // Transform dates from StUF YYYYMMDD to ISO 8601 format.
-                if ($registerField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->stufDateToISO(stufDate: $value);
-                }
+				$result[$registerField] = $value;
+			}
+		}
 
-                $result[$registerField] = $value;
-            }
-        }
+		return $result;
+	}//end mapStUFToPerson()
 
-        return $result;
+	/**
+	 * Map an OpenRegister address object to StUF-BG address fields.
+	 *
+	 * @param array $address The address properties.
+	 * @param array|null $mapping Custom address field mapping.
+	 *
+	 * @return array Array of StUF address field name to value pairs.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function mapAddressToStUF(array $address, ?array $mapping = null): array {
+		$fieldMapping = $mapping ?? self::DEFAULT_ADDRESS_MAPPING;
+		$result = [];
 
-    }//end mapStUFToPerson()
+		foreach ($fieldMapping as $registerField => $stufField) {
+			if (isset($address[$registerField]) === true) {
+				$result[$stufField] = $address[$registerField];
+			}
+		}
 
-    /**
-     * Map an OpenRegister address object to StUF-BG address fields.
-     *
-     * @param array      $address The address properties.
-     * @param array|null $mapping Custom address field mapping.
-     *
-     * @return array Array of StUF address field name to value pairs.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
-     */
-    public function mapAddressToStUF(array $address, ?array $mapping=null): array
-    {
-        $fieldMapping = $mapping ?? self::DEFAULT_ADDRESS_MAPPING;
-        $result       = [];
+		return $result;
+	}//end mapAddressToStUF()
 
-        foreach ($fieldMapping as $registerField => $stufField) {
-            if (isset($address[$registerField]) === true) {
-                $result[$stufField] = $address[$registerField];
-            }
-        }
+	/**
+	 * Convert an ISO 8601 date to StUF YYYYMMDD format.
+	 *
+	 * @param string $isoDate The ISO 8601 date string (e.g., "1990-05-15").
+	 *
+	 * @return string The StUF date string (e.g., "19900515").
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function isoDateToStUF(string $isoDate): string {
+		$date = \DateTime::createFromFormat('Y-m-d', substr($isoDate, 0, 10));
+		if ($date === false) {
+			return $isoDate;
+		}
 
-        return $result;
+		return $date->format('Ymd');
+	}//end isoDateToStUF()
 
-    }//end mapAddressToStUF()
+	/**
+	 * Convert a StUF YYYYMMDD date to ISO 8601 format.
+	 *
+	 * @param string $stufDate The StUF date string (e.g., "19900515").
+	 *
+	 * @return string The ISO 8601 date string (e.g., "1990-05-15").
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function stufDateToISO(string $stufDate): string {
+		$date = \DateTime::createFromFormat('Ymd', $stufDate);
+		if ($date === false) {
+			return $stufDate;
+		}
 
-    /**
-     * Convert an ISO 8601 date to StUF YYYYMMDD format.
-     *
-     * @param string $isoDate The ISO 8601 date string (e.g., "1990-05-15").
-     *
-     * @return string The StUF date string (e.g., "19900515").
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
-     */
-    public function isoDateToStUF(string $isoDate): string
-    {
-        $date = \DateTime::createFromFormat('Y-m-d', substr($isoDate, 0, 10));
-        if ($date === false) {
-            return $isoDate;
-        }
-
-        return $date->format('Ymd');
-
-    }//end isoDateToStUF()
-
-    /**
-     * Convert a StUF YYYYMMDD date to ISO 8601 format.
-     *
-     * @param string $stufDate The StUF date string (e.g., "19900515").
-     *
-     * @return string The ISO 8601 date string (e.g., "1990-05-15").
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
-     */
-    public function stufDateToISO(string $stufDate): string
-    {
-        $date = \DateTime::createFromFormat('Ymd', $stufDate);
-        if ($date === false) {
-            return $stufDate;
-        }
-
-        return $date->format('Y-m-d');
-
-    }//end stufDateToISO()
+		return $date->format('Y-m-d');
+	}//end stufDateToISO()
 }//end class

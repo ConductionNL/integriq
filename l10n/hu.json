@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Tulajdonság eltávolítása",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Állítsa be, hogyan ellenőrizzük kriptográfiailag a bejövő DSO-LV STAM webhook kéréseket. A HMAC megosztott titkot használ (előtermelés); a PKIoverheid tanúsítványláncot használ (élesítés).",
+        "Configured (leave blank to keep unchanged)": "Beállítva (hagyja üresen, ha nem szeretné módosítani)",
+        "DSO signature configuration saved.": "A DSO aláírás-konfiguráció mentve.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook aláírás-ellenőrzés",
+        "Failed to load the DSO signature configuration.": "A DSO aláírás-konfiguráció betöltése sikertelen.",
+        "Failed to save the DSO signature configuration.": "A DSO aláírás-konfiguráció mentése sikertelen.",
+        "HMAC shared secret": "Megosztott HMAC titok",
+        "HMAC shared secret (pre-production)": "Megosztott HMAC titok (előtermelés)",
+        "Intermediate certificate chain (PEM, optional)": "Köztes tanúsítványlánc (PEM, opcionális)",
+        "Loading DSO signature configuration…": "DSO aláírás-konfiguráció betöltése…",
+        "Not configured": "Nincs beállítva",
+        "PKIoverheid certificate chain (production)": "PKIoverheid tanúsítványlánc (élesítés)",
+        "Save DSO signature configuration": "DSO aláírás-konfiguráció mentése",
+        "Signing certificate (PEM)": "Aláíró tanúsítvány (PEM)",
+        "Signing mode": "Aláírási mód",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Megbízható gyökér CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

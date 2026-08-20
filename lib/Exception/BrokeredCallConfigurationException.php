@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Brokered Call Configuration Exception.
  *
@@ -40,8 +41,7 @@ use Exception;
  * Mapped to a synthetic 409 config-error CallLog; never falls back to
  * embedded secrets (REQ-SBC-001 / REQ-SBC-004).
  *
- * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
  */
-class BrokeredCallConfigurationException extends Exception
-{
+class BrokeredCallConfigurationException extends Exception {
 }//end class

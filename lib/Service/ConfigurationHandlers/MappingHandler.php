@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Mapping configuration handler.
  *
@@ -19,6 +20,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -26,147 +28,171 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Handler for exporting and importing mapping configurations.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
-class MappingHandler implements ConfigurationHandlerInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param OrObjectService $orObjectService The OR object service.
-     */
-    public function __construct(
-        private readonly OrObjectService $orObjectService
-    ) {
+class MappingHandler implements ConfigurationHandlerInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
+	 */
+	public function __construct(
+		private readonly OrObjectService $orObjectService,
+		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Export a mapping entity to its serialised configuration form.
-     *
-     * @param Entity                                                                           $entity     The mapping entity to export.
-     * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings   The global mappings for ID/slug conversion.
-     * @param array<int, int|string>                                                           $mappingIds Collected mapping ids (out param).
-     *
-     * @return array The serialised mapping configuration.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
-     */
-    public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
-    {
-        if ($entity instanceof ObjectEntity) {
-            $mappingArray = $entity->getObject();
-        } else {
-            $mappingArray = $entity->jsonSerialize();
-        }
+	/**
+	 * Export a mapping entity to its serialised configuration form.
+	 *
+	 * @param Entity $entity The mapping entity to export.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
+	 *
+	 * @return array The serialised mapping configuration.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
+		if ($entity instanceof ObjectEntity) {
+			$mappingArray = $entity->getObject();
+		} else {
+			$mappingArray = $entity->jsonSerialize();
+		}
 
-        unset($mappingArray['id'], $mappingArray['uuid']);
+		unset($mappingArray['id'], $mappingArray['uuid']);
 
-        // Ensure slug is set.
-        if (empty($mappingArray['slug']) === true && $entity instanceof ObjectEntity) {
-            $mappingArray['slug'] = $entity->getUuid();
-        }
+		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
+		$mappingArray = $this->redactConfiguration(entityArray: $mappingArray);
 
-        // Replace IDs with slugs where applicable.
-        if (isset($mappingArray['source_id']) === true
-            && isset($mappings['source']['idToSlug'][$mappingArray['source_id']]) === true
-        ) {
-            $mappingArray['source_id'] = $mappings['source']['idToSlug'][$mappingArray['source_id']];
-        }
+		// Ensure slug is set.
+		if (empty($mappingArray['slug']) === true && $entity instanceof ObjectEntity) {
+			$mappingArray['slug'] = $entity->getUuid();
+		}
 
-        if (isset($mappingArray['target_id']) === true
-            && isset($mappings['source']['idToSlug'][$mappingArray['target_id']]) === true
-        ) {
-            $mappingArray['target_id'] = $mappings['source']['idToSlug'][$mappingArray['target_id']];
-        }
+		// Replace IDs with slugs where applicable.
+		if (isset($mappingArray['source_id']) === true
+			&& isset($mappings['source']['idToSlug'][$mappingArray['source_id']]) === true
+		) {
+			$mappingArray['source_id'] = $mappings['source']['idToSlug'][$mappingArray['source_id']];
+		}
 
-        if (isset($mappingArray['mapping']) === false) {
-            return $mappingArray;
-        }
+		if (isset($mappingArray['target_id']) === true
+			&& isset($mappings['source']['idToSlug'][$mappingArray['target_id']]) === true
+		) {
+			$mappingArray['target_id'] = $mappings['source']['idToSlug'][$mappingArray['target_id']];
+		}
 
-        $matchedMappings = array_map(
-            function (string $field) use ($mappings) {
+		if (isset($mappingArray['mapping']) === false) {
+			return $mappingArray;
+		}
 
-                $regex = '$executeMapping\(([^)]+)\)$';
-                preg_match_all($regex, $field, $matches);
-                [$fullMatches, $subMatches] = $matches;
+		$matchedMappings = array_map(
+			function (string $field) use ($mappings) {
 
-                return array_map(
-                    callback: function (string $match) use ($mappings) {
-                        [$mapping, $data]  = explode(separator: ',', string: $match, limit: 2);
-                        $mappingIdentifier = trim($mapping, '\' ');
+				$regex = '$executeMapping\(([^)]+)\)$';
+				preg_match_all($regex, $field, $matches);
+				[$fullMatches, $subMatches] = $matches;
 
-                        if (isset($mappings['mapping']['slugToId'][$mappingIdentifier]) === true) {
-                            return $mappings['mapping']['slugToId'][$mappingIdentifier];
-                        }
+				return array_map(
+					callback: function (string $match) use ($mappings) {
+						[$mapping, $data] = explode(separator: ',', string: $match, limit: 2);
+						$mappingIdentifier = trim($mapping, '\' ');
 
-                        return $mappingIdentifier;
-                    },
-                    array: $subMatches
-                );
-            },
-            $mappingArray['mapping']
-        );
+						if (isset($mappings['mapping']['slugToId'][$mappingIdentifier]) === true) {
+							return $mappings['mapping']['slugToId'][$mappingIdentifier];
+						}
 
-        $addingMappingIds = array_merge(...array_values($matchedMappings));
+						return $mappingIdentifier;
+					},
+					array: $subMatches
+				);
+			},
+			$mappingArray['mapping']
+		);
 
-        $mappingIds = array_merge($mappingIds, $addingMappingIds);
+		$addingMappingIds = array_merge(...array_values($matchedMappings));
 
-        return $mappingArray;
+		$mappingIds = array_merge($mappingIds, $addingMappingIds);
 
-    }//end export()
+		return $mappingArray;
+	}//end export()
 
-    /**
-     * Import a mapping configuration into a mapping entity.
-     *
-     * @param array                                                                            $data     The serialised mapping configuration.
-     * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
-     *
-     * @return Entity The imported mapping entity.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
-     */
-    public function import(array $data, array $mappings): Entity
-    {
-        // Convert slugs back to IDs.
-        if (isset($data['source_id']) === true
-            && isset($mappings['source']['slugToId'][$data['source_id']]) === true
-        ) {
-            $data['source_id'] = $mappings['source']['slugToId'][$data['source_id']];
-        }
+	/**
+	 * Redact secret-shaped values from an entity array's nested `configuration`
+	 * sub-array via the shared registry, when present.
+	 *
+	 * Extracted as a helper to keep export()'s NPath complexity within the
+	 * configured threshold.
+	 *
+	 * @param array $entityArray The serialised entity array.
+	 *
+	 * @return array The entity array with its configuration redacted.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	private function redactConfiguration(array $entityArray): array {
+		if (isset($entityArray['configuration']) === true && is_array($entityArray['configuration']) === true) {
+			$entityArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $entityArray['configuration']);
+		}
 
-        if (isset($data['target_id']) === true
-            && isset($mappings['source']['slugToId'][$data['target_id']]) === true
-        ) {
-            $data['target_id'] = $mappings['source']['slugToId'][$data['target_id']];
-        }
+		return $entityArray;
+	}//end redactConfiguration()
 
-        // Check if mapping with this slug already exists.
-        $slug = $data['slug'] ?? null;
-        if ($slug !== null && isset($mappings['mapping']['slugToId'][$slug]) === true) {
-            // Update existing mapping.
-            return $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'mapping',
-                uuid: $mappings['mapping']['slugToId'][$slug]
-            );
-        }
+	/**
+	 * Import a mapping configuration into a mapping entity.
+	 *
+	 * @param array $data The serialised mapping configuration.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return Entity The imported mapping entity.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	public function import(array $data, array $mappings): Entity {
+		// Convert slugs back to IDs.
+		if (isset($data['source_id']) === true
+			&& isset($mappings['source']['slugToId'][$data['source_id']]) === true
+		) {
+			$data['source_id'] = $mappings['source']['slugToId'][$data['source_id']];
+		}
 
-        // Create new mapping.
-        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'mapping');
+		if (isset($data['target_id']) === true
+			&& isset($mappings['source']['slugToId'][$data['target_id']]) === true
+		) {
+			$data['target_id'] = $mappings['source']['slugToId'][$data['target_id']];
+		}
 
-    }//end import()
+		// Check if mapping with this slug already exists.
+		$slug = $data['slug'] ?? null;
+		if ($slug !== null && isset($mappings['mapping']['slugToId'][$slug]) === true) {
+			// Update existing mapping.
+			return $this->orObjectService->saveObject(
+				object: $data,
+				register: 'openconnector',
+				schema: 'mapping',
+				uuid: $mappings['mapping']['slugToId'][$slug]
+			);
+		}
 
-    /**
-     * Get the entity type this handler is responsible for.
-     *
-     * @return string The entity type identifier.
-     */
-    public function getEntityType(): string
-    {
-        return 'mapping';
+		// Create new mapping.
+		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'mapping');
+	}//end import()
 
-    }//end getEntityType()
+	/**
+	 * Get the entity type this handler is responsible for.
+	 *
+	 * @return string The entity type identifier.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
+	 */
+	public function getEntityType(): string {
+		return 'mapping';
+	}//end getEntityType()
 }//end class

@@ -36,7 +36,10 @@ log by id and call `deleteObject($log->getUuid())`. On success it MUST
 return `{ message: 'Log deleted successfully' }`; on missing,
 `404 { error: 'Log not found or could not be deleted' }`.
 
-All three carry `@NoAdminRequired` + `@NoCSRFRequired`.
+All three carry `@NoAdminRequired` + `@NoCSRFRequired` at the route layer, and
+MUST delegate the authorization decision to `ActionAuthService::requireAction()`
+on the actions `log.index`, `log.show` and `log.destroy` respectively,
+answering `403 { error: <the refusal message> }` when it throws.
 
 #### Scenario: list with level filter
 
@@ -60,14 +63,32 @@ All three carry `@NoAdminRequired` + `@NoCSRFRequired`.
 
 #### Notes
 
-- **HIGH (IDOR / OWASP A01:2021):** all three endpoints are
-  `@NoAdminRequired` + `@NoCSRFRequired` and accept arbitrary log
-  UUIDs. Any authed user can list / read / delete every log on the
-  instance. `destroy` further enables audit-trail tampering — users
-  can delete logs of their own activity.
-- The retrofit documents the surface but does not patch it. Hardening
-  is a focused change with admin-only annotations + per-object scope
-  checks.
+- ✅ **RESOLVED (openconnector#1217, PR #1218).** The IDOR described below was
+  real and was confirmed by live exploitation with two non-admin accounts
+  before being fixed: a stranger reading another account's log returned
+  **HTTP 200** with the payload, and `DELETE` returned **HTTP 200 "Log deleted
+  successfully"**, after which the owner's own read returned **404**. All three
+  endpoints now answer **403** to a caller the action matrix does not permit,
+  and **200** to one it does.
+- **Was: HIGH (IDOR / OWASP A01:2021).** All three endpoints were
+  `@NoAdminRequired` + `@NoCSRFRequired` and accepted arbitrary log
+  UUIDs. Any authed user could list / read / delete every log on the
+  instance. `destroy` further enabled audit-trail tampering — users
+  could delete logs of their own activity.
+- ⚠️ **This note is why the finding is worth reading twice: the defect was
+  written down here, at HIGH, and left unpatched.** The original text said *"the
+  retrofit documents the surface but does not patch it"*, and nothing chased it,
+  because `lib/actions.seed.json` already declared `log.index` / `log.show` /
+  `log.destroy` (so the design looked complete) and gate-7 reported **0** for
+  this repo throughout (`ConductionNL/.github#365` — it accepts a `401`
+  authentication check as an authorisation guard). **A documented,
+  correctly-severity-rated vulnerability plus a green security gate is a
+  quieter state than an undocumented one.**
+- The hardening is the "focused change" this note called for, though not the
+  shape it predicted: not admin-only annotations plus per-object scope checks,
+  but a call to the action-RBAC guard the app already had and never invoked. A
+  synchronization log has no per-user owner to scope to — it is instance-wide
+  operational audit data.
 
 ---
 
@@ -101,7 +122,20 @@ and one row per log. The response MUST be:
 
 On any `\Exception`: `500 { error: 'Could not export logs' }`.
 
-Both endpoints carry `@NoAdminRequired` + `@NoCSRFRequired`.
+Both endpoints carry `@NoAdminRequired` + `@NoCSRFRequired` at the route layer,
+and MUST delegate the authorization decision to
+`ActionAuthService::requireAction()` on `log.statistics` and `log.export`
+respectively. That check MUST sit OUTSIDE each method's own
+`catch (\Exception)` block: `OCSForbiddenException` is an `\Exception`, so a
+guard placed inside would answer `500 { error: 'Could not fetch statistics' }`
+/ `500 { error: 'Could not export logs' }` and report a refusal as an outage.
+
+Both routes MUST be registered BEFORE the `logs#show` / `logs#destroy`
+`/api/logs/{id}` wildcard. Registered after it, `/api/logs/statistics` and
+`/api/logs/export` match as `show(id: 'statistics')` / `show(id: 'export')` and
+answer `404 { error: 'Log not found' }` — the body of a real handler, not a
+router 404, which is why this was invisible until both endpoints were probed
+directly.
 
 #### Scenario: statistics aggregates 5 levels
 
@@ -121,8 +155,16 @@ Both endpoints carry `@NoAdminRequired` + `@NoCSRFRequired`.
 - **MEDIUM (soft DoS):** `export` materialises the entire matching
   dataset in PHP memory and returns it in the JSON body. Large
   datasets OOM the worker.
-- **HIGH (IDOR):** like REQ-001, both endpoints are `@NoAdminRequired`
-  — any user can extract every log on the instance via CSV.
+- ✅ **RESOLVED (openconnector#1217, PR #1218)** — see the REQ-001 notes. Both
+  endpoints now answer **403** to a caller the action matrix does not permit.
+- **Was: HIGH (IDOR):** like REQ-001, both endpoints were `@NoAdminRequired`
+  — any user could extract every log on the instance via CSV, including the
+  `User ID` and `Session ID` columns the header declares.
+- ⚠️ **Neither endpoint was reachable at all** before PR #1218's route-ordering
+  fix, so the CSV exposure was latent rather than live. That is a correction to
+  the severity as originally recorded, not a dismissal of it: the route order
+  was one line away from making it live, and nothing in the code expressed the
+  dependency.
 
 ---
 

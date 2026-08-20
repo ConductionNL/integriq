@@ -1,0 +1,47 @@
+# Publishes an installable build of the development branch.
+#
+# Beta and stable reach people through the Nextcloud app store. Development
+# reached nobody: releases only fire on a push to beta or main, so the
+# newest installable build was months behind the branch and trying out
+# unreleased work meant building it yourself.
+#
+# This publishes a GitHub prerelease with a .tar.gz on every push to
+# development. The App Versions app reads a repository's releases from the
+# forge API and installs from that asset, and it already trusts
+# github:ConductionNL/* by default, so nothing needs configuring on the
+# Nextcloud side.
+#
+# Deliberately never uploaded to the app store: the shared workflow skips
+# that step for this channel. A dev build is for people who asked for one.
+name: Development Release
+
+on:
+  push:
+    branches: [development]
+  workflow_dispatch:
+
+# A push during a running build supersedes it. Without this, a busy morning
+# produces a queue of releases that are obsolete before they finish, and
+# the tag each one cuts sticks around.
+concurrency:
+  group: development-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    # Permission CEILING for the called release workflow, not a grant. The
+    # callee's `release` job already declares `contents: write` for itself, so
+    # this restates today's effective token and changes nothing that runs.
+    # `contents: write` cuts the tag and publishes the prerelease + .tar.gz that
+    # the App Versions app installs from. This channel never touches the App
+    # Store, so nothing else is needed.
+    #
+    # ⚠️ Not `contents: read`. A caller block CAPS the callee, so a lower ceiling
+    # makes the call fail to START rather than run with less.
+    permissions:
+      contents: write
+    uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
+    with:
+      app-name: openconnector
+      channel: dev
+    secrets: inherit

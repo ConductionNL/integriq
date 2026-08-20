@@ -32,90 +32,85 @@ use OCA\OpenConnector\Exception\DigikoppelingException;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-final class GroteBerichtenReference
-{
+final class GroteBerichtenReference {
 
-    /**
-     * The checksum algorithm used for Grote Berichten payloads.
-     *
-     * @var string
-     */
-    public const ALGORITHM = 'sha256';
+	/**
+	 * The checksum algorithm used for Grote Berichten payloads.
+	 *
+	 * @var string
+	 */
+	public const ALGORITHM = 'sha256';
 
-    /**
-     * Constructor.
-     *
-     * @param string $url       The out-of-band payload URL.
-     * @param string $checksum  The lowercase hex checksum of the payload.
-     * @param int    $sizeBytes The declared payload size in bytes.
-     */
-    public function __construct(
-        public readonly string $url,
-        public readonly string $checksum,
-        public readonly int $sizeBytes
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $url The out-of-band payload URL.
+	 * @param string $checksum The lowercase hex checksum of the payload.
+	 * @param int $sizeBytes The declared payload size in bytes.
+	 */
+	public function __construct(
+		public readonly string $url,
+		public readonly string $checksum,
+		public readonly int $sizeBytes,
+	) {
+	}//end __construct()
 
-    /**
-     * Build a reference for a payload that is being sent out-of-band.
-     *
-     * @param string $url     The URL the payload will be served from.
-     * @param string $payload The raw payload bytes.
-     *
-     * @return self
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: Grote Berichten out-of-band large-payload transfer (REQ-DK-004)
-     */
-    public static function forPayload(string $url, string $payload): self
-    {
-        return new self(
-            url: $url,
-            checksum: hash(self::ALGORITHM, $payload),
-            sizeBytes: strlen($payload)
-        );
+	/**
+	 * Build a reference for a payload that is being sent out-of-band.
+	 *
+	 * @param string $url The URL the payload will be served from.
+	 * @param string $payload The raw payload bytes.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: Grote Berichten out-of-band large-payload transfer (REQ-DK-004)
+	 */
+	public static function forPayload(string $url, string $payload): self {
+		return new self(
+			url: $url,
+			checksum: hash(self::ALGORITHM, $payload),
+			sizeBytes: strlen($payload)
+		);
 
-    }//end forPayload()
+	}//end forPayload()
 
-    /**
-     * Serialise the reference for embedding in a message (never the payload).
-     *
-     * @return array<string, mixed>
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md
-     */
-    public function toMessagePart(): array
-    {
-        return [
-            'href'      => $this->url,
-            'algorithm' => self::ALGORITHM,
-            'checksum'  => $this->checksum,
-            'sizeBytes' => $this->sizeBytes,
-        ];
+	/**
+	 * Serialise the reference for embedding in a message (never the payload).
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md
+	 */
+	public function toMessagePart(): array {
+		return [
+			'href' => $this->url,
+			'algorithm' => self::ALGORITHM,
+			'checksum' => $this->checksum,
+			'sizeBytes' => $this->sizeBytes,
+		];
 
-    }//end toMessagePart()
+	}//end toMessagePart()
 
-    /**
-     * Verify a retrieved payload against this reference's checksum.
-     *
-     * @param string $payload The payload bytes fetched from {@see $url}.
-     *
-     * @return string The verified payload (returned for fluent use).
-     *
-     * @throws DigikoppelingException On a checksum mismatch (transport error).
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: Grote Berichten out-of-band large-payload transfer (REQ-DK-004)
-     */
-    public function verifyPayload(string $payload): string
-    {
-        $actual = hash(self::ALGORITHM, $payload);
-        if (hash_equals($this->checksum, $actual) === false) {
-            throw new DigikoppelingException(
-                    message:
-                'Grote Berichten payload checksum mismatch — rejected as a transport error.'
-            );
-        }
+	/**
+	 * Verify a retrieved payload against this reference's checksum.
+	 *
+	 * @param string $payload The payload bytes fetched from {@see $url}.
+	 *
+	 * @return string The verified payload (returned for fluent use).
+	 *
+	 * @throws DigikoppelingException On a checksum mismatch (transport error).
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: Grote Berichten out-of-band large-payload transfer (REQ-DK-004)
+	 */
+	public function verifyPayload(string $payload): string {
+		$actual = hash(self::ALGORITHM, $payload);
+		if (hash_equals($this->checksum, $actual) === false) {
+			throw new DigikoppelingException(
+				message:
+				'Grote Berichten payload checksum mismatch — rejected as a transport error.'
+			);
+		}
 
-        return $payload;
-
-    }//end verifyPayload()
+		return $payload;
+	}//end verifyPayload()
 }//end class

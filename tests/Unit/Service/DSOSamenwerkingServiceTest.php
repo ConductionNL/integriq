@@ -30,106 +30,101 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-14
  */
-class DSOSamenwerkingServiceTest extends TestCase
-{
+class DSOSamenwerkingServiceTest extends TestCase {
 
-    /**
-     * @var DSOSamenwerkingService
-     */
-    private DSOSamenwerkingService $service;
+	/**
+	 * @var DSOSamenwerkingService
+	 */
+	private DSOSamenwerkingService $service;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $logger        = $this->createMock(LoggerInterface::class);
-        $clientService = $this->createMock(IClientService::class);
+		$logger = $this->createMock(LoggerInterface::class);
+		$clientService = $this->createMock(IClientService::class);
 
-        $this->service = new DSOSamenwerkingService(
-            logger: $logger,
-            clientService: $clientService
-        );
+		$this->service = new DSOSamenwerkingService(
+			logger: $logger,
+			clientService: $clientService
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Test buildAdviesverzoekPayload includes required fields.
-     *
-     * @return void
-     */
-    public function testBuildAdviesverzoekPayloadIncludesRequiredFields(): void
-    {
-        $zaak = [
-            'id'        => 'zaak-001',
-            'verzoekId' => 'dso-001',
-            'aanvrager' => ['naam' => 'Test BV'],
-        ];
+	/**
+	 * Test buildAdviesverzoekPayload includes required fields.
+	 *
+	 * @return void
+	 */
+	public function testBuildAdviesverzoekPayloadIncludesRequiredFields(): void {
+		$case = [
+			'id' => 'zaak-001',
+			'verzoekId' => 'dso-001',
+			'aanvrager' => ['naam' => 'Test BV'],
+		];
 
-        $payload = $this->service->buildAdviesverzoekPayload(
-            zaak: $zaak,
-            partnerOin: '00000001234567890000',
-            termijn: '2024-09-15'
-        );
+		$payload = $this->service->buildAdviesverzoekPayload(
+			case: $case,
+			partnerOin: '00000001234567890000',
+			term: '2024-09-15'
+		);
 
-        $this->assertArrayHasKey('zaakId', $payload);
-        $this->assertArrayHasKey('partnerOin', $payload);
-        $this->assertArrayHasKey('termijn', $payload);
+		$this->assertArrayHasKey('caseId', $payload);
+		$this->assertArrayHasKey('partnerOin', $payload);
+		$this->assertArrayHasKey('termijn', $payload);
 
-        $this->assertSame('zaak-001', $payload['zaakId']);
-        $this->assertSame('00000001234567890000', $payload['partnerOin']);
-        $this->assertSame('2024-09-15', $payload['termijn']);
+		$this->assertSame('zaak-001', $payload['caseId']);
+		$this->assertSame('00000001234567890000', $payload['partnerOin']);
+		$this->assertSame('2024-09-15', $payload['termijn']);
 
-    }//end testBuildAdviesverzoekPayloadIncludesRequiredFields()
+	}//end testBuildAdviesverzoekPayloadIncludesRequiredFields()
 
-    /**
-     * Test receiveAdvies validates required fields.
-     *
-     * @return void
-     */
-    public function testReceiveAdviesValidatesRequiredFields(): void
-    {
-        // Payload missing required 'adviesId' field.
-        $incompletePayload = [
-            'organisatieOin' => '00000001234567890000',
-            'advies'         => 'Geen bezwaar',
-        ];
+	/**
+	 * Test receiveAdvies validates required fields.
+	 *
+	 * @return void
+	 */
+	public function testReceiveAdviesValidatesRequiredFields(): void {
+		// Payload missing required 'adviesId' field.
+		$incompletePayload = [
+			'organisatieOin' => '00000001234567890000',
+			'advies' => 'Geen bezwaar',
+		];
 
-        $result = $this->service->receiveAdvies(
-            adviesPayload: $incompletePayload,
-            zaakId: 'zaak-001'
-        );
+		$result = $this->service->receiveAdvies(
+			adviesPayload: $incompletePayload,
+			caseId: 'zaak-001'
+		);
 
-        $this->assertFalse($result['stored']);
-        $this->assertArrayHasKey('error', $result);
+		$this->assertFalse($result['stored']);
+		$this->assertArrayHasKey('error', $result);
 
-    }//end testReceiveAdviesValidatesRequiredFields()
+	}//end testReceiveAdviesValidatesRequiredFields()
 
-    /**
-     * Test receiveAdvies stores a valid advies.
-     *
-     * @return void
-     */
-    public function testReceiveAdviesStoresValidAdvies(): void
-    {
-        $validPayload = [
-            'adviesId'       => 'advies-001',
-            'organisatieOin' => '00000001234567890000',
-            'advies'         => 'Geen bezwaar tegen de aanvraag.',
-        ];
+	/**
+	 * Test receiveAdvies stores a valid advies.
+	 *
+	 * @return void
+	 */
+	public function testReceiveAdviesStoresValidAdvies(): void {
+		$validPayload = [
+			'adviesId' => 'advies-001',
+			'organisatieOin' => '00000001234567890000',
+			'advies' => 'Geen bezwaar tegen de aanvraag.',
+		];
 
-        $result = $this->service->receiveAdvies(
-            adviesPayload: $validPayload,
-            zaakId: 'zaak-001'
-        );
+		$result = $this->service->receiveAdvies(
+			adviesPayload: $validPayload,
+			caseId: 'zaak-001'
+		);
 
-        $this->assertTrue($result['stored']);
-        $this->assertSame('advies-001', $result['adviesId']);
-        $this->assertSame('zaak-001', $result['zaakId']);
+		$this->assertTrue($result['stored']);
+		$this->assertSame('advies-001', $result['adviesId']);
+		$this->assertSame('zaak-001', $result['caseId']);
 
-    }//end testReceiveAdviesStoresValidAdvies()
+	}//end testReceiveAdviesStoresValidAdvies()
 }//end class

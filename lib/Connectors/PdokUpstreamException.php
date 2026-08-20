@@ -31,30 +31,27 @@ use RuntimeException;
 /**
  * Exception carrying the upstream HTTP status code.
  */
-class PdokUpstreamException extends RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param string $message    Human-readable message.
-     * @param int    $statusCode Upstream HTTP status code (or 503 on transport failure).
-     */
-    public function __construct(
-        string $message,
-        private readonly int $statusCode
-    ) {
-        parent::__construct(message: $message);
+class PdokUpstreamException extends RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message.
+	 * @param int $statusCode Upstream HTTP status code (or 503 on transport failure).
+	 */
+	public function __construct(
+		string $message,
+		private readonly int $statusCode,
+	) {
+		parent::__construct(message: $message);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the upstream HTTP status code attached to this exception.
-     *
-     * @return int HTTP status code.
-     */
-    public function getStatusCode(): int
-    {
-        return $this->statusCode;
-
-    }//end getStatusCode()
+	/**
+	 * Get the upstream HTTP status code attached to this exception.
+	 *
+	 * @return int HTTP status code.
+	 */
+	public function getStatusCode(): int {
+		return $this->statusCode;
+	}//end getStatusCode()
 }//end class

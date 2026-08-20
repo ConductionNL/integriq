@@ -1,7 +1,27 @@
 # document-cms-connectors Specification
 
 ## Purpose
-TBD - created by archiving change add-openconnector-connector-categories. Update Purpose after archive.
+
+Document/CMS vendors (SharePoint, OneDrive, Google Drive, Alfresco, Box, etc.)
+register as `IntegrationProvider`s under `lib/Service/Adapter/DocumentCms/`,
+each extending the shared `AbstractCategoryAdapterProvider`
+(`lib/Service/Adapter/AbstractCategoryAdapterProvider.php`).
+`SharePointOnlineAdapter` (`lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php`)
+is the reference implementation, proving `document-list`/`document-fetch`
+against Microsoft Graph's `drive` API. To add the next vendor: create a new
+class extending `AbstractCategoryAdapterProvider`, implement the
+`IntegrationProvider` metadata methods plus vendor-specific document
+list/fetch methods via `brokeredRequest()`, and register it in
+`Application::registerIntegrationProviders()`.
+
+KNOWN GAP: the reference adapter persists fetched documents into Nextcloud's
+own Files storage (`IRootFolder`), not into a dedicated docudesk
+attachment-ingestion endpoint — no such public route currently exists in the
+docudesk app. Wiring a real docudesk hand-off is deferred as a follow-up, not
+invented against a route that doesn't exist. The remaining named vendors
+stay explicit backlog (see
+`openspec/changes/connector-category-adapter-scaffolding`).
+
 ## Requirements
 ### Requirement: Document/CMS connector adapters SHALL register through the integration registry per ADR-019 and target EXTERNAL document systems only (REQ-DCC-001)
 

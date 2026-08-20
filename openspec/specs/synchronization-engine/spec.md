@@ -19,10 +19,8 @@ This spec retroactively describes 97 existing methods across
 `SynchronizationService`, two controllers, and the integration provider. It is a
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
-
 ## Requirements
-
-### REQ-UI-001: Synchronization Management UI
+### Requirement: Synchronization Management UI (REQ-UI-001)
 
 OpenConnector MUST provide a Synchronizations section in its SPA where administrators
 can browse, create, edit, and manage synchronization configurations and view their
@@ -52,7 +50,7 @@ contracts and logs.
 - WHEN they navigate to the Synchronization logs page
 - THEN the page mounts and renders the app-content area
 
-### REQ-001: Synchronization orchestration and direction routing
+### Requirement: Synchronization orchestration and direction routing (REQ-001)
 
 The system SHALL run a synchronization given a `Synchronization` object,
 selecting the direction from `sourceType`: when `sourceType` is `register/schema`
@@ -116,7 +114,7 @@ graph where required, and run each matching synchronization with `force: true`.
   `resolveParentObjectForRelatedObjectTrigger()`, `findAllBySourceId()`,
   `getSynchronization()`, `calculateExpires()`.
 
-### REQ-002: Source object fetching and pagination
+### Requirement: Source object fetching and pagination (REQ-002)
 
 The system SHALL fetch objects from a synchronization's source according to
 `sourceType`. For `api` sources it SHALL resolve the `source` record, enforce the
@@ -125,9 +123,21 @@ and drive pagination via configurable strategies: an optimized parallel mode
 (ReactPHP), a sequential fallback, and per-page single fetches, capped by a
 safety limit of 50 pages. Next-page resolution SHALL support query-parameter
 pagination, body-embedded next endpoints, and OData `$nextLink`. The system SHALL
-fetch per-object extra/sub-resource data when configured, and SHALL support
-`array` (static) sources directly. `register/schema` and `database` source types
-are recognised but not implemented (no-op).
+fetch per-object extra/sub-resource data when configured. `array`,
+`register/schema`, and `database` are recognised `sourceType` values for
+which `getAllObjectsFromSource()`'s dispatch switch has no matching case;
+each falls through with no objects fetched (no-op), identically to any other
+unrecognised `sourceType`.
+
+<!-- Previous behavior: this requirement claimed the system "SHALL support
+     `array` (static) sources directly" and carried a scenario asserting
+     array sources are read without an HTTP call. Neither was ever true —
+     `getAllObjectsFromSource()`'s switch has never had a `case 'array':`
+     (verified via `git log -S "case 'array':"` returning zero hits across
+     all history), and `array` was never a selectable sourceType in the
+     synchronization editor UI. This delta corrects the documentation to
+     match observed code; it does not change `getAllObjectsFromSource()`'s
+     behaviour. -->
 
 @e2e exclude backend source-fetching internals — covered by PHPUnit/Newman, not browser UI
 
@@ -155,20 +165,32 @@ are recognised but not implemented (no-op).
 - **WHEN** an object is processed
 - **THEN** `fetchExtraDataForObject()` / `fetchMultipleExtraData()` fetch the configured sub-resources and merge them per config (dynamic or static endpoint).
 
-#### Scenario: array source is read without an HTTP call
+#### Scenario: an unrecognised or not-yet-dispatched sourceType yields no fetched objects
 
-- **GIVEN** a synchronization with `sourceType: array`
-- **WHEN** fetching runs
-- **THEN** objects are read directly from the static array source without an HTTP call.
+- **GIVEN** a synchronization with `sourceType` set to `array`, `register/schema`, `database`, or any other value not matched by `getAllObjectsFromSource()`'s dispatch switch
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** it returns an empty array without making any HTTP call or throwing, and no items reach the per-item processing loop.
 
 **Notes:**
 
 - `getAllObjectsFromSource()` has empty `register/schema` and `database`
-  branches marked `@todo: implement` — these silently return an empty array.
+  branches marked `@todo: implement`, and no matching case at all for
+  `array` — all three silently return an empty array.
 - `getAllObjectsFromApi()` carries a `TODO` noting the endpoint-templating
   function is called twice in the flow, pending refactor.
 - The 50-page cap (`DEFAULT_MAX_PAGES`) is a hard safety limit against runaway
   pagination loops; it is not configurable per source.
+- `getAllObjectsFromArray()` exists and is exercised, but only as a helper
+  called from within `getAllObjectsFromApi()`'s response-body parsing (to
+  extract an item list via `sourceConfig.resultsPosition`), which is a
+  distinct concern from `sourceType` dispatch and is unaffected by this
+  delta.
+- A synchronization whose source legitimately returns bare scalar items
+  (e.g. a JSON array of strings/numbers under `sourceType: api`) is covered
+  by the per-item scalar-coercion guard described in this change's
+  proposal/design — that guard operates after this requirement's fetch
+  stage has already returned the item list, at the per-item boundary shared
+  by REQ-003/REQ-008.
 - Methods: `getObjectFromSource()`, `getAllObjectsFromSource()`,
   `getAllObjectsFromApi()`, `getAllObjectsFromArray()`, `fetchAllPages()`,
   `fetchAllPagesOptimized()`, `fetchAllPagesSequential()`, `fetchSinglePage()`,
@@ -176,7 +198,7 @@ are recognised but not implemented (no-op).
   `getNextPageInfo()`, `getNextlinkFromCall()`, `checkRateLimit()`,
   `getRateLimitHeaders()`, `fetchExtraDataForObject()`, `fetchMultipleExtraData()`.
 
-### REQ-003: Mapping, transformation and object identity
+### Requirement: Mapping, transformation and object identity (REQ-003)
 
 The system SHALL compute a stable identity for each source object: it SHALL
 extract an origin id from a configurable `idPosition` (default `id`, dotted-path
@@ -234,7 +256,7 @@ during transformation.
   `isAssociativeArray()`, `xmlToArray()`, `encodeArrayKeys()`,
   `generatePlaceholderValues()`.
 
-### REQ-004: Target write, deduplication and file handling
+### Requirement: Target write, deduplication and file handling (REQ-004)
 
 The system SHALL write each transformed object to its target, branching to an
 OpenRegister-specific write when the target is an OR register/schema, and SHALL
@@ -242,10 +264,22 @@ maintain one `SynchronizationContract` per object carrying origin/target ids and
 hashes for incremental change detection. The system SHALL cascade contract
 creation and id rewrites to sub-objects. It SHALL garbage-collect target objects
 no longer present in the source (`deleteInvalidObjects()`) unless `force` opts
-out. The system SHALL fetch, persist, and clean up files referenced by sync
-objects: download a file via `CallService`, validate the target object id is a
-UUID, persist to storage, optionally run async batch fetching (ReactPHP), and
-remove orphaned files/attachments no longer referenced after a sync.
+out, **and unless the run's fetch was incomplete, the run is a test
+(`isTest: true`), the computed deletion ratio exceeds the configured
+guard threshold without an explicit `forceDeletion` override (REQ-009,
+REQ-010, REQ-011), or the Synchronization's `syncMode` is `incremental`
+(REQ-018 — this last guard is unconditional and is never bypassed by
+`forceDeletion`)**. The system SHALL fetch, persist, and clean up files
+referenced by sync objects: download a file via `CallService`, validate the
+target object id is a UUID, persist to storage, optionally run async batch
+fetching (ReactPHP), and remove orphaned files/attachments no longer
+referenced after a sync.
+
+<!-- Previous behavior (as of sync-safety-guardrails): deleteInvalidObjects()
+     was gated on fetch-completeness, test-mode, and the deletion-ratio
+     guard, but had no awareness of an incremental sync mode — this change
+     adds the syncMode === 'incremental' guard as an unconditional
+     precondition, on top of (not instead of) the pre-existing guards. -->
 
 @e2e exclude backend target-write internals — covered by PHPUnit/Newman, not browser UI
 
@@ -255,9 +289,9 @@ remove orphaned files/attachments no longer referenced after a sync.
 - **WHEN** `updateTarget()` runs
 - **THEN** it delegates to `updateTargetOpenRegister()` and a `SynchronizationContract` records the resulting origin/target ids and hashes.
 
-#### Scenario: absent source objects are garbage-collected
+#### Scenario: absent source objects are garbage-collected when the fetch was complete, within the deletion-ratio guard, and syncMode is full
 
-- **GIVEN** a source no longer returns objects that previously had contracts
+- **GIVEN** a source no longer returns objects that previously had contracts, a complete fetch (REQ-009), a non-test run, a deletion ratio within the configured threshold (REQ-010), and `syncMode` absent or `full` (REQ-018)
 - **WHEN** `deleteInvalidObjects()` runs
 - **THEN** the now-absent target objects are deleted (garbage-collected).
 
@@ -291,6 +325,12 @@ remove orphaned files/attachments no longer referenced after a sync.
   fetches are not surfaced to the caller as a structured error.
 - `updateTargetOpenRegister()` is the only fully-wired target-write branch;
   non-OR targets are handled generically by `writeObjectToTarget()`.
+- **See REQ-009/REQ-010/REQ-011/REQ-012/REQ-013 (sync-safety-guardrails) for
+  the deletion-gating, test-run no-write, ad-hoc Source, and duplicate-contract
+  detection behaviour layered onto this requirement, and REQ-016/REQ-017/
+  REQ-018/REQ-019 (cdc-incremental-sync) for the incremental-mode fetch
+  filtering, watermark, and unconditional deletion-block layered on top of
+  those.**
 - Methods: `updateTarget()`, `updateTargetOpenRegister()`,
   `writeObjectToTarget()`, `deleteInvalidObjects()`, `processSyncContract()`,
   `updateContractsForSubObjects()`, `processSynchronizationObject()`,
@@ -298,9 +338,9 @@ remove orphaned files/attachments no longer referenced after a sync.
   `executeAsyncFileFetching()`, `processMultipleFilesWithCleanup()`,
   `cleanupOrphanedFiles()`, `cleanupFilesFromAttachments()`,
   `shouldPublishFile()`, `getFileContext()`, `getFilenameFromHeaders()`,
-  `synchronizeToTarget()`.
+  `synchronizeToTarget()`, `detectDuplicateContracts()`.
 
-### REQ-005: Sync rule pipeline and management/integration surface
+### Requirement: Sync rule pipeline and management/integration surface (REQ-005)
 
 The system SHALL run a configurable, ordered rule pipeline at defined timings
 during a sync (mirroring `EndpointService::processRules`): rules are loaded,
@@ -375,3 +415,1192 @@ strategy/health/enablement.
   `calculateMedian()`, `getSlowestStage()`, `calculateEfficiencyRatio()`,
   `list()`, `getId()`, `getLabel()`, `getIcon()`, `getGroup()`,
   `getRequiredApp()`, `getStorageStrategy()`, `health()`, `isEnabled()`.
+
+### Requirement: `nextcloud-table` source/target dispatch (REQ-014)
+
+`SynchronizationService::getAllObjectsFromSource()` MUST dispatch
+`sourceType: nextcloud-table` to the Tables source adapter (see
+`tables-bridge` REQ-002) instead of falling through with no matching `case`.
+`SynchronizationService::updateTarget()` MUST dispatch `targetType:
+nextcloud-table` to the Tables target adapter (see `tables-bridge` REQ-001)
+instead of throwing `Unsupported target type`. `SynchronizationService::
+deleteInvalidObjects()` MUST dispatch `targetType: nextcloud-table` through
+the same guarded deletion path described in `tables-bridge` REQ-005 — this
+requirement does not itself define the deletion-safety guard (that is
+`sync-safety-guardrails`'s concern); it only establishes that
+`nextcloud-table` is a recognised branch of that shared dispatch, not a
+type that silently no-ops or bypasses the guard.
+
+@e2e exclude backend Tables source/target adapter dispatch — covered by PHPUnit, not browser UI
+
+#### Scenario: source fetch dispatches to the Tables adapter
+
+- **GIVEN** a synchronization with `sourceType: nextcloud-table`
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** the Tables source adapter is invoked and its returned rows are
+  used as the fetched objects, exactly as the `api` branch returns
+  `getAllObjectsFromApi()`'s result
+
+#### Scenario: target write dispatches to the Tables adapter instead of throwing
+
+- **GIVEN** a synchronization with `targetType: nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** the Tables target adapter is invoked
+- **AND** no `Unsupported target type` exception is thrown (unlike an
+  unrecognised type, which still throws per the base spec's REQ-001
+  `default` branch)
+
+#### Scenario: an unrecognised type (not nextcloud-table) still throws
+
+- **GIVEN** a synchronization with `targetType: some-future-type` that is
+  neither `register/schema`, `api`, `database`, nor `nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** it still throws `Unsupported target type: some-future-type`,
+  unchanged from the base spec's existing `default` branch behavior
+
+### Requirement: Per-item isolation and dead-letter capture during extern-to-intern sync (REQ-008)
+
+The system MUST wrap each per-object call to `processSynchronizationObject()`
+inside `SynchronizationService::synchronizeExternToIntern()`'s object loop
+(the `foreach ($objectList as $object)`) in a `try/catch (\Throwable)`. On a
+caught exception, the system MUST persist a `sync_item_dead_letter` object
+capturing: the synchronization's uuid, the best-effort `originId` (when
+resolvable before the failure), the raw source `$object` as `payload`, the
+exception message as `error`, `phase: 'item-processing'`, and
+`status: 'failed'`; increment `result['objects']['invalid']`; and continue
+processing the remaining objects in `$objectList`. A single item's failure
+MUST NOT abort processing of the remaining objects in the same sync pass,
+and MUST NOT prevent `synchronize()` from completing and persisting its
+`synchronization_log` with a summary reflecting the partial success
+(previously: an uncaught exception from `processSynchronizationObject()`
+propagated through the un-guarded loop and aborted the entire pass for
+every remaining object — verified absent in HEAD prior to this change).
+
+Dead-lettered items are captured for **manual** replay only — the system
+MUST NOT schedule an automatic retry sweep for `sync_item_dead_letter`
+entries (unlike event delivery's `EventRetryJob`), since item transformation
+and write failures are typically deterministic (mapping/config/data errors)
+rather than transient.
+
+@e2e exclude backend per-item isolation and dead-letter internals — covered by PHPUnit, not browser UI
+
+#### Scenario: one bad item does not abort the sync pass
+
+- **GIVEN** a synchronization fetching 10 objects from its source, where
+  object #4's mapping throws an exception
+- **WHEN** `synchronize()` runs
+- **THEN** objects #1-3 and #5-10 SHALL be processed normally (contracts
+  created/updated as applicable)
+- **AND** object #4 SHALL be captured as a `sync_item_dead_letter` entry with
+  `status = 'failed'`
+- **AND** `result['objects']['invalid']` SHALL be incremented by 1
+- **AND** the `synchronization_log` SHALL be persisted reflecting 9
+  successfully-processed objects and 1 invalid
+
+#### Scenario: dead-lettered items are not automatically retried
+
+- **GIVEN** a `sync_item_dead_letter` entry with `status = 'failed'`
+- **WHEN** the next scheduled run of the same synchronization occurs
+- **THEN** no automatic re-attempt of the dead-lettered item SHALL occur
+  outside of an explicit operator replay action (REQ-DLR-007/008 in
+  `dead-letter-replay`)
+
+#### Notes
+
+- `phase` is fixed to the literal `'item-processing'` in this change —
+  `processSynchronizationObject()` has no internal phase boundaries exposed
+  to a caller today, and distinguishing `fetch`/`mapping`/`write` precisely
+  would require refactoring internals of `SynchronizationService`
+  (~6,700 lines). The field is a free-form string (not a locked enum) so a
+  follow-up change can populate it more precisely without a schema
+  migration. Observed limitation; flagged in design.md Open Questions.
+- Fetch-stage failures (`TooManyRequestsHttpException` from
+  `getAllObjectsFromSource()`) are already isolated one level higher (caught
+  in `synchronizeExternToIntern()` before the object loop, per the existing
+  REQ-002 rate-limit scenario) and are NOT captured as
+  `sync_item_dead_letter` entries — they short-circuit the whole pass with
+  `rateLimitException`, which is a distinct pre-existing behavior this
+  change does not alter.
+
+### Requirement: Fetch-completeness tracking during source pagination (REQ-009)
+
+The system SHALL track, for every extern→intern fetch of an `api` source,
+whether the fetch completed (every page was retrieved successfully and
+pagination ended because the source reported no further page) or was
+incomplete (any page returned a non-2xx/unclassifiable response, any page
+fetch failed outright, or the `DEFAULT_MAX_PAGES` safety cap was reached
+while a further page was still available). This signal SHALL be available to
+the caller of `getAllObjectsFromSource()` / `getAllObjectsFromApi()` without
+changing either method's existing return type (an array of fetched objects).
+A `429` rate-limit response SHALL continue to be surfaced as a thrown
+`TooManyRequestsHttpException` (unchanged) and SHALL also be treated as an
+incomplete fetch by the caller catching it.
+
+@e2e exclude backend pagination fetch-completeness internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a non-2xx page response marks the fetch incomplete
+
+- GIVEN an `api` source synchronization with 3 pages of data
+- WHEN page 2 of 3 returns HTTP 500
+- THEN the fetch stops at page 2 and is marked incomplete with a
+  `failureReason` identifying the failed page
+- AND the objects successfully retrieved from page 1 are still returned to
+  the caller (so the fetch failure is visible without discarding partial
+  results)
+
+#### Scenario: a natural end of pagination is marked complete
+
+- GIVEN an `api` source synchronization whose last page returns zero objects
+  with HTTP 200
+- WHEN pagination runs to completion
+- THEN the fetch is marked complete
+- AND this is indistinguishable in outcome from today's pre-existing correct
+  behaviour for a genuinely-empty final page
+
+#### Scenario: reaching the pagination safety cap marks the fetch incomplete
+
+- GIVEN an `api` source synchronization whose source keeps returning
+  non-empty pages past the `DEFAULT_MAX_PAGES` (50) safety limit
+- WHEN the safety cap is reached
+- THEN the fetch stops (unchanged — the cap remains a hard limit) and is
+  marked incomplete with `failureReason: max_pages_reached`
+
+#### Scenario: static and no-op source types are always complete
+
+- GIVEN a synchronization with `sourceType: array` (static source) or
+  `sourceType: register/schema`/`database` (currently no-op)
+- WHEN a fetch runs
+- THEN the fetch is marked complete (nothing can partially fail on these
+  paths today)
+
+### Requirement: Deletion is gated on fetch-completeness and a configurable deletion-ratio guard (REQ-010)
+
+The system SHALL NOT run `deleteInvalidObjects()`'s garbage-collection pass
+when the preceding fetch for that run was incomplete (REQ-009). When the
+fetch was complete, the system SHALL compare the number of contracts that
+would be deleted (contracts whose target id was not seen in the current run)
+against the total number of existing contracts for that synchronization; when
+this ratio exceeds a configurable per-synchronization threshold
+(`sourceConfig.deletionRatioThreshold`, default `0.10`), the system SHALL
+abort the deletion pass, log a warning-level message, and dispatch a
+`SynchronizationDeletionGuardedEvent`, unless the caller supplied an explicit
+`forceDeletion` override. This ratio guard SHALL NOT apply to the
+`deleteRestriction` (single-object, event-driven) deletion path, which is
+already scoped to an explicitly-identified object. The `forceDeletion`
+override SHALL be a distinct parameter from the pre-existing `force`
+parameter (which bypasses unchanged-hash skipping and is already applied
+automatically by event-driven re-syncs) so that automatic re-syncs can never
+silently bypass this guard.
+
+@e2e exclude backend deletion-guard internals — covered by PHPUnit, not browser UI
+
+#### Scenario: incomplete fetch blocks deletion entirely
+
+- GIVEN a synchronization with 100 existing contracts
+- WHEN a run's fetch is marked incomplete (REQ-009) for any reason
+- THEN `deleteInvalidObjects()` is not invoked for that run
+- AND 0 objects are deleted
+- AND the run's log records the deletion was skipped due to an incomplete
+  fetch
+
+#### Scenario: a 429 rate-limit response blocks deletion
+
+- GIVEN a synchronization with existing contracts
+- WHEN the source returns HTTP 429 on the first page of a run
+- THEN the run's fetch result is empty AND is treated as incomplete
+- AND `deleteInvalidObjects()` is not invoked
+- AND the caller still receives the `TooManyRequestsHttpException` (429,
+  with rate-limit headers) as before — only the deletion side-effect changes
+
+#### Scenario: deleting more than the default threshold aborts and is logged
+
+- GIVEN a synchronization with 100 existing contracts and a complete fetch
+  that would delete 15 of them (15%, above the 10% default)
+- WHEN `deleteInvalidObjects()` runs
+- THEN no objects are deleted
+- AND a warning-level log entry and a `SynchronizationDeletionGuardedEvent`
+  are recorded with the computed ratio and threshold
+
+#### Scenario: an explicit `forceDeletion` override proceeds past the ratio guard
+
+- GIVEN the same 100-contract/15%-deletion scenario above
+- WHEN the run is invoked with `forceDeletion: true`
+- THEN the 15 objects are deleted as they would have been before this change
+
+#### Scenario: a per-synchronization threshold override changes the guard point
+
+- GIVEN a synchronization with `sourceConfig.deletionRatioThreshold` set to
+  `0.5`
+- WHEN a complete fetch would delete 30% of existing contracts
+- THEN the deletion proceeds without requiring `forceDeletion` (30% < 50%)
+
+#### Scenario: the deleteRestriction single-object delete path is not ratio-guarded
+
+- GIVEN an OpenRegister `ObjectDeletedEvent` triggers a synchronization run
+  with `mutationType: delete` and `sourceConfig.restrictDeletion: true`
+- WHEN `deleteInvalidObjects()` runs with that single object's origin id in
+  `$data`
+- THEN the single matching object is deleted regardless of what percentage
+  of the synchronization's total contracts it represents
+
+### Requirement: Test runs make no writes (REQ-011)
+
+A synchronization run invoked with `isTest: true` SHALL NOT create, update,
+or delete any `SynchronizationContract`, any target object, or any `Source`
+object, and SHALL NOT persist any change to the `Synchronization` entity
+itself (including its `targetLastSynced` timestamp).
+
+@e2e exclude backend dry-run write-suppression internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a test run against a synchronization with existing synced objects deletes nothing
+
+- GIVEN a synchronization with 50 previously-synced objects and contracts
+- WHEN `POST .../synchronizations/{id}/test` is called
+- THEN 0 objects are deleted
+- AND all 50 pre-existing target objects and contracts remain unchanged
+
+#### Scenario: a test run does not persist the synchronization's own state
+
+- GIVEN a synchronization with `targetLastSynced` set to a prior timestamp
+- WHEN a test run completes
+- THEN the synchronization's persisted `targetLastSynced` is unchanged
+- AND the returned log/result reflects what the test observed without
+  mutating stored state
+
+#### Scenario: a test run against a changed object does not write the target
+
+- GIVEN a source object whose content differs from its existing contract's
+  `originHash`
+- WHEN a test run processes that object
+- THEN the transformed result is returned to the caller for inspection
+- AND no target object is created or updated
+- AND no contract is created or updated
+
+#### Scenario: a test run tolerates the uuid-less contracts it necessarily produces
+
+- GIVEN a synchronization whose source objects have no previously-persisted
+  contract
+- WHEN a test run processes them
+- THEN the run completes and reports its result
+- AND no lookup is attempted for the contract references it never assigned —
+  persisting the contract is what would have assigned a uuid, and this
+  requirement forbids that
+
+#### Scenario: reference lists report references, not one slot per object
+
+- WHEN a run finalises its log
+- THEN `result.contracts`, `result.logs` and `result._embed.contracts` contain
+  only entries that reference something, with `_embed.contracts` compacted in
+  lockstep with `contracts` so the two stay aligned by position
+- AND the returned payload is identical to the persisted row, both being taken
+  from the same normalised log
+- AND the object tallies still report every processed object
+
+Notes: both scenarios are regression guards, covered by
+`SynchronizationServiceTestRunContractEmbedTest`.
+
+`POST .../{id}/test` answered 500 (`findContract(): Argument #1 ($id) must be
+of type string|int, null given`) for every first-ever dry run, because the
+embedding step mapped the null ids this requirement guarantees through a
+lookup typed to reject them.
+
+Separately, the engine appends to `contracts`/`logs` once per processed object
+whether or not there is a reference, so a 100-object dry run reported three
+hundred nulls. `SynchronizationLogService` had a normaliser for exactly this
+but applied it only to the copy headed for storage, so the API response and
+the stored row disagreed — the response carried the nulls, the row did not. It
+now normalises the log itself, which is what both are serialised from.
+
+### Requirement: Ad-hoc Source resolution does not persist a new Source (REQ-012)
+
+The system SHALL use a transient, in-memory source configuration, and SHALL
+NOT persist a new `Source` object, when a synchronization run is invoked with
+an ad-hoc `source` location string that does not match any existing,
+admin-configured Source's `location`. Resolution against an already-configured
+Source (matching `location`) is unaffected and continues to reuse that
+persisted Source, including its rate-limit watermark state.
+
+@e2e exclude backend ad-hoc source-resolution internals — covered by PHPUnit, not browser UI
+
+#### Scenario: an ad-hoc location with no matching Source does not create one
+
+- GIVEN no existing Source has `location` equal to
+  `https://example.test/ad-hoc-feed`
+- WHEN a synchronization run is invoked with
+  `source: "https://example.test/ad-hoc-feed"`
+- THEN the run fetches from that location successfully
+- AND no new `Source` object is persisted in OpenRegister as a result
+
+#### Scenario: an ad-hoc location that matches an existing Source reuses it unchanged
+
+- GIVEN an existing, admin-configured Source with
+  `location: "https://example.test/configured-feed"` and rate-limit state
+- WHEN a synchronization run is invoked with
+  `source: "https://example.test/configured-feed"`
+- THEN that existing Source is reused, including its rate-limit watermark
+- AND no new Source object is created
+
+### Requirement: Duplicate synchronization contracts are surfaced, never silently removed (REQ-013)
+
+The system SHALL log a warning identifying all duplicate contract ids, and
+SHALL NOT automatically delete or merge any of them, when processing a
+source object finds more than one `SynchronizationContract` for the same
+`(synchronizationId, originId)` pair.
+
+@e2e exclude backend contract-deduplication internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a pre-existing duplicate contract pair is logged, not deleted
+
+- GIVEN two `SynchronizationContract` objects exist for the same
+  synchronization and the same `originId` (e.g. from data created before
+  this change, or a race between two concurrent runs)
+- WHEN a run processes a source object with that `originId`
+- THEN a warning is logged identifying both contract ids
+- AND neither contract nor its target object is deleted by this detection
+
+#### Scenario: the common case of exactly one contract per originId is unaffected
+
+- GIVEN a synchronization where every `originId` has exactly one contract
+- WHEN a run processes those objects
+- THEN no duplicate-contract warning is logged
+- AND behaviour is identical to before this change
+
+### Requirement: The contract is persisted before the after-rules run (REQ-021)
+
+The system SHALL persist the `SynchronizationContract` as soon as the target write
+has established a `targetId`, BEFORE the `after`-timed rules (which fetch files)
+run, and SHALL then update that same contract row — matched on its `uuid`, so no
+second row is created — with the rule outcomes and log references once those rules
+complete.
+
+A contract records ONLY that source object X maps to target object A, so that a
+re-run writes X's changes to A instead of creating a second A. It is NOT a record
+that everything downstream of the target write succeeded.
+
+This tightens REQ-013, which only requires duplicates to be *detected* after the
+fact. Persisting the mapping first makes the duplicate class structurally
+impossible rather than merely reportable.
+
+@e2e exclude backend contract-persistence ordering — covered by PHPUnit, not browser UI
+
+#### Scenario: a failure in the after-rules does not lose the mapping
+
+- GIVEN a synchronization whose `after` rules fetch a file for each object
+- AND the file fetch throws for a given source object (a missing filename, an
+  unresolvable object id, an upstream 404 or timeout, or a failed save)
+- WHEN the run processes that object
+- THEN the target object has been written
+- AND its contract exists, carrying the `originId` -> `targetId` mapping
+- AND the item is reported as `invalid` with the reason logged
+- AND a subsequent run matches that contract and UPDATES the same target object
+- AND no second target object is created for that `originId`
+
+#### Scenario: the happy path still writes exactly one contract row
+
+- GIVEN a synchronization whose `after` rules complete without error
+- WHEN a run creates a new target object
+- THEN the contract is written once before the rules and updated once after them
+- AND exactly one contract row exists for that `(synchronizationId, originId)`
+
+#### Scenario: an unchanged object still skips without writing a contract
+
+- GIVEN a source object whose hash matches its existing contract
+- WHEN a run processes it
+- THEN the run returns `skip` before the target write
+- AND no contract write occurs
+
+### Requirement: Batch-level approval gate before target writes (REQ-015)
+
+The orchestrator (REQ-001) MUST, when a Synchronization's
+`sourceConfig.requiresApproval` is `true`, after source fetch and mapping
+complete and before the `updateTarget()` write loop (REQ-004) begins, check for an
+existing `approved` `approval_request` whose `synchronizationId` matches
+this synchronization and whose approval has not yet been consumed by a
+write. If none exists, the system MUST create exactly one `approval_request`
+for the run (with `synchronizationId` set instead of `endpointId`/`ruleId`,
+per `approval-workflow`'s schema), notify the configured `approverGroup`
+(`approval-workflow` REQ-002), finalize the `synchronization_log` with a
+`pending_approval` outcome, and return without writing any target object.
+If an approved, unconsumed `approval_request` exists for this
+synchronization, the write loop MUST proceed normally and the
+`approval_request` MUST be marked consumed on completion.
+
+@e2e exclude backend sync engine internals — covered by PHPUnit/Newman, not browser UI
+
+#### Scenario: a gated synchronization pauses before any writes
+
+- **GIVEN** a Synchronization with `sourceConfig.requiresApproval: true` and
+  no existing `approval_request` for it
+- **WHEN** `synchronize()` runs and source fetch + mapping complete
+- **THEN** an `approval_request` is created with this synchronization's id,
+  the approver group is notified, the `synchronization_log` records a
+  `pending_approval` outcome, and no target objects are written or
+  garbage-collected
+
+#### Scenario: approval resumes the batch write via a bypass token, not a re-serialized payload
+
+- **GIVEN** an `approval_request` for a gated synchronization is approved
+- **WHEN** `ApprovalService::resume()` re-invokes `synchronize()` with
+  `force: true` and the approved request's id
+- **THEN** the gate check finds the approved, unconsumed `approval_request`,
+  the `updateTarget()` write loop proceeds for every fetched/mapped object,
+  and the `approval_request` is marked consumed on completion
+
+#### Scenario: an ungated synchronization is unaffected
+
+- **GIVEN** a Synchronization with `sourceConfig.requiresApproval` absent or
+  `false`
+- **WHEN** `synchronize()` runs
+- **THEN** the write loop proceeds exactly as before this change, with no
+  `approval_request` created
+
+#### Notes
+
+- The gate is evaluated once per synchronization run, not per object —
+  garbage collection (`deleteInvalidObjects()`) and per-object contract
+  writes are both part of the gated write phase and do not run until
+  approval.
+- Rejecting or letting a gated synchronization's `approval_request` expire
+  applies the same `onReject`/`onTimeout` outcomes as the endpoint-rule
+  case (`approval-workflow` REQ-004/REQ-005); a `skip` outcome for a
+  synchronization means the run completes with zero writes rather than
+  skipping a single rule.
+
+### Requirement: Bulk gzip/JSONL source ingestion (REQ-006)
+
+`SynchronizationService::fetchSinglePageData()` MUST detect a
+gzip-compressed response body via, in order: an explicit
+`Source.configuration.decompress === "gzip"` hint; the fetched endpoint
+ending in `.gz` (checked against the endpoint path or any query-string
+value, to cover `/download?name=full.jsonl.gz`-shaped registry endpoints);
+or an `application/gzip` response Content-Type header (case-insensitive
+substring match). When any signal is present, the method MUST first
+base64-decode the body when the call-log response's `encoding` field is
+`"base64"` (the marker `CallService::buildResponseData()` already records
+for any response body that fails UTF-8 validation, which gzip-compressed
+binary always does), then gunzip it via `gzdecode()` before any parse
+attempt. When `Synchronization.sourceConfig.format === "jsonl"`, the method
+MUST parse the (decompressed, or already-plain) body as line-delimited
+JSON — each non-empty, non-whitespace line independently `json_decode`d,
+malformed or non-array lines skipped rather than aborting the page — instead
+of the whole-document JSON/XML parse attempts, and MUST feed the resulting
+records array through the existing `getAllObjectsFromArray()` /
+`resultsPosition` extraction unchanged. An endpoint identified as a
+`.tar.gz`/`.tar` archive (by the same endpoint-suffix check) MUST short-circuit
+with a logged warning and an empty result instead of attempting to parse the
+undecoded tar byte stream. A source presenting none of these signals MUST
+take the exact pre-existing JSON-then-XML-fallback code path, unchanged.
+
+@e2e exclude backend bulk gzip/JSONL ingestion internals — covered by PHPUnit, not browser UI
+
+#### Scenario: gzip-compressed JSONL bulk file is decompressed and parsed line-by-line
+
+- **GIVEN** a source whose fetched response has `encoding: "base64"` (a
+  non-UTF8 body) and a `.gz`-suffixed endpoint (or an `application/gzip`
+  Content-Type, or `configuration.decompress: "gzip"`)
+- **AND** `sourceConfig.format` is `"jsonl"`
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** the body is base64-decoded, gunzipped, and each non-empty line
+  parsed as one JSON record
+- **AND** a blank line between two records does not drop the record that follows it
+
+#### Scenario: JSONL parsing works without gzip
+
+- **GIVEN** a source with `sourceConfig.format: "jsonl"` and a plain
+  (UTF-8, uncompressed) line-delimited JSON body
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** each line is parsed as one record, identically to the gzip case
+  minus the decompression step
+
+#### Scenario: gzip decompression works independently of JSONL, for an ordinary JSON body
+
+- **GIVEN** a source with no `format` override, a gzip-compressed response
+  body, and a `resultsPosition` pointing at a nested array
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** the body is gunzipped and then parsed as ordinary whole-document
+  JSON through the pre-existing `resultsPosition` extraction
+
+#### Scenario: a `.tar.gz` endpoint is refused with a logged warning, not silently mis-parsed
+
+- **GIVEN** a source whose endpoint identifies a `.tar.gz`/`.tar` archive
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** a warning is logged naming the endpoint
+- **AND** the method returns an empty `objects`/`result` pair without
+  attempting to gunzip-then-parse the tar byte stream
+
+#### Scenario: a source with none of the new signals is unaffected
+
+- **GIVEN** a source with an ordinary JSON (or XML) body, no `.gz`/`.tar`
+  suffix, no `application/gzip` Content-Type, no `configuration.decompress`,
+  and no `sourceConfig.format`
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** the result is byte-identical to the pre-existing
+  json_decode-then-simplexml-fallback behaviour
+- @e2e exclude backend regression — covered by PHPUnit
+
+**Notes:**
+
+- `.tar.gz`/`.csv.tar.gz` archives are explicitly NOT unpacked by this
+  requirement — gzip decompression alone yields a tar byte stream, not
+  parseable JSON. A genuine tar-extraction capability is deferred; an
+  ETL-style loader remains the documented workaround for `.tar.gz`-only
+  sources (e.g. the OCP-mirror path for `croatia_eojn`) until/unless a
+  follow-up change adds one.
+- The JSONL parser tokenises line-by-line (`strtok`) rather than
+  `explode()`-ing a second full in-memory copy of the body, but the body
+  itself is still one fully-buffered string by the time this code runs
+  (Guzzle/`CallService` already materialise the whole HTTP response) — this
+  is a partial memory mitigation, not true streaming. A lower-level change
+  to how `CallService` hands off the response body would be needed for
+  genuine streaming decompression/parsing; out of scope here.
+- Methods added: `isGzipPayload()`, `isTarGzEndpoint()`,
+  `endpointSuggestsSuffix()`, `parseJsonLines()` (all private, alongside the
+  existing `fetchSinglePageData()`).
+
+### Requirement: Markdown and HTML source extraction (REQ-007)
+
+`SynchronizationService::fetchSinglePageData()` MUST detect
+`Source.configuration.format === "markdown"` (case-insensitive) and, when
+present, parse the response body as a markdown bullet list: each line
+matching `- [Name](url) - description \`Tag1\` \`Tag2\`` (a leading
+`-`/`*`/`+` list marker, a `[name](url)` link, and an optional trailing
+free-text description followed by zero or more backtick-wrapped tags)
+becomes one record with `name`, `url`, `description`, and a positional
+`tags` array; a line that does not match this shape (a heading, blank line,
+prose, or a link-less list item) MUST be skipped without aborting the page.
+
+`fetchSinglePageData()` MUST also detect `Source.configuration.format ===
+"html"` (case-insensitive) and, when present, extract records via CSS
+selectors: `Source.configuration.htmlSelector` identifies the repeating
+record container (each match becomes one record), and
+`Source.configuration.htmlFields` (a `fieldName => selector` map) extracts
+one value per field relative to that container — a selector suffixed with
+`@attributeName` (e.g. `a@href`) MUST extract that DOM attribute instead of
+the (default) trimmed text content. A `htmlSelector` matching nothing MUST
+yield zero records; a `htmlFields` sub-selector matching nothing within a
+container MUST yield a `null` value for that field, without aborting the
+container or the page.
+
+Both branches MUST feed their resulting records array through the existing
+`getAllObjectsFromArray()` / `resultsPosition` extraction unchanged, and
+both MUST be evaluated using `Source.configuration.format` (a per-source
+property) — NOT `Synchronization.sourceConfig.format` (the existing,
+distinct per-synchronization key REQ-006 uses for `"jsonl"`). A source
+presenting neither `configuration.format` value MUST take the exact
+pre-existing JSON-then-XML-fallback (and REQ-006 gzip/JSONL) code path,
+unchanged.
+
+@e2e exclude backend markdown/HTML source extraction internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a markdown "awesome list" source is parsed into one record per list item
+
+- **GIVEN** a source with `configuration.format: "markdown"`
+- **AND** a response body containing markdown list items of the form
+  `- [Name](url) - description \`Tag1\` \`Tag2\``, interspersed with
+  headings, blank lines, and a link-less bullet
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** each matching list item becomes one record with the correct
+  `name`, `url`, `description`, and `tags` (an array of 0 or more entries)
+- **AND** the non-matching lines produce no records and do not raise an
+  error
+
+#### Scenario: an HTML source extracts records via CSS selectors, including attribute values
+
+- **GIVEN** a source with `configuration.format: "html"`, a
+  `configuration.htmlSelector` matching a repeating row/card element, and
+  `configuration.htmlFields` mapping field names to selectors — at least one
+  of which uses the `selector@attr` syntax
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** one record is returned per matched container
+- **AND** each field is populated with either the sub-selected node's
+  trimmed text content, or — for a `selector@attr` field — the named
+  attribute's value
+
+#### Scenario: a markdown list item pointing at an in-document anchor or relative URL is skipped
+
+- **GIVEN** a source with `configuration.format: "markdown"`
+- **AND** a response body containing a `- [Name](url)` list item whose `url`
+  is an in-document anchor (e.g. `#software`) or otherwise carries no URI
+  scheme (a relative link) — the shape of a table-of-contents entry or a
+  "back to top" navigation link, as opposed to a data record
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** that list item produces no record
+- **AND** a sibling list item whose `url` is an absolute URI (carries a
+  scheme, e.g. `https://...`) still produces its record unaffected
+- **AND** no error is raised
+
+#### Scenario: a source with neither new `format` value is unaffected
+
+- **GIVEN** a source with `configuration.format` absent, or set to
+  anything other than `"markdown"`/`"html"`
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** the result is byte-identical to the pre-existing behaviour
+  (REQ-002's JSON/XML parsing, and REQ-006's gzip/JSONL handling where
+  applicable)
+- @e2e exclude backend regression — covered by PHPUnit
+
+**Notes:**
+
+- `tags` is intentionally positional and unlabelled — this requirement does
+  not assign semantic meaning to tag position (e.g. "position 0 is always a
+  license"). A source's downstream mapping/rules configuration is
+  responsible for naming positional tags, not the fetch-engine parser.
+- The markdown line pattern is a single built-in regex tuned to the
+  awesome-selfhosted README shape; it is not source-configurable in this
+  requirement (no second markdown-shaped source was in scope to validate a
+  configurable pattern against).
+- Methods added: `parseMarkdownResponse()`, `parseHtmlResponse()`,
+  `extractHtmlField()` (all private, alongside the existing
+  `fetchSinglePageData()`). Uses `Symfony\Component\DomCrawler\Crawler`
+  (`symfony/dom-crawler` + `symfony/css-selector`, pinned `^7.2` for PHP 8.3
+  compatibility).
+
+### Requirement: Incremental sync mode selects a cursor-filtered fetch request (REQ-016)
+
+`SynchronizationService` SHALL support `syncMode: incremental` on a
+Synchronization, in addition to the existing (default, unchanged) `full`
+mode. When `syncMode` is `incremental` and `sourceType` is `api`,
+`getAllObjectsFromApi()` MUST make the Synchronization's stored
+`cursorWatermark` — or an empty string when no watermark has been set yet —
+available as a `cursor` key in the Twig context already passed to
+`MappingService::renderTemplateString()` when rendering `sourceConfig.endpoint`
+(alongside the existing `data` key). `getAllObjectsFromApi()` MUST also
+apply the identical `{{`/`}}`-presence-detection-then-`renderTemplateString()`
+treatment already used for `sourceConfig.endpoint` to each scalar value in
+`sourceConfig.query`, using the same `['data' => ..., 'cursor' => ...]`
+context, so a source that takes its cursor as a query parameter rather than
+an endpoint path segment can also reference `{{ cursor }}`. A Synchronization
+with `syncMode` absent or `full` MUST take the exact pre-existing code path —
+no `cursor` context key is added and `sourceConfig.query` values are passed
+through unrendered, unchanged from current behavior.
+
+@e2e exclude backend incremental cursor-filtered fetch internals — covered by PHPUnit, not browser UI
+
+#### Scenario: an incremental run injects the stored watermark into a templated endpoint
+
+- GIVEN a Synchronization with `syncMode: incremental`, `sourceConfig.endpoint:
+  ".../items?updatedAfter={{ cursor }}"`, and a stored `cursorWatermark` of
+  `"2026-07-01T00:00:00Z"`
+- WHEN `getAllObjectsFromApi()` runs
+- THEN the rendered request endpoint is
+  `.../items?updatedAfter=2026-07-01T00:00:00Z`
+
+#### Scenario: an incremental run injects the stored watermark into a templated query parameter
+
+- GIVEN a Synchronization with `syncMode: incremental`,
+  `sourceConfig.query.updatedAfter: "{{ cursor }}"`, and a stored
+  `cursorWatermark` of `"42"`
+- WHEN `getAllObjectsFromApi()` runs
+- THEN the outbound request's `updatedAfter` query parameter is rendered to
+  `"42"` before the call is made
+
+#### Scenario: an incremental run with no prior watermark passes an empty cursor
+
+- GIVEN a Synchronization with `syncMode: incremental` and no
+  `cursorWatermark` set (its first-ever incremental run)
+- WHEN `getAllObjectsFromApi()` runs
+- THEN `{{ cursor }}` renders to an empty string
+- AND a source whose default/fallback (e.g. `{{ cursor|default('1970-01-01')
+  }}`, a plain Twig filter requiring no engine change) treats an empty
+  cursor as "everything" receives an effectively full fetch on this first
+  incremental run
+
+#### Scenario: a full-mode run is unaffected
+
+- GIVEN a Synchronization with `syncMode` absent or `full`
+- WHEN `getAllObjectsFromApi()` runs
+- THEN the Twig context passed to `sourceConfig.endpoint` templating
+  contains only `data` (no `cursor` key), and `sourceConfig.query` values
+  are used exactly as configured, byte-identical to pre-existing behavior
+
+**Notes:**
+
+- This requirement extends the fetch-request-shaping mechanics of REQ-002
+  (source object fetching and pagination) for the `api` branch only; it does
+  not change REQ-002's pagination, rate-limiting, or next-page resolution
+  behavior.
+- `sourceConfig.cursorField` (a dotted-path lookup mirroring REQ-003's
+  `idPosition`/`getOriginId()` convention) identifies which field of a
+  fetched record is the comparable cursor value; it is read by REQ-017's
+  watermark computation, not by this requirement.
+- Methods: `getAllObjectsFromApi()` (extended), `MappingService::
+  renderTemplateString()` (reused, unchanged).
+
+### Requirement: Cursor watermark advances only after a complete, successful fetch (REQ-017)
+
+`synchronizeExternToIntern()` MUST, for a Synchronization with `syncMode:
+incremental`, compute a new high-watermark value from the fetched records'
+configured `sourceConfig.cursorField` and persist it as the Synchronization's
+`cursorWatermark` **only when** that run's fetch was marked complete per
+REQ-009 (`fetchInfo.complete === true`) **and** no `TooManyRequestsHttpException`
+was thrown during the fetch — the same `$fetchComplete` computation REQ-010
+already performs at the same point in the method. When the fetch was
+incomplete for any reason (partial pagination, a failed page, a rate-limit
+response, or the pagination safety cap), the system MUST NOT persist any
+change to `cursorWatermark`, so the next run retries from the same
+watermark rather than silently skipping the unfetched remainder. A run
+invoked with `isTest: true` MUST NOT persist a watermark change regardless
+of fetch completeness, consistent with REQ-011 (test runs make no writes).
+A record whose configured `cursorField` resolves to `null` MUST cause the
+run to throw, mirroring REQ-003's `getOriginId()` behavior for a missing
+`idPosition` — silently computing a watermark from an incomplete field
+would risk producing an incorrect (too-low) high-watermark that
+permanently skips sibling records on every subsequent run.
+
+@e2e exclude backend cursor-watermark internals — covered by PHPUnit, not browser UI
+
+#### Scenario: watermark advances after a complete fetch
+
+- GIVEN a Synchronization with `syncMode: incremental`,
+  `sourceConfig.cursorField: "updatedAt"`, and a fetch that completes
+  successfully, returning records with `updatedAt` values up to
+  `"2026-07-15T09:00:00Z"`
+- WHEN `synchronizeExternToIntern()` finishes the run
+- THEN the Synchronization's `cursorWatermark` is persisted as
+  `"2026-07-15T09:00:00Z"`
+
+#### Scenario: watermark does not advance after a page failure mid-fetch
+
+- GIVEN a Synchronization with `syncMode: incremental` and an existing
+  `cursorWatermark` of `"2026-07-01T00:00:00Z"`
+- WHEN a run's fetch is marked incomplete (REQ-009) because page 2 of 3
+  returned HTTP 500
+- THEN the Synchronization's `cursorWatermark` remains
+  `"2026-07-01T00:00:00Z"` after the run, unchanged
+- AND the next run requests records with `cursor` still resolving to
+  `"2026-07-01T00:00:00Z"`
+
+#### Scenario: watermark does not advance after a 429 rate-limit
+
+- GIVEN a Synchronization with `syncMode: incremental`
+- WHEN the source returns HTTP 429 on the first page of a run
+- THEN the run's fetch is treated as incomplete (REQ-009)
+- AND the Synchronization's `cursorWatermark` is not modified
+- AND the caller still receives the `TooManyRequestsHttpException` as before
+  (REQ-010's existing behavior for the deletion side is unchanged; this
+  requirement adds the equivalent guarantee for the watermark side)
+
+#### Scenario: watermark does not advance for a test run even when the fetch is complete
+
+- GIVEN a Synchronization with `syncMode: incremental`
+- WHEN `POST .../synchronizations/{id}/test` runs and its fetch completes
+  successfully
+- THEN the Synchronization's persisted `cursorWatermark` is unchanged
+  (REQ-011: test runs persist no Synchronization state)
+
+#### Scenario: a record missing the configured cursorField throws rather than silently computing a wrong watermark
+
+- GIVEN a Synchronization with `syncMode: incremental` and
+  `sourceConfig.cursorField: "updatedAt"`
+- WHEN a fetched record has no value at the `updatedAt` path
+- THEN the run throws an `Exception` naming the missing cursor field
+- AND no `cursorWatermark` change is persisted for that run
+
+**Notes:**
+
+- This requirement composes directly with REQ-009/REQ-010's existing
+  `$fetchComplete` computation in `synchronizeExternToIntern()` — it does
+  not introduce a second completeness signal.
+- Watermark computation takes the maximum `cursorField` value across all
+  fetched records in the run (not the last record processed), so
+  out-of-order pagination or concurrent per-page fetching (REQ-002's
+  optimized parallel mode) cannot regress the watermark.
+- Methods added: `computeCursorWatermark()` (private, alongside the
+  existing `getOriginId()`/`hashObject()` identity helpers).
+
+### Requirement: Deletion garbage-collection never runs for an incremental sync (REQ-018)
+
+`synchronizeExternToIntern()` MUST NOT invoke `deleteInvalidObjects()` for
+any run whose Synchronization has `syncMode: incremental` — unconditionally,
+regardless of that run's fetch-completeness (REQ-009), the computed
+deletion ratio (REQ-010), or an explicit `forceDeletion` override. An
+incremental fetch is, by construction, a filtered subset of the source; the
+absence of a target id from `$synchronizedTargetIds` on an incremental run
+is not evidence that the corresponding source record was deleted — it may
+simply be outside the cursor filter. `deleteInvalidObjects()` MUST also
+independently refuse to run when passed a Synchronization whose `syncMode`
+is `incremental`, regardless of caller, so a future caller that invokes it
+directly (bypassing `synchronizeExternToIntern()`'s gate) cannot
+accidentally delete against a partial incremental fetch. On this refusal,
+`deleteInvalidObjects()` MUST log a warning-level message and dispatch a
+`SynchronizationDeletionGuardedEvent` with `reason: incremental_mode`,
+mirroring its existing `fetch_incomplete`-reason guard (REQ-010), and MUST
+return `0`.
+
+@e2e exclude backend deletion garbage-collection internals — covered by PHPUnit, not browser UI
+
+#### Scenario: incremental mode blocks deletion even on a complete fetch
+
+- GIVEN a Synchronization with `syncMode: incremental`, 100 existing
+  contracts, and a run whose fetch completes successfully but — because it
+  is cursor-filtered — returns only 5 changed records
+- WHEN `synchronizeExternToIntern()` reaches its cleanup stage
+- THEN `deleteInvalidObjects()` is not invoked
+- AND 0 objects are deleted
+- AND the run's `result.objects.deletionGuard` records
+  `reason: incremental_mode`
+
+#### Scenario: forceDeletion cannot override the incremental-mode block
+
+- GIVEN the same Synchronization as above
+- WHEN the run is invoked with `forceDeletion: true`
+- THEN deletion is still not invoked — `forceDeletion` only overrides
+  REQ-010's ratio guard on a `full`-mode run and has no effect on this
+  unconditional incremental-mode block
+
+#### Scenario: deleteInvalidObjects() called directly against an incremental Synchronization still refuses
+
+- GIVEN a Synchronization with `syncMode: incremental`
+- WHEN `deleteInvalidObjects()` is invoked directly (not via
+  `synchronizeExternToIntern()`) with `fetchComplete: true` and
+  `forceDeletion: true`
+- THEN it still returns `0` and deletes nothing
+- AND a warning is logged and a `SynchronizationDeletionGuardedEvent` with
+  `reason: incremental_mode` is dispatched
+
+#### Scenario: the deleteRestriction single-object delete path is unaffected
+
+- GIVEN an OpenRegister `ObjectDeletedEvent` triggers a synchronization run
+  with `mutationType: delete` and `sourceConfig.restrictDeletion: true`
+  against a Synchronization with `syncMode: incremental`
+- WHEN `synchronizeExternToIntern()` runs
+- THEN the single-object delete path (`$data !== null && $mutationType ===
+  'delete'`) is taken — this path never calls `deleteInvalidObjects()`'s
+  bulk source-diff branch regardless of `syncMode`, so this requirement
+  introduces no new behavior here; it is called out only to confirm the
+  event-driven single-object delete is not accidentally caught by this
+  guard
+
+**Notes:**
+
+- This requirement composes with, and takes priority over, REQ-010's
+  ratio/`forceDeletion` guard: the `syncMode` check happens first and
+  unconditionally, before REQ-010's `fetchComplete`/ratio logic is ever
+  reached, for an incremental Synchronization.
+- Restoring deletion-based garbage collection for a Synchronization
+  currently in `incremental` mode requires explicitly switching its
+  `syncMode` back to `full` — REQ-019's reset-cursor action does not do
+  this (see REQ-019).
+- Methods: `deleteInvalidObjects()` (extended with the new guard clause,
+  ahead of its existing `fetchComplete === false` early return),
+  `synchronizeExternToIntern()` (extended call-site check).
+
+### Requirement: Reset-cursor action clears the stored watermark (REQ-019)
+
+`SynchronizationsController` MUST expose `POST
+/api/synchronizations/{id}/reset-cursor`, which clears the target
+Synchronization's `cursorWatermark` (to `null`/absent) and persists that
+change, without altering `syncMode` or any other Synchronization field.
+This action MUST NOT itself delete, create, or update any target object or
+`SynchronizationContract` — it only clears stored cursor state. Following a
+reset, the Synchronization's next run resolves `{{ cursor }}` to an empty
+string (REQ-016's "no prior watermark" case), which — for a source whose
+templated request treats an absent cursor as unfiltered — yields a
+full-equivalent fetch that re-evaluates every currently-reachable source
+record for create/update via the existing hash-diff contract mechanism
+(REQ-003). This action MUST NOT re-enable `deleteInvalidObjects()` for that
+Synchronization: REQ-018's guard is keyed on `syncMode`, not on cursor
+state, and a reset-cursor call does not change `syncMode`.
+
+@e2e exclude backend cursor-reset internals — covered by PHPUnit/Newman, not browser UI
+
+#### Scenario: reset-cursor clears the watermark
+
+- GIVEN a Synchronization with `syncMode: incremental` and
+  `cursorWatermark: "2026-07-10T00:00:00Z"`
+- WHEN `POST /api/synchronizations/{id}/reset-cursor` is called
+- THEN the Synchronization's `cursorWatermark` is persisted as
+  `null`/absent
+- AND `syncMode` remains `incremental`, unchanged
+
+#### Scenario: the next run after a reset requests an unfiltered fetch
+
+- GIVEN a Synchronization whose `cursorWatermark` was just cleared via
+  reset-cursor, with `sourceConfig.endpoint: ".../items?updatedAfter={{
+  cursor }}"`
+- WHEN the next `synchronize()` run's `getAllObjectsFromApi()` executes
+- THEN the rendered endpoint is `.../items?updatedAfter=` (empty cursor
+  value)
+
+#### Scenario: reset-cursor does not perform or re-enable deletion
+
+- GIVEN a Synchronization with `syncMode: incremental` and 100 existing
+  contracts
+- WHEN `POST /api/synchronizations/{id}/reset-cursor` is called, and then
+  the Synchronization's next run executes and — because the source
+  honored the empty cursor — refetches all currently-existing source
+  records
+- THEN `reset-cursor` itself deletes nothing
+- AND the subsequent run also does not invoke `deleteInvalidObjects()`
+  (REQ-018 still applies — `syncMode` is still `incremental`)
+- AND restoring deletion detection requires a separate, explicit change of
+  `syncMode` to `full`
+
+#### Scenario: a missing synchronization id returns 404
+
+- GIVEN no Synchronization exists with the given `id`
+- WHEN `POST /api/synchronizations/{id}/reset-cursor` is called
+- THEN the response is `404`, mirroring the existing `run()`/`test()`
+  action's not-found handling
+
+**Notes:**
+
+- This action follows the existing `activate`/`deactivate`/`run`/`test`
+  action-route convention on `SynchronizationsController`
+  (`/api/synchronizations/{id}/<action>`, `POST`).
+- **SECURITY:** per REQ-005's existing, pre-existing IDOR note on this
+  controller, `reset-cursor` inherits the same `@NoAdminRequired` +
+  `@NoCSRFRequired` + no-per-object-ownership-guard posture as every other
+  action on `SynchronizationsController` today. This is observed,
+  pre-existing behavior this change does not alter or worsen (clearing a
+  watermark is a low-severity action relative to `run`/`test`/`execute`
+  already available on the same unguarded surface) — flagged for the same
+  future authorization follow-up already noted under REQ-005, not
+  addressed here.
+- Methods added: `SynchronizationsController::resetCursor()`.
+
+### Requirement: `nextcloud-form` source dispatch (REQ-020)
+
+`SynchronizationService::getAllObjectsFromSource()` MUST dispatch
+`sourceType: nextcloud-form` to the Forms source adapter (see
+`nextcloud-forms-connector` REQ-002) instead of falling through with no
+matching `case`. `SynchronizationService::updateTarget()` MUST NOT gain a
+`nextcloud-form` branch — a synchronization configured with
+`targetType: nextcloud-form` MUST continue to throw `Unsupported target
+type: nextcloud-form`, unchanged from the base spec's existing `default`
+branch behaviour (`nextcloud-forms-connector` REQ-002 explicitly excludes a
+target/write direction).
+
+@e2e exclude backend Forms source adapter dispatch — covered by PHPUnit, not browser UI
+
+#### Scenario: source fetch dispatches to the Forms adapter
+
+- **GIVEN** a synchronization with `sourceType: nextcloud-form`
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** the Forms source adapter is invoked and its returned submissions
+  are used as the fetched objects, exactly as the `api` branch returns
+  `getAllObjectsFromApi()`'s result
+
+#### Scenario: nextcloud-form is not a recognised target type
+
+- **GIVEN** a synchronization with `targetType: nextcloud-form`
+- **WHEN** `updateTarget()` runs
+- **THEN** it throws `Unsupported target type: nextcloud-form`, identical
+  in shape to any other unrecognised target type (unlike
+  `nextcloud-table`, which REQ-014 explicitly carves out as a recognised
+  target)
+
+#### Scenario: an unrecognised source type remains a silent no-op, unchanged
+
+- **GIVEN** a synchronization with `sourceType: some-future-type` that is
+  neither `register/schema`, `api`, `database`, `nextcloud-table`, nor
+  `nextcloud-form`
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** the `switch` matches no `case` and an empty array is returned,
+  identical to the base spec REQ-002's documented no-op behaviour for
+  `register/schema`/`database` — this requirement does not change that
+  fallthrough behaviour for any type outside `nextcloud-form`
+
+
+### Requirement: Mid-run progress is observable without slowing the run (REQ-022)
+
+A synchronization run SHALL record how far it has got **while it is still
+running**, in a dedicated `openconnector`/`synchronization_run` record, because
+none of the pre-existing surfaces can answer that question: `synchronization.status`
+is null on every synchronization, no `execution_trace` row is `running`
+mid-flight, and `synchronization_log` is built in memory and persisted once at
+the end on an `appendOnly`/`immutable` schema that refuses an update outright.
+
+Recording SHALL be opt-outable by the caller, and SHALL NOT make the run it
+describes measurably slower or fail it:
+
+- Intermediate progress SHALL be **time-throttled**, at most one write per
+  `THROTTLE_SECONDS` (2.0 s), NOT throttled per N objects — a per-N rule writes
+  200x more on a 20,000-object corpus than on a 100-object one, while a time
+  rule writes the same amount on both, which is the property that makes it safe
+  on the corpora that matter.
+- The record SHALL be **constant-size** (every field a scalar), so write cost
+  does not grow with the run.
+- Writes SHALL use the cheap save path (`_rbac`, `_multitenancy`, `_validation`
+  off, `silent` on).
+- A failed progress write SHALL NOT fail the run, and SHALL NOT be silent: the
+  failure count SHALL be carried on the final record as `progressWriteFailures`.
+- The number of writes actually issued SHALL be readable, so a throttle that
+  never fired can be told apart from a throttle that worked — both otherwise
+  report zero overhead.
+
+The terminal write SHALL NOT be throttled: a finished run that stayed `running`
+reads as hung to every watcher.
+
+@e2e exclude backend progress-recording internals and write throttling — covered by PHPUnit, not browser UI
+
+#### Scenario: a run opens a progress record and closes it with a terminal status
+
+- **GIVEN** progress recording is enabled for a synchronization
+- **WHEN** the run starts
+- **THEN** one `synchronization_run` record is created with `status: running`,
+  `startedAt`, and zeroed counters
+- **AND WHEN** the run completes
+- **THEN** the same record is updated with the terminal status, `finishedAt`,
+  and the final counters — unthrottled, so the record is never left `running`
+
+#### Scenario: progress recording can be switched off entirely
+
+- **GIVEN** a run started with progress recording disabled
+- **WHEN** progress is reported and the run finishes
+- **THEN** no `synchronization_run` record is created
+- **AND** every later report and the terminal close are the same no-op, so a
+  caller cannot start a run it then never closes
+
+#### Scenario: reporting more often than the throttle does not write more often
+
+- **GIVEN** a run reporting progress per object
+- **WHEN** many objects are processed inside one throttle window
+- **THEN** at most one intermediate write is issued per `THROTTLE_SECONDS`
+- **AND** the in-memory counters still carry every reported value, so the next
+  write that does happen is not missing them
+
+#### Scenario: a progress write that fails is counted, not swallowed
+
+- **GIVEN** the object service rejects a progress write mid-run
+- **WHEN** the run continues and finishes
+- **THEN** the run itself succeeds
+- **AND** the final record reports the number of failed progress writes rather
+  than presenting itself as a healthy recording
+
+### Requirement: File fetching can be deferred off the synchronization request (REQ-023)
+
+A source SHALL be able to opt into fetching its objects' files **outside** the
+synchronization request, via `configuration.fileFetchMode: async` (default
+`sync`, which keeps the existing in-request behaviour unchanged).
+
+This exists because the in-request path is not actually asynchronous:
+`startAsyncFileFetching()` calls `executeAsyncFileFetching()` inline, so
+"fire-and-forget" there means *errors are swallowed*, not *work is deferred* —
+every download and every save happens while the caller's HTTP request is still
+open. Measured: 7,507 ms for a run with no files against 17,256 ms with 40, even
+with the fetch window fully parallel (REQ-004's concurrency does not remove the
+wall-clock, it only bounds it).
+
+When the mode is `async` the system SHALL enqueue one one-shot `QueuedJob` per
+object instead of fetching inline, so the synchronization returns as soon as its
+objects are written and the files arrive afterwards on the cron worker. Each
+deferred job SHALL:
+
+- Carry the config, endpoint, object id and rule id it needs in its argument.
+- **Drop the job with a logged reason** when that argument is absent or
+  incomplete, rather than proceeding on partial input.
+- **Contain its own failures**: a fetch that throws SHALL be logged and SHALL
+  NOT take the worker down, because the next job in the queue is another
+  object's.
+
+@e2e exclude backend deferred file-fetch queueing and cron execution — covered by PHPUnit, not browser UI
+
+#### Scenario: an async source returns before its files are fetched
+
+- **GIVEN** a source configured with `fileFetchMode: async`
+- **WHEN** a synchronization writes its objects
+- **THEN** the run returns without downloading any file
+- **AND** one deferred fetch job is queued per object
+
+#### Scenario: the default mode is unchanged
+
+- **GIVEN** a source with no `fileFetchMode` set
+- **WHEN** a synchronization processes an object with files
+- **THEN** files are fetched in-request exactly as before, under REQ-004
+
+#### Scenario: an incomplete job argument is dropped, not guessed
+
+- **GIVEN** a queued fetch job whose argument is not an array, or is missing
+  config, endpoint, or object id
+- **WHEN** the job runs
+- **THEN** it records why it was dropped and performs no fetch
+
+#### Scenario: one object's failed fetch does not affect the next
+
+- **GIVEN** a queued fetch job whose fetch throws
+- **WHEN** the job runs
+- **THEN** the error is logged against that object id
+- **AND** the worker continues with the next queued job
+
+### Requirement: Change detection is independent of how a timestamp is typed (REQ-024)
+
+The skip test SHALL compare timestamps by value, not by PHP's ordering of
+whatever type each side happens to be. A `Mapping`'s `getUpdated()` is a
+`DateTime`; a contract's `sourceLastChecked` is an ATOM **string**; PHP does not
+order an object against a string, so the mapping-freshness clause was false for
+every mapped synchronization and the skip branch could never be taken.
+
+Consequence, measured on the 2000-dataset CKAN benchmark with identical source
+data: **1854 skipped without a mapping, 0 skipped with one**, and a steady-state
+run of 6.8 s against 17.7 s. Every object of every mapped synchronization was
+rewritten on every run, forever.
+
+When either side is absent or unparseable the comparison SHALL yield false, so
+the run falls through to the update path. "Cannot prove it is older" must never
+silently skip a write.
+
+@e2e exclude backend change-detection internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a mapping older than the last check does not force an update
+
+- **GIVEN** a contract whose `originHash` still matches the source
+- **AND** a mapping whose `updated` is earlier than the contract's `sourceLastChecked`
+- **WHEN** the object is processed
+- **THEN** the run skips it, exactly as it would with no mapping at all
+
+#### Scenario: a mapping changed since the last check still forces an update
+
+- **GIVEN** the same unchanged contract
+- **AND** a mapping whose `updated` is LATER than `sourceLastChecked`
+- **WHEN** the object is processed
+- **THEN** it is re-mapped and written — the freshness clause must keep working
+  in the direction it was written for
+
+#### Scenario: an unparseable timestamp does not skip a write
+
+- **GIVEN** a contract whose `sourceLastChecked` is missing or unparseable
+- **WHEN** the object is processed
+- **THEN** the run takes the update path rather than skipping
+
+### Requirement: A contract is upserted on its own identity (REQ-025)
+
+Persisting a `SynchronizationContract` SHALL key the upsert on the contract's
+own identity, so that re-running a synchronization updates the contract it
+already has rather than minting another one.
+
+The identity is the payload's `uuid` when present, otherwise its `id` **when
+that `id` is not numeric**. A contract read back from OpenRegister carries no
+`uuid` property at all — its identity comes back AS `id`, and that `id` is a uuid
+string. Reading `uuid` alone therefore produced a null upsert key and every save
+created a new object.
+
+Consequence, measured: four **distinct** contract objects for a single
+`(synchronizationId, originId)`, one per run, each carrying an **identical**
+`originHash` — so the source demonstrably had not changed. On the dev instance
+`synchronization_contract` held **528,656** rows.
+
+A numeric `id` SHALL still be refused as an upsert key and dropped from the
+payload: it is a legacy identifier, not an OpenRegister one, and it would break
+OpenRegister's `trim($object['id'])` upsert probe.
+
+@e2e exclude backend contract persistence internals — covered by PHPUnit, not browser UI
+
+#### Scenario: re-running a synchronization does not multiply contracts
+
+- **GIVEN** a synchronization that has already written a contract for an origin
+- **WHEN** the synchronization runs again and that object takes the update path
+- **THEN** the existing contract is updated in place
+- **AND** the number of contracts for that `(synchronizationId, originId)` stays 1
+
+#### Scenario: a contract read back from OpenRegister is upserted on its `id`
+
+- **GIVEN** a contract payload that carries `id` (a uuid string) and no `uuid`
+- **WHEN** it is persisted
+- **THEN** the save is keyed on that `id`
+
+#### Scenario: a legacy numeric id is not used as an upsert key
+
+- **GIVEN** a contract payload whose `id` is numeric and which has no `uuid`
+- **WHEN** it is persisted
+- **THEN** no upsert key is derived from it and `id` is dropped from the payload

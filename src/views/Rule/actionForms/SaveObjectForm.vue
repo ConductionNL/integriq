@@ -7,34 +7,48 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Register (required)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Register (required)')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-save-register"
 			:aria-label-combobox="t('openconnector', 'Register (required)')"
-			:value="selectedRegister"
+			:modelValue="selectedRegister"
 			:options="registerOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a register')"
-			@input="(option) => patch('register', option?.id ? String(option.id) : '')" />
+			@update:modelValue="
+				(option) => patch('register', option?.id ? String(option.id) : '')
+			" />
 
-		<label class="action-form__label">{{ t('openconnector', 'Schema (required)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Schema (required)')
+		}}</label>
 		<NcSelect
 			data-testid="action-form-save-schema"
 			:aria-label-combobox="t('openconnector', 'Schema (required)')"
-			:value="selectedSchema"
+			:modelValue="selectedSchema"
 			:options="schemaOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@input="(option) => patch('schema', option?.id ? String(option.id) : '')" />
+			@update:modelValue="
+				(option) => patch('schema', option?.id ? String(option.id) : '')
+			" />
 
-		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Mapping (optional)')
+		}}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
-			:value="selectedMapping"
+			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Pick a mapping to transform before save')"
-			@input="(option) => patch('mapping', option?.id ? String(option.id) : '')" />
+			:placeholder="
+				t('openconnector', 'Pick a mapping to transform before save')
+			"
+			@update:modelValue="
+				(option) => patch('mapping', option?.id ? String(option.id) : '')
+			" />
 	</div>
 </template>
 
@@ -54,27 +68,40 @@ export default {
 			loading: false,
 		}
 	},
+
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedRegister() {
 			const id = String(this.value?.register || '')
 			if (!id) return null
-			return this.registerOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.registerOptions.find((opt) => opt.id === id) ?? {
+					id,
+					label: id,
+				}
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
 			const id = String(this.value?.schema || '')
 			if (!id) return null
-			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mapping || '')
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			return (
+				this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
+			)
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		const [registers, schemas, mappings] = await Promise.all([
@@ -87,12 +114,19 @@ export default {
 		this.mappingOptions = mappings
 		this.loading = false
 	},
+
 	methods: { patch: patchMethod() },
 }
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 </style>

@@ -1,5 +1,5 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Shared helpers for the visual-regression layer (GAP-5).
  *
@@ -25,6 +25,7 @@
  * environment. See tests/e2e/visual/README in-repo wiring notes.
  */
 import { expect, type Page, type Locator } from '@playwright/test'
+import { dismissSupportDialog } from '@conduction/nextcloud-vue/testing/playwright'
 
 /** Common screenshot options applied to every visual assertion. */
 export const SHOT_OPTIONS = {
@@ -41,6 +42,14 @@ export const SHOT_OPTIONS = {
  * shot taken mid-frame is identical every run.
  */
 export async function freezePage(page: Page): Promise<void> {
+	// Animation/caret freezing only. This used to also force
+	// `visibility: hidden` onto `.cn-support-dialog` and `.modal-mask` so a
+	// racing dismissal could not bleed into a shot. That is deleted, not
+	// relocated: hiding an overlay leaves it mounted and in the layout, and a
+	// mask that is merely invisible still eats the pointer events of anything
+	// underneath — a shot looks clean while the next click silently misses.
+	// `global-setup` now seeds the dialog as already-seen, so it never mounts
+	// and there is nothing to hide.
 	await page.addStyleTag({
 		content: `
 			*, *::before, *::after {
@@ -51,25 +60,8 @@ export async function freezePage(page: Page): Promise<void> {
 				caret-color: transparent !important;
 				scroll-behavior: auto !important;
 			}
-			/* Hide the auto-opening support dialog + its backdrop entirely so
-			   it can never bleed into a shot even if dismissal races. */
-			[data-testid-modal="cn-support-dialog"],
-			.cn-support-dialog,
-			.modal-mask { visibility: hidden !important; }
 		`,
 	})
-}
-
-/**
- * Dismiss the "Support <App>" dialog that auto-opens over the app and would
- * otherwise dominate (and randomise) the shot.
- */
-export async function dismissSupportDialog(page: Page): Promise<void> {
-	const dialog = page.locator('[data-testid-modal="cn-support-dialog"]')
-	if (await dialog.isVisible().catch(() => false)) {
-		await dialog.getByRole('button', { name: 'Close' }).click().catch(() => {})
-		await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {})
-	}
 }
 
 /**
@@ -79,7 +71,9 @@ export async function dismissSupportDialog(page: Page): Promise<void> {
  */
 export async function waitForContentReady(page: Page): Promise<void> {
 	await expect(
-		page.locator('#header, header.header-appcontainer, .header-appcontainer').first(),
+		page
+			.locator('#header, header.header-appcontainer, .header-appcontainer')
+			.first(),
 	).toBeVisible({ timeout: 25_000 })
 	await expect(
 		page.locator('main, #app-content, .app-content, #content-vue').first(),
@@ -89,17 +83,25 @@ export async function waitForContentReady(page: Page): Promise<void> {
 	const spinner = page.locator(
 		'.icon-loading, .loading, .material-design-icon.loading-icon, [class*="skeleton"], .app-content-loading',
 	)
-	await spinner.first().waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {})
+	await spinner
+		.first()
+		.waitFor({ state: 'hidden', timeout: 8_000 })
+		.catch(() => {})
 
 	// Wait for common async "Loading …" placeholder text to vanish. Many of
 	// the Conduction dashboards stream widget data after first paint
 	// ("Loading statistics…", "Loading version information…"); shooting before
 	// it lands produces a non-deterministic baseline. Poll up to ~10s.
-	const loadingText = page.getByText(/Loading[\s.]*(statistics|version|data|information)?…?/i)
+	const loadingText = page.getByText(
+		/Loading[\s.]*(statistics|version|data|information)?…?/i,
+	)
 	for (let i = 0; i < 20; i++) {
 		const count = await loadingText.count().catch(() => 0)
 		if (count === 0) break
-		const anyVisible = await loadingText.first().isVisible().catch(() => false)
+		const anyVisible = await loadingText
+			.first()
+			.isVisible()
+			.catch(() => false)
 		if (!anyVisible) break
 		await page.waitForTimeout(500)
 	}
@@ -117,22 +119,39 @@ export function dynamicMasks(page: Page): Locator[] {
 	const selectors = [
 		// Nextcloud header right-side: user menu / avatar / notifications /
 		// contacts menu / unified search — all volatile or focus-dependent.
-		'#user-menu', '.avatardiv', '.user-menu', '#settings',
-		'#notifications', '.notifications', '#contactsmenu', '.unified-search',
+		'#user-menu',
+		'.avatardiv',
+		'.user-menu',
+		'#settings',
+		'#notifications',
+		'.notifications',
+		'#contactsmenu',
+		'.unified-search',
 		'.header-right',
 		// Common dynamic-content hooks across the Conduction apps.
-		'[class*="timestamp"]', '[class*="date"]', 'time',
-		'[class*="relative-time"]', '[class*="last-modified"]', '[class*="updated"]',
-		'[class*="uuid"]', '[class*="avatar"]',
+		'[class*="timestamp"]',
+		'[class*="date"]',
+		'time',
+		'[class*="relative-time"]',
+		'[class*="last-modified"]',
+		'[class*="updated"]',
+		'[class*="uuid"]',
+		'[class*="avatar"]',
 		'[data-visual-mask]',
 		// Count badges / stat numbers on dashboard cards + tables. These are
 		// live data that churns between runs; mask the value, not the label.
-		'.cn-stat-value', '[class*="stat-value"]', '.counter-bubble__counter',
-		'[class*="statistic"]', '[class*="metric-value"]', '[class*="count"]',
+		'.cn-stat-value',
+		'[class*="stat-value"]',
+		'.counter-bubble__counter',
+		'[class*="statistic"]',
+		'[class*="metric-value"]',
+		'[class*="count"]',
 		// Side detail / right sidebar panels stream live aggregates
 		// ("Totals", "Loading statistics…") that never settle against a shared
 		// live-data instance — mask the panel so structure stays the signal.
-		'.app-content-details', '.app-sidebar', '[class*="dashboard-detail"]',
+		'.app-content-details',
+		'.app-sidebar',
+		'[class*="dashboard-detail"]',
 	]
 	return selectors.map((s) => page.locator(s))
 }
@@ -173,7 +192,11 @@ export async function shootByNav(
 	await waitForContentReady(page)
 
 	// Close any open detail/side panel that can overlay + swallow nav clicks.
-	const panelClose = page.locator('.app-content-details .icon-close, [class*="detail"] button[aria-label*="lose"], .app-sidebar__close').first()
+	const panelClose = page
+		.locator(
+			'.app-content-details .icon-close, [class*="detail"] button[aria-label*="lose"], .app-sidebar__close',
+		)
+		.first()
 	if (await panelClose.isVisible().catch(() => false)) {
 		await panelClose.click().catch(() => {})
 		await page.waitForTimeout(300)

@@ -5,7 +5,7 @@ status: done
 # mapping-editor-ui Specification
 
 ## Purpose
-Provides the mapping editor frontend for OpenConnector, where users open a mapping detail page to edit its title, description, pass-through flag, and its mapping, cast, and unset rule collections with create/edit/delete, reordering, and duplicate-key validation. Users can run a mapping test against the backend with a JSON input object and target schema, render the transformed result, and save that result as an OpenRegister object in a chosen register.
+Provides the mapping editor frontend for OpenConnector. Users create and edit a mapping in a wide three-column modal from the Mappings index, or open its detail page, to edit its title, description, pass-through flag, and its mapping, cast, and unset rule collections with create/edit/delete, reordering, and duplicate-key validation. Users can run a mapping test against the backend with a JSON input object and target schema, render the transformed result, and save that result as an OpenRegister object in a chosen register.
 
 @e2e exclude Vue component-internal method/computed behaviour (ensureRegistered, persistPatch, derived rule collections, load-error state) reverse-engineered from the mapping detail-page .vue components — unit-level (vitest), not browser-observable; the mapping detail-page render + Add Mapping modal surfaces are covered by manifest-pages e2e under mapping-and-search
 
@@ -82,18 +82,51 @@ when inputs are incomplete, and surfaces validation errors.
 - WHEN the input object is not valid JSON
 - THEN `validJson` reports the error and the test is not run
 
-Notes: `TestMapping.vue` (5), `TestMappingInputObject.vue` (2),
-`TestMappingMappingSelect.vue` (14), `TestMappingResult.vue` partial (2),
-`v2/TestMappingModal.vue` (10).
+Notes: `components/mapping/MappingResultPanel.vue` (`run`, `parseInput`, `fetchSchemas`),
+`v2/TestMappingModal.vue`. The legacy `TestMapping.vue` tree that previously carried
+this was deleted once the panel absorbed it.
 
 ### Requirement: Persist a mapped result as an OpenRegister object (REQ-MAPUI-005)
 
-The result panel SHALL let the user pick a target register and save the transformed
-mapping output as an OpenRegister object.
+The result panel SHALL let the user pick a target register and a schema and save the
+transformed mapping output as an OpenRegister object. Save SHALL stay disabled until
+both are chosen: `MappingsController::saveObject()` defaults `schema` to `'mapping'`,
+so a register-only save would file the payload as a mapping object.
 
 #### Scenario: Saving the mapped result
-- WHEN the user selects a register and invokes save
-- THEN `saveObject` persists the transformed payload as a new object in the chosen register
+- WHEN the user selects a register and a schema and invokes save
+- THEN `saveResult` persists the transformed payload as a new object in the chosen register
 
-Notes: `TestMappingResult.vue` `fetchRegisters` + `saveObject` (1 of its 3 methods is `setup`, covered under REQ-MAPUI-004).
+#### Scenario: Save is unavailable without a schema
+- WHEN a register is selected but no validation schema is
+- THEN `canSaveResult` is false and the save button stays disabled
+
+Notes: `components/mapping/MappingResultPanel.vue` `fetchRegisters` + `saveResult`.
+Reachable from all three mapping surfaces (editor modal, detail page, test modal),
+where previously it lived only in the unmounted legacy `TestMappingResult.vue`.
+
+### Requirement: Wide create/edit mapping modal (REQ-MAPUI-006)
+
+The Mappings index SHALL offer a three-column create/edit modal — test input, general
+fields plus the transformation-rule tabs, and the live output — replacing the generic
+two-field form dialog. It is mounted through CnIndexPage's `form-dialog` slot, declared
+in the manifest as `pages[Mappings].slots["form-dialog"]`.
+
+All edits SHALL be held in a local draft and persisted only on save, so a mapping can be
+built complete — rules included — before it first exists.
+
+#### Scenario: Creating a mapping with rules in one pass
+- WHEN the user opens Add, fills in a name, adds mapping rules and saves
+- THEN a single `saveObject` call creates the mapping with its rules
+
+#### Scenario: Cancelling discards rule edits
+- WHEN the user edits rules on an existing mapping and cancels
+- THEN nothing is persisted and the stored mapping is unchanged
+
+#### Scenario: Live output follows the draft
+- WHEN the user edits the test input or a rule
+- THEN the output pane re-runs against the draft, not the last-saved mapping
+
+Notes: `modals/v2/MappingEditorModal.vue`, `views/wrappers/MappingRulesEditor.vue`
+`showOptionsTab` + `update-pass-through`.
 

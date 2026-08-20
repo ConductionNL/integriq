@@ -21,6 +21,13 @@
         <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">
+                <!-- Nextcloud's legacy bootstrap class. There is no OCP
+                     interface for registering another app's autoloader, so the
+                     ADR-040 AppHost prelude in AppInfo\Application has to call
+                     OC_App::registerAutoloading() directly. It is server-private
+                     and therefore absent from nextcloud/ocp, which is why psalm
+                     cannot see it. Same suppression, same reason, as doriath. -->
+                <referencedClass name="OC_App"/>
                 <!-- Nextcloud OCP Classes -->
                 <referencedClass name="OCP\AppFramework\App"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>
@@ -77,7 +84,39 @@
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
                 <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Handoff\HandoffService"/>
+                <referencedClass name="OCA\OpenRegister\Exception\HandoffException"/>
+                <referencedClass name="OCA\OpenRegister\Exception\NotAuthorizedException"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!-- ADR-078 actor-forwarded deferral contract. ViewDeletedEventListener
+                     hands its cascade to DeferredViewCascadeJob through
+                     ListenerDeferralService instead of running it inside the user's
+                     delete request; both types live in OpenRegister and are resolved
+                     at runtime, exactly like ObjectService above. -->
+                <referencedClass name="OCA\OpenRegister\Service\Deferral\ListenerDeferralService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Deferral\DeferredListenerContext"/>
+                <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
+                <referencedClass name="OCA\OpenRegister\BackgroundJob\ActorForwardedJob"/>
+                <!-- OpenRegister flow-engine types. Present only at runtime, and only on an
+                     OpenRegister that ships the flow engine — which is exactly what the
+                     class_exists() guard in Application::registerFlowNodes() is for. The
+                     same three files are already excluded from PHPStan for this reason. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent"/>
+                <!-- FlowSuspension is the engine's "pause this run" signal, raised by the
+                     nodes that a source can rate-limit. FlowRateLimit builds it and is the
+                     one flow helper that references an OpenRegister flow type WITHOUT also
+                     implementing IFlowNode, so it is analysed rather than skipped and needs
+                     the suppression named explicitly. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\FlowSuspension"/>
+                <!-- Same reasoning for mapping: the engine is OpenRegister's and this app
+                     only CONTRIBUTES the three functions needing its own services. The
+                     addServiceListener registration is lazy, so the class is never touched
+                     on an instance without OpenRegister. -->
+                <referencedClass name="OCA\OpenRegister\Service\RegisterMappingFunctionsEvent"/>
+                <referencedClass name="OCA\OpenRegister\Service\Flow\IFlowNode"/>
+                <!-- Used by the MaterializeCatalogItems repair step to run a write as the
+                     system operator; resolved from OpenRegister at runtime. -->
+                <referencedClass name="OCA\OpenRegister\Service\SystemOperationContext"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
@@ -90,6 +129,12 @@
                 <referencedClass name="OC"/>
                 <referencedClass name="OC\AppFramework\Middleware\Security\Exceptions\SecurityException"/>
                 <referencedClass name="OC\Files\Node\File"/>
+                <!-- flow-workflowengine-integration: NC's concrete IRequest implementation,
+                     synthesized by EndpointService::buildSyntheticRequest() (design.md Decision 5) -->
+                <referencedClass name="OC\AppFramework\Http\Request"/>
+                <!-- flow-workflowengine-integration: NC core's only bundled WorkflowEngine IEntity,
+                     referenced only as a compile-time ::class string by the three operation classes -->
+                <referencedClass name="OCA\WorkflowEngine\Entity\File"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
@@ -97,13 +142,21 @@
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericPreferencesController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\IMetricsProvider"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\ManifestLoader"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\MetricsEngine"/>
+                <!-- OR AppHost boilerplate (adopt-apphost: Settings/Section + InitializeActions) -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Repair\GenericInitializeActions"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Service\GenericActionAuthService"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
                 <!-- Service classes from OpenRegister used via OR integration layer -->
                 <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationRegistry"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationProvider"/>
                 <referencedClass name="OCA\OpenRegister\Db\Mapping"/>
                 <!-- Symfony (loaded at runtime via Nextcloud or composer require) -->
                 <referencedClass name="Symfony\Component\ExpressionLanguage\ExpressionLanguage"/>
@@ -114,13 +167,34 @@
                 <!-- OpenRegister additional runtime classes -->
                 <referencedClass name="OCA\OpenRegister\Service\ObjectServiceMapperAdapter"/>
                 <referencedClass name="OCA\OpenRegister\Exception\ValidationException"/>
-                <!-- Doctrine\DBAL (shipped by NC server; not in standalone stubs) -->
-                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
                 <!-- PHP extension classes (loaded at runtime) -->
                 <referencedClass name="SoapFault"/>
                 <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
                 <referencedClass name="OCA\OpenConnector\Service\Rule"/>
+                <!-- nextcloud-event-hub: NC-core-app / optional-app event classes
+                     referenced only via `::class` (compile-time string) and
+                     instanceof (safe when the class is absent). OCA\DAV\* is an NC
+                     core app; OCA\Tables\* / OCA\Forms\* are optional App Store apps —
+                     none is present in the standalone vendor tree. See design.md
+                     Decision 1 and each listener's class docblock.
+
+                     The three OCP\Calendar\Events\* entries that used to sit here are
+                     GONE (#1174). Their reason was "`@since 32.0.0`, newer than the
+                     pinned nextcloud/ocp: dev-stable29 dev dependency" — true when
+                     written, false once this repo pinned nextcloud/ocp ^32.0. Those
+                     classes now ship in vendor/nextcloud/ocp and psalm analyses them
+                     for real, so suppressing UndefinedClass on them would only hide a
+                     future rename. -->
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectCreatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectUpdatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectDeletedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowAddedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowUpdatedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowDeletedEvent"/>
+                <referencedClass name="OCA\Forms\Events\FormSubmittedEvent"/>
+                <!-- OCP\SystemTag\MapperEvent is real OCP present in the vendored stubs;
+                     listed for documentation completeness of the file-tag producer. -->
+                <referencedClass name="OCP\SystemTag\MapperEvent"/>
             </errorLevel>
         </UndefinedClass>
         <!-- UndefinedMethod: suppress known false positives from interface types (OCP\IRequest::server,
@@ -173,6 +247,15 @@
         <NullableReturnStatement errorLevel="suppress"/>
         <InvalidOperand errorLevel="suppress"/>
         <UndefinedVariable errorLevel="suppress"/>
+        <!-- FlowNodeListener implements IEventListener<RegisterFlowNodesEvent>. Psalm cannot
+             see that the OpenRegister event extends OCP\EventDispatcher\Event (the class is
+             runtime-only, see the referencedClass entries above), so it reports the template
+             param as invalid. Scoped to the one listener rather than suppressed globally. -->
+        <InvalidTemplateParam>
+            <errorLevel type="suppress">
+                <file name="lib/Flow/FlowNodeListener.php"/>
+            </errorLevel>
+        </InvalidTemplateParam>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

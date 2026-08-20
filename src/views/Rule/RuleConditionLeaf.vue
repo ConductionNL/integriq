@@ -23,31 +23,37 @@
 			v-if="schema.kind !== 'var-only'"
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Field')"
-			:value="varPath"
+			:modelValue="varPath"
 			:placeholder="t('openconnector', 'e.g. body.status')"
-			@update:value="onVarInput" />
+			@update:modelValue="onVarInput" />
 		<NcTextField
 			v-else
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Variable path')"
-			:value="varOnlyPath"
+			:modelValue="varOnlyPath"
 			:placeholder="t('openconnector', 'e.g. user.email')"
-			@update:value="onVarOnlyInput" />
+			@update:modelValue="onVarOnlyInput" />
 		<NcSelect
 			class="rule-condition-leaf__op"
-			:input-id="'rule-condition-op-' + uid"
-			:input-label="t('openconnector', 'Operator')"
-			:value="selectedOperator"
+			:inputId="'rule-condition-op-' + uid"
+			:inputLabel="t('openconnector', 'Operator')"
+			:modelValue="selectedOperator"
 			:options="operatorOptions"
 			:clearable="false"
 			:placeholder="t('openconnector', 'Operator')"
 			label="label"
 			:reduce="(option) => option"
-			@input="onOperatorPick">
+			@update:modelValue="onOperatorPick">
 			<template #option="{ label, group }">
 				<div class="rule-condition-leaf__op-option">
-					<span class="rule-condition-leaf__op-option-label">{{ label }}</span>
-					<span v-if="group" class="rule-condition-leaf__op-option-group">{{ group }}</span>
+					<span class="rule-condition-leaf__op-option-label">{{
+						label
+					}}</span>
+					<span
+						v-if="group"
+						class="rule-condition-leaf__op-option-group"
+						>{{ group }}</span
+					>
 				</div>
 			</template>
 		</NcSelect>
@@ -55,16 +61,19 @@
 			<NcTextField
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[0] || t('openconnector', 'Value')"
-				:value="slotString(1)"
-				:placeholder="schema.placeholders?.[0] || t('openconnector', 'Comparison value')"
-				@update:value="(value) => onSlotInput(1, value)" />
+				:modelValue="slotString(1)"
+				:placeholder="
+					schema.placeholders?.[0]
+					|| t('openconnector', 'Comparison value')
+				"
+				@update:modelValue="(value) => onSlotInput(1, value)" />
 			<NcTextField
 				v-if="schema.kind === 'ternary'"
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[1] || t('openconnector', 'Length')"
-				:value="slotString(2)"
+				:modelValue="slotString(2)"
 				:placeholder="schema.placeholders?.[1] || ''"
-				@update:value="(value) => onSlotInput(2, value)" />
+				@update:modelValue="(value) => onSlotInput(2, value)" />
 		</template>
 		<template v-else-if="schema.kind === 'if'">
 			<label class="rule-condition-leaf__json-label">
@@ -74,7 +83,7 @@
 					:value="slotJson(1)"
 					spellcheck="false"
 					rows="2"
-					placeholder="{ &quot;var&quot;: &quot;a&quot; }"
+					placeholder='{ "var": "a" }'
 					@input="(event) => onJsonSlotInput(1, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
@@ -84,29 +93,40 @@
 					:value="slotJson(2)"
 					spellcheck="false"
 					rows="2"
-					placeholder="{ &quot;var&quot;: &quot;b&quot; }"
+					placeholder='{ "var": "b" }'
 					@input="(event) => onJsonSlotInput(2, event.target.value)" />
 			</label>
 		</template>
 		<template v-else-if="schema.kind === 'array-op'">
 			<label class="rule-condition-leaf__json-label">
-				{{ schema.labels?.[0] || t('openconnector', 'Collection (JsonLogic)') }}
+				{{
+					schema.labels?.[0]
+					|| t('openconnector', 'Collection (JsonLogic)')
+				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(0, { fallback: '' })"
 					spellcheck="false"
 					rows="2"
-					:placeholder="schema.placeholders?.[0] || '{ &quot;var&quot;: &quot;items&quot; }'"
+					:placeholder="
+						schema.placeholders?.[0]
+						|| '{ &quot;var&quot;: &quot;items&quot; }'
+					"
 					@input="(event) => onJsonSlotInput(0, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
-				{{ schema.labels?.[1] || t('openconnector', 'Predicate (JsonLogic)') }}
+				{{
+					schema.labels?.[1] || t('openconnector', 'Predicate (JsonLogic)')
+				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(1)"
 					spellcheck="false"
 					rows="2"
-					:placeholder="schema.placeholders?.[1] || '{ &quot;==&quot;: [{&quot;var&quot;: &quot;&quot;}, true] }'"
+					:placeholder="
+						schema.placeholders?.[1]
+						|| '{ &quot;==&quot;: [{&quot;var&quot;: &quot;&quot;}, true] }'
+					"
 					@input="(event) => onJsonSlotInput(1, event.target.value)" />
 			</label>
 		</template>
@@ -118,12 +138,13 @@
 					:value="mergeJson"
 					spellcheck="false"
 					rows="3"
-					placeholder="[ { &quot;var&quot;: &quot;a&quot; }, [ 1, 2 ] ]"
+					placeholder='[ { "var": "a" }, [ 1, 2 ] ]'
 					@input="(event) => onMergeInput(event.target.value)" />
 			</label>
 		</template>
 		<template v-else-if="schema.kind === 'unary' || schema.kind === 'var-only'">
-			<span class="rule-condition-leaf__value rule-condition-leaf__value--placeholder">
+			<span
+				class="rule-condition-leaf__value rule-condition-leaf__value--placeholder">
 				{{ t('openconnector', '(no value needed)') }}
 			</span>
 		</template>
@@ -133,7 +154,7 @@
 		<NcButton
 			class="rule-condition-leaf__remove"
 			:aria-label="t('openconnector', 'Remove condition')"
-			type="tertiary-no-background"
+			variant="tertiary-no-background"
 			@click="$emit('remove')">
 			<template #icon>
 				<Close :size="18" />
@@ -167,14 +188,31 @@ const OPERATORS = [
 	{ id: '==', label: 'equals', group: 'comparison', kind: 'binary' },
 	{ id: '!=', label: 'does not equal', group: 'comparison', kind: 'binary' },
 	{ id: '>', label: 'greater than', group: 'comparison', kind: 'binary' },
-	{ id: '>=', label: 'greater than or equal', group: 'comparison', kind: 'binary' },
+	{
+		id: '>=',
+		label: 'greater than or equal',
+		group: 'comparison',
+		kind: 'binary',
+	},
 	{ id: '<', label: 'less than', group: 'comparison', kind: 'binary' },
 	{ id: '<=', label: 'less than or equal', group: 'comparison', kind: 'binary' },
-	{ id: 'in', label: 'in (string contains / array member)', group: 'comparison', kind: 'binary' },
+	{
+		id: 'in',
+		label: 'in (string contains / array member)',
+		group: 'comparison',
+		kind: 'binary',
+	},
 	// Negation / existence
 	{ id: '!!', label: 'exists / truthy', group: 'negation', kind: 'unary' },
 	{ id: '!', label: 'missing / falsy', group: 'negation', kind: 'unary' },
-	{ id: 'missing', label: 'missing (list of required paths)', group: 'negation', kind: 'binary', labels: ['Comma-separated paths'], placeholders: ['a,b,c'] },
+	{
+		id: 'missing',
+		label: 'missing (list of required paths)',
+		group: 'negation',
+		kind: 'binary',
+		labels: ['Comma-separated paths'],
+		placeholders: ['a,b,c'],
+	},
 	// Arithmetic
 	{ id: '+', label: 'add', group: 'arithmetic', kind: 'binary' },
 	{ id: '-', label: 'subtract', group: 'arithmetic', kind: 'binary' },
@@ -182,19 +220,67 @@ const OPERATORS = [
 	{ id: '/', label: 'divide', group: 'arithmetic', kind: 'binary' },
 	{ id: '%', label: 'modulo', group: 'arithmetic', kind: 'binary' },
 	// String
-	{ id: 'cat', label: 'concatenate strings', group: 'string', kind: 'binary', labels: ['Right operand'] },
-	{ id: 'substr', label: 'substring', group: 'string', kind: 'ternary', labels: ['Start', 'Length'], placeholders: ['0', '5'] },
+	{
+		id: 'cat',
+		label: 'concatenate strings',
+		group: 'string',
+		kind: 'binary',
+		labels: ['Right operand'],
+	},
+	{
+		id: 'substr',
+		label: 'substring',
+		group: 'string',
+		kind: 'ternary',
+		labels: ['Start', 'Length'],
+		placeholders: ['0', '5'],
+	},
 	// Array / higher-order
-	{ id: 'map', label: 'map (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'filter', label: 'filter (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'reduce', label: 'reduce (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'all', label: 'all (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'none', label: 'none (collection, predicate)', group: 'array', kind: 'array-op' },
-	{ id: 'some', label: 'some (collection, predicate)', group: 'array', kind: 'array-op' },
+	{
+		id: 'map',
+		label: 'map (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'filter',
+		label: 'filter (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'reduce',
+		label: 'reduce (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'all',
+		label: 'all (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'none',
+		label: 'none (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
+	{
+		id: 'some',
+		label: 'some (collection, predicate)',
+		group: 'array',
+		kind: 'array-op',
+	},
 	{ id: 'merge', label: 'merge arrays', group: 'array', kind: 'merge' },
 	// Control flow / refs
 	{ id: 'if', label: 'if (condition, then, else)', group: 'control', kind: 'if' },
-	{ id: 'var', label: 'var (read value at path)', group: 'control', kind: 'var-only' },
+	{
+		id: 'var',
+		label: 'var (read value at path)',
+		group: 'control',
+		kind: 'var-only',
+	},
 ]
 
 let leafUidCounter = 0
@@ -228,7 +314,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorOptions() {
 			return OPERATORS.map((op) => ({
 				id: op.id,
@@ -236,22 +322,34 @@ export default {
 				group: op.group ? this.t('openconnector', op.group) : '',
 			}))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
-			const op = keys.find((key) => OPERATORS.some((entry) => entry.id === key))
+			const op = keys.find((key) =>
+				OPERATORS.some((entry) => entry.id === key),
+			)
 			return op || '=='
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		schema() {
-			return OPERATORS.find((entry) => entry.id === this.currentOperator) || OPERATORS[0]
+			return (
+				OPERATORS.find((entry) => entry.id === this.currentOperator)
+				|| OPERATORS[0]
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
-			return this.operatorOptions.find((option) => option.id === this.currentOperator)
-				?? this.operatorOptions[0]
+			return (
+				this.operatorOptions.find(
+					(option) => option.id === this.currentOperator,
+				) ?? this.operatorOptions[0]
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		args() {
 			const value = this.node?.[this.currentOperator]
 			if (Array.isArray(value)) return value
@@ -261,53 +359,114 @@ export default {
 			}
 			return []
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varPath() {
 			const first = this.args[0]
-			if (first && typeof first === 'object' && Object.prototype.hasOwnProperty.call(first, 'var')) {
+			if (first && typeof first === 'object' && Object.hasOwn(first, 'var')) {
 				return String(first.var ?? '')
 			}
 			if (typeof first === 'string') return first
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varOnlyPath() {
 			// For top-level `var` ops, args[0] is the dotted-path string.
 			const first = this.args[0]
 			if (typeof first === 'string') return first
-			if (first && typeof first === 'object' && Object.prototype.hasOwnProperty.call(first, 'var')) {
+			if (first && typeof first === 'object' && Object.hasOwn(first, 'var')) {
 				return String(first.var ?? '')
 			}
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		mergeJson() {
-			try { return JSON.stringify(this.args, null, 2) } catch (_e) { return '[]' }
+			try {
+				return JSON.stringify(this.args, null, 2)
+			} catch (_e) {
+				return '[]'
+			}
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/**
+		 * Handle typing in the "Field" input of a non-`var` leaf: rewrite
+		 * args[0] to `{ var: <path> }` while leaving the operator and the
+		 * value slots untouched.
+		 *
+		 * @param {string} value Dotted path into the rule context, e.g. `body.status`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onVarInput(value) {
 			this.emitUpdate({ varPath: value })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle typing in the "Variable path" input shown when the picked
+		 * operator is `var` itself — the whole node is the reference, so it
+		 * is emitted directly instead of going through `emitUpdate`.
+		 *
+		 * @param {string} value Dotted path to read from the rule context, e.g. `user.email`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onVarOnlyInput(value) {
 			// Emit `{ "var": [<path>] }` — jsonlogic-php accepts both
 			// `{ var: "a" }` and `{ var: ["a"] }`; we use the array form
 			// here for shape parity with other ops in the tree.
 			this.$emit('update', { var: [value] })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle a pick in the operator NcSelect. Ignores the clear event
+		 * so the leaf always keeps a valid JsonLogic operator.
+		 *
+		 * @param {{ id: string, label: string, group: string }|null} option Chosen entry
+		 *   from `operatorOptions`, or null when the select emits a clear.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onOperatorPick(option) {
 			if (!option) return
 			this.emitUpdate({ operator: option.id })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle typing in a plain-text value slot (comparison value, or the
+		 * start/length slots of a ternary op). The text is coerced to a
+		 * number/boolean/null where it looks like one.
+		 *
+		 * @param {number} slot Index in the operator's args array to write, e.g. 1 for
+		 *   the comparison value and 2 for a ternary's length.
+		 * @param {string} value Raw text entered by the user, before coercion.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSlotInput(slot, value) {
 			this.emitUpdate({ slot, slotValue: this.coerce(value) })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle typing in a JsonLogic textarea slot (the then/else branches
+		 * of `if`, or the collection/predicate of an array op). Empty input
+		 * clears the slot; invalid JSON sets `parseError` and emits nothing,
+		 * so a half-typed node never reaches the rule.
+		 *
+		 * @param {number} slot Index in the operator's args array to write, e.g. 0 for an
+		 *   array op's collection and 1 for its predicate.
+		 * @param {string} value Raw textarea contents, expected to parse as JsonLogic.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onJsonSlotInput(slot, value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -320,10 +479,25 @@ export default {
 				this.parseError = ''
 				this.emitUpdate({ slot, slotValue: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.parseError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle typing in the `merge` textarea. `merge` is variadic, so the
+		 * whole args array is authored as one JSON array; anything that is
+		 * not an array is rejected with a `parseError` instead of emitted.
+		 *
+		 * @param {string} value Raw textarea contents, expected to be a JSON array of
+		 *   JsonLogic nodes, e.g. `[ { "var": "a" }, [ 1, 2 ] ]`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onMergeInput(value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -334,31 +508,70 @@ export default {
 			try {
 				const parsed = JSON.parse(trimmed)
 				if (!Array.isArray(parsed)) {
-					this.parseError = this.t('openconnector', 'merge expects a JSON array')
+					this.parseError = this.t(
+						'openconnector',
+						'merge expects a JSON array',
+					)
 					return
 				}
 				this.parseError = ''
 				this.$emit('update', { merge: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+				this.parseError = this.t(
+					'openconnector',
+					'Invalid JSON: {message}',
+					{ message: parseErr.message },
+				)
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Render one arg slot as text for a plain `NcTextField`. Objects are
+		 * stringified so a nested node at least stays visible instead of
+		 * showing `[object Object]`.
+		 *
+		 * @param {number} index Position in the operator's args array to read.
+		 * @return {string} Displayable value, or '' when the slot is unset.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		slotString(index) {
 			const raw = this.args[index]
 			if (raw === null || raw === undefined) return ''
 			if (typeof raw === 'object') {
-				try { return JSON.stringify(raw) } catch (_e) { return String(raw) }
+				try {
+					return JSON.stringify(raw)
+				} catch (_e) {
+					return String(raw)
+				}
 			}
 			return String(raw)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Render one arg slot as pretty-printed JSON for a textarea. Strings
+		 * are passed through unquoted so a user's in-progress typing is not
+		 * re-escaped on every keystroke.
+		 *
+		 * @param {number} index Position in the operator's args array to read.
+		 * @param {object} [options] Rendering options.
+		 * @param {string} [options.fallback] Text to show when the slot does not exist yet,
+		 *   used by array ops whose collection slot may still be empty.
+		 * @return {string} JSON text for the textarea.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		slotJson(index, { fallback = '' } = {}) {
 			const raw = this.args[index]
 			if (raw === undefined) return fallback
 			if (typeof raw === 'string') return raw
-			try { return JSON.stringify(raw, null, 2) } catch (_e) { return String(raw) }
+			try {
+				return JSON.stringify(raw, null, 2)
+			} catch (_e) {
+				return String(raw)
+			}
 		},
+
 		/**
 		 * Best-effort literal coercion. Numbers and booleans get
 		 * recognised so JsonLogic's `>`/`<` actually compare numerics
@@ -369,7 +582,7 @@ export default {
 		 * @param {string} raw User-entered text.
 		 * @return {*} Coerced value.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		coerce(raw) {
 			if (raw === '') return ''
@@ -380,6 +593,7 @@ export default {
 			if (/^-?\d+\.\d+$/.test(raw)) return Number(raw)
 			return raw
 		},
+
 		/**
 		 * Rebuild the JsonLogic node and emit. Done in one place so
 		 * the operator change can both flip the operator key AND
@@ -389,25 +603,34 @@ export default {
 		 *   Partial change — fields omitted come from current state.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		emitUpdate(patch) {
 			const operator = patch.operator ?? this.currentOperator
-			const nextSchema = OPERATORS.find((entry) => entry.id === operator) || OPERATORS[0]
+			const nextSchema =
+				OPERATORS.find((entry) => entry.id === operator) || OPERATORS[0]
 
 			// Operator switch: rebuild args from scratch using current
 			// var/value where possible, falling back to defaults.
 			if (patch.operator !== undefined) {
-				const args = this.argsForKind(nextSchema, { carryVar: this.varPath, carryValue: this.args[1] })
+				const args = this.argsForKind(nextSchema, {
+					carryVar: this.varPath,
+					carryValue: this.args[1],
+				})
 				this.$emit('update', { [operator]: args })
 				return
 			}
 
 			// var-only schema funnels through onVarOnlyInput; here we
 			// rebuild non-var-only schemas.
-			const args = (this.node?.[this.currentOperator] && Array.isArray(this.node[this.currentOperator]))
-				? this.node[this.currentOperator].slice()
-				: this.argsForKind(nextSchema, { carryVar: this.varPath, carryValue: this.args[1] })
+			const args =
+				this.node?.[this.currentOperator]
+				&& Array.isArray(this.node[this.currentOperator])
+					? this.node[this.currentOperator].slice()
+					: this.argsForKind(nextSchema, {
+							carryVar: this.varPath,
+							carryValue: this.args[1],
+						})
 
 			if (patch.varPath !== undefined) {
 				args[0] = { var: patch.varPath }
@@ -418,12 +641,15 @@ export default {
 
 			// For unary, trim trailing slots.
 			if (nextSchema.kind === 'unary') {
-				this.$emit('update', { [operator]: [args[0] ?? { var: this.varPath }] })
+				this.$emit('update', {
+					[operator]: [args[0] ?? { var: this.varPath }],
+				})
 				return
 			}
 
 			this.$emit('update', { [operator]: args })
 		},
+
 		/**
 		 * Build a fresh args array for a given schema kind. Used when
 		 * switching ops so the new shape is well-formed.
@@ -433,26 +659,26 @@ export default {
 		 *   reuse of the current var/value across an op change.
 		 * @return {Array} Initial args array.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		argsForKind(schema, { carryVar = '', carryValue = '' } = {}) {
 			switch (schema.kind) {
-			case 'unary':
-				return [{ var: carryVar }]
-			case 'binary':
-				return [{ var: carryVar }, carryValue ?? '']
-			case 'ternary':
-				return [{ var: carryVar }, carryValue ?? '', '']
-			case 'if':
-				return [{ var: carryVar }, '', '']
-			case 'array-op':
-				return [{ var: carryVar }, { '==': [{ var: '' }, true] }]
-			case 'merge':
-				return [{ var: carryVar }]
-			case 'var-only':
-				return [carryVar]
-			default:
-				return [{ var: carryVar }, carryValue ?? '']
+				case 'unary':
+					return [{ var: carryVar }]
+				case 'binary':
+					return [{ var: carryVar }, carryValue ?? '']
+				case 'ternary':
+					return [{ var: carryVar }, carryValue ?? '', '']
+				case 'if':
+					return [{ var: carryVar }, '', '']
+				case 'array-op':
+					return [{ var: carryVar }, { '==': [{ var: '' }, true] }]
+				case 'merge':
+					return [{ var: carryVar }]
+				case 'var-only':
+					return [carryVar]
+				default:
+					return [{ var: carryVar }, carryValue ?? '']
 			}
 		},
 	},
@@ -462,12 +688,26 @@ export default {
 <style scoped>
 .rule-condition-leaf {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr) auto;
+	grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr) minmax(0, 1fr) auto;
 	gap: 8px;
 	align-items: end;
 	padding: 8px;
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
+}
+
+/*
+ * NcSelect ships `.v-select.select { min-width: 260px }`, which is wider than
+ * the operator's grid track. A grid item cannot shrink below its content's
+ * min-width, so the select overflowed its track and rendered on top of the
+ * Value field to its right — at any container width, since the track was a
+ * fixed 220px. Clear the floor so the track governs, and let the track grow
+ * with the row instead of staying pinned at its minimum.
+ */
+.rule-condition-leaf .rule-condition-leaf__op,
+.rule-condition-leaf :deep(.v-select.select) {
+	min-width: 0;
+	width: 100%;
 }
 
 .rule-condition-leaf__value--placeholder {

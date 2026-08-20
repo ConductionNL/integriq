@@ -21,7 +21,7 @@ as an `IntegrationProvider` registered through OR's integration
 registry per ADR-019 and surfaced to consuming apps by a stable
 slot slug. Adapter classes MUST live under
 `lib/Service/Adapter/DataInfra/` and MUST NOT be embedded in any
-sibling app (decidesk, opencatalogi, launchpad, etc.). Per ADR-022,
+sibling app (decidesk, opencatalogi, mydash, etc.). Per ADR-022,
 sibling apps consume these adapters by slot slug, not by
 importing openconnector PHP.
 

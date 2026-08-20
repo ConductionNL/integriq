@@ -42,40 +42,60 @@
 					{{ kindLabel }} {{ t('openconnector', 'source (API)') }}
 				</label>
 				<NcSelect
-					:input-id="apiSourceId"
+					:inputId="apiSourceId"
 					:aria-label-combobox="t('openconnector', 'Source (API)')"
-					:value="selectedSource"
+					:modelValue="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@input="onSourcePick" />
+					@update:modelValue="onSourcePick" />
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'The Source record that defines the API base URL + auth.') }}
+					{{
+						t(
+							'openconnector',
+							'The Source record that defines the API base URL + auth.',
+						)
+					}}
 				</span>
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Endpoint')"
-					:value="configValue('endpoint')"
-					:placeholder="t('openconnector', 'Path appended to the source URL')"
-					@update:value="(value) => onConfigUpdate('endpoint', value)" />
+					:modelValue="configValue('endpoint')"
+					:placeholder="
+						t('openconnector', 'Path appended to the source URL')
+					"
+					@update:modelValue="
+						(value) => onConfigUpdate('endpoint', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:value="configValue('idPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the id field in the API response')"
-					@update:value="(value) => onConfigUpdate('idPosition', value)" />
+					:modelValue="configValue('idPosition')"
+					:placeholder="
+						t(
+							'openconnector',
+							'Dot-path to the id field in the API response',
+						)
+					"
+					@update:modelValue="
+						(value) => onConfigUpdate('idPosition', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Results position')"
-					:value="configValue('resultsPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the list of items')"
-					@update:value="(value) => onConfigUpdate('resultsPosition', value)" />
+					:modelValue="configValue('resultsPosition')"
+					:placeholder="
+						t('openconnector', 'Dot-path to the list of items')
+					"
+					@update:modelValue="
+						(value) => onConfigUpdate('resultsPosition', value)
+					" />
 			</div>
 		</template>
 
@@ -86,13 +106,13 @@
 					{{ t('openconnector', 'Register') }}
 				</label>
 				<NcSelect
-					:input-id="registerSelectId"
+					:inputId="registerSelectId"
 					:aria-label-combobox="t('openconnector', 'Register')"
-					:value="selectedRegister"
+					:modelValue="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
 					:placeholder="t('openconnector', 'Pick a register')"
-					@input="onRegisterPick" />
+					@update:modelValue="onRegisterPick" />
 			</div>
 
 			<div class="sync-config__field">
@@ -100,21 +120,25 @@
 					{{ t('openconnector', 'Schema') }}
 				</label>
 				<NcSelect
-					:input-id="schemaSelectId"
+					:inputId="schemaSelectId"
 					:aria-label-combobox="t('openconnector', 'Schema')"
-					:value="selectedSchema"
+					:modelValue="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
-					:placeholder="t('openconnector', 'Pick a schema in the register')"
-					@input="onSchemaPick" />
+					:placeholder="
+						t('openconnector', 'Pick a schema in the register')
+					"
+					@update:modelValue="onSchemaPick" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Object filter (optional)')"
-					:value="configValue('filter')"
+					:modelValue="configValue('filter')"
 					:placeholder="t('openconnector', 'JSON-encoded OR query filter')"
-					@update:value="(value) => onConfigUpdate('filter', value)" />
+					@update:modelValue="
+						(value) => onConfigUpdate('filter', value)
+					" />
 			</div>
 		</template>
 
@@ -125,14 +149,30 @@
 					{{ t('openconnector', 'File path or glob') }}
 				</label>
 				<div class="sync-config__file-row">
+					<!-- `:id`, NOT `:inputId`. `inputId` is a real prop on
+					     NcSelect (used above) but NOT on NcTextField /
+					     NcInputField: nc-vue 9.9.0 declares `id`, `label`,
+					     `placeholder`, `inputClass`, `helperText` and
+					     `modelValue`, and `grep -ril inputid` over
+					     dist/components/NcTextField|NcInputField returns
+					     nothing. So `:inputId` fell through $attrs onto the
+					     <input> as a literal `inputid="…"` attribute that no
+					     browser or screen reader consumes — the `<label for>`
+					     above pointed at an id that never existed, and this
+					     field had no accessible name (WCAG 2.2 AA SC 1.3.1 /
+					     3.3.2). `id` is what NcInputField puts on the real
+					     <input>, so the existing visible label now associates
+					     for real. -->
 					<NcTextField
-						:input-id="filePathId"
+						:id="filePathId"
 						class="sync-config__file-field"
-						:value="sourceIdValue"
-						:placeholder="'/example/path/*.json'"
-						@update:value="(value) => $emit('update:sourceId', value)" />
+						:modelValue="sourceIdValue"
+						placeholder="/example/path/*.json"
+						@update:modelValue="
+							(value) => $emit('update:sourceId', value)
+						" />
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						:aria-label="t('openconnector', 'Browse Files app')"
 						:disabled="pickingFile"
 						@click="openFilePicker">
@@ -144,7 +184,12 @@
 					</NcButton>
 				</div>
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.') }}
+					{{
+						t(
+							'openconnector',
+							'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.',
+						)
+					}}
 				</span>
 				<span v-if="pickerError" class="sync-config__error">
 					{{ pickerError }}
@@ -154,33 +199,177 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'File format')"
-					:value="configValue('format')"
-					:placeholder="'json | xml | csv'"
-					@update:value="(value) => onConfigUpdate('format', value)" />
+					:modelValue="configValue('format')"
+					placeholder="json | xml | csv"
+					@update:modelValue="
+						(value) => onConfigUpdate('format', value)
+					" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:value="configValue('idPosition')"
-					:placeholder="t('openconnector', 'Dot-path to the id field in each record')"
-					@update:value="(value) => onConfigUpdate('idPosition', value)" />
+					:modelValue="configValue('idPosition')"
+					:placeholder="
+						t('openconnector', 'Dot-path to the id field in each record')
+					"
+					@update:modelValue="
+						(value) => onConfigUpdate('idPosition', value)
+					" />
 			</div>
+		</template>
+
+		<!-- Nextcloud Table mode -->
+		<template v-else-if="type === 'nextcloud-table'">
+			<div class="sync-config__field">
+				<label :for="tableSourceId" class="sync-config__label">
+					{{ kindLabel }}
+					{{ t('openconnector', 'source (Nextcloud instance)') }}
+				</label>
+				<NcSelect
+					:inputId="tableSourceId"
+					:aria-label-combobox="
+						t('openconnector', 'Source (Nextcloud instance)')
+					"
+					:modelValue="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
+					:placeholder="t('openconnector', 'Pick a configured source')"
+					@update:modelValue="onSourcePick" />
+				<span class="sync-config__helper">
+					{{
+						t(
+							'openconnector',
+							'The Source record whose base URL + credential reach the Tables API.',
+						)
+					}}
+				</span>
+			</div>
+
+			<div class="sync-config__field">
+				<label :for="tablePickerId" class="sync-config__label">
+					{{ t('openconnector', 'Table') }}
+				</label>
+				<NcSelect
+					:inputId="tablePickerId"
+					:aria-label-combobox="t('openconnector', 'Table')"
+					:modelValue="selectedTable"
+					:options="tableOptions"
+					:loading="tablesLoading"
+					:disabled="!sourceIdValue"
+					:inputLabel="t('openconnector', 'Table')"
+					:placeholder="
+						t('openconnector', 'Pick a table the source can access')
+					"
+					@update:modelValue="onTablePick" />
+				<span v-if="tablesError" class="sync-config__error">
+					{{ tablesError }}
+				</span>
+				<span v-else class="sync-config__helper">
+					{{
+						t(
+							'openconnector',
+							'Rows are read from (source) or written to (target) this table.',
+						)
+					}}
+				</span>
+			</div>
+
+			<!-- Column-mapping helper (target only) -->
+			<TablesColumnMapping
+				v-if="kind === 'target' && configValue('tableId')"
+				:sourceId="sourceIdValue"
+				:tableId="configValue('tableId')"
+				:config="config"
+				@update:config="(value) => $emit('update:config', value)" />
+		</template>
+
+		<!-- Nextcloud Form mode (source only — nextcloud-forms-connector REQ-002) -->
+		<template v-else-if="type === 'nextcloud-form'">
+			<div class="sync-config__field">
+				<label :for="formSourceId" class="sync-config__label">
+					{{ kindLabel }}
+					{{ t('openconnector', 'source (Nextcloud instance)') }}
+				</label>
+				<NcSelect
+					:inputId="formSourceId"
+					:aria-label-combobox="
+						t('openconnector', 'Source (Nextcloud instance)')
+					"
+					:modelValue="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
+					:placeholder="t('openconnector', 'Pick a configured source')"
+					@update:modelValue="onSourcePick" />
+				<span class="sync-config__helper">
+					{{
+						t(
+							'openconnector',
+							'The Source record whose base URL + credential reach the Forms API.',
+						)
+					}}
+				</span>
+			</div>
+
+			<div class="sync-config__field">
+				<label :for="formPickerId" class="sync-config__label">
+					{{ t('openconnector', 'Form') }}
+				</label>
+				<NcSelect
+					:inputId="formPickerId"
+					:aria-label-combobox="t('openconnector', 'Form')"
+					:modelValue="selectedForm"
+					:options="formOptions"
+					:loading="formsLoading"
+					:disabled="!sourceIdValue"
+					:inputLabel="t('openconnector', 'Form')"
+					:placeholder="
+						t('openconnector', 'Pick a form the source can access')
+					"
+					@update:modelValue="onFormPick" />
+				<span v-if="formsError" class="sync-config__error">
+					{{ formsError }}
+				</span>
+				<span v-else class="sync-config__helper">
+					{{
+						t(
+							'openconnector',
+							'Submissions are read from this form (nextcloud-form is a source-only type).',
+						)
+					}}
+				</span>
+			</div>
+
+			<!-- Field-mapping (question reference) helper -->
+			<FormsFieldMapping
+				v-if="configValue('formId')"
+				:sourceId="sourceIdValue"
+				:formId="configValue('formId')" />
 		</template>
 
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
-			{{ t('openconnector', 'Pick a {kind} type above to configure it.', { kind: kind }) }}
+			{{
+				t('openconnector', 'Pick a {kind} type above to configure it.', {
+					kind: kind,
+				})
+			}}
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
+import { FilePickerType, getFilePickerBuilder } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
-import { getFilePickerBuilder, FilePickerType } from '@nextcloud/dialogs'
+import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
+import FormsFieldMapping from './FormsFieldMapping.vue'
+import TablesColumnMapping from './TablesColumnMapping.vue'
+import { mapFormOptions } from './formsBridge.js'
+import { extractResults, mapTableOptions } from './tablesBridge.js'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -198,6 +387,8 @@ export default {
 		NcSelect,
 		NcTextField,
 		FolderOpenOutline,
+		TablesColumnMapping,
+		FormsFieldMapping,
 	},
 
 	props: {
@@ -211,6 +402,7 @@ export default {
 			required: true,
 			validator: (value) => ['source', 'target'].includes(value),
 		},
+
 		/**
 		 * The type discriminator picked on the parent. Determines which
 		 * branch of the conditional template renders.
@@ -219,6 +411,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * The polymorphic id string. For `api` mode the Source UUID; for
 		 * `register/schema` mode `<registerId>/<schemaId>`; for `file`
@@ -228,6 +421,7 @@ export default {
 			type: [String, Number],
 			default: '',
 		},
+
 		/**
 		 * Type-specific config blob. Different keys are read/written
 		 * depending on `type`.
@@ -238,6 +432,15 @@ export default {
 		},
 	},
 
+	// The two model channels documented at the top of this file. Declaring
+	// them is not bookkeeping: an UNDECLARED emitted event also falls through
+	// as a native listener onto the component's root element, so the parent's
+	// `@update:sourceId` was being bound twice — once as a component event and
+	// once on the wrapping <div>. Declaring them removes the stray native
+	// binding and is what `vue/require-explicit-emits` was reporting (11
+	// warnings on this file).
+	emits: ['update:sourceId', 'update:config'],
+
 	data() {
 		const seq = ++widgetSeq
 		return {
@@ -247,99 +450,272 @@ export default {
 			registerOptions: [],
 			registersLoading: false,
 			selectedRegisterRecord: null,
+			/**
+			 * Schema id → display label, from `/apps/openregister/api/schemas`.
+			 * A register's own `schemas` array carries bare ids, so without
+			 * this the picker can only show the id back to the user.
+			 */
+			schemaLabelsById: {},
 			pickingFile: false,
 			pickerError: '',
+			tableOptions: [],
+			tablesLoading: false,
+			tablesError: '',
+			formOptions: [],
+			formsLoading: false,
+			formsError: '',
 		}
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		kindLabel() {
 			return this.kind === 'source'
 				? t('openconnector', 'Source')
 				: t('openconnector', 'Target')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		apiSourceId() {
 			return `sync-config-${this.widgetUid}-api-source`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSelectId() {
 			return `sync-config-${this.widgetUid}-register`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSelectId() {
 			return `sync-config-${this.widgetUid}-schema`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		filePathId() {
 			return `sync-config-${this.widgetUid}-file-path`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		sourceIdValue() {
 			return this.sourceId != null ? String(this.sourceId) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
-			return this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
-				id: this.sourceIdValue,
-				label: this.sourceIdValue,
-			}
+			return (
+				this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
+					id: this.sourceIdValue,
+					label: this.sourceIdValue,
+				}
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
 			if (!registerId) return null
-			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
+			return (
+				this.registerOptions.find(
+					(opt) => String(opt.id) === String(registerId),
+				) ?? null
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Schema options for the selected register.
+		 *
+		 * A register's `schemas` is an array of bare ids — `[25, 26]` — not
+		 * expanded records, so a label has to be resolved from the separately
+		 * fetched schema list. Without that lookup the picker fell back to
+		 * `String(schema)` and showed the user the id. Expanded objects are
+		 * still accepted in case the registers endpoint ever inlines them.
+		 *
+		 * @return {Array<{id: string, label: string}>} Options for the picker.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		schemaOptions() {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
 			const schemas = Array.isArray(reg.schemas) ? reg.schemas : []
-			return schemas.map((schema) => ({
-				id: String(schema.id ?? schema.slug ?? schema),
-				label: schema.title || schema.name || schema.slug || String(schema),
-			}))
+			return schemas.map((schema) => {
+				const isRecord = schema !== null && typeof schema === 'object'
+				const id = String(
+					isRecord ? (schema.id ?? schema.slug ?? '') : schema,
+				)
+				const inlineLabel = isRecord
+					? schema.title || schema.name || schema.slug || ''
+					: ''
+				return {
+					id,
+					// Fall back to the id only when the schema list has not
+					// resolved (or no longer contains this schema) — better a
+					// visible id than an empty option.
+					label: inlineLabel || this.schemaLabelsById[id] || id,
+				}
+			})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSchema() {
 			const parts = this.sourceIdValue.split('/')
 			if (parts.length < 2) return null
 			const schemaId = parts[1]
-			return this.schemaOptions.find((opt) => String(opt.id) === String(schemaId)) ?? null
+			return (
+				this.schemaOptions.find((opt) => String(opt.id) === String(schemaId))
+				?? null
+			)
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		tableSourceId() {
+			return `sync-config-${this.widgetUid}-table-source`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		tablePickerId() {
+			return `sync-config-${this.widgetUid}-table`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		selectedTable() {
+			const tableId = this.configValue('tableId')
+			if (!tableId) return null
+			return (
+				this.tableOptions.find(
+					(opt) => String(opt.id) === String(tableId),
+				) ?? {
+					id: Number(tableId),
+					label: String(tableId),
+				}
+			)
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		formSourceId() {
+			return `sync-config-${this.widgetUid}-form-source`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		formPickerId() {
+			return `sync-config-${this.widgetUid}-form`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		selectedForm() {
+			const formId = this.configValue('formId')
+			if (!formId) return null
+			return (
+				this.formOptions.find(
+					(opt) => String(opt.id) === String(formId),
+				) ?? {
+					id: Number(formId),
+					label: String(formId),
+				}
+			)
 		},
 	},
 
 	watch: {
 		type: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+			/**
+			 * Lazily load the option lists the newly-selected branch of the
+			 * template needs, skipping any list that is already populated so
+			 * re-picking the same type costs no requests.
+			 *
+			 * @param {string} value The `type` discriminator now in effect — one of
+			 *   `api`, `register/schema`, `nextcloud-table`, `nextcloud-form`.
+			 * @return {void}
+			 *
+			 * @spec openspec/specs/sync-editor-ui/spec.md
+			 */
 			handler(value) {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
 				}
-				if (value === 'register/schema' && this.registerOptions.length === 0) {
-					this.fetchRegisters()
+				if (value === 'register/schema') {
+					if (this.registerOptions.length === 0) {
+						this.fetchRegisters()
+					}
+					// Separate call, separately guarded: registers carry schema
+					// IDS only, so the names come from the schema endpoint, and
+					// the two caches must not be able to drift apart.
+					if (Object.keys(this.schemaLabelsById).length === 0) {
+						this.fetchSchemaLabels()
+					}
+				}
+				if (value === 'nextcloud-table') {
+					if (this.sourceOptions.length === 0) {
+						this.fetchSources()
+					}
+					if (this.sourceIdValue) {
+						this.fetchTables()
+					}
+				}
+				if (value === 'nextcloud-form') {
+					if (this.sourceOptions.length === 0) {
+						this.fetchSources()
+					}
+					if (this.sourceIdValue) {
+						this.fetchForms()
+					}
 				}
 			},
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		sourceId() {
+			// A source change under nextcloud-table invalidates the table list.
+			if (this.type === 'nextcloud-table' && this.sourceIdValue) {
+				this.fetchTables()
+			}
+			// A source change under nextcloud-form invalidates the form list
+			// (sync-editor-ui REQ-SYNCUI-008).
+			if (this.type === 'nextcloud-form' && this.sourceIdValue) {
+				this.fetchForms()
+			}
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/**
+		 * Read one key out of the `config` blob as a string for binding to a
+		 * text input. Missing keys and null become '' so inputs never bind
+		 * to undefined, and non-strings (e.g. a numeric tableId) are cast.
+		 *
+		 * @param {string} key Config key to read, e.g. `endpoint`, `idPosition`, `tableId`.
+		 * @return {string} The stored value as text, or '' when unset.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		configValue(key) {
 			if (!this.config || typeof this.config !== 'object') return ''
 			const v = this.config[key]
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Write one key into the `config` blob and emit the whole object
+		 * back to the parent. Copies before mutating so the prop is never
+		 * edited in place, and an emptied field drops its key rather than
+		 * persisting an empty string.
+		 *
+		 * @param {string} key Config key to set, e.g. `endpoint`, `filter`, `format`.
+		 * @param {string} value New value from the input; '' or null removes the key.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onConfigUpdate(key, value) {
-			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
-				? { ...this.config }
-				: {}
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
 			if (value === '' || value == null) {
 				delete next[key]
 			} else {
@@ -347,11 +723,158 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle a pick in the Source selector, emitting the Source UUID up
+		 * to the parent's `sourceId`/`targetId` field. Clearing the select
+		 * emits '' so the parent unsets the id.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `sourceOptions`, or null when the select is cleared.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle a pick in the Table selector under the `nextcloud-table`
+		 * kind.
+		 *
+		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
+		 *   `tableOptions`; null (or a missing id) clears `config.tableId`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		onTablePick(option) {
+			// Store the numeric table id in the config blob; clear any stale
+			// column mapping since it referenced the previous table's columns.
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
+			if (option?.id) {
+				next.tableId = Number(option.id)
+			} else {
+				delete next.tableId
+			}
+			delete next.columnMapping
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Fetch the tables the selected Source can access via the tables-bridge
+		 * discovery endpoint. Soft-fails to an empty list with an inline error
+		 * message so the picker degrades gracefully (contract.md 4xx/5xx).
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		async fetchTables() {
+			if (!this.sourceIdValue) {
+				this.tableOptions = []
+				return
+			}
+			this.tablesLoading = true
+			this.tablesError = ''
+			try {
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/tables-bridge/tables',
+					),
+					{ params: { sourceId: this.sourceIdValue } },
+				)
+				this.tableOptions = mapTableOptions(extractResults(response.data))
+			} catch (err) {
+				this.tableOptions = []
+				this.tablesError =
+					err?.response?.data?.error
+					|| t('openconnector', 'Could not load tables for this source.')
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] tables fetch failed', err)
+			} finally {
+				this.tablesLoading = false
+			}
+		},
+
+		/**
+		 * Handle a pick in the Form selector under the `nextcloud-form`
+		 * source kind.
+		 *
+		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
+		 *   `formOptions`; null (or a missing id) clears `config.formId`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		onFormPick(option) {
+			// Store the numeric form id in the config blob; clear no other
+			// keys — unlike nextcloud-table there is no columnMapping stored
+			// here (FormsFieldMapping is read-only labelling, no write payload).
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
+			if (option?.id) {
+				next.formId = Number(option.id)
+			} else {
+				delete next.formId
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Fetch the forms the selected Source can access via the forms-bridge
+		 * discovery endpoint. Soft-fails to an empty list with an inline error
+		 * message so the picker degrades gracefully.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		async fetchForms() {
+			if (!this.sourceIdValue) {
+				this.formOptions = []
+				return
+			}
+			this.formsLoading = true
+			this.formsError = ''
+			try {
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openconnector/api/synchronizations/forms-bridge/forms',
+					),
+					{ params: { sourceId: this.sourceIdValue } },
+				)
+				this.formOptions = mapFormOptions(extractResults(response.data))
+			} catch (err) {
+				this.formOptions = []
+				this.formsError =
+					err?.response?.data?.error
+					|| t('openconnector', 'Could not load forms for this source.')
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] forms fetch failed', err)
+			} finally {
+				this.formsLoading = false
+			}
+		},
+
+		/**
+		 * Handle a pick in the Register selector of `register/schema` mode.
+		 * Emits the half-formed `<registerId>/` id — the schema half stays
+		 * empty until the user picks below — and caches the full record so
+		 * `schemaOptions` keeps its schemas after the prop round-trips.
+		 *
+		 * @param {{ id: string, label: string, schemas: object[] }|null} option Chosen
+		 *   entry from `registerOptions`; null clears the id and the cache.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -365,7 +888,18 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Handle a pick in the Schema selector of `register/schema` mode,
+		 * emitting the combined `<registerId>/<schemaId>` id. Clearing the
+		 * schema falls back to the register half alone.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `schemaOptions`, or null when the select is cleared.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onSchemaPick(option) {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg || !option?.id) {
@@ -374,16 +908,26 @@ export default {
 			}
 			this.$emit('update:sourceId', String(reg.id) + '/' + String(option.id))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchSources() {
 			this.sourcesLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/source'),
-					{ params: { limit: 500 } },
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/source',
+					),
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.sourceOptions = list.map((row) => ({
 					id: String(row.id || row.uuid),
 					label: row.name || row.title || row.id,
@@ -396,6 +940,7 @@ export default {
 				this.sourcesLoading = false
 			}
 		},
+
 		/**
 		 * Open the Nextcloud Files file picker and write the chosen path
 		 * back through the `update:sourceId` channel — same mutation path
@@ -408,7 +953,7 @@ export default {
 		 * are commonly XML/CSV/JSON without consistent mime detection on
 		 * server uploads.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		async openFilePicker() {
 			this.pickerError = ''
@@ -440,13 +985,57 @@ export default {
 				this.pickingFile = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Build the schema id → name lookup the schema picker labels itself
+		 * with. `/apps/openregister/api/registers` returns each register's
+		 * `schemas` as bare ids, so this second call is what turns "25" into
+		 * the schema's title. Soft-fails: on error the picker falls back to
+		 * showing ids, which is what it did unconditionally before.
+		 *
+		 * @return {Promise<void>} Resolves once the lookup is populated.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		async fetchSchemaLabels() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas'),
+				)
+				const data = response.data
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
+				const labels = {}
+				for (const schema of list) {
+					const id = schema?.id ?? schema?.uuid
+					if (id === undefined || id === null) continue
+					labels[String(id)] =
+						schema.title || schema.name || schema.slug || String(id)
+				}
+				this.schemaLabelsById = labels
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] schemas fetch failed', err)
+				this.schemaLabelsById = {}
+			}
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/registers'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/registers'),
+				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.registerOptions = list.map((reg) => ({
 					id: String(reg.id),
 					label: reg.title || reg.name || reg.slug || String(reg.id),
@@ -457,7 +1046,10 @@ export default {
 				// options ready without a second round-trip.
 				const [regId] = this.sourceIdValue.split('/')
 				if (regId) {
-					this.selectedRegisterRecord = this.registerOptions.find((opt) => String(opt.id) === String(regId)) || null
+					this.selectedRegisterRecord =
+						this.registerOptions.find(
+							(opt) => String(opt.id) === String(regId),
+						) || null
 				}
 			} catch (err) {
 				// eslint-disable-next-line no-console

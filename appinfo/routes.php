@@ -17,21 +17,208 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak — route REMOVED (wave-3 security fix).
+		// DSO / Omgevingsloket STAM koppelvlak.
 		//
-		// The `validateSignature` method that backs this endpoint accepts any
-		// non-empty X-DSO-Signature header without cryptographic verification
-		// (the PKIoverheid HMAC/RSA verifier, REQ-DSO-050, was never implemented).
-		// Leaving a #[PublicPage]+#[NoCSRFRequired] webhook with only a
-		// string-presence check in production is a CRITICAL vulnerability.
+		// Re-enabled once `DSOSignatureVerifierService` implemented real
+		// PKIoverheid certificate-chain (RSA) / HMAC shared-secret signature
+		// verification — see
+		// openspec/changes/dso-stam-pkioverheid-signature-verification. Every
+		// request now MUST carry an `X-DSO-Signature` header that
+		// cryptographically verifies before the payload is parsed; the
+		// previous string-presence-only placeholder has been removed.
+		// The target is `receiveRequest`, not the former `receiveVerzoek`: the
+		// method was renamed under the English-code rule and the route name was
+		// left pointing at the old one, so the router matched, the reflector
+		// found no such method, and every STAM push died as a 500. The URL is
+		// unchanged — `verzoeken` there is the DSO/STAM wire path, not code.
+		['name' => 'dSO#receiveRequest', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+
+		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
+		// surface completing the STAM koppelvlak above (which previously
+		// logged and dropped every verzoek — no persistence, no handoff, no
+		// outbound leg existed before this change). The handoff trigger
+		// deliberately requires a real authenticated actor (OpenRegister
+		// HandoffService v1 has no system-user privilege lane; see
+		// design.md §1, same constraint documented for open-formulieren-intake).
+		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
+		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
+		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
+		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
+
+		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
+		// Participant/SMP lookup is an authenticated NC-session call (production
+		// binding for shillinq's PeppolTransmissionAdapterInterface::lookupParticipant).
+		// Outbound transmission is event-driven (PeppolOutboundConsumer), not a route.
+		['name' => 'peppol#participants', 'url' => '/api/peppol/participants/{peppolId}', 'verb' => 'GET', 'requirements' => ['peppolId' => '.+']],
+		// Inbound AP delivery callbacks / document notifications — gated by webhook
+		// signature (HMAC), not an NC session; see PeppolController::inbound().
+		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
+
+		// Live payment providers connector (openspec/changes/live-payment-providers).
+		// Payment creation is an authenticated NC-session call (production binding
+		// for shillinq's MolliePaymentAdapterInterface::createPayment, a follow-up
+		// change — not built here). The webhook is gated by webhook signature
+		// (HMAC), not an NC session; see PaymentsController::webhook() — it never
+		// trusts a status claimed in the body and always re-fetches the
+		// authoritative status from the provider.
+		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
+		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+
+		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
+		// send/status are authenticated NC-session calls (production binding for
+		// sibling apps' own local send adapters, e.g. procest) — mirrors
+		// peppol#participants. Inbound delivery-status callbacks are gated by
+		// webhook signature (HMAC), not an NC session; see NotifyNlController::inbound().
+		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
+		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
+		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+
+		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
+		// Push is an authenticated NC-session call (production binding for sibling
+		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
+		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
 		//
-		// The route is held here as a commented-out placeholder so that the
-		// controller, openspec spec, and TODO are not lost.  Re-enable only after
-		// the real verifier has been implemented and reviewed.
+		// The target is `createCustomerContact`, not the former
+		// `createKlantcontact`: the method was renamed under the English-code
+		// rule and the route name was left behind, so the route resolved to no
+		// method and every push died as a 500. The URL keeps `klantcontacten`
+		// — that is the KISS wire path, not code.
+		['name' => 'kiss#createCustomerContact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+
+		// iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0) bridge
+		// (openspec/changes/iwmo-ijw-adapter). Push is an authenticated NC-session
+		// call (production binding for sibling apps' own social-domain case
+		// modules) — mirrors kiss#createCustomerContact. The inbound retour
+		// receiver is gated by webhook signature (HMAC), not an NC session; see
+		// IwmoIjwController::inbound().
 		//
-		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1041
-		//
-		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// The target is `createMessage`, not the former `createBericht`: the
+		// method was renamed under the English-code rule and the route name was
+		// left behind, so the route resolved to no method and every push died as
+		// a 500. The URL keeps `berichten` — that is the iWMO/iJW wire path.
+		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
+		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
+
+		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
+		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
+		// standard, letting a municipality adopt procest without ripping out
+		// its StUF estate first. The inbound SOAP endpoint is gated by webhook
+		// signature (HMAC), not an NC session, and always replies with a
+		// Bv03/Fo03 StUF body — see StufZknController::inbound(). The outbound
+		// push endpoint is an authenticated NC-session call (production
+		// binding for sibling apps' own zaak modules) — mirrors
+		// iwmoIjw#createMessage.
+		['name' => 'stufZkn#inbound', 'url' => '/api/stuf-zkn/inbound', 'verb' => 'POST'],
+		['name' => 'stufZkn#outbound', 'url' => '/api/stuf-zkn/kennisgevingen', 'verb' => 'POST'],
+
+		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
+		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
+		// routes are authenticated NC-session calls (production binding for
+		// sibling apps reaching another organisation's published service via
+		// the directory + provider seam) — there is no inbound leg (see
+		// design.md "Architecture Overview"), so unlike the connectors above
+		// there is no signed webhook receiver here.
+		['name' => 'fsc#listServices', 'url' => '/api/fsc/services', 'verb' => 'GET'],
+		['name' => 'fsc#call', 'url' => '/api/fsc/call', 'verb' => 'POST'],
+
+		// ZGW version-translation shim (openspec/changes/zgw-version-translation)
+		// — translates the fleet's current ZGW shape ("1.0", the shape
+		// procest/OpenRegister emit today) to/from VNG's incremental ZGW
+		// v1.6 stability line for sibling apps / municipalities on a
+		// different ZGW version. Authenticated NC-session call, mirrors
+		// fsc#call. See ZgwVersionTranslateController::translate().
+		['name' => 'zgwVersionTranslate#translate', 'url' => '/api/zgw-translate', 'verb' => 'POST'],
+
+		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
+		// Inbound submissions are gated by webhook signature (HMAC), not an NC
+		// session; see OpenFormulierenController::inbound(). status/handoff are
+		// authenticated NC-session calls — the handoff trigger deliberately
+		// requires a real authenticated actor (OpenRegister HandoffService v1 has
+		// no system-user privilege lane; see design.md §1.1).
+		['name' => 'openFormulieren#inbound', 'url' => '/api/open-formulieren/submissions', 'verb' => 'POST'],
+		['name' => 'openFormulieren#status', 'url' => '/api/open-formulieren/submissions/{id}', 'verb' => 'GET'],
+		['name' => 'openFormulieren#handoff', 'url' => '/api/open-formulieren/submissions/{id}/handoff', 'verb' => 'POST'],
+
+		// LTI 1.3 / LTI Advantage adapter (openspec/changes/lti-13-platform).
+		// Dedicated controller (DSOController precedent), not the generic
+		// Endpoint pipeline — every route here is called by an external
+		// Platform/Tool, never by an NC session; authentication is the
+		// protocol itself (signed id_token / RFC 7523 client assertion /
+		// previously-issued access token), enforced inside LtiController.
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET'],
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'POST'],
+		['name' => 'lti#launch', 'url' => '/api/lti/{deployment}/launch', 'verb' => 'POST'],
+		['name' => 'lti#token', 'url' => '/api/lti/token', 'verb' => 'POST'],
+		['name' => 'lti#agsScore', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}/scores', 'verb' => 'POST', 'requirements' => ['lineItemId' => '.+']],
+		['name' => 'lti#agsLineItem', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}', 'verb' => 'GET', 'requirements' => ['lineItemId' => '.+']],
+		['name' => 'lti#nrpsMembership', 'url' => '/api/lti/{deployment}/nrps/membership', 'verb' => 'GET'],
+		['name' => 'lti#jwks', 'url' => '/.well-known/lti/{registrationType}/{registrationUuid}/jwks.json', 'verb' => 'GET'],
+		// AGS outbound, Tool role (REQ-LTI-008) — admin-gated, CSRF-protected.
+		// Every route above is the PLATFORM role (inbound). Without this one the
+		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
+		// publishScore() was implemented and spec'd done but structurally
+		// unreachable (openconnector#1192).
+		['name' => 'lti#agsPublishScore', 'url' => '/api/lti/{deployment}/ags/publish-score', 'verb' => 'POST'],
+		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
+		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
+		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],
+		// Registration trust gate (openspec/changes/lti-tool-provider-role, REQ-LTI-011) —
+		// admin-gated, CSRF-protected. No route for LtiIdentityLinkService/
+		// resolveResourceMapping() — both are consumed cross-app via PHP service
+		// injection (see LtiController::approve()/suspend() precedent + design.md).
+		['name' => 'lti#approve', 'url' => '/api/lti/{registrationType}/{registrationUuid}/approve', 'verb' => 'POST'],
+		['name' => 'lti#suspend', 'url' => '/api/lti/{registrationType}/{registrationUuid}/suspend', 'verb' => 'POST'],
+
+		// EUDI wallet credential issuance — OpenID4VCI pre-authorized code flow
+		// (openspec/changes/eudi-wallet-credential-issuance). Dedicated controller
+		// (DSOController/LtiController precedent), not the generic Endpoint
+		// pipeline. Per design.md D-ROUTE these four wallet-facing routes are
+		// registered ONLY because their verification is real and tested
+		// (EudiCredentialOfferService::exchangeToken()/issueCredential()'s atomic
+		// consume-on-read + proof-of-possession checks) — never ahead of it, per
+		// the DSOController removed-route precedent this design cites.
+		['name' => 'eudiWallet#issuerMetadata', 'url' => '/.well-known/openid-credential-issuer', 'verb' => 'GET'],
+		['name' => 'eudiWallet#resolveOffer', 'url' => '/api/eudi/credential-offers/{id}', 'verb' => 'GET'],
+		['name' => 'eudiWallet#token', 'url' => '/api/eudi/token', 'verb' => 'POST'],
+		['name' => 'eudiWallet#credential', 'url' => '/api/eudi/credential', 'verb' => 'POST'],
+		['name' => 'eudiWallet#statusList', 'url' => '/api/eudi/status-lists/{id}', 'verb' => 'GET'],
+		// App-facing offer creation + revocation — consumer-gated (REQ-CON-001 +
+		// authorization-jwt REQ-001), not an NC session, hence #[PublicPage] too.
+		['name' => 'eudiWallet#createOffer', 'url' => '/api/eudi/credential-offers', 'verb' => 'POST'],
+		['name' => 'eudiWallet#revoke', 'url' => '/api/eudi/credential-offers/{id}/revoke', 'verb' => 'POST'],
+		// Tenant-wide issuer key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
+		['name' => 'eudiIssuerKeyAdmin#status', 'url' => '/api/admin/eudi/keys', 'verb' => 'GET'],
+		['name' => 'eudiIssuerKeyAdmin#generateKey', 'url' => '/api/admin/eudi/keys/generate', 'verb' => 'POST'],
+		['name' => 'eudiIssuerKeyAdmin#rotateKey', 'url' => '/api/admin/eudi/keys/rotate', 'verb' => 'POST'],
+
+		// PSD2 AIS bank-feed connector (openspec/changes/psd2-ais-bank-feed-connector).
+		// Redirect-based SCA consent flow: connect returns the bank SCA URL, the bank
+		// redirects the operator back to callback (GET — no NC request token possible
+		// on an external redirect; the in-body pending-requisition validation + action
+		// RBAC are the auth body; see Psd2Controller). The scheduled transaction sync
+		// is cron-driven (BankfeedSyncJob), not a route.
+		['name' => 'psd2#connect', 'url' => '/api/psd2/connect', 'verb' => 'POST'],
+		['name' => 'psd2#callback', 'url' => '/api/psd2/callback', 'verb' => 'GET'],
+		['name' => 'psd2#discoverAccounts', 'url' => '/api/psd2/connections/{connectionId}/accounts', 'verb' => 'POST'],
+
+		// Corporate card-feed connector (openspec/changes/corporate-card-feed).
+		// enroll discovers a card program's cards and records a cardfeed_account
+		// (admin action RBAC — grants access to real card data). The scheduled
+		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
+		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
+
+		// ZGW Notificaties API subscriber/publisher (openspec/changes/notificaties-api-subscriber).
+		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
+		// controller — NOT the generic OR object CRUD a CnIndexPage would drive,
+		// because create/update/delete must also register/update/delete the
+		// abonnement against the remote Notificaties API (design.md File
+		// Structure). The callback is gated by consumer-apiKey auth, not an NC
+		// session (design.md Decision 1/2) — mirrors PeppolController#inbound.
+		['name' => 'notificatiesSubscriber#index', 'url' => '/api/notificaties/abonnementen', 'verb' => 'GET'],
+		['name' => 'notificatiesSubscriber#create', 'url' => '/api/notificaties/abonnementen', 'verb' => 'POST'],
+		['name' => 'notificatiesSubscriber#update', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'PUT'],
+		['name' => 'notificatiesSubscriber#destroy', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'DELETE'],
+		['name' => 'notificatiesSubscriber#callback', 'url' => '/api/notificaties/callback/{abonnementId}', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
@@ -39,6 +226,17 @@ return [
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
+
+		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
+		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
+		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+
+		// dashboard-http-datasource: governed, read-only "resolve one value
+		// from a configured source" façade for dashboard/widget hosts
+		// (openspec/changes/dashboard-http-datasource). Authenticated NC
+		// session; honours the source's own read-authorization (403
+		// otherwise); egress is always the stored source, never the caller.
+		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
 
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
@@ -55,9 +253,20 @@ return [
 		// Synchronization endpoints
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
+		['name' => 'synchronizations#resetCursor', 'url' => '/api/synchronizations/{id}/reset-cursor', 'verb' => 'POST'],
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
+
+		// Tables bridge discovery endpoints (nextcloud-table source/target editor support)
+		['name' => 'tablesBridge#status', 'url' => '/api/synchronizations/tables-bridge/status', 'verb' => 'GET'],
+		['name' => 'tablesBridge#tables', 'url' => '/api/synchronizations/tables-bridge/tables', 'verb' => 'GET'],
+		['name' => 'tablesBridge#columns', 'url' => '/api/synchronizations/tables-bridge/tables/{tableId}/columns', 'verb' => 'GET'],
+
+		// Forms bridge discovery endpoints (nextcloud-form source editor support)
+		['name' => 'formsBridge#status', 'url' => '/api/synchronizations/forms-bridge/status', 'verb' => 'GET'],
+		['name' => 'formsBridge#forms', 'url' => '/api/synchronizations/forms-bridge/forms', 'verb' => 'GET'],
+		['name' => 'formsBridge#questions', 'url' => '/api/synchronizations/forms-bridge/forms/{formId}/questions', 'verb' => 'GET'],
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
@@ -109,12 +318,35 @@ return [
 		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
 		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
 
-		// Logs endpoints (LogsController — synchronization_log schema)
+		// Sync-item dead-letter queue inspection and replay (admin-only, CSRF
+		// intact — REQ-DLR-007..011). Bulk (static) routes registered BEFORE
+		// the {id} wildcard, mirroring the events# ordering above.
+		['name' => 'syncDeadLetter#index', 'url' => '/api/sync-dead-letter', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#bulkReplay', 'url' => '/api/sync-dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#bulkDiscard', 'url' => '/api/sync-dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#show', 'url' => '/api/sync-dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#replay', 'url' => '/api/sync-dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#discard', 'url' => '/api/sync-dead-letter/{id}/discard', 'verb' => 'POST'],
+
+		// Logs endpoints (LogsController — synchronization_log schema).
+		// Static routes MUST precede the {id} wildcard, the same convention the
+		// execution-traces block below states explicitly. They did not: with
+		// `logs#show` registered first, `GET /api/logs/statistics` and
+		// `GET /api/logs/export` were matched as `show(id: 'statistics')` and
+		// `show(id: 'export')` and answered `404 {"error":"Log not found"}`.
+		// Both endpoints were unreachable in every deployment.
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
-		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
-		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
 		['name' => 'logs#statistics', 'url' => '/api/logs/statistics', 'verb' => 'GET'],
 		['name' => 'logs#export', 'url' => '/api/logs/export', 'verb' => 'GET'],
+		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
+		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
+
+		// Execution traces endpoints (ExecutionTracesController — execution_trace
+		// schema; execution-trace-observability). Static routes registered
+		// before the {id} wildcard.
+		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
+		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
+		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -134,6 +366,60 @@ return [
 		['name' => 'pdok#lookupAction', 'url' => '/api/pdok/lookup/{id}', 'verb' => 'GET'],
 		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
 		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
+
+		// HITL approval workflow (openspec/changes/hitl-approval-rule-action).
+		// Auth: #[NoAdminRequired] with in-body two-layer authorization
+		// (ADR-023 action matrix + per-request approverGroup membership,
+		// see ApprovalsController). Standard NC CSRF protection applies to
+		// approve/reject — no #[NoCSRFRequired] (design.md API Design).
+		['name' => 'approvals#index', 'url' => '/api/approvals', 'verb' => 'GET'],
+		['name' => 'approvals#show', 'url' => '/api/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
+		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
+
+		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
+		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
+		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
+		// API Products gateway (openspec/changes/api-product-gateway). api_product/
+		// api_product_subscription CRUD goes through OR's generic object API
+		// (design.md API Design); these are the bespoke, non-CRUD actions.
+		// Auth: subscribe/analytics are admin-only (default Controller posture, no
+		// #[NoAdminRequired] — matches ConsumersController's posture); approve/reject
+		// use the same #[NoAdminRequired] + in-body approverGroup authorization as
+		// the HITL approvals routes above.
+		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+
+		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
+		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
+		// these two are the bespoke, non-CRUD actions.
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
+		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// Configuration import/export UI endpoints (connector-catalog-ui) — a
+		// thin, routed wrapper over the existing, already-tested
+		// ConfigurationService::exportConfiguration()/importConfiguration().
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		// Register connector export — routed trigger for ConfigurationService::exportRegister().
+		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
+		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
+		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+
+		// Environments & Promotion (environments-and-promotion). Environment
+		// CRUD (environment.manage) plus promotion preview/confirm
+		// (environment.promote) — dispatched to the target's own, unmodified
+		// /api/configurations/import/preview + /api/configurations/import
+		// endpoints via CallService::call() against the environment's sourceRef.
+		// See openspec/specs/environments-and-promotion/spec.md
+		['name' => 'environment#index', 'url' => '/api/environments', 'verb' => 'GET'],
+		['name' => 'environment#create', 'url' => '/api/environments', 'verb' => 'POST'],
+		['name' => 'promotion#preview', 'url' => '/api/promotions/preview', 'verb' => 'POST'],
+		['name' => 'promotion#confirm', 'url' => '/api/promotions', 'verb' => 'POST'],
 
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
@@ -157,12 +443,23 @@ return [
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
+		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
+		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
+		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
+
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
-		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The leaf-namespaced
-		// controller class is bound to the engine generic in lib/AppInfo/Application.php (appName=openconnector,
-		// so the `pref_` user-value namespace stays scoped to this app). URLs + JSON contract unchanged.
-		['name' => 'AppHost\Controller\GenericPreferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
-		['name' => 'AppHost\Controller\GenericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
+		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is
+		// bound under the standard `OCA\OpenConnector\Controller\GenericPreferencesController` service key
+		// in lib/AppInfo/Application.php (appName=openconnector, so the `pref_` user-value namespace stays
+		// scoped to this app). The route name MUST resolve to that key: NC's App::main only prepends the
+		// `OCA\<App>\Controller\` namespace when the built controller name does NOT already contain
+		// `\Controller\`, so a namespaced route name like `AppHost\Controller\GenericPreferences` is looked
+		// up verbatim, fails the container lookup, and NC then reads its second path segment ("Controller")
+		// as an app id — throwing HintException "App controller is not enabled" (HTTP 503) on every call.
+		// A plain `genericPreferences` name builds `GenericPreferencesController`, gets the standard
+		// namespace prefix, and resolves the service. URLs + JSON contract unchanged.
+		['name' => 'genericPreferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
+		['name' => 'genericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
 		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
@@ -187,6 +484,11 @@ return [
 		['name' => 'ui#cloudEventsEvents', 'url' => '/cloud-events/events', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
+		['name' => 'ui#approvals', 'url' => '/approvals', 'verb' => 'GET'],
+		['name' => 'ui#approvalsId', 'url' => '/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'ui#products', 'url' => '/products', 'verb' => 'GET'],
+		['name' => 'ui#productsId', 'url' => '/products/{id}', 'verb' => 'GET'],
+		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.

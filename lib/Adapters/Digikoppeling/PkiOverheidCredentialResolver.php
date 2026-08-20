@@ -46,111 +46,109 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-class PkiOverheidCredentialResolver
-{
+class PkiOverheidCredentialResolver {
 
-    /**
-     * FQCN of the OpenRegister credential broker (resolved lazily).
-     *
-     * @var string
-     */
-    public const BROKER_CLASS = 'OCA\OpenRegister\Service\Credential\CredentialBrokerService';
+	/**
+	 * FQCN of the OpenRegister credential broker (resolved lazily).
+	 *
+	 * @var string
+	 */
+	public const BROKER_CLASS = 'OCA\OpenRegister\Service\Credential\CredentialBrokerService';
 
-    /**
-     * Broker method that would issue in-process signing material, if it exists.
-     *
-     * @var string
-     */
-    public const MATERIAL_METHOD = 'issueSigningMaterial';
+	/**
+	 * Broker method that would issue in-process signing material, if it exists.
+	 *
+	 * @var string
+	 */
+	public const MATERIAL_METHOD = 'issueSigningMaterial';
 
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container PSR container used to resolve the broker lazily.
-     */
-    public function __construct(private readonly ContainerInterface $container)
-    {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container PSR container used to resolve the broker lazily.
+	 */
+	public function __construct(
+		private readonly ContainerInterface $container,
+	) {
+	}//end __construct()
 
-    /**
-     * Resolve PKIoverheid signing material for a `certificateRef`.
-     *
-     * @param string $certificateRef The broker credentialRef naming the PKIoverheid credential.
-     *
-     * @return array{certificatePem: string, privateKeyPem: string} The in-process signing material.
-     *
-     * @throws DigikoppelingException Fail-closed when the ref is empty, the broker is unavailable, or it
-     *                                cannot issue in-process signing material (never a plaintext fallback).
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: PKIoverheid keys resolved via the broker, never plaintext (REQ-DK-005)
-     */
-    public function resolveSigningMaterial(string $certificateRef): array
-    {
-        if (trim($certificateRef) === '') {
-            throw new DigikoppelingException(
-                    message:
-                'Digikoppeling signing requires a PKIoverheid certificateRef — none is configured.'
-            );
-        }
+	/**
+	 * Resolve PKIoverheid signing material for a `certificateRef`.
+	 *
+	 * @param string $certificateRef The broker credentialRef naming the PKIoverheid credential.
+	 *
+	 * @return array{certificatePem: string, privateKeyPem: string} The in-process signing material.
+	 *
+	 * @throws DigikoppelingException Fail-closed when the ref is empty, the broker is unavailable, or it
+	 *                                cannot issue in-process signing material (never a plaintext fallback).
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: PKIoverheid keys resolved via the broker, never plaintext (REQ-DK-005)
+	 */
+	public function resolveSigningMaterial(string $certificateRef): array {
+		if (trim($certificateRef) === '') {
+			throw new DigikoppelingException(
+				message:
+				'Digikoppeling signing requires a PKIoverheid certificateRef — none is configured.'
+			);
+		}
 
-        $broker = $this->resolveBroker();
-        if ($broker === null) {
-            throw new DigikoppelingException(
-                    message:
-                'Digikoppeling signing requires the OpenRegister credential broker, which is not available. '
-                .'Configure the certificateRef "'.$certificateRef.'" through the broker.'
-            );
-        }
+		$broker = $this->resolveBroker();
+		if ($broker === null) {
+			throw new DigikoppelingException(
+				message:
+				'Digikoppeling signing requires the OpenRegister credential broker, which is not available. '
+				. 'Configure the certificateRef "' . $certificateRef . '" through the broker.'
+			);
+		}
 
-        // Fail closed unless the broker can issue in-process signing material.
-        // The constrained-proxy broker cannot, by design; this lights up
-        // automatically if/when a signing-material capability is added.
-        if (method_exists($broker, self::MATERIAL_METHOD) === false) {
-            throw new DigikoppelingException(
-                    message:
-                'The credential broker cannot supply in-process PKIoverheid signing material for certificateRef "'
-                .$certificateRef.'". Digikoppeling WUS/ebMS2 message signing needs the private key in-process; '
-                .'no plaintext-key-on-disk fallback is permitted (ADR-007). This capability is a documented '
-                .'follow-on: the broker must expose a signing-material issuance path.'
-            );
-        }
+		// Fail closed unless the broker can issue in-process signing material.
+		// The constrained-proxy broker cannot, by design; this lights up
+		// automatically if/when a signing-material capability is added.
+		if (method_exists($broker, self::MATERIAL_METHOD) === false) {
+			throw new DigikoppelingException(
+				message:
+				'The credential broker cannot supply in-process PKIoverheid signing material for certificateRef "'
+				. $certificateRef . '". Digikoppeling WUS/ebMS2 message signing needs the private key in-process; '
+				. 'no plaintext-key-on-disk fallback is permitted (ADR-007). This capability is a documented '
+				. 'follow-on: the broker must expose a signing-material issuance path.'
+			);
+		}
 
-        $material = $broker->{self::MATERIAL_METHOD}($certificateRef);
-        if (is_array($material) === false
-            || isset($material['certificatePem'], $material['privateKeyPem']) === false
-        ) {
-            throw new DigikoppelingException(
-                    message:
-                'The credential broker returned no usable signing material for certificateRef "'.$certificateRef.'".'
-            );
-        }
+		$material = $broker->{self::MATERIAL_METHOD}($certificateRef);
+		if (is_array($material) === false
+			|| isset($material['certificatePem'], $material['privateKeyPem']) === false
+		) {
+			throw new DigikoppelingException(
+				message:
+				'The credential broker returned no usable signing material for certificateRef "' . $certificateRef . '".'
+			);
+		}
 
-        return [
-            'certificatePem' => (string) $material['certificatePem'],
-            'privateKeyPem'  => (string) $material['privateKeyPem'],
-        ];
+		return [
+			'certificatePem' => (string)$material['certificatePem'],
+			'privateKeyPem' => (string)$material['privateKeyPem'],
+		];
 
-    }//end resolveSigningMaterial()
+	}//end resolveSigningMaterial()
 
-    /**
-     * Lazily resolve the broker instance, or null when unavailable.
-     *
-     * Protected so tests can substitute a broker double (the real broker FQCN
-     * does not `class_exists` in the bare unit environment).
-     *
-     * @return object|null
-     */
-    protected function resolveBroker(): ?object
-    {
-        if (class_exists(self::BROKER_CLASS) === false) {
-            return null;
-        }
+	/**
+	 * Lazily resolve the broker instance, or null when unavailable.
+	 *
+	 * Protected so tests can substitute a broker double (the real broker FQCN
+	 * does not `class_exists` in the bare unit environment).
+	 *
+	 * @return object|null
+	 */
+	protected function resolveBroker(): ?object {
+		if (class_exists(self::BROKER_CLASS) === false) {
+			return null;
+		}
 
-        try {
-            return $this->container->get(self::BROKER_CLASS);
-        } catch (\Throwable) {
-            return null;
-        }
+		try {
+			return $this->container->get(self::BROKER_CLASS);
+		} catch (\Throwable) {
+			return null;
+		}
 
-    }//end resolveBroker()
+	}//end resolveBroker()
 }//end class

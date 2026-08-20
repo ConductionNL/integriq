@@ -20,9 +20,7 @@
   touch the parent's data here — pure form-state.
 -->
 <template>
-	<NcModal :name="dialogTitle"
-		size="normal"
-		@close="$emit('cancel')">
+	<NcModal :name="dialogTitle" size="normal" @close="$emit('cancel')">
 		<div class="cn-rule-dialog">
 			<h2 class="cn-rule-dialog__title">
 				{{ dialogTitle }}
@@ -31,10 +29,11 @@
 			<form class="cn-rule-dialog__form" @submit.prevent="onSubmit">
 				<label class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">{{ propertyLabel }}</span>
-					<NcTextField :value.sync="propertyDraft"
+					<NcTextField
+						v-model="propertyDraft"
 						:placeholder="propertyPlaceholder"
 						:error="!!propertyError"
-						:helper-text="propertyError"
+						:helperText="propertyError"
 						:label="propertyLabel" />
 				</label>
 
@@ -42,7 +41,8 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Twig template') }}
 					</span>
-					<textarea v-model="valueDraft"
+					<textarea
+						v-model="valueDraft"
 						class="cn-rule-dialog__textarea"
 						rows="6"
 						spellcheck="false"
@@ -56,19 +56,23 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Cast type') }}
 					</span>
-					<NcSelect :value="castSelectValue"
+					<NcSelect
+						:modelValue="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
 						:aria-label-combobox="t('openconnector', 'Cast type')"
-						input-id="cn-rule-dialog-cast-type"
-						@input="onCastTypeInput" />
+						inputId="cn-rule-dialog-cast-type"
+						@update:modelValue="onCastTypeInput" />
 				</label>
 
 				<div class="cn-rule-dialog__actions">
-					<NcButton type="tertiary" @click="$emit('cancel')">
+					<NcButton variant="tertiary" @click="$emit('cancel')">
 						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
-					<NcButton type="primary" :disabled="!canSubmit" @click="onSubmit">
+					<NcButton
+						variant="primary"
+						:disabled="!canSubmit"
+						@click="onSubmit">
 						{{ submitLabel }}
 					</NcButton>
 				</div>
@@ -78,12 +82,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcModal,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
 
 /**
  * Cast type vocabulary, mirrored from the legacy
@@ -118,6 +117,7 @@ export default {
 			required: true,
 			validator: (value) => ['mapping', 'cast', 'unset'].includes(value),
 		},
+
 		/**
 		 * Property/key being edited. `null` indicates a new row, in which
 		 * case the property input is empty and editable.
@@ -126,6 +126,7 @@ export default {
 			type: String,
 			default: null,
 		},
+
 		/**
 		 * Initial value: a Twig template string (`kind: 'mapping'`), a
 		 * cast type id (`kind: 'cast'`), or the property name itself
@@ -135,6 +136,7 @@ export default {
 			type: [String, Number, Boolean, Object],
 			default: '',
 		},
+
 		/**
 		 * Keys already present in the collection (excluding the row being
 		 * edited). Used to surface a "duplicate property" inline error
@@ -148,23 +150,28 @@ export default {
 
 	data() {
 		return {
-			propertyDraft: this.kind === 'unset'
-				? (this.property ?? (typeof this.value === 'string' ? this.value : ''))
-				: (this.property ?? ''),
-			valueDraft: typeof this.value === 'string'
-				? this.value
-				: this.value != null
-					? String(this.value)
-					: '',
+			propertyDraft:
+				this.kind === 'unset'
+					? (this.property
+						?? (typeof this.value === 'string' ? this.value : ''))
+					: (this.property ?? ''),
+
+			valueDraft:
+				typeof this.value === 'string'
+					? this.value
+					: this.value != null
+						? String(this.value)
+						: '',
 		}
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castTypeOptions() {
 			return CAST_TYPE_OPTIONS
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templatePlaceholder() {
 			// Built outside the template so the embedded `{{ … }}` Twig
 			// markers don't collide with Vue's mustache parser.
@@ -172,7 +179,8 @@ export default {
 			const closeBrace = '}}'
 			return `${openBrace} originalProperty ${closeBrace} or ${openBrace} source.field|default('-') ${closeBrace}`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templateHelp() {
 			// See `templatePlaceholder`: avoid embedding `{{` directly in
 			// the template literal that becomes Vue parser input.
@@ -184,15 +192,20 @@ export default {
 				{ open: openBrace, close: closeBrace },
 			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castSelectValue() {
-			return this.castTypeOptions.find((option) => option.id === this.valueDraft)
+			return (
+				this.castTypeOptions.find((option) => option.id === this.valueDraft)
 				|| this.castTypeOptions[0]
+			)
 		},
+
 		isNew() {
 			return this.property == null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			if (this.kind === 'mapping') {
 				return this.isNew
@@ -208,34 +221,43 @@ export default {
 				? this.t('openconnector', 'Add unset rule')
 				: this.t('openconnector', 'Edit unset rule')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		submitLabel() {
 			return this.isNew
 				? this.t('openconnector', 'Add rule')
 				: this.t('openconnector', 'Save rule')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
-			if (this.kind === 'mapping') return this.t('openconnector', 'Target property')
+			if (this.kind === 'mapping')
+				return this.t('openconnector', 'Target property')
 			return this.t('openconnector', 'Property')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyPlaceholder() {
 			if (this.kind === 'mapping') {
 				return this.t('openconnector', 'e.g. firstName')
 			}
 			return this.t('openconnector', 'JSON path or property name')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyError() {
 			const trimmed = this.propertyDraft.trim()
 			if (!trimmed) return ''
 			if (this.existingKeys.includes(trimmed)) {
-				return this.t('openconnector', 'Another rule already targets this property.')
+				return this.t(
+					'openconnector',
+					'Another rule already targets this property.',
+				)
 			}
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canSubmit() {
 			const property = this.propertyDraft.trim()
 			if (!property || this.propertyError) return false
@@ -243,19 +265,28 @@ export default {
 				return this.valueDraft.length > 0
 			}
 			if (this.kind === 'cast') {
-				return this.castTypeOptions.some((option) => option.id === this.valueDraft)
+				return this.castTypeOptions.some(
+					(option) => option.id === this.valueDraft,
+				)
 			}
 			return true
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/**
+		 * Store the picked cast type as the rule's value draft.
+		 *
+		 * @param {{id: string, label: string}|null} selected The cast-type option
+		 *   chosen in the NcSelect, or null when the selection is cleared.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onCastTypeInput(selected) {
 			if (!selected) return
 			this.valueDraft = selected.id
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onSubmit() {
 			if (!this.canSubmit) return
 			const property = this.propertyDraft.trim()

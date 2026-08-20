@@ -12,16 +12,73 @@
  *    problems.
  */
 import { type Page, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
-// The in-app router runs in HASH mode (`mode: 'hash'`, src/main.js). A
-// path-form deep-link such as `/apps/openconnector/sources` is therefore
-// ignored by the router and silently lands on the dashboard (`#/`); only
-// a hash-form link (`/apps/openconnector/#/sources`) renders the target
-// page. APP_BASE carries the `/#` so `${APP_BASE}/<route>` is a valid
-// hash deep-link. (NC32→NC34 note: this is router behaviour, not NC
-// chrome — the NC34 migration surfaced it because the weak dashboard
-// fallback masked it before.)
-export const APP_BASE = '/apps/openconnector/#'
+// The one openconnector URL base for the whole spec-coverage suite. Two
+// separate things are encoded here, and both were learned from a failing run.
+//
+// 1. THE `/index.php/` PREFIX IS NOT OPTIONAL.
+//
+//    This used to read `/apps/openconnector/#`. That form works in the docker
+//    dev images, where Apache + Nextcloud's `.htaccess` rewrite pretty URLs
+//    onto `index.php`. CI has no Apache: the shared workflow serves Nextcloud
+//    with `cd server && php -S 0.0.0.0:8080` and NO router script, and PHP's
+//    built-in server resolves a request against the filesystem first.
+//
+//    Measured on a clean install (php -S, docroot = server/):
+//
+//        /index.php/apps/openconnector/   -> 200   (PATH_INFO reaches NC)
+//        /apps/openconnector/             -> 404   (a real directory on disk
+//                                                   with no index.php inside)
+//        /apps/openconnector/js/…-main.js -> 200   (a real FILE, served flat)
+//
+//    Note the shape of that: the assets resolve fine, so nothing about the
+//    build looks wrong — only the HTML entry point 404s. Every spec that deep-
+//    linked through the short form therefore asserted against PHP's own 404
+//    page, which has no `<main>`, no nav and no SPA. That is the single cause
+//    behind "element(s) not found" for `main`, `Nav entry "Webhooks" must be
+//    present`, and `Add Source button must be visible` alike — one cause
+//    wearing ~130 disguises.
+//
+//    The discriminator is in the CI log itself: in the same run, on the same
+//    instance, `configuration-export-import.spec.ts` — which probes
+//    `/index.php/apps/openconnector` — PASSED its two page-mount assertions
+//    while the specs on either side of it failed on `main`.
+//
+//    The `/index.php/` form is correct in BOTH environments (verified against
+//    Apache: `/index.php/apps/openconnector/#/sources` renders `main` with the
+//    "Add Source" button), so this is one form everywhere rather than a probe.
+//
+// 2. THE `#` IS NOW WRONG — REMOVED 2026-08-16.
+//
+//    The in-app router ran in HASH mode (`createWebHashHistory()`) when this
+//    comment was written, so a path-form deep-link such as
+//    `…/openconnector/sources` was ignored by the router and silently landed
+//    on the dashboard — only the hash form rendered the target page.
+//
+//    openconnector switched to `createWebHistory()` in src/main.js
+//    (flow-engine-unification / router-history-mode convention,
+//    docs/claude/frontend-standards.md#routing-history-mode), backed by the
+//    `ui#dashboard` `/{path}` catch-all in appinfo/routes.php, verified live
+//    via a genuine hard reload of a deep path. The failure mode is now the
+//    MIRROR of the one above: a URL carrying `#/<route>` sets
+//    `location.hash`, which the path-mode router never reads, and every such
+//    deep-link now silently lands on the dashboard instead of the target
+//    page — the same "main exists but shows the wrong content" symptom, for
+//    the opposite reason. `${APP_BASE}/<route>` (no `#`) is the correct
+//    path-mode deep link.
+//
+// Every spec-coverage file imports this rather than redeclaring it — nine of
+// them used to keep private copies of the wrong string.
+export const APP_BASE = '/index.php/apps/openconnector'
+
+/**
+ * The openconnector app root, without the router hash.
+ *
+ * Same `/index.php/` reasoning as APP_BASE above: use this anywhere a spec
+ * needs the app entry point itself rather than a route inside it.
+ */
+export const APP_ROOT_URL = '/index.php/apps/openconnector/'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
@@ -29,7 +86,8 @@ export const APP_BASE = '/apps/openconnector/#'
  * user_status OCS endpoint reliably 500s and core logs a matching error;
  * these must NOT fail an openconnector UI assertion.
  */
-const NOISE_URL = /\/(user_status|heartbeat|notifications|core\/preview|avatar|files\/api)/i
+const NOISE_URL =
+	/\/(user_status|heartbeat|notifications|core\/preview|avatar|files\/api)/i
 const NOISE_CONSOLE = [
 	'user_status',
 	'Failed to load user status',
@@ -77,9 +135,17 @@ export function trackErrors(page: Page): ErrorSink {
  * (catches sync/endpoint dispatch regressions).
  */
 export function assertNoAppErrors(sink: ErrorSink): void {
-	const appServerErrors = sink.serverErrors.filter((e) => /openconnector|openregister/.test(e))
-	expect(appServerErrors, `Unexpected app 5xx responses: ${appServerErrors.join(', ')}`).toEqual([])
-	expect(sink.consoleErrors, `Unexpected console errors: ${sink.consoleErrors.join(' | ')}`).toEqual([])
+	const appServerErrors = sink.serverErrors.filter((e) =>
+		/openconnector|openregister/.test(e),
+	)
+	expect(
+		appServerErrors,
+		`Unexpected app 5xx responses: ${appServerErrors.join(', ')}`,
+	).toEqual([])
+	expect(
+		sink.consoleErrors,
+		`Unexpected console errors: ${sink.consoleErrors.join(' | ')}`,
+	).toEqual([])
 }
 
 /**
@@ -99,7 +165,9 @@ async function expandNavGroups(page: Page): Promise<void> {
 	// child entries appear), which invalidates positional locators. Repeatedly
 	// click the FIRST still-collapsed group header until none remain.
 	for (let guard = 0; guard < 10; guard++) {
-		const header = page.locator('.app-navigation a[href="#"][aria-expanded="false"]').first()
+		const header = page
+			.locator('.app-navigation a[href="#"][aria-expanded="false"]')
+			.first()
 		if (!(await header.isVisible({ timeout: 500 }).catch(() => false))) break
 		await header.click().catch(() => {})
 		await page.waitForTimeout(200)
@@ -114,7 +182,11 @@ async function expandNavGroups(page: Page): Promise<void> {
  * `expectedRoute` is the route fragment the URL should contain after the
  * click (e.g. '/sources').
  */
-export async function navTo(page: Page, navLabel: string, expectedRoute: string): Promise<void> {
+export async function navTo(
+	page: Page,
+	navLabel: string,
+	expectedRoute: string,
+): Promise<void> {
 	// Land on the app root first so the SPA + nav are mounted.
 	if (!page.url().includes('/apps/openconnector')) {
 		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
@@ -128,17 +200,28 @@ export async function navTo(page: Page, navLabel: string, expectedRoute: string)
 		.locator('.app-navigation')
 		.getByRole('link', { name: new RegExp(`^\\s*${navLabel}\\s*$`, 'i') })
 		.first()
-	await expect(navLink, `Nav entry "${navLabel}" must be present`).toBeVisible({ timeout: 20_000 })
+	await expect(navLink, `Nav entry "${navLabel}" must be present`).toBeVisible({
+		timeout: 20_000,
+	})
 	await navLink.click()
-	await page.waitForURL((url) => url.toString().includes(expectedRoute), { timeout: 15_000 }).catch(() => {})
-	await page.waitForLoadState('networkidle').catch(() => {})
+	await page
+		.waitForURL((url) => url.toString().includes(expectedRoute), {
+			timeout: 15_000,
+		})
+		.catch(() => {})
+	// ADR-074 rule 4: networkidle never settles on Nextcloud, so this waited
+	// out its own timeout and swallowed the error every time. The URL wait
+	// above is the real signal; callers assert on content after it.
+	await page.waitForLoadState('domcontentloaded').catch(() => {})
 }
 
 /**
  * Assert an index page surfaced its heading and primary content area.
  */
 export async function expectHeading(page: Page, heading: RegExp): Promise<void> {
-	await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({ timeout: 15_000 })
+	await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({
+		timeout: 15_000,
+	})
 }
 
 /**
@@ -148,11 +231,20 @@ export async function expectHeading(page: Page, heading: RegExp): Promise<void> 
  * @param page      the Playwright page
  * @param addButton accessible-name regex for the create button
  */
-export async function openAndDismissCreateModal(page: Page, addButton: RegExp): Promise<void> {
+export async function openAndDismissCreateModal(
+	page: Page,
+	addButton: RegExp,
+): Promise<void> {
 	const addBtn = page.getByRole('button', { name: addButton }).first()
-	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({ timeout: 20_000 })
+	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({
+		timeout: 20_000,
+	})
 	await addBtn.click()
-	const dialog = page.getByRole('dialog').first()
+	// appDialog(), not getByRole('dialog').first(): NC's first-run wizard and
+	// nc-vue's support dialog are themselves role="dialog" overlays, so the
+	// naive locator can match one of them after a click they intercepted and
+	// report a modal that never opened as open.
+	const dialog = appDialog(page)
 	await expect(dialog, 'Create modal must open').toBeVisible({ timeout: 10_000 })
 	const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
 	if (await cancel.isVisible({ timeout: 2_000 }).catch(() => false)) {

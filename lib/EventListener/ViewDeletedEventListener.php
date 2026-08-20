@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector ViewDeleted EventListener.
  *
@@ -22,77 +23,122 @@
 
 namespace OCA\OpenConnector\EventListener;
 
-use OCA\OpenConnector\Service\SourceMappingService;
+use OCA\OpenConnector\Cron\DeferredViewCascadeJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Log\LoggerInterface;
 
 /**
- * Event listener that removes extended views when a view is deleted.
+ * Queues removal of the extended views belonging to a deleted view.
  *
- * @SuppressWarnings(PHPMD.IfStatementAssignment)
+ * ADR-078: `ObjectDeletedEvent` is a POST event — the view is already gone by
+ * the time this runs, and nothing this listener does can change that. It
+ * therefore does no work on the request: it resolves the deleted view's
+ * `identifier` (which is only readable from the event payload) and hands it to
+ * {@see DeferredViewCascadeJob} through OpenRegister's
+ * {@see ListenerDeferralService}, which carries the acting user into the job.
+ *
+ * What used to happen here instead: an UNBOUNDED `findAll()` over the
+ * `extendview` schema followed by one `delete()` per matching row, charged to
+ * the latency of the user's delete request.
+ *
+ * The identifier is captured here rather than re-resolved in the job on
+ * purpose. OpenRegister's `DeferredEntryObjectResolver` treats a soft-deleted
+ * object as a stale no-op and returns null, so a delete cascade that re-fetched
+ * its own subject would find nothing and report success.
  */
-class ViewDeletedEventListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SchemaMapper         $schemaMapper   Schema mapper used to resolve view + extendview schemas.
-     * @param RegisterMapper       $registerMapper Register mapper used to resolve the vng-gemma register.
-     * @param SourceMappingService $objectService  Service providing access to the OR object layer.
-     */
-    public function __construct(
-        private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SourceMappingService $objectService,
-    ) {
+class ViewDeletedEventListener implements IEventListener {
 
-    }//end __construct()
+	/**
+	 * Register slug this listener reacts to.
+	 *
+	 * @var string
+	 */
+	private const REGISTER_SLUG = 'vng-gemma';
 
-    /**
-     * Handle a fired event.
-     *
-     * @param Event $event Event payload to handle.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        // Filter out all events that are not an ObjectDeletedEvent.
-        if ($event instanceof ObjectDeletedEvent === false) {
-            return;
-        }
+	/**
+	 * Schema slug of the deleted object this listener reacts to.
+	 *
+	 * @var string
+	 */
+	private const VIEW_SCHEMA_SLUG = 'view';
 
-        // Make sure that we have the proper register and schema.
-        $object   = $event->getObject();
-        $register = $this->registerMapper->find($object->getRegister());
-        if ($register->getSlug() !== 'vng-gemma'
-            || $this->schemaMapper->find($object->getSchema())->getSlug() !== 'view'
-        ) {
-            return;
-        }
+	/**
+	 * Schema slug of the dependent objects the cascade removes.
+	 *
+	 * @var string
+	 */
+	private const EXTEND_VIEW_SCHEMA_SLUG = 'extendview';
 
-        $identifier = $object->jsonSerialize()['identifier'];
+	/**
+	 * Constructor.
+	 *
+	 * @param SchemaMapper            $schemaMapper   Schema mapper used to resolve view + extendview schemas.
+	 * @param RegisterMapper          $registerMapper Register mapper used to resolve the vng-gemma register.
+	 * @param ListenerDeferralService $deferral       Actor-forwarding deferral service.
+	 * @param LoggerInterface         $logger         The logger.
+	 */
+	public function __construct(
+		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapper $registerMapper,
+		private readonly ListenerDeferralService $deferral,
+		private readonly LoggerInterface $logger,
+	) {
 
-        $schema       = $this->schemaMapper->find('extendview');
-        $openregister = $this->objectService->getOpenRegisters();
+	}//end __construct()
 
-        $extendedViews = $openregister->findAll(
-                [
-                    'filters' => [
-                        'register'   => $register->getId(),
-                        'schema'     => $schema->getId(),
-                        'identifier' => $identifier,
-                    ],
-                ]
-                );
+	/**
+	 * Handle a fired event.
+	 *
+	 * @param Event $event Event payload to handle.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		// Filter out all events that are not an ObjectDeletedEvent.
+		if ($event instanceof ObjectDeletedEvent === false) {
+			return;
+		}
 
-        foreach ($extendedViews as $extendedView) {
-            $openregister->delete($extendedView);
-        }
+		// Make sure that we have the proper register and schema.
+		$object = $event->getObject();
+		try {
+			$register = $this->registerMapper->find($object->getRegister());
+			if ($register->getSlug() !== self::REGISTER_SLUG
+				|| $this->schemaMapper->find($object->getSchema())->getSlug() !== self::VIEW_SCHEMA_SLUG
+			) {
+				return;
+			}
 
-        // Now we can do our update magic by using the SoftwareCatalogueService or it might be called from a rule.
-    }//end handle()
+			$extendViewSchema = $this->schemaMapper->find(self::EXTEND_VIEW_SCHEMA_SLUG);
+		} catch (\Throwable $e) {
+			// A register/schema this instance does not have is the normal case
+			// on any deployment that is not the Software Catalog — it must never
+			// break the delete that triggered us.
+			$this->logger->debug(
+				'OpenConnector: view-delete cascade skipped, register or schema not resolvable',
+				['exception' => $e->getMessage()]
+			);
+			return;
+		}//end try
+
+		$identifier = ($object->jsonSerialize()['identifier'] ?? null);
+		if (is_string($identifier) === false || $identifier === '') {
+			return;
+		}
+
+		$this->deferral->defer(
+			jobClass: DeferredViewCascadeJob::class,
+			entry: [
+				'identifier' => $identifier,
+				'register'   => $register->getId(),
+				'schema'     => $extendViewSchema->getId(),
+			],
+			dedupeKey: $register->getId() . '|' . $extendViewSchema->getId() . '|' . $identifier
+		);
+	}//end handle()
 }//end class

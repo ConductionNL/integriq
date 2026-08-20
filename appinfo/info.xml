@@ -23,11 +23,11 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.2.19</version>
+	<version>0.3.4</version>
 	<licence>EUPL-1.2</licence>
-	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>OpenConnector</namespace>
+	<category>integration</category>
     <website>https://codeberg.org/Conduction/openconnector</website>
 	<bugs>https://codeberg.org/Conduction/openconnector/issues</bugs>
     <repository>https://codeberg.org/Conduction/openconnector</repository>
@@ -35,8 +35,14 @@
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-sources.png</screenshot>
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
-        <app>openregister</app>
-        <nextcloud min-version="28" max-version="34"/>
+        <!--
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time.
+        -->
         <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
@@ -45,26 +51,149 @@
         <lib>curl</lib>
 
         <owncloud max-version="0" min-version="0"/>
+        <!--
+        min-version is 32, NOT 28, because the openregister app dependency noted
+        above is a HARD dependency and openregister declares min-version="32". On NC 28-31 openregister
+        refuses to install ("cannot be installed because it is not compatible with this
+        version of the server"), and every openconnector entity is an OpenRegister
+        object — so the app cannot function there. Declaring 28 advertised a range
+        this app cannot deliver. See issue #1172.
+
+        max-version is 34, NOT 35, for the same "do not advertise a range you
+        cannot deliver" reason in the other direction: NC 35 does not exist —
+        there is no tag, no branch, and this app's own CI matrix has no leg past
+        stable33. The rest of the fleet declares 34; openconnector was the only
+        repo claiming 35, so the claim was untested everywhere it mattered.
+        -->
+        <nextcloud min-version="32" max-version="34"/>
 	</dependencies>
 
 	<background-jobs>
+		<!-- ADR-076 rule 4: the register bootstrap used to run from
+		     Application::boot() as a fallback for the InitializeRegister repair
+		     step possibly not having run. Gated, but one unset config key away
+		     from a repair step on every request. Hourly cron instead. -->
+		<job>OCA\OpenConnector\Cron\RegisterBootstrapJob</job>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
+		<!-- Closes synchronization_run records whose process died: a
+		     permanently-`running` row is indistinguishable from a live
+		     one, so the page built to answer "is my sync still going?"
+		     would answer it wrongly. -->
+		<job>OCA\OpenConnector\Cron\StaleRunSweepJob</job>
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
+		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
+		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
+		<job>OCA\OpenConnector\Cron\CardfeedSyncJob</job>
+		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
+		<job>OCA\OpenConnector\Cron\KissPullJob</job>
+		<job>OCA\OpenConnector\Cron\ApprovalTimeoutSweepJob</job>
+		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
+		<job>OCA\OpenConnector\Cron\StufZknRetryJob</job>
 	</background-jobs>
+
+	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
+	     these hooks run in. info.xsd declares repair-steps as an xs:sequence of
+	     pre-migration, post-migration, live-migration, install, uninstall — so
+	     `<install>` goes LAST of the two used here even though it is the hook a
+	     fresh instance reaches FIRST. Written the intuitive way round, xmllint
+	     rejects the manifest with
+	       Element 'post-migration': This element is not expected.
+	       Expected is ( uninstall ).
+	     and the App Store refuses the release AFTER it has been tagged. -->
+	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
+			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
+			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
+		</post-migration>
+		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
+		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
+		     `$schemaOnly = true` when there is no previous version, which routes
+		     `MigrationService::migrate()` to `migrateSchemaOnly()` (changeSchema
+		     only, then every version marked executed), and it guards the
+		     post-migration steps behind the same `$previousVersion !== ''`.
+		     `<install>` is the only hook that runs unconditionally on a first
+		     install, so the steps a fresh instance cannot work without are
+		     declared here as well. All four are idempotent, so an instance that
+		     reaches them by both routes does the work once. -->
+		<install>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MigrateLegacyStorage</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
+			<!-- The three inline-secret steps are deliberately NOT here. A first
+			     install has no sources, so they would have nothing to migrate,
+			     and RemoveMigratedSourceSecretFields is IRREVERSIBLE: it would
+			     find the empty instance trivially clean and strip the four
+			     secret fields from the live source schema before any source
+			     exists. Whether a brand-new instance should ship without those
+			     fields is a product decision, tracked separately, not one this
+			     fix should take by side effect. -->
+		</install>
+	</repair-steps>
 
 	<commands>
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
 		     row migration (dry-run, per-entity retry, verify). -->
 		<command>OCA\OpenConnector\Command\MigrateToOpenRegister</command>
+		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
+		     secret and what each would become in the credential broker. The dry-run
+		     mode writes nothing and emits the "clean" gate phase D must check before
+		     it may remove the schema properties. A real run migrates inline secrets.
+		     (XML comments must not contain a double hyphen, so the dry-run flag is
+		     not written with its leading dashes here.) -->
+		<command>OCA\OpenConnector\Command\MigrateInlineSecrets</command>
+		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
+		     authenticationConfig field. No code authenticates from it, so removal
+		     (not a credentialRef migration) is the correct treatment. The default
+		     action is a READ ONLY audit reporting key NAMES only, never values.
+		     Removal DELETES credential data and therefore happens only when a human
+		     passes the explicit opt in flag; it is registered here as a command and
+		     never as a repair step, so an upgrade or maintenance:repair can never
+		     reach the deleting path.
+		     (XML comments must not contain a double hyphen, so the flags are not
+		     written with their leading dashes here.) -->
+		<command>OCA\OpenConnector\Command\AuthenticationConfig</command>
+		<!-- flow-native-synchronization task 3.1: renders one synchronization as a
+		     generated flow document, or names the features the decomposed flow
+		     cannot express yet. The command WRITES NOTHING: it creates no flow,
+		     enables nothing and touches no synchronization contract, because a
+		     generated flow ships disabled until a human has reviewed it. -->
+		<command>OCA\OpenConnector\Command\SynchronizationToFlow</command>
+		<!-- flow-native-synchronization task 3.3: renders one job as a generated
+		     trigger schedule flow document, or names the features no flow node can
+		     express. Same contract as the synchronization renderer above: the
+		     command WRITES NOTHING, and what it emits ships disabled. -->
+		<command>OCA\OpenConnector\Command\JobToFlow</command>
+		<!-- flow-native-synchronization task 3.3: renders one rule, as it runs on
+		     one named endpoint, as a generated trigger object plus switch flow
+		     document. The endpoint is required because a rule carries no register,
+		     schema or method of its own and an object trigger refuses a partial
+		     scope. WRITES NOTHING; the emitted document ships disabled. -->
+		<command>OCA\OpenConnector\Command\RuleToFlow</command>
 	</commands>
 
-	<repair-steps>
-		<post-migration>
-			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
-			<step>OCA\OpenConnector\Repair\InitializeActions</step>
-		</post-migration>
-	</repair-steps>
+	<settings>
+		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
+		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
+	</settings>
 
 	<navigations>
 		<navigation>
@@ -74,9 +203,4 @@
 			<icon>app.svg</icon>
 		</navigation>
 	</navigations>
-
-	<settings>
-		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
-		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
-	</settings>
 </info>

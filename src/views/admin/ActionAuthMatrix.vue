@@ -4,10 +4,17 @@
 -->
 
 <template>
-	<div class="openconnector-admin__section" data-testid="admin-action-auth-section">
+	<div
+		class="openconnector-admin__section"
+		data-testid="admin-action-auth-section">
 		<h3>{{ t('openconnector', 'Action authorization') }}</h3>
 		<p class="openconnector-admin__hint">
-			{{ t('openconnector', 'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.') }}
+			{{
+				t(
+					'openconnector',
+					'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.',
+				)
+			}}
 		</p>
 
 		<div v-if="error" class="openconnector-admin__action-error" role="alert">
@@ -44,10 +51,16 @@
 							:key="`${action}-${group}`"
 							class="openconnector-admin__matrix-cell">
 							<NcCheckboxRadioSwitch
-								:checked="isChecked(action, group)"
+								:modelValue="isChecked(action, group)"
 								:disabled="group === 'admin'"
-								:aria-label="t('openconnector', 'Allow group {group} to perform {action}', { group, action })"
-								@update:checked="toggle(action, group, $event)" />
+								:aria-label="
+									t(
+										'openconnector',
+										'Allow group {group} to perform {action}',
+										{ group, action },
+									)
+								"
+								@update:modelValue="toggle(action, group, $event)" />
 						</td>
 					</tr>
 				</tbody>
@@ -56,21 +69,25 @@
 
 		<div class="openconnector-admin__matrix-actions">
 			<NcButton
-				type="primary"
+				variant="primary"
 				data-testid="admin-action-matrix-save"
 				:disabled="loading || saving"
 				@click="save">
-				{{ saving ? t('openconnector', 'Saving…') : t('openconnector', 'Save action matrix') }}
+				{{
+					saving
+						? t('openconnector', 'Saving…')
+						: t('openconnector', 'Save action matrix')
+				}}
 			</NcButton>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 
 /**
  * Admin editor for the ADR-023 action-authorization matrix.
@@ -80,7 +97,7 @@ import { generateUrl } from '@nextcloud/router'
  * list. The synthetic `admin` column is always-on and disabled because
  * Nextcloud admins always pass ActionAuthService::requireAction().
  *
- * @spec openspec/architecture/adr-023-action-authorization.md
+ * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  */
 export default {
 	name: 'ActionAuthMatrix',
@@ -104,44 +121,60 @@ export default {
 
 	computed: {
 		// `admin` is always shown first as a disabled, always-on column.
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		displayGroups() {
-			const rest = this.groups.filter(g => g !== 'admin')
+			const rest = this.groups.filter((g) => g !== 'admin')
 			return ['admin', ...rest]
 		},
 	},
 
-	/** @spec openspec/architecture/adr-023-action-authorization.md */
+	/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 	async mounted() {
 		await this.load()
 	},
 
 	methods: {
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		async load() {
 			this.loading = true
 			this.error = ''
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openconnector/api/admin/action-matrix'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openconnector/api/admin/action-matrix'),
+				)
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
 				// Clone the matrix into a plain editable map keyed by action.
 				const next = {}
-				const source = data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
+				const source =
+					data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
 				for (const action of this.actions) {
-					const allowed = Array.isArray(source[action]) ? source[action] : []
+					const allowed = Array.isArray(source[action])
+						? source[action]
+						: []
 					next[action] = [...allowed]
 				}
 				this.matrix = next
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
-				this.error = this.t('openconnector', 'Failed to load the action matrix.')
+				this.error = this.t(
+					'openconnector',
+					'Failed to load the action matrix.',
+				)
 			} finally {
 				this.loading = false
 			}
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/**
+		 * Decide whether one cell of the matrix renders as ticked. `admin` is
+		 * always allowed, whatever the stored list says.
+		 *
+		 * @param {string} action Action name identifying the matrix row.
+		 * @param {string} group Nextcloud group id identifying the column.
+		 *
+		 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+		 */
 		isChecked(action, group) {
 			// Admins always pass regardless of the stored list.
 			if (group === 'admin') {
@@ -151,13 +184,26 @@ export default {
 			return allowed.includes(group)
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/**
+		 * Add or remove one group from an action's allow-list in the local
+		 * matrix (persisted later by `save`). The `admin` column is fixed and
+		 * ignored here.
+		 *
+		 * @param {string} action Action name identifying the matrix row.
+		 * @param {string} group Nextcloud group id identifying the column.
+		 * @param {boolean} checked New checkbox state — true grants the group
+		 *   the action, false revokes it.
+		 *
+		 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+		 */
 		toggle(action, group, checked) {
 			// The admin column is fixed and never persisted as a toggle.
 			if (group === 'admin') {
 				return
 			}
-			const allowed = Array.isArray(this.matrix[action]) ? [...this.matrix[action]] : []
+			const allowed = Array.isArray(this.matrix[action])
+				? [...this.matrix[action]]
+				: []
 			const index = allowed.indexOf(group)
 			if (checked === true && index === -1) {
 				allowed.push(group)
@@ -167,7 +213,7 @@ export default {
 			this.matrix = { ...this.matrix, [action]: allowed }
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		async save() {
 			this.saving = true
 			try {
@@ -175,14 +221,19 @@ export default {
 				// stored posture stays admin-inclusive and human-readable.
 				const payload = {}
 				for (const action of this.actions) {
-					const extra = (this.matrix[action] || []).filter(g => g !== 'admin')
+					const extra = (this.matrix[action] || []).filter(
+						(g) => g !== 'admin',
+					)
 					payload[action] = ['admin', ...extra]
 				}
 				const { data } = await axios.put(
 					generateUrl('/apps/openconnector/api/admin/action-matrix'),
 					{ matrix: payload },
 				)
-				const saved = data && data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
+				const saved =
+					data && data.matrix && typeof data.matrix === 'object'
+						? data.matrix
+						: {}
 				const next = {}
 				for (const action of this.actions) {
 					const allowed = Array.isArray(saved[action]) ? saved[action] : []
@@ -192,7 +243,9 @@ export default {
 				showSuccess(this.t('openconnector', 'Action matrix saved.'))
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
-				showError(this.t('openconnector', 'Failed to save the action matrix.'))
+				showError(
+					this.t('openconnector', 'Failed to save the action matrix.'),
+				)
 			} finally {
 				this.saving = false
 			}

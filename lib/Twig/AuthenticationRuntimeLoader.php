@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Authentication Twig Runtime Loader.
  *
@@ -27,33 +28,30 @@ use Twig\RuntimeLoader\RuntimeLoaderInterface;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class AuthenticationRuntimeLoader implements RuntimeLoaderInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param AuthenticationService $authenticationService Service that performs the token fetches.
-     */
-    public function __construct(
-        private readonly AuthenticationService $authenticationService,
-    ) {
+class AuthenticationRuntimeLoader implements RuntimeLoaderInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param AuthenticationService $authenticationService Service that performs the token fetches.
+	 */
+	public function __construct(
+		private readonly AuthenticationService $authenticationService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Instantiate the requested runtime extension class.
-     *
-     * @param string $class Fully qualified class name to load.
-     *
-     * @return AuthenticationRuntime|null
-     */
-    public function load(string $class): ?AuthenticationRuntime
-    {
-        if ($class === AuthenticationRuntime::class) {
-            return new AuthenticationRuntime($this->authenticationService);
-        }
+	/**
+	 * Instantiate the requested runtime extension class.
+	 *
+	 * @param string $class Fully qualified class name to load.
+	 *
+	 * @return AuthenticationRuntime|null
+	 */
+	public function load(string $class): ?AuthenticationRuntime {
+		if ($class === AuthenticationRuntime::class) {
+			return new AuthenticationRuntime($this->authenticationService);
+		}
 
-        return null;
-
-    }//end load()
+		return null;
+	}//end load()
 }//end class

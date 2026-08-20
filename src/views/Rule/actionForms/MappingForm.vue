@@ -14,13 +14,18 @@
 		<NcSelect
 			data-testid="action-form-mapping"
 			:aria-label-combobox="t('openconnector', 'Mapping')"
-			:value="selected"
+			:modelValue="selected"
 			:options="options"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@input="onPick" />
+			@update:modelValue="onPick" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'Pick the mapping that will transform the request/response body.') }}
+			{{
+				t(
+					'openconnector',
+					'Pick the mapping that will transform the request/response body.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -37,23 +42,41 @@ export default {
 		// `configuration.mapping`. Parent supplies it via the `id` prop.
 		id: { type: [String, Number, null], default: '' },
 	},
-	data() { return { options: [], loading: false } },
+
+	data() {
+		return { options: [], loading: false }
+	},
+
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selected() {
 			const idStr = String(this.id || '')
 			if (!idStr) return null
-			return this.options.find((opt) => opt.id === idStr) ?? { id: idStr, label: idStr }
+			return (
+				this.options.find((opt) => opt.id === idStr) ?? {
+					id: idStr,
+					label: idStr,
+				}
+			)
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.options = await fetchOpenRegisterCollection('mapping')
 		this.loading = false
 	},
+
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Emit the picked mapping's id upwards so the parent can write it to
+		 * `configuration.mapping`; clearing the select emits an empty string.
+		 *
+		 * @param {{id: string, label: string, raw: object}|null} option The
+		 *   mapping option selected in the NcSelect.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPick(option) {
 			this.$emit('update:id', option?.id ? String(option.id) : '')
 		},
@@ -62,9 +85,18 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

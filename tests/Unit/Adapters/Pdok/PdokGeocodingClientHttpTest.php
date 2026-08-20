@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for PdokGeocodingClientHttp.
  *
@@ -31,242 +32,221 @@ use Psr\Log\NullLogger;
  * inject canned PDOK Locatieserver-style JSON responses without hitting the
  * real network.
  */
-class PdokGeocodingClientHttpTest extends TestCase
-{
+class PdokGeocodingClientHttpTest extends TestCase {
 
-    /**
-     * Captured outbound requests, populated by the history middleware.
-     *
-     * @var array<int,array{request:Request}>
-     */
-    private array $history = [];
+	/**
+	 * Captured outbound requests, populated by the history middleware.
+	 *
+	 * @var array<int,array{request:Request}>
+	 */
+	private array $history = [];
 
+	/**
+	 * Build a client wired to a Guzzle MockHandler that returns the supplied
+	 * responses (in order). The history middleware writes each outbound
+	 * request into `$this->history` so the test can assert on it.
+	 *
+	 * @param array<int,Response> $responses Canned responses.
+	 *
+	 * @return PdokGeocodingClientHttp
+	 */
+	private function buildClient(array $responses): PdokGeocodingClientHttp {
+		$mock = new MockHandler($responses);
+		$stack = HandlerStack::create($mock);
+		$this->history = [];
+		$stack->push(Middleware::history($this->history));
 
-    /**
-     * Build a client wired to a Guzzle MockHandler that returns the supplied
-     * responses (in order). The history middleware writes each outbound
-     * request into `$this->history` so the test can assert on it.
-     *
-     * @param array<int,Response> $responses Canned responses.
-     *
-     * @return PdokGeocodingClientHttp
-     */
-    private function buildClient(array $responses): PdokGeocodingClientHttp
-    {
-        $mock = new MockHandler($responses);
-        $stack = HandlerStack::create($mock);
-        $this->history = [];
-        $stack->push(Middleware::history($this->history));
+		return new PdokGeocodingClientHttp(
+			httpClient: new Client(['handler' => $stack]),
+			logger: new NullLogger(),
+			baseUri: 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/'
+		);
+	}//end buildClient()
 
-        return new PdokGeocodingClientHttp(
-            httpClient: new Client(['handler' => $stack]),
-            logger: new NullLogger(),
-            baseUri: 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/'
-        );
-    }//end buildClient()
+	/**
+	 * Build a Locatieserver-shaped doc payload.
+	 *
+	 * @param string $id The doc id.
+	 * @param string $label The display label.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function lauriergrachtDoc(string $id, string $label): array {
+		return [
+			'id' => $id,
+			'weergavenaam' => $label,
+			'straatnaam' => 'Lauriergracht',
+			'huisnummer' => '37',
+			'postcode' => '1016 RG',
+			'woonplaatsnaam' => 'Amsterdam',
+			'provincienaam' => 'Noord-Holland',
+			'centroide_ll' => 'POINT(4.88525 52.37025)',
+			'nummeraanduiding_id' => '0363200000406543',
+			'adresseerbaarobject_id' => '0363010000406543',
+		];
+	}//end lauriergrachtDoc()
 
+	/**
+	 * @return void
+	 */
+	public function testFlavourIsHttp(): void {
+		$client = $this->buildClient([]);
 
-    /**
-     * Build a Locatieserver-shaped doc payload.
-     *
-     * @param string $id    The doc id.
-     * @param string $label The display label.
-     *
-     * @return array<string,mixed>
-     */
-    private function lauriergrachtDoc(string $id, string $label): array
-    {
-        return [
-            'id'                     => $id,
-            'weergavenaam'           => $label,
-            'straatnaam'             => 'Lauriergracht',
-            'huisnummer'             => '37',
-            'postcode'               => '1016 RG',
-            'woonplaatsnaam'         => 'Amsterdam',
-            'provincienaam'          => 'Noord-Holland',
-            'centroide_ll'           => 'POINT(4.88525 52.37025)',
-            'nummeraanduiding_id'    => '0363200000406543',
-            'adresseerbaarobject_id' => '0363010000406543',
-        ];
-    }//end lauriergrachtDoc()
+		$this->assertSame('http', $client->flavour());
+	}//end testFlavourIsHttp()
 
+	/**
+	 * @return void
+	 */
+	public function testSuggestIssuesGetRequestAndNormalisesDocs(): void {
+		$payload = [
+			'response' => [
+				'docs' => [
+					$this->lauriergrachtDoc('adr-1', 'Lauriergracht 37, 1016 RG Amsterdam'),
+				],
+			],
+		];
 
-    /**
-     * @return void
-     */
-    public function testFlavourIsHttp(): void
-    {
-        $client = $this->buildClient([]);
+		$client = $this->buildClient(
+			[new Response(200, ['Content-Type' => 'application/json'], json_encode($payload))]
+		);
 
-        $this->assertSame('http', $client->flavour());
-    }//end testFlavourIsHttp()
+		$result = $client->suggest('lauriergracht', 5);
 
+		// Assert response normalisation.
+		$this->assertCount(1, $result);
+		$this->assertSame('Lauriergracht 37, 1016 RG Amsterdam', $result[0]['displayName']);
+		$this->assertSame('Lauriergracht', $result[0]['streetAddress']);
+		$this->assertSame('1016 RG', $result[0]['postalCode']);
+		$this->assertSame('Amsterdam', $result[0]['addressLocality']);
+		$this->assertSame('adr-1', $result[0]['pdokId']);
+		$this->assertSame('0363200000406543', $result[0]['bagAddressId']);
+		$this->assertSame('Point', $result[0]['location']['type']);
+		$this->assertSame([4.88525, 52.37025], $result[0]['location']['coordinates']);
+		$this->assertSame('pdok', $result[0]['source']);
 
-    /**
-     * @return void
-     */
-    public function testSuggestIssuesGetRequestAndNormalisesDocs(): void
-    {
-        $payload = [
-            'response' => [
-                'docs' => [
-                    $this->lauriergrachtDoc('adr-1', 'Lauriergracht 37, 1016 RG Amsterdam'),
-                ],
-            ],
-        ];
+		// Assert outbound request.
+		$this->assertCount(1, $this->history);
+		$request = $this->history[0]['request'];
+		$this->assertSame('GET', $request->getMethod());
+		$this->assertStringStartsWith('https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest', (string)$request->getUri());
+		parse_str($request->getUri()->getQuery(), $query);
+		$this->assertSame('lauriergracht', $query['q']);
+		$this->assertSame('5', $query['rows']);
+	}//end testSuggestIssuesGetRequestAndNormalisesDocs()
 
-        $client = $this->buildClient(
-            [new Response(200, ['Content-Type' => 'application/json'], json_encode($payload))]
-        );
+	/**
+	 * @return void
+	 */
+	public function testSuggestClampsRowsToSafeBounds(): void {
+		$client = $this->buildClient(
+			[new Response(200, [], json_encode(['response' => ['docs' => []]]))]
+		);
 
-        $result = $client->suggest('lauriergracht', 5);
+		$client->suggest('q', 999);
 
-        // Assert response normalisation.
-        $this->assertCount(1, $result);
-        $this->assertSame('Lauriergracht 37, 1016 RG Amsterdam', $result[0]['displayName']);
-        $this->assertSame('Lauriergracht', $result[0]['streetAddress']);
-        $this->assertSame('1016 RG', $result[0]['postalCode']);
-        $this->assertSame('Amsterdam', $result[0]['addressLocality']);
-        $this->assertSame('adr-1', $result[0]['pdokId']);
-        $this->assertSame('0363200000406543', $result[0]['bagAddressId']);
-        $this->assertSame('Point', $result[0]['location']['type']);
-        $this->assertSame([4.88525, 52.37025], $result[0]['location']['coordinates']);
-        $this->assertSame('pdok', $result[0]['source']);
+		parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
+		$this->assertSame('50', $query['rows']);
+	}//end testSuggestClampsRowsToSafeBounds()
 
-        // Assert outbound request.
-        $this->assertCount(1, $this->history);
-        $request = $this->history[0]['request'];
-        $this->assertSame('GET', $request->getMethod());
-        $this->assertStringStartsWith('https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest', (string) $request->getUri());
-        parse_str($request->getUri()->getQuery(), $query);
-        $this->assertSame('lauriergracht', $query['q']);
-        $this->assertSame('5', $query['rows']);
-    }//end testSuggestIssuesGetRequestAndNormalisesDocs()
+	/**
+	 * @return void
+	 */
+	public function testLookupReturnsSingleNormalisedEntry(): void {
+		$payload = [
+			'response' => [
+				'docs' => [
+					$this->lauriergrachtDoc('adr-target', 'Lauriergracht 37'),
+				],
+			],
+		];
 
+		$client = $this->buildClient(
+			[new Response(200, [], json_encode($payload))]
+		);
 
-    /**
-     * @return void
-     */
-    public function testSuggestClampsRowsToSafeBounds(): void
-    {
-        $client = $this->buildClient(
-            [new Response(200, [], json_encode(['response' => ['docs' => []]]))]
-        );
+		$result = $client->lookup('adr-target');
 
-        $client->suggest('q', 999);
+		$this->assertIsArray($result);
+		$this->assertSame('adr-target', $result['pdokId']);
+		$this->assertSame('Lauriergracht 37', $result['displayName']);
 
-        parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
-        $this->assertSame('50', $query['rows']);
-    }//end testSuggestClampsRowsToSafeBounds()
+		parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
+		$this->assertSame('adr-target', $query['id']);
+	}//end testLookupReturnsSingleNormalisedEntry()
 
+	/**
+	 * @return void
+	 */
+	public function testLookupReturnsNullWhenNoDocs(): void {
+		$client = $this->buildClient(
+			[new Response(200, [], json_encode(['response' => ['docs' => []]]))]
+		);
 
-    /**
-     * @return void
-     */
-    public function testLookupReturnsSingleNormalisedEntry(): void
-    {
-        $payload = [
-            'response' => [
-                'docs' => [
-                    $this->lauriergrachtDoc('adr-target', 'Lauriergracht 37'),
-                ],
-            ],
-        ];
+		$this->assertNull($client->lookup('missing'));
+	}//end testLookupReturnsNullWhenNoDocs()
 
-        $client = $this->buildClient(
-            [new Response(200, [], json_encode($payload))]
-        );
+	/**
+	 * @return void
+	 */
+	public function testReverseIssuesLatLngQuery(): void {
+		$payload = [
+			'response' => [
+				'docs' => [
+					$this->lauriergrachtDoc('adr-2', 'Lauriergracht'),
+				],
+			],
+		];
 
-        $result = $client->lookup('adr-target');
+		$client = $this->buildClient(
+			[new Response(200, [], json_encode($payload))]
+		);
 
-        $this->assertIsArray($result);
-        $this->assertSame('adr-target', $result['pdokId']);
-        $this->assertSame('Lauriergracht 37', $result['displayName']);
+		$result = $client->reverse(52.37025, 4.88525);
 
-        parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
-        $this->assertSame('adr-target', $query['id']);
-    }//end testLookupReturnsSingleNormalisedEntry()
+		$this->assertCount(1, $result);
 
+		parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
+		$this->assertSame('52.37025', $query['lat']);
+		$this->assertSame('4.88525', $query['lon']);
+	}//end testReverseIssuesLatLngQuery()
 
-    /**
-     * @return void
-     */
-    public function testLookupReturnsNullWhenNoDocs(): void
-    {
-        $client = $this->buildClient(
-            [new Response(200, [], json_encode(['response' => ['docs' => []]]))]
-        );
+	/**
+	 * @return void
+	 */
+	public function testTransportFailureReturnsEmptyResult(): void {
+		// 500 with no JSON body triggers the decode-failure branch.
+		$client = $this->buildClient(
+			[new Response(500, [], 'Service Unavailable')]
+		);
 
-        $this->assertNull($client->lookup('missing'));
-    }//end testLookupReturnsNullWhenNoDocs()
+		$this->assertSame([], $client->suggest('q'));
+	}//end testTransportFailureReturnsEmptyResult()
 
+	/**
+	 * @return void
+	 */
+	public function testInvalidCentroidLlIsDropped(): void {
+		$payload = [
+			'response' => [
+				'docs' => [
+					[
+						'id' => 'adr-no-coords',
+						'weergavenaam' => 'Geen coords',
+						'centroide_ll' => 'INVALID',
+					],
+				],
+			],
+		];
 
-    /**
-     * @return void
-     */
-    public function testReverseIssuesLatLngQuery(): void
-    {
-        $payload = [
-            'response' => [
-                'docs' => [
-                    $this->lauriergrachtDoc('adr-2', 'Lauriergracht'),
-                ],
-            ],
-        ];
+		$client = $this->buildClient(
+			[new Response(200, [], json_encode($payload))]
+		);
 
-        $client = $this->buildClient(
-            [new Response(200, [], json_encode($payload))]
-        );
+		$result = $client->suggest('q');
 
-        $result = $client->reverse(52.37025, 4.88525);
-
-        $this->assertCount(1, $result);
-
-        parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
-        $this->assertSame('52.37025', $query['lat']);
-        $this->assertSame('4.88525', $query['lon']);
-    }//end testReverseIssuesLatLngQuery()
-
-
-    /**
-     * @return void
-     */
-    public function testTransportFailureReturnsEmptyResult(): void
-    {
-        // 500 with no JSON body triggers the decode-failure branch.
-        $client = $this->buildClient(
-            [new Response(500, [], 'Service Unavailable')]
-        );
-
-        $this->assertSame([], $client->suggest('q'));
-    }//end testTransportFailureReturnsEmptyResult()
-
-
-    /**
-     * @return void
-     */
-    public function testInvalidCentroidLlIsDropped(): void
-    {
-        $payload = [
-            'response' => [
-                'docs' => [
-                    [
-                        'id'           => 'adr-no-coords',
-                        'weergavenaam' => 'Geen coords',
-                        'centroide_ll' => 'INVALID',
-                    ],
-                ],
-            ],
-        ];
-
-        $client = $this->buildClient(
-            [new Response(200, [], json_encode($payload))]
-        );
-
-        $result = $client->suggest('q');
-
-        $this->assertArrayNotHasKey('location', $result[0]);
-        $this->assertSame('adr-no-coords', $result[0]['pdokId']);
-    }//end testInvalidCentroidLlIsDropped()
+		$this->assertArrayNotHasKey('location', $result[0]);
+		$this->assertSame('adr-no-coords', $result[0]['pdokId']);
+	}//end testInvalidCentroidLlIsDropped()
 
 }//end class

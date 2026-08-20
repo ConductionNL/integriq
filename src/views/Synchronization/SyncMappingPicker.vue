@@ -31,17 +31,24 @@
 				{{ t('openconnector', 'Source → Target mapping *') }}
 			</label>
 			<NcSelect
-				:input-id="primaryId"
+				:inputId="primaryId"
 				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
-				:value="selectedPrimary"
+				:modelValue="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
 				:placeholder="t('openconnector', 'Pick a mapping')"
-				@input="(option) => $emit('update:value', option?.id || '')" />
+				@update:modelValue="
+					(option) => $emit('update:value', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Transforms each source record into the target shape.') }}
+				{{
+					t(
+						'openconnector',
+						'Transforms each source record into the target shape.',
+					)
+				}}
 			</span>
-			<SyncMappingPreview :mapping-id="value" />
+			<SyncMappingPreview :mappingId="value" />
 		</div>
 
 		<div class="sync-mapping__field">
@@ -49,16 +56,25 @@
 				{{ t('openconnector', 'Target → Source mapping') }}
 			</label>
 			<NcSelect
-				:input-id="reverseId"
+				:inputId="reverseId"
 				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
-				:value="selectedReverse"
+				:modelValue="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
-				:placeholder="t('openconnector', 'Optional — for bidirectional sync')"
-				@input="(option) => $emit('update:targetSourceValue', option?.id || '')" />
+				:placeholder="
+					t('openconnector', 'Optional — for bidirectional sync')
+				"
+				@update:modelValue="
+					(option) => $emit('update:targetSourceValue', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Only needed when changes flow back from target to source.') }}
+				{{
+					t(
+						'openconnector',
+						'Only needed when changes flow back from target to source.',
+					)
+				}}
 			</span>
 		</div>
 
@@ -67,26 +83,32 @@
 				{{ t('openconnector', 'Hash mapping') }}
 			</label>
 			<NcSelect
-				:input-id="hashId"
+				:inputId="hashId"
 				:aria-label-combobox="t('openconnector', 'Hash mapping')"
-				:value="selectedHash"
+				:modelValue="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
 				:placeholder="t('openconnector', 'Optional — change detection')"
-				@input="(option) => $emit('update:hashValue', option?.id || '')" />
+				@update:modelValue="
+					(option) => $emit('update:hashValue', option?.id || '')
+				" />
 			<span class="sync-mapping__helper">
-				{{ t('openconnector', 'Mapping used to compute the source-side hash for change detection.') }}
+				{{
+					t(
+						'openconnector',
+						'Mapping used to compute the source-side hash for change detection.',
+					)
+				}}
 			</span>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
+import { NcSelect } from '@nextcloud/vue'
 import SyncMappingPreview from './SyncMappingPreview.vue'
 
 let pickerSeq = 0
@@ -118,21 +140,32 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
-		primaryId() { return `sync-mapping-${this.pickerUid}-primary` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
-		reverseId() { return `sync-mapping-${this.pickerUid}-reverse` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
-		hashId() { return `sync-mapping-${this.pickerUid}-hash` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		primaryId() {
+			return `sync-mapping-${this.pickerUid}-primary`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		reverseId() {
+			return `sync-mapping-${this.pickerUid}-reverse`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		hashId() {
+			return `sync-mapping-${this.pickerUid}-hash`
+		},
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedPrimary() {
 			return this.resolveOption(this.value)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedReverse() {
 			return this.resolveOption(this.targetSourceValue)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedHash() {
 			return this.resolveOption(this.hashValue)
 		},
@@ -143,24 +176,46 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/**
+		 * Turn a stored mapping slug into the option object NcSelect renders.
+		 * Falls back to a synthetic `{ id, label }` so a slug that is not in
+		 * the fetched list (or is still loading) still shows its own value.
+		 *
+		 * @param {string|number} id The stored mapping slug; falsy means "none
+		 *   selected".
+		 * @return {{id: string, label: string}|null} The matching option, a
+		 *   synthetic stand-in, or null when nothing is selected.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		resolveOption(id) {
 			if (!id) return null
-			return this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
-				id: String(id),
-				label: String(id),
-			}
+			return (
+				this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
+					id: String(id),
+					label: String(id),
+				}
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchMappings() {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/mapping'),
-					{ params: { limit: 500 } },
+					generateUrl(
+						'/apps/openregister/api/objects/openconnector/mapping',
+					),
+					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
+					// FILTER in OpenRegister and silently returns `total: 0`
+					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
+					{ params: { _limit: 500 } },
 				)
 				const data = response.data
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const list = Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				this.mappingOptions = list.map((row) => ({
 					// Mappings are referenced by slug in the synchronization
 					// record (per the register schema description). Fall back

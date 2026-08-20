@@ -1,23 +1,24 @@
-# PHPStan baseline — tracked lint debt for openconnector
-#
-# Burndown tracked at: https://github.com/ConductionNL/openconnector/issues/848
-# Remove entries here as the underlying code is fixed.
 parameters:
 	ignoreErrors:
-		# AuthorizedAdminSetting accepts APP_ID string (not a class-string<IDelegatedSettings>)
-		# because NC's middleware resolves admin-gating by app ID at runtime, not by the
-		# IDelegatedSettings interface. This is the fleet-wide usage pattern.
-		# phpstan could not run locally (azjezz/psl v4 / PHP 8.2 incompatibility) — count
-		# validated on CI (PHP 8.3). Tracked in: https://github.com/ConductionNL/openconnector/issues/990
 		-
-			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			message: "#^Parameter \\$className of method OCP\\\\EventDispatcher\\\\IEventDispatcher\\:\\:addServiceListener\\(\\) expects class\\-string\\<OCP\\\\EventDispatcher\\\\IEventListener\\<OCP\\\\EventDispatcher\\\\Event\\>\\>, 'OCA\\\\\\\\OpenConnector\\\\\\\\Flow\\\\\\\\FlowNodeListener' given\\.$#"
 			count: 1
-			path: lib/Controller/SynchronizationsController.php
+			path: lib/AppInfo/Application.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\IUserSession\\:\\:createSessionToken\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/UserController.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\CloudEventListener\\:\\:SELF_REGISTER is unused\\.$#"
+			count: 1
+			path: lib/EventListener/CloudEventListener.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\CloudEventListener\\:\\:SELF_SCHEMAS is unused\\.$#"
+			count: 1
+			path: lib/EventListener/CloudEventListener.php
 
 		-
 			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:SOFTWARE_CATALOG_REGISTER_ID is unused\\.$#"
@@ -33,11 +34,6 @@ parameters:
 			message: "#^Call to an undefined method OCP\\\\DB\\\\IResult\\:\\:fetchAssociative\\(\\)\\.$#"
 			count: 1
 			path: lib/Migration/Version2Date20260520000099.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\AuthenticationService\\:\\:\\$twig\\.$#"
-			count: 2
-			path: lib/Service/AuthenticationService.php
 
 		-
 			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\AuthenticationService\\:\\:getHSJWK\\(\\) never returns null so it can be removed from the return type\\.$#"
@@ -60,19 +56,34 @@ parameters:
 			path: lib/Service/AuthorizationService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\CallService\\:\\:call\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity but returns GuzzleHttp\\\\Promise\\\\PromiseInterface\\.$#"
+			message: "#^Offset 'connectionId' on array\\{consentGrantedAt\\: non\\-falsy\\-string, consentExpiresAt\\: string, accounts\\: array\\<int, mixed\\>, lifecycleState\\: 'active'\\} on left side of \\?\\? does not exist\\.$#"
 			count: 1
-			path: lib/Service/CallService.php
+			path: lib/Service/BankfeedSyncService.php
 
 		-
-			message: "#^Offset 'type' on array\\{lastCall\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			message: "#^Offset 'connectionId' on array\\{expiryWarnedAt\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
 			count: 1
-			path: lib/Service/CallService.php
+			path: lib/Service/BankfeedSyncService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between null and 'soap' will always evaluate to false\\.$#"
+			message: "#^Offset 'connectionId' on array\\{lastSyncAt\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
 			count: 1
-			path: lib/Service/CallService.php
+			path: lib/Service/BankfeedSyncService.php
+
+		-
+			message: "#^Offset 'connectionId' on array\\{lifecycleState\\: 'expired'\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/BankfeedSyncService.php
+
+		-
+			message: "#^Offset 'connectionId' on array\\{lifecycleState\\: 'revoked'\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/BankfeedSyncService.php
+
+		-
+			message: "#^Offset 'redirectUrl' on array\\{consentGrantedAt\\: non\\-falsy\\-string, consentExpiresAt\\: string, accounts\\: array\\<int, mixed\\>, lifecycleState\\: 'active'\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/BankfeedSyncService.php
 
 		-
 			message: "#^Call to method export\\(\\) on an unknown class OCA\\\\OpenConnector\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
@@ -120,6 +131,11 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
+			message: "#^Empty array passed to foreach\\.$#"
+			count: 1
+			path: lib/Service/EndpointService.php
+
+		-
 			message: "#^Function request_parse_body not found\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
@@ -127,11 +143,6 @@ parameters:
 		-
 			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:getObjects\\(\\) never returns OCP\\\\AppFramework\\\\Db\\\\Entity so it can be removed from the return type\\.$#"
 			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:handleRequest\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse but returns OCP\\\\AppFramework\\\\Http\\\\Response\\.$#"
-			count: 3
 			path: lib/Service/EndpointService.php
 
 		-
@@ -165,16 +176,6 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Call to method evaluate\\(\\) on an unknown class Symfony\\\\Component\\\\ExpressionLanguage\\\\ExpressionLanguage\\.$#"
-			count: 1
-			path: lib/Service/EventService.php
-
-		-
-			message: "#^Instantiated class Symfony\\\\Component\\\\ExpressionLanguage\\\\ExpressionLanguage not found\\.$#"
-			count: 1
-			path: lib/Service/EventService.php
-
-		-
 			message: "#^Function request_parse_body not found\\.$#"
 			count: 1
 			path: lib/Service/Helper/FlowToken.php
@@ -195,27 +196,17 @@ parameters:
 			path: lib/Service/JobService.php
 
 		-
+			message: "#^Offset 'logRetention' on array\\{lastRun\\: non\\-falsy\\-string, nextRun\\?\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/JobService.php
+
+		-
 			message: "#^Result of && is always false\\.$#"
 			count: 2
 			path: lib/Service/JobService.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/JobService.php
-
-		-
-			message: "#^Offset 'logRetention' on array\\{lastRun\\: non\\-falsy\\-string, nextRun\\?\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: lib/Service/JobService.php
-
-		-
-			message: "#^Parameter \\$hour of method DateTime\\:\\:setTime\\(\\) expects int, string given\\.$#"
-			count: 1
-			path: lib/Service/JobService.php
-
-		-
-			message: "#^Parameter \\$minute of method DateTime\\:\\:setTime\\(\\) expects int, string given\\.$#"
 			count: 1
 			path: lib/Service/JobService.php
 
@@ -245,6 +236,41 @@ parameters:
 			path: lib/Service/Migration/LegacyToRegisterMigrator.php
 
 		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:BRON is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROPERTY_DEFINITIONS is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_DATUM_EXPORT is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_EXTERN_PAKKET is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_OBJECT_ID is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_OMSCHRIJVING is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_SWC_TYPE is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
 			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_TITEL_VIEW is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
@@ -255,7 +281,17 @@ parameters:
 			path: lib/Service/RuleService.php
 
 		-
+			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:RELATION_IDS is unused\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
 			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:processCustomConnectionsRule\\(\\) never returns array so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:processNodes\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
@@ -265,9 +301,14 @@ parameters:
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between SimpleXMLElement\\|false and null will always evaluate to false\\.$#"
+			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:\\$registerMapper is never read, only written\\.$#"
 			count: 1
-			path: lib/Service/SOAPService.php
+			path: lib/Service/RuleService.php
+
+		-
+			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:\\$registerResolver is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/RuleService.php
 
 		-
 			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\SearchService\\:\\:\\$directoryService\\.$#"
@@ -278,6 +319,11 @@ parameters:
 			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\SearchService\\:\\:\\$elasticService\\.$#"
 			count: 1
 			path: lib/Service/SearchService.php
+
+		-
+			message: "#^Offset 'objectUri' on array\\{attempts\\: non\\-empty\\-array, status\\: 'failed', detail\\: string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/SmsDispatchService.php
 
 		-
 			message: "#^Anonymous function has an unused use \\$deferred\\.$#"
@@ -330,7 +376,7 @@ parameters:
 			path: lib/Service/SynchronizationService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\SynchronizationService\\:\\:fetchAllPagesSequential\\(\\) is unused\\.$#"
+			message: "#^Call to function is_array\\(\\) with non\\-empty\\-string will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/SynchronizationService.php
 
@@ -340,17 +386,7 @@ parameters:
 			path: lib/Service/SynchronizationService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\SynchronizationService\\:\\:writeFile\\(\\) is unused\\.$#"
-			count: 1
-			path: lib/Service/SynchronizationService.php
-
-		-
-			message: "#^Parameter \\#2 \\$message of class Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\TooManyRequestsHttpException constructor expects string, int given\\.$#"
-			count: 1
-			path: lib/Service/SynchronizationService.php
-
-		-
-			message: "#^Parameter \\#3 \\$previous of class Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\TooManyRequestsHttpException constructor expects Throwable\\|null, array given\\.$#"
+			message: "#^Offset 'targetId' on array on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/SynchronizationService.php
 
@@ -375,20 +411,12 @@ parameters:
 			path: lib/Service/SynchronizationService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\Accounts\\\\IAccountProperty and null will always evaluate to false\\.$#"
+			message: "#^Variable \\$synchronizationContractResult on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/UserService.php
+			path: lib/Service/SynchronizationService.php
 
 		-
 			message: "#^Class OC\\\\Files\\\\Node\\\\File not found\\.$#"
 			count: 1
 			path: lib/Twig/MappingRuntime.php
-
-		# False positive: $this->pendingContractLogs is populated as a side effect of
-		# synchronizeContract() (line 1269). PHPStan sees only the reset to [] at line
-		# 3711 and cannot track the inter-method side-effect on the property.
-		-
-			message: "#^Empty array passed to foreach\\.$#"
-			count: 1
-			path: lib/Service/SynchronizationService.php
 

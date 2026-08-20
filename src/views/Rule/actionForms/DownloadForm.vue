@@ -11,17 +11,24 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Filename position (dotted path on object)')"
-			:value="value.filenamePosition || ''"
+			:modelValue="value.filenamePosition || ''"
 			placeholder="attachments.0.filename"
-			@update:value="(next) => patch('filenamePosition', next)" />
+			@update:modelValue="(next) => patch('filenamePosition', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File ID position in URL path (legacy)')"
 			type="number"
-			:value="value.fileIdPosition != null ? String(value.fileIdPosition) : ''"
+			:modelValue="
+				value.fileIdPosition != null ? String(value.fileIdPosition) : ''
+			"
 			placeholder="2"
-			@update:value="onFileIdInput" />
+			@update:modelValue="onFileIdInput" />
 		<span class="action-form__helper">
-			{{ t('openconnector', 'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.') }}
+			{{
+				t(
+					'openconnector',
+					'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.',
+				)
+			}}
 		</span>
 	</div>
 </template>
@@ -36,7 +43,14 @@ export default {
 	props: { ...valueProp },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Coerce the numeric file-ID-position field: an empty input removes the
+		 * key entirely, non-numeric input is ignored, anything else is stored
+		 * as a number.
+		 *
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onFileIdInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
@@ -53,7 +67,14 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
 </style>

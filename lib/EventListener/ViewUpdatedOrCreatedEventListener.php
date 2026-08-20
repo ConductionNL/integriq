@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector ViewUpdatedOrCreated EventListener.
  *
@@ -32,63 +33,60 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ViewUpdatedOrCreatedEventListener implements IEventListener
-{
+class ViewUpdatedOrCreatedEventListener implements IEventListener {
 
-    /**
-     * Register ID for the Software Catalog.
-     *
-     * @var int
-     */
-    private const SOFTWARE_CATALOG_REGISTER_ID = 1;
+	/**
+	 * Register ID for the Software Catalog.
+	 *
+	 * @var int
+	 */
+	private const SOFTWARE_CATALOG_REGISTER_ID = 1;
 
-    /**
-     * Schema ID for Software Items.
-     *
-     * @var int
-     */
-    private const SOFTWARE_ITEM_SCHEMA_ID = 1;
+	/**
+	 * Schema ID for Software Items.
+	 *
+	 * @var int
+	 */
+	private const SOFTWARE_ITEM_SCHEMA_ID = 1;
 
-    /**
-     * Schema ID for Software Versions.
-     *
-     * @var int
-     */
-    private const SOFTWARE_VERSION_SCHEMA_ID = 2;
+	/**
+	 * Schema ID for Software Versions.
+	 *
+	 * @var int
+	 */
+	private const SOFTWARE_VERSION_SCHEMA_ID = 2;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a fired event.
-     *
-     * @param Event $event Event payload to handle.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        // Filter out all events that are not an ObjectUpdatedEvent or ObjectCreatedEvent.
-        if ($event instanceof ObjectUpdatedEvent === false && $event instanceof ObjectCreatedEvent === false) {
-            return;
-        }
+	/**
+	 * Handle a fired event.
+	 *
+	 * @param Event $event Event payload to handle.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		// Filter out all events that are not an ObjectUpdatedEvent or ObjectCreatedEvent.
+		if ($event instanceof ObjectUpdatedEvent === false && $event instanceof ObjectCreatedEvent === false) {
+			return;
+		}
 
-        // Make sure that we have an object.
-        if (method_exists($event, 'getNewObject') === false) {
-            return;
-        }
+		// Make sure that we have an object.
+		if (method_exists($event, 'getNewObject') === false) {
+			return;
+		}
 
-        // Make sure that we have the proper register and schema.
-        $object = $event->getNewObject();
-        if ($object->getRegister() !== self::SOFTWARE_VERSION_SCHEMA_ID || $object->getSchema() !== self::SOFTWARE_ITEM_SCHEMA_ID) {
-            return;
-        }
+		// Make sure that we have the proper register and schema.
+		$object = $event->getNewObject();
+		if ($object->getRegister() !== self::SOFTWARE_VERSION_SCHEMA_ID || $object->getSchema() !== self::SOFTWARE_ITEM_SCHEMA_ID) {
+			return;
+		}
 
-        // Now we can do our update magic by using the SoftwareCatalogueService or it might be called from a rule.
-    }//end handle()
+		// Now we can do our update magic by using the SoftwareCatalogueService or it might be called from a rule.
+	}//end handle()
 }//end class

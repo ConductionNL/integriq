@@ -34,48 +34,44 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/licence-and-or-requirement-honesty/specs/app-distribution-metadata/spec.md
  */
-class OpenRegisterDependencyCheckTest extends TestCase
-{
-    /**
-     * Build the check with an IAppManager mock reporting the given state.
-     *
-     * @param bool $installed Whether openregister reports as installed/enabled.
-     *
-     * @return OpenRegisterDependencyCheck
-     */
-    private function makeCheck(bool $installed): OpenRegisterDependencyCheck
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn($installed);
+class OpenRegisterDependencyCheckTest extends TestCase {
+	/**
+	 * Build the check with an IAppManager mock reporting the given state.
+	 *
+	 * @param bool $installed Whether openregister reports as installed/enabled.
+	 *
+	 * @return OpenRegisterDependencyCheck
+	 */
+	private function makeCheck(bool $installed): OpenRegisterDependencyCheck {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn($installed);
 
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
 
-        return new OpenRegisterDependencyCheck($appManager, $l10n);
-    }//end makeCheck()
+		return new OpenRegisterDependencyCheck($appManager, $l10n);
+	}//end makeCheck()
 
-    /**
-     * When OpenRegister is disabled the check reports an error naming it.
-     *
-     * @return void
-     */
-    public function testErrorWhenOpenRegisterDisabled(): void
-    {
-        $result = $this->makeCheck(false)->run();
+	/**
+	 * When OpenRegister is disabled the check reports an error naming it.
+	 *
+	 * @return void
+	 */
+	public function testErrorWhenOpenRegisterDisabled(): void {
+		$result = $this->makeCheck(false)->run();
 
-        $this->assertSame(SetupResult::ERROR, $result->getSeverity());
-        $this->assertStringContainsString('OpenRegister', (string) $result->getDescription());
-    }//end testErrorWhenOpenRegisterDisabled()
+		$this->assertSame(SetupResult::ERROR, $result->getSeverity());
+		$this->assertStringContainsString('OpenRegister', (string)$result->getDescription());
+	}//end testErrorWhenOpenRegisterDisabled()
 
-    /**
-     * When OpenRegister is enabled the check is silent (success).
-     *
-     * @return void
-     */
-    public function testSuccessWhenOpenRegisterEnabled(): void
-    {
-        $result = $this->makeCheck(true)->run();
+	/**
+	 * When OpenRegister is enabled the check is silent (success).
+	 *
+	 * @return void
+	 */
+	public function testSuccessWhenOpenRegisterEnabled(): void {
+		$result = $this->makeCheck(true)->run();
 
-        $this->assertSame(SetupResult::SUCCESS, $result->getSeverity());
-    }//end testSuccessWhenOpenRegisterEnabled()
+		$this->assertSame(SetupResult::SUCCESS, $result->getSeverity());
+	}//end testSuccessWhenOpenRegisterEnabled()
 }//end class

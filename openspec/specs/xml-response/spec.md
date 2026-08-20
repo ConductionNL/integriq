@@ -7,7 +7,7 @@ status: done
 ## Purpose
 Provides an XML response type that serialises an array payload to a well-formed XML string via DOMDocument, honouring an `@root` key (or explicit root tag) for the document element and supporting `@attributes`, `#text`, indexed-array fan-out, and numeric-key rewriting in the recursive walk. It allows a render callback to fully override the default serialisation, applies carriage-return normalisation, and uses safe text nodes with an object-to-string fallback that hides IQueryBuilder SQL fragments.
 
-@e2e exclude backend XML serialisation helper (array→XML rendering, no browser UI) — covered by PHPUnit
+@e2e exclude backend XML serialisation helper (array→XML rendering, no browser UI) — all 13 scenarios below are asserted by `OCA\OpenConnector\Tests\Unit\Http\XMLResponseTest` (tests/Unit/Http/XMLResponseTest.php), which drives the real `OCA\OpenConnector\Http\XMLResponse` through `render()` and `arrayToXml()` and runs in the `tests/Unit` PHPUnit suite on every CI leg.
 
 ## Requirements
 ### Requirement: Data accessor and render-callback override (REQ-001)

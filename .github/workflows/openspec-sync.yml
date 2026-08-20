@@ -8,7 +8,17 @@ on:
 
 jobs:
   sync:
-    uses: Conduction/.github/.github/workflows/openspec-sync.yml@feature/openspec-project-sync
+    # Permission CEILING for the called workflow, not a grant. The callee's
+    # `sync` job already declares exactly `issues: write` + `contents: read`, so
+    # this restates today's effective token. It creates/updates the OpenSpec
+    # tracking issues; the board placement is disabled (GITHUB_TOKEN cannot do
+    # ProjectsV2 — ConductionNL/.github#432).
+    permissions:
+      issues: write
+      contents: read
+    # `@main`, not `@feature/openspec-project-sync` — that branch no longer
+    # exists on ConductionNL/.github, so the reference was unresolvable.
+    uses: ConductionNL/.github/.github/workflows/openspec-sync.yml@main
     with:
       app-name: openconnector
     secrets:

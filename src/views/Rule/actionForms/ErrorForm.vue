@@ -10,14 +10,14 @@
 		<NcTextField
 			:label="t('openconnector', 'HTTP status code')"
 			type="number"
-			:value="value.code != null ? String(value.code) : ''"
+			:modelValue="value.code != null ? String(value.code) : ''"
 			placeholder="500"
-			@update:value="onCodeInput" />
+			@update:modelValue="onCodeInput" />
 		<NcTextField
 			:label="t('openconnector', 'Error title')"
-			:value="value.name || ''"
+			:modelValue="value.name || ''"
 			:placeholder="t('openconnector', 'Something went wrong')"
-			@update:value="(next) => patch('name', next)" />
+			@update:modelValue="(next) => patch('name', next)" />
 		<label class="action-form__label" :for="'rule-action-error-msg-' + uid">
 			{{ t('openconnector', 'Error message') }}
 		</label>
@@ -30,8 +30,8 @@
 			@input="(event) => patch('message', event.target.value)" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.includeJsonLogicResult"
-			@update:checked="(next) => patch('includeJsonLogicResult', !!next)">
+			:modelValue="!!value.includeJsonLogicResult"
+			@update:modelValue="(next) => patch('includeJsonLogicResult', !!next)">
 			{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 		</NcCheckboxRadioSwitch>
 	</div>
@@ -47,10 +47,20 @@ export default {
 	name: 'ErrorForm',
 	components: { NcCheckboxRadioSwitch, NcTextField },
 	props: { ...valueProp },
-	data() { return { uid: ++uidCounter } },
+	data() {
+		return { uid: ++uidCounter }
+	},
+
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Coerce the HTTP status-code field: an empty input removes the key
+		 * entirely, non-numeric input is ignored, anything else is stored as a
+		 * number.
+		 *
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onCodeInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
@@ -67,13 +77,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
 .action-form__textarea {
-	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
-	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
-	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
+	width: 100%;
+	padding: 8px;
+	font-family: var(--font-face, sans-serif);
+	font-size: 14px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	resize: vertical;
 }
 </style>

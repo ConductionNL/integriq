@@ -2,11 +2,12 @@
 <template>
 	<div class="openconnector-app-root">
 		<CnAppRoot
-			:ai-companion="true"
+			:aiCompanion="true"
 			:manifest="manifest"
-			:custom-components="customComponents"
-			:page-types="pageTypes"
-			app-id="openconnector"
+			:customComponents="customComponents"
+			:registry="registry"
+			:pageTypes="pageTypes"
+			appId="openconnector"
 			:translate="translateForApp"
 			:permissions="permissions" />
 		<!--
@@ -20,8 +21,8 @@
 </template>
 
 <script>
-import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
+import { translate as ncT } from '@nextcloud/l10n'
 import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
@@ -36,10 +37,23 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		customComponents: {
 			type: Object,
 			default: () => ({}),
 		},
+
+		/**
+		 * V2 component registry (ADR-036) — map of registry-key →
+		 * `{ kind, component }`. Forwarded verbatim to CnAppRoot, which resolves
+		 * `type:"custom"` page components against the `kind:'page'` entries.
+		 * Replaces the deprecated `customComponents` string map for v2 manifests.
+		 */
+		registry: {
+			type: Object,
+			default: () => ({}),
+		},
+
 		pageTypes: {
 			type: Object,
 			default: () => ({}),
@@ -47,15 +61,16 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		permissions() {
 			const base = window.OC?.currentUser?.permissions ?? []
 			// CnAppNav's permission filter is an array-includes check; Nextcloud
 			// does not put the boolean admin flag into the permissions array, so
 			// we inject it here for manifest entries gated on permission: "admin".
-			const isAdmin = typeof window.OC?.isUserAdmin === 'function'
-				? window.OC.isUserAdmin()
-				: false
+			const isAdmin =
+				typeof window.OC?.isUserAdmin === 'function'
+					? window.OC.isUserAdmin()
+					: false
 			return isAdmin ? [...base, 'admin'] : base
 		},
 	},
@@ -69,7 +84,7 @@ export default {
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1
+		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md
 		 */
 		translateForApp(key) {
 			return ncT('openconnector', key)

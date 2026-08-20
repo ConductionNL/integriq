@@ -8,9 +8,9 @@
 
 function interpolate(text, vars) {
 	if (!vars) return text
-	return text.replace(/\{(\w+)\}/g, (match, key) => (
-		Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match
-	))
+	return text.replace(/\{(\w+)\}/g, (match, key) =>
+		Object.hasOwn(vars, key) ? String(vars[key]) : match,
+	)
 }
 
 export function translate(app, text, vars) {

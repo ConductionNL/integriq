@@ -6,7 +6,17 @@ on:
 
 jobs:
   release:
-    uses: Conduction/.github/.github/workflows/release-stable.yml@main
+    # Permission CEILING for the called release workflow, not a grant. The
+    # callee's `release` job already declares `contents: write` for itself, so
+    # this restates today's effective token and changes nothing that runs.
+    # `contents: write` cuts the tag and uploads the release asset; the App Store
+    # publish authenticates with NEXTCLOUD_APPSTORE_TOKEN, not GITHUB_TOKEN.
+    #
+    # ⚠️ Not `contents: read`. A caller block CAPS the callee, so a lower ceiling
+    # makes the call fail to START rather than run with less.
+    permissions:
+      contents: write
+    uses: ConductionNL/.github/.github/workflows/release-stable.yml@main
     with:
       app-name: openconnector
     secrets: inherit

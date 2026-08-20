@@ -23,7 +23,6 @@ use OCP\App\IAppManager;
 use OCP\IContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,173 +33,165 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class OrganisationBridgeServiceTest extends TestCase
-{
-    /**
-     * Test that service returns null when OpenRegister is not installed
-     *
-     * @return void
-     */
-    public function testGetOrganisationServiceWhenOpenRegisterNotInstalled(): void
-    {
-        // Mock app manager to return false for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'files']);
+class OrganisationBridgeServiceTest extends TestCase {
+	/**
+	 * Test that service returns null when OpenRegister is not installed
+	 *
+	 * @return void
+	 */
+	public function testGetOrganisationServiceWhenOpenRegisterNotInstalled(): void {
+		// Mock app manager to return false for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(IContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->getOrganisationService();
-        $this->assertNull($result);
-    }
+		$result = $service->getOrganisationService();
+		$this->assertNull($result);
+	}
 
-    /**
-     * Test that service returns null when OpenRegister is installed but service not available
-     *
-     * @return void
-     */
-    public function testGetOrganisationServiceWhenServiceNotAvailable(): void
-    {
-        // Mock app manager to return true for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'openregister', 'files']);
+	/**
+	 * Test that service returns null when OpenRegister is installed but service not available
+	 *
+	 * @return void
+	 */
+	public function testGetOrganisationServiceWhenServiceNotAvailable(): void {
+		// Mock app manager to return true for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'openregister', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $container->method('get')
-            ->with('OCA\OpenRegister\Service\OrganisationService')
-            ->willThrowException(new class extends \Exception implements ContainerExceptionInterface {});
+		$container = $this->createMock(IContainer::class);
+		$container->method('get')
+			->with('OCA\OpenRegister\Service\OrganisationService')
+			->willThrowException(new class extends \Exception implements ContainerExceptionInterface {});
 
-        $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects($this->once())
-            ->method('warning')
-            ->with('OpenRegister OrganisationService not available');
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('warning')
+			->with('OpenRegister OrganisationService not available');
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->getOrganisationService();
-        $this->assertNull($result);
-    }
+		$result = $service->getOrganisationService();
+		$this->assertNull($result);
+	}
 
-    /**
-     * Test that service returns correct stats when OpenRegister is not available
-     *
-     * @return void
-     */
-    public function testGetUserOrganisationStatsWhenServiceNotAvailable(): void
-    {
-        // Mock app manager to return false for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'files']);
+	/**
+	 * Test that service returns correct stats when OpenRegister is not available
+	 *
+	 * @return void
+	 */
+	public function testGetUserOrganisationStatsWhenServiceNotAvailable(): void {
+		// Mock app manager to return false for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(IContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->getUserOrganisationStats();
+		$result = $service->getUserOrganisationStats();
 
-        $this->assertIsArray($result);
-        $this->assertEquals(0, $result['total']);
-        $this->assertNull($result['active']);
-        $this->assertEmpty($result['results']);
-        $this->assertFalse($result['available']);
-    }
+		$this->assertIsArray($result);
+		$this->assertEquals(0, $result['total']);
+		$this->assertNull($result['active']);
+		$this->assertEmpty($result['results']);
+		$this->assertFalse($result['available']);
+	}
 
-    /**
-     * Test that service returns correct result when setting active organization fails
-     *
-     * @return void
-     */
-    public function testSetActiveOrganisationWhenServiceNotAvailable(): void
-    {
-        // Mock app manager to return false for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'files']);
+	/**
+	 * Test that service returns correct result when setting active organization fails
+	 *
+	 * @return void
+	 */
+	public function testSetActiveOrganisationWhenServiceNotAvailable(): void {
+		// Mock app manager to return false for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(IContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->setActiveOrganisation('test-uuid');
+		$result = $service->setActiveOrganisation('test-uuid');
 
-        $this->assertIsArray($result);
-        $this->assertFalse($result['success']);
-        $this->assertEquals('Organization service not available', $result['message']);
-        $this->assertFalse($result['available']);
-    }
+		$this->assertIsArray($result);
+		$this->assertFalse($result['success']);
+		$this->assertEquals('Organization service not available', $result['message']);
+		$this->assertFalse($result['available']);
+	}
 
-    /**
-     * Test that service correctly identifies when organization service is available
-     *
-     * @return void
-     */
-    public function testIsOrganisationServiceAvailable(): void
-    {
-        // Mock app manager to return true for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'openregister', 'files']);
+	/**
+	 * Test that service correctly identifies when organization service is available
+	 *
+	 * @return void
+	 */
+	public function testIsOrganisationServiceAvailable(): void {
+		// Mock app manager to return true for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'openregister', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $container->method('get')
-            ->with('OCA\OpenRegister\Service\OrganisationService')
-            ->willReturn($this->createMock(\OCA\OpenRegister\Service\OrganisationService::class));
+		$container = $this->createMock(IContainer::class);
+		$container->method('get')
+			->with('OCA\OpenRegister\Service\OrganisationService')
+			->willReturn($this->createMock(\OCA\OpenRegister\Service\OrganisationService::class));
 
-        $logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->isOrganisationServiceAvailable();
-        $this->assertTrue($result);
-    }
+		$result = $service->isOrganisationServiceAvailable();
+		$this->assertTrue($result);
+	}
 
-    /**
-     * Test that service returns empty array when getting user organizations fails
-     *
-     * @return void
-     */
-    public function testGetUserOrganisationsWhenServiceNotAvailable(): void
-    {
-        // Mock app manager to return false for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'files']);
+	/**
+	 * Test that service returns empty array when getting user organizations fails
+	 *
+	 * @return void
+	 */
+	public function testGetUserOrganisationsWhenServiceNotAvailable(): void {
+		// Mock app manager to return false for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(IContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->getUserOrganisations();
-        $this->assertIsArray($result);
-        $this->assertEmpty($result);
-    }
+		$result = $service->getUserOrganisations();
+		$this->assertIsArray($result);
+		$this->assertEmpty($result);
+	}
 
-    /**
-     * Test that service returns null when getting active organization fails
-     *
-     * @return void
-     */
-    public function testGetActiveOrganisationWhenServiceNotAvailable(): void
-    {
-        // Mock app manager to return false for openregister
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('getInstalledApps')
-            ->willReturn(['openconnector', 'files']);
+	/**
+	 * Test that service returns null when getting active organization fails
+	 *
+	 * @return void
+	 */
+	public function testGetActiveOrganisationWhenServiceNotAvailable(): void {
+		// Mock app manager to return false for openregister
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getEnabledApps')
+			->willReturn(['openconnector', 'files']);
 
-        $container = $this->createMock(IContainer::class);
-        $logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(IContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $service = new OrganisationBridgeService($appManager, $container, $logger);
+		$service = new OrganisationBridgeService($appManager, $container, $logger);
 
-        $result = $service->getActiveOrganisation();
-        $this->assertNull($result);
-    }
-} 
+		$result = $service->getActiveOrganisation();
+		$this->assertNull($result);
+	}
+}

@@ -35,77 +35,72 @@ namespace OCA\OpenConnector\Adapters\Berichtenbox;
  * `dispatch()` and `checkMailbox()` accept them but never echo them
  * back nor log them.
  */
-final class BerichtenboxClientMock extends BerichtenboxClient
-{
-    /**
-     * Flavour identifier.
-     *
-     * @inheritDoc
-     *
-     * @return string
-     */
-    public function flavour(): string
-    {
-        return 'mock';
-    }//end flavour()
+final class BerichtenboxClientMock extends BerichtenboxClient {
+	/**
+	 * Flavour identifier.
+	 *
+	 * @inheritDoc
+	 *
+	 * @return string
+	 */
+	public function flavour(): string {
+		return 'mock';
+	}//end flavour()
 
-    /**
-     * Dormant dispatch — returns a synthetic Logius envelope.
-     *
-     * @param array<string,mixed> $message Message (ignored).
-     * @param string              $pkiCert PKIoverheid cert (ignored).
-     * @param string              $pkiKey  Private key (ignored).
-     *
-     * @return array<string,mixed>
-     */
-    public function dispatch(array $message, string $pkiCert, string $pkiKey): array
-    {
-        unset($message, $pkiCert, $pkiKey);
-        return [
-            'logiusKenmerk'  => 'bbk-mock-'.bin2hex(random_bytes(8)),
-            'deliveryStatus' => 'queued',
-            'receivedAt'     => gmdate('c'),
-            'flavour'        => 'mock',
-        ];
-    }//end dispatch()
+	/**
+	 * Dormant dispatch — returns a synthetic Logius envelope.
+	 *
+	 * @param array<string,mixed> $message Message (ignored).
+	 * @param string $pkiCert PKIoverheid cert (ignored).
+	 * @param string $pkiKey Private key (ignored).
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function dispatch(array $message, string $pkiCert, string $pkiKey): array {
+		unset($message, $pkiCert, $pkiKey);
+		return [
+			'logiusKenmerk' => 'bbk-mock-' . bin2hex(random_bytes(8)),
+			'deliveryStatus' => 'queued',
+			'receivedAt' => gmdate('c'),
+			'flavour' => 'mock',
+		];
+	}//end dispatch()
 
-    /**
-     * Dormant verify — returns signatureValid=false so a downstream
-     * caller never treats a mock-verified webhook as authentic.
-     *
-     * @param string               $rawBody Raw body (ignored).
-     * @param array<string,string> $headers Headers (ignored).
-     *
-     * @return array<string,mixed>
-     */
-    public function verifyWebhook(string $rawBody, array $headers): array
-    {
-        unset($rawBody, $headers);
-        return [
-            'signatureValid' => false,
-            'logiusKenmerk'  => 'bbk-mock-verify-'.bin2hex(random_bytes(6)),
-            'deliveryStatus' => 'mock',
-            'deliveredAt'    => gmdate('c'),
-            'flavour'        => 'mock',
-        ];
-    }//end verifyWebhook()
+	/**
+	 * Dormant verify — returns signatureValid=false so a downstream
+	 * caller never treats a mock-verified webhook as authentic.
+	 *
+	 * @param string $rawBody Raw body (ignored).
+	 * @param array<string,string> $headers Headers (ignored).
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function verifyWebhook(string $rawBody, array $headers): array {
+		unset($rawBody, $headers);
+		return [
+			'signatureValid' => false,
+			'logiusKenmerk' => 'bbk-mock-verify-' . bin2hex(random_bytes(6)),
+			'deliveryStatus' => 'mock',
+			'deliveredAt' => gmdate('c'),
+			'flavour' => 'mock',
+		];
+	}//end verifyWebhook()
 
-    /**
-     * Dormant mailbox-check — returns active=false regardless of BSN.
-     *
-     * BSN itself is never inspected nor echoed (AVG / WBP art. 9).
-     *
-     * @param string $bsn BSN (ignored).
-     *
-     * @return array<string,mixed>
-     */
-    public function checkMailbox(string $bsn): array
-    {
-        unset($bsn);
-        return [
-            'active'     => false,
-            'lastUsedAt' => null,
-            'flavour'    => 'mock',
-        ];
-    }//end checkMailbox()
+	/**
+	 * Dormant mailbox-check — returns active=false regardless of BSN.
+	 *
+	 * BSN itself is never inspected nor echoed (AVG / WBP art. 9).
+	 *
+	 * @param string $bsn BSN (ignored).
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function checkMailbox(string $bsn): array {
+		unset($bsn);
+		return [
+			'active' => false,
+			'lastUsedAt' => null,
+			'flavour' => 'mock',
+		];
+	}//end checkMailbox()
 }//end class

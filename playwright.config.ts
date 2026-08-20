@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 OpenConnector Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright config for OpenConnector.
  *
@@ -22,15 +22,20 @@
  *                      rather than `docs/static/` — see the capture
  *                      spec for details.
  *
- * Point at a running Nextcloud with NEXTCLOUD_URL (default
- * http://localhost:8080). `globalSetup` logs in once (admin/admin by
- * default; override with NC_ADMIN_USER / NC_ADMIN_PASS) and persists
- * the session to `tests/e2e/.auth/admin.json`; every spec reuses it via
- * `use.storageState`.
+ * Point at a running Nextcloud with PLAYWRIGHT_BASE_URL (or BASE_URL, which is
+ * what the shared quality workflow exports in CI). There is no default — see
+ * tests/e2e/support/baseUrl.ts for why (the old
+ * `NEXTCLOUD_URL || 'http://localhost:8080'` fallback silently targeted the
+ * SHARED dev container). `globalSetup` logs in once (admin/admin by default;
+ * override with NC_ADMIN_USER / NC_ADMIN_PASS) and persists the session to
+ * `tests/e2e/.auth/admin.json`; every spec reuses it via `use.storageState`.
+ *
+ *   PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e
  */
 
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
+import { BASE_URL } from './tests/e2e/support/baseUrl'
 
 export default defineConfig({
 	testDir: './tests/e2e',
@@ -48,6 +53,20 @@ export default defineConfig({
 	workers: process.env.PLAYWRIGHT_REGRESSION_WORKERS
 		? Number(process.env.PLAYWRIGHT_REGRESSION_WORKERS)
 		: 1,
+	// The shared quality.yml Playwright job is `timeout-minutes: 45`, and a job
+	// cancelled by that cap produces NO verdict: Playwright never prints its
+	// tally, the `if: failure()` trace upload never fires, and the
+	// `if: always()` report upload does not run on a cancelled job either — the
+	// run you most need to read is the one that leaves nothing behind, and it
+	// still renders as "fail" in `gh pr checks` while carrying no information.
+	// Runs cancelled at ~45m16s have been observed in this fleet. Measured
+	// overhead before `Run Playwright tests` starts is 2.0-2.4 min (this repo's
+	// run 31257480415: 2m20s) and the uploads after it take seconds, so 38m
+	// keeps ~7 min of margin while guaranteeing both a tally and the artifacts
+	// that explain it. It is also ~5x the REQ-009 10-minute regression budget,
+	// so it cannot mask a real regression — only turn a silent cancellation
+	// into a reported timeout.
+	globalTimeout: 38 * 60_000,
 	reporter: [
 		['html', { open: 'never', outputFolder: 'tests/e2e/playwright-report' }],
 		['list'],
@@ -55,9 +74,17 @@ export default defineConfig({
 	outputDir: 'tests/e2e/test-results',
 
 	use: {
-		baseURL: process.env.NEXTCLOUD_URL || 'http://localhost:8080',
+		baseURL: BASE_URL,
 		storageState: path.resolve(__dirname, 'tests/e2e/.auth/admin.json'),
-		trace: 'on-first-retry',
+		// `on-first-retry` writes a trace only when a retry actually happens, so
+		// the trace artifact is a function of `retries`. Off CI `retries` is 0
+		// above, so a local failure has never produced a trace at all; on CI it
+		// traces the SECOND attempt only, which means the failure that does not
+		// reproduce — the one actually worth a trace — leaves no record of the
+		// attempt that failed. `retain-on-failure` traces every attempt and
+		// keeps the ones that failed: strictly more informative, and
+		// independent of the retry count.
+		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
 

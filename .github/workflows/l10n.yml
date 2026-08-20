@@ -1,0 +1,30 @@
+name: l10n
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, beta, development]
+
+permissions:
+  contents: read
+
+jobs:
+  l10n:
+    # Names the FRONTEND catalogue deliberately: test:l10n asserts every t()/n()
+    # literal in src/ against l10n/en.js, the file OC.L10N.register loads. It used
+    # to check en.json — the backend PHP catalogue, which no frontend code path
+    # reads — so the display name someone sees on a red check said en.json.
+    name: l10n coverage (en.js)
+    runs-on: ubuntu-latest
+    # Observed: n=216 runs, median 0.1 min, max 1.1 min. Bounded loosely so
+    # normal runner contention can never trip it.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # check-l10n.js uses only Node built-ins (fs/path) — no npm ci needed.
+      - name: Check l10n coverage
+        run: npm run test:l10n

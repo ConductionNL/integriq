@@ -45,222 +45,208 @@ namespace OCA\OpenConnector\Adapters\Digikoppeling;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-class Ebms2ReliableMessagingService
-{
+class Ebms2ReliableMessagingService {
 
-    /**
-     * Outbound message state, keyed by MessageId.
-     *
-     * Each entry: {conversationId, sequence, attempts, acknowledged, deadLettered}.
-     *
-     * @var array<string, array<string, mixed>>
-     */
-    private array $outbound = [];
+	/**
+	 * Outbound message state, keyed by MessageId.
+	 *
+	 * Each entry: {conversationId, sequence, attempts, acknowledged, deadLettered}.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private array $outbound = [];
 
-    /**
-     * Set of inbound MessageIds already processed (duplicate elimination).
-     *
-     * @var array<string, bool>
-     */
-    private array $seenInbound = [];
+	/**
+	 * Set of inbound MessageIds already processed (duplicate elimination).
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $seenInbound = [];
 
-    /**
-     * Register an outbound message for reliable delivery.
-     *
-     * @param string $messageId      The ebMS2 MessageId (unique).
-     * @param string $conversationId The ebMS2 ConversationId.
-     * @param int    $sequence       Monotonic sequence number within the conversation (for ordering).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function registerOutbound(string $messageId, string $conversationId, int $sequence=0): void
-    {
-        $this->outbound[$messageId] = [
-            'conversationId' => $conversationId,
-            'sequence'       => $sequence,
-            'attempts'       => 0,
-            'acknowledged'   => false,
-            'deadLettered'   => false,
-        ];
+	/**
+	 * Register an outbound message for reliable delivery.
+	 *
+	 * @param string $messageId The ebMS2 MessageId (unique).
+	 * @param string $conversationId The ebMS2 ConversationId.
+	 * @param int $sequence Monotonic sequence number within the conversation (for ordering).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function registerOutbound(string $messageId, string $conversationId, int $sequence = 0): void {
+		$this->outbound[$messageId] = [
+			'conversationId' => $conversationId,
+			'sequence' => $sequence,
+			'attempts' => 0,
+			'acknowledged' => false,
+			'deadLettered' => false,
+		];
 
-    }//end registerOutbound()
+	}//end registerOutbound()
 
-    /**
-     * Record one delivery attempt (a (re)transmission) for a message.
-     *
-     * @param string $messageId The MessageId being (re)transmitted.
-     *
-     * @return int The number of attempts made so far.
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md
-     */
-    public function recordAttempt(string $messageId): int
-    {
-        if (isset($this->outbound[$messageId]) === false) {
-            return 0;
-        }
+	/**
+	 * Record one delivery attempt (a (re)transmission) for a message.
+	 *
+	 * @param string $messageId The MessageId being (re)transmitted.
+	 *
+	 * @return int The number of attempts made so far.
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md
+	 */
+	public function recordAttempt(string $messageId): int {
+		if (isset($this->outbound[$messageId]) === false) {
+			return 0;
+		}
 
-        $this->outbound[$messageId]['attempts']++;
-        return (int) $this->outbound[$messageId]['attempts'];
+		$this->outbound[$messageId]['attempts']++;
+		return (int)$this->outbound[$messageId]['attempts'];
+	}//end recordAttempt()
 
-    }//end recordAttempt()
+	/**
+	 * Mark an outbound message acknowledged by the partner.
+	 *
+	 * @param string $messageId The acknowledged MessageId.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md
+	 */
+	public function acknowledge(string $messageId): void {
+		if (isset($this->outbound[$messageId]) === true) {
+			$this->outbound[$messageId]['acknowledged'] = true;
+		}
 
-    /**
-     * Mark an outbound message acknowledged by the partner.
-     *
-     * @param string $messageId The acknowledged MessageId.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md
-     */
-    public function acknowledge(string $messageId): void
-    {
-        if (isset($this->outbound[$messageId]) === true) {
-            $this->outbound[$messageId]['acknowledged'] = true;
-        }
+	}//end acknowledge()
 
-    }//end acknowledge()
+	/**
+	 * Whether a message has been acknowledged.
+	 *
+	 * @param string $messageId The MessageId.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md
+	 */
+	public function isAcknowledged(string $messageId): bool {
+		return (bool)($this->outbound[$messageId]['acknowledged'] ?? false);
+	}//end isAcknowledged()
 
-    /**
-     * Whether a message has been acknowledged.
-     *
-     * @param string $messageId The MessageId.
-     *
-     * @return bool
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md
-     */
-    public function isAcknowledged(string $messageId): bool
-    {
-        return (bool) ($this->outbound[$messageId]['acknowledged'] ?? false);
+	/**
+	 * Whether a message should be retransmitted now.
+	 *
+	 * A message is due for retransmit when it is unacknowledged, not yet
+	 * dead-lettered, and has attempts remaining within the retry budget.
+	 *
+	 * @param string $messageId The MessageId.
+	 * @param int $retryBudget The maximum number of (re)transmissions.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function dueForRetransmit(string $messageId, int $retryBudget): bool {
+		$message = ($this->outbound[$messageId] ?? null);
+		if ($message === null) {
+			return false;
+		}
 
-    }//end isAcknowledged()
+		return $message['acknowledged'] === false
+			&& $message['deadLettered'] === false
+			&& (int)$message['attempts'] < $retryBudget;
 
-    /**
-     * Whether a message should be retransmitted now.
-     *
-     * A message is due for retransmit when it is unacknowledged, not yet
-     * dead-lettered, and has attempts remaining within the retry budget.
-     *
-     * @param string $messageId   The MessageId.
-     * @param int    $retryBudget The maximum number of (re)transmissions.
-     *
-     * @return bool
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function dueForRetransmit(string $messageId, int $retryBudget): bool
-    {
-        $message = ($this->outbound[$messageId] ?? null);
-        if ($message === null) {
-            return false;
-        }
+	}//end dueForRetransmit()
 
-        return $message['acknowledged'] === false
-            && $message['deadLettered'] === false
-            && (int) $message['attempts'] < $retryBudget;
+	/**
+	 * Whether a message has exhausted its retry budget and must be dead-lettered.
+	 *
+	 * @param string $messageId The MessageId.
+	 * @param int $retryBudget The maximum number of (re)transmissions.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function shouldDeadLetter(string $messageId, int $retryBudget): bool {
+		$message = ($this->outbound[$messageId] ?? null);
+		if ($message === null) {
+			return false;
+		}
 
-    }//end dueForRetransmit()
+		return $message['acknowledged'] === false
+			&& $message['deadLettered'] === false
+			&& (int)$message['attempts'] >= $retryBudget;
 
-    /**
-     * Whether a message has exhausted its retry budget and must be dead-lettered.
-     *
-     * @param string $messageId   The MessageId.
-     * @param int    $retryBudget The maximum number of (re)transmissions.
-     *
-     * @return bool
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function shouldDeadLetter(string $messageId, int $retryBudget): bool
-    {
-        $message = ($this->outbound[$messageId] ?? null);
-        if ($message === null) {
-            return false;
-        }
+	}//end shouldDeadLetter()
 
-        return $message['acknowledged'] === false
-            && $message['deadLettered'] === false
-            && (int) $message['attempts'] >= $retryBudget;
+	/**
+	 * Move an exhausted message onto the dead-letter surface.
+	 *
+	 * The actual dead-letter persistence is the `dead-letter-replay` surface
+	 * (not a parallel bus, D4); this marks the message so it is no longer
+	 * retransmitted and returns the audit record the caller hands to that
+	 * surface.
+	 *
+	 * @param string $messageId The exhausted MessageId.
+	 *
+	 * @return array<string, mixed> The dead-letter audit record.
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function deadLetter(string $messageId): array {
+		if (isset($this->outbound[$messageId]) === true) {
+			$this->outbound[$messageId]['deadLettered'] = true;
+		}
 
-    }//end shouldDeadLetter()
+		return [
+			'messageId' => $messageId,
+			'conversationId' => ($this->outbound[$messageId]['conversationId'] ?? null),
+			'attempts' => (int)($this->outbound[$messageId]['attempts'] ?? 0),
+			'reason' => 'ebms2-retransmission-budget-exhausted',
+		];
 
-    /**
-     * Move an exhausted message onto the dead-letter surface.
-     *
-     * The actual dead-letter persistence is the `dead-letter-replay` surface
-     * (not a parallel bus, D4); this marks the message so it is no longer
-     * retransmitted and returns the audit record the caller hands to that
-     * surface.
-     *
-     * @param string $messageId The exhausted MessageId.
-     *
-     * @return array<string, mixed> The dead-letter audit record.
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function deadLetter(string $messageId): array
-    {
-        if (isset($this->outbound[$messageId]) === true) {
-            $this->outbound[$messageId]['deadLettered'] = true;
-        }
+	}//end deadLetter()
 
-        return [
-            'messageId'      => $messageId,
-            'conversationId' => ($this->outbound[$messageId]['conversationId'] ?? null),
-            'attempts'       => (int) ($this->outbound[$messageId]['attempts'] ?? 0),
-            'reason'         => 'ebms2-retransmission-budget-exhausted',
-        ];
+	/**
+	 * Register receipt of an inbound message, reporting whether it is a duplicate.
+	 *
+	 * Duplicate elimination keyed on the ebMS2 `MessageId` — a message whose id
+	 * was already processed is reported as a duplicate and MUST be processed at
+	 * most once (REQ-DK-003).
+	 *
+	 * @param string $messageId The inbound ebMS2 MessageId.
+	 *
+	 * @return bool True when this is a duplicate (already seen); false on first receipt.
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function receiveInbound(string $messageId): bool {
+		if (isset($this->seenInbound[$messageId]) === true) {
+			return true;
+		}
 
-    }//end deadLetter()
+		$this->seenInbound[$messageId] = true;
+		return false;
+	}//end receiveInbound()
 
-    /**
-     * Register receipt of an inbound message, reporting whether it is a duplicate.
-     *
-     * Duplicate elimination keyed on the ebMS2 `MessageId` — a message whose id
-     * was already processed is reported as a duplicate and MUST be processed at
-     * most once (REQ-DK-003).
-     *
-     * @param string $messageId The inbound ebMS2 MessageId.
-     *
-     * @return bool True when this is a duplicate (already seen); false on first receipt.
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function receiveInbound(string $messageId): bool
-    {
-        if (isset($this->seenInbound[$messageId]) === true) {
-            return true;
-        }
+	/**
+	 * Order a set of MessageIds within a conversation by their sequence number.
+	 *
+	 * @param string $conversationId The conversation to order.
+	 *
+	 * @return array<int, string> MessageIds ordered by ascending sequence.
+	 *
+	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
+	 */
+	public function orderedConversation(string $conversationId): array {
+		$messages = [];
+		foreach ($this->outbound as $messageId => $state) {
+			if ($state['conversationId'] === $conversationId) {
+				$messages[$messageId] = (int)$state['sequence'];
+			}
+		}
 
-        $this->seenInbound[$messageId] = true;
-        return false;
-
-    }//end receiveInbound()
-
-    /**
-     * Order a set of MessageIds within a conversation by their sequence number.
-     *
-     * @param string $conversationId The conversation to order.
-     *
-     * @return array<int, string> MessageIds ordered by ascending sequence.
-     *
-     * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: ebMS2 reliable asynchronous messaging (REQ-DK-003)
-     */
-    public function orderedConversation(string $conversationId): array
-    {
-        $messages = [];
-        foreach ($this->outbound as $messageId => $state) {
-            if ($state['conversationId'] === $conversationId) {
-                $messages[$messageId] = (int) $state['sequence'];
-            }
-        }
-
-        asort($messages);
-        return array_keys($messages);
-
-    }//end orderedConversation()
+		asort($messages);
+		return array_keys($messages);
+	}//end orderedConversation()
 }//end class

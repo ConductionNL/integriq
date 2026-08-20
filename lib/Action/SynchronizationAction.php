@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Synchronization Action.
  *
@@ -31,111 +32,117 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class SynchronizationAction
-{
+class SynchronizationAction {
 
-    /**
-     * The synchronization service that runs the synchronization.
-     *
-     * @var SynchronizationService
-     */
-    private SynchronizationService $synchronizationService;
+	/**
+	 * The synchronization service that runs the synchronization.
+	 *
+	 * @var SynchronizationService
+	 */
+	private SynchronizationService $synchronizationService;
 
-    /**
-     * Constructor.
-     *
-     * @param SynchronizationService $synchronizationService The synchronization service.
-     */
-    public function __construct(
-        SynchronizationService $synchronizationService,
-    ) {
-        $this->synchronizationService = $synchronizationService;
+	/**
+	 * Constructor.
+	 *
+	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 */
+	public function __construct(
+		SynchronizationService $synchronizationService,
+	) {
+		$this->synchronizationService = $synchronizationService;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Executes the synchronization process based on the provided arguments.
-     *
-     * This method checks for a valid synchronization ID and performs the
-     * synchronization action, returning a stack trace of operations performed.
-     *
-     * @param array $argument An array of arguments that can include 'synchronizationId' and 'force'.
-     *
-     * @return array Returns an array containing the stack trace of actions performed and any warnings or messages.
-     *
-     * @throws Exception Throws an exception if the synchronization process fails or encounters an error.
-     *
-     * @todo Make this method more generic to handle different synchronization processes.
-     * @todo Implement proper error handling when 'synchronizationId' is missing or invalid.
-     * @todo Improve handling for testing purposes and synchronization contract logic.
-     */
-    public function run(array $argument=[]): array
-    {
-        $response = [];
+	/**
+	 * Executes the synchronization process based on the provided arguments.
+	 *
+	 * This method checks for a valid synchronization ID and performs the
+	 * synchronization action, returning a stack trace of operations performed.
+	 *
+	 * @param array $argument An array of arguments that can include 'synchronizationId' and 'force'.
+	 *
+	 * @return array Returns an array containing the stack trace of actions performed and any warnings or messages.
+	 *
+	 * @throws Exception Throws an exception if the synchronization process fails or encounters an error.
+	 *
+	 * @todo Make this method more generic to handle different synchronization processes.
+	 * @todo Implement proper error handling when 'synchronizationId' is missing or invalid.
+	 * @todo Improve handling for testing purposes and synchronization contract logic.
+	 */
+	public function run(array $argument = []): array {
+		$response = [];
 
-        // If we do not have a synchronization id then everything is wrong.
-        $response['message'] = $response['stackTrace'][] = 'Check for a valid synchronization ID';
-        if (isset($argument['synchronizationId']) === false) {
-            $response['level']        = 'ERROR';
-            $response['stackTrace'][] = $response['message'] = 'No synchronization ID provided';
+		// If we do not have a synchronization id then everything is wrong.
+		$response['message'] = $response['stackTrace'][] = 'Check for a valid synchronization ID';
+		if (isset($argument['synchronizationId']) === false) {
+			$response['level'] = 'ERROR';
+			$response['stackTrace'][] = $response['message'] = 'No synchronization ID provided';
 
-            return $response;
-        }
+			return $response;
+		}
 
-        // Resolve the synchronization (OpenRegister ids are UUID strings).
-        $response['stackTrace'][] = 'Getting synchronization: '.$argument['synchronizationId'];
-        try {
-            $synchronization = $this->synchronizationService->getSynchronization(id: (string) $argument['synchronizationId']);
-        } catch (DoesNotExistException $e) {
-            $response['level']        = 'WARNING';
-            $response['stackTrace'][] = $response['message'] = 'Synchronization not found: '.$argument['synchronizationId'];
+		// Resolve the synchronization (OpenRegister ids are UUID strings).
+		$response['stackTrace'][] = 'Getting synchronization: ' . $argument['synchronizationId'];
+		try {
+			$synchronization = $this->synchronizationService->getSynchronization(id: (string)$argument['synchronizationId']);
+		} catch (DoesNotExistException $e) {
+			$response['level'] = 'WARNING';
+			$response['stackTrace'][] = $response['message'] = 'Synchronization not found: ' . $argument['synchronizationId'];
 
-            return $response;
-        }
+			return $response;
+		}
 
-        $force = filter_var(($argument['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
-        if ($force === true) {
-            $response['stackTrace'][] = 'Force enabled for synchronization job';
-        }
+		$force = filter_var(($argument['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
+		if ($force === true) {
+			$response['stackTrace'][] = 'Force enabled for synchronization job';
+		}
 
-        // Run the synchronization.
-        $response['stackTrace'][] = 'Doing the synchronization';
-        try {
-            $objects = $this->synchronizationService->synchronize(
-                synchronization: $synchronization,
-                force: $force
-            );
-        } catch (TooManyRequestsHttpException $e) {
-            $response['level']        = 'WARNING';
-            $response['stackTrace'][] = $response['message'] = 'Stopped synchronization: '.$e->getMessage();
-            if (isset($e->getHeaders()['X-RateLimit-Reset']) === true) {
-                $response['nextRun']      = $e->getHeaders()['X-RateLimit-Reset'];
-                $response['stackTrace'][] = 'Returning X-RateLimit-Reset header to update Job nextRun: '.$response['nextRun'];
-            }
+		// Execution-trace REQ-001: JobService::executeJob() threads the
+		// active `job`-entryPoint trace context via this internal argument
+		// key (never part of the job's own persisted `arguments`). Only
+		// JobService populates this key, always with an ExecutionTraceContext
+		// or nothing — `synchronize(trace:)`'s own `?ExecutionTraceContext`
+		// type hint is the single source of truth for this contract.
+		$trace = ($argument['_executionTrace'] ?? null);
 
-            return $response;
-        } catch (Exception $e) {
-            $response['level']        = 'ERROR';
-            $response['stackTrace'][] = $response['message'] = 'Failed to synchronize: '.$e->getMessage();
+		// Run the synchronization.
+		$response['stackTrace'][] = 'Doing the synchronization';
+		try {
+			$objects = $this->synchronizationService->synchronize(
+				synchronization: $synchronization,
+				force: $force,
+				trace: $trace
+			);
+		} catch (TooManyRequestsHttpException $e) {
+			$response['level'] = 'WARNING';
+			$response['stackTrace'][] = $response['message'] = 'Stopped synchronization: ' . $e->getMessage();
+			if (isset($e->getHeaders()['X-RateLimit-Reset']) === true) {
+				$response['nextRun'] = $e->getHeaders()['X-RateLimit-Reset'];
+				$response['stackTrace'][] = 'Returning X-RateLimit-Reset header to update Job nextRun: ' . $response['nextRun'];
+			}
 
-            return $response;
-        }//end try
+			return $response;
+		} catch (Exception $e) {
+			$response['level'] = 'ERROR';
+			$response['stackTrace'][] = $response['message'] = 'Failed to synchronize: ' . $e->getMessage();
 
-        $response['level'] = 'INFO';
+			return $response;
+		}//end try
 
-        $objectCount = 0;
-        if (is_array($objects) === true) {
-            if (empty($objects['result']['contracts']) === false) {
-                $objectCount = count($objects['result']['contracts']);
-            } else {
-                $objectCount = $objects['result']['objects']['found'];
-            }
-        }
+		$response['level'] = 'INFO';
 
-        $response['stackTrace'][] = $response['message'] = 'Synchronized '.$objectCount.' successfully';
+		$objectCount = 0;
+		if (is_array($objects) === true) {
+			if (empty($objects['result']['contracts']) === false) {
+				$objectCount = count($objects['result']['contracts']);
+			} else {
+				$objectCount = $objects['result']['objects']['found'];
+			}
+		}
 
-        // Report back about what we have just done.
-        return $response;
+		$response['stackTrace'][] = $response['message'] = 'Synchronized ' . $objectCount . ' successfully';
 
-    }//end run()
+		// Report back about what we have just done.
+		return $response;
+	}//end run()
 }//end class

@@ -21,12 +21,12 @@
 		<div class="rule-condition-group__header">
 			<NcSelect
 				class="rule-condition-group__op"
-				:input-id="'rule-condition-group-op-' + uid"
-				:input-label="t('openconnector', 'Group operator')"
-				:value="selectedOperator"
+				:inputId="'rule-condition-group-op-' + uid"
+				:inputLabel="t('openconnector', 'Group operator')"
+				:modelValue="selectedOperator"
 				:options="operatorOptions"
 				:clearable="false"
-				@input="onOperatorPick" />
+				@update:modelValue="onOperatorPick" />
 			<span class="rule-condition-group__hint">
 				{{ operatorHint }}
 			</span>
@@ -34,7 +34,7 @@
 			<NcButton
 				v-if="removable"
 				:aria-label="t('openconnector', 'Remove group')"
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				@click="$emit('remove')">
 				<template #icon>
 					<Close :size="18" />
@@ -60,20 +60,25 @@
 			<NcEmptyContent
 				v-if="children.length === 0"
 				:name="t('openconnector', 'No conditions yet')"
-				:description="t('openconnector', 'Add a condition or sub-group to start matching incoming data.')">
+				:description="
+					t(
+						'openconnector',
+						'Add a condition or sub-group to start matching incoming data.',
+					)
+				">
 				<template #icon>
 					<FilterVariant :size="32" />
 				</template>
 			</NcEmptyContent>
 		</div>
 		<div class="rule-condition-group__actions">
-			<NcButton type="secondary" @click="addLeaf">
+			<NcButton variant="secondary" @click="addLeaf">
 				<template #icon>
 					<Plus :size="18" />
 				</template>
 				{{ t('openconnector', 'Add condition') }}
 			</NcButton>
-			<NcButton type="tertiary" @click="addGroup">
+			<NcButton variant="tertiary" @click="addGroup">
 				<template #icon>
 					<FormatListGroup :size="18" />
 				</template>
@@ -133,30 +138,37 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
 			const found = keys.find((key) => GROUP_OPERATORS.includes(key))
 			return found || 'and'
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		children() {
 			const value = this.node?.[this.currentOperator]
 			return Array.isArray(value) ? value : []
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorOptions() {
 			return [
 				{ id: 'and', label: this.t('openconnector', 'ALL of (AND)') },
 				{ id: 'or', label: this.t('openconnector', 'ANY of (OR)') },
 			]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
-			return this.operatorOptions.find((option) => option.id === this.currentOperator)
-				?? this.operatorOptions[0]
+			return (
+				this.operatorOptions.find(
+					(option) => option.id === this.currentOperator,
+				) ?? this.operatorOptions[0]
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorHint() {
 			return this.currentOperator === 'and'
 				? this.t('openconnector', 'Every child below must match.')
@@ -165,36 +177,83 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/**
+		 * Decide whether a child renders as a nested RuleConditionGroup rather
+		 * than a leaf predicate: exactly one top-level key, that key being
+		 * `and`/`or`, and its value an array.
+		 *
+		 * @param {*} child One entry of this group's operand array. Untyped on
+		 *   purpose — the tree is user-editable, so a child may be any JsonLogic
+		 *   value (or malformed) and still has to be classified without throwing.
+		 * @return {boolean} True when the child is a boolean sub-group.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		isGroup(child) {
-			if (!child || typeof child !== 'object' || Array.isArray(child)) return false
+			if (!child || typeof child !== 'object' || Array.isArray(child))
+				return false
 			const keys = Object.keys(child)
-			return keys.length === 1 && GROUP_OPERATORS.includes(keys[0]) && Array.isArray(child[keys[0]])
+			return (
+				keys.length === 1
+				&& GROUP_OPERATORS.includes(keys[0])
+				&& Array.isArray(child[keys[0]])
+			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Re-key the group under the newly picked boolean operator, carrying the
+		 * existing children over unchanged, and emit the rewritten node.
+		 *
+		 * @param {{id: string, label: string}} option The operator option picked
+		 *   in the NcSelect; `id` is `and` or `or`. Null/undefined when the
+		 *   select clears, in which case the current operator is kept.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onOperatorPick(option) {
 			if (!option) return
 			this.$emit('update', { [option.id]: this.children.slice() })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Replace one child with the node its component just emitted and emit
+		 * the whole group upwards (the tree is edited immutably, top-down).
+		 *
+		 * @param {number} index Position of the child inside the operand array,
+		 *   as bound by the `v-for` in the template.
+		 * @param {object} value The replacement JsonLogic node — a sub-group
+		 *   from RuleConditionGroup or a predicate from RuleConditionLeaf.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		updateChild(index, value) {
 			const next = this.children.slice()
 			next[index] = value
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/**
+		 * Drop one child from the group and emit the shortened group upwards.
+		 *
+		 * @param {number} index Position of the child to remove from the operand
+		 *   array, as bound by the `v-for` in the template.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeChild(index) {
 			const next = this.children.slice()
 			next.splice(index, 1)
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addLeaf() {
 			const next = this.children.slice()
 			next.push({ '==': [{ var: '' }, ''] })
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addGroup() {
 			const next = this.children.slice()
 			next.push({ and: [] })
@@ -238,8 +297,6 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	padding-left: 16px;
-	border-left: 2px solid var(--color-border);
 }
 
 .rule-condition-group__actions {

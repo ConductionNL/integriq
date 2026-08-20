@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Odstrani lastnost",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Nastavite, kako se dohodne zahteve webhook DSO-LV STAM kriptografsko preverjajo. HMAC uporablja skupno skrivnost (predprodukcija); PKIoverheid uporablja verigo certifikatov (produkcija).",
+        "Configured (leave blank to keep unchanged)": "Konfigurirano (pustite prazno, če ne želite spremeniti)",
+        "DSO signature configuration saved.": "Konfiguracija podpisa DSO je shranjena.",
+        "DSO STAM webhook signature verification": "Preverjanje podpisa webhooka DSO STAM",
+        "Failed to load the DSO signature configuration.": "Nalaganje konfiguracije podpisa DSO ni uspelo.",
+        "Failed to save the DSO signature configuration.": "Shranjevanje konfiguracije podpisa DSO ni uspelo.",
+        "HMAC shared secret": "Skupna skrivnost HMAC",
+        "HMAC shared secret (pre-production)": "Skupna skrivnost HMAC (predprodukcija)",
+        "Intermediate certificate chain (PEM, optional)": "Veriga vmesnih certifikatov (PEM, neobvezno)",
+        "Loading DSO signature configuration…": "Nalaganje konfiguracije podpisa DSO…",
+        "Not configured": "Ni konfigurirano",
+        "PKIoverheid certificate chain (production)": "Veriga certifikatov PKIoverheid (produkcija)",
+        "Save DSO signature configuration": "Shrani konfiguracijo podpisa DSO",
+        "Signing certificate (PEM)": "Podpisno potrdilo (PEM)",
+        "Signing mode": "Način podpisovanja",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Zaupanja vreden koreninski overitelj (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

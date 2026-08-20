@@ -1,14 +1,36 @@
 <?php
+
 /**
- * OpenConnector Admin Settings.
+ * OpenConnector Admin Settings — AppHost adapter.
  *
- * Renders the admin settings form for the OpenConnector application.
+ * Thin app-namespace subclass of the OpenRegister AppHost
+ * {@see \OCA\OpenRegister\AppHost\Settings\GenericAdminSettings}. It carries no
+ * settings logic of its own: the engine renders openconnector's
+ * `settings/admin` template and provides `version`/`configuredVersion`/
+ * `isUpToDate` as initial state. This class exists only so the class name
+ * referenced by `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`
+ * (dozens of admin-only controller methods across the app) and by
+ * `appinfo/info.xml` `<settings><admin>` resolves in openconnector's own
+ * namespace — required because NC instantiates settings/attribute-referenced
+ * classes by their concrete class name.
+ *
+ * `getAuthorizedAppConfig()` (the auth-critical method every
+ * `#[AuthorizedAdminSetting]` gate depends on) returns an empty map — byte
+ * identical to the pre-adoption bespoke implementation — so every existing
+ * admin gate keeps its exact fail-closed (full-admin-only) posture. The
+ * pre-adoption `mySetting` template parameter is dropped: it was dead code
+ * (never read by `templates/settings/admin.php`, which only mounts the Vue
+ * settings app).
+ *
+ * The constructor + service wiring (appId/sectionId/priority + collaborators)
+ * is registered in
+ * {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostBoilerplate()}.
  *
  * @category Settings
  * @package  OCA\OpenConnector\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git_id>
@@ -16,105 +38,16 @@
  * @link https://www.OpenConnector.nl
  */
 
+declare(strict_types=1);
+
 namespace OCA\OpenConnector\Settings;
 
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IConfig;
-use OCP\Settings\IDelegatedSettings;
+use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 
 /**
- * Admin settings panel for OpenConnector.
+ * Admin settings panel for OpenConnector, delegated to the engine.
  *
- * Implements IDelegatedSettings (extends ISettings) so the form can be guarded
- * by #[AuthorizedAdminSetting(OpenConnectorAdmin::class)] on the controllers
- * that mutate OpenConnector configuration. NC's middleware resolves the
- * admin-gating from the class-string of the delegated settings section.
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
-class OpenConnectorAdmin implements IDelegatedSettings
-{
-
-    /**
-     * Nextcloud config service.
-     *
-     * @var IConfig
-     */
-    private IConfig $config;
-
-    /**
-     * Constructor.
-     *
-     * @param IConfig $config Nextcloud config service.
-     */
-    public function __construct(IConfig $config)
-    {
-        $this->config = $config;
-
-    }//end __construct()
-
-    /**
-     * Render the admin settings form.
-     *
-     * @return TemplateResponse
-     */
-    public function getForm()
-    {
-        $parameters = [
-            'mySetting' => $this->config->getSystemValue('open_connector_setting', true),
-        ];
-
-        return new TemplateResponse('openconnector', 'settings/admin', $parameters, '');
-
-    }//end getForm()
-
-    /**
-     * Return the section identifier where this settings panel belongs.
-     *
-     * @return string
-     */
-    public function getSection()
-    {
-        // Name of the previously created section.
-        return 'openconnector';
-
-    }//end getSection()
-
-    /**
-     * Return the form priority within the admin section.
-     *
-     * Forms are arranged in ascending order of the priority values. The
-     * returned value must be between 0 and 100.
-     *
-     * @return int
-     */
-    public function getPriority()
-    {
-        return 10;
-
-    }//end getPriority()
-
-    /**
-     * Human-readable name of the delegated settings section.
-     *
-     * @return string|null The section name, or null to use the section default.
-     */
-    public function getName(): ?string
-    {
-        return null;
-
-    }//end getName()
-
-    /**
-     * App config keys an authorized (delegated) admin may manage.
-     *
-     * Returned as a map of appId => list of allowed config keys. OpenConnector
-     * exposes no delegatable sub-keys yet, so this is intentionally empty; the
-     * attribute still scopes the endpoints to full admins.
-     *
-     * @return array<string,string[]> Map of appId to allowed config keys.
-     */
-    public function getAuthorizedAppConfig(): array
-    {
-        return [];
-
-    }//end getAuthorizedAppConfig()
+class OpenConnectorAdmin extends GenericAdminSettings {
 }//end class

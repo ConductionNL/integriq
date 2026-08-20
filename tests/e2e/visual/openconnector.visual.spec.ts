@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 OpenConnector Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Visual-regression baselines for OpenConnector's key surfaces (GAP-5).
  *
@@ -17,6 +17,6 @@ const APP = '/index.php/apps/openconnector'
 
 test.describe('OpenConnector — visual baselines', () => {
 	test('dashboard', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/`, 'dashboard.png')
+		await shootSurface(page, `${APP}/`, 'dashboard.png')
 	})
 })

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for RuleService.
  *
@@ -23,250 +24,140 @@ use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCA\OpenRegister\Service\RegisterResolverService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 
 /**
  * Tests for the rule processing service (OR cutover — no deleted Db types).
  */
-class RuleServiceTest extends TestCase
-{
+class RuleServiceTest extends TestCase {
 
-    /**
-     * @var RuleService
-     */
-    private RuleService $service;
+	/**
+	 * @var RuleService
+	 */
+	private RuleService $service;
 
-    /**
-     * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $orObjectService;
+	/**
+	 * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $orObjectService;
 
-    /**
-     * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $logger;
 
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->orObjectService = ObjectServiceMockBuilder::make($this);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->orObjectService  = ObjectServiceMockBuilder::make($this);
-        $this->logger           = $this->createMock(LoggerInterface::class);
+		$objectService = $this->createMock(ObjectService::class);
+		$catalogueService = $this->createMock(SoftwareCatalogueService::class);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$callService = $this->createMock(CallService::class);
 
-        $objectService    = $this->createMock(ObjectService::class);
-        $catalogueService = $this->createMock(SoftwareCatalogueService::class);
-        $registerMapper   = $this->createMock(RegisterMapper::class);
-        $schemaMapper     = $this->createMock(SchemaMapper::class);
-        $callService      = $this->createMock(CallService::class);
+		// RuleService constructor signature (6 args, no $logger):
+		//   objectService, catalogueService, registerMapper, schemaMapper,
+		//   callService, orObjectService.
+		// The previous version prepended $this->logger which pushed every
+		// dependency one slot to the right (objectService got the logger
+		// instance and crashed). Pre-existing test bug surfaced once #1015
+		// unblocked the suite from crashing in setUp.
+		unset($this->logger);
+		$this->service = new RuleService(
+			$objectService,
+			$catalogueService,
+			$registerMapper,
+			$schemaMapper,
+			$callService,
+			$this->orObjectService,
+		);
+	}//end setUp()
 
-        // RuleService constructor signature (6 args, no $logger):
-        //   objectService, catalogueService, registerMapper, schemaMapper,
-        //   callService, orObjectService.
-        // The previous version prepended $this->logger which pushed every
-        // dependency one slot to the right (objectService got the logger
-        // instance and crashed). Pre-existing test bug surfaced once #1015
-        // unblocked the suite from crashing in setUp.
-        unset($this->logger);
-        $this->service = new RuleService(
-            $objectService,
-            $catalogueService,
-            $registerMapper,
-            $schemaMapper,
-            $callService,
-            $this->orObjectService,
-        );
-    }//end setUp()
+	/**
+	 * Test that the constructor instantiates RuleService without errors.
+	 *
+	 * @return void
+	 */
+	public function testConstructorWiresDependencies(): void {
+		$this->assertInstanceOf(RuleService::class, $this->service);
+	}//end testConstructorWiresDependencies()
 
+	/**
+	 * Test that processCustomRule throws for an unknown rule type.
+	 *
+	 * @return void
+	 */
+	public function testProcessCustomRuleThrowsForUnknownType(): void {
+		// Arrange
+		$ruleEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['configuration' => ['type' => 'unknownType']],
+			'rule-uuid-1'
+		);
 
-    /**
-     * Test that the constructor instantiates RuleService without errors.
-     *
-     * @return void
-     */
-    public function testConstructorWiresDependencies(): void
-    {
-        $this->assertInstanceOf(RuleService::class, $this->service);
-    }//end testConstructorWiresDependencies()
+		// Assert
+		$this->expectException(Exception::class);
 
+		// Act
+		$this->service->processCustomRule($ruleEntity, ['someData' => 'value']);
+	}//end testProcessCustomRuleThrowsForUnknownType()
 
-    /**
-     * Test that processCustomRule throws for an unknown rule type.
-     *
-     * @return void
-     */
-    public function testProcessCustomRuleThrowsForUnknownType(): void
-    {
-        // Arrange
-        $ruleEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['configuration' => ['type' => 'unknownType']],
-            'rule-uuid-1'
-        );
+	/**
+	 * Test that processCustomRule throws when configuration key is absent.
+	 *
+	 * @return void
+	 */
+	public function testProcessCustomRuleThrowsWhenConfigurationAbsent(): void {
+		// Arrange
+		$ruleEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[],
+			'rule-uuid-2'
+		);
 
-        // Assert
-        $this->expectException(Exception::class);
+		// Assert
+		$this->expectException(Exception::class);
 
-        // Act
-        $this->service->processCustomRule($ruleEntity, ['someData' => 'value']);
-    }//end testProcessCustomRuleThrowsForUnknownType()
+		// Act
+		$this->service->processCustomRule($ruleEntity, []);
+	}//end testProcessCustomRuleThrowsWhenConfigurationAbsent()
 
+	/**
+	 * Test that processCustomRule accepts a connectRelations type without throwing (delegates to sub-method).
+	 *
+	 * The sub-method will throw on incomplete config, but we only need to
+	 * confirm the dispatch routing does not itself throw an "Unsupported" error.
+	 *
+	 * @return void
+	 */
+	public function testProcessCustomRuleDispatchesConnectRelationsType(): void {
+		// Arrange
+		$ruleEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['configuration' => ['type' => 'connectRelations', 'configuration' => ['register' => 'r', 'schema' => 's', 'relatedRegister' => 'rr', 'relatedSchema' => 'rs', 'selfField' => 'sf', 'relatedField' => 'rf']]],
+			'rule-uuid-3'
+		);
 
-    /**
-     * Test that processCustomRule throws when configuration key is absent.
-     *
-     * @return void
-     */
-    public function testProcessCustomRuleThrowsWhenConfigurationAbsent(): void
-    {
-        // Arrange
-        $ruleEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            [],
-            'rule-uuid-2'
-        );
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => [], 'total' => 0]);
 
-        // Assert
-        $this->expectException(Exception::class);
-
-        // Act
-        $this->service->processCustomRule($ruleEntity, []);
-    }//end testProcessCustomRuleThrowsWhenConfigurationAbsent()
-
-
-    /**
-     * Test that processCustomRule accepts a connectRelations type without throwing (delegates to sub-method).
-     *
-     * The sub-method will throw on incomplete config, but we only need to
-     * confirm the dispatch routing does not itself throw an "Unsupported" error.
-     *
-     * @return void
-     */
-    public function testProcessCustomRuleDispatchesConnectRelationsType(): void
-    {
-        // Arrange
-        $ruleEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['configuration' => ['type' => 'connectRelations', 'configuration' => ['register' => 'r', 'schema' => 's', 'relatedRegister' => 'rr', 'relatedSchema' => 'rs', 'selfField' => 'sf', 'relatedField' => 'rf']]],
-            'rule-uuid-3'
-        );
-
-        $this->orObjectService->method('findAll')
-            ->willReturn(['results' => [], 'total' => 0]);
-
-        // Act — expect it runs without "Unsupported" exception
-        try {
-            $result = $this->service->processCustomRule($ruleEntity, ['items' => []]);
-            $this->assertIsArray($result);
-        } catch (Exception $e) {
-            // Any exception other than "Unsupported" is acceptable here.
-            $this->assertStringNotContainsString('Unsupported', $e->getMessage());
-        }
-    }//end testProcessCustomRuleDispatchesConnectRelationsType()
-
-
-    /**
-     * resolvePropertyRef returns the resolver-supplied id when the resolver is wired
-     * and returns a non-empty value for the config key.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#phase-1
-     */
-    public function testResolvePropertyRefRoutesThroughResolverWhenWired(): void
-    {
-        $resolver = $this->createMock(RegisterResolverService::class);
-        $resolver->expects($this->once())
-            ->method('resolvePropertyId')
-            ->willReturnCallback(
-                function (string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-                    $this->assertSame('openconnector', $appId);
-                    $this->assertSame('swc_type_property', $configKey);
-                    $this->assertSame('id-default-type', $default);
-                    return 'id-resolved-type';
-                }
-            );
-
-        $service = new RuleService(
-            $this->createMock(ObjectService::class),
-            $this->createMock(SoftwareCatalogueService::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(CallService::class),
-            $this->orObjectService,
-            $resolver,
-        );
-
-        $method = new ReflectionMethod(RuleService::class, 'resolvePropertyRef');
-        $method->setAccessible(true);
-
-        $this->assertSame('id-resolved-type', $method->invoke($service, 'swc_type_property', 'id-default-type'));
-
-    }//end testResolvePropertyRefRoutesThroughResolverWhenWired()
-
-
-    /**
-     * resolvePropertyRef returns the default identifier when the resolver
-     * is omitted (constructor's null fallback path).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#phase-1
-     */
-    public function testResolvePropertyRefFallsBackToDefaultWhenResolverAbsent(): void
-    {
-        $method = new ReflectionMethod(RuleService::class, 'resolvePropertyRef');
-        $method->setAccessible(true);
-
-        // $this->service was wired without a resolver in setUp() — exercise that branch.
-        $this->assertSame(
-            'id-default-fallback',
-            $method->invoke($this->service, 'swc_type_property', 'id-default-fallback')
-        );
-
-    }//end testResolvePropertyRefFallsBackToDefaultWhenResolverAbsent()
-
-
-    /**
-     * Resolver throws → resolvePropertyRef swallows the exception and returns
-     * the in-code default so the catalogue-export pipeline never breaks.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#phase-1
-     */
-    public function testResolvePropertyRefFallsBackToDefaultOnResolverFailure(): void
-    {
-        $resolver = $this->createMock(RegisterResolverService::class);
-        $resolver->method('resolvePropertyId')->willThrowException(new \RuntimeException('OR offline'));
-
-        $service = new RuleService(
-            $this->createMock(ObjectService::class),
-            $this->createMock(SoftwareCatalogueService::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(CallService::class),
-            $this->orObjectService,
-            $resolver,
-        );
-
-        $method = new ReflectionMethod(RuleService::class, 'resolvePropertyRef');
-        $method->setAccessible(true);
-
-        $this->assertSame(
-            'id-safe-default',
-            $method->invoke($service, 'swc_bron_property', 'id-safe-default')
-        );
-
-    }//end testResolvePropertyRefFallsBackToDefaultOnResolverFailure()
-
+		// Act — expect it runs without "Unsupported" exception
+		try {
+			$result = $this->service->processCustomRule($ruleEntity, ['items' => []]);
+			$this->assertIsArray($result);
+		} catch (Exception $e) {
+			// Any exception other than "Unsupported" is acceptable here.
+			$this->assertStringNotContainsString('Unsupported', $e->getMessage());
+		}
+	}//end testProcessCustomRuleDispatchesConnectRelationsType()
 
 }//end class

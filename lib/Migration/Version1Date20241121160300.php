@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Add rate-limit columns to the Source table.
  *
@@ -27,105 +28,97 @@ use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
-use OCP\IDBConnection;
 
 /**
  * Adds rate-limit tracking columns to the openconnector_sources table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241121160300 extends SimpleMigrationStep
-{
-    /**
-     * Pre-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241121160300 extends SimpleMigrationStep {
+	/**
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Adds the rate-limit columns to the sources table when missing.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Adds the rate-limit columns to the sources table when missing.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
-        // Sources table.
-        $table = $schema->getTable('openconnector_sources');
+		$schema = $schemaClosure();
+		// Sources table.
+		$table = $schema->getTable('openconnector_sources');
 
-        if ($table->hasColumn('rate_limit_limit') === false) {
-            $table->addColumn(
-                'rate_limit_limit',
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-        }
+		if ($table->hasColumn('rate_limit_limit') === false) {
+			$table->addColumn(
+				'rate_limit_limit',
+				Types::INTEGER,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+		}
 
-        if ($table->hasColumn('rate_limit_remaining') === false) {
-            $table->addColumn(
-                'rate_limit_remaining',
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-        }
+		if ($table->hasColumn('rate_limit_remaining') === false) {
+			$table->addColumn(
+				'rate_limit_remaining',
+				Types::INTEGER,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+		}
 
-        if ($table->hasColumn('rate_limit_reset') === false) {
-            $table->addColumn(
-                'rate_limit_reset',
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-        }
+		if ($table->hasColumn('rate_limit_reset') === false) {
+			$table->addColumn(
+				'rate_limit_reset',
+				Types::INTEGER,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+		}
 
-        if ($table->hasColumn('rate_limit_window') === false) {
-            $table->addColumn(
-                'rate_limit_window',
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-        }
+		if ($table->hasColumn('rate_limit_window') === false) {
+			$table->addColumn(
+				'rate_limit_window',
+				Types::INTEGER,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
-
-    /**
-     * Post-schema change callback.
-     *
-     * @param IOutput                   $output        Migration output interface.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
-     * @param array<string, mixed>      $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

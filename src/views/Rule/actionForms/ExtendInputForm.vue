@@ -13,20 +13,24 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Properties to extend') }}</label>
+		<label class="action-form__label">{{
+			t('openconnector', 'Properties to extend')
+		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:value="row.property"
+				:modelValue="row.property"
 				placeholder="a.b"
-				@update:value="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
-				:label="t('openconnector', 'Extends (comma-separated paths, optional)')"
-				:value="(row.extends || []).join(',')"
+				:label="
+					t('openconnector', 'Extends (comma-separated paths, optional)')
+				"
+				:modelValue="(row.extends || []).join(',')"
 				placeholder="x.y,z"
-				@update:value="(next) => onExtendsInput(index, next)" />
+				@update:modelValue="(next) => onExtendsInput(index, next)" />
 			<NcButton
-				type="tertiary-no-background"
+				variant="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
@@ -34,7 +38,7 @@
 				</template>
 			</NcButton>
 		</div>
-		<NcButton type="secondary" @click="addRow">
+		<NcButton variant="secondary" @click="addRow">
 			<template #icon>
 				<Plus :size="18" />
 			</template>
@@ -54,18 +58,36 @@ export default {
 	components: { NcButton, NcTextField, Close, Plus },
 	props: { ...valueProp },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
-			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
-			const extendsMap = (this.value?.extends && typeof this.value.extends === 'object') ? this.value.extends : {}
+			const props = Array.isArray(this.value?.properties)
+				? this.value.properties
+				: []
+			const extendsMap =
+				this.value?.extends && typeof this.value.extends === 'object'
+					? this.value.extends
+					: {}
 			return props.map((property) => ({
 				property: String(property || ''),
-				extends: Array.isArray(extendsMap[property]) ? extendsMap[property] : [],
+				extends: Array.isArray(extendsMap[property])
+					? extendsMap[property]
+					: [],
 			}))
 		},
 	},
+
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Split the edited rows back into the two shapes the backend expects —
+		 * a flat `properties` array of dot paths plus an optional `extends` map
+		 * keyed by property — and emit the updated config. Blank properties are
+		 * dropped, and `extends` is removed entirely when no row declares one.
+		 *
+		 * @param {Array<{property: string, extends: string[]}>} rows The full
+		 *   row list after the edit, in display order.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		emitRows(rows) {
 			const properties = rows.map((row) => row.property).filter(Boolean)
 			const extendsMap = {}
@@ -82,28 +104,57 @@ export default {
 			}
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Update the dot-path of one row as the user types.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value New dotted path on the parameters whose uuid
+		 *   value gets resolved into an OpenRegister object (e.g. `a.b`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Update the per-property extend paths of one row, parsing the
+		 * comma-separated text field into an array of trimmed, non-empty paths.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value Comma-separated extend paths as typed (e.g. `x.y,z`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onExtendsInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = {
 				...rows[index],
-				extends: value.split(',').map((entry) => entry.trim()).filter(Boolean),
+				extends: value
+					.split(',')
+					.map((entry) => entry.trim())
+					.filter(Boolean),
 			}
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', extends: [] })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+
+		/**
+		 * Drop one property row, discarding its extend paths with it.
+		 *
+		 * @param {number} index Zero-based position of the row to remove.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)
@@ -114,10 +165,25 @@ export default {
 </script>
 
 <style scoped>
-.action-form { display: flex; flex-direction: column; gap: 10px; }
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
 
-.action-form__label { font-weight: bold; }
+.action-form__label {
+	font-weight: bold;
+}
 
-.action-form__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
-@media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
+.action-form__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr auto;
+	gap: 8px;
+	align-items: end;
+}
+@media (max-width: 720px) {
+	.action-form__row {
+		grid-template-columns: 1fr;
+	}
+}
 </style>

@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Allontanar la caracteristica",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configurescha co ils dumondas webhook DSO-LV STAM entrants vegnan verifitgads criptograficamain. HMAC dovra in secret cundiviso (pre-productiun); PKIoverheid dovra ina chadaina da certificats (productiun).",
+        "Configured (leave blank to keep unchanged)": "Configurà (laschar vid per betg midar)",
+        "DSO signature configuration saved.": "La configuraziun da la signatura DSO è vegnida memorisada.",
+        "DSO STAM webhook signature verification": "Verificaziun da la signatura dal webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "Chargiar la configuraziun da la signatura DSO n'ha betg reussì.",
+        "Failed to save the DSO signature configuration.": "Memorisar la configuraziun da la signatura DSO n'ha betg reussì.",
+        "HMAC shared secret": "Secret HMAC cundiviso",
+        "HMAC shared secret (pre-production)": "Secret HMAC cundiviso (pre-productiun)",
+        "Intermediate certificate chain (PEM, optional)": "Chadaina da certificats intermediars (PEM, opziunal)",
+        "Loading DSO signature configuration…": "Chargiar la configuraziun da la signatura DSO…",
+        "Not configured": "Betg configurà",
+        "PKIoverheid certificate chain (production)": "Chadaina da certificats PKIoverheid (productiun)",
+        "Save DSO signature configuration": "Memorisar la configuraziun da la signatura DSO",
+        "Signing certificate (PEM)": "Certificat da signatura (PEM)",
+        "Signing mode": "Modus da signatura",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA radiscala fidada (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

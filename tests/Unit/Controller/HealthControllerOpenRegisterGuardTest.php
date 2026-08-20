@@ -35,62 +35,59 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/changes/licence-and-or-requirement-honesty/specs/app-distribution-metadata/spec.md
  */
-class HealthControllerOpenRegisterGuardTest extends TestCase
-{
-    /**
-     * When OpenRegister is disabled, /api/health returns 503 naming the
-     * missing dependency (never a bare 500) and never touches the delegate.
-     *
-     * @return void
-     */
-    public function testHealthReports503WhenOpenRegisterAbsent(): void
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn(false);
+class HealthControllerOpenRegisterGuardTest extends TestCase {
+	/**
+	 * When OpenRegister is disabled, /api/health returns 503 naming the
+	 * missing dependency (never a bare 500) and never touches the delegate.
+	 *
+	 * @return void
+	 */
+	public function testHealthReports503WhenOpenRegisterAbsent(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(false);
 
-        $controller = new HealthController(
-            appName: 'openconnector',
-            request: $this->createMock(IRequest::class),
-            appManager: $appManager,
-            delegate: null
-        );
+		$controller = new HealthController(
+			appName: 'openconnector',
+			request: $this->createMock(IRequest::class),
+			appManager: $appManager,
+			delegate: null
+		);
 
-        $response = $controller->index();
+		$response = $controller->index();
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
-        $body = $response->getData();
-        $this->assertSame('unhealthy', $body['status']);
-        $this->assertSame('openregister-dependency', $body['checks'][0]['name']);
-        $this->assertStringContainsString('OpenRegister', $body['checks'][0]['message']);
-    }//end testHealthReports503WhenOpenRegisterAbsent()
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$body = $response->getData();
+		$this->assertSame('unhealthy', $body['status']);
+		$this->assertSame('openregister-dependency', $body['checks'][0]['name']);
+		$this->assertStringContainsString('OpenRegister', $body['checks'][0]['message']);
+	}//end testHealthReports503WhenOpenRegisterAbsent()
 
-    /**
-     * When OpenRegister is enabled, the controller delegates to the engine and
-     * returns its healthy payload unchanged.
-     *
-     * @return void
-     */
-    public function testHealthDelegatesWhenOpenRegisterEnabled(): void
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('openregister')->willReturn(true);
+	/**
+	 * When OpenRegister is enabled, the controller delegates to the engine and
+	 * returns its healthy payload unchanged.
+	 *
+	 * @return void
+	 */
+	public function testHealthDelegatesWhenOpenRegisterEnabled(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(true);
 
-        $delegate = $this->createMock(GenericHealthController::class);
-        $delegate->expects($this->once())
-            ->method('index')
-            ->willReturn(new JSONResponse(['status' => 'healthy'], Http::STATUS_OK));
+		$delegate = $this->createMock(GenericHealthController::class);
+		$delegate->expects($this->once())
+			->method('index')
+			->willReturn(new JSONResponse(['status' => 'healthy'], Http::STATUS_OK));
 
-        $controller = new HealthController(
-            appName: 'openconnector',
-            request: $this->createMock(IRequest::class),
-            appManager: $appManager,
-            delegate: $delegate
-        );
+		$controller = new HealthController(
+			appName: 'openconnector',
+			request: $this->createMock(IRequest::class),
+			appManager: $appManager,
+			delegate: $delegate
+		);
 
-        $response = $controller->index();
+		$response = $controller->index();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame('healthy', $response->getData()['status']);
-    }//end testHealthDelegatesWhenOpenRegisterEnabled()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('healthy', $response->getData()['status']);
+	}//end testHealthDelegatesWhenOpenRegisterEnabled()
 }//end class

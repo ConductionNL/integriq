@@ -38,449 +38,428 @@ use SimpleXMLElement;
  *
  * @spec openspec/changes/stuf-adapter/tasks.md#task-8
  */
-class StUFZKNService
-{
+class StUFZKNService {
 
-    /**
-     * ZKN register slug.
-     *
-     * @var string
-     */
-    private const REGISTER_ZKN = 'zaken';
+	/**
+	 * ZKN register slug.
+	 *
+	 * @var string
+	 */
+	private const REGISTER_ZKN = 'zaken';
 
-    /**
-     * ZKN zaak schema slug.
-     *
-     * @var string
-     */
-    private const SCHEMA_ZAAK = 'zaak';
+	/**
+	 * ZKN zaak schema slug.
+	 *
+	 * @var string
+	 */
+	private const SCHEMA_ZAAK = 'zaak';
 
-    /**
-     * ZKN field mapping from StUF to OpenRegister properties.
-     *
-     * @var array<string,string>
-     */
-    private const ZAAK_FIELD_MAP = [
-        'identificatie' => 'zaakidentificatie',
-        'omschrijving'  => 'omschrijving',
-        'startdatum'    => 'startdatum',
-        'einddatum'     => 'einddatum',
-        'zaaktype'      => 'zaaktype',
-        'status'        => 'status',
-    ];
+	/**
+	 * ZKN field mapping from StUF to OpenRegister properties.
+	 *
+	 * @var array<string,string>
+	 */
+	private const ZAAK_FIELD_MAP = [
+		'identificatie' => 'zaakidentificatie',
+		'omschrijving' => 'omschrijving',
+		'startdatum' => 'startdatum',
+		'einddatum' => 'einddatum',
+		'zaaktype' => 'zaaktype',
+		'status' => 'status',
+	];
 
-    /**
-     * StUFZKNService constructor.
-     *
-     * @param LoggerInterface $logger          PSR-3 logger.
-     * @param ORObjectService $orObjectService OpenRegister object service.
-     * @param StUFXMLBuilder  $xmlBuilder      StUF XML response builder.
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly ORObjectService $orObjectService,
-        private readonly StUFXMLBuilder $xmlBuilder,
-    ) {
+	/**
+	 * StUFZKNService constructor.
+	 *
+	 * @param LoggerInterface $logger PSR-3 logger.
+	 * @param ORObjectService $orObjectService OpenRegister object service.
+	 * @param StUFXMLBuilder $xmlBuilder StUF XML response builder.
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly ORObjectService $orObjectService,
+		private readonly StUFXMLBuilder $xmlBuilder,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle an inbound zakLk01 (zaak aanmaken/bijwerken) SOAP request.
-     *
-     * Parses the message, creates or updates the zaak in OpenRegister, and
-     * returns a Bv03 bevestiging or Fo03 foutmelding.
-     *
-     * @param string $soapXml       The raw incoming SOAP XML string.
-     * @param array  $stuurgegevens Stuurgegevens for the response.
-     *
-     * @return string The complete Bv03 or Fo03 SOAP XML response.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    public function handleZakLk01(string $soapXml, array $stuurgegevens): string
-    {
-        $xml = SafeXmlParser::parse(data: $soapXml);
-        if ($xml === false) {
-            $this->logger->warning(message: 'StUF-ZKN: malformed XML in zakLk01 request.');
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF046',
-                omschrijving: 'Malformed XML: unable to parse SOAP request.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+	/**
+	 * Handle an inbound zakLk01 (zaak aanmaken/bijwerken) SOAP request.
+	 *
+	 * Parses the message, creates or updates the zaak in OpenRegister, and
+	 * returns a Bv03 bevestiging or Fo03 foutmelding.
+	 *
+	 * @param string $soapXml The raw incoming SOAP XML string.
+	 * @param array $stuurgegevens Stuurgegevens for the response.
+	 *
+	 * @return string The complete Bv03 or Fo03 SOAP XML response.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function handleZakLk01(string $soapXml, array $stuurgegevens): string {
+		$xml = SafeXmlParser::parse(data: $soapXml);
+		if ($xml === false) {
+			$this->logger->warning(message: 'StUF-ZKN: malformed XML in zakLk01 request.');
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF046',
+				omschrijving: 'Malformed XML: unable to parse SOAP request.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-        $namespaces = $xml->getNamespaces(recursive: true);
-        $zknNs      = $this->resolveNamespace(namespaces: $namespaces, hint: 'zkn');
-        $body       = $this->extractSoapBody(xml: $xml, namespaces: $namespaces);
+		$namespaces = $xml->getNamespaces(recursive: true);
+		$zknNs = $this->resolveNamespace(namespaces: $namespaces, hint: 'zkn');
+		$body = $this->extractSoapBody(xml: $xml, namespaces: $namespaces);
 
-        if ($body === null) {
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF046',
-                omschrijving: 'Malformed XML: missing SOAP body.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+		if ($body === null) {
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF046',
+				omschrijving: 'Malformed XML: missing SOAP body.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-        $zaakData = $this->extractZaakData(body: $body, zknNs: $zknNs);
-        if (empty($zaakData) === true) {
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF046',
-                omschrijving: 'Missing required zaak data in zakLk01.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+		$caseData = $this->extractCaseData(body: $body, zknNs: $zknNs);
+		if (empty($caseData) === true) {
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF046',
+				omschrijving: 'Missing required zaak data in zakLk01.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-        if (isset($zaakData['zaaktype']) === false) {
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF050',
-                omschrijving: 'Required field zaaktype is missing.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+		if (isset($caseData['zaaktype']) === false) {
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF050',
+				omschrijving: 'Required field zaaktype is missing.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-        $zaakIdentificatie = $this->persistZaak(zaakData: $zaakData);
+		$caseIdentification = $this->persistCase(caseData: $caseData);
 
-        $crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $this->resolveNamespace(namespaces: $namespaces, hint: 'stuf'));
-        if ($crossRef !== null) {
-            $stuurgegevens['crossRefnummer'] = $crossRef;
-        }
+		$crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $this->resolveNamespace(namespaces: $namespaces, hint: 'stuf'));
+		if ($crossRef !== null) {
+			$stuurgegevens['crossRefnummer'] = $crossRef;
+		}
 
-        return $this->xmlBuilder->buildBv03(zaakIdentificatie: $zaakIdentificatie, stuurgegevens: $stuurgegevens);
+		return $this->xmlBuilder->buildBv03(caseIdentification: $caseIdentification, stuurgegevens: $stuurgegevens);
+	}//end handleZakLk01()
 
-    }//end handleZakLk01()
+	/**
+	 * Handle an inbound zakLv01 (zaak opvragen) SOAP request.
+	 *
+	 * Parses the query, searches OpenRegister, and returns a zakLa01 response
+	 * or Fo03 foutmelding.
+	 *
+	 * @param string $soapXml The raw incoming SOAP XML string.
+	 * @param array $stuurgegevens Stuurgegevens for the response.
+	 *
+	 * @return string The complete zakLa01 or Fo03 SOAP XML response.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	public function handleZakLv01(string $soapXml, array $stuurgegevens): string {
+		$xml = SafeXmlParser::parse(data: $soapXml);
+		if ($xml === false) {
+			$this->logger->warning(message: 'StUF-ZKN: malformed XML in zakLv01 request.');
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF046',
+				omschrijving: 'Malformed XML: unable to parse SOAP request.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-    /**
-     * Handle an inbound zakLv01 (zaak opvragen) SOAP request.
-     *
-     * Parses the query, searches OpenRegister, and returns a zakLa01 response
-     * or Fo03 foutmelding.
-     *
-     * @param string $soapXml       The raw incoming SOAP XML string.
-     * @param array  $stuurgegevens Stuurgegevens for the response.
-     *
-     * @return string The complete zakLa01 or Fo03 SOAP XML response.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    public function handleZakLv01(string $soapXml, array $stuurgegevens): string
-    {
-        $xml = SafeXmlParser::parse(data: $soapXml);
-        if ($xml === false) {
-            $this->logger->warning(message: 'StUF-ZKN: malformed XML in zakLv01 request.');
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF046',
-                omschrijving: 'Malformed XML: unable to parse SOAP request.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+		$namespaces = $xml->getNamespaces(recursive: true);
+		$zknNs = $this->resolveNamespace(namespaces: $namespaces, hint: 'zkn');
+		$stufNs = $this->resolveNamespace(namespaces: $namespaces, hint: 'stuf');
+		$body = $this->extractSoapBody(xml: $xml, namespaces: $namespaces);
 
-        $namespaces = $xml->getNamespaces(recursive: true);
-        $zknNs      = $this->resolveNamespace(namespaces: $namespaces, hint: 'zkn');
-        $stufNs     = $this->resolveNamespace(namespaces: $namespaces, hint: 'stuf');
-        $body       = $this->extractSoapBody(xml: $xml, namespaces: $namespaces);
+		if ($body === null) {
+			return $this->xmlBuilder->buildFo03(
+				code: 'StUF046',
+				omschrijving: 'Malformed XML: missing SOAP body.',
+				stuurgegevens: $stuurgegevens
+			);
+		}
 
-        if ($body === null) {
-            return $this->xmlBuilder->buildFo03(
-                code: 'StUF046',
-                omschrijving: 'Malformed XML: missing SOAP body.',
-                stuurgegevens: $stuurgegevens
-            );
-        }
+		$criteria = $this->extractZakLv01Criteria(body: $body, zknNs: $zknNs, stufNs: $stufNs);
+		$crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $stufNs);
+		if ($crossRef !== null) {
+			$stuurgegevens['crossRefnummer'] = $crossRef;
+		}
 
-        $criteria = $this->extractZakLv01Criteria(body: $body, zknNs: $zknNs, stufNs: $stufNs);
-        $crossRef = $this->extractCrossRefnummer(body: $body, stufNs: $stufNs);
-        if ($crossRef !== null) {
-            $stuurgegevens['crossRefnummer'] = $crossRef;
-        }
+		$cases = $this->searchCases(criteria: $criteria);
+		$mapped = array_map(callback: fn (array $z) => $this->mapCaseToStuf(case: $z), array: $cases);
 
-        $zaken  = $this->searchZaken(criteria: $criteria);
-        $mapped = array_map(callback: fn(array $z) => $this->mapZaakToStuf(zaak: $z), array: $zaken);
+		return $this->xmlBuilder->buildZakLa01(cases: $mapped, stuurgegevens: $stuurgegevens);
+	}//end handleZakLv01()
 
-        return $this->xmlBuilder->buildZakLa01(zaken: $mapped, stuurgegevens: $stuurgegevens);
+	/**
+	 * Extract zaak data fields from a zakLk01 body element.
+	 *
+	 * @param SimpleXMLElement $body The SOAP body element.
+	 * @param string $zknNs The ZKN namespace URI.
+	 *
+	 * @return array Zaak property array for OpenRegister storage.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function extractCaseData(SimpleXMLElement $body, string $zknNs): array {
+		$caseData = [];
+		if ($zknNs === '') {
+			return $caseData;
+		}
 
-    }//end handleZakLv01()
+		$zknBodyKids = $body->children($zknNs);
+		if (isset($zknBodyKids->zakLk01) === false) {
+			return $caseData;
+		}
 
-    /**
-     * Extract zaak data fields from a zakLk01 body element.
-     *
-     * @param SimpleXMLElement $body  The SOAP body element.
-     * @param string           $zknNs The ZKN namespace URI.
-     *
-     * @return array Zaak property array for OpenRegister storage.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    private function extractZaakData(SimpleXMLElement $body, string $zknNs): array
-    {
-        $zaakData = [];
-        if ($zknNs === '') {
-            return $zaakData;
-        }
+		$zakLk01 = $zknBodyKids->zakLk01;
+		$zakLk01Kids = $zakLk01->children($zknNs);
+		if (isset($zakLk01Kids->object) === false) {
+			return $caseData;
+		}
 
-        $zknBodyKids = $body->children($zknNs);
-        if (isset($zknBodyKids->zakLk01) === false) {
-            return $zaakData;
-        }
+		$obj = $zakLk01Kids->object;
+		foreach ($obj->children($zknNs) as $elName => $el) {
+			if (isset(self::ZAAK_FIELD_MAP[$elName]) === true && (string)$el !== '') {
+				$caseData[self::ZAAK_FIELD_MAP[$elName]] = (string)$el;
+			}
+		}
 
-        $zakLk01     = $zknBodyKids->zakLk01;
-        $zakLk01Kids = $zakLk01->children($zknNs);
-        if (isset($zakLk01Kids->object) === false) {
-            return $zaakData;
-        }
+		return $caseData;
+	}//end extractZaakData()
 
-        $obj = $zakLk01Kids->object;
-        foreach ($obj->children($zknNs) as $elName => $el) {
-            if (isset(self::ZAAK_FIELD_MAP[$elName]) === true && (string) $el !== '') {
-                $zaakData[self::ZAAK_FIELD_MAP[$elName]] = (string) $el;
-            }
-        }
+	/**
+	 * Extract query criteria from a zakLv01 body element.
+	 *
+	 * @param SimpleXMLElement $body The SOAP body element.
+	 * @param string $zknNs The ZKN namespace URI.
+	 * @param string $stufNs The StUF namespace URI (reserved for future multi-namespace criteria).
+	 *
+	 * @return array Associative array of OpenRegister filter criteria.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function extractZakLv01Criteria(SimpleXMLElement $body, string $zknNs, string $stufNs): array {
+		$criteria = [];
+		if ($zknNs === '') {
+			return $criteria;
+		}
 
-        return $zaakData;
+		$zknBodyKids = $body->children($zknNs);
+		if (isset($zknBodyKids->zakLv01) === false) {
+			return $criteria;
+		}
 
-    }//end extractZaakData()
+		$zakLv01 = $zknBodyKids->zakLv01;
+		$zakLv01Kids = $zakLv01->children($zknNs);
+		if (isset($zakLv01Kids->gelijk) === false) {
+			return $criteria;
+		}
 
-    /**
-     * Extract query criteria from a zakLv01 body element.
-     *
-     * @param SimpleXMLElement $body   The SOAP body element.
-     * @param string           $zknNs  The ZKN namespace URI.
-     * @param string           $stufNs The StUF namespace URI (reserved for future multi-namespace criteria).
-     *
-     * @return array Associative array of OpenRegister filter criteria.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    private function extractZakLv01Criteria(SimpleXMLElement $body, string $zknNs, string $stufNs): array
-    {
-        $criteria = [];
-        if ($zknNs === '') {
-            return $criteria;
-        }
+		$gelijk = $zakLv01Kids->gelijk;
+		foreach ($gelijk->children($zknNs) as $elName => $el) {
+			if (isset(self::ZAAK_FIELD_MAP[$elName]) === true && (string)$el !== '') {
+				$criteria[self::ZAAK_FIELD_MAP[$elName]] = (string)$el;
+			}
+		}
 
-        $zknBodyKids = $body->children($zknNs);
-        if (isset($zknBodyKids->zakLv01) === false) {
-            return $criteria;
-        }
+		return $criteria;
+	}//end extractZakLv01Criteria()
 
-        $zakLv01     = $zknBodyKids->zakLv01;
-        $zakLv01Kids = $zakLv01->children($zknNs);
-        if (isset($zakLv01Kids->gelijk) === false) {
-            return $criteria;
-        }
+	/**
+	 * Map an OpenRegister zaak array to StUF-ZKN field names for XML building.
+	 *
+	 * @param array $case The OpenRegister zaak property array.
+	 *
+	 * @return array StUF field name to value pairs.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function mapCaseToStuf(array $case): array {
+		$stufData = [];
+		foreach (array_values(self::ZAAK_FIELD_MAP) as $registerField) {
+			if (isset($case[$registerField]) === true) {
+				$stufData[$registerField] = $case[$registerField];
+			}
+		}
 
-        $gelijk = $zakLv01Kids->gelijk;
-        foreach ($gelijk->children($zknNs) as $elName => $el) {
-            if (isset(self::ZAAK_FIELD_MAP[$elName]) === true && (string) $el !== '') {
-                $criteria[self::ZAAK_FIELD_MAP[$elName]] = (string) $el;
-            }
-        }
+		return $stufData;
+	}//end mapZaakToStuf()
 
-        return $criteria;
+	/**
+	 * Persist a zaak in OpenRegister (create or update).
+	 *
+	 * Checks for an existing zaak by zaakidentificatie and updates it, or creates a new one.
+	 *
+	 * @param array $caseData The zaak data to persist.
+	 *
+	 * @return string The zaakidentificatie of the persisted zaak.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function persistCase(array $caseData): string {
+		$identification = $caseData['zaakidentificatie'] ?? '';
 
-    }//end extractZakLv01Criteria()
+		if ($identification !== '') {
+			$existing = $this->orObjectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::REGISTER_ZKN,
+						'schema' => self::SCHEMA_ZAAK,
+						'zaakidentificatie' => $identification,
+					],
+				]
+			);
 
-    /**
-     * Map an OpenRegister zaak array to StUF-ZKN field names for XML building.
-     *
-     * @param array $zaak The OpenRegister zaak property array.
-     *
-     * @return array StUF field name to value pairs.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    private function mapZaakToStuf(array $zaak): array
-    {
-        $stufData = [];
-        foreach (array_values(self::ZAAK_FIELD_MAP) as $registerField) {
-            if (isset($zaak[$registerField]) === true) {
-                $stufData[$registerField] = $zaak[$registerField];
-            }
-        }
+			$results = $existing['results'] ?? [];
+			if (empty($results) === false) {
+				if (is_array($results[0]) === true) {
+					$existingData = $results[0];
+				} else {
+					$existingData = $results[0]->getObject();
+				}
 
-        return $stufData;
+				$merged = array_merge($existingData, $caseData);
+				$this->orObjectService->saveObject(
+					register: self::REGISTER_ZKN,
+					schema: self::SCHEMA_ZAAK,
+					object: $merged
+				);
+				return $identification;
+			}
+		}//end if
 
-    }//end mapZaakToStuf()
+		$saved = $this->orObjectService->saveObject(
+			register: self::REGISTER_ZKN,
+			schema: self::SCHEMA_ZAAK,
+			object: $caseData
+		);
+		if (is_array($saved) === true) {
+			$savedData = $saved;
+		} else {
+			$savedData = $saved->getObject();
+		}
 
-    /**
-     * Persist a zaak in OpenRegister (create or update).
-     *
-     * Checks for an existing zaak by zaakidentificatie and updates it, or creates a new one.
-     *
-     * @param array $zaakData The zaak data to persist.
-     *
-     * @return string The zaakidentificatie of the persisted zaak.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    private function persistZaak(array $zaakData): string
-    {
-        $identificatie = $zaakData['zaakidentificatie'] ?? '';
+		return (string)($savedData['zaakidentificatie'] ?? $identification);
+	}//end persistZaak()
 
-        if ($identificatie !== '') {
-            $existing = $this->orObjectService->findAll(
-                    config: [
-                        'filters' => [
-                            'register'          => self::REGISTER_ZKN,
-                            'schema'            => self::SCHEMA_ZAAK,
-                            'zaakidentificatie' => $identificatie,
-                        ],
-                    ]
-                    );
+	/**
+	 * Search OpenRegister ZKN for zaken matching the given criteria.
+	 *
+	 * @param array $criteria Filter criteria (field => value pairs).
+	 *
+	 * @return array Array of zaak property arrays.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function searchCases(array $criteria): array {
+		$filters = array_merge(
+			[
+				'register' => self::REGISTER_ZKN,
+				'schema' => self::SCHEMA_ZAAK,
+			],
+			$criteria
+		);
 
-            $results = $existing['results'] ?? [];
-            if (empty($results) === false) {
-                if (is_array($results[0]) === true) {
-                    $existingData = $results[0];
-                } else {
-                    $existingData = $results[0]->getObject();
-                }
+		$result = $this->orObjectService->findAll(config: ['filters' => $filters]);
+		return $result['results'] ?? [];
+	}//end searchZaken()
 
-                $merged = array_merge($existingData, $zaakData);
-                $this->orObjectService->saveObject(
-                    register: self::REGISTER_ZKN,
-                    schema: self::SCHEMA_ZAAK,
-                    object: $merged
-                );
-                return $identificatie;
-            }
-        }//end if
+	/**
+	 * Extract the referentienummer from stuurgegevens for use as crossRefnummer.
+	 *
+	 * @param SimpleXMLElement $body The SOAP body element.
+	 * @param string $stufNs The StUF namespace URI.
+	 *
+	 * @return string|null The referentienummer, or null if not present.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function extractCrossRefnummer(SimpleXMLElement $body, string $stufNs): ?string {
+		if ($stufNs === '') {
+			return null;
+		}
 
-        $saved = $this->orObjectService->saveObject(
-            register: self::REGISTER_ZKN,
-            schema: self::SCHEMA_ZAAK,
-            object: $zaakData
-        );
-        if (is_array($saved) === true) {
-            $savedData = $saved;
-        } else {
-            $savedData = $saved->getObject();
-        }
+		foreach ($body->children() as $child) {
+			$stufKids = $child->children($stufNs);
+			if (isset($stufKids->stuurgegevens) === false) {
+				continue;
+			}
 
-        return (string) ($savedData['zaakidentificatie'] ?? $identificatie);
+			$sg = $stufKids->stuurgegevens;
+			$sgKids = $sg->children($stufNs);
+			if (isset($sgKids->referentienummer) === true && (string)$sgKids->referentienummer !== '') {
+				return (string)$sgKids->referentienummer;
+			}
+		}
 
-    }//end persistZaak()
+		return null;
+	}//end extractCrossRefnummer()
 
-    /**
-     * Search OpenRegister ZKN for zaken matching the given criteria.
-     *
-     * @param array $criteria Filter criteria (field => value pairs).
-     *
-     * @return array Array of zaak property arrays.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
-     */
-    private function searchZaken(array $criteria): array
-    {
-        $filters = array_merge(
-            [
-                'register' => self::REGISTER_ZKN,
-                'schema'   => self::SCHEMA_ZAAK,
-            ],
-            $criteria
-        );
+	/**
+	 * Extract the SOAP Body element from a parsed SOAP Envelope.
+	 *
+	 * @param SimpleXMLElement $xml The parsed SOAP envelope.
+	 * @param array $namespaces The namespace map.
+	 *
+	 * @return SimpleXMLElement|null The SOAP body element, or null if not found.
+	 *
+	 * @spec openspec/changes/stuf-adapter/tasks.md#task-8
+	 */
+	private function extractSoapBody(SimpleXMLElement $xml, array $namespaces): ?SimpleXMLElement {
+		$soapNs = $this->resolveNamespace(namespaces: $namespaces, hint: 'soap');
+		if ($soapNs !== '') {
+			$soapKids = $xml->children($soapNs);
+			// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
+			if (isset($soapKids->{'Body'}) === true) {
+				// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
+				return $soapKids->{'Body'};
+			}
+		}
 
-        $result = $this->orObjectService->findAll(config: ['filters' => $filters]);
-        return $result['results'] ?? [];
+		$candidates = [
+			'http://schemas.xmlsoap.org/soap/envelope/',
+			'http://www.w3.org/2003/05/soap-envelope',
+		];
+		foreach ($candidates as $ns) {
+			$kids = $xml->children($ns);
+			// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
+			if (isset($kids->{'Body'}) === true) {
+				// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
+				return $kids->{'Body'};
+			}
+		}
 
-    }//end searchZaken()
+		return null;
+	}//end extractSoapBody()
 
-    /**
-     * Extract the referentienummer from stuurgegevens for use as crossRefnummer.
-     *
-     * @param SimpleXMLElement $body   The SOAP body element.
-     * @param string           $stufNs The StUF namespace URI.
-     *
-     * @return string|null The referentienummer, or null if not present.
-     *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-042
-     */
-    private function extractCrossRefnummer(SimpleXMLElement $body, string $stufNs): ?string
-    {
-        if ($stufNs === '') {
-            return null;
-        }
+	/**
+	 * Resolve a namespace URI from the namespace map by hint.
+	 *
+	 * @param array $namespaces The namespace map (prefix => URI).
+	 * @param string $hint Lowercase hint string (e.g. 'zkn', 'stuf', 'soap').
+	 *
+	 * @return string The namespace URI, or empty string if not found.
+	 *
+	 * @spec openspec/changes/stuf-adapter/tasks.md#task-8
+	 */
+	private function resolveNamespace(array $namespaces, string $hint): string {
+		foreach ($namespaces as $prefix => $uri) {
+			if (str_contains(haystack: strtolower($prefix), needle: $hint) === true) {
+				return (string)$uri;
+			}
 
-        foreach ($body->children() as $child) {
-            $stufKids = $child->children($stufNs);
-            if (isset($stufKids->stuurgegevens) === false) {
-                continue;
-            }
+			if (str_contains(haystack: strtolower($uri), needle: $hint) === true) {
+				return (string)$uri;
+			}
+		}
 
-            $sg     = $stufKids->stuurgegevens;
-            $sgKids = $sg->children($stufNs);
-            if (isset($sgKids->referentienummer) === true && (string) $sgKids->referentienummer !== '') {
-                return (string) $sgKids->referentienummer;
-            }
-        }
-
-        return null;
-
-    }//end extractCrossRefnummer()
-
-    /**
-     * Extract the SOAP Body element from a parsed SOAP Envelope.
-     *
-     * @param SimpleXMLElement $xml        The parsed SOAP envelope.
-     * @param array            $namespaces The namespace map.
-     *
-     * @return SimpleXMLElement|null The SOAP body element, or null if not found.
-     *
-     * @spec openspec/changes/stuf-adapter/tasks.md#task-8
-     */
-    private function extractSoapBody(SimpleXMLElement $xml, array $namespaces): ?SimpleXMLElement
-    {
-        $soapNs = $this->resolveNamespace(namespaces: $namespaces, hint: 'soap');
-        if ($soapNs !== '') {
-            $soapKids = $xml->children($soapNs);
-            // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
-            if (isset($soapKids->{'Body'}) === true) {
-                // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
-                return $soapKids->{'Body'};
-            }
-        }
-
-        $candidates = [
-            'http://schemas.xmlsoap.org/soap/envelope/',
-            'http://www.w3.org/2003/05/soap-envelope',
-        ];
-        foreach ($candidates as $ns) {
-            $kids = $xml->children($ns);
-            // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
-            if (isset($kids->{'Body'}) === true) {
-                // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- SOAP XML element.
-                return $kids->{'Body'};
-            }
-        }
-
-        return null;
-
-    }//end extractSoapBody()
-
-    /**
-     * Resolve a namespace URI from the namespace map by hint.
-     *
-     * @param array  $namespaces The namespace map (prefix => URI).
-     * @param string $hint       Lowercase hint string (e.g. 'zkn', 'stuf', 'soap').
-     *
-     * @return string The namespace URI, or empty string if not found.
-     *
-     * @spec openspec/changes/stuf-adapter/tasks.md#task-8
-     */
-    private function resolveNamespace(array $namespaces, string $hint): string
-    {
-        foreach ($namespaces as $prefix => $uri) {
-            if (str_contains(haystack: strtolower($prefix), needle: $hint) === true) {
-                return (string) $uri;
-            }
-
-            if (str_contains(haystack: strtolower($uri), needle: $hint) === true) {
-                return (string) $uri;
-            }
-        }
-
-        return '';
-
-    }//end resolveNamespace()
+		return '';
+	}//end resolveNamespace()
 }//end class

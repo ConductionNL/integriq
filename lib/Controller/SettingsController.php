@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector Settings Controller
  *
@@ -27,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SettingsService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCP\AppFramework\Controller;
@@ -42,72 +42,70 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
-class SettingsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string          $appName         The app identifier.
-     * @param IRequest        $request         The current request.
-     * @param SettingsService $settingsService Service that performs the rebase action.
-     * @param LoggerInterface $logger          Logger instance.
-     * @param IL10N           $l               Localisation service.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly SettingsService $settingsService,
-        private readonly LoggerInterface $logger,
-        private readonly IL10N $l
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class SettingsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app identifier.
+	 * @param IRequest $request The current request.
+	 * @param SettingsService $settingsService Service that performs the rebase action.
+	 * @param LoggerInterface $logger Logger instance.
+	 * @param IL10N $l Localisation service.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly SettingsService $settingsService,
+		private readonly LoggerInterface $logger,
+		private readonly IL10N $l,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Rebase all logs with current retention settings.
-     *
-     * Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows
-     * based on the current retention windows. This is the openconnector-specific
-     * action that has no OR equivalent (OR's archival workflow uses ISO durations
-     * + per-object retention; the connector mixes service-level constants with
-     * per-source overrides — see local ADR-004).
-     *
-     * Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.
-     *
-     * @return JSONResponse JSON response with the rebase result.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
-     */
-    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
-    public function rebase(): JSONResponse
-    {
-        try {
-            $this->logger->info('Rebase endpoint called', ['endpoint' => '/api/settings/rebase']);
-            $result = $this->settingsService->rebase();
-            $this->logger->info(
-                    'Rebase operation completed',
-                    [
-                        'success'  => $result['success'] ?? false,
-                        'duration' => $result['duration'] ?? 'unknown',
-                        'errors'   => count($result['errors'] ?? []),
-                    ]
-                    );
-            return new JSONResponse($result);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                    'Failed to perform rebase operation',
-                    [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
-            return new JSONResponse(
-                    [
-                        'error'   => $this->l->t('Failed to perform rebase operation'),
-                        'message' => $e->getMessage(),
-                    ],
-                    500
-                    );
-        }//end try
-    }//end rebase()
+	/**
+	 * Rebase all logs with current retention settings.
+	 *
+	 * Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows
+	 * based on the current retention windows. This is the openconnector-specific
+	 * action that has no OR equivalent (OR's archival workflow uses ISO durations
+	 * + per-object retention; the connector mixes service-level constants with
+	 * per-source overrides — see local ADR-004).
+	 *
+	 * Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.
+	 *
+	 * @return JSONResponse JSON response with the rebase result.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	public function rebase(): JSONResponse {
+		try {
+			$this->logger->info('Rebase endpoint called', ['endpoint' => '/api/settings/rebase']);
+			$result = $this->settingsService->rebase();
+			$this->logger->info(
+				'Rebase operation completed',
+				[
+					'success' => $result['success'] ?? false,
+					'duration' => $result['duration'] ?? 'unknown',
+					'errors' => count($result['errors'] ?? []),
+				]
+			);
+			return new JSONResponse($result);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'Failed to perform rebase operation',
+				[
+					'exception' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				[
+					'error' => $this->l->t('Failed to perform rebase operation'),
+					'message' => $e->getMessage(),
+				],
+				500
+			);
+		}//end try
+	}//end rebase()
 }//end class
