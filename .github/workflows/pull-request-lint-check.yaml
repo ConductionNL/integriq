@@ -4,19 +4,40 @@ on:
   pull_request:
     branches:
       - development
-      - beta
       - main
+      - beta
 
 jobs:
   lint-check:
     runs-on: ubuntu-latest
+    # Checkout + `npm ci` + `npm run lint`. Nothing here writes to the repo,
+    # comments on the PR, or uploads an artifact, so read is the whole need.
+    # `packages: read` is deliberately absent: .npmrc points at the public
+    # registry and package-lock.json contains zero npm.pkg.github.com entries,
+    # so the install never authenticates to GitHub Packages.
+    permissions:
+      contents: read
+    # Observed: n=28 runs, median 0.6 min, max 1.2 min. Bounded loosely so
+    # normal runner contention can never trip it.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # This job had NO setup-node at all, so it inherited the runner default —
+      # currently Node 22, which bundles npm 10. npm 10 cannot install from the
+      # npm 11 lockfile this repo now ships: it exits EUSAGE with
+      # "Missing: <pkg> from lock file". Node 24 bundles npm 11.
+      #
+      # Nothing in this file named a Node version, so nothing looked wrong.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Linting
         run: npm run lint

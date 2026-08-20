@@ -1,82 +1,458 @@
 name: Code Quality
 
 on:
-  # `push` on main is the load-bearing one, and it was MISSING. Without it a
-  # push to the release branch built nothing at all — not red, not green,
-  # simply no run. Measured 2026-08-09: openconnector `main` had ZERO Code
-  # Quality runs on record, so nobody could say what state the branch users
-  # install was in. A branch with no runs shows no red.
-  #
-  # `development` has carried this trigger for some time; it never reached
-  # `main` because the corrected workflow travels the release train and no
-  # release has carried it across. See ConductionNL/.github#285.
   push:
-    branches: [main, development, feature/**, bugfix/**, hotfix/**]
+    # An ALLOW-LIST of prefixes is a gate with a hole in it, and the hole is
+    # silent: a branch whose name matches nothing simply gets no CI, and its last
+    # visible status is whatever it inherited. On 2026-08-14 a merge with
+    # unresolved conflict markers and 84 failing tests was pushed to
+    # `perf/predicted-page-fanout` — `perf/**` was not on this list, so nothing
+    # ran and nothing said so.
+    #
+    # Prefixes added rather than replaced with `**` because this workflow is not
+    # cheap (PHPUnit matrix, Newman, Playwright); running it on every scratch
+    # branch would be a real bill. The fast structural checks DO run on `**` —
+    # see merge-hygiene.yml, which exists because of that same incident.
+    #
+    # ⚠️ Adding a prefix here is not the durable fix. Anyone inventing a new one
+    # is uncovered again until someone remembers this file. The durable fix is
+    # branch protection requiring a PR into development, which is where the
+    # pull_request trigger below already gates properly.
+    branches:
+      - main
+      - development
+      - feature/**
+      - bugfix/**
+      - hotfix/**
+      - perf/**
+      - refactor/**
+      - chore/**
+      - fix/**
   pull_request:
-    branches: [main, master, development]
+    # Spelled out rather than left to the default so the set is reviewable.
+    # `synchronize` — a push to an open PR — is the load-bearing one: without
+    # it the suite runs once at PR-open and every later commit merges unchecked
+    # under the first run's green tick. Cost is bounded by the `concurrency`
+    # block below, which cancels the in-flight run for the same head ref.
+    types: [opened, reopened, synchronize]
+    branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it carries the push-only "Coverage Baseline Check", which is the
+# whole push side of the coverage ratchet. And those two branches always have an
+# open PR whose `head_ref` IS the branch name: the standing "Release: merge
+# development into beta". `github.head_ref` on that PR run and `github.ref_name`
+# on the push run both render `development`, so both landed in the identical
+# group `quality-development`, and `cancel-in-progress` killed whichever started
+# first — always the push run, by ~9 seconds.
+#
+# Measured on the merge of #1151 (ddd74da4): run 31045325182, event `push`,
+# CANCELLED; run 31045337494, event `pull_request`, survived. Same pattern on
+# 3b9371f1, 75190bca and f2219e09 — four for four, so the push run on
+# `development` has never reached a verdict. "Coverage Baseline Check" therefore
+# reported `skipped` on the surviving run (correctly — it is push-only) while
+# never once executing on the run that could have run it. #1151 enabled a job
+# that could not reach a verdict: a dead gate of the permanently-pending shape,
+# which is invisible because a skipped job renders like a passing one.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref }}
+  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
   cancel-in-progress: true
 
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so capping any of these at
+# `read` makes the whole call fail to START (zero jobs, no annotations).
+# Union of what the nested jobs need: journeydoc-capture (contents+actions
+# write), update-baseline / features-extract (contents write), the Quality
+# Report PR comment (issues / pull-requests write), and packages: read for
+# pulling org images.
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pull-requests: write
+  packages: read
+
 jobs:
-  php-checks:
-    name: ${{ matrix.check.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        check:
-          - { name: "PHP Lint", command: "composer lint" }
-          - { name: "PHPCS", command: "./vendor/bin/phpcs --standard=phpcs.xml" }
-          - { name: "PHPMD", command: "./vendor/bin/phpmd lib text phpmd.xml" }
-          - { name: "Psalm", command: "./vendor/bin/psalm --threads=1 --no-cache --output-format=github" }
-          - { name: "PHPStan", command: "./vendor/bin/phpstan analyse --memory-limit=1G" }
-          - { name: "PHPUnit", command: "./vendor/bin/phpunit --colors=always" }
+  quality:
+    # Skip the duplicate run a branch-creation push fires alongside the PR event.
+    if: github.event_name != 'push' || github.event.created != true
+    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    with:
+      app-name: openconnector
+      # composer.json `config.platform.php` is pinned to 8.3, so phpcs/phpmd/etc
+      # need the matching runtime or `vendor/composer/platform_check.php` aborts
+      # with `Composer dependencies require a PHP version ">= 8.3.0"`.
+      php-version: "8.3"
+      # Set explicitly, because the shared workflow defaults to
+      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. openconnector
+      # declares <app>openregister</app> as a hard dependency, and openregister
+      # declares min-version="32". On NC31 the E2E job logs
+      #   App "Open Register" cannot be installed because it is not compatible
+      #   with this version of the server.
+      # then continues with a WARNING, so the run proceeds without its central
+      # dependency and fails ~70s later on missing tables — which reads like a
+      # migration fault rather than a missing app. Testing a version the app
+      # cannot support produces red that says nothing. See issue #1172.
+      #
+      # WHY THIS IS NOW stable34 AND NOT `["stable32", "stable33"]`. This PR
+      # moves the dev requirement to `nextcloud/ocp ^34`, so the stubs every
+      # static-analysis leg resolves against are NC34's. Running the suite
+      # against an older server would check the app under one set of API
+      # signatures and analyse it under another, and the two disagreeing is
+      # exactly the class of defect the analysers exist to find.
+      #
+      # ✅ THE NARROWING IS CLOSED, THE FIRST WAY. The previous revision of this
+      # comment recorded a deliberate trade: info.xml declared three server
+      # versions while the suite exercised one, leaving NC32 and NC33 unmeasured
+      # rather than known-broken. It named its own closure condition — "restoring
+      # the older refs alongside stable34 once ocp ^34 stubs are proven compatible
+      # with them" — and that condition is now met: portaliq runs stable32,
+      # stable33 and stable34 against `nextcloud/ocp ^34` and all six PHPUnit
+      # legs pass (run 31599055849). So the refs come back rather than info.xml's
+      # floor going up, and the two numbers agree again.
+      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
+      # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
+      # the comment it replaced instructed: "Remove this line in the change
+      # that wires those producers up, so the coverage requirement arrives with
+      # the coverage."
+      #
+      # WHAT THE FLAG ACTUALLY DID. It is not a gate and it does not decide any
+      # finding. It answers one question: when a gate DID NOT RUN, is that a
+      # failure? The gate package sorts every non-run into three categories —
+      # `na` (subject matter absent: nothing is unverified), `structural`
+      # (subject matter EXISTS, nothing produced the gate's input) and `wiring`
+      # (the gate's own helper or tool is missing). Only `structural` and
+      # `wiring` count against coverage. With the flag set to false, a gate
+      # whose machinery had quietly stopped existing reported as green.
+      #
+      # That is not hypothetical in this fleet: a missing helper made gate-7
+      # report PASS over 11 real unguarded IDOR endpoints, and openregister
+      # reported `success` while its own log read "EXCEPT GATES 4 33, WHICH DID
+      # NOT RUN". A waiver here means openconnector's green does not include
+      # the coverage assertion at all.
+      #
+      # THE ORIGINAL DEFERRAL NO LONGER HOLDS, and not for the reason this PR
+      # first gave. Re-measured on `development` @5ab1c9df, FULL TREE, with the
+      # gate package cloned fresh from ConductionNL/.github@main (756fe89) —
+      # not the local submodule, which was 38 commits behind and is therefore a
+      # different program:
+      #
+      #   [hydra-gates] COVERAGE: 63 of 64 declared gates reported a result
+      #   (1 not applicable to this repo/diff; 63 of 63 applicable gates ran).
+      #
+      # ZERO structural skips, ZERO wiring skips. The single not-applicable was
+      # gate-33 axe-core, which declared itself so because this caller had not
+      # set `enable-axe`.
+      #
+      # THAT IS NO LONGER TRUE: `enable-axe: true` is set below, and gate-33
+      # now reports a real verdict instead of `na`. CONFIRMED IN CI on the PR
+      # that turned it on (#1211, job 93785212530):
+      #
+      #   [gate-33] axe-core: PASS
+      #   [hydra-gates] gate-33 axe-core: report read — 0 violation(s)
+      #                 present, 0 serious/critical. A PASS here is a PASS
+      #                 over that number, not over silence.
+      #
+      # "report read" is the part that matters: the report survived the
+      # provenance check rather than being rejected and deleted, which is the
+      # failure mode where gate-33 goes back to skipping loudly.
+      #
+      # DO NOT READ THE COVERAGE LINE AS A CONSTANT. An earlier draft of this
+      # comment predicted it would move from `63 of 64` to `64 of 64`. That
+      # was wrong, and wrong in the way this fleet keeps getting caught by:
+      # the count is a function of the DIFF, not of the repo. The same run
+      # that produced the PASS above printed
+      #
+      #   [hydra-gates] COVERAGE: 28 of 64 declared gates reported a result
+      #   (36 not applicable to this repo/diff; 28 of 28 applicable gates ran).
+      #
+      # because a two-file PR gives 36 gates no subject matter. The `63 of 64`
+      # figure quoted higher up came from a FULL-SCOPE run. Compare like with
+      # like or the number means nothing. What is genuinely comparable is that
+      # gate-33 is now inside the applicable set in both scopes instead of
+      # declaring itself `na`.
+      #
+      # ⚠️ AND THE SAME CAVEAT USED TO APPLY TO A GATE THAT PRINTS `PASS`.
+      # gate-16 spec-coverage takes its base from `HYDRA_GATE_BASE_REF`, and
+      # the runner supplied none on `--full`, so a full-scope run ON
+      # `development` diffed the branch against itself, inspected nothing, and
+      # printed PASS — a PASS that COUNTED toward "N of N applicable gates
+      # ran" (ConductionNL/.github#361). **#364 has since MERGED**: a
+      # full-repo run with no diff now reports
+      # `NOT APPLICABLE — full-repo run computed NO diff … This is NOT a
+      # pass.` So do not read a historical green gate-16 cell on this repo as
+      # a measurement — re-measure with an explicit base.
+      #
+      # Measured here on `development` @7c1d9c6d with the canonical package
+      # @81c8c97 (which still carried the old behaviour), changing ONLY the
+      # base:
+      #
+      #   base origin/development (= what CI's --full run uses) -> count=0
+      #   base origin/beta                                      -> count=0
+      #   base origin/main                                      -> count=30
+      #   --mode report (whole tree, no diff at all)            -> 30
+      #
+      # A committed, untagged public method planted in lib/Service and a
+      # matching Vue method moved every one of those numbers by exactly +2 and
+      # named both plants, so the zeros above are real zeros and not a dead
+      # gate. openconnector's genuine gate-16 debt is 30 methods, all backend.
+      #
+      # Gate 4 was never starved by a producer this repo declines to switch
+      # on; it declares itself not applicable. And gate-24
+      # integration-parity — named by the first version of this comment as the
+      # real gap, which it then was — now PASSES: `scripts/check-integration-
+      # parity.sh` landed on `development` after this PR was opened, so the
+      # parity script arrived exactly as that comment said it should, ahead of
+      # the flag being dropped.
+      #
+      # PROOF THIS SETTING CAN STILL FAIL, rather than being inert. On the same
+      # tree, deleting `scripts/check-integration-parity.sh`:
+      #
+      #   [gate-24] integration-parity: SKIPPED (structural) — ... this repo
+      #   DOES register integration leaves ... server↔JS leaf parity is
+      #   UNVERIFIED
+      #   [hydra-gates] COVERAGE: 62 of 63 applicable gates ran
+      #
+      # which is precisely the shape the runner exits 98 on, and which
+      # quality.yml turns into `::error::hydra-gates passed every gate that
+      # ran, but a gate whose SUBJECT MATTER EXISTS did not report`. So this
+      # repo has live subject matter for the assertion; it is not being turned
+      # on over nothing.
+      #
+      # NOTE ON WHAT THIS DOES *NOT* CHANGE. Exit 98 is reached only when no
+      # gate FAILED — a run with failures is already red and exits with the
+      # failure count. Removing this line therefore adds a verdict where there
+      # was none; it cannot mask one. The same full-tree run still shows
+      # gate-38 and gate-57 failing on inherited debt in files no PR is
+      # touching; both are tracked separately and neither is in scope for a
+      # diff-scoped CI run.
+      enable-phpcs: true
+      enable-psalm: true
+      enable-phpstan: true
+      enable-phpmetrics: true
+      enable-frontend: true
+      enable-eslint: true
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Build the bundle in CI. Nothing here did until now, and the gap hid two
+      # real defects for weeks: @nextcloud/dialogs pinned at a vue@2.7 release
+      # inside a Vue 3 app, and fifty NcSelect/NcTextArea listeners still on the
+      # v8 `@input` contract that v9 does not emit. Both compile, lint and pass
+      # unit tests — only an actual build (and, for the listeners, using the
+      # control) shows them.
+      #
+      # A broken bundle is also silent in production: Nextcloud serves whatever
+      # js/ was last committed, so the app keeps working from a stale build
+      # while main cannot be rebuilt at all.
+      # `check:specs` and `test:l10n` are added to this list below rather than
+      # here; see the "Frontend Check legs" block further down. The value lives
+      # in exactly one place — a second `frontend-checks:` key in the same
+      # `with:` block would be accepted last-one-wins by every YAML parser
+      # involved and would read as configured while being decided elsewhere.
+      # Integration + E2E run against a live Nextcloud server with OR
+      # checked out as an additional app (collections + journeys exercise
+      # /index.php/apps/openregister/api/objects/openconnector/*).
+      enable-newman: true
+      newman-collection-path: "tests/postman"
+      newman-environment-path: "tests/postman/openconnector.postman_environment.json"
+      # WHY THIS SEED EXISTS. The collection's "01 — Fixture setup (via OR)"
+      # folder POSTs to /apps/openregister/api/objects/openconnector/<schema>;
+      # since the chain-C cutover every openconnector entity is an OpenRegister
+      # object. Without a seed step the `openconnector` register does not
+      # exist, all 8 fixture POSTs return 404, `{{fxSourceUuid}}` is never set,
+      # and every downstream request then 404s on the literal placeholder —
+      # 51 of 107 assertions (measured, run 30816264169). SEED_SCOPE=register
+      # reuses the Playwright job's tests/e2e/ci-seed.sh and stops after the
+      # register import, skipping the SPA warm-up and bundle gate that this
+      # job (which never runs `npm run build`) must not execute.
+      #
+      # This was held back until ConductionNL/.github#132 landed: the shared
+      # workflow used to start this job's `php -S` SINGLE-WORKER, and journey
+      # J2 points a Source at this very instance, so the app called back into
+      # the server while the one worker was still inside the outer request —
+      # a deadlock that hung the job until timeout-minutes (run 30821823343).
+      # #132 sets PHP_CLI_SERVER_WORKERS=8 on this job's server, which is what
+      # makes the self-referential fixtures serveable. Merged 2026-08-03.
+      newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          extensions: mbstring, xml, ctype, iconv, intl, dom, filter, gd, json, posix, zip, soap
-          tools: composer:v2
+      # ── E2E browser tests ────────────────────────────────────────────────
+      # `playwright-test-path` does double duty in the shared workflow:
+      #   1. it is the directory the "Validate Playwright tests exist" step
+      #      counts *.spec.ts in;
+      #   2. it is the FIRST place the run step looks for a config —
+      #      `${playwright-test-path}/playwright.config.ts`, falling back to
+      #      the repo root only if that file is absent.
+      # It used to say `tests/e2e/regression`, which holds no config, so lookup
+      # (2) fell through to the ROOT config. The run step passes no
+      # `--project`, so all four root projects ran at once — 243 tests in 1.6h,
+      # including `visual` (pixel baselines the root config itself documents as
+      # un-matchable on a CI Linux runner) and `docs-capture` (screenshot
+      # re-shoots that have their own dedicated job). `tests/e2e` makes lookup
+      # (1) hit tests/e2e/playwright.config.ts, which declares exactly one
+      # project over spec-coverage/ + regression/ + workflows/.
+      enable-playwright: true
+      playwright-test-path: tests/e2e
+      # openconnector's sources/mappings/synchronizations/jobs are OpenRegister
+      # OBJECTS — there is no `oc_openconnector_*` table for them — so with no
+      # `openconnector` register the SPA has nothing to resolve and the suite
+      # reports it as a wall of selector timeouts. `occ app:enable` is not a
+      # reliable provisioning path for it: the InitializeRegister repair step
+      # swallows its own failures as warnings and occ still exits 0. The script
+      # provisions explicitly and fails loudly when the register or its schemas
+      # are still absent. cwd for this step is the Nextcloud server root.
+      playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+      # ── PHPUnit ──────────────────────────────────────────────────────────
+      # `enable-phpunit` defaults to FALSE in the shared workflow and this
+      # caller never set it, so the job reported `skipped` — with its matrix
+      # placeholders still literal (`PHPUnit (PHP ${{ matrix.php-version }},
+      # NC ${{ matrix.nextcloud-ref }})`), because GitHub evaluates a matrix
+      # job's `if:` before expanding the matrix. A disabled PHPUnit therefore
+      # looks exactly like a repo with no PHP tests. This repo has phpunit.xml
+      # and a tests/ tree, and a `coverage-report` artifact from 2026-08-03
+      # proves the suite does run: 20141 of 33162 statements covered.
+      # This is also the prerequisite for the coverage ratchet — the
+      # "Coverage Baseline Check" job `needs: phpunit` and downloads its
+      # artifact, so enabling the guard without this would be a dead gate of a
+      # different shape.
+      enable-phpunit: true
 
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      # ── Frontend Check legs ──────────────────────────────────────────────
+      # `frontend-checks` was already non-empty (`["build"]`), so the job did
+      # run here — but only the build. The validator family ran nowhere.
+      # `check:specs` is the aggregate (json-strict + manifest + register) and
+      # is listed as ONE leg rather than three, because each leg is a fresh job
+      # with its own checkout + `npm ci`.
+      # Measured on this tree before enabling: `check:specs` PASSES and
+      # `test:l10n` PASSES.
+      # `test:l10n:parity` is deliberately NOT added: measured on this tree it
+      # is short 337+ translations across the required locales. That is a
+      # translation backlog, and a permanently-red leg is one that gets
+      # switched off again.
+      #
+      # `format` (prettier --check) is listed because the shared workflow has NO
+      # prettier job of its own — `quality.yml` runs eslint and stylelint and
+      # mentions prettier ZERO times. This repo already carries
+      # `@nextcloud/prettier-config` and a `format` script, so without this leg
+      # `npm run format` never runs outside a developer's editor and the tree
+      # drifts straight back out of format between merges — the same inert-
+      # formatter failure mode that made the old `.prettierrc` worth deleting.
+      # Centralising the config never stopped drift; the gate does.
+      # Measured on this tree before enabling: PASSES, 176 of 222 tracked
+      # frontend files in scope (l10n/ and docs/ excluded via .prettierignore /
+      # .gitignore, which prettier 3 also reads).
+      frontend-checks: '["build", "check:specs", "test:l10n", "format"]'
 
-      - name: ${{ matrix.check.name }}
-        run: ${{ matrix.check.command }}
-  frontend-quality:
-    name: Frontend Quality
-    runs-on: ubuntu-latest
+      # ── Hydra mechanical gates ───────────────────────────────────────────
+      # `enable-hydra-gates` defaults to FALSE, so this tier has never executed
+      # here — the job reported `skipped`, which the Quality Report renders
+      # identically to a pass.
+      enable-hydra-gates: true
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
+      #
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
+      # ── axe-core (gate-33) ───────────────────────────────────────────────
+      # `enable-axe` used to be deliberately unset here, on the grounds that a
+      # vanilla Nextcloud 34 reports serious/critical violations on core's OWN
+      # routes that DOM scoping does not remove. That reasoning is now out of
+      # date in the part that mattered: `axe-include-selector` defaults to
+      # `#content-vue, #content`, which scopes the analysis to the app's own
+      # rendered DOM, and the runner proves on every run that the scope is a
+      # SCOPE and not a MUTE (it injects a violation inside the container and
+      # asserts it is reported, and one outside and asserts it is not).
+      #
+      # So this is turned on against a MEASUREMENT, not a hope. Run locally
+      # with the canonical runner (ConductionNL/.github@main b8c7ead,
+      # @axe-core/playwright 4.12.1) against a dedicated Nextcloud 34 with
+      # openregister + openconnector installed and the register seeded:
+      #
+      #   /index.php/apps/openconnector/          HTTP 200  passes=19  violations=0
+      #   /index.php/apps/openconnector/#/sources HTTP 200  passes=17  violations=0
+      #
+      # with `axe self-test OK` and `axe scope control OK` on both. Zero
+      # violations at any impact, so zero serious/critical — gate-33 has
+      # nothing to fail on today.
+      enable-axe: true
+      # ONE ROUTE, AND THAT IS A RUNNER DEFECT, NOT A CHOICE — see
+      # ConductionNL/.github#351.
+      #
+      # `axe-run.cjs` treats a null `page.goto()` response as HTTP 0 and dies.
+      # A fragment-only navigation returns null because no document is fetched,
+      # so for a hash-routed SPA — which this app is (`createWebHashHistory()`)
+      # — every route after the first one shares a document with it and is
+      # reported as `returned HTTP 0. … Set the axe-routes input to routes this
+      # app actually serves.` The route is served fine; only its POSITION in
+      # the list decides. Proven both ways on the same instance: `#/sources`
+      # listed FIRST analysed cleanly at HTTP 200; the SAME route listed after
+      # the app root killed the run with exit 2 and wrote no report at all.
+      #
+      # That is the trap in this input: the error blames the caller, so the
+      # obvious response is to delete routes until it goes green, which
+      # silently narrows accessibility coverage to the landing page and reads
+      # as a config fix. Recording it here so the next person widens the list
+      # by fixing #351 rather than by guessing.
+      #
+      # Until #351 lands this is the app root only. It is a real verdict on a
+      # real page — gate-33 has reported SKIPPED in this repo since it was
+      # written — but it is one page, not the app.
+      axe-routes: "/index.php/apps/openconnector/"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: ESLint
-        run: npm run lint
-
-      - name: Stylelint
-        run: npm run stylelint
+      # ── Coverage ratchet ─────────────────────────────────────────────────
+      # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
+      # BOTH coverage jobs — "Coverage Baseline Protection" (PR) and "Coverage
+      # Baseline Check" (push) — have only ever reported `skipped` here. A
+      # skipped job renders in the Quality Report exactly like a passing one,
+      # so the ratchet read as present while checking nothing.
+      #
+      # Turning it on needs two files this repo did not have, both now added
+      # alongside this line:
+      #   * `scripts/coverage-guard.php` — copied BYTE-IDENTICAL from
+      #     openregister (the same copy softwarecatalog took), so there is one
+      #     implementation of the ratchet across the fleet rather than five.
+      #   * `.coverage-baseline` — a bare number. It must EQUAL what CI
+      #     measures on development, not approximate it: too high and the
+      #     "Guard coverage baseline" step inside PHPUnit exits 1; too low and
+      #     the push-side Coverage Baseline Check recomputes a higher value,
+      #     finds `git diff` non-empty, and fails demanding the new number be
+      #     committed. There is no safe margin in either direction.
+      # The committed value is the one CI printed, recorded as measured.
+      #
+      # This was held back until `enable-phpunit` above had produced a
+      # `coverage-report` artifact from this repo, since the guard reads the
+      # project-level metrics out of that job's clover.xml.
+      enable-coverage-guard: true
