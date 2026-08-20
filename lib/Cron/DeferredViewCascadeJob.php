@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  * The job is a one-shot {@see ActorForwardedJob} (a `QueuedJob`), so it is
  * removed from the job list once it has run: it can never re-queue itself and
  * starve the rest of the cron queue behind it.
+ *
+ * @spec openspec/specs/job-scheduling/spec.md#requirement-work-deferred-off-a-request-runs-on-the-cron-worker-with-its-dispatch-time-context-req-007
  */
 class DeferredViewCascadeJob extends ActorForwardedJob {
 
@@ -89,6 +91,8 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * @param DeferredListenerContext $context The captured dispatch-time context.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md#requirement-work-deferred-off-a-request-runs-on-the-cron-worker-with-its-dispatch-time-context-req-007
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
 		$openRegister = $this->objectService->getOpenRegisters();

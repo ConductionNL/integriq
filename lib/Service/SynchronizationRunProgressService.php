@@ -53,6 +53,8 @@ use Psr\Log\LoggerInterface;
  * the exact defect this session kept finding — a recorder that quietly stopped
  * working and still looked healthy — so failures are counted in
  * `progressWriteFailures` and reported on the final record.
+ *
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
  */
 class SynchronizationRunProgressService {
 
@@ -165,6 +167,8 @@ class SynchronizationRunProgressService {
 	 *   early return below and the same no-op every later tick/finish takes.
 	 *   Splitting it into two methods would push the same `if` to every call site
 	 *   and hand callers a way to start a run they then never tick.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
 	 */
 	public function start(string $synchronizationId, bool $enabled = true): void {
 		if ($enabled === false) {
@@ -208,6 +212,8 @@ class SynchronizationRunProgressService {
 	 * @param array $counters Partial counters to merge into the record.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
 	 */
 	public function tick(array $counters = []): void {
 		if ($this->runUuid === null) {
@@ -236,6 +242,8 @@ class SynchronizationRunProgressService {
 	 * @param string|null $message Terminal message, if any.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
 	 */
 	public function finish(string $status, array $counters = [], ?string $message = null): void {
 		if ($this->runUuid === null) {
@@ -265,6 +273,8 @@ class SynchronizationRunProgressService {
 	 * overhead at all and look exactly like a throttle that works.
 	 *
 	 * @return int The number of issued writes.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
 	 */
 	public function writeCount(): int {
 		return $this->writes;

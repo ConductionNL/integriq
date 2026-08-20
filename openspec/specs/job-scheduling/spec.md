@@ -532,3 +532,51 @@ record was closed**. A sweep that closes nothing logs nothing.
 - `STALE_AFTER_SECONDS` is `public`, so a test may assert against it rather than
   hard-coding 1800.
 
+
+### Requirement: Work deferred off a request runs on the cron worker with its dispatch-time context (REQ-007)
+
+Work that an event listener triggers but that cannot change the outcome of the
+request it observes SHALL be deferred to a background job rather than run inside
+that request (ADR-078). The extended-view cascade is the reference case: a
+deleted `view` used to run one unbounded `findAll()` plus one `delete()` per
+matching row before the delete response was written.
+
+A deferred job of this kind SHALL:
+
+- Be a **one-shot** `QueuedJob`, so it removes itself once run and can never
+  re-queue itself and starve the cron queue behind it.
+- Carry everything it needs in the dispatched entry — register id, schema id and
+  identifier captured at dispatch time. It SHALL NOT re-resolve the subject
+  through the deferred-entry object resolver: that resolver returns null for a
+  soft-deleted object by design, so a delete cascade re-resolved that way would
+  find nothing and report success — a flawless no-op.
+- Bound its work per entry (`CASCADE_LIMIT`, 500 rows) rather than deleting an
+  unbounded result set.
+- Run as the dispatching user, re-established from the captured context.
+- State the reason when it cannot proceed rather than inventing a fallback.
+
+@e2e exclude backend deferred-job dispatch and cron execution internals — covered by PHPUnit, not browser UI
+
+#### Scenario: the delete request returns without waiting for the cascade
+
+- **GIVEN** a `view` object with matching `extendview` objects
+- **WHEN** the view is deleted
+- **THEN** the delete response is written as soon as the view itself is gone
+- **AND** a deferred cascade job is queued to remove the extended views
+
+#### Scenario: the deferred job uses captured ids, not a re-resolution
+
+- **GIVEN** a queued cascade entry for a view that is now soft-deleted
+- **WHEN** the job runs
+- **THEN** it locates the extended views from the register id, schema id and
+  identifier captured at dispatch time
+- **AND** it does not report success having found nothing, which is what
+  re-resolving the soft-deleted subject would have produced
+
+#### Scenario: OpenRegister unavailable between dispatch and run is reported, not faked
+
+- **GIVEN** a queued cascade entry
+- **WHEN** the job runs and the OpenRegister object service is unavailable
+- **THEN** the entries are dropped
+- **AND** the reason is recorded in the log rather than the job reporting a
+  successful cascade
