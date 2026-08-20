@@ -24,6 +24,7 @@ use OCA\OpenConnector\Db\SynchronizationLogMapper;
 use OCA\OpenConnector\Db\SynchronizationMapper;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -1150,9 +1151,8 @@ class SynchronizationService
 		switch ($type) {
 			case 'register/schema':
 
-				$targetIdsToDelete = [];
 				[$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getTargetId());
-				$allContracts = $this->synchronizationContractMapper->findAllBySynchronizationAndSchema(synchronizationId: $synchronization->getId(), schemaId: $schemaId);
+				$allContracts = $this->synchronizationContractMapper->findAllBySynchronizationAndSchema(synchronizationId: $synchronization->getId(), registerId: $registerId, schemaId: $schemaId);
 				$allContractTargetIds = [];
                 $allContractSourceIds = [];
 				foreach ($allContracts as $contract) {
@@ -1187,7 +1187,9 @@ class SynchronizationService
 						$this->synchronizationContractMapper->update($synchronizationContract);
 						$deletedObjectsCount++;
 					} catch (DoesNotExistException $exception) {
-						// @todo log
+						$this->logger->info('Skipped deleting invalid object, contract or target object no longer exists', ['targetId' => $targetIdToDelete, 'exception' => $exception->getMessage()]);
+					} catch (ReferentialIntegrityException $exception) {
+						$this->logger->warning('Skipped deleting invalid object due to referential integrity constraints', ['targetId' => $targetIdToDelete, 'exception' => $exception->getMessage()]);
 					}
 				}
 				break;
@@ -1493,7 +1495,10 @@ class SynchronizationService
 				$synchronizationContract->setTargetLastAction($synchronizationContract->getTargetId() ? 'update' : 'create');
 				break;
 			case 'delete':
-				$objectService->delete(object: ['id' => $synchronizationContract->getTargetId()]);
+				$deleted = $objectService->deleteObject(uuid: $synchronizationContract->getTargetId());
+				if ($deleted === false) {
+					$this->logger->warning('OpenRegister reported the object was not deleted', ['targetId' => $synchronizationContract->getTargetId()]);
+				}
 				$synchronizationContract->setTargetId(null);
 				$synchronizationContract->setTargetLastAction('delete');
 				break;

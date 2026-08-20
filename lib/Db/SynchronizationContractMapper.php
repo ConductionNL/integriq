@@ -3,6 +3,7 @@
 namespace OCA\OpenConnector\Db;
 
 use OCA\OpenConnector\Db\SynchronizationContract;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
@@ -185,36 +186,45 @@ class SynchronizationContractMapper extends QBMapper
     }
 
     /**
-     * Find all synchronization contracts by synchronization ID and where target have the given schema id
+     * Find all synchronization contracts for a synchronization whose target object
+     * still exists in the register/schema's OpenRegister magic table.
      *
-     * @param string $synchronization The synchronization ID
+     * OpenRegister stores objects in a dynamically created, per-schema table
+     * (see OCA\OpenRegister\Db\MagicMapper::TABLE_PREFIX) rather than a single
+     * generic objects table, so the join target is computed from the register
+     * and schema IDs rather than being a fixed table name.
      *
-     * @return array An array of target IDs or an empty array if none found
+     * @param string $synchronizationId The synchronization ID
+     * @param string $registerId        The target register ID
+     * @param string $schemaId          The target schema ID
+     *
+     * @return array An array of contracts, or an empty array if none found (or
+     *               if the schema's magic table does not exist yet)
      */
-    public function findAllBySynchronizationAndSchema(string $synchronizationId, string $schemaId): array
+    public function findAllBySynchronizationAndSchema(string $synchronizationId, string $registerId, string $schemaId): array
     {
         // Create query builder
         $qb = $this->db->getQueryBuilder();
 
-        // Build select query with synchronization ID and schema filter
+        $tableName = MagicMapper::TABLE_PREFIX.$registerId.'_'.$schemaId;
+
+        // Build select query, joined against the schema's magic table
         $qb->select('c.*')
             ->from('openconnector_synchronization_contracts', 'c')
             ->innerJoin(
                 'c',
-                'openregister_objects',
+                $tableName,
                 'o',
-                $qb->expr()->eq('c.target_id', 'o.uuid')
+                $qb->expr()->eq('c.target_id', 'o._uuid')
             )
             ->where(
-                $qb->expr()->andX(
-                    $qb->expr()->eq('c.synchronization_id', $qb->createNamedParameter($synchronizationId)),
-                    $qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId))
-                )
+                $qb->expr()->eq('c.synchronization_id', $qb->createNamedParameter($synchronizationId))
             );
 
         try {
             return $this->findEntities($qb);
         } catch (\Exception $e) {
+            // The schema's magic table may not exist yet (e.g. nothing synced so far).
             return [];
         }
     }
