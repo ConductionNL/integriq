@@ -135,3 +135,105 @@ Fixtures left in place (not deleted — they are the benchmark):
 - mapping `99390e2e-5796-4f57-b406-8eb73bbedc0e`
 - synchronization clone `b1e14f05-39c1-4a87-ad5e-f44dd5121bad`
 - flow `1c894b1e-ac5a-4b2f-88f7-d00c5363ca1f` (the no-`skipWhen`, no-`sweep` variant)
+
+---
+
+# UPDATE 2026-08-20 — D1 and D2 are fixed and verified live
+
+Both defects reported above are fixed and measured. **The legacy baseline in this
+document is now stale** — see "What this does to the benchmark" below.
+
+## D1 — fixed (#1306)
+
+`isBefore()`/`mappingUnchangedSince()` normalise both sides to a Unix timestamp.
+The two unknowns fall in opposite directions on purpose: an absent *mapping*
+timestamp is not evidence the mapping changed (must not block a skip), while an
+absent `sourceLastChecked` means there is no previous check to be newer than
+(must write).
+
+## D2 — took FOUR attempts, and the first three fixed the wrong layer
+
+The defect was never in the writers. Both sites in `synchronizeContract()` read:
+
+```php
+if (($synchronizationContract['uuid'] ?? null) === null) {
+    $synchronizationContract['uuid'] = (string)Uuid::v4();
+}
+```
+
+A contract loaded back from OpenRegister carries `id`, **never `uuid`** — so this
+minted a fresh identity on every rerun, and every downstream writer then
+faithfully upserted on that brand-new uuid and created a row. The writers were
+doing exactly what they were told.
+
+| # | what was fixed | measured effect |
+|---|---|---|
+| #1306 | `persist()` + `persistContract()` | none (+97/run) |
+| #1307 | `ensureUuid` ordering | none (+97/run) |
+| #1309 | `persistBulk()` (the buffered path) | none (+97/run) |
+| #1311 | **`assignContractIdentity()` — the root** | **+0/run** |
+
+**The signal I misread for three attempts was the number not moving.** Each fix
+provably landed and was verified in the container, and the count still went
+8237 -> 8334 -> 8431 -> 8528, exactly +1 per updated object every time. A fix that
+lands and changes nothing means the cause is upstream of everything you are
+looking at — not that there is one more writer to find.
+
+The writer fixes are still worth keeping: all four paths now derive identity the
+same way, so none can reintroduce the mint alone. They were necessary but not
+sufficient; this was sufficient.
+
+## The verification that counts
+
+A flat total is **necessary but not sufficient** — it reads identically whether
+the row was updated in place or nothing was written at all. So the check is by
+the narrowest identifier: one origin that actually takes the update path.
+
+Probe origin `86bee4b2-25f0-4c2a-a38c-ddad3729b403` had accumulated **9
+contracts, one per run**, a clean chronological record of the defect
+(02:29:34, 02:29:52, 02:30:20, 02:30:37, 08:12:01, 08:13:06, 09:47:18, 09:56:37,
+11:08:02).
+
+After the fix, on the very next run:
+
+- its contract count stayed at **9** — no tenth row, and
+- the **oldest** row (`3575d316…`, previously `02:29:34`) was **updated in place
+  to `11:59:34`**, `targetHash` still set.
+
+That is the pair that distinguishes "upserts correctly" from "silently stopped
+writing". It updates `matches[0]`, which is what `findContractBySyncAndOrigin()`
+returns.
+
+Five consecutive runs, contract delta **0** every time:
+
+| run | found | created | updated | skipped | contract delta |
+|-----|-------|---------|---------|---------|----------------|
+| 1 | 2000 | 0 | 97 | 1903 | **0** |
+| 2 | 2000 | 0 | 0 | **2000** | **0** |
+| 3 | 2000 | 0 | 0 | 2000 | **0** |
+| 4 | 2000 | 0 | 0 | 2000 | **0** |
+| 5 | 2000 | 0 | 0 | 2000 | **0** |
+
+The 97 that used to update forever were only doing so because their contract was
+re-created every run, so the hash comparison could never hold for them. With the
+contract persisted correctly the whole corpus now skips: **2000/2000, nothing
+written.** That is full idempotency for a mapped synchronization, which is what
+task 2.3 set out to establish and could not while D1 and D2 stood.
+
+## What this does to the benchmark — NUMBERS ABOVE ARE STALE
+
+The mapped legacy steady state measured above (17.7 s, 2000 updated, 0 skipped)
+described a run doing 2000 pointless writes. It now skips 2000/2000, so that
+figure no longer describes the engine and **must not be used as the bar the
+decomposed flow has to beat.**
+
+The new figure is NOT recorded here, deliberately. The five runs above were taken
+at **loadavg 15.98 with the nextcloud container at 88.7% CPU** — another session
+was using the box. The original baseline was taken at loadavg 0.36. Timings from
+the two are not comparable, and the wall clocks observed (30-77 s) are dominated
+by contention, not by the engine.
+
+**To close 2.2 properly, re-measure all three figures on a quiet box** (unmapped
+legacy, mapped legacy, decomposed flow), confirming `docker stats` and
+`/proc/loadavg` first. Only the correctness result above — a count, not a timing —
+is safe to carry forward from this session.
