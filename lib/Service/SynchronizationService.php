@@ -2458,7 +2458,17 @@ class SynchronizationService
 
             $bodyDot = new Dot($body);
 
-			if (isset($targetConfig['idPosition']) === true) {
+			if (isset($targetConfig['idKeyPosition']) === true) {
+                // Some target APIs return the id as the KEY of an object rather than a value at a
+                // fixed path (e.g. Xxllnc's /case/prepare_file: result.instance.references.{uuid} = filename).
+                // idPosition/Dot notation can only fetch values, so this takes the first key instead.
+                $referencesValue = $bodyDot->get($targetConfig['idKeyPosition']);
+                if (is_array($referencesValue) === true && empty($referencesValue) === false) {
+                    $targetId = array_key_first($referencesValue);
+                } else {
+                    throw new Exception('Could not determine an id (key) from target synchronization at idKeyPosition: ' . $targetConfig['idKeyPosition']);
+                }
+            } else if (isset($targetConfig['idPosition']) === true) {
 				$targetId = $bodyDot->get($targetConfig['idPosition']);
 			} else if (isset($targetConfig['idposition']) === true) {
                 // Backwards compatible if older sync still use idposition (lowercase)
