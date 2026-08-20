@@ -243,6 +243,7 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				ContractMatchNode::NODE_ID,
 				'openregister.set-fields',
 				'openregister.object-write',
+				'openregister.set-fields',
 				ContractCommitNode::NODE_ID,
 				ContractSweepNode::NODE_ID,
 				'openregister.end',
@@ -748,4 +749,79 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		}
 
 	}//end testAnUnreadableSynchronizationIsRefused()
+	/**
+	 * The write step is told which items are already current.
+	 *
+	 * @return void
+	 */
+	public function testTheWriteStepSkipsItemsTheContractCalledUnchanged(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$write = null;
+		foreach ($flow['nodes'] as $node) {
+			if ($node['type'] === 'openregister.object-write') {
+				$write = $node;
+			}
+		}
+
+		$this->assertNotNull($write);
+		$this->assertSame(
+			SynchronizationFlowGenerator::KEY_CONTRACT . '.outcome',
+			$write['config']['skipWhen'] ?? null,
+			'without skipWhen the re-run rewrites every object it just decided to skip'
+		);
+	}
+
+	/**
+	 * THE DELETION HAZARD. The sweep must not read its ids from the write
+	 * output: a skipped item has no `written` block, so unchanged objects would
+	 * fall out of the synced set and the sweep would delete them.
+	 *
+	 * @return void
+	 */
+	public function testTheSweepReadsAnIdThatSurvivesASkip(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$sweep = null;
+		foreach ($flow['nodes'] as $node) {
+			if ($node['type'] === ContractSweepNode::NODE_ID) {
+				$sweep = $node;
+			}
+		}
+
+		$this->assertNotNull($sweep);
+		$this->assertSame(
+			SynchronizationFlowGenerator::KEY_SYNCED_ID,
+			$sweep['config']['targetIdsPosition'] ?? null,
+			'the sweep must read the unified synced id, never the write output alone'
+		);
+		$this->assertStringNotContainsString(
+			SynchronizationFlowGenerator::KEY_WRITTEN,
+			(string)($sweep['config']['targetIdsPosition'] ?? ''),
+			'reading written.uuid drops every skipped object from the synced set'
+		);
+	}
+
+	/**
+	 * The unified id falls back to the contract's own target when nothing was
+	 * written — precisely the skipped case.
+	 *
+	 * @return void
+	 */
+	public function testTheSyncedIdFallsBackToTheContractTarget(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$compute = null;
+		foreach ($flow['nodes'] as $node) {
+			if (($node['id'] ?? '') === 'synced-id') {
+				$compute = $node['config']['compute'][SynchronizationFlowGenerator::KEY_SYNCED_ID] ?? null;
+			}
+		}
+
+		$this->assertIsArray($compute, 'the synced-id step must compute the unified field');
+		$encoded = (string)json_encode($compute);
+		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_WRITTEN, $encoded);
+		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_TARGET_UUID, $encoded);
+	}
+
 }//end class
