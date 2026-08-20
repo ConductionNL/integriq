@@ -1487,14 +1487,12 @@ class SynchronizationService {
 		}
 
 		$merged = array_merge($existing, $object);
+
+		// Identity BEFORE dropping `id` — the delegate's copy of this method was
+		// corrected first; this fallback carried the same defect, reading a `uuid`
+		// a contract payload never has and so upserting on null.
+		$uuidValue = $this->contractIdentity(object: $merged);
 		unset($merged['id']);
-
-		$uuid = ($merged['uuid'] ?? null);
-
-		$uuidValue = null;
-		if ($uuid !== null && $uuid !== '') {
-			$uuidValue = (string)$uuid;
-		}
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,

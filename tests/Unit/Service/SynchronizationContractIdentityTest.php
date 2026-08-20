@@ -196,4 +196,87 @@ class SynchronizationContractIdentityTest extends TestCase {
 		$this->assertNotNull($seen, 'ensureUuid must mint an identity when there is none');
 		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$seen);
 	}//end testEnsureUuidStillMintsWhenThereIsNoIdentity()
+
+	/**
+	 * THE PATH THE ENGINE ACTUALLY TAKES. When a target write is buffered,
+	 * synchronizeContract() pushes the contract onto `contractWriteBuffer` and
+	 * the flush writes the batch through persistBulk() — persistContract() is
+	 * never called for those rows.
+	 *
+	 * persistBulk() carried the same defect: it tested `empty($object['uuid'])`,
+	 * true for every contract loaded back from OpenRegister, minted a fresh uuid
+	 * and overwrote `id` with it. Measured live AFTER the single-write path was
+	 * fixed: a run that skipped 1903 of 2000 and updated 97 still added exactly
+	 * 97 contract rows, twice running.
+	 *
+	 * @return void
+	 */
+	public function testPersistBulkKeepsAnExistingIdentity(): void {
+		$rows = null;
+
+		$this->orObjectService->method('saveObjects')->willReturnCallback(
+			function (...$args) use (&$rows): array {
+				$rows = ($args[0] ?? null);
+
+				return ['statistics' => ['saved' => 0, 'updated' => 1, 'invalid' => 0, 'errors' => 0]];
+			}
+		);
+
+		$this->service->persistBulk(
+			contracts: [
+				['id' => '2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33', 'originId' => 'o-1'],
+			]
+		);
+
+		$this->assertIsArray($rows);
+		$this->assertSame('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33', $rows[0]['id']);
+		$this->assertSame('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33', $rows[0]['uuid']);
+	}//end testPersistBulkKeepsAnExistingIdentity()
+
+	/**
+	 * ...and still mints for a contract that genuinely has none, so a first-run
+	 * batch keeps creating rows as it should.
+	 *
+	 * @return void
+	 */
+	public function testPersistBulkStillMintsWhenThereIsNoIdentity(): void {
+		$rows = null;
+
+		$this->orObjectService->method('saveObjects')->willReturnCallback(
+			function (...$args) use (&$rows): array {
+				$rows = ($args[0] ?? null);
+
+				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
+			}
+		);
+
+		$this->service->persistBulk(contracts: [['originId' => 'o-2']]);
+
+		$this->assertIsArray($rows);
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$rows[0]['id']);
+		$this->assertSame($rows[0]['id'], $rows[0]['uuid'], 'the bulk path takes identity from id, so both must agree');
+	}//end testPersistBulkStillMintsWhenThereIsNoIdentity()
+
+	/**
+	 * A legacy NUMERIC id must not become the batch identity either.
+	 *
+	 * @return void
+	 */
+	public function testPersistBulkRefusesANumericId(): void {
+		$rows = null;
+
+		$this->orObjectService->method('saveObjects')->willReturnCallback(
+			function (...$args) use (&$rows): array {
+				$rows = ($args[0] ?? null);
+
+				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
+			}
+		);
+
+		$this->service->persistBulk(contracts: [['id' => 4438, 'originId' => 'o-3']]);
+
+		$this->assertIsArray($rows);
+		$this->assertNotSame('4438', (string)$rows[0]['id']);
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$rows[0]['id']);
+	}//end testPersistBulkRefusesANumericId()
 }//end class

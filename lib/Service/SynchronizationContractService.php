@@ -344,17 +344,32 @@ class SynchronizationContractService {
 	 * @return array The OpenRegister bulk-save result, or an empty array for an empty batch.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function persistBulk(array $contracts): array {
 		$rows = [];
 		foreach ($contracts as $contract) {
 			$object = $contract;
 
-			if (empty($object['uuid']) === true) {
-				$object['uuid'] = (string)Uuid::v4();
+			// Same defect the single-write path carried, and this is the path the
+			// engine actually takes for a buffered target write: it tested
+			// `empty($object['uuid'])`, true for EVERY contract loaded back from
+			// OpenRegister — they carry `id`, never `uuid` — so it minted a fresh
+			// uuid, overwrote `id` with it, and the batch created a duplicate
+			// instead of updating.
+			//
+			// Measured live after the single-write path was fixed: a run that
+			// skipped 1903 of 2000 and updated 97 still added exactly 97 contract
+			// rows, twice in a row. The rows it added carried no `uuid` and no
+			// `version`, which is what ruled out both createFromArray() and an
+			// ensureUuid mint and pointed here.
+			$identity = $this->contractIdentity(object: $object);
+			if ($identity === null) {
+				$identity = (string)Uuid::v4();
 			}
 
-			$object['id'] = (string)$object['uuid'];
+			$object['uuid'] = $identity;
+			$object['id'] = $identity;
 			$rows[] = $object;
 		}
 
