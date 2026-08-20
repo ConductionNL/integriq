@@ -1401,3 +1401,124 @@ target/write direction).
   `register/schema`/`database` — this requirement does not change that
   fallthrough behaviour for any type outside `nextcloud-form`
 
+
+### Requirement: Mid-run progress is observable without slowing the run (REQ-022)
+
+A synchronization run SHALL record how far it has got **while it is still
+running**, in a dedicated `openconnector`/`synchronization_run` record, because
+none of the pre-existing surfaces can answer that question: `synchronization.status`
+is null on every synchronization, no `execution_trace` row is `running`
+mid-flight, and `synchronization_log` is built in memory and persisted once at
+the end on an `appendOnly`/`immutable` schema that refuses an update outright.
+
+Recording SHALL be opt-outable by the caller, and SHALL NOT make the run it
+describes measurably slower or fail it:
+
+- Intermediate progress SHALL be **time-throttled**, at most one write per
+  `THROTTLE_SECONDS` (2.0 s), NOT throttled per N objects — a per-N rule writes
+  200x more on a 20,000-object corpus than on a 100-object one, while a time
+  rule writes the same amount on both, which is the property that makes it safe
+  on the corpora that matter.
+- The record SHALL be **constant-size** (every field a scalar), so write cost
+  does not grow with the run.
+- Writes SHALL use the cheap save path (`_rbac`, `_multitenancy`, `_validation`
+  off, `silent` on).
+- A failed progress write SHALL NOT fail the run, and SHALL NOT be silent: the
+  failure count SHALL be carried on the final record as `progressWriteFailures`.
+- The number of writes actually issued SHALL be readable, so a throttle that
+  never fired can be told apart from a throttle that worked — both otherwise
+  report zero overhead.
+
+The terminal write SHALL NOT be throttled: a finished run that stayed `running`
+reads as hung to every watcher.
+
+@e2e exclude backend progress-recording internals and write throttling — covered by PHPUnit, not browser UI
+
+#### Scenario: a run opens a progress record and closes it with a terminal status
+
+- **GIVEN** progress recording is enabled for a synchronization
+- **WHEN** the run starts
+- **THEN** one `synchronization_run` record is created with `status: running`,
+  `startedAt`, and zeroed counters
+- **AND WHEN** the run completes
+- **THEN** the same record is updated with the terminal status, `finishedAt`,
+  and the final counters — unthrottled, so the record is never left `running`
+
+#### Scenario: progress recording can be switched off entirely
+
+- **GIVEN** a run started with progress recording disabled
+- **WHEN** progress is reported and the run finishes
+- **THEN** no `synchronization_run` record is created
+- **AND** every later report and the terminal close are the same no-op, so a
+  caller cannot start a run it then never closes
+
+#### Scenario: reporting more often than the throttle does not write more often
+
+- **GIVEN** a run reporting progress per object
+- **WHEN** many objects are processed inside one throttle window
+- **THEN** at most one intermediate write is issued per `THROTTLE_SECONDS`
+- **AND** the in-memory counters still carry every reported value, so the next
+  write that does happen is not missing them
+
+#### Scenario: a progress write that fails is counted, not swallowed
+
+- **GIVEN** the object service rejects a progress write mid-run
+- **WHEN** the run continues and finishes
+- **THEN** the run itself succeeds
+- **AND** the final record reports the number of failed progress writes rather
+  than presenting itself as a healthy recording
+
+### Requirement: File fetching can be deferred off the synchronization request (REQ-023)
+
+A source SHALL be able to opt into fetching its objects' files **outside** the
+synchronization request, via `configuration.fileFetchMode: async` (default
+`sync`, which keeps the existing in-request behaviour unchanged).
+
+This exists because the in-request path is not actually asynchronous:
+`startAsyncFileFetching()` calls `executeAsyncFileFetching()` inline, so
+"fire-and-forget" there means *errors are swallowed*, not *work is deferred* —
+every download and every save happens while the caller's HTTP request is still
+open. Measured: 7,507 ms for a run with no files against 17,256 ms with 40, even
+with the fetch window fully parallel (REQ-004's concurrency does not remove the
+wall-clock, it only bounds it).
+
+When the mode is `async` the system SHALL enqueue one one-shot `QueuedJob` per
+object instead of fetching inline, so the synchronization returns as soon as its
+objects are written and the files arrive afterwards on the cron worker. Each
+deferred job SHALL:
+
+- Carry the config, endpoint, object id and rule id it needs in its argument.
+- **Drop the job with a logged reason** when that argument is absent or
+  incomplete, rather than proceeding on partial input.
+- **Contain its own failures**: a fetch that throws SHALL be logged and SHALL
+  NOT take the worker down, because the next job in the queue is another
+  object's.
+
+@e2e exclude backend deferred file-fetch queueing and cron execution — covered by PHPUnit, not browser UI
+
+#### Scenario: an async source returns before its files are fetched
+
+- **GIVEN** a source configured with `fileFetchMode: async`
+- **WHEN** a synchronization writes its objects
+- **THEN** the run returns without downloading any file
+- **AND** one deferred fetch job is queued per object
+
+#### Scenario: the default mode is unchanged
+
+- **GIVEN** a source with no `fileFetchMode` set
+- **WHEN** a synchronization processes an object with files
+- **THEN** files are fetched in-request exactly as before, under REQ-004
+
+#### Scenario: an incomplete job argument is dropped, not guessed
+
+- **GIVEN** a queued fetch job whose argument is not an array, or is missing
+  config, endpoint, or object id
+- **WHEN** the job runs
+- **THEN** it records why it was dropped and performs no fetch
+
+#### Scenario: one object's failed fetch does not affect the next
+
+- **GIVEN** a queued fetch job whose fetch throws
+- **WHEN** the job runs
+- **THEN** the error is logged against that object id
+- **AND** the worker continues with the next queued job

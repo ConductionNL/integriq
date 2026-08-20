@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * ⚠️ A background job that never runs is indistinguishable from one that
  * succeeded. Verified on this instance before relying on it:
  * `backgroundjobs_mode=cron`, with `oc_jobs.last_run` one minute old.
+ *
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
  */
 class FetchFilesJob extends QueuedJob {
 
@@ -71,6 +73,8 @@ class FetchFilesJob extends QueuedJob {
 	 * @param mixed $argument The queued arguments: config, endpoint, objectId, ruleId.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
 	 */
 	protected function run($argument): void {
 		if (is_array($argument) === false) {
