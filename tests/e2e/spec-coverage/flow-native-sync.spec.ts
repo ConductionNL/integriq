@@ -874,25 +874,33 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'the canvas must mount bound to THIS flow, not an empty new-flow shell',
 		).toBeVisible({ timeout: 30_000 })
 
-		// One node per step, identified by the per-type modifier class rather
-		// than by a count: a count of ten is satisfied by ten copies of the
+		// Each step type, identified by its per-type modifier class rather than
+		// by a total: a count of eleven is satisfied by eleven copies of the
 		// wrong node, and `explode` being present is the whole point.
-		for (const type of [
-			'openregister-trigger-manual',
-			'openconnector-source-paginate',
-			'openregister-explode',
-			'openconnector-apply-mapping',
-			'openconnector-contract',
-			'openregister-set-fields',
-			'openregister-object-write',
-			'openconnector-contract-commit',
-			'openconnector-contract-sweep',
-			'openregister-end',
-		]) {
+		//
+		// `set-fields` appears TWICE and the expected count says so. Both are
+		// load-bearing and neither is a duplicate: `target-uuid` resolves the
+		// uuid the write matches on (empty for a create, which makes the match
+		// MISS rather than throw), and `synced-id` names the target id this
+		// pass REACHED — written or skipped — because `contract-sweep` deletes
+		// whatever its items do not name and a skipped item has no `written`
+		// block at all.
+		for (const [type, expected] of [
+			['openregister-trigger-manual', 1],
+			['openconnector-source-paginate', 1],
+			['openregister-explode', 1],
+			['openconnector-apply-mapping', 1],
+			['openconnector-contract', 1],
+			['openregister-set-fields', 2],
+			['openregister-object-write', 1],
+			['openconnector-contract-commit', 1],
+			['openconnector-contract-sweep', 1],
+			['openregister-end', 1],
+		] as Array<[string, number]>) {
 			await expect(
 				page.locator(`.cn-flow-detail__node--${type}`),
-				`the ${type} step must be drawn on the canvas`,
-			).toHaveCount(1)
+				`the canvas must draw ${expected} ${type} step(s)`,
+			).toHaveCount(expected)
 		}
 
 		// ⚠️ toHaveCount, never toBeVisible. An edge is an SVG <path>, and a
