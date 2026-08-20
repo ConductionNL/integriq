@@ -1522,3 +1522,85 @@ deferred job SHALL:
 - **WHEN** the job runs
 - **THEN** the error is logged against that object id
 - **AND** the worker continues with the next queued job
+
+### Requirement: Change detection is independent of how a timestamp is typed (REQ-024)
+
+The skip test SHALL compare timestamps by value, not by PHP's ordering of
+whatever type each side happens to be. A `Mapping`'s `getUpdated()` is a
+`DateTime`; a contract's `sourceLastChecked` is an ATOM **string**; PHP does not
+order an object against a string, so the mapping-freshness clause was false for
+every mapped synchronization and the skip branch could never be taken.
+
+Consequence, measured on the 2000-dataset CKAN benchmark with identical source
+data: **1854 skipped without a mapping, 0 skipped with one**, and a steady-state
+run of 6.8 s against 17.7 s. Every object of every mapped synchronization was
+rewritten on every run, forever.
+
+When either side is absent or unparseable the comparison SHALL yield false, so
+the run falls through to the update path. "Cannot prove it is older" must never
+silently skip a write.
+
+@e2e exclude backend change-detection internals — covered by PHPUnit, not browser UI
+
+#### Scenario: a mapping older than the last check does not force an update
+
+- **GIVEN** a contract whose `originHash` still matches the source
+- **AND** a mapping whose `updated` is earlier than the contract's `sourceLastChecked`
+- **WHEN** the object is processed
+- **THEN** the run skips it, exactly as it would with no mapping at all
+
+#### Scenario: a mapping changed since the last check still forces an update
+
+- **GIVEN** the same unchanged contract
+- **AND** a mapping whose `updated` is LATER than `sourceLastChecked`
+- **WHEN** the object is processed
+- **THEN** it is re-mapped and written — the freshness clause must keep working
+  in the direction it was written for
+
+#### Scenario: an unparseable timestamp does not skip a write
+
+- **GIVEN** a contract whose `sourceLastChecked` is missing or unparseable
+- **WHEN** the object is processed
+- **THEN** the run takes the update path rather than skipping
+
+### Requirement: A contract is upserted on its own identity (REQ-025)
+
+Persisting a `SynchronizationContract` SHALL key the upsert on the contract's
+own identity, so that re-running a synchronization updates the contract it
+already has rather than minting another one.
+
+The identity is the payload's `uuid` when present, otherwise its `id` **when
+that `id` is not numeric**. A contract read back from OpenRegister carries no
+`uuid` property at all — its identity comes back AS `id`, and that `id` is a uuid
+string. Reading `uuid` alone therefore produced a null upsert key and every save
+created a new object.
+
+Consequence, measured: four **distinct** contract objects for a single
+`(synchronizationId, originId)`, one per run, each carrying an **identical**
+`originHash` — so the source demonstrably had not changed. On the dev instance
+`synchronization_contract` held **528,656** rows.
+
+A numeric `id` SHALL still be refused as an upsert key and dropped from the
+payload: it is a legacy identifier, not an OpenRegister one, and it would break
+OpenRegister's `trim($object['id'])` upsert probe.
+
+@e2e exclude backend contract persistence internals — covered by PHPUnit, not browser UI
+
+#### Scenario: re-running a synchronization does not multiply contracts
+
+- **GIVEN** a synchronization that has already written a contract for an origin
+- **WHEN** the synchronization runs again and that object takes the update path
+- **THEN** the existing contract is updated in place
+- **AND** the number of contracts for that `(synchronizationId, originId)` stays 1
+
+#### Scenario: a contract read back from OpenRegister is upserted on its `id`
+
+- **GIVEN** a contract payload that carries `id` (a uuid string) and no `uuid`
+- **WHEN** it is persisted
+- **THEN** the save is keyed on that `id`
+
+#### Scenario: a legacy numeric id is not used as an upsert key
+
+- **GIVEN** a contract payload whose `id` is numeric and which has no `uuid`
+- **WHEN** it is persisted
+- **THEN** no upsert key is derived from it and `id` is dropped from the payload
