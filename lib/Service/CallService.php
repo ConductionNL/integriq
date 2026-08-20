@@ -449,6 +449,13 @@ class CallService
 			unset($config['json']);
 		}
 
+		// Guzzle must be left to compute its own multipart boundary Content-Type header. An explicit
+		// Content-Type (e.g. inherited from the source's default headers, merged in above) would
+		// otherwise silently mismatch the actual multipart/form-data body being sent.
+		if (isset($config['multipart']) === true) {
+			unset($config['headers']['Content-Type'], $config['headers']['content-type']);
+		}
+
         if ($source->getType() === 'soap') {
 			// If the source type is SOAP, use the soap service.
 			// Warning: This functionality requires ext-soap and ext-xsd.
