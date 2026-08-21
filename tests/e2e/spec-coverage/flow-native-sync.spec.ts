@@ -203,7 +203,10 @@ function occ(): OccRunner {
 	let dir = path.resolve(__dirname, '..', '..', '..')
 	for (let up = 0; up < 6; up++) {
 		const candidate = path.join(dir, 'occ')
-		if (fs.existsSync(candidate) === true && occAnswers(candidate, dir) === true) {
+		if (
+			fs.existsSync(candidate) === true
+			&& occAnswers(candidate, dir) === true
+		) {
 			occRunner = {
 				how: `php ${candidate}`,
 				run: (args) =>
@@ -1190,7 +1193,10 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			configurations: [],
 		})
 		unmappedSyncId = String(unmapped.id ?? unmapped.uuid)
-		expect(unmappedSyncId, 'the unmapped synchronization must persist').toBeTruthy()
+		expect(
+			unmappedSyncId,
+			'the unmapped synchronization must persist',
+		).toBeTruthy()
 
 		const doc = parseOccJson(
 			occ().run([
