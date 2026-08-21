@@ -323,3 +323,77 @@ decomposed flow can meet or beat `synchronization-run`; it can, on this corpus,
 on a quiet box. It does not follow that the legacy pages should be removed —
 that is a product call, and the deprecation path, migration coverage and the
 528,656 pre-existing duplicate contract rows are separate questions.
+
+---
+
+# CORRECTION 2026-08-21 — "14.6% faster" was noise. It is a TIE.
+
+The verdict recorded immediately above is **wrong on the margin** and is
+corrected here. 2.2 is still MET, but the flow does not beat legacy — it
+**matches** it.
+
+## What happened
+
+The box qualified again, and far more quietly than for the previous set:
+
+| | loadavg samples | nextcloud samples |
+|---|---|---|
+| previous set | 1.95 / 1.86 / 1.59 | 0.00% / 0.00% / 1.80% |
+| **this set** | **0.44 / 0.72 / 0.51** | **0.01% / 0.00% / 0.00%** |
+
+That is essentially the original 0.36 baseline. All three figures were re-taken,
+and the third flow run — the one previously caveated — was taken clean.
+
+## Corrected results
+
+| configuration | mean | runs | spread |
+|---|---|---|---|
+| legacy, unmapped | **7.48 s** | 6.98 / 7.32 / 8.15 | 1.17 |
+| legacy, **mapped** | **18.91 s** | 17.93 / 19.24 / 19.56 | 1.63 |
+| **decomposed flow** | **18.90 s** | 16.42 / 20.82 / 19.45 | 4.40 |
+
+Contract delta **0** on all three mapped runs, again.
+
+### Verdict — 2.2 is MET on parity, NOT on a margin
+
+**18.90 s against 18.91 s: a difference of 0.006 s, which is 688x smaller than
+the flow's own run-to-run spread of 4.40 s.** These are indistinguishable. The
+honest statement is that the decomposed flow *matches* `synchronization-run`;
+2.2 asked for "meet or beat" and meeting is satisfied.
+
+The previously recorded **14.6% faster** came from comparing a 20.38 s flow
+figure against a 23.87 s legacy figure, both taken at loadavg 1.6-2.5. Both were
+inflated by contention, and unequally so. **The margin was an artefact of the
+noise floor, not a property of the engines.**
+
+## The lesson, which is the same one twice
+
+A quiet-enough gate is not a quiet gate. The previous set passed a bar of
+loadavg < 2.0 and was still contended enough to manufacture a 14.6% difference
+out of two engines that are actually tied. **When the difference between two
+measurements is smaller than the spread within either one, there is no
+difference — report the tie.** The spread column is not decoration; it is the
+thing that decides whether a margin exists at all.
+
+## What does NOT change
+
+Everything that rests on counts rather than wall clocks stands unchanged:
+
+- contract delta **0** — D1/D2 remain fixed
+- `write` at **3-11 ms** — `skipWhen` still skips all 2000; the decomposition is
+  still nearly free
+- **mapping still dominates both engines**: `map` is 8.9-9.7 s of the flow's
+  ~19 s, and legacy still pays **11.4 s** more mapped than unmapped
+  (18.91 vs 7.48) on a run that skips all 2000 objects and writes nothing,
+  because the mapping is resolved per item before the skip decision
+
+That last point is the actionable output of this task and it is now measured on
+a genuinely quiet box, on both engines, twice.
+
+## Operational note for anyone re-running this
+
+`FlowRunWorker` declares `setInterval(seconds: 60)` — a floor, not a schedule.
+Driving `cron.php` repeatedly inside 60 s does nothing: the worker is skipped and
+the run stays `queued`, which looks exactly like a stalled engine. Space cron
+ticks more than 60 s apart, or you will conclude the flow is broken when it is
+merely not yet eligible.

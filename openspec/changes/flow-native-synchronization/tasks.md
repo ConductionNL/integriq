@@ -43,29 +43,28 @@
       cursor in `flow-state`; the generated flow delegates paging to
       `source-paginate`, which keeps the cursor on the synchronization.
 - [x] 2.2 Benchmark: decomposed flow vs `synchronization-run` on the 2000-
-      dataset CKAN run — MET. Measured 2026-08-21 on a quiet box (loadavg
-      1.95/1.86/1.59, nextcloud 0.00/0.00/1.80%), all three figures taken
-      back to back after D1+D2 were fixed:
-        legacy unmapped  7.84 s  (7.71 / 7.97)
-        legacy MAPPED   23.87 s  (22.38 / 25.08 / 24.15), contract delta 0
-        decomposed      20.38 s  (21.56 / 19.20)
-      The fair bar is MAPPED — the flow is generated from the mapped sync and
-      does the same mapping. **20.38 s vs 23.87 s = 14.6% FASTER** (11.9% if
-      the caveated third flow run is included). It does NOT beat the unmapped
-      7.84 s, but an unmapped sync does no mapping at all.
-      CAVEAT, recorded not buried: external load returned during the third
-      flow run. Eight of nine runs carry a nextcloud-idle reading taken
-      immediately after them; that one does not. The verdict holds on the
-      clean runs alone and with it included, so the direction is not in
-      question — a re-take would only tighten the figure.
-      THE REAL FINDING: mapping dominates BOTH engines. `map` is ~60% of the
-      flow's total (10.8-13.7 s), and legacy pays a 16 s penalty for a mapping
-      on a run that skips all 2000 objects and writes nothing, because the
-      mapping is resolved PER ITEM before the skip decision. `write` at
-      11-18 ms shows the decomposition itself is nearly free. Optimise the
-      mapping, not the decomposition.
-      3.4 STAYS GATED on a human decision — 2.2 answers whether the flow CAN
-      meet or beat, not whether the legacy pages should go.
+      dataset CKAN run — MET, on PARITY not on a margin. Re-measured
+      2026-08-21 on a properly quiet box (loadavg 0.44/0.72/0.51, nextcloud
+      0.01/0.00/0.00% — essentially the original 0.36 baseline):
+        legacy unmapped   7.48 s  (6.98 / 7.32 / 8.15), spread 1.17
+        legacy MAPPED    18.91 s  (17.93 / 19.24 / 19.56), spread 1.63,
+                                  contract delta 0
+        decomposed       18.90 s  (16.42 / 20.82 / 19.45), spread 4.40
+      18.90 vs 18.91 is a difference of 0.006 s — 688x SMALLER than the
+      flow's own run-to-run spread. They are indistinguishable. The flow
+      MATCHES the legacy engine; "meet or beat" is satisfied by meeting.
+      CORRECTION: an earlier entry claimed 14.6% FASTER (20.38 vs 23.87).
+      Both those figures were taken at loadavg 1.6-2.5 and were inflated by
+      contention, unequally. The margin was an artefact of the noise floor,
+      not a property of the engines. When the difference between two
+      measurements is smaller than the spread within either, report the tie.
+      UNCHANGED (counts, not wall clocks): contract delta 0; `write` 3-11 ms
+      so `skipWhen` still skips all 2000 and the decomposition is nearly
+      free; and MAPPING STILL DOMINATES BOTH ENGINES — `map` is 8.9-9.7 s of
+      the flow's ~19 s, and legacy pays 11.4 s more mapped than unmapped on a
+      run that writes nothing, because the mapping is resolved PER ITEM
+      before the skip decision. Optimise the mapping, not the decomposition.
+      3.4 STAYS GATED on a human decision.
 - [x] 2.3 Re-run idempotency. `contract-commit` never wrote `targetHash`, so
       `ContractMatchNode::isUnchanged()` could never hold and `skip` was
       unreachable (#1297). Measured live: contracts went 18/18 rewritten to
