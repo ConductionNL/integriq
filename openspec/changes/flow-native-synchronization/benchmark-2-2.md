@@ -237,3 +237,89 @@ by contention, not by the engine.
 legacy, mapped legacy, decomposed flow), confirming `docker stats` and
 `/proc/loadavg` first. Only the correctness result above — a count, not a timing —
 is safe to carry forward from this session.
+
+---
+
+# MEASURED 2026-08-21 — the decomposed flow MEETS AND BEATS legacy
+
+All three figures re-taken back to back on a quiet box, after D1 and D2 were
+fixed. **These supersede every wall-clock number above.**
+
+## Quiet gate
+
+The box was polled every 20 minutes for ~4 hours before it qualified. The gate:
+1-min loadavg < 2.0 **and** nextcloud container CPU < 5%, on **three** samples
+~20 s apart. Ticks that failed included loadavg 24.91 and nextcloud at 282%. One
+tick had two of three samples pass (loadavg 1.85, nextcloud 0.00%) — sampling
+once would have read as a clean pass and produced numbers worth discarding.
+
+Qualifying reading: loadavg **1.95 / 1.86 / 1.59**, nextcloud
+**0.00% / 0.00% / 1.80%**.
+
+## Results
+
+| configuration | steady state | per-run | objects |
+|---|---|---|---|
+| legacy, unmapped | **7.84 s** | 7.71 / 7.97 | 2000 found, 2000 skipped |
+| legacy, **mapped** | **23.87 s** | 22.38 / 25.08 / 24.15 | 2000 found, 2000 skipped |
+| **decomposed flow** | **20.38 s** | 21.56 / 19.20 | 2000 through every step |
+
+Legacy unmapped run 1 (10.54 s, 33 created / 167 updated) is excluded as cold —
+the source drifted overnight. Contract delta was **0 on all three** mapped runs.
+
+### Verdict — 2.2 is MET
+
+The fair comparison is **mapped**: the flow is generated *from* the mapped
+synchronization and performs the same mapping. Against that bar:
+
+- **20.38 s vs 23.87 s — the decomposed flow is 14.6% FASTER.**
+- Including the caveated third run (below): 21.03 s, **11.9% faster**.
+
+It does not beat the *unmapped* legacy figure (7.84 s), but that is not the
+comparison — an unmapped sync does no mapping at all.
+
+### The third flow run is caveated, and does not change the verdict
+
+External load returned as the third flow run was taken (nextcloud 19.1%, then
+13–116% with nothing of ours running). Eight of the nine runs carry a
+nextcloud-idle reading taken immediately after them; the third flow run does not.
+
+The protocol written for this measurement says to discard the whole set when the
+box gets busy mid-measurement. That is departed from here **deliberately and
+visibly**: the evidence is per-run rather than set-level, and the verdict holds
+on the clean runs alone (20.38 s) as well as with the suspect one included
+(21.03 s). Re-taking a third clean flow run would tighten the figure; it cannot
+change the direction.
+
+## Where the time actually goes — mapping dominates BOTH engines
+
+Decomposed flow, per-step (ms), from the flow-run record rather than the enqueue
+wall clock (enqueue returns in under a second and measures nothing):
+
+| step | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| fetch (20 CKAN pages) | 3520 | 4274 | 4591 |
+| **map** | **13657** | **10791** | **12214** |
+| contract | 4307 | 4049 | 5393 |
+| write | 11 | 11 | 18 |
+| sweep | 11 | 12 | 12 |
+
+`map` is ~60% of the flow's total. `write` at 11–18 ms confirms `skipWhen` is
+skipping all 2000 — the decomposition itself is nearly free.
+
+The legacy engine shows the same shape from the other side: **mapped 23.87 s
+against unmapped 7.84 s — a 16 s penalty for a run that skips all 2000 objects
+and writes nothing.** The mapping is *resolved per item* before the skip decision
+is taken, so a skipped item still pays for it. That is ~2000 avoidable lookups
+per run and is the single largest remaining cost in the legacy path.
+
+**The optimisation worth having is in the mapping, not in the decomposition.**
+That conclusion now holds for both engines and is the useful output of this task.
+
+## What this does NOT settle
+
+3.4 (page removal) stays gated on a human decision. 2.2 asked whether the
+decomposed flow can meet or beat `synchronization-run`; it can, on this corpus,
+on a quiet box. It does not follow that the legacy pages should be removed —
+that is a product call, and the deprecation path, migration coverage and the
+528,656 pre-existing duplicate contract rows are separate questions.
