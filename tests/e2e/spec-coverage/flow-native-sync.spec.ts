@@ -119,10 +119,18 @@ const SEED = [
  *    tree, so no `occ` exists above this file and the command has to cross the
  *    container boundary.
  *
- * Both are POSITIVE detections — an `occ` file that exists, or a container
- * that answers `docker inspect` — so a wrong answer is impossible rather than
- * merely unlikely. When neither resolves, the helper THROWS: a spec that
- * quietly skipped its own subject would be an invisible pass.
+ * Both are POSITIVE detections — an `occ` that ANSWERS, or a container that
+ * answers `docker inspect`. When neither resolves, the helper THROWS: a spec
+ * that quietly skipped its own subject would be an invisible pass.
+ *
+ * CORRECTION, found by running this spec from the dev checkout: this comment
+ * used to say the file EXISTING made a wrong answer "impossible". It does not.
+ * `server/occ` exists on this box and its Nextcloud is not installed, so it
+ * answers every app command with `There are no commands defined in the
+ * "openconnector" namespace` — a present instrument wired to nothing, while a
+ * working container sat one branch further down and was never reached. An
+ * existence check is not a functional check, so candidate 2 now has to prove
+ * it can see the app before it is accepted.
  */
 interface OccRunner {
 	/** Human-readable description of how occ is reached, for failure messages. */
@@ -132,6 +140,37 @@ interface OccRunner {
 }
 
 let occRunner: OccRunner | null = null
+
+/**
+ * Does this `occ` actually reach an installed Nextcloud with the app enabled?
+ *
+ * An uninstalled Nextcloud still ships a working `occ` — it just exposes a
+ * reduced command set and says so. Asking it to list the app's own namespace
+ * is the cheapest question whose answer distinguishes "the instrument works"
+ * from "the instrument is present", and it is the exact capability every
+ * caller here depends on.
+ *
+ * @param candidate Absolute path to the occ file.
+ * @param dir       The directory to run it from.
+ *
+ * @return Whether it can see the app's commands.
+ */
+function occAnswers(candidate: string, dir: string): boolean {
+	try {
+		const listed = execFileSync('php', [candidate, 'list', 'openconnector'], {
+			encoding: 'utf8',
+			cwd: dir,
+			maxBuffer: 32 * 1024 * 1024,
+			stdio: ['ignore', 'pipe', 'pipe'],
+		})
+		return listed.includes('openconnector:synchronization-to-flow')
+	} catch {
+		// A non-zero exit is the uninstalled case ("There are no commands
+		// defined in the \"openconnector\" namespace") and also the
+		// no-PHP/broken-config case. All of them mean: not this one.
+		return false
+	}
+}
 
 /**
  * Resolve the occ invocation for this environment.
@@ -160,11 +199,11 @@ function occ(): OccRunner {
 		return occRunner
 	}
 
-	// 2. An `occ` file above this checkout — the CI layout.
+	// 2. An `occ` above this checkout that ANSWERS — the CI layout.
 	let dir = path.resolve(__dirname, '..', '..', '..')
 	for (let up = 0; up < 6; up++) {
 		const candidate = path.join(dir, 'occ')
-		if (fs.existsSync(candidate) === true) {
+		if (fs.existsSync(candidate) === true && occAnswers(candidate, dir) === true) {
 			occRunner = {
 				how: `php ${candidate}`,
 				run: (args) =>
@@ -362,6 +401,8 @@ let api: ApiClient
 let pipeline: Pipeline
 let flowId = ''
 let generated: Record<string, unknown> | null = null
+/** The UNMAPPED synchronization and the flow generated from it. */
+let unmappedSyncId = ''
 
 /** Target-object `@self.updated` stamps, captured either side of the second run. */
 let updatedAfterFirstRun: Record<string, string> = {}
@@ -707,6 +748,11 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 						{ failOnStatusCode: false },
 					)
 				}
+			}
+			// The unmapped synchronization first: it shares the source and target
+			// this block is about to remove.
+			if (unmappedSyncId !== '') {
+				await deleteObject(api, 'synchronization', unmappedSyncId)
 			}
 			await deleteObject(api, 'synchronization', pipeline.syncId)
 			await deleteObject(api, 'mapping', pipeline.mappingId)
@@ -1107,5 +1153,137 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		// Both are `flow-native-synchronization` task 1.1 work (the rate-limit
 		// suspension moves into source-paginate there), so this is blocked on
 		// that task rather than on the harness alone.
+	})
+
+	/* -------------------------------------------------------------------
+	 * 5. A synchronization with NO mapping — generated, and preflighted
+	 *    against the LIVE node registry
+	 * ---------------------------------------------------------------- */
+
+	// @e2e synchronization-engine::mapping-transforms-source-into-target-shape
+	// @e2e synchronization-engine::or-target-write-records-a-contract
+	test('a synchronization with NO mapping generates, and the live registry accepts payloadFrom', async () => {
+		test.setTimeout(120_000)
+
+		// THIS TEST EXISTS BECAUSE THE UNIT SUITE CANNOT DO IT.
+		// SynchronizationFlowGeneratorTest constructs the five OPENCONNECTOR
+		// nodes and hands them their generated config, so it catches a key that
+		// drifts out of THEIR vocabulary. `openregister.object-write` is not
+		// among them, so a `payloadFrom` that the deployed node does not read
+		// would pass every unit test and fail at flow-save time on a real
+		// instance. Only the live preflight closes that, which is why this
+		// asserts against the instance rather than a double.
+		const unmapped = await createObject(api, 'synchronization', {
+			name: `${RUN}-unmapped`,
+			description: RUN,
+			sourceId: pipeline.sourceId,
+			sourceType: 'api',
+			sourceConfig: { resultsPosition: 'results', idPosition: 'id' },
+			// No sourceTargetMapping. Before openregister #2684 + integriq #1334
+			// this was refused outright: "sourceTargetMapping is not set". That
+			// one refusal accounted for 98 of 99 measured refusals.
+			targetType: 'register/schema',
+			targetId: `${pipeline.registerId}/${pipeline.targetSchemaId}`,
+			conditions: [],
+			followUps: [],
+			actions: [],
+			configurations: [],
+		})
+		unmappedSyncId = String(unmapped.id ?? unmapped.uuid)
+		expect(unmappedSyncId, 'the unmapped synchronization must persist').toBeTruthy()
+
+		const doc = parseOccJson(
+			occ().run([
+				'openconnector:synchronization-to-flow',
+				unmappedSyncId,
+				'--json',
+			]),
+			'openconnector:synchronization-to-flow (unmapped)',
+		) as Record<string, unknown>
+
+		const nodes = doc.nodes as Array<Record<string, unknown>>
+		const types = nodes.map((node) => String(node.type))
+
+		// No mapping means no map STEP. `edgesFor()` chains on array order, so
+		// the pipeline has to close around the gap rather than leave a dangling
+		// reference to a node that was never emitted.
+		expect(
+			types,
+			'an unmapped synchronization generates the same pipeline WITHOUT apply-mapping',
+		).toEqual([
+			'openregister.trigger-manual',
+			'openconnector.source-paginate',
+			'openregister.explode',
+			'openconnector.contract',
+			'openregister.set-fields',
+			'openregister.object-write',
+			'openregister.set-fields',
+			'openconnector.contract-commit',
+			'openconnector.contract-sweep',
+			'openregister.end',
+		])
+
+		const edges = doc.edges as Array<Record<string, unknown>>
+		const fromExplode = edges.filter((edge) => String(edge.from) === 'explode')
+		expect(
+			fromExplode.map((edge) => String(edge.to)),
+			'explode must chain straight to contract with no map step between',
+		).toEqual(['contract'])
+
+		const nodeById = (id: string): Record<string, unknown> =>
+			nodes.find((node) => String(node.id) === id) as Record<string, unknown>
+		const writeConfig = nodeById('write').config as Record<string, unknown>
+
+		expect(
+			writeConfig.payloadFrom,
+			'the write step writes the SOURCE object whole',
+		).toBe('source')
+		expect(
+			writeConfig.fields,
+			'`fields` and `payloadFrom` are alternatives — object-write refuses both together',
+		).toBeUndefined()
+
+		// The commit must hash what was WRITTEN. Hashing a `target` that never
+		// existed would leave targetHash empty and make the skip test
+		// unreachable — the defect task 2.3 already had to fix once.
+		const commitConfig = nodeById('commit').config as Record<string, unknown>
+		expect(
+			commitConfig.targetHashPosition,
+			'with no mapping the commit hashes the source, not a target that was never produced',
+		).toBe('source')
+
+		// THE ASSERTION THIS TEST IS FOR: the LIVE registry, not a double.
+		const verdict = await post(
+			`${OR}/flow/validate`,
+			doc,
+			'preflighting the unmapped generated flow',
+		)
+		expect(
+			verdict.blocking,
+			'the deployed object-write must READ payloadFrom — a node that ignores a '
+				+ 'configured key is a step that reports success having done nothing: '
+				+ JSON.stringify(verdict.blocking),
+		).toEqual([])
+		expect(verdict.valid, 'and the verdict itself is positive').toBe(true)
+
+		// NEGATIVE CONTROL, same endpoint, same document, one key renamed. Without
+		// it a green verdict could mean the preflight simply accepts anything.
+		const bogus = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>
+		const bogusWrite = (bogus.nodes as Array<Record<string, unknown>>).find(
+			(node) => String(node.id) === 'write',
+		) as Record<string, unknown>
+		const bogusConfig = bogusWrite.config as Record<string, unknown>
+		delete bogusConfig.payloadFrom
+		bogusConfig.payloadFromm = 'source'
+
+		const refused = await post(
+			`${OR}/flow/validate`,
+			bogus,
+			'preflighting a deliberately misspelled payloadFrom',
+		)
+		expect(
+			refused.valid,
+			'a misspelled config key must be REFUSED, or the positive verdict above proves nothing',
+		).toBe(false)
 	})
 })
