@@ -2016,7 +2016,19 @@ class EndpointService
      */
     private function updateRequestWithRuleData(FlowToken $flowToken, array $ruleData): FlowToken
     {
-        $parameters = $ruleData['body']['_parameters'] ?? $flowToken->getRequestAmended()['parameters'];
+        // Use the full body produced by 'before' rules (e.g. a mapping rule adding/changing top-level
+        // fields) rather than just the untouched _parameters snapshot, so rule output actually reaches
+        // the save. Strip the underscore-prefixed bookkeeping keys that were merged in for rule context.
+        $parameters = $flowToken->getRequestAmended()['parameters'];
+        if (isset($ruleData['body']) === true && is_array($ruleData['body']) === true) {
+            $parameters = $ruleData['body'];
+            foreach (array_keys($parameters) as $key) {
+                if (is_string($key) === true && str_starts_with($key, '_') === true) {
+                    unset($parameters[$key]);
+                }
+            }
+        }
+
         $method = $ruleData['body']['_method'] ?? $flowToken->getRequestAmended()['method'];
         $headers = $ruleData['body']['_headers'] ?? $flowToken->getRequestAmended()['headers'];
 
