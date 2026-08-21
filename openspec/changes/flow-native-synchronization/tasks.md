@@ -120,3 +120,22 @@
 - [ ] 3.4 Page removal — LAST, after every live synchronization has a
       reviewed generated flow and 2.2 holds; `synchronization-run` deprecates
       with them.
+      STILL GATED ON A HUMAN DECISION, now with the number it was waiting for.
+      Migration coverage MEASURED across all 240 synchronizations on the dev
+      instance (full write-up in `migration-coverage.md`):
+        before `payloadFrom`:  20 / 119 cleanly judged = 16.8%
+        after  #2684 + #1334: 161 / 240                = 67.1%
+      `sourceTargetMapping is not set` went from 98 refusals to 0.
+      OF THE 79 REMAINING REFUSALS, 74 ARE `actions` — the synchronization
+      declares rules and no generated step evaluates them. The rest are single
+      digits (targetId shape 4, empty sourceType/targetType 2+2, file source 1,
+      api target 1, conditions 1, sourceHashMapping 1). 94% of what is left is
+      ONE cause, so measure whether rule evaluation can be expressed as flow
+      steps before assuming the scatter matters.
+      A PROJECTION OF ~99% WAS RECORDED IN #1334 AND WAS WRONG BY 30 POINTS. It
+      came from the earlier sweep, where 98 of 99 refusals were the missing
+      mapping — but that sweep judged only 119 of 240 before the instance
+      degraded, and the `actions`-heavy synchronizations sat in the part it
+      never reached. A partial measurement is not a proportional one.
+      TWO THIRDS IS NOT "THE PAGES CAN GO": a third of synchronizations still
+      cannot migrate, 74 of them for a reason nobody has designed for yet.
