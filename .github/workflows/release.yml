@@ -35,7 +35,18 @@ permissions:
 
 jobs:
   unstable:
-    if: false # unstable builds are disabled
+    # Enabled 2026-08-21 to complete the convergence. It was `if: false` while
+    # the legacy `release-development.yml` carried this channel, so the two
+    # never overlapped — that file is deleted in the same commit, and without
+    # this guard openconnector would simply stop publishing from development.
+    #
+    # ⚠️ THE TAG SHAPE CHANGES. The legacy workflow called a DIFFERENT shared
+    # workflow — `release-beta.yml@main` with `channel: dev` — which is why
+    # this app's development tags read `-dev.` (v0.3.4-dev.20260821092435)
+    # while the rest of the fleet reads `-unstable.`. Routing the channel
+    # through `release.yml`'s `unstable` job is what makes openconnector match
+    # the fleet, and it is a visible rename, not a silent one.
+    if: github.ref == 'refs/heads/development'
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable
