@@ -2,37 +2,87 @@
 
 ## 0. Dialog debt (independent, ship first)
 
-- [ ] 0.1 nextcloud-vue: `flowNodeEditors` registry +
+> ⚠️ THESE BOXES WERE UNTICKED WHILE THE WORK WAS DONE. Verified against the
+> code 2026-08-22: 0.1 and 0.4 shipped, and 0.2/0.3 describe a problem
+> `optionsFrom` had already solved. The checkbox is not the record — the code
+> is. A task list that lags the tree costs a later reader a day of rebuilding
+> something that exists, which is exactly what nearly happened here.
+
+- [x] 0.1 nextcloud-vue: `flowNodeEditors` registry +
       `registerFlowNodeEditor(nodeId, component)`; `CnFlowDetail` opens the
       registered editor over the generic dialog, same Done/Cancel/Remove
-      contract.
-- [ ] 0.2 openregister: catalogue `configFields`
-      (`{key, type, reference?: {register, schema}}`) alongside `configKeys`;
-      preflight keeps accepting both.
-- [ ] 0.3 nextcloud-vue: `CnFlowNodeEditModal` renders a reference field as a
+      contract. Live in `src/composables/useFlowNodeEditors.js`, exported from
+      `src/index.js`.
+- [x] 0.2 openregister: catalogue the typed config fields alongside
+      `configKeys`; preflight keeps accepting both.
+      NOT built as `configFields`. `IFlowNodeConfigForm::configForm()` already
+      returns `{key, label, type, help, required, optionsFrom}`, is already
+      exposed by `FlowNodeRegistry` and already rendered by the editor. A third
+      declaration beside `configKeys` and `configForm` is precisely what
+      `FlowNodeRegistry`'s own comment warns of — a second hand-maintained
+      table of keys "is only ever correct until the next node ships a key".
+      I DID BUILD A `reference` TYPE FOR THIS (or#2698) AND CLOSED IT. The
+      premise was false: `reference: {register, schema}` derives an objects URL,
+      and every caller already declares that URL directly via `optionsFrom`.
+      It would have been a second mechanism for a solved problem.
+- [x] 0.3 nextcloud-vue: the edit dialog renders an object-id field as a
       register/schema-backed select — no more bare uuid boxes.
-- [ ] 0.4 openconnector: register the Synchronization dialog as the editor for
+      ALREADY TRUE via `optionsFrom`. `CnFlowNodeEditModal` (in `src/dialogs/`,
+      not `src/components/`) renders `type: 'select'` + `optionsFrom` as a
+      picker, resolving a stored uuid to the object's NAME. nc-vue#732, which
+      would have rendered the `reference` type, is closed with or#2698.
+- [x] 0.4 openconnector: register the Synchronization dialog as the editor for
       `synchronization-run` (node fields output/maxItems/onError alongside);
-      Source picker for `source-call`.
+      Source picker for `source-call`. Live: `src/main.js` calls
+      `registerFlowNodeEditor` for `src/modals/v2/SynchronizationNodeEditor.vue`.
+
+> 📌 HOW 0.2/0.3 CAME TO BE WRITTEN, AND THE MEASUREMENT LESSON. I first
+> reported them unstarted because I grepped for `configFields` — the name in
+> THIS FILE — and found 0 hits, then read 0 hits as "nothing exists". The code
+> calls it `configForm`. A search for the name a plan uses measures whether the
+> plan's vocabulary was adopted, not whether its goal was met; when the answer
+> is zero, the next question is what the code calls the thing, not whether the
+> thing is missing.
 
 ## 1. Engine steps (each a thin adapter over a KEPT service)
 
-- [ ] 1.1 `openconnector.source-paginate` — one item per page; bounded
+- [x] 1.1 `openconnector.source-paginate` — one item per page; bounded
       concurrent fetches via `FlowConcurrency` once the total is known;
       rate-limit suspension (`FlowSuspension`, 60s–3600s bounds) moves here.
-- [ ] 1.2 `openconnector.apply-mapping` — `MappingService` over the whole
-      page inside one execution.
-- [ ] 1.3 `openconnector.contract` — one `IN (sourceIds…)` lookup per page
+      `lib/Flow/SourcePaginateNode.php`.
+- [x] 1.2 `openconnector.apply-mapping` — `MappingService` over the whole
+      page inside one execution. `lib/Flow/ApplyMappingNode.php`.
+- [x] 1.3 `openconnector.contract` — one `IN (sourceIds…)` lookup per page
       via `SynchronizationContractService`; hash compare; stamps
-      create/update/skip + targetId.
-- [ ] 1.4 openregister: `object-write` gains `bulk: true` →
-      `ObjectService::saveObjects()`.
-- [ ] 1.5 `openconnector.contract-commit` — bulk contract upsert + log rows,
-      stamped with the run id.
-- [ ] 1.6 `openconnector.contract-sweep` — contracts not stamped by this
+      create/update/skip + targetId. Shipped as `ContractMatchNode` (the type
+      id is still `openconnector.contract`).
+- [x] 1.4 openregister: `object-write` gains `bulk: true` →
+      `ObjectService::saveObjects()`. Declared in `ObjectWriteNode::configKeys()`
+      and read in its config guard.
+- [x] 1.5 `openconnector.contract-commit` — bulk contract upsert + log rows,
+      stamped with the run id. `lib/Flow/ContractCommitNode.php`.
+- [x] 1.6 `openconnector.contract-sweep` — contracts not stamped by this
       run → delete/flag per config; refuses to run after a partial pass.
-- [ ] 1.7 Every node: `configKeys`/`configFields`, vocabulary pinned by unit
+      `lib/Flow/ContractSweepNode.php`.
+- [x] 1.7 Every node: `configKeys`/`configForm`, vocabulary pinned by unit
       test (the SourceCallNode/SynchronizationRunNode pattern), log links.
+      All 7 nodes declare both, and each has a vocabulary-pinning test.
+      LOG LINKS WERE THE ONLY PART ACTUALLY MISSING: SourceCallNode had them
+      and the other six did not, so a run-log entry offered no way back to the
+      synchronization it acted on. Closed by `SynchronizationLogActions`, a
+      trait shared by paginate, commit, sweep and the legacy run node.
+      TWO NODES DELIBERATELY GET NO LINK. `apply-mapping` and `contract` stamp
+      no reference into the items they emit, and the log entry carries `input`,
+      `output` and timings but NO CONFIG — so there is nothing to build a link
+      from without first changing what those nodes emit. `IFlowNodeLogActions`
+      says an entry with nothing to point at must return an empty array rather
+      than link to a list page, and not implementing it is that answer stated
+      once instead of per call.
+      ⚠️ THE LINK IS BUILT WITHOUT RESOLVING ANYTHING. `FlowController::logActions()`
+      is `NoAdminRequired` and passes the caller's POST body through verbatim,
+      so the reference is attacker-controlled: it is escaped into the fragment
+      and never looked up. A link built from a lookup would disclose, by its
+      mere presence, that a record the caller may not read exists.
 
 ## 2. The canonical flow, proven
 
@@ -139,3 +189,9 @@
       never reached. A partial measurement is not a proportional one.
       TWO THIRDS IS NOT "THE PAGES CAN GO": a third of synchronizations still
       cannot migrate, 74 of them for a reason nobody has designed for yet.
+      DECIDED 2026-08-22 (Ruben, with the number in hand): KEEP THE PAGES, and
+      design rule evaluation as flow steps FIRST. Removing them at 67.1% would
+      strand ~79 live synchronizations without a working generated flow. 3.4
+      stays open, but it is no longer waiting on a measurement — it is waiting
+      on the `actions` design, which is now the single blocking piece of work
+      for this whole change.
