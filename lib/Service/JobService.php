@@ -489,7 +489,11 @@ class JobService {
 		$jobData['lastRun'] = (new DateTime())->format('c');
 		if ($forceRun === false) {
 			if ($executionThrew === false) {
-				$nextRunDt = new DateTime('now + ' . ($jobData['interval'] ?? 0) . ' seconds');
+				// Read from $jobConfig, the job AS LOADED: $jobData has been
+				// mutated above (lastRun) and static analysis narrows it to the
+				// keys this method assigns, so `interval` reads as non-existent.
+				// Same remedy the comment at the top of this method describes.
+				$nextRunDt = new DateTime('now + ' . ($jobConfig['interval'] ?? 0) . ' seconds');
 
 				// Handle rate limiting if specified in result.
 				if (isset($result['nextRun']) === true) {
@@ -508,7 +512,7 @@ class JobService {
 			} else {
 				// On failure advance by the job's interval so it doesn't block
 				// the next cron tick (same logic as run()'s catch block).
-				$nextRunDt = new DateTime('now + ' . ((int)($jobData['interval'] ?? 0)) . ' seconds');
+				$nextRunDt = new DateTime('now + ' . ((int)($jobConfig['interval'] ?? 0)) . ' seconds');
 			}//end if
 
 			// Set time to the current hour and minute (remove seconds).
