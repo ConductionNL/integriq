@@ -37,6 +37,7 @@ use OCA\OpenConnector\Flow\SourcePaginateNode;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
+use OCA\OpenConnector\Service\SynchronizationSemanticRefusals;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -101,7 +102,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub.
+			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
 		);
 
 	}//end setUp()
@@ -554,10 +558,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				['sourceConfig' => ['idsToReplaceWithTargetIdsBeforeRules' => ['a' => 'b']]],
 				'sourceConfig.idsToReplaceWithTargetIdsBeforeRules',
 			],
-			'no mapping to enumerate' => [
-				['sourceTargetMapping' => ''],
-				'sourceTargetMapping is not set',
-			],
+			// 'no mapping to enumerate' is DELIBERATELY GONE: object-write gained
+			// `payloadFrom`, so an unmapped synchronization now generates rather than
+			// refusing. Covered positively by the unmapped tests below, which assert
+			// the shape it generates instead.
 		];
 
 	}//end refusalProvider()
@@ -610,7 +614,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub.
+			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -632,7 +639,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub.
+			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -654,7 +664,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub.
+			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -824,4 +837,102 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_TARGET_UUID, $encoded);
 	}
 
+
+	/**
+	 * AN UNMAPPED SYNCHRONIZATION NOW GENERATES. This one refusal accounted for 98
+	 * of the 99 refusals measured across 119 synchronizations on the dev instance,
+	 * so it is the difference between the generator covering a sixth of the estate
+	 * and covering most of it.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedSynchronizationIsNoLongerRefused(): void {
+		$reasons = $this->generator->refusalsFor(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$this->assertSame([], $reasons, 'a missing mapping is no longer a blocker');
+	}//end testAnUnmappedSynchronizationIsNoLongerRefused()
+
+	/**
+	 * With no mapping there is no `map` step, and `edgesFor()` chains in array
+	 * order, so explode must hand straight to contract.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowHasNoMapStepAndChainsAroundIt(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$ids = array_column($flow['nodes'], 'id');
+		$this->assertNotContains('map', $ids, 'nothing to map without a mapping');
+
+		$edge = array_values(
+			array_filter($flow['edges'], static fn (array $e): bool => ($e['from'] ?? null) === 'explode')
+		);
+		$this->assertSame('contract', $edge[0]['to'], 'explode chains straight to contract');
+	}//end testAnUnmappedFlowHasNoMapStepAndChainsAroundIt()
+
+	/**
+	 * The write step writes the SOURCE object whole, and carries no `fields` — the
+	 * two are alternatives and object-write refuses both together.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowWritesTheSourceObjectWhole(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$write = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'write')
+		)[0];
+
+		$this->assertSame('source', $write['config']['payloadFrom']);
+		$this->assertArrayNotHasKey('fields', $write['config'], 'fields and payloadFrom are alternatives');
+	}//end testAnUnmappedFlowWritesTheSourceObjectWhole()
+
+	/**
+	 * The commit hashes what was WRITTEN. Hashing a `target` that never existed
+	 * would leave targetHash empty and make the skip test unreachable — the exact
+	 * defect task 2.3 had to fix once already.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowHashesTheSourceNotAMissingTarget(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$commit = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'commit')
+		)[0];
+
+		$this->assertSame('source', $commit['config']['targetHashPosition']);
+	}//end testAnUnmappedFlowHashesTheSourceNotAMissingTarget()
+
+	/**
+	 * A MAPPED synchronization is unchanged: it still maps, still enumerates
+	 * fields, and still hashes the mapped target.
+	 *
+	 * @return void
+	 */
+	public function testAMappedSynchronizationIsUnchanged(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$ids = array_column($flow['nodes'], 'id');
+		$this->assertContains('map', $ids);
+
+		$write = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'write')
+		)[0];
+		$commit = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'commit')
+		)[0];
+
+		$this->assertArrayHasKey('fields', $write['config']);
+		$this->assertArrayNotHasKey('payloadFrom', $write['config']);
+		$this->assertSame('target', $commit['config']['targetHashPosition']);
+	}//end testAMappedSynchronizationIsUnchanged()
 }//end class
