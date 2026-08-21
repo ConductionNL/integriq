@@ -1098,7 +1098,11 @@ class SynchronizationService {
 	 * @param string     $synchronizationId The synchronization id.
 	 * @param string     $originId          The origin id.
 	 * @param bool|null  $justByOriginId    When true, match on origin id only.
-	 * @param array|null $allMatches        By-reference output: ALL matching contract payloads.
+	 * @param array|null $allMatches       By-reference output: ALL matching contract
+	 *                                     payloads.
+	 * @param-out array $allMatches        Callers may pass null IN, but this method
+	 *                                     always assigns an array back out — empty
+	 *                                     when there is no match.
 	 *
 	 * @return array|null The found contract payload array or null when not found.
 	 */
@@ -1804,7 +1808,7 @@ class SynchronizationService {
 	 */
 	private function shouldTriggerOnEvent(array $synchronization, string $eventMutationType): bool {
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		if (is_array($sourceConfig) === false || array_key_exists('triggerOnlyOnEvents', $sourceConfig) === false) {
+		if (array_key_exists('triggerOnlyOnEvents', $sourceConfig) === false) {
 			return true;
 		}
 
@@ -4051,10 +4055,9 @@ class SynchronizationService {
 						continue;
 					}
 
+					// updateTarget() returns an array, so no is_array() guard.
 					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-					if (is_array($synchronizationContract) === true) {
-						$this->persistContract(contract: $synchronizationContract);
-					}
+					$this->persistContract(contract: $synchronizationContract);
 
 					$deletedObjectsCount++;
 				}//end foreach
@@ -4146,10 +4149,9 @@ class SynchronizationService {
 				continue;
 			}
 
+			// updateTarget() returns an array, so no is_array() guard.
 			$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-			if (is_array($synchronizationContract) === true) {
-				$this->persistContract(contract: $synchronizationContract);
-			}
+			$this->persistContract(contract: $synchronizationContract);
 
 			$deletedCount++;
 		}//end foreach
@@ -4294,7 +4296,7 @@ class SynchronizationService {
 		$contractLoggingEnabled = ((($sourceConfig['logs'] ?? true) !== false));
 
 		// We are doing something so lets log it.
-		$hasContractId = isset($synchronizationContract['id']) === true && $synchronizationContract['id'] !== null;
+		$hasContractId = isset($synchronizationContract['id']) === true;
 		$hasLogService = ($this->synchronizationContractLogService !== null && $contractLoggingEnabled === true);
 		if ($hasContractId === true && $hasLogService === true) {
 			$contractLog = $this->synchronizationContractLogService->createFromArray(
@@ -4418,7 +4420,26 @@ class SynchronizationService {
 		$flowToken->setSyncOutputAmended($object);
 
 		if (($synchronization['actions'] ?? []) !== []) {
-			$object = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
+			$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
+
+			// processRules() returns a JSONResponse INSTEAD of an array when a
+			// rule fails. This used to be assigned straight into $object, which
+			// then went into md5(serialize($object)) and on to updateTarget() —
+			// where a JSONResponse hit an `array|null` parameter and surfaced as
+			// a TypeError deep in the target writer, naming neither the
+			// synchronisation nor the rule that actually failed.
+			//
+			// The outcome is unchanged (the sync still fails); it now says why.
+			// Turning this into a clean skip instead would be a behaviour change
+			// for the sync engine, which is not a call to make in a lint pass.
+			if ($ruleResult instanceof JSONResponse) {
+				throw new Exception(
+					'Synchronization aborted: a "before" rule returned an error response for synchronization '
+					. ($synchronization['uuid'] ?? $synchronization['id'] ?? 'unknown')
+				);
+			}
+
+			$object = $ruleResult;
 			$flowToken->setSyncOutputAmended($object);
 		}
 
@@ -4610,6 +4631,9 @@ class SynchronizationService {
 	 * @param array $synchronizationContract The synchronization contract being updated.
 	 * @param array $synchronization The synchronization entity containing the target ID.
 	 * @param array|null $targetObject An optional array containing the data for the target object.
+	 * @param-out array $targetObject Every write-back in here assigns an array
+	 *        (updateIdsOnSubObjects(), replaceRelatedOriginIds(), renderEntity()),
+	 *        so null never comes back out even though it may go in.
 	 *                                 Defaults to an empty array.
 	 * @param string|null $action The action to perform: 'save' (default) to update or
 	 *                            'delete' to remove the target object.
@@ -4647,7 +4671,7 @@ class SynchronizationService {
 		$hadTargetId = (($synchronizationContract['targetId'] ?? null) !== null);
 
 		// If we already have an id, we need to get the object and update it.
-		if (isset($synchronizationContract['targetId']) === true && $synchronizationContract['targetId'] !== null) {
+		if (isset($synchronizationContract['targetId']) === true) {
 			$targetObject['id'] = $synchronizationContract['targetId'];
 		}
 
@@ -5185,7 +5209,7 @@ class SynchronizationService {
 			// Replace 'id' at this level if requested, demands originId to be set aswel.
 			if ($replaceIdWithTargetId === true && $key === 'id' && isset($object['originId']) === true && is_string($object['originId']) === true) {
 				$targetId = $this->replaceIdInString(value: $object['originId']);
-				if ($targetId !== null && $targetId !== $object['originId']) {
+				if ($targetId !== $object['originId']) {
 					$object['id'] = $targetId;
 				}
 			}
@@ -5438,6 +5462,10 @@ class SynchronizationService {
 	 *
 	 * @param array $synchronizationContract The contract payload array to write.
 	 * @param array|null $targetObject The object data to write to the target.
+	 * @param-out array $targetObject Callers may pass null IN (the parameter also
+	 *        defaults to []), but nothing in here ever assigns null back out. Without
+	 *        this, every caller that hands over an `array` by reference is reported as
+	 *        possibly getting null back.
 	 * @param string|null $action Determines what needs to be done with the target object,
 	 *                            defaults to 'save'.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type
@@ -5473,6 +5501,13 @@ class SynchronizationService {
 		?ExecutionTraceContext $trace = null,
 		?array $synchronization = null,
 	): array {
+		// Normalise null to the same [] the parameter already defaults to. The
+		// `database` (a @todo no-op) and `nextcloud-table` branches never write
+		// $targetObject back, so without this a null passed IN came straight
+		// back OUT — which is what made the @param-out below untrue for those
+		// two paths.
+		$targetObject = ($targetObject ?? []);
+
 		// The function can be called standalone, so it still resolves the
 		// synchronization from the contract when the caller does not supply it.
 		//
@@ -7859,6 +7894,8 @@ class SynchronizationService {
 	 * @param array $contract The contract to enforce.
 	 * @param string $endpoint The endpoint to write the object to.
 	 * @param array|null $targetObject Update referenced targetObject so we can return response here.
+	 * @param-out array $targetObject The single write-back assigns array_merge(...),
+	 *        so null never comes back out even though it may go in.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the
 	 *                                  mutation that will be handled, 'create', 'update' or 'delete'.
 	 *                                  Used for syncs to extern sources.
@@ -9913,10 +9950,9 @@ class SynchronizationService {
 		if ($conditions !== []) {
 			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
 
-			// Add flow token to conditions object if it exists.
-			if ($flowToken !== null) {
-				$conditionsObject['flowToken'] = $flowToken->__serialize();
-			}
+			// Add the flow token to the conditions object. No null guard: the
+			// enclosing method's $flowToken parameter is non-nullable.
+			$conditionsObject['flowToken'] = $flowToken->__serialize();
 
 			// Take note, JsonLogic::apply() returns a range of return types, so
 			// checking it with '=== false' or '!== true' does not work properly.
@@ -11040,7 +11076,7 @@ class SynchronizationService {
 		}
 
 		// Handle date strings - if it's a valid date string, consider it as published.
-		if (is_string($published) === true && empty($published) === false) {
+		if (empty($published) === false) {
 			// Try to parse as a date.
 			$date = \DateTime::createFromFormat(\DateTime::ATOM, $published);
 			if ($date !== false) {
