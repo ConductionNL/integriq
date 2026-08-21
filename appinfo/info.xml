@@ -177,6 +177,14 @@
 		     enables nothing and touches no synchronization contract, because a
 		     generated flow ships disabled until a human has reviewed it. -->
 		<command>OCA\OpenConnector\Command\SynchronizationToFlow</command>
+		<!-- Remediation for the contract-identity defect fixed in #1311: until then
+		     synchronizeContract() minted a fresh uuid every rerun, so each run created
+		     a contract instead of updating one. This collapses the leftovers to one per
+		     (synchronization, origin), keeping the newest by sourceLastChecked. It is a
+		     COMMAND and not engine behaviour on purpose: REQ-013 says duplicates are
+		     surfaced, never silently removed, so this is human-invoked and dry-run by
+		     default. -->
+		<command>OCA\OpenConnector\Command\DedupeContracts</command>
 		<!-- flow-native-synchronization task 3.3: renders one job as a generated
 		     trigger schedule flow document, or names the features no flow node can
 		     express. Same contract as the synchronization renderer above: the
