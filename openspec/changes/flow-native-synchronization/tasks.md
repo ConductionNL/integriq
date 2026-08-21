@@ -195,3 +195,21 @@
       stays open, but it is no longer waiting on a measurement — it is waiting
       on the `actions` design, which is now the single blocking piece of work
       for this whole change.
+      AND THAT DESIGN IS MUCH SMALLER THAN "RULE EVALUATION". Measured on the
+      dev instance the same day, over all 240 synchronizations and all 61 rules:
+        every one of the 74 blocked synchronizations references EXACTLY ONE
+        rule, and all 74 of those rules are `fetch_file` / `after`
+        rule types across the whole instance: fetch_file/after 59,
+        authentication/before 1, (empty)/before 1
+      So the blocker is not a general rule engine and not per-item branching —
+      it is ONE MISSING STEP, `openconnector.fetch-file`, doing after the write
+      what `SynchronizationService` does inside its own write path. The
+      `authentication` rule is a `before` rule on a single synchronization and
+      is a separate, smaller question.
+      ⚠️ NO COVERAGE PROJECTION IS RECORDED HERE, DELIBERATELY. A fetch-file
+      step is NECESSARY for all 74 but only SUFFICIENT for those whose ONLY
+      refusal is `actions`, and refusals outnumber synchronizations (79 refusals
+      across the tail, with a scatter summing to more than the non-`actions`
+      remainder, so some synchronizations carry two). The last projection made
+      here from a plausible-looking ratio was wrong by 30 points. Build the
+      step, then RE-MEASURE all 240.
