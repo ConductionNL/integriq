@@ -42,26 +42,30 @@
       preflight validates vocabulary, not item SHAPE. NOT done: the page
       cursor in `flow-state`; the generated flow delegates paging to
       `source-paginate`, which keeps the cursor on the synchronization.
-- [ ] 2.2 Benchmark: decomposed flow vs `synchronization-run` on the 2000-
-      dataset CKAN run — meet or beat, measured, before any deprecation.
-      STILL OPEN. This gates 3.4.
-      CORRECTNESS IS SETTLED, TIMINGS ARE NOT. Fixing D1+D2
-      (#1306/#1307/#1309/#1311) moved the legacy engine's mapped steady
-      state from "2000 updated, 0 skipped" to "2000 SKIPPED, nothing
-      written", contract delta 0 across five consecutive runs, with an
-      existing contract row proven updated IN PLACE rather than
-      re-created. Full write-up in `benchmark-2-2.md`.
-      EVERY WALL-CLOCK FIGURE RECORDED SO FAR IS STALE. The old bar
-      (6.8 s unmapped / 17.7 s mapped / 22.6 s decomposed) described an
-      engine that rewrote 2000 objects a run; it no longer does. And the
-      verification runs cannot supply the new figure — they were taken at
-      loadavg 15.98 with nextcloud at 88.7% CPU, against loadavg 0.36 for
-      the original baseline, so their 30-77 s is contention, not engine.
-      TO CLOSE: re-measure all three figures together on a quiet box
-      (check `docker stats` + `/proc/loadavg` first), then compare.
-      The decomposed side is no longer blocked — openregister on the box
-      now includes `development`, the generated flow validates clean and
-      runs end to end (11 nodes, 2000 items through every step).
+- [x] 2.2 Benchmark: decomposed flow vs `synchronization-run` on the 2000-
+      dataset CKAN run — MET. Measured 2026-08-21 on a quiet box (loadavg
+      1.95/1.86/1.59, nextcloud 0.00/0.00/1.80%), all three figures taken
+      back to back after D1+D2 were fixed:
+        legacy unmapped  7.84 s  (7.71 / 7.97)
+        legacy MAPPED   23.87 s  (22.38 / 25.08 / 24.15), contract delta 0
+        decomposed      20.38 s  (21.56 / 19.20)
+      The fair bar is MAPPED — the flow is generated from the mapped sync and
+      does the same mapping. **20.38 s vs 23.87 s = 14.6% FASTER** (11.9% if
+      the caveated third flow run is included). It does NOT beat the unmapped
+      7.84 s, but an unmapped sync does no mapping at all.
+      CAVEAT, recorded not buried: external load returned during the third
+      flow run. Eight of nine runs carry a nextcloud-idle reading taken
+      immediately after them; that one does not. The verdict holds on the
+      clean runs alone and with it included, so the direction is not in
+      question — a re-take would only tighten the figure.
+      THE REAL FINDING: mapping dominates BOTH engines. `map` is ~60% of the
+      flow's total (10.8-13.7 s), and legacy pays a 16 s penalty for a mapping
+      on a run that skips all 2000 objects and writes nothing, because the
+      mapping is resolved PER ITEM before the skip decision. `write` at
+      11-18 ms shows the decomposition itself is nearly free. Optimise the
+      mapping, not the decomposition.
+      3.4 STAYS GATED on a human decision — 2.2 answers whether the flow CAN
+      meet or beat, not whether the legacy pages should go.
 - [x] 2.3 Re-run idempotency. `contract-commit` never wrote `targetHash`, so
       `ContractMatchNode::isUnchanged()` could never hold and `skip` was
       unreachable (#1297). Measured live: contracts went 18/18 rewritten to
