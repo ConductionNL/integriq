@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "openconnector",
-        "version": "0.0.1",
+        "version": "0.2.24",
         "description": "open connector",
         "license": {
             "name": "agpl"
