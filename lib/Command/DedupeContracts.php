@@ -82,6 +82,8 @@ class DedupeContracts extends Command {
 	 * Configure the command name, description and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openconnector:contracts:dedupe')
@@ -174,12 +176,13 @@ class DedupeContracts extends Command {
 	 * @param OutputInterface $output Console output.
 	 *
 	 * @return int 0 on success.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
-		$only = $input->getOption('synchronization');
 
-		$synchronizationIds = $this->synchronizationIds(only: $only);
+		$synchronizationIds = $this->synchronizationIds(only: $input->getOption('synchronization'));
 		if ($synchronizationIds === []) {
 			$output->writeln('<comment>No synchronizations with contracts found.</comment>');
 
@@ -191,73 +194,126 @@ class DedupeContracts extends Command {
 			$mode = '<info>Applying</info>';
 		}
 
-		$output->writeln(
-			sprintf('%s across %d synchronization(s).', $mode, count($synchronizationIds))
-		);
+		$output->writeln(sprintf('%s across %d synchronization(s).', $mode, count($synchronizationIds)));
 
-		$scanned = 0;
-		$planned = 0;
-		$deleted = 0;
-		$skipped = 0;
-		$affected = 0;
+		$totals = ['scanned' => 0, 'planned' => 0, 'deleted' => 0, 'skipped' => 0, 'affected' => 0];
 
 		foreach ($synchronizationIds as $synchronizationId) {
-			$rows = $this->contracts->findAllObjects(filters: ['synchronizationId' => $synchronizationId]);
-			// FindAllObjects() returns ObjectEntity[], so an is_array() guard here
-			// would be dead code — phpstan is right to call it out.
-			$payloads = array_map(static fn ($row): array => $row->jsonSerialize(), $rows);
-
-			$scanned += count($payloads);
-			$plan = self::planDeletions(contracts: $payloads);
-			$doomed = $plan['delete'];
-
-			if ($doomed === []) {
-				continue;
-			}
-
-			$affected++;
-			$planned += count($doomed);
-
-			$output->writeln(
-				sprintf(
-					'  %s: %d contract(s), %d duplicate(s) to remove, %d origin(s) kept',
-					$synchronizationId,
-					count($payloads),
-					count($doomed),
-					count($plan['keep'])
-				)
+			$this->dedupeOne(
+				synchronizationId: $synchronizationId,
+				apply: $apply,
+				output: $output,
+				totals: $totals
 			);
+		}
 
-			if ($apply === false) {
-				continue;
-			}
+		return $this->summarise(output: $output, apply: $apply, totals: $totals);
 
-			foreach (array_chunk($doomed, self::DELETE_BATCH) as $batch) {
-				// `_rbac`/`_multitenancy` default to TRUE and silently FILTER the
-				// uuid list, so a run from occ deleted nothing and the command still
-				// reported the plan as if it had. This is an admin remediation in a
-				// system context — the same posture the engine uses for its own
-				// contract bookkeeping.
-				$result = $this->objects->deleteObjects(
-					uuids: $batch,
-					_rbac: false,
-					_multitenancy: false
-				);
+	}//end execute()
 
-				// COUNT THE RESULT, NEVER THE PLAN. Reporting `count($doomed)` is how
-				// this command claimed 6485 deletions while the table was untouched.
-				$deleted += count(($result['deleted_uuids'] ?? []));
-				$skipped += count(($result['skipped_uuids'] ?? []));
-			}
-		}//end foreach
+	/**
+	 * Dedupe one synchronization's contracts, accumulating into $totals.
+	 *
+	 * @param string          $synchronizationId The synchronization to walk.
+	 * @param bool            $apply             Whether to actually delete.
+	 * @param OutputInterface $output            Console output.
+	 * @param array           $totals            Running totals, modified in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	private function dedupeOne(
+		string $synchronizationId,
+		bool $apply,
+		OutputInterface $output,
+		array &$totals
+	): void {
+		$rows = $this->contracts->findAllObjects(filters: ['synchronizationId' => $synchronizationId]);
+		// FindAllObjects() returns ObjectEntity[], so an is_array() guard here
+		// would be dead code — phpstan is right to call it out.
+		$payloads = array_map(static fn ($row): array => $row->jsonSerialize(), $rows);
 
-		$output->writeln('');
-		$output->writeln(sprintf('Contracts scanned:    %d', $scanned));
-		$output->writeln(sprintf('Synchronizations hit: %d', $affected));
-		$output->writeln(sprintf('Duplicates planned:   %d', $planned));
+		$totals['scanned'] += count($payloads);
+		$plan = self::planDeletions(contracts: $payloads);
+		$doomed = $plan['delete'];
+
+		if ($doomed === []) {
+			return;
+		}
+
+		$totals['affected']++;
+		$totals['planned'] += count($doomed);
+
+		$output->writeln(
+			sprintf(
+				'  %s: %d contract(s), %d duplicate(s) to remove, %d origin(s) kept',
+				$synchronizationId,
+				count($payloads),
+				count($doomed),
+				count($plan['keep'])
+			)
+		);
 
 		if ($apply === false) {
-			if ($planned > 0) {
+			return;
+		}
+
+		$outcome = $this->deleteBatches(uuids: $doomed);
+		$totals['deleted'] += $outcome['deleted'];
+		$totals['skipped'] += $outcome['skipped'];
+
+	}//end dedupeOne()
+
+	/**
+	 * Delete uuids in batches and report what OpenRegister actually removed.
+	 *
+	 * @param string[] $uuids The contract uuids to delete.
+	 *
+	 * @return array{deleted: int, skipped: int} What happened.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	private function deleteBatches(array $uuids): array {
+		$deleted = 0;
+		$skipped = 0;
+
+		foreach (array_chunk($uuids, self::DELETE_BATCH) as $batch) {
+			// `_rbac`/`_multitenancy` default to TRUE and silently FILTER the uuid
+			// list, so a run from occ deleted nothing while the command still
+			// reported the plan as if it had. This is an admin remediation in a
+			// system context — the posture the engine uses for its own bookkeeping.
+			$result = $this->objects->deleteObjects(uuids: $batch, _rbac: false, _multitenancy: false);
+
+			// COUNT THE RESULT, NEVER THE PLAN. Reporting the plan is how this
+			// command claimed 6485 deletions while the table was untouched.
+			$deleted += count(($result['deleted_uuids'] ?? []));
+			$skipped += count(($result['skipped_uuids'] ?? []));
+		}
+
+		return ['deleted' => $deleted, 'skipped' => $skipped];
+
+	}//end deleteBatches()
+
+	/**
+	 * Print the run summary and decide the exit code.
+	 *
+	 * @param OutputInterface $output Console output.
+	 * @param bool            $apply  Whether deletions were attempted.
+	 * @param array           $totals The accumulated counts.
+	 *
+	 * @return int 0 on success, 1 when fewer rows were deleted than planned.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
+	 */
+	private function summarise(OutputInterface $output, bool $apply, array $totals): int {
+		$output->writeln('');
+		$output->writeln(sprintf('Contracts scanned:    %d', $totals['scanned']));
+		$output->writeln(sprintf('Synchronizations hit: %d', $totals['affected']));
+		$output->writeln(sprintf('Duplicates planned:   %d', $totals['planned']));
+
+		if ($apply === false) {
+			if ($totals['planned'] > 0) {
 				$output->writeln('');
 				$output->writeln('<comment>Re-run with --apply to delete them.</comment>');
 			}
@@ -265,19 +321,19 @@ class DedupeContracts extends Command {
 			return 0;
 		}
 
-		$output->writeln(sprintf('Duplicates DELETED:   %d', $deleted));
-		$output->writeln(sprintf('Skipped by OpenRegister: %d', $skipped));
+		$output->writeln(sprintf('Duplicates DELETED:   %d', $totals['deleted']));
+		$output->writeln(sprintf('Skipped by OpenRegister: %d', $totals['skipped']));
 
 		// A command that plans N deletions, deletes 0 and exits 0 is worse than one
 		// that fails: it reports the cleanup as done. Fail loudly on any shortfall.
-		if ($deleted !== $planned) {
+		if ($totals['deleted'] !== $totals['planned']) {
 			$output->writeln('');
 			$output->writeln(
 				sprintf(
 					'<error>Planned %d deletions but OpenRegister removed %d. The duplicates are '
 					. 'still there — do not treat this run as a cleanup.</error>',
-					$planned,
-					$deleted
+					$totals['planned'],
+					$totals['deleted']
 				)
 			);
 
@@ -286,7 +342,7 @@ class DedupeContracts extends Command {
 
 		return 0;
 
-	}//end execute()
+	}//end summarise()
 
 	/**
 	 * The synchronization ids to walk.
