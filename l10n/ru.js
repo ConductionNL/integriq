@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "openconnector",
+    "integriq",
     {
     "Run a synchronization" : "Выполнить синхронизацию",
     "Run a flow" : "Выполнить flow",

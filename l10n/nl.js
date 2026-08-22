@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "openconnector",
+    "integriq",
     {
     "A name is required." : "Een naam is verplicht.",
     "Allowed domains" : "Toegestane domeinen",

@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "openconnector",
+    "integriq",
     {
     "Run a synchronization" : "Käivita sünkroonimine",
     "Run a flow" : "Käivita flow",

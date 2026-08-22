@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "openconnector",
+    "integriq",
     {
     "(no value needed)" : "(no value needed)",
     "(not set — the next run requests an unfiltered fetch)" : "(not set — the next run requests an unfiltered fetch)",

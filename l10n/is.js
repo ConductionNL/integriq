@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "openconnector",
+    "integriq",
     {
     "Run a synchronization" : "Keyra samstillingu",
     "Run a flow" : "Keyra flæði",
