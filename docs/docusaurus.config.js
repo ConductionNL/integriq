@@ -1,12 +1,12 @@
 // @ts-check
 
 /**
- * OpenConnector documentation site.
+ * Integriq documentation site.
  *
  * Built on @conduction/docusaurus-preset for brand defaults (tokens,
  * theme swizzles for Navbar / Footer, four-locale i18n scaffolding,
  * KvK / BTW copyright). Site-specific overrides — locale, sidebar
- * path, custom prism themes, openconnector-only navbar items — are
+ * path, custom prism themes, integriq-only navbar items — are
  * passed through createConfig() opts.
  */
 
@@ -19,13 +19,17 @@ const { createConfig, baseFooterLinks } = require('@conduction/docusaurus-preset
 const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
 
 const config = createConfig({
-  title: 'OpenConnector',
+  title: 'Integriq',
   tagline: 'The integration layer for Nextcloud. REST and SOAP sources, plus Dutch government-standard connectors (PDOK, StUF, DSO, Berichtenbox). Pulls data from your existing systems into typed registers without writing glue code.',
+  // FROZEN on the OLD id during the app-id rename: this is a live DNS record
+  // and the Pages CNAME (docs/static/CNAME, and documentation.yml's `cname:`).
+  // Verified by curl: openconnector.conduction.nl -> 200,
+  // integriq.conduction.nl -> 000. All three move together in the DNS pass.
   url: 'https://openconnector.conduction.nl',
   baseUrl: '/',
 
   organizationName: 'ConductionNL',
-  projectName: 'openconnector',
+  projectName: 'integriq',
 
   /* English-only for now. The brand preset's default i18n block
      (nl/en/de/fr) is replaced wholesale here. Re-enable additional
@@ -38,11 +42,11 @@ const config = createConfig({
     },
   },
 
-  /* The openconnector docs source lives at the repo root in `docs/`
+  /* The integriq docs source lives at the repo root in `docs/`
      while the Docusaurus config + pages live in the sibling
      `docusaurus/` folder. Override the preset's default `presets:`
      block to point `docs.path` at `../docs` and disable the blog
-     plugin. customCss carries openconnector-specific CSS only — brand
+     plugin. customCss carries integriq-specific CSS only — brand
      tokens and the theme swizzles are auto-loaded by the brand theme
      entry in `themes:` below. */
   presets: [
@@ -69,7 +73,7 @@ const config = createConfig({
             'administrators-legacy/mapping/mapping.md',
           ],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/ConductionNL/openconnector/tree/main/docs/',
+          editUrl: 'https://github.com/ConductionNL/integriq/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -82,8 +86,8 @@ const config = createConfig({
   themes: [BRAND_THEME, '@docusaurus/theme-mermaid'],
 
   /* Brand navbar provides locale dropdown + GitHub by default; we
-     replace items[] with openconnector's own (Documentation sidebar
-     link, openconnector GitHub link). Object.assign in createConfig is
+     replace items[] with integriq's own (Documentation sidebar
+     link, integriq GitHub link). Object.assign in createConfig is
      shallow, so items: replaces wholesale. */
   navbar: {
     items: [
@@ -94,7 +98,7 @@ const config = createConfig({
         label: 'Documentation',
       },
       {
-        href: 'https://github.com/ConductionNL/openconnector',
+        href: 'https://github.com/ConductionNL/integriq',
         label: 'GitHub',
         position: 'right',
       },
@@ -119,7 +123,7 @@ const config = createConfig({
      (colorMode + navbar + footer). Custom prism + mermaid theme
      overrides land alongside. */
   themeConfig: {
-    image: 'img/og-openconnector.png',
+    image: 'img/og-integriq.png',
     prism: {
       theme: {
         plain: {

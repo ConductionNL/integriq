@@ -6,7 +6,7 @@ description: Register an external system (REST, SOAP, FTP) as a Source, wire its
 
 # Add a source
 
-A **Source** is a configured connection to an external system. Every API call OpenConnector makes — through a synchronization, an endpoint proxy, or a scheduled job — references a Source for the base URL, authentication, and connection defaults.
+A **Source** is a configured connection to an external system. Every API call Integriq makes — through a synchronization, an endpoint proxy, or a scheduled job — references a Source for the base URL, authentication, and connection defaults.
 
 ## Goal
 
@@ -14,10 +14,10 @@ By the end you will have created a Source pointing at an external REST API, wire
 
 ## Prerequisites
 
-- You have completed [Open OpenConnector for the first time](./01-first-launch.md).
+- You have completed [Open Integriq for the first time](./01-first-launch.md).
 - You know the base URL of the external system and one valid endpoint to test against.
 - You have a **vault credential** for the external system, or the rights to create one. The recommended pattern is to **never store the secret in the Source** — keep it in OpenRegister's credential broker and reference it. See [Sources → Authentication](../../features/sources.md#authentication-methods) for the full picture. In short:
-  - For a **catalogued SaaS** (Mollie, KVK, GitHub, …), create a brokered credential for that provider and reference it at the top level — the call is proxied and the secret never enters OpenConnector.
+  - For a **catalogued SaaS** (Mollie, KVK, GitHub, …), create a brokered credential for that provider and reference it at the top level — the call is proxied and the secret never enters Integriq.
   - For an **arbitrary or self-hosted host**, create a credential with a `generic-*` (inject-only) provider — the secret is resolved from the vault and injected app-side.
 
   In both cases: note the credential's **UUID** and add `openconnector` to its **allowedApps**.
