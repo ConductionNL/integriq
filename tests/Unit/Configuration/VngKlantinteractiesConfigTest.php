@@ -4,7 +4,7 @@
  * Structural tests for the packaged VNG Klantinteracties configuration set.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Configuration
+ * @package  OCA\Integriq\Tests\Unit\Configuration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Configuration;
+namespace OCA\Integriq\Tests\Unit\Configuration;
 
 use PHPUnit\Framework\TestCase;
 

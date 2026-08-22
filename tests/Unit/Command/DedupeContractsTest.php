@@ -12,7 +12,7 @@
  * apply always choose the same row.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Command
+ * @package  OCA\Integriq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Command;
+namespace OCA\Integriq\Tests\Unit\Command;
 
-use OCA\OpenConnector\Command\DedupeContracts;
+use OCA\Integriq\Command\DedupeContracts;
 use PHPUnit\Framework\TestCase;
 
 /**

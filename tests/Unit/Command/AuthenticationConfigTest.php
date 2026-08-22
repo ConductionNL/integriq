@@ -16,7 +16,7 @@
  * "make removal fire without the opt-in and a test fails" true.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Command
+ * @package  OCA\Integriq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -30,21 +30,21 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Command;
+namespace OCA\Integriq\Tests\Unit\Command;
 
-use OCA\OpenConnector\Command\AuthenticationConfig;
-use OCA\OpenConnector\Service\Security\AuthenticationConfigAuditor;
-use OCA\OpenConnector\Service\Security\AuthenticationConfigRemover;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
-use OCA\OpenConnector\Tests\Helpers\MigrationSimulatingObjectService;
-use OCA\OpenConnector\Tests\Helpers\RecordingLogger;
+use OCA\Integriq\Command\AuthenticationConfig;
+use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
+use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Tests\Helpers\MigrationSimulatingObjectService;
+use OCA\Integriq\Tests\Helpers\RecordingLogger;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * @covers \OCA\OpenConnector\Command\AuthenticationConfig
+ * @covers \OCA\Integriq\Command\AuthenticationConfig
  */
 class AuthenticationConfigTest extends TestCase {
 
@@ -335,7 +335,7 @@ class AuthenticationConfigTest extends TestCase {
 		}
 
 		$this->assertContains(
-			'OCA\OpenConnector\Command\AuthenticationConfig',
+			'OCA\Integriq\Command\AuthenticationConfig',
 			$commands,
 			'The command must be registered so an operator can actually run it.'
 		);
@@ -346,10 +346,10 @@ class AuthenticationConfigTest extends TestCase {
 		}
 
 		$this->assertNotContains(
-			'OCA\OpenConnector\Command\AuthenticationConfig',
+			'OCA\Integriq\Command\AuthenticationConfig',
 			$repairSteps,
 			'The authenticationConfig removal must NEVER be reachable from an upgrade / maintenance:repair.'
 		);
-		$this->assertNotContains('OCA\OpenConnector\Service\Security\AuthenticationConfigRemover', $repairSteps);
+		$this->assertNotContains('OCA\Integriq\Service\Security\AuthenticationConfigRemover', $repairSteps);
 	}//end testInfoXmlRegistersThisAsACommandAndNeverAsARepairStep()
 }//end class

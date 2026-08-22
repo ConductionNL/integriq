@@ -5,7 +5,7 @@
  * feature detection (#1103).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\AppInfo
+ * @package  OCA\Integriq\Tests\Unit\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,15 +35,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\AppInfo;
+namespace OCA\Integriq\Tests\Unit\AppInfo;
 
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 /**
- * @covers \OCA\OpenConnector\AppInfo\Application
+ * @covers \OCA\Integriq\AppInfo\Application
  */
 class ApplicationAppEnabledForAnyoneTest extends TestCase {
 

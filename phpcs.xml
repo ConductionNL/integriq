@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="openconnector" xsi:noNamespaceSchemaLocation="phpcs.xsd">
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="integriq" xsi:noNamespaceSchemaLocation="phpcs.xsd">
     <description>
-        openconnector — SEMANTICS ONLY. Formatting belongs to php-cs-fixer via
+        integriq — SEMANTICS ONLY. Formatting belongs to php-cs-fixer via
         conduction/coding-standard; see .php-cs-fixer.dist.php.
     </description>
 

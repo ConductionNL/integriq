@@ -4,7 +4,7 @@
  * OpenConnector — Digikoppeling adapter catalogue descriptor tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling;
+namespace OCA\Integriq\Tests\Unit\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Adapters\Digikoppeling\DigikoppelingAdapter;
+use OCA\Integriq\Adapters\Digikoppeling\DigikoppelingAdapter;
 use PHPUnit\Framework\TestCase;
 
 /**

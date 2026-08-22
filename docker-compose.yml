@@ -28,7 +28,7 @@ services:
   nextcloud:
     user: root
     container_name: nextcloud
-#    entrypoint: occ app:enable openconnector
+#    entrypoint: occ app:enable integriq
     image: nextcloud:34.0.0-apache
     restart: always
     ports:
@@ -38,7 +38,7 @@ services:
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
-      - .:/var/www/html/custom_apps/openconnector
+      - .:/var/www/html/custom_apps/integriq
     environment:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud

@@ -15,13 +15,13 @@ webpackConfig.stats = {
 	modules: false,
 }
 
-const appId = 'openconnector'
+const appId = 'integriq'
 webpackConfig.entry = {
 	main: {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
 	},
-	// Path-2 leaf bundle: a tiny entry that registers OpenConnector's
+	// Path-2 leaf bundle: a tiny entry that registers Integriq's
 	// "Synced from" component on the OpenRegister integration registry.
 	// Loaded GLOBALLY on every NC page via \OCP\Util::addInitScript
 	// (lib/AppInfo/Application.php) so the component is present when a

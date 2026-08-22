@@ -22,9 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\AppInfo;
+namespace OCA\Integriq\Tests\Unit\AppInfo;
 
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
- * @covers \OCA\OpenConnector\AppInfo\Application
+ * @covers \OCA\Integriq\AppInfo\Application
  */
 class ApplicationStorageMigratedTest extends TestCase {
 	/**

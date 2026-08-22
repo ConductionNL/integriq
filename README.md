@@ -1,25 +1,25 @@
 <p align="center">
-  <img src="img/app-store.svg" alt="OpenConnector logo" width="80" height="80">
+  <img src="img/app-store.svg" alt="Integriq logo" width="80" height="80">
 </p>
 
-<h1 align="center">OpenConnector</h1>
+<h1 align="center">Integriq</h1>
 
 <p align="center">
   <strong>API gateway and integration hub for Nextcloud — connect, transform, and synchronize data between systems</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/openconnector/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openconnector" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/openconnector/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/openconnector/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openconnector/code-quality.yml?label=quality" alt="Code quality"></a>
-  <a href="https://conductionnl.github.io/openconnector/"><img src="https://img.shields.io/badge/docs-openconnector-green" alt="Documentation"></a>
+  <a href="https://github.com/ConductionNL/integriq/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/integriq" alt="Latest release"></a>
+  <a href="https://github.com/ConductionNL/integriq/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://github.com/ConductionNL/integriq/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/integriq/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://conductionnl.github.io/integriq/"><img src="https://img.shields.io/badge/docs-integriq-green" alt="Documentation"></a>
 </p>
 
 ---
 
-OpenConnector brings enterprise service bus (ESB) capabilities natively into Nextcloud. Define external API connections as sources, expose your own API endpoints, transform data with flexible mappings, and keep systems in sync through scheduled or event-driven synchronizations — all from within your Nextcloud instance. It supports REST, SOAP, and XML APIs with OAuth, JWT, and API key authentication out of the box.
+Integriq brings enterprise service bus (ESB) capabilities natively into Nextcloud. Define external API connections as sources, expose your own API endpoints, transform data with flexible mappings, and keep systems in sync through scheduled or event-driven synchronizations — all from within your Nextcloud instance. It supports REST, SOAP, and XML APIs with OAuth, JWT, and API key authentication out of the box.
 
-OpenConnector requires the [OpenRegister](https://github.com/ConductionNL/openregister) app as a runtime dependency. Every entity (source, endpoint, mapping, synchronization, consumer, job, event, call log) is persisted as an OpenRegister object, and the controllers inject OpenRegister's `ObjectService` as a required dependency — OpenConnector does not function without it. `src/manifest.json` declares `"dependencies": ["openregister"]` accordingly.
+Integriq requires the [OpenRegister](https://github.com/ConductionNL/openregister) app as a runtime dependency. Every entity (source, endpoint, mapping, synchronization, consumer, job, event, call log) is persisted as an OpenRegister object, and the controllers inject OpenRegister's `ObjectService` as a required dependency — Integriq does not function without it. `src/manifest.json` declares `"dependencies": ["openregister"]` accordingly.
 
 ## Screenshots
 
@@ -100,7 +100,7 @@ OpenConnector requires the [OpenRegister](https://github.com/ConductionNL/openre
 
 ```mermaid
 graph TD
-    A[Vue 2 Frontend] -->|REST API| B[OpenConnector PHP Backend]
+    A[Vue 2 Frontend] -->|REST API| B[Integriq PHP Backend]
     B --> C[(PostgreSQL / MySQL / SQLite)]
     B -->|Guzzle HTTP| D[External REST APIs]
     B -->|SOAP Client| E[External SOAP Services]
@@ -131,7 +131,7 @@ Every entity below is persisted as an [OpenRegister](https://github.com/Conducti
 ### Directory Structure
 
 ```
-openconnector/
+integriq/
 ├── appinfo/           # Nextcloud app manifest, routes, navigation
 ├── lib/               # PHP backend
 │   ├── Action/        # Action handlers
@@ -168,28 +168,28 @@ openconnector/
 | Nextcloud | 28 -- 33 |
 | PHP | 8.1+ |
 | Database | PostgreSQL, MySQL 8.0+, or SQLite |
-| **OpenRegister** | **Required** — object persistence layer; OpenConnector will not start without it |
+| **OpenRegister** | **Required** — object persistence layer; Integriq will not start without it |
 
-OpenConnector requires the [OpenRegister](https://github.com/ConductionNL/openregister) app to be installed and enabled. It is a hard runtime dependency: all entities are stored as OpenRegister objects. When OpenRegister is absent, OpenConnector reports the missing dependency via an admin notice and its `/api/health` endpoint returns HTTP 503, rather than failing with bare HTTP 500 errors.
+Integriq requires the [OpenRegister](https://github.com/ConductionNL/openregister) app to be installed and enabled. It is a hard runtime dependency: all entities are stored as OpenRegister objects. When OpenRegister is absent, Integriq reports the missing dependency via an admin notice and its `/api/health` endpoint returns HTTP 503, rather than failing with bare HTTP 500 errors.
 
 ## Installation
 
 ### From the Nextcloud App Store
 
 1. Go to **Apps** in your Nextcloud instance
-2. Search for **OpenConnector**
+2. Search for **Integriq**
 3. Click **Download and enable**
 
 ### From Source
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/openconnector.git
-cd openconnector
+git clone https://github.com/ConductionNL/integriq.git
+cd integriq
 composer install --no-dev
 npm install
 npm run build
-php occ app:enable openconnector
+php occ app:enable integriq
 ```
 
 ## Development
@@ -203,7 +203,7 @@ docker compose -f openregister/docker-compose.yml up -d
 ### Frontend development
 
 ```bash
-cd openconnector
+cd integriq
 npm install
 npm run dev        # Development build
 npm run watch      # Watch mode with live reload
@@ -265,11 +265,11 @@ For a Service Level Agreement (SLA), contact [sales@conduction.nl](mailto:sales@
 
 ## Documentation
 
-Full documentation is available at **[conductionnl.github.io/openconnector](https://conductionnl.github.io/openconnector/)**
+Full documentation is available at **[conductionnl.github.io/integriq](https://conductionnl.github.io/integriq/)**
 
 | Page | Description |
 |------|-------------|
-| [Introduction](docs/intro.md) | Overview of OpenConnector and its components |
+| [Introduction](docs/intro.md) | Overview of Integriq and its components |
 | [Sources](docs/sources.md) | Configuring external API connections and authentication |
 | [Synchronization](docs/synchronization.md) | Setting up data sync flows with contracts and change detection |
 | [Mappings](docs/tutorial/mappings.md) | Data transformation with field mapping and Twig templates |
@@ -290,20 +290,20 @@ Full documentation is available at **[conductionnl.github.io/openconnector](http
 
 ## Related Apps
 
-- **[OpenRegister](https://github.com/ConductionNL/openregister)** -- Object storage layer (**required** runtime dependency; all OpenConnector entities are stored as OpenRegister objects)
+- **[OpenRegister](https://github.com/ConductionNL/openregister)** -- Object storage layer (**required** runtime dependency; all Integriq entities are stored as OpenRegister objects)
 - **[OpenCatalogi](https://github.com/ConductionNL/opencatalogi)** -- Publication and catalog management
 - **[DocuDesk](https://github.com/ConductionNL/docudesk)** -- Document generation
 - **[NL Design](https://github.com/ConductionNL/nldesign)** -- Design token theming for government compliance
 
 ## Running the tests
 
-OpenConnector ships three test suites, all wired into CI (`.github/workflows/tests.yml`):
+Integriq ships three test suites, all wired into CI (`.github/workflows/tests.yml`):
 
 | Suite | Command | What it covers |
 |---|---|---|
 | **PHPUnit (unit)** | `composer test:unit` | Services + the chain-B `LegacyToRegisterMigrator` branching paths, mocking OpenRegister's `ObjectService` via `tests/Helpers/ObjectServiceMockBuilder.php`. Runs against PHP 8.3. |
 | **PHPUnit coverage gate** | `composer test:coverage && composer coverage:check` | Emits `coverage/clover.xml` + `coverage/html/`, then enforces the **merge-blocking** thresholds: **≥ 80% line** and **≥ 70% branch** (`tests/scripts/check-coverage.php`). 100% is the aspirational quarterly tech-debt target, not enforced. |
-| **Newman (API)** | `npm run test:newman` | Postman collection at `tests/postman/openconnector.postman_collection.json` against a running dev container (happy path + auth error paths per endpoint). Uses placeholder `admin`/`admin` credentials — never commit real secrets. |
+| **Newman (API)** | `npm run test:newman` | Postman collection at `tests/postman/integriq.postman_collection.json` against a running dev container (happy path + auth error paths per endpoint). Uses placeholder `admin`/`admin` credentials — never commit real secrets. |
 | **Playwright (E2E)** | `npm run test:regression` | The `regression` project (runs with `--workers=4`): per-resource page journeys, the OR-cutover smoke test, and the migration round-trip invariant. Excludes the docs-screenshot capture spec. |
 
 Coverage requires Xdebug 3 with `xdebug.mode=coverage`; the dev container leaves

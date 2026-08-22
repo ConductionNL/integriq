@@ -157,7 +157,7 @@ return [
 		// Every route above is the PLATFORM role (inbound). Without this one the
 		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
 		// publishScore() was implemented and spec'd done but structurally
-		// unreachable (openconnector#1192).
+		// unreachable (integriq#1192).
 		['name' => 'lti#agsPublishScore', 'url' => '/api/lti/{deployment}/ags/publish-score', 'verb' => 'POST'],
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
@@ -449,8 +449,8 @@ return [
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is
-		// bound under the standard `OCA\OpenConnector\Controller\GenericPreferencesController` service key
-		// in lib/AppInfo/Application.php (appName=openconnector, so the `pref_` user-value namespace stays
+		// bound under the standard `OCA\Integriq\Controller\GenericPreferencesController` service key
+		// in lib/AppInfo/Application.php (appName=integriq, so the `pref_` user-value namespace stays
 		// scoped to this app). The route name MUST resolve to that key: NC's App::main only prepends the
 		// `OCA\<App>\Controller\` namespace when the built controller name does NOT already contain
 		// `\Controller\`, so a namespaced route name like `AppHost\Controller\GenericPreferences` is looked
@@ -493,7 +493,7 @@ return [
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.
 		// MUST exclude /api/* so deleted API routes return 404, not the SPA shell.
-		// Regex is `.*` (not `.+`) so the empty-path case (`/apps/openconnector/`) also
+		// Regex is `.*` (not `.+`) so the empty-path case (`/apps/integriq/`) also
 		// resolves to the Dashboard — the duplicate `ui#dashboard` controller#method name
 		// with the line-112 `/` route triggers NC's last-wins binding, which means the
 		// catch-all is the one that actually serves `/` at runtime.

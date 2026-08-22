@@ -5,7 +5,7 @@
  * the state guards (409/404/400), and the approve/reject wiring.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,15 +19,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\ApprovalsController;
-use OCA\OpenConnector\Exception\ApprovalStateException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Controller\ApprovalsController;
+use OCA\Integriq\Exception\ApprovalStateException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
@@ -230,7 +230,7 @@ class ApprovalsControllerTest extends TestCase {
 		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'woo-approvers', 'endpointId' => 'ep-1', 'resumeOrder' => 20, 'snapshot' => []]);
 		$this->approvalService->method('find')->willReturn($request);
 		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
-		$this->approvalService->method('rehydrateFlowToken')->willReturn(new \OCA\OpenConnector\Service\Helper\FlowToken());
+		$this->approvalService->method('rehydrateFlowToken')->willReturn(new \OCA\Integriq\Service\Helper\FlowToken());
 
 		$endpoint = $this->entity(['name' => 'WOO Publish'], 'ep-1');
 		$this->endpointService->method('getEndpointById')->willReturn($endpoint);

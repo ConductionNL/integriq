@@ -7,10 +7,10 @@
  * the fail-closed drive, and (item 3 of ocon#151 phase C) persisting the TRUE
  * post-run Phase D gate into appconfig after a real run. The mint→verify→null
  * safety contract itself is proven at the service level in
- * {@see \OCA\OpenConnector\Tests\Unit\Service\Security\InlineSecretMigrationExecutorTest}.
+ * {@see \OCA\Integriq\Tests\Unit\Service\Security\InlineSecretMigrationExecutorTest}.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Command
+ * @package  OCA\Integriq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -24,19 +24,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Command;
+namespace OCA\Integriq\Tests\Unit\Command;
 
-use OCA\OpenConnector\Command\MigrateInlineSecrets;
-use OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Command\MigrateInlineSecrets;
+use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * @covers \OCA\OpenConnector\Command\MigrateInlineSecrets
+ * @covers \OCA\Integriq\Command\MigrateInlineSecrets
  */
 class MigrateInlineSecretsTest extends TestCase {
 

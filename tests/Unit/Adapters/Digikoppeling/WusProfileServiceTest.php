@@ -4,7 +4,7 @@
  * OpenConnector — WUS profile service tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,12 +20,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling;
+namespace OCA\Integriq\Tests\Unit\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
-use OCA\OpenConnector\Adapters\Digikoppeling\WsSecuritySigner;
-use OCA\OpenConnector\Adapters\Digikoppeling\WusProfileService;
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
+use OCA\Integriq\Adapters\Digikoppeling\WsSecuritySigner;
+use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
+use OCA\Integriq\Exception\DigikoppelingException;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -4,7 +4,7 @@
  * Unit tests for PdokWmsClientHttp.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Pdok
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,14 +13,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Pdok;
+namespace OCA\Integriq\Tests\Unit\Adapters\Pdok;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 

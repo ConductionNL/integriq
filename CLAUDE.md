@@ -1,11 +1,11 @@
-# openconnector — l10n tooling
+# integriq — l10n tooling
 
 Ported from openregister, which shares the tooling. The app id is
-**`openconnector`**. Every wrap is:
+**`integriq`**. Every wrap is:
 
 ```js
-t('openconnector', 'Some user-visible string')
-n('openconnector', '{count} contract', '{count} contracts', count, { count })
+t('integriq', 'Some user-visible string')
+n('integriq', '{count} contract', '{count} contracts', count, { count })
 ```
 
 Use the scripts for CRUD on `l10n/*.js`. Hand-editing means 37 files kept in sync

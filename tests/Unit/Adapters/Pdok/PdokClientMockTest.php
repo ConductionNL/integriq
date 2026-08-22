@@ -4,7 +4,7 @@
  * Unit tests for the PDOK *ClientMock dormant implementations.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Pdok
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,14 +13,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Pdok;
+namespace OCA\Integriq\Tests\Unit\Adapters\Pdok;
 
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientMock;
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
 use PHPUnit\Framework\TestCase;
 
 /**

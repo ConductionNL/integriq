@@ -4,7 +4,7 @@
  * Unit tests for FlowAction — the FlowRunnerService-backed cron Action.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Action
+ * @package  OCA\Integriq\Tests\Unit\Action
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,11 +18,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Action;
+namespace OCA\Integriq\Tests\Unit\Action;
 
-use OCA\OpenConnector\Action\FlowAction;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Action\FlowAction;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 

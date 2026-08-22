@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright config for OpenConnector.
+ * Playwright config for Integriq.
  *
- * Scaffolded by /journeydoc-init (ADR-030). OpenConnector previously
+ * Scaffolded by /journeydoc-init (ADR-030). Integriq previously
  * had no Playwright setup — this is a from-scratch config with two
  * projects:
  *
@@ -16,7 +16,7 @@
  *                      Opt-in: `npx playwright test --project docs-capture`.
  *                      Output lands in
  *                      `docusaurus/static/screenshots/tutorials/{user,admin}/`.
- *                      Note: openconnector keeps its Docusaurus site in
+ *                      Note: integriq keeps its Docusaurus site in
  *                      `docusaurus/` (sibling of the markdown `docs/`),
  *                      so screenshots go under `docusaurus/static/`
  *                      rather than `docs/static/` — see the capture
@@ -49,7 +49,7 @@ export default defineConfig({
 	// `regression` project opts into 4 parallel workers via the
 	// `PLAYWRIGHT_REGRESSION_WORKERS` override (set by `npm run test:regression`
 	// → `--workers=4`) to keep its wall time under the 10-minute budget the
-	// openconnector-comprehensive-tests spec mandates (REQ-009).
+	// integriq-comprehensive-tests spec mandates (REQ-009).
 	workers: process.env.PLAYWRIGHT_REGRESSION_WORKERS
 		? Number(process.env.PLAYWRIGHT_REGRESSION_WORKERS)
 		: 1,
@@ -97,7 +97,7 @@ export default defineConfig({
 			// for this project (Playwright does not merge them), so the
 			// api-direct exclusion must be repeated here. The api-direct specs
 			// are API/HTTP-contract assertions covered by the Newman suite
-			// (tests/postman/openconnector.postman_collection.json), NOT real
+			// (tests/postman/integriq.postman_collection.json), NOT real
 			// UI-driving Playwright tests — gate-19: API-direct → Newman.
 			testIgnore: [
 				'**/docs-screenshots.spec.ts',

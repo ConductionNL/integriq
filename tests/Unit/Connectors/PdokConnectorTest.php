@@ -4,7 +4,7 @@
  * OpenConnector PDOK Connector Test
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Connectors
+ * @package  OCA\Integriq\Tests\Unit\Connectors
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Connectors;
+namespace OCA\Integriq\Tests\Unit\Connectors;
 
-use OCA\OpenConnector\Connectors\PdokConnector;
+use OCA\Integriq\Connectors\PdokConnector;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
