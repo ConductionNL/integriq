@@ -96,7 +96,14 @@ class SynchronizationSemanticRefusals {
 			);
 		}
 
-		foreach (['conditions', 'actions', 'followUps'] as $key) {
+		// `actions` is NOT in this list any more. It used to be, and it was the
+		// single largest cause of refusal on the instance — 74 of 79. It is
+		// judged by the generator instead, because deciding whether a rule is
+		// expressible needs the RULE, and this class deliberately depends on
+		// nothing but translations. A blanket refusal here could only ever say
+		// "there are actions"; the generator can say which ones, and emit
+		// steps for the ones that have an equivalent.
+		foreach (['conditions', 'followUps'] as $key) {
 			if ((array)($synchronization[$key] ?? []) === []) {
 				continue;
 			}

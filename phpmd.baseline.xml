@@ -50,6 +50,7 @@
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Flow/ContractSweepNode.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Flow/ContractSweepNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/ContractSweepNode.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/FetchFileNode.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Flow/SourcePaginateNode.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Flow/SourcePaginateNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/SourcePaginateNode.php"/>

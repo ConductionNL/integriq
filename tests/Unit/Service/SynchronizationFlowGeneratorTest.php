@@ -32,11 +32,13 @@ use OCA\OpenConnector\Flow\ApplyMappingNode;
 use OCA\OpenConnector\Flow\ContractCommitNode;
 use OCA\OpenConnector\Flow\ContractMatchNode;
 use OCA\OpenConnector\Flow\ContractSweepNode;
+use OCA\OpenConnector\Flow\FetchFileNode;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Flow\SourcePaginateNode;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
+use OCA\OpenConnector\Service\SynchronizationActionRules;
 use OCA\OpenConnector\Service\SynchronizationSemanticRefusals;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
@@ -104,8 +106,13 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 			mappingService: $this->mappingService,
 			l10n: $this->l10n,
 			// The REAL collaborator, not a double: these tests assert the refusal
-			// sentences themselves, and a stub would only test the stub.
-			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 	}//end setUp()
@@ -262,6 +269,102 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		}
 
 	}//end testPipelineIsTheDecomposedChain()
+
+	/**
+	 * A `fetch_file` / `after` rule becomes a STEP, not a refusal.
+	 *
+	 * This is the case that unblocks the migration. Measured on the dev
+	 * instance, every one of the 74 synchronizations refused for `actions`
+	 * references exactly one rule and all 74 are fetch_file/after.
+	 *
+	 * @return void
+	 */
+	public function testAFetchFileRuleBecomesAStepInsteadOfARefusal(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'grab-docs', 'type' => 'fetch_file', 'timing' => 'after', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['grab-docs']]);
+
+		$this->assertSame(
+			[],
+			$this->generator->refusalsFor(synchronization: $synchronization),
+			'A fetch-file rule has an equivalent step, so it is no longer a reason to refuse.'
+		);
+
+		$flow = $this->generator->generateFrom(synchronization: $synchronization);
+		$types = array_column($flow['nodes'], 'type');
+
+		$this->assertContains(FetchFileNode::NODE_ID, $types);
+
+		// AFTER the synced-id step and BEFORE the commit. The rule attaches
+		// files to the object that was just written, so it needs that id —
+		// which the set-fields step immediately before it puts on the record.
+		$position = array_search(FetchFileNode::NODE_ID, $types, true);
+		$this->assertSame('openregister.set-fields', $types[($position - 1)]);
+		$this->assertSame(ContractCommitNode::NODE_ID, $types[($position + 1)]);
+
+		$config = $flow['nodes'][$position]['config'];
+		$this->assertSame('grab-docs', $config['rule']);
+		$this->assertSame('syncedId', $config['objectIdPath']);
+
+		// The chain must still close over the inserted step rather than
+		// leaving an edge pointing at what used to follow.
+		$this->assertCount((count($flow['nodes']) - 1), $flow['edges']);
+		foreach ($flow['edges'] as $index => $edge) {
+			$this->assertSame($flow['nodes'][$index]['id'], $edge['from']);
+			$this->assertSame($flow['nodes'][($index + 1)]['id'], $edge['to']);
+		}
+
+	}//end testAFetchFileRuleBecomesAStepInsteadOfARefusal()
+
+	/**
+	 * Any OTHER rule type is still refused, by name.
+	 *
+	 * The negative control for the test above. Dropping an unsupported rule
+	 * silently would leave the generated flow doing less than the
+	 * synchronization it replaced, while reporting success.
+	 *
+	 * @return void
+	 */
+	public function testAnUnsupportedRuleTypeIsStillRefusedByName(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'sign-it', 'type' => 'authentication', 'timing' => 'before', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['sign-it']]);
+
+		$reasons = $this->generator->refusalsFor(synchronization: $synchronization);
+
+		$this->assertCount(1, $reasons);
+		$this->assertStringContainsString('sign-it', $reasons[0]);
+		$this->assertStringContainsString('authentication', $reasons[0]);
+
+	}//end testAnUnsupportedRuleTypeIsStillRefusedByName()
+
+	/**
+	 * A `before`-timed fetch-file rule is refused, and the reason says why.
+	 *
+	 * Not a placement detail: a `before` rule runs ahead of the write, and the
+	 * object its files attach to does not exist yet. There is nothing to
+	 * attach them to, so there is no step that would be equivalent.
+	 *
+	 * @return void
+	 */
+	public function testAFetchFileRuleTimedBeforeTheWriteIsRefused(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'too-early', 'type' => 'fetch_file', 'timing' => 'before', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['too-early']]);
+
+		$reasons = $this->generator->refusalsFor(synchronization: $synchronization);
+
+		$this->assertCount(1, $reasons);
+		$this->assertStringContainsString('too-early', $reasons[0]);
+		$this->assertStringContainsString('before', $reasons[0]);
+
+	}//end testAFetchFileRuleTimedBeforeTheWriteIsRefused()
 
 	/**
 	 * Every generated config is accepted by the node that will run it.
@@ -534,7 +637,12 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				['conditions' => [['==' => ['status', 'open']]]],
 				'conditions',
 			],
-			'rules applied during the sync' => [
+			// `actions` is no longer refused wholesale — a fetch_file/after
+			// rule is a step now. What is still refused is a rule whose
+			// meaning cannot be established, which is what this fixture's
+			// unresolvable id exercises. The cases where a rule DOES resolve
+			// have their own tests below.
+			'a rule that cannot be resolved' => [
 				['actions' => ['enrich-tender']],
 				'actions',
 			],
@@ -616,8 +724,13 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 			mappingService: $this->mappingService,
 			l10n: $this->l10n,
 			// The REAL collaborator, not a double: these tests assert the refusal
-			// sentences themselves, and a stub would only test the stub.
-			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -641,8 +754,13 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 			mappingService: $this->mappingService,
 			l10n: $this->l10n,
 			// The REAL collaborator, not a double: these tests assert the refusal
-			// sentences themselves, and a stub would only test the stub.
-			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -666,8 +784,13 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 			mappingService: $this->mappingService,
 			l10n: $this->l10n,
 			// The REAL collaborator, not a double: these tests assert the refusal
-			// sentences themselves, and a stub would only test the stub.
-			semanticRefusals: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());

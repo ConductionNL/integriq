@@ -23,6 +23,7 @@ use OCA\OpenConnector\Flow\ApplyMappingNode;
 use OCA\OpenConnector\Flow\ContractCommitNode;
 use OCA\OpenConnector\Flow\ContractMatchNode;
 use OCA\OpenConnector\Flow\ContractSweepNode;
+use OCA\OpenConnector\Flow\FetchFileNode;
 use OCA\OpenConnector\Flow\FlowNodeListener;
 use OCA\OpenConnector\Flow\FlowOwner;
 use OCA\OpenConnector\Flow\SourceCallNode;
@@ -144,6 +145,13 @@ class FlowNodeListenerTest extends TestCase {
 				l10n: $l10n,
 				urlGenerator: $urlGenerator,
 				logger: $this->createMock(LoggerInterface::class)
+			),
+			fetchFileNode: new FetchFileNode(
+				synchronizations: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
 			)
 		);
 
@@ -168,7 +176,8 @@ class FlowNodeListenerTest extends TestCase {
 		$this->assertArrayHasKey('openconnector.contract', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-commit', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-sweep', $nodes);
-		$this->assertCount(7, $nodes);
+		$this->assertArrayHasKey('openconnector.fetch-file', $nodes);
+		$this->assertCount(8, $nodes);
 
 		foreach ($nodes as $node) {
 			$this->assertNotSame('', $node->getDisplayName());
