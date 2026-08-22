@@ -243,23 +243,18 @@ class SynchronizationFlowGenerator {
 	private const SUPPORTED_TARGET_TYPE = 'register/schema';
 
 	/**
-	 * The fetch strategy the decomposed flow expresses.
-	 *
-	 * @var string
-	 */
-	private const SUPPORTED_SYNC_MODE = 'full';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SynchronizationService $synchronizationService Resolves a synchronization by uuid, slug or reference.
 	 * @param MappingService $mappingService Resolves the source→target mapping whose keys become the written fields.
 	 * @param IL10N $l10n Translations.
+	 * @param SynchronizationSemanticRefusals $semanticRefusals The semantic half of the refusal surface.
 	 */
 	public function __construct(
 		private readonly SynchronizationService $synchronizationService,
 		private readonly MappingService $mappingService,
 		private readonly IL10N $l10n,
+		private readonly SynchronizationSemanticRefusals $semanticRefusals,
 	) {
 
 	}//end __construct()
@@ -361,7 +356,7 @@ class SynchronizationFlowGenerator {
 	public function refusalsFor(array $synchronization): array {
 		return array_merge(
 			$this->transportRefusals(synchronization: $synchronization),
-			$this->semanticRefusals(synchronization: $synchronization),
+			$this->semanticRefusals->refusalsFor(synchronization: $synchronization),
 			$this->fieldRefusals(synchronization: $synchronization)
 		);
 
@@ -416,98 +411,6 @@ class SynchronizationFlowGenerator {
 	}//end transportRefusals()
 
 	/**
-	 * Refusals about rules the flow would otherwise silently drop.
-	 *
-	 * Each of these changes WHICH objects are synchronised, or what happens
-	 * around the write. A generated flow that omitted one would run green and
-	 * do less than the synchronization it replaced.
-	 *
-	 * @param array $synchronization The synchronization's serialised record.
-	 *
-	 * @return array<int, string> The refusal reasons.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	private function semanticRefusals(array $synchronization): array {
-		$sourceConfig = (array)($synchronization['sourceConfig'] ?? []);
-		$reasons = [];
-
-		$syncMode = trim((string)($synchronization['syncMode'] ?? self::SUPPORTED_SYNC_MODE));
-		if ($syncMode !== '' && $syncMode !== self::SUPPORTED_SYNC_MODE) {
-			$reasons[] = $this->l10n->t(
-				'syncMode "%1$s": no step carries the cursor watermark, and the stale sweep refuses an incremental pass.',
-				[$syncMode]
-			);
-		}
-
-		if (trim((string)($synchronization['sourceHashMapping'] ?? '')) !== '') {
-			$reasons[] = $this->l10n->t(
-				'sourceHashMapping: the contract step hashes a dot-path on the item, not the output of a mapping, '
-				. 'so change detection would compare a different value than the stored contract.'
-			);
-		}
-
-		if (trim((string)($synchronization['targetSourceMapping'] ?? '')) !== '') {
-			$reasons[] = $this->l10n->t(
-				'targetSourceMapping: the reverse (target→source) leg of a bidirectional sync has no decomposed steps.'
-			);
-		}
-
-		foreach (['conditions', 'actions', 'followUps'] as $key) {
-			if ((array)($synchronization[$key] ?? []) === []) {
-				continue;
-			}
-
-			$reasons[] = $this->l10n->t(
-				'%1$s: this synchronization declares them and no generated step evaluates them.',
-				[$key]
-			);
-		}
-
-		return array_merge($reasons, $this->sourceConfigRefusals(sourceConfig: $sourceConfig));
-
-	}//end semanticRefusals()
-
-	/**
-	 * Refusals hidden inside `sourceConfig`.
-	 *
-	 * @param array $sourceConfig The synchronization's source configuration.
-	 *
-	 * @return array<int, string> The refusal reasons.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	private function sourceConfigRefusals(array $sourceConfig): array {
-		$reasons = [];
-
-		if ((array)($sourceConfig['subObjects'] ?? []) !== []) {
-			$reasons[] = $this->l10n->t(
-				'sourceConfig.subObjects: nested objects are written and contracted by the legacy engine only.'
-			);
-		}
-
-		if ((bool)($sourceConfig['requiresApproval'] ?? false) === true) {
-			$reasons[] = $this->l10n->t(
-				'sourceConfig.requiresApproval: the write would bypass the approval gate the synchronization requires.'
-			);
-		}
-
-		foreach (['originIdsToReplace', 'idsToReplaceWithTargetIdsBeforeRules'] as $key) {
-			if ((array)($sourceConfig[$key] ?? []) === []) {
-				continue;
-			}
-
-			$reasons[] = $this->l10n->t(
-				'sourceConfig.%1$s: origin-id rewriting happens inside the legacy write path and has no step.',
-				[$key]
-			);
-		}
-
-		return $reasons;
-
-	}//end sourceConfigRefusals()
-
-	/**
 	 * Refusals about the field list the write step has to enumerate.
 	 *
 	 * @param array $synchronization The synchronization's serialised record.
@@ -519,12 +422,12 @@ class SynchronizationFlowGenerator {
 	private function fieldRefusals(array $synchronization): array {
 		$reference = trim((string)($synchronization['sourceTargetMapping'] ?? ''));
 		if ($reference === '') {
-			return [
-				$this->l10n->t(
-					'sourceTargetMapping is not set: with no mapping the written properties cannot be enumerated, '
-					. 'and "openregister.object-write" has no shorthand for writing an item whole.'
-				),
-			];
+			// NO LONGER A REFUSAL. `openregister.object-write` gained `payloadFrom`,
+			// which writes the object at a path whole, so a synchronization without
+			// a mapping is generated as the legacy engine runs it: the source object
+			// written as it stands. This one refusal accounted for 98 of the 99
+			// refusals measured across 119 synchronizations on the dev instance.
+			return [];
 		}
 
 		try {
@@ -563,6 +466,66 @@ class SynchronizationFlowGenerator {
 
 	/**
 	 * The `fields` map the write step writes, one entry per mapped property.
+	 *
+	 * A mapped synchronization writes the mapping's output keys. An unmapped one
+	 * has no such list, so it writes the object WHOLE through `payloadFrom` —
+	 * which is what the legacy engine does, and what "sourceTargetMapping is not
+	 * set" used to refuse.
+	 *
+	 * @param object|null $mapping The resolved mapping, or null when none is set.
+	 * @param string      $written The path holding what gets written.
+	 *
+	 * @return array<string, mixed> The `fields` or `payloadFrom` half of the write config.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function payloadConfigFor(?object $mapping, string $written): array {
+		if ($mapping === null) {
+			// No mapping means the written properties cannot be enumerated. Rather
+			// than refuse — which is what refused 98 of 99 unmigratable
+			// synchronizations measured on the dev instance — write the object
+			// whole, exactly as the legacy engine does for an unmapped sync.
+			return ['payloadFrom' => $written];
+		}
+
+		return ['fields' => $this->fieldsFor(mapping: $mapping)];
+
+	}//end payloadConfigFor()
+
+	/**
+	 * The `map` step, or nothing at all.
+	 *
+	 * Returned as a LIST so the caller can splice it in unconditionally —
+	 * `edgesFor()` chains on array order, so an empty list rewires the pipeline
+	 * around the missing step without anything else knowing.
+	 *
+	 * @param string $mappingId The configured mapping reference, empty when unset.
+	 *
+	 * @return array<int, array<string, mixed>> Zero or one node.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function mapNodesFor(string $mappingId): array {
+		if ($mappingId === '') {
+			return [];
+		}
+
+		return [
+			[
+				'id' => 'map',
+				'type' => ApplyMappingNode::NODE_ID,
+				'config' => [
+					'mapping' => $mappingId,
+					'input' => self::KEY_SOURCE,
+					'output' => self::KEY_TARGET,
+				],
+			],
+		];
+
+	}//end mapNodesFor()
+
+	/**
+	 * The properties a mapped synchronization writes.
 	 *
 	 * Derived from the MAPPING rather than the target schema on purpose: the
 	 * mapping's keys are exactly what the synchronization writes today, where a
@@ -624,11 +587,21 @@ class SynchronizationFlowGenerator {
 		}
 
 		[$register, $schema] = $this->targetPair(synchronization: $synchronization);
-		$mapping = $this->mappingService->getMapping(
-			mappingId: trim((string)($synchronization['sourceTargetMapping'] ?? ''))
-		);
 
-		return [
+		// A synchronization with NO mapping writes the source object as it stands.
+		// That shape has no `map` step and therefore no `target`, so the object,
+		// the hash and the payload all come from `source`. One branch decides all
+		// three, deliberately: three separate `if ($hasMapping)` blocks said the
+		// same thing three times and pushed the class past its complexity budget.
+		$mappingId = trim((string)($synchronization['sourceTargetMapping'] ?? ''));
+		$mapping = null;
+		$written = self::KEY_SOURCE;
+		if ($mappingId !== '') {
+			$mapping = $this->mappingService->getMapping(mappingId: $mappingId);
+			$written = self::KEY_TARGET;
+		}
+
+		$nodes = [
 			['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => []],
 			[
 				'id' => 'fetch',
@@ -647,15 +620,53 @@ class SynchronizationFlowGenerator {
 					'keepRecord' => true,
 				],
 			],
-			[
-				'id' => 'map',
-				'type' => ApplyMappingNode::NODE_ID,
-				'config' => [
-					'mapping' => trim((string)$synchronization['sourceTargetMapping']),
-					'input' => self::KEY_SOURCE,
-					'output' => self::KEY_TARGET,
-				],
-			],
+		];
+
+		// `edgesFor()` chains nodes in ARRAY ORDER, so an empty map step rewires
+		// explode -> contract on its own. Nothing else has to know.
+		return array_merge(
+			$nodes,
+			$this->mapNodesFor(mappingId: $mappingId),
+			$this->writeNodesFor(
+				reference: $reference,
+				idPosition: $idPosition,
+				register: $register,
+				schema: $schema,
+				mapping: $mapping,
+				written: $written
+			)
+		);
+
+	}//end nodesFor()
+
+	/**
+	 * The steps from the contract decision through to the end.
+	 *
+	 * Split out of `nodesFor()` for LENGTH, not for reuse — it has one caller.
+	 * The class had no complexity budget left to spend on an extra method until
+	 * the semantic refusals moved to their own class, which is why this shape is
+	 * only possible now.
+	 *
+	 * @param string      $reference  The synchronization reference.
+	 * @param string      $idPosition The source object's id path.
+	 * @param string      $register   The target register.
+	 * @param string      $schema     The target schema.
+	 * @param object|null $mapping    The resolved mapping, null when unmapped.
+	 * @param string      $written    The item path holding what gets written.
+	 *
+	 * @return array<int, array<string, mixed>> The tail of the pipeline.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function writeNodesFor(
+		string $reference,
+		string $idPosition,
+		string $register,
+		string $schema,
+		?object $mapping,
+		string $written
+	): array {
+		return [
 			[
 				'id' => 'contract',
 				'type' => ContractMatchNode::NODE_ID,
@@ -678,7 +689,11 @@ class SynchronizationFlowGenerator {
 					'match' => [
 						['property' => '@self.uuid', 'value' => '{{' . self::KEY_TARGET_UUID . '}}'],
 					],
-					'fields' => $this->fieldsFor(mapping: $mapping),
+					// With a mapping the written properties are the mapping's output
+					// keys. Without one they cannot be enumerated at all, so the
+					// source object is written WHOLE — which is what the legacy
+					// engine does for an unmapped synchronization.
+					...$this->payloadConfigFor(mapping: $mapping, written: $written),
 					'output' => self::KEY_WRITTEN,
 					// An item the contract step decided is unchanged passes
 					// through UNWRITTEN. Without this the re-run rewrote every
@@ -696,7 +711,11 @@ class SynchronizationFlowGenerator {
 					'synchronization' => $reference,
 					'contractPosition' => self::KEY_CONTRACT,
 					'targetIdPosition' => self::KEY_WRITTEN . '.uuid',
-					'targetHashPosition' => self::KEY_TARGET,
+					// The hash must cover what was WRITTEN. With no mapping that is
+					// the source object; hashing a `target` that never existed would
+					// leave targetHash empty and make the skip test unreachable —
+					// the defect task 2.3 already had to fix once.
+					'targetHashPosition' => $written,
 				],
 			],
 			[
@@ -711,7 +730,7 @@ class SynchronizationFlowGenerator {
 			['id' => 'end', 'type' => 'openregister.end', 'config' => []],
 		];
 
-	}//end nodesFor()
+	}//end writeNodesFor()
 
 	/**
 	 * The step that names the target id this pass REACHED, written or skipped.

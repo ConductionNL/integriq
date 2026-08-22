@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -90,7 +91,10 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+
+	use SynchronizationLogActions;
+
 
 	/**
 	 * The step type this node answers to.
