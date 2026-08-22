@@ -971,6 +971,36 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		const executed = (run.log ?? []).map((entry: Record<string, unknown>) =>
 			String(entry.transition),
 		)
+		// DIAGNOSTIC (temporary): when the run ends early it ends SUCCESSFULLY,
+		// so the only evidence of where it stopped is the log's own shape.
+		// Printing itemsIn/itemsOut per step distinguishes "a node emitted
+		// nothing" from "the marking never advanced" — two very different bugs
+		// that look identical from the assertion below.
+		console.log(
+			'[diag] run status='
+				+ String(run.status)
+				+ ' marking='
+				+ JSON.stringify(run.marking)
+				+ ' error='
+				+ JSON.stringify(run.error),
+		)
+		for (const entry of run.log ?? []) {
+			console.log(
+				'[diag] step '
+					+ String(entry.transition)
+					+ ' type='
+					+ String(entry.type)
+					+ ' status='
+					+ String(entry.status)
+					+ ' in='
+					+ String(entry.itemsIn)
+					+ ' out='
+					+ String(entry.itemsOut)
+					+ ' reason='
+					+ JSON.stringify(entry.reason ?? null),
+			)
+		}
+
 		expect(
 			executed,
 			'the run log must show every decomposed step executing, in order',
