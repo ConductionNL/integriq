@@ -316,9 +316,7 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(
-						`/apps/integriq/api/events/dead-letter/${verb}`,
-					),
+					generateUrl(`/apps/integriq/api/events/dead-letter/${verb}`),
 					{ ids: this.selected },
 				)
 				const results = res.data?.results || {}
@@ -332,9 +330,7 @@ export default {
 						}),
 					)
 				} else {
-					showSuccess(
-						t('integriq', '{ok} messages processed', { ok }),
-					)
+					showSuccess(t('integriq', '{ok} messages processed', { ok }))
 				}
 				await this.reload()
 			} catch (err) {

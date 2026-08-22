@@ -8,9 +8,7 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{
-			t('integriq', 'Lock action')
-		}}</label>
+		<label class="action-form__label">{{ t('integriq', 'Lock action') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('integriq', 'Lock action')"
 			:modelValue="selectedAction"

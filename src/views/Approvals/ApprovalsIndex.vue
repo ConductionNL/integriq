@@ -36,10 +36,7 @@
 			data-testid="empty-state"
 			:name="t('integriq', 'No approval requests')"
 			:description="
-				t(
-					'integriq',
-					'There are no approval requests matching this filter.',
-				)
+				t('integriq', 'There are no approval requests matching this filter.')
 			">
 			<template #icon>
 				<CheckboxMarkedCircleOutline :size="48" />

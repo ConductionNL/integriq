@@ -63,9 +63,7 @@
 				<NcTextField
 					:label="t('integriq', 'Endpoint')"
 					:modelValue="configValue('endpoint')"
-					:placeholder="
-						t('integriq', 'Path appended to the source URL')
-					"
+					:placeholder="t('integriq', 'Path appended to the source URL')"
 					@update:modelValue="
 						(value) => onConfigUpdate('endpoint', value)
 					" />
@@ -76,10 +74,7 @@
 					:label="t('integriq', 'ID position')"
 					:modelValue="configValue('idPosition')"
 					:placeholder="
-						t(
-							'integriq',
-							'Dot-path to the id field in the API response',
-						)
+						t('integriq', 'Dot-path to the id field in the API response')
 					"
 					@update:modelValue="
 						(value) => onConfigUpdate('idPosition', value)
@@ -90,9 +85,7 @@
 				<NcTextField
 					:label="t('integriq', 'Results position')"
 					:modelValue="configValue('resultsPosition')"
-					:placeholder="
-						t('integriq', 'Dot-path to the list of items')
-					"
+					:placeholder="t('integriq', 'Dot-path to the list of items')"
 					@update:modelValue="
 						(value) => onConfigUpdate('resultsPosition', value)
 					" />
@@ -125,9 +118,7 @@
 					:modelValue="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
-					:placeholder="
-						t('integriq', 'Pick a schema in the register')
-					"
+					:placeholder="t('integriq', 'Pick a schema in the register')"
 					@update:modelValue="onSchemaPick" />
 			</div>
 
@@ -325,9 +316,7 @@
 					:loading="formsLoading"
 					:disabled="!sourceIdValue"
 					:inputLabel="t('integriq', 'Form')"
-					:placeholder="
-						t('integriq', 'Pick a form the source can access')
-					"
+					:placeholder="t('integriq', 'Pick a form the source can access')"
 					@update:modelValue="onFormPick" />
 				<span v-if="formsError" class="sync-config__error">
 					{{ formsError }}

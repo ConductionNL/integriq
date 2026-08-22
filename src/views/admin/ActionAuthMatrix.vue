@@ -4,9 +4,7 @@
 -->
 
 <template>
-	<div
-		class="integriq-admin__section"
-		data-testid="admin-action-auth-section">
+	<div class="integriq-admin__section" data-testid="admin-action-auth-section">
 		<h3>{{ t('integriq', 'Action authorization') }}</h3>
 		<p class="integriq-admin__hint">
 			{{
@@ -157,10 +155,7 @@ export default {
 				this.matrix = next
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
-				this.error = this.t(
-					'integriq',
-					'Failed to load the action matrix.',
-				)
+				this.error = this.t('integriq', 'Failed to load the action matrix.')
 			} finally {
 				this.loading = false
 			}
@@ -243,9 +238,7 @@ export default {
 				showSuccess(this.t('integriq', 'Action matrix saved.'))
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
-				showError(
-					this.t('integriq', 'Failed to save the action matrix.'),
-				)
+				showError(this.t('integriq', 'Failed to save the action matrix.'))
 			} finally {
 				this.saving = false
 			}

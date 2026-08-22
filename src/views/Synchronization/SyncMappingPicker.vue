@@ -62,9 +62,7 @@
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
-				:placeholder="
-					t('integriq', 'Optional — for bidirectional sync')
-				"
+				:placeholder="t('integriq', 'Optional — for bidirectional sync')"
 				@update:modelValue="
 					(option) => $emit('update:targetSourceValue', option?.id || '')
 				" />

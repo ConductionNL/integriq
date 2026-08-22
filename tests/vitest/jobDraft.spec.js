@@ -291,10 +291,7 @@ describe('Jobs form configuration consistency', () => {
 		const onDisk = fs
 			.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
 			.filter((file) => file.endsWith('.php'))
-			.map(
-				(file) =>
-					`OCA\\Integriq\\Action\\${file.replace(/\.php$/, '')}`,
-			)
+			.map((file) => `OCA\\Integriq\\Action\\${file.replace(/\.php$/, '')}`)
 		expect([...overrides.jobClass.enum].sort()).toEqual([...onDisk].sort())
 	})
 

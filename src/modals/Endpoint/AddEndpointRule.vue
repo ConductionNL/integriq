@@ -126,9 +126,7 @@ defineOptions({
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
 					<p>
-						{{
-							t('integriq', 'Rule successfully added to endpoint')
-						}}
+						{{ t('integriq', 'Rule successfully added to endpoint') }}
 					</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">

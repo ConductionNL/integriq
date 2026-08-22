@@ -76,9 +76,7 @@
 						class="cn-test-source-modal__textarea"
 						rows="8"
 						spellcheck="false"
-						:placeholder="
-							t('integriq', 'Request body for POST/PUT')
-						" />
+						:placeholder="t('integriq', 'Request body for POST/PUT')" />
 
 					<div class="cn-test-source-modal__actions">
 						<NcButton @click="onClose">
@@ -104,12 +102,7 @@
 					<div
 						v-if="!hasResult && !runError"
 						class="cn-test-source-modal__empty">
-						{{
-							t(
-								'integriq',
-								'Run the test to see the response here.',
-							)
-						}}
+						{{ t('integriq', 'Run the test to see the response here.') }}
 					</div>
 
 					<NcNoteCard v-if="runError" type="error">
@@ -148,9 +141,7 @@
 							<dt>{{ t('integriq', 'Response time') }}</dt>
 							<dd>{{ formatMs(response.responseTime) }}</dd>
 							<dt>{{ t('integriq', 'Size') }}</dt>
-							<dd>
-								{{ response.size }} {{ t('integriq', 'bytes') }}
-							</dd>
+							<dd>{{ response.size }} {{ t('integriq', 'bytes') }}</dd>
 							<dt v-if="response.remoteIp">
 								{{ t('integriq', 'Remote IP') }}
 							</dt>
@@ -300,9 +291,7 @@ export default {
 					payload.body = this.body
 				}
 				const res = await axios.post(
-					generateUrl(
-						`/apps/integriq/api/sources/test/${this.sourceId}`,
-					),
+					generateUrl(`/apps/integriq/api/sources/test/${this.sourceId}`),
 					payload,
 				)
 				// The controller returns the CallLog object; the live request/response

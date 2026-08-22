@@ -28,12 +28,7 @@
 		</div>
 
 		<div v-else-if="rows.length === 0" class="oc-synced-from__empty">
-			{{
-				t(
-					'integriq',
-					'This object was not created by a synchronization.',
-				)
-			}}
+			{{ t('integriq', 'This object was not created by a synchronization.') }}
 		</div>
 
 		<ul v-else class="oc-synced-from__list">

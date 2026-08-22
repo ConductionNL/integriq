@@ -144,9 +144,7 @@
 							:keepOpen="true"
 							:clearable="true"
 							:disabled="saving"
-							:aria-label-combobox="
-								t('integriq', 'Allowed domains')
-							"
+							:aria-label-combobox="t('integriq', 'Allowed domains')"
 							:placeholder="domainPlaceholder"
 							@update:modelValue="
 								(value) => updateDraft('domains', value)
@@ -232,9 +230,7 @@
 						:options="authorizationTypeOptions"
 						:clearable="false"
 						:disabled="saving"
-						:aria-label-combobox="
-							t('integriq', 'Authorization type')
-						"
+						:aria-label-combobox="t('integriq', 'Authorization type')"
 						@update:modelValue="onAuthorizationTypePick" />
 					<span class="cn-consumer-editor__helper">
 						{{ authorizationTypeHelper }}
@@ -377,11 +373,7 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{
-					isCreate
-						? t('integriq', 'Create')
-						: t('integriq', 'Save')
-				}}
+				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -894,8 +886,7 @@ export default {
 							)
 						: ''
 			} catch (err) {
-				this.authConfigError =
-					err?.message || t('integriq', 'Invalid JSON.')
+				this.authConfigError = err?.message || t('integriq', 'Invalid JSON.')
 			}
 		},
 

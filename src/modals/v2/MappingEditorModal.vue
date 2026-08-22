@@ -191,11 +191,7 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{
-					isCreate
-						? t('integriq', 'Create')
-						: t('integriq', 'Save')
-				}}
+				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -335,9 +331,7 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
-				return this.nameTouched
-					? this.t('integriq', 'Name is required')
-					: ''
+				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''

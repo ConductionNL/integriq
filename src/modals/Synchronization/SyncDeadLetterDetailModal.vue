@@ -224,9 +224,7 @@ export default {
 			this.busy = true
 			try {
 				await axios.post(
-					generateUrl(
-						`/apps/integriq/api/sync-dead-letter/${id}/${verb}`,
-					),
+					generateUrl(`/apps/integriq/api/sync-dead-letter/${id}/${verb}`),
 				)
 				showSuccess(
 					verb === 'replay'

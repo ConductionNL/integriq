@@ -43,9 +43,7 @@
 			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
-			:placeholder="
-				t('integriq', 'Pick a mapping to transform before save')
-			"
+			:placeholder="t('integriq', 'Pick a mapping to transform before save')"
 			@update:modelValue="
 				(option) => patch('mapping', option?.id ? String(option.id) : '')
 			" />

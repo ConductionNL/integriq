@@ -127,9 +127,7 @@
 									</NcButton>
 									<NcButton
 										variant="tertiary"
-										:aria-label="
-											t('integriq', 'Delete rule')
-										"
+										:aria-label="t('integriq', 'Delete rule')"
 										:disabled="saving"
 										@click="deleteRule('mapping', row.key)">
 										<template #icon>
@@ -244,9 +242,7 @@
 									</NcButton>
 									<NcButton
 										variant="tertiary"
-										:aria-label="
-											t('integriq', 'Delete rule')
-										"
+										:aria-label="t('integriq', 'Delete rule')"
 										:disabled="saving"
 										@click="deleteRule('cast', row.key)">
 										<template #icon>
@@ -350,9 +346,7 @@
 									</NcButton>
 									<NcButton
 										variant="tertiary"
-										:aria-label="
-											t('integriq', 'Delete rule')
-										"
+										:aria-label="t('integriq', 'Delete rule')"
 										:disabled="saving"
 										@click="deleteUnset(property)">
 										<template #icon>
@@ -567,10 +561,7 @@ export default {
 						'integriq',
 						'Enable pass-through in the Options tab to add unset rules.',
 					)
-				: this.t(
-						'integriq',
-						'Enable pass-through above to add unset rules.',
-					)
+				: this.t('integriq', 'Enable pass-through above to add unset rules.')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */

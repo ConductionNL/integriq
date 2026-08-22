@@ -111,9 +111,7 @@
 								</label>
 								<NcSelect
 									inputId="cn-endpoint-form-register"
-									:aria-label-combobox="
-										t('integriq', 'Register')
-									"
+									:aria-label-combobox="t('integriq', 'Register')"
 									:modelValue="selectedRegister"
 									:options="registerOptions"
 									:loading="registersLoading"
@@ -128,9 +126,7 @@
 								</label>
 								<NcSelect
 									inputId="cn-endpoint-form-schema"
-									:aria-label-combobox="
-										t('integriq', 'Schema')
-									"
+									:aria-label-combobox="t('integriq', 'Schema')"
 									:modelValue="selectedSchema"
 									:options="schemaOptions"
 									:disabled="!selectedRegister"

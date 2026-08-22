@@ -1332,11 +1332,7 @@ defineOptions({
 	<NcModal ref="modalRef" labelId="editRule" @close="closeModal">
 		<div class="modalContent">
 			<h2>
-				{{
-					ruleItem.id
-						? t('integriq', 'Edit')
-						: t('integriq', 'Add')
-				}}
+				{{ ruleItem.id ? t('integriq', 'Edit') : t('integriq', 'Add') }}
 				{{ t('integriq', 'Rule') }}
 			</h2>
 
@@ -1439,9 +1435,7 @@ defineOptions({
 					:label="t('integriq', 'Description')" />
 
 				<div class="json-editor">
-					<label>{{
-						t('integriq', 'Conditions (JSON logic)')
-					}}</label>
+					<label>{{ t('integriq', 'Conditions (JSON logic)') }}</label>
 					<div :class="`codeMirrorContainer ${getTheme()}`">
 						<CodeMirror
 							v-model="ruleItem.conditions"
@@ -1553,10 +1547,7 @@ defineOptions({
 						resize="vertical"
 						maxlength="2550"
 						:placeholder="
-							t(
-								'integriq',
-								'We encountered an unexpected problem',
-							)
+							t('integriq', 'We encountered an unexpected problem')
 						" />
 
 					<NcCheckboxRadioSwitch
@@ -1675,9 +1666,7 @@ defineOptions({
 							<div class="extendItemProperty">
 								<NcTextField
 									v-model="item.property"
-									:label="
-										t('integriq', 'Property (dot path)')
-									"
+									:label="t('integriq', 'Property (dot path)')"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
@@ -1728,9 +1717,7 @@ defineOptions({
 						:label="
 							t('integriq', 'Validate fetched object with schema')
 						">
-						{{
-							t('integriq', 'Validate fetched object with schema')
-						}}
+						{{ t('integriq', 'Validate fetched object with schema') }}
 					</NcCheckboxRadioSwitch>
 
 					<div class="extendList">

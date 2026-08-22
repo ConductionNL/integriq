@@ -319,14 +319,8 @@ function jobClassLabel(fqn) {
 			'Run a synchronization',
 		),
 		'OCA\\Integriq\\Action\\FlowAction': t('integriq', 'Run a flow'),
-		'OCA\\Integriq\\Action\\EventAction': t(
-			'integriq',
-			'Dispatch an event',
-		),
-		'OCA\\Integriq\\Action\\PingAction': t(
-			'integriq',
-			'Ping a source',
-		),
+		'OCA\\Integriq\\Action\\EventAction': t('integriq', 'Dispatch an event'),
+		'OCA\\Integriq\\Action\\PingAction': t('integriq', 'Ping a source'),
 	}
 	return labels[fqn] || fqn
 }

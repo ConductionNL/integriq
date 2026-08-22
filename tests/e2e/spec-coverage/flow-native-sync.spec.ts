@@ -788,10 +788,10 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			pipeline.syncId,
 			'--json',
 		])
-		generated = parseOccJson(
-			raw,
-			'integriq:synchronization-to-flow',
-		) as Record<string, unknown>
+		generated = parseOccJson(raw, 'integriq:synchronization-to-flow') as Record<
+			string,
+			unknown
+		>
 
 		// SHAPE FIRST. A document that preflights green while missing `explode`
 		// is the documented failure this change exists to prevent, so the node

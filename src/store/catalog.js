@@ -106,9 +106,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		async fetchStatus(id) {
-			const url = generateUrl(
-				`/apps/integriq/api/catalog/items/${id}/status`,
-			)
+			const url = generateUrl(`/apps/integriq/api/catalog/items/${id}/status`)
 			const { data } = await axios.get(url)
 			this.statusById = { ...this.statusById, [id]: data }
 			return data

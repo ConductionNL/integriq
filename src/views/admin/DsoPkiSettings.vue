@@ -61,10 +61,7 @@
 					data-testid="admin-dso-pki-signing-cert" />
 
 				<label for="dso-pki-intermediate-chain">{{
-					t(
-						'integriq',
-						'Intermediate certificate chain (PEM, optional)',
-					)
+					t('integriq', 'Intermediate certificate chain (PEM, optional)')
 				}}</label>
 				<textarea
 					id="dso-pki-intermediate-chain"
@@ -136,10 +133,7 @@ export default {
 			rootCa: '',
 			modeOptions: [
 				{
-					label: this.t(
-						'integriq',
-						'HMAC shared secret (pre-production)',
-					),
+					label: this.t('integriq', 'HMAC shared secret (pre-production)'),
 
 					value: 'hmac',
 				},
@@ -202,9 +196,7 @@ export default {
 				)
 				this.hmacSecret = ''
 				await this.load()
-				showSuccess(
-					this.t('integriq', 'DSO signature configuration saved.'),
-				)
+				showSuccess(this.t('integriq', 'DSO signature configuration saved.'))
 			} catch (e) {
 				console.error('Failed to save DSO PKI configuration', e)
 				const errors =

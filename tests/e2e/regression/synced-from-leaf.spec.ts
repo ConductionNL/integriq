@@ -159,8 +159,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// A brand-new integriq therefore never surfaces "Synced from" on
 		// any OpenRegister object. That is a product defect, not a test
 		// problem, and it is why this suite skips in CI rather than passing.
-		let disabledReason =
-			'integriq.storage_migrated is not true on this instance'
+		let disabledReason = 'integriq.storage_migrated is not true on this instance'
 		try {
 			const probe = await ctx.get(
 				'/index.php/apps/openregister/api/integrations',

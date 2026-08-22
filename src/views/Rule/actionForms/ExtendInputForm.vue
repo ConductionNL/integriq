@@ -23,9 +23,7 @@
 				placeholder="a.b"
 				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
-				:label="
-					t('integriq', 'Extends (comma-separated paths, optional)')
-				"
+				:label="t('integriq', 'Extends (comma-separated paths, optional)')"
 				:modelValue="(row.extends || []).join(',')"
 				placeholder="x.y,z"
 				@update:modelValue="(next) => onExtendsInput(index, next)" />

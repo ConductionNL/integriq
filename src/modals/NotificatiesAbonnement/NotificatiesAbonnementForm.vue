@@ -391,9 +391,7 @@ export default {
 					showSuccess(t('integriq', 'Abonnement updated'))
 				} else {
 					await axios.post(
-						generateUrl(
-							'/apps/integriq/api/notificaties/abonnementen',
-						),
+						generateUrl('/apps/integriq/api/notificaties/abonnementen'),
 						payload,
 					)
 					showSuccess(t('integriq', 'Abonnement created'))

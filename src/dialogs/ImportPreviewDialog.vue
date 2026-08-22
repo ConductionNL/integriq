@@ -104,9 +104,7 @@
 					v-if="preview.unresolvedReferences.length > 0"
 					type="error"
 					data-testid="preview-unresolved">
-					<strong>{{
-						t('integriq', 'Unresolved references')
-					}}</strong>
+					<strong>{{ t('integriq', 'Unresolved references') }}</strong>
 					<p>
 						{{
 							t(
@@ -342,8 +340,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('integriq', 'Preview failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Preview failed') + (detail ? `: ${detail}` : '')
 			}
 		},
 
@@ -361,9 +358,7 @@ export default {
 			this.importRunning = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(
-					'/apps/integriq/api/configurations/import',
-				)
+				const url = generateUrl('/apps/integriq/api/configurations/import')
 				const { data } = await axios.post(url, {
 					document: this.document,
 					confirmed: true,
@@ -373,8 +368,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('integriq', 'Import failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Import failed') + (detail ? `: ${detail}` : '')
 			} finally {
 				this.importRunning = false
 			}

@@ -56,10 +56,7 @@
 				<CnFieldHelper
 					:text="
 						field.description
-						|| t(
-							'integriq',
-							'The transport used to reach this source.',
-						)
+						|| t('integriq', 'The transport used to reach this source.')
 					"
 					:more="field.descriptionLong" />
 			</div>
@@ -224,16 +221,12 @@
 					<NcSelect
 						inputId="cn-source-form-credentialref"
 						:inputLabel="t('integriq', 'Brokered credential')"
-						:aria-label-combobox="
-							t('integriq', 'Brokered credential')
-						"
+						:aria-label-combobox="t('integriq', 'Brokered credential')"
 						:modelValue="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
-						:placeholder="
-							t('integriq', 'Select a brokered credential')
-						"
+						:placeholder="t('integriq', 'Select a brokered credential')"
 						@update:modelValue="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
 						{{

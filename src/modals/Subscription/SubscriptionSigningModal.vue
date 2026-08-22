@@ -53,10 +53,7 @@
 			<p v-else class="signing__status">
 				{{
 					hasSecret
-						? t(
-								'integriq',
-								'A signing secret is configured (hidden).',
-							)
+						? t('integriq', 'A signing secret is configured (hidden).')
 						: t('integriq', 'No signing secret configured.')
 				}}
 			</p>

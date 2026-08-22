@@ -193,9 +193,7 @@ export default {
 			this.loading = true
 			try {
 				const res = await axios.get(
-					generateUrl(
-						`/apps/integriq/api/approvals/${this.requestId}`,
-					),
+					generateUrl(`/apps/integriq/api/approvals/${this.requestId}`),
 				)
 				this.request = res.data
 			} catch (err) {
@@ -224,8 +222,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('integriq', 'Approve failed')
-						+ (detail ? `: ${detail}` : ''),
+					t('integriq', 'Approve failed') + (detail ? `: ${detail}` : ''),
 				)
 			} finally {
 				this.busy = false
@@ -254,8 +251,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('integriq', 'Reject failed')
-						+ (detail ? `: ${detail}` : ''),
+					t('integriq', 'Reject failed') + (detail ? `: ${detail}` : ''),
 				)
 			} finally {
 				this.busy = false

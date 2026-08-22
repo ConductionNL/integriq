@@ -36,9 +36,7 @@
 				}}
 			</span>
 			<span class="circuitBreaker__failures">
-				{{
-					t('integriq', 'Failures: {count}', { count: failureCount })
-				}}
+				{{ t('integriq', 'Failures: {count}', { count: failureCount }) }}
 			</span>
 			<span
 				v-if="isOpen && cooldownRemaining > 0"

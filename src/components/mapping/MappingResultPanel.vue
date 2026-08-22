@@ -37,9 +37,7 @@
 			</label>
 			<NcSelect
 				v-model="selectedSchema"
-				:aria-label-combobox="
-					t('integriq', 'Validation schema (optional)')
-				"
+				:aria-label-combobox="t('integriq', 'Validation schema (optional)')"
 				:options="schemaOptions"
 				:loading="schemasLoading"
 				:placeholder="t('integriq', 'No validation')"
@@ -63,20 +61,12 @@
 		<template v-if="hasResult && selectedSchema">
 			<p v-if="isValid" class="cn-mapping-result__valid">
 				<CheckCircleIcon :size="18" />
-				{{
-					t(
-						'integriq',
-						'Result is valid against the selected schema.',
-					)
-				}}
+				{{ t('integriq', 'Result is valid against the selected schema.') }}
 			</p>
 			<p v-else class="cn-mapping-result__invalid">
 				<CloseCircleIcon :size="18" />
 				{{
-					t(
-						'integriq',
-						'Result is not valid against the selected schema.',
-					)
+					t('integriq', 'Result is not valid against the selected schema.')
 				}}
 			</p>
 		</template>

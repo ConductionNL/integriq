@@ -350,10 +350,7 @@
 										)
 									"
 									:emptyLabel="
-										t(
-											'integriq',
-											'No follow-ups linked yet.',
-										)
+										t('integriq', 'No follow-ups linked yet.')
 									"
 									@input="
 										(value) => updateDraft('followUps', value)
@@ -402,11 +399,7 @@
 					<PlusIcon v-else-if="isCreate" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{
-					isCreate
-						? t('integriq', 'Create')
-						: t('integriq', 'Save')
-				}}
+				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -573,9 +566,7 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
-				return this.nameTouched
-					? this.t('integriq', 'Name is required')
-					: ''
+				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''

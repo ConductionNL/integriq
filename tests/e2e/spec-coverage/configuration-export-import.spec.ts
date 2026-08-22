@@ -26,10 +26,7 @@ const OR_BASE = '/index.php/apps/openregister/api'
 let _appBase: string | null = null
 async function appBase(page: Page): Promise<string> {
 	if (_appBase) return _appBase
-	for (const candidate of [
-		'/apps/integriq',
-		'/index.php/apps/integriq',
-	]) {
+	for (const candidate of ['/apps/integriq', '/index.php/apps/integriq']) {
 		const res = await page.request.get(`${candidate}/import`, {
 			failOnStatusCode: false,
 		})

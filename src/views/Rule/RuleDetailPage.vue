@@ -70,11 +70,7 @@
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
 				</template>
-				{{
-					saving
-						? t('integriq', 'Saving…')
-						: t('integriq', 'Save')
-				}}
+				{{ saving ? t('integriq', 'Saving…') : t('integriq', 'Save') }}
 			</NcButton>
 		</template>
 
@@ -441,8 +437,7 @@ export default {
 				if (!fetched) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
 					this.error =
-						storeError
-						|| new Error(this.t('integriq', 'Rule not found'))
+						storeError || new Error(this.t('integriq', 'Rule not found'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(fetched))
@@ -583,8 +578,7 @@ export default {
 				if (!saved) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
 					this.error =
-						storeError
-						|| new Error(this.t('integriq', 'Saving failed'))
+						storeError || new Error(this.t('integriq', 'Saving failed'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(saved))

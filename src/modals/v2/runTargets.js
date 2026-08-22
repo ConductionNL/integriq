@@ -366,8 +366,7 @@ function jobStatus(payload) {
 		return {
 			type: 'warning',
 			text:
-				payload.message
-				|| t('integriq', 'The job finished with a warning.'),
+				payload.message || t('integriq', 'The job finished with a warning.'),
 		}
 	}
 

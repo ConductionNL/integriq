@@ -61,10 +61,7 @@
 				<NcNoteCard v-if="!subjectId" type="error">
 					<p>
 						{{
-							t(
-								'integriq',
-								'This row has no id, so it cannot be run.',
-							)
+							t('integriq', 'This row has no id, so it cannot be run.')
 						}}
 					</p>
 				</NcNoteCard>

@@ -208,17 +208,13 @@ export function openPromotionHandler() {
 export function viewLogsHandler({ actionId, item }) {
 	if (!VIEW_LOGS_TARGETS[actionId]) {
 		// eslint-disable-next-line no-console
-		console.warn(
-			`[integriq] viewLogsHandler: unknown actionId "${actionId}"`,
-		)
+		console.warn(`[integriq] viewLogsHandler: unknown actionId "${actionId}"`)
 		return
 	}
 	const router = getRouter()
 	if (!router) {
 		// eslint-disable-next-line no-console
-		console.warn(
-			'[integriq] viewLogsHandler: router not set; cannot navigate',
-		)
+		console.warn('[integriq] viewLogsHandler: router not set; cannot navigate')
 		return
 	}
 	const location = logsLocation(actionId, rowId(item))
@@ -226,9 +222,7 @@ export function viewLogsHandler({ actionId, item }) {
 		// Only reachable for a row with no id at all, and only on a SCOPED target
 		// — an unfiltered one builds a location without reading the id.
 		// eslint-disable-next-line no-console
-		console.warn(
-			`[integriq] viewLogsHandler: no id on row for "${actionId}"`,
-		)
+		console.warn(`[integriq] viewLogsHandler: no id on row for "${actionId}"`)
 		return
 	}
 	router.push(location).catch((err) => {

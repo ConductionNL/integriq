@@ -326,8 +326,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('integriq', 'Action failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Action failed') + (detail ? `: ${detail}` : '')
 			} finally {
 				this.actionRunning = false
 			}

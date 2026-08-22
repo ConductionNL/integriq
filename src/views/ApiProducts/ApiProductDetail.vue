@@ -79,9 +79,7 @@
 					:loading="loadingEndpoints"
 					:multiple="true"
 					:clearable="true"
-					:placeholder="
-						t('integriq', 'Pick one or more endpoints')
-					" />
+					:placeholder="t('integriq', 'Pick one or more endpoints')" />
 				<NcButton
 					variant="primary"
 					:disabled="selectedEndpoints.length === 0 || saving"
@@ -611,8 +609,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('integriq', 'Approve failed')
-						+ (detail ? `: ${detail}` : ''),
+					t('integriq', 'Approve failed') + (detail ? `: ${detail}` : ''),
 				)
 			} finally {
 				this.busy = false
@@ -642,8 +639,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('integriq', 'Reject failed')
-						+ (detail ? `: ${detail}` : ''),
+					t('integriq', 'Reject failed') + (detail ? `: ${detail}` : ''),
 				)
 			} finally {
 				this.busy = false

@@ -451,8 +451,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('integriq', 'Preview failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Preview failed') + (detail ? `: ${detail}` : '')
 			} finally {
 				this.previewing = false
 			}
@@ -488,8 +487,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('integriq', 'Promotion failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Promotion failed') + (detail ? `: ${detail}` : '')
 			} finally {
 				this.confirming = false
 			}

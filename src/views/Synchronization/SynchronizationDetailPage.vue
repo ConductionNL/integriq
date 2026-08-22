@@ -262,9 +262,7 @@
 						<h3>{{ t('integriq', 'Target') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{
-							t('integriq', 'Configure where data is written to.')
-						}}
+						{{ t('integriq', 'Configure where data is written to.') }}
 					</p>
 
 					<!-- Target type discriminator -->
@@ -324,12 +322,7 @@
 						<h3>{{ t('integriq', 'Actions') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{
-							t(
-								'integriq',
-								'Rules applied during each sync pass.',
-							)
-						}}
+						{{ t('integriq', 'Rules applied during each sync pass.') }}
 					</p>
 
 					<!-- #actions-list-widget -->
@@ -337,9 +330,7 @@
 						schema="rule"
 						labelKey="name"
 						:value="draft.actions"
-						:placeholder="
-							t('integriq', 'Pick rules to run during sync')
-						"
+						:placeholder="t('integriq', 'Pick rules to run during sync')"
 						:emptyLabel="t('integriq', 'No rules linked yet.')"
 						@input="(value) => updateDraft('actions', value)" />
 				</section>
@@ -383,14 +374,8 @@
 							variant="tertiary"
 							:aria-label="
 								rawConditions
-									? t(
-											'integriq',
-											'Switch back to visual builder',
-										)
-									: t(
-											'integriq',
-											'Edit conditions as raw JSON',
-										)
+									? t('integriq', 'Switch back to visual builder')
+									: t('integriq', 'Edit conditions as raw JSON')
 							"
 							@click="toggleRawConditions">
 							<template #icon>
@@ -626,10 +611,7 @@ export default {
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
-			return (
-				this.loadError
-				|| t('integriq', 'Failed to load synchronization')
-			)
+			return this.loadError || t('integriq', 'Failed to load synchronization')
 		},
 
 		/**
@@ -852,8 +834,7 @@ export default {
 				this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
 			} catch (err) {
 				this.loadError =
-					err?.message
-					|| t('integriq', 'Failed to load synchronization')
+					err?.message || t('integriq', 'Failed to load synchronization')
 				this.draft = null
 				this.original = null
 			} finally {
@@ -958,11 +939,9 @@ export default {
 				this.rawConditionsError = ''
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
-				this.rawConditionsError = t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
+				this.rawConditionsError = t('integriq', 'Invalid JSON: {message}', {
+					message: parseErr.message,
+				})
 			}
 		},
 

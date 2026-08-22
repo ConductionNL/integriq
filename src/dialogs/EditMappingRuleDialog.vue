@@ -231,8 +231,7 @@ export default {
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
-			if (this.kind === 'mapping')
-				return this.t('integriq', 'Target property')
+			if (this.kind === 'mapping') return this.t('integriq', 'Target property')
 			return this.t('integriq', 'Property')
 		},
 

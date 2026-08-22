@@ -63,8 +63,7 @@
 				:label="schema.labels?.[0] || t('integriq', 'Value')"
 				:modelValue="slotString(1)"
 				:placeholder="
-					schema.placeholders?.[0]
-					|| t('integriq', 'Comparison value')
+					schema.placeholders?.[0] || t('integriq', 'Comparison value')
 				"
 				@update:modelValue="(value) => onSlotInput(1, value)" />
 			<NcTextField
@@ -99,10 +98,7 @@
 		</template>
 		<template v-else-if="schema.kind === 'array-op'">
 			<label class="rule-condition-leaf__json-label">
-				{{
-					schema.labels?.[0]
-					|| t('integriq', 'Collection (JsonLogic)')
-				}}
+				{{ schema.labels?.[0] || t('integriq', 'Collection (JsonLogic)') }}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(0, { fallback: '' })"
@@ -115,9 +111,7 @@
 					@input="(event) => onJsonSlotInput(0, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
-				{{
-					schema.labels?.[1] || t('integriq', 'Predicate (JsonLogic)')
-				}}
+				{{ schema.labels?.[1] || t('integriq', 'Predicate (JsonLogic)') }}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(1)"
@@ -479,11 +473,9 @@ export default {
 				this.parseError = ''
 				this.emitUpdate({ slot, slotValue: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
+				this.parseError = this.t('integriq', 'Invalid JSON: {message}', {
+					message: parseErr.message,
+				})
 			}
 		},
 
@@ -517,11 +509,9 @@ export default {
 				this.parseError = ''
 				this.$emit('update', { merge: parsed })
 			} catch (parseErr) {
-				this.parseError = this.t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
+				this.parseError = this.t('integriq', 'Invalid JSON: {message}', {
+					message: parseErr.message,
+				})
 			}
 		},
 
