@@ -4,7 +4,7 @@ Task 3.4 (removing the legacy pages) was gated on a number nobody had: not
 whether the decomposed flow is fast enough — task 2.2 settled that — but whether
 the generator can migrate the synchronizations that actually exist.
 
-Measured by running `occ openconnector:synchronization-to-flow` against every
+Measured by running `occ integriq:synchronization-to-flow` against every
 synchronization on the dev instance. The command WRITES NOTHING; it renders the
 document or names the reasons it cannot.
 
@@ -13,7 +13,7 @@ document or names the reasons it cannot.
 | | accepted | of | coverage |
 |---|---|---|---|
 | before `payloadFrom` | 20 | 119 cleanly judged | **16.8%** |
-| after (openregister #2684 + openconnector #1334) | **161** | **240** | **67.1%** |
+| after (openregister #2684 + integriq #1334) | **161** | **240** | **67.1%** |
 
 `sourceTargetMapping is not set` went from **98 refusals to 0**.
 
@@ -60,6 +60,10 @@ conditions that were not what they appeared to be.
   "There are no commands defined in the openconnector namespace". The harness
   now separates ACCEPTED / REFUSED / did-not-run and aborts rather than counting
   a non-run as a verdict.
+  (That error string is quoted verbatim from the original run and is left on the
+  old name deliberately — it is a record of what the instance actually said. The
+  occ namespace has since moved to `integriq:`, so a re-run will report the same
+  condition under that name instead.)
 - **The instance degrades under a shared box.** It went into maintenance mode or
   needed a DB upgrade repeatedly mid-sweep, because other work was changing app
   versions on the bind mounts. The sweep is resumable: it skips ids already

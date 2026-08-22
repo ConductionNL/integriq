@@ -122,7 +122,10 @@ worked around here.
 
 The document in this directory returns `{"valid": true, "blocking": [],
 "warnings": []}` from `POST /apps/openregister/api/flow/validate` on a live
-instance carrying all seven openconnector nodes.
+instance carrying all seven `openconnector.*` nodes. (The node-type ids keep the
+old prefix across the app-id rename: they are written into stored flow
+documents, so renaming them would leave every existing flow referencing a node
+type nothing answers to.)
 
 That verdict is trustworthy because the same endpoint demonstrably refuses
 neighbouring mistakes: an `apply-mapping` with no `mapping`, an undeclared
