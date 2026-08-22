@@ -74,6 +74,15 @@ class DSOSamenwerkingService {
 	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
 	 *
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1536. Zero production callers, verified on both
+	 * `origin/development` and the app-id rename branch, so the finding is
+	 * pre-existing rather than rename damage. This is a fully-implemented,
+	 * spec'd OUTBOUND integration (builds an adviesverzoek and POSTs it to a
+	 * partner OIN endpoint over DSO-SWF) that nothing reaches, so if the flow is
+	 * meant to be live today the request is silently never sent. Wiring or
+	 * removing it is unrelated behaviour change; #1536 carries what to check.
 	 */
 	public function sendAdviesverzoek(
 		array $case,

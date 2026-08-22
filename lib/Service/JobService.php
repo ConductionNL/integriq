@@ -198,6 +198,16 @@ class JobService {
 	 * @phpstan-return ObjectEntity
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1534. This method genuinely has zero production
+	 * callers, verified on both `origin/development` and the app-id rename
+	 * branch, so the finding is pre-existing and real rather than rename damage.
+	 * If it is what it looks like, jobs never get their `jobListId` stamped and
+	 * so never reach Nextcloud's scheduler — failing silently, the same family
+	 * as the stored-jobClass defect. Wiring or removing it is unrelated
+	 * behaviour change that does not belong in an app-id rename; #1534 carries
+	 * the symptoms to check.
 	 */
 	public function scheduleJob(ObjectEntity $job): ObjectEntity {
 		$jobData = $job->getObject();

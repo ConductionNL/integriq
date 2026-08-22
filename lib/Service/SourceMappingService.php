@@ -201,6 +201,13 @@ class SourceMappingService {
 	 * @throws GuzzleException When the HTTP request fails.
 	 *
 	 * @spec openspec/specs/object-service-shim/spec.md
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1535. Zero production callers, verified on both
+	 * `origin/development` and the app-id rename branch, so the finding is
+	 * pre-existing rather than rename damage. Most likely an unused arm of this
+	 * Mongo-backend CRUD shim, in which case the fix is deletion — but that is
+	 * unrelated behaviour change and does not belong in an app-id rename.
 	 */
 	public function updateObject(array $filters, array $update, array $config): array {
 		$client = $this->getClient(config: $config);

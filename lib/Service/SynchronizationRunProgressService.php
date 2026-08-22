@@ -278,6 +278,13 @@ class SynchronizationRunProgressService {
 	 * @return int The number of issued writes.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
+	 *
+	 * @orphaned-write-capability exclude Read-only accessor returning
+	 * `$this->writes`; it performs no write and has no side effect at all. It
+	 * matched the gate only because the method name begins with `write`. The
+	 * actual write capability is the private `write()` below, which this merely
+	 * counts. Re-verify in one glance from the body: a single `return` of an
+	 * int property.
 	 */
 	public function writeCount(): int {
 		return $this->writes;
