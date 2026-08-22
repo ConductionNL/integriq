@@ -497,6 +497,43 @@ async function driveRunToTerminal(
 			+ `${JSON.stringify(run.error)}`,
 	).toContain(String(run.status))
 	expect(run.error, `${label} must not carry an error`).toBeFalsy()
+
+	// ⚠️ `stopped` IS IN `SUCCESSFUL_STATUSES`, AND A FAILED STEP ALSO PRODUCES IT.
+	//
+	// `FlowEngine` logs a throwing step as `status: 'failed'` with the message
+	// in the entry's `error`, then asks the step's onError policy what to do —
+	// and the run it returns is `stopped`, with the RUN-level `error` left
+	// null. So all three assertions above pass over a run that died in the
+	// middle of the pipeline: terminal, "successful", no error.
+	//
+	// Measured on development 2026-08-22: `object-write` failed, the marking
+	// stayed at `{"write":1}`, and the only thing that noticed was a separate
+	// assertion about the step LIST — which reported a missing-steps diff and
+	// said nothing about a failure, sending the reader looking for a routing
+	// bug that did not exist.
+	//
+	// The per-step status is the ground truth, so it is asserted here, with the
+	// engine's own message. A run helper that cannot tell "finished" from "died
+	// on step 7" is not a signal.
+	const failedSteps = (run.log ?? []).filter(
+		(entry: Record<string, unknown>) => String(entry.status) === 'failed',
+	)
+	expect(
+		failedSteps.map((entry: Record<string, unknown>) =>
+			String(entry.transition),
+		),
+		`${label} must not contain a FAILED step. The run reports status `
+			+ `"${run.status}" and no run-level error, so this is the only place `
+			+ `the failure is visible: `
+			+ JSON.stringify(
+				failedSteps.map((entry: Record<string, unknown>) => ({
+					step: entry.transition,
+					type: entry.type,
+					error: entry.error,
+				})),
+			),
+	).toEqual([])
+
 	return run
 }
 
@@ -971,36 +1008,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		const executed = (run.log ?? []).map((entry: Record<string, unknown>) =>
 			String(entry.transition),
 		)
-		// DIAGNOSTIC (temporary): when the run ends early it ends SUCCESSFULLY,
-		// so the only evidence of where it stopped is the log's own shape.
-		// Printing itemsIn/itemsOut per step distinguishes "a node emitted
-		// nothing" from "the marking never advanced" — two very different bugs
-		// that look identical from the assertion below.
-		console.log(
-			'[diag] run status='
-				+ String(run.status)
-				+ ' marking='
-				+ JSON.stringify(run.marking)
-				+ ' error='
-				+ JSON.stringify(run.error),
-		)
-		for (const entry of run.log ?? []) {
-			console.log(
-				'[diag] step '
-					+ String(entry.transition)
-					+ ' type='
-					+ String(entry.type)
-					+ ' status='
-					+ String(entry.status)
-					+ ' in='
-					+ String(entry.itemsIn)
-					+ ' out='
-					+ String(entry.itemsOut)
-					+ ' reason='
-					+ JSON.stringify(entry.reason ?? null),
-			)
-		}
-
 		expect(
 			executed,
 			'the run log must show every decomposed step executing, in order',
