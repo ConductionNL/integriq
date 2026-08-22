@@ -1292,4 +1292,100 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'a misspelled config key must be REFUSED, or the positive verdict above proves nothing',
 		).toBe(false)
 	})
+
+	/* -------------------------------------------------------------------
+	 * 6. A run-log entry links back to the synchronization it acted on
+	 * ---------------------------------------------------------------- */
+
+	// @e2e synchronization-engine::or-target-write-records-a-contract
+	test('the deployed nodes offer a run-log link back to the synchronization', async () => {
+		// Unit tests prove the trait; only the live registry can prove the
+		// DEPLOYED node is registered as an IFlowNodeLogActions. A node whose
+		// interface is missing returns [] from FlowNodeRegistry rather than
+		// erroring, so the failure mode here is a silently linkless log — the
+		// same shape as a step that reports success having done nothing.
+		const linked = [
+			'openconnector.source-paginate',
+			'openconnector.contract-commit',
+			'openconnector.contract-sweep',
+			'openconnector.synchronization-run',
+		]
+
+		for (const type of linked) {
+			const verdict = await post(
+				`${OR}/flow/log-actions`,
+				{
+					entry: {
+						type,
+						// Deliberately NOT the default output key: the payload
+						// sits wherever the step's config put it, and a log
+						// entry carries no config, so a node that addressed a
+						// fixed path would pass a fixture and fail in a real
+						// run whose author renamed the key.
+						output: {
+							items: [
+								{
+									json: {
+										renamedByTheAuthor: {
+											synchronization: pipeline.syncId,
+										},
+									},
+								},
+							],
+						},
+					},
+				},
+				`log actions for ${type}`,
+			)
+
+			expect(
+				verdict.results,
+				`${type} must offer exactly one link back to the synchronization`,
+			).toHaveLength(1)
+			expect(String(verdict.results[0].href)).toContain(
+				`#/synchronizations/${encodeURIComponent(pipeline.syncId)}`,
+			)
+		}
+
+		// NEGATIVE CONTROL. Same endpoint, same node, an entry with nothing to
+		// point at. Without it, "one link came back" could just mean the
+		// endpoint always answers.
+		const empty = await post(
+			`${OR}/flow/log-actions`,
+			{
+				entry: {
+					type: 'openconnector.contract-sweep',
+					output: { items: [{ json: { count: 3 } }] },
+				},
+			},
+			'log actions for an entry with no reference',
+		)
+		expect(
+			empty.results,
+			'an entry with nothing to point at must earn NO link, not a link to the list page',
+		).toEqual([])
+
+		// And the two nodes that stamp no reference stay silent by design.
+		for (const type of [
+			'openconnector.apply-mapping',
+			'openconnector.contract',
+		]) {
+			const none = await post(
+				`${OR}/flow/log-actions`,
+				{
+					entry: {
+						type,
+						output: {
+							items: [{ json: { synchronization: pipeline.syncId } }],
+						},
+					},
+				},
+				`log actions for ${type}`,
+			)
+			expect(
+				none.results,
+				`${type} declares no log actions — it stamps no reference into what it emits`,
+			).toEqual([])
+		}
+	})
 })
