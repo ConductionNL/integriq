@@ -113,6 +113,18 @@
 			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
 			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
+			<!-- Third leg of the app-id rename, and the one that lives in
+			     OpenRegister rather than in oc_appconfig. A job object stores its
+			     action as a PHP class NAME, which JobService resolves through the
+			     container at run time, so the rename leaves every stored job asking
+			     for `OCA\OpenConnector\Action\*` — a class that no longer exists.
+			     It fails SILENTLY: the container throw happens outside the try that
+			     writes a job_log, and JobService::run()'s per-job catch does
+			     `unset($e); continue;`, so every synchronization stops running while
+			     cron reports success and leaves no evidence. Placed AFTER
+			     InitializeRegister so the register and its schemas exist; a first
+			     install has no stored jobs and it is a no-op there. -->
+			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
@@ -153,6 +165,13 @@
 			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
 			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
+			<!-- See the note on this step in <post-migration>. Idempotent, and a
+			     no-op on a first install (no stored jobs yet), but declared here
+			     too because <install> is the only hook a real deployment of this
+			     rename actually takes — Nextcloud discovers `integriq` as a NEW
+			     app and runs neither postSchemaChange nor the post-migration
+			     steps. -->
+			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
