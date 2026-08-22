@@ -1,13 +1,13 @@
 # Proposal: execution-trace-observability
 
 ## Summary
-OpenConnector today records call/job/sync activity as independent per-entity logs (`call_log`, `synchronization_log`, `event_message`) with no shared identifier tying one request's rule → mapping → synchronization → outbound-call path together, and no way to re-run a failed execution. This change mints an execution id at every entry point (endpoint call, job run, event delivery, manual sync), threads it through the existing pipeline, persists an ordered per-execution timeline as a new `execution_trace` OpenRegister object (redacted via the existing `SensitiveFieldRegistry`), adds a Traces UI (manifest v2 list+detail) and a Prometheus counter, and adds dry-run/force replay of a traced failure.
+Integriq today records call/job/sync activity as independent per-entity logs (`call_log`, `synchronization_log`, `event_message`) with no shared identifier tying one request's rule → mapping → synchronization → outbound-call path together, and no way to re-run a failed execution. This change mints an execution id at every entry point (endpoint call, job run, event delivery, manual sync), threads it through the existing pipeline, persists an ordered per-execution timeline as a new `execution_trace` OpenRegister object (redacted via the existing `SensitiveFieldRegistry`), adds a Traces UI (manifest v2 list+detail) and a Prometheus counter, and adds dry-run/force replay of a traced failure.
 
 ## Motivation
-n8n shipped a per-step execution trace + replay debugging engine (June 2026); this is now a baseline expectation for integration-platform observability and a named competitive gap (Specter insight #1267, Codeberg issue #154). Operators debugging a failed sync today must correlate rows across three separate log schemas by timestamp and source/synchronization id, with no persisted step-by-step view and no one-click re-run. This change closes that gap without introducing distributed tracing (OpenTelemetry export is explicitly out of scope) or a new persistence layer — it is built entirely on existing OpenConnector/OpenRegister primitives (register.d fragments, FlowToken, SensitiveFieldRegistry, AppHost `tableCount` metrics, dead-letter replay dispatch).
+n8n shipped a per-step execution trace + replay debugging engine (June 2026); this is now a baseline expectation for integration-platform observability and a named competitive gap (Specter insight #1267, Codeberg issue #154). Operators debugging a failed sync today must correlate rows across three separate log schemas by timestamp and source/synchronization id, with no persisted step-by-step view and no one-click re-run. This change closes that gap without introducing distributed tracing (OpenTelemetry export is explicitly out of scope) or a new persistence layer — it is built entirely on existing Integriq/OpenRegister primitives (register.d fragments, FlowToken, SensitiveFieldRegistry, AppHost `tableCount` metrics, dead-letter replay dispatch).
 
 ## Affected Projects
-- [ ] Project: `openconnector` — mints/propagates an execution id through `EndpointService`/`FlowToken`, `RuleService`, `SynchronizationService`, and `CallService`; adds an `execution_trace` register.d fragment schema; adds `ExecutionTraceService` (Controller→Service→Mapper, ADR-008) for trace assembly, persistence, and replay; adds a Traces manifest v2 page; adds an AppHost `tableCount` Prometheus counter.
+- [ ] Project: `integriq` — mints/propagates an execution id through `EndpointService`/`FlowToken`, `RuleService`, `SynchronizationService`, and `CallService`; adds an `execution_trace` register.d fragment schema; adds `ExecutionTraceService` (Controller→Service→Mapper, ADR-008) for trace assembly, persistence, and replay; adds a Traces manifest v2 page; adds an AppHost `tableCount` Prometheus counter.
 
 ## Scope
 
@@ -20,7 +20,7 @@ n8n shipped a per-step execution trace + replay debugging engine (June 2026); th
 6. Unit tests for trace-id propagation and redaction-in-snapshot; one integration test proving a single endpoint call produces a trace spanning rule → mapping → call.
 
 ### Out of Scope
-Distributed tracing across apps (OpenTelemetry export, W3C traceparent propagation to OpenRegister/other Conduction apps) — noted as a follow-up; this change is OpenConnector-internal correlation only.
+Distributed tracing across apps (OpenTelemetry export, W3C traceparent propagation to OpenRegister/other Conduction apps) — noted as a follow-up; this change is Integriq-internal correlation only.
 
 ## Approach
 Mint the `traceId` at each of the four entry points and carry it as a lightweight `ExecutionTraceContext` value object passed alongside `FlowToken` (not added as a 9th `FlowToken` constructor parameter — `FlowToken` has two existing zero-arg-then-rehydrate call sites that a required id param would break; see design.md Decision 1). Each pipeline stage (rule, mapping step, synchronization item, outbound call) appends one ordered step to an in-memory trace buffer; `ExecutionTraceService` persists the assembled buffer as one `execution_trace` object at the end of the execution (success, short-circuit, or exception). Redaction is applied per-step at snapshot-build time by calling `SensitiveFieldRegistry::redactArray()` directly (not through `CallService`'s local reimplementation — see design.md Decision 3, which flags that asymmetry as pre-existing debt this change does not need to fix but must not copy). Replay re-invokes the existing dead-letter dispatch points with a new dry-run parameter, producing a new `execution_trace` linked to the original via a `replayOf` field rather than mutating the original trace.
@@ -42,7 +42,7 @@ None.
 - `src/views/ExecutionTrace/*.vue` (new) — list + detail Vue components.
 
 ## Cross-Project Dependencies
-None — self-contained within `openconnector`. No OpenRegister core change is required; the fragment mechanism (ADR-037) and `SensitiveFieldRegistry`/AppHost engine are consumed as-is.
+None — self-contained within `integriq`. No OpenRegister core change is required; the fragment mechanism (ADR-037) and `SensitiveFieldRegistry`/AppHost engine are consumed as-is.
 
 ## Risks
 

@@ -2,17 +2,17 @@
 
 ## Summary
 
-Give OpenConnector its first OpenRegister integration leaves — deliberately few. Verified current state: `src/manifest.json` contains zero `{"type": "integration"}` widgets and no schema in `lib/Settings/openconnector_register.json` declares `linkedTypes`; OpenConnector consumes none of OpenRegister's ~17 app-agnostic leaves. Its domain objects are technical (source, endpoint, job, mapping, synchronization, dead-letter), so most consumer-style leaves (photos, polls, contacts, mail intake…) would be decoration. Four leaves genuinely serve an integrator's workflow and only those are adopted: **files** on `source` (supplier API documentation, OAS exports, onboarding documents attached to the connection they describe), **deck** on `source` (integration-incident follow-up cards), **talk** on `source` (an incident war-room conversation linked to the failing connection), and **calendar** on `synchronization` (planned maintenance windows and cutover dates linked to the sync they affect). Everything is declarative — `configuration.linkedTypes` in the register plus manifest widgets on the two manifest-driven detail pages — with one honest limitation recorded: `SynchronizationDetail` is a `type: "custom"` page (verified), so its calendar leaf surfaces through the shared object sidebar rather than a manifest widget until that page is manifest-driven.
+Give Integriq its first OpenRegister integration leaves — deliberately few. Verified current state: `src/manifest.json` contains zero `{"type": "integration"}` widgets and no schema in `lib/Settings/integriq_register.json` declares `linkedTypes`; Integriq consumes none of OpenRegister's ~17 app-agnostic leaves. Its domain objects are technical (source, endpoint, job, mapping, synchronization, dead-letter), so most consumer-style leaves (photos, polls, contacts, mail intake…) would be decoration. Four leaves genuinely serve an integrator's workflow and only those are adopted: **files** on `source` (supplier API documentation, OAS exports, onboarding documents attached to the connection they describe), **deck** on `source` (integration-incident follow-up cards), **talk** on `source` (an incident war-room conversation linked to the failing connection), and **calendar** on `synchronization` (planned maintenance windows and cutover dates linked to the sync they affect). Everything is declarative — `configuration.linkedTypes` in the register plus manifest widgets on the two manifest-driven detail pages — with one honest limitation recorded: `SynchronizationDetail` is a `type: "custom"` page (verified), so its calendar leaf surfaces through the shared object sidebar rather than a manifest widget until that page is manifest-driven.
 
 ## Motivation
 
 - **Integration operations is coordination work with no anchor today.** When a supplier API breaks, the artefacts scatter: the incident card in a personal Deck board, the war-room in an unlinked Talk conversation, the supplier's PDF in someone's mail, the maintenance window in a private agenda. The `source`/`synchronization` object is the natural anchor and OpenRegister's leaf machinery already links all four entity types to objects — for free.
-- **The infrastructure is proven next door.** Scholiq and OpenCatalogi render integration widgets from the same manifest mechanism; OpenConnector's SourceDetail and EndpointDetail are already manifest `detail` pages with widget arrays.
-- **Restraint is the deliverable.** An earlier fleet lesson (opencatalogi/scholiq leaf adoptions) is that every widget costs page space and every leaf on a data-bearing schema is an exposure question. OpenConnector's schemas are the integration control plane; this change declares leaves on exactly two schemas and refuses the rest with reasons.
+- **The infrastructure is proven next door.** Scholiq and OpenCatalogi render integration widgets from the same manifest mechanism; Integriq's SourceDetail and EndpointDetail are already manifest `detail` pages with widget arrays.
+- **Restraint is the deliverable.** An earlier fleet lesson (opencatalogi/scholiq leaf adoptions) is that every widget costs page space and every leaf on a data-bearing schema is an exposure question. Integriq's schemas are the integration control plane; this change declares leaves on exactly two schemas and refuses the rest with reasons.
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — `lib/Settings/openconnector_register.json` (`configuration.linkedTypes` on `source` and `synchronization`), `src/manifest.json` (3 widgets on SourceDetail), one e2e spec-coverage file.
+- [x] Project: `integriq` — `lib/Settings/integriq_register.json` (`configuration.linkedTypes` on `source` and `synchronization`), `src/manifest.json` (3 widgets on SourceDetail), one e2e spec-coverage file.
 
 ## Scope
 
@@ -27,7 +27,7 @@ Give OpenConnector its first OpenRegister integration leaves — deliberately fe
 
 - Leaves on `endpoint`, `job`, `mapping`, `rule`, `consumer`, any log schema, or any dead-letter schema — see design; notably a files leaf on `sync_item_dead_letter` (exported payload samples) is **deferred, not refused**: the DeadLetters page is `type: "custom"` and bulk-oriented, so there is no per-object surface to render it on yet
 - Converting `SynchronizationDetail` (or any custom page) to a manifest-driven detail page — its own change
-- Mail intake (`mailObjectTemplate`) — no OpenConnector archetype maps to "an email becomes an object"
+- Mail intake (`mailObjectTemplate`) — no Integriq archetype maps to "an email becomes an object"
 - Any automation attached to leaves (auto-creating a Deck card when a circuit breaker opens is an event/notification feature, not a leaf declaration — noted as a follow-up)
 - Membership sync for the Talk leaf (war-room membership is manual)
 
@@ -41,7 +41,7 @@ None. Deck/Talk/Calendar are runtime-optional: OpenRegister providers self-disab
 
 ## Impact
 
-- `lib/Settings/openconnector_register.json` — additive `configuration` keys on 2 of 39 schemas; no property, authorization, or lockdown overlay (`register.d/99-*`) change.
+- `lib/Settings/integriq_register.json` — additive `configuration` keys on 2 of 39 schemas; no property, authorization, or lockdown overlay (`register.d/99-*`) change.
 - `src/manifest.json` — 3 new widgets on SourceDetail; no existing page or widget changes.
 - No REST surface, no ADR-023 action, no secret-handling change: leaves link entities held by other NC apps and never read `source`'s credential properties.
 
@@ -65,7 +65,7 @@ None requiring changes elsewhere. Requires openregister ≥ the pluggable-integr
 
 ## Rollback Strategy
 
-Revert the commit; re-import drops the `linkedTypes` keys and the widgets disappear with the manifest. Linked cards/conversations/events/files live in their owning NC apps and lose only their OpenConnector-side rendering.
+Revert the commit; re-import drops the `linkedTypes` keys and the widgets disappear with the manifest. Linked cards/conversations/events/files live in their owning NC apps and lose only their Integriq-side rendering.
 
 ## Open Questions
 

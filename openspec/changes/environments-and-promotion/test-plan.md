@@ -29,7 +29,7 @@
 ### TC-4: Promotion dispatch reuses CallService against the target's environment Source
 - **spec_ref**: `openspec/changes/environments-and-promotion/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-targets-existing-import-endpoints-req-002`
 - **type**: integration
-- **preconditions**: Two OpenConnector instances (A, B) reachable from each other; `environment` object on A pointing at a Source describing B's API
+- **preconditions**: Two Integriq instances (A, B) reachable from each other; `environment` object on A pointing at a Source describing B's API
 - **steps**: Confirm a promotion from A to B
 - **expected result**: A `CallLog` is created on A for the dispatch, identical in shape to any other Source call's CallLog
 - **test command**: /test-api
@@ -102,7 +102,7 @@
 ### TC-13: A failed promotion is still audited
 - **spec_ref**: `openspec/changes/environments-and-promotion/specs/environments-and-promotion/spec.md#requirement-every-promotion-attempt-is-recorded-in-an-append-only-promotion-audit-log-req-006`
 - **type**: api
-- **preconditions**: Target environment simulated to return 404 (older OpenConnector without import routes)
+- **preconditions**: Target environment simulated to return 404 (older Integriq without import routes)
 - **steps**: Confirm the promotion
 - **expected result**: A `promotion_audit` object exists with `outcome: "failed"` and a message identifying the failure; no fabricated `written` summary
 - **test command**: /test-api

@@ -1,13 +1,13 @@
 # api-product-gateway Specification
 
 **Status**: in-progress
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - [api-product-gateway](../../changes/api-product-gateway/)
 
 ## Purpose
 
-OpenConnector exposes individual `Endpoint`s gated by `Consumer` auth and
+Integriq exposes individual `Endpoint`s gated by `Consumer` auth and
 per-consumer rate limits (`consumer-management`, `endpoint-runtime`), but has
 no concept of a **API Product** — a named, versioned bundle of endpoints a
 consumer can subscribe to at a rate-limit tier, with gateway analytics and
@@ -45,14 +45,14 @@ creating or updating an `api_product` MUST NOT create, modify, or delete the
 
 ### Requirement: API Products management UI (REQ-APG-002)
 
-OpenConnector MUST provide an **API Products** section in its SPA where an
+Integriq MUST provide an **API Products** section in its SPA where an
 administrator can browse, create, edit, and delete API Products, pick which
 existing Endpoints belong to a product, and define/edit its named tiers.
 
 #### Scenario: API Products list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the API Products section via the sidebar nav or direct URL `/apps/openconnector/products`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the API Products section via the sidebar nav or direct URL `/apps/integriq/products`
 - THEN the API Products index page renders inside the main content area with content visible
 
 #### Scenario: product detail page exposes an endpoint picker and tier editor

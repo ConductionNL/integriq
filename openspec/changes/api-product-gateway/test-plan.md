@@ -22,7 +22,7 @@
 - **spec_ref**: `openspec/changes/api-product-gateway/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002`
 - **type**: functional
 - **preconditions**: authenticated admin session
-- **steps**: navigate to `/apps/openconnector/products` via sidebar nav
+- **steps**: navigate to `/apps/integriq/products` via sidebar nav
 - **expected result**: index page renders inside main content area with content visible
 - **test command**: /test-functional
 
@@ -151,7 +151,7 @@
 - **type**: api
 - **preconditions**: inbound rows across two products, mixed status codes
 - **steps**: `GET /api/metrics`
-- **expected result**: `openconnector_api_product_requests_total{product,status}` and `openconnector_api_product_errors_total{product}` present with correct counts; zero-value placeholder for a traffic-free product
+- **expected result**: `integriq_api_product_requests_total{product,status}` and `integriq_api_product_errors_total{product}` present with correct counts; zero-value placeholder for a traffic-free product
 - **test command**: /test-api
 
 ### TC-20: Per-product Prometheus latency percentile gauges
@@ -159,7 +159,7 @@
 - **type**: api
 - **preconditions**: a product with recorded `responseTime` values
 - **steps**: `GET /api/metrics`
-- **expected result**: `openconnector_api_product_latency_seconds{product,quantile}` present for `0.5`/`0.95`/`0.99`, in seconds
+- **expected result**: `integriq_api_product_latency_seconds{product,quantile}` present for `0.5`/`0.95`/`0.99`, in seconds
 - **test command**: /test-api
 
 ### TC-21: Percentile gauge degrades gracefully on query failure

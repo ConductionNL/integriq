@@ -4,7 +4,7 @@
 
 ### Requirement: Operational schemas declare notification rules
 
-OpenConnector's operational schemas SHALL declare `x-openregister-notifications`
+Integriq's operational schemas SHALL declare `x-openregister-notifications`
 rules so the OpenRegister notification engine dispatches notifications on
 call/job/sync failures, exhausted event-delivery retries, and overdue scheduled
 jobs. Every rule SHALL use a trigger type that works today (`created` + filter,

@@ -6,7 +6,7 @@
 
 ### REQ-CON-UI-001: Consumer Management UI
 
-OpenConnector MUST provide a Consumers section in its SPA where administrators can browse,
+Integriq MUST provide a Consumers section in its SPA where administrators can browse,
 create, edit, and delete consumer configurations.
 
 The create/edit form SHALL expose every authorable consumer property — name, description,
@@ -28,8 +28,8 @@ enforced on save and would make existing rows unsaveable.
 
 #### Scenario: consumers list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the Consumers section via the sidebar nav or direct URL `/apps/openconnector/consumers`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the Consumers section via the sidebar nav or direct URL `/apps/integriq/consumers`
 - THEN the Consumers index page renders inside the main content area with content visible
 
 #### Scenario: add consumer button opens the creation modal

@@ -13,7 +13,7 @@ MUST be deleted. The hardcoded nav items in `src/navigation/` MUST be deleted.
 
 #### Scenario: All 13 manifest menu items render in the nav
 
-GIVEN the app is loaded at `/apps/openconnector` in a Nextcloud instance with OR installed
+GIVEN the app is loaded at `/apps/integriq` in a Nextcloud instance with OR installed
 WHEN the user opens the left navigation panel
 THEN all 13 menu items declared in `src/manifest.json` MUST be visible (Dashboard, Sources,
 Endpoints, Consumers, Webhooks, Mappings, Jobs, CloudEvents, Synchronizations, Rules,
@@ -67,7 +67,7 @@ THEN the command MUST return no results
 
 Every manifest page MUST use one of the 11 standard v2 page types (`index`/`detail`/`dashboard`/`logs`/`settings`/`chat`/`files`/`form`/`wiki`/`map`/`custom`) and MUST NOT use `type: "custom"` unless a `_note` field documents a specific capability gap in `@conduction/nextcloud-vue` that prevents using a standard type.
 
-**Baseline reality (2026-05-20):** post-merge with `origin/development`, all 24 entries in `src/manifest.json` currently use `type: "custom"` and are mapped through `src/registry.js`'s customComponents. The registry.js comment frames this as "genuine exceptions, not deferred migrations". **This spec deliberately overrides that framing.** Per the nc-vue capability surface shipped in PRs #254/#257/#258/#259 (manifest-v2 schema + renderer + codemod + CSP-safe validator), the v2 page-type enum (`index`, `detail`, `dashboard`, `logs`, `settings`, `chat`, `files`, `form`, `wiki`, `map`, `custom`) plus the universal widget+slot grid system CAN express every openconnector page — including the "complex interactive surfaces" the dev team flagged (mapping editor, cron builder, rule conditions, CloudEvent management).
+**Baseline reality (2026-05-20):** post-merge with `origin/development`, all 24 entries in `src/manifest.json` currently use `type: "custom"` and are mapped through `src/registry.js`'s customComponents. The registry.js comment frames this as "genuine exceptions, not deferred migrations". **This spec deliberately overrides that framing.** Per the nc-vue capability surface shipped in PRs #254/#257/#258/#259 (manifest-v2 schema + renderer + codemod + CSP-safe validator), the v2 page-type enum (`index`, `detail`, `dashboard`, `logs`, `settings`, `chat`, `files`, `form`, `wiki`, `map`, `custom`) plus the universal widget+slot grid system CAN express every integriq page — including the "complex interactive surfaces" the dev team flagged (mapping editor, cron builder, rule conditions, CloudEvent management).
 
 Every manifest page MUST use one of the standard v2 page types unless its `_note` field documents a specific capability gap in nc-vue that prevents it. `registry.js` MUST shrink as pages migrate; the long-term target is a registry containing ONLY genuinely-custom widgets registered against specific page slots (NOT entire pages).
 
@@ -113,7 +113,7 @@ AND `src/registry.js` MUST NOT export any entry whose corresponding manifest pag
 
 GIVEN the manifest page `Sources` has `type: "index"` post-migration
 WHEN the user navigates to `/sources`
-THEN CnIndexPage MUST render the sources list from `GET /index.php/apps/openconnector/api/sources` AND the existing hand-rolled `src/views/Source/SourcesIndex.vue` MUST be deleted
+THEN CnIndexPage MUST render the sources list from `GET /index.php/apps/integriq/api/sources` AND the existing hand-rolled `src/views/Source/SourcesIndex.vue` MUST be deleted
 
 #### Scenario: Mapping detail page renders the MappingEditor as a widget
 
@@ -139,7 +139,7 @@ THEN the export count MUST be reduced by at least 12 entries (those whose pages 
 GIVEN the app is running and the user navigates to `/sources`
 WHEN the Sources page mounts
 THEN `CnIndexPage` MUST render a list of source objects returned by
-`GET /index.php/apps/openconnector/api/sources`
+`GET /index.php/apps/integriq/api/sources`
 
 #### Scenario: Create source form opens from CnIndexPage
 
@@ -171,7 +171,7 @@ THEN no file MUST be reported (all 9 + the importExport.js variants are deleted)
 
 GIVEN a `useJobRunner` store exists under `src/store/actions/` (new directory pattern)
 WHEN a component calls `jobRunnerStore.run(jobId)`
-THEN it MUST POST to `/index.php/apps/openconnector/api/jobs/{jobId}/run` (a connector-specific action endpoint preserved in chain C) and MUST track the run state (`status: 'running' | 'completed' | 'failed'`, `lastResult`)
+THEN it MUST POST to `/index.php/apps/integriq/api/jobs/{jobId}/run` (a connector-specific action endpoint preserved in chain C) and MUST track the run state (`status: 'running' | 'completed' | 'failed'`, `lastResult`)
 
 #### Scenario: Synchronization trigger preserves the flow-token
 
@@ -183,7 +183,7 @@ THEN the HTTP request MUST include the `X-Flow-Token` header value per local ADR
 
 ### Requirement: src/settings.js entry point MUST be deleted; Settings MUST become a router route
 
-The `src/settings.js` standalone webpack entry MUST be deleted. The OpenConnector
+The `src/settings.js` standalone webpack entry MUST be deleted. The Integriq
 settings panel MUST be accessible as the `/settings` vue-router route rendered by
 `CnPageRenderer` inside the `CnAppRoot` shell. The manifest page
 `{ "id": "Settings", "route": "/settings", "type": "settings" }` declared in D1 is the
@@ -196,7 +196,7 @@ deleted.
 #### Scenario: Settings page is reachable via nav
 
 GIVEN the user is logged in as admin
-WHEN they click the "Settings" menu item in the OpenConnector navigation
+WHEN they click the "Settings" menu item in the Integriq navigation
 THEN the router MUST navigate to `/settings` and the settings page content MUST render
 inside the CnAppRoot shell
 

@@ -8,7 +8,7 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector's data-sync feature set is built around a three-entity model:
+Integriq's data-sync feature set is built around a three-entity model:
 
 1. **Source** (`lib/Db/Source.php`) — an external API connection. Holds base
    URL, authentication, headers, rate-limit watermarks (`rateLimitLimit`,
@@ -35,7 +35,7 @@ remain pending a migration cleanup.
 ## Decision
 
 Source -> Synchronization -> SynchronizationContract is the canonical data
-flow for openconnector. Any new sync-style integration MUST express itself
+flow for integriq. Any new sync-style integration MUST express itself
 in these three entities:
 
 - A new external system is modelled as a `Source` row.

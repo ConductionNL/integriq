@@ -8,10 +8,10 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector has 15 typed `lib/Db/<Entity>.php` classes (Source, Job, Mapping,
+Integriq has 15 typed `lib/Db/<Entity>.php` classes (Source, Job, Mapping,
 …) and 15 corresponding `lib/Db/<Entity>Mapper.php` classes backed by
 `oc_openconnector_*` MySQL tables. Hydra ADR-001 mandates that all domain data
-move to OpenRegister `ObjectEntity` storage; leaving openconnector with a
+move to OpenRegister `ObjectEntity` storage; leaving integriq with a
 parallel entity/mapper layer is a known violation of that rule.
 
 The naive fix is an atomic rewrite: change storage, delete entities, delete
@@ -56,7 +56,7 @@ accordingly.
 **Chain C** deletes the facade AND the 15 mapper files AND the 15 entity files
 (31 files total), and rewrites every consumer in `lib/Service/`,
 `lib/Controller/`, and `lib/Cron/` to use `ObjectService` directly. After chain
-C ships, openconnector contains no `lib/Db/*Mapper.php` or `lib/Db/<Entity>.php`
+C ships, integriq contains no `lib/Db/*Mapper.php` or `lib/Db/<Entity>.php`
 files for domain data. The `storage_migrated` flag becomes load-bearing rather
 than a toggle: the legacy branches inside the chain-B facade are gone.
 
@@ -81,8 +81,8 @@ Either chain is independently shippable and rollbackable:
   tempted to add features against it MUST read this ADR: the facade is a
   transitional artefact scheduled for deletion in chain C, not a new abstraction
   layer.
-- Cross-app consumers that import openconnector PHP entity classes
-  (`OCA\OpenConnector\Db\Source`, etc.) must migrate to OR `ObjectEntity` before
+- Cross-app consumers that import integriq PHP entity classes
+  (`OCA\Integriq\Db\Source`, etc.) must migrate to OR `ObjectEntity` before
   chain C ships; that migration is chain C Out-of-Scope item and is tracked
   separately.
 - After chain C ships, the Issue B-001 cleanup change (dropping
@@ -98,7 +98,7 @@ Either chain is independently shippable and rollbackable:
 - `openspec/changes/openconnector-services-direct-or-usage/proposal.md:52-57` —
   the strangler-fig table naming chain B as "Strangle" and chain C as "Cut over".
 - `openspec/changes/openconnector-services-direct-or-usage/proposal.md:70-94` —
-  motivational section explaining why chain B left openconnector in deliberate
+  motivational section explaining why chain B left integriq in deliberate
   violation of ADR-001 and what chain C fixes.
 - `openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md:230-258` —
   the 31-types quality gate specification that enforces the post-chain-C

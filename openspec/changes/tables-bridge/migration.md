@@ -6,9 +6,9 @@
 objects (register `openconnector`, schemas `synchronization`, `source`,
 `synchronization_contract` — per `openconnector-direct-or-usage`, all
 app-local mapper/entity classes for these were deleted; there is no
-OpenConnector-owned SQL table for any of them). `Synchronization.sourceType`
+Integriq-owned SQL table for any of them). `Synchronization.sourceType`
 /`targetType` are free-form strings (verified: `lib/Settings/
-openconnector_register.json` declares them as `"type": "string"` with a
+integriq_register.json` declares them as `"type": "string"` with a
 descriptive `title`, not a JSON Schema `enum`); `sourceConfig`/`targetConfig`
 are free-form JSON objects. `nextcloud-table` is not currently a recognised
 value anywhere in `SynchronizationService`'s dispatch `switch` statements.
@@ -26,7 +26,7 @@ register or schema is introduced.
 
 Not applicable. This change introduces no new Nextcloud database table,
 column, or OpenRegister schema requiring a `lib/Migration/VersionXXXXXXXXXX.php`
-class. `openconnector_register.json`'s `synchronization`/`source` schema
+class. `integriq_register.json`'s `synchronization`/`source` schema
 definitions are not modified — their `sourceConfig`/`targetConfig` fields
 were already declared as open `"type": "object"` blobs before this change,
 so no schema-definition edit is needed to accept the new keys either.

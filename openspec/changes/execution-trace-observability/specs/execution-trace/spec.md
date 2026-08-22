@@ -1,13 +1,13 @@
 # execution-trace Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - `execution-trace-observability` _(in progress)_
 
 ## Purpose
 
-Joins one logical OpenConnector execution — an inbound endpoint call, a cron
+Joins one logical Integriq execution — an inbound endpoint call, a cron
 job run, a CloudEvent delivery, or a manual synchronization run — under a
 single minted id, propagated through the rule pipeline, mapping,
 synchronization, and outbound `CallService` dispatch, and persists an
@@ -297,7 +297,7 @@ replay). Every `NcSelect` filter control MUST carry an `inputLabel` prop
 
 - **GIVEN** the Traces list page
 - **WHEN** the entryPoint filter renders
-- **THEN** the `NcSelect` carries `:input-label="t('openconnector',
+- **THEN** the `NcSelect` carries `:input-label="t('integriq',
   'Entry point')"`, matching the pattern already used in
   `EventDeliveriesPage.vue`
 
@@ -316,10 +316,10 @@ no bespoke `MetricsController` code.
 
 - **GIVEN** 10 `execution_trace` objects with `status` values 7 `success`,
   2 `failed`, 1 `running`
-- **WHEN** `GET /apps/openconnector/api/metrics` is called by an admin
-- **THEN** the output includes `openconnector_traces_total{status="success"}
-  7`, `openconnector_traces_total{status="failed"} 2`, and
-  `openconnector_traces_total{status="running"} 1`
+- **WHEN** `GET /apps/integriq/api/metrics` is called by an admin
+- **THEN** the output includes `integriq_traces_total{status="success"}
+  7`, `integriq_traces_total{status="failed"} 2`, and
+  `integriq_traces_total{status="running"} 1`
 
 ### Requirement: Retention-bounded trace persistence (REQ-009)
 
@@ -358,7 +358,7 @@ fragment's own schema validation, not a runtime test
 - [ ] An endpoint call produces one `execution_trace` spanning its rule, mapping, and outbound-call steps, with every snapshot redacted.
 - [ ] A dry-run replay of a failed sync/job/event/endpoint trace performs zero writes and produces a new linked preview trace.
 - [ ] A forced replay reuses the original entry point's real dispatch path and resolves credentials live, never from the stored snapshot.
-- [ ] The Traces list/detail UI renders with a labeled `NcSelect` filter and a `traces_total` counter is scraped from `GET /apps/openconnector/api/metrics`.
+- [ ] The Traces list/detail UI renders with a labeled `NcSelect` filter and a `traces_total` counter is scraped from `GET /apps/integriq/api/metrics`.
 
 ## Notes
 

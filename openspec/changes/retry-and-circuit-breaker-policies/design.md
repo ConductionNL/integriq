@@ -1,7 +1,7 @@
 # Design: retry-and-circuit-breaker-policies
 
 ## Architecture Overview
-Three independent additions to the existing OpenConnector engine layer, all following the established `Controller → Service → OR ObjectService` layering (ADR-008):
+Three independent additions to the existing Integriq engine layer, all following the established `Controller → Service → OR ObjectService` layering (ADR-008):
 
 1. **Retry + circuit breaker in `CallService`** — the single dispatch attempt inside `CallService::call()` (which currently delegates to the private `dispatchRequest()` helper exactly once) is wrapped in a bounded retry loop, gated by a per-Source circuit breaker check. Both the `RetryPolicy` and the breaker state are resolved from/persisted to the `source` OR object, reusing the exact `saveObject(register: 'openconnector', schema: 'source', uuid: ..., _rbac: false, _multitenancy: false)` pattern `sourceRateLimit()` already uses for rate-limit bookkeeping (`lib/Service/CallService.php:545-553`).
 2. **Sync-item dead-letter** — a new `sync_item_dead_letter` OR schema plus a new `SyncItemDeadLetterService` (mirroring `EventService`'s `recordFailure`/`replayMessage`/`discardMessage` shape) and controller endpoints, reusing the `EventsController` dead-letter UI pattern already shipped (`openconnector-dead-letter-replay`). `SynchronizationService::synchronizeExternToIntern()`'s per-object `foreach` loop (currently un-guarded — verified at `lib/Service/SynchronizationService.php:1449-1460`) gets a `try/catch (\Throwable)` around the `processSynchronizationObject()` call that captures the failure and continues.
@@ -117,7 +117,7 @@ Mirrors REQ-DLR-004: terminal `discarded` state, audited, no hard delete.
 Bulk variants, `{ids: string[]}` capped at 100, per-id outcome map. Mirrors REQ-DLR-005.
 
 ## Database Changes
-No Nextcloud `lib/Migration/` classes — schema changes flow entirely through the OR register descriptor (`lib/Settings/openconnector_register.json`), consistent with every other schema change in this app (see `openconnector-register-schema` spec). Changes:
+No Nextcloud `lib/Migration/` classes — schema changes flow entirely through the OR register descriptor (`lib/Settings/integriq_register.json`), consistent with every other schema change in this app (see `openconnector-register-schema` spec). Changes:
 - `source`: + `retryPolicy` (object), + `circuitBreakerState` (string, default `closed`), + `circuitBreakerFailureCount` (integer, default 0), + `circuitBreakerOpenedAt` (integer, nullable), + `circuitBreakerLastProbeAt` (integer, nullable), + `circuitBreakerThreshold` (integer, default 5), + `circuitBreakerCooldownSeconds` (integer, default 30).
 - `synchronization`: + `retryPolicyOverride` (object, optional).
 - New schema `sync_item_dead_letter`: `uuid`, `synchronization` (FK → `synchronization`, CASCADE), `synchronizationContract` (FK → `synchronization_contract`, SET NULL, nullable), `originId` (string, nullable), `phase` (string, default `item-processing`), `payload` (object), `error` (string), `status` (enum `failed|replayed|discarded`), `retryCount` (integer, default 0 — counts manual replays, not automatic attempts), `attempts` (array, same per-attempt shape as `event_message.attempts`), `replayedBy`/`replayedAt`, `discardedBy`/`discardedAt`, `created`/`updated`.
@@ -148,7 +148,7 @@ lib/
     SyncItemDeadLetterService.php (new)
     SynchronizationService.php   (+ try/catch at object-loop call site)
   Settings/
-    openconnector_register.json  (+ source.retryPolicy/circuitBreaker*, + synchronization.retryPolicyOverride, + sync_item_dead_letter schema)
+    integriq_register.json  (+ source.retryPolicy/circuitBreaker*, + synchronization.retryPolicyOverride, + sync_item_dead_letter schema)
 src/
   views/synchronizations/SyncDeadLetter.vue (new, mirrors Events "Event deliveries" sub-view)
   modals/SyncDeadLetterDetailModal.vue (new)

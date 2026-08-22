@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-`lib/Service/ObjectService.php` is a thin wrapper that openconnector exposes for two
+`lib/Service/ObjectService.php` is a thin wrapper that integriq exposes for two
 unrelated jobs: (1) a Guzzle-based CRUD client against the MongoDB Data API, used when
 operators opt into a Mongo backend for free-form JSON object storage; and (2) a runtime
 shim that lazily resolves OpenRegister's own `ObjectService` when the openregister app

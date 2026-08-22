@@ -4,7 +4,7 @@
 
 Two independent additive surfaces, both consuming existing backend logic rather than duplicating it:
 
-1. **Catalog** — a new `catalog_item` OpenRegister schema (like every other OpenConnector entity, per ADR-001/`openconnector-direct-or-usage`), populated by a new `CatalogRegistryService` at repair-step time from three existing sources (OR's `IntegrationRegistry`, a small static descriptor list for the adapters not in that registry, and the `register.d/*-source.json` seed fragments), browsed via a manifest-v2 `type: "index"` + `viewMode: "cards"` page (zero `nextcloud-vue` changes — this exact pattern already ships in `openbuild`'s `VirtualApps` page and `softwarecatalog`'s `Organisaties` page).
+1. **Catalog** — a new `catalog_item` OpenRegister schema (like every other Integriq entity, per ADR-001/`openconnector-direct-or-usage`), populated by a new `CatalogRegistryService` at repair-step time from three existing sources (OR's `IntegrationRegistry`, a small static descriptor list for the adapters not in that registry, and the `register.d/*-source.json` seed fragments), browsed via a manifest-v2 `type: "index"` + `viewMode: "cards"` page (zero `nextcloud-vue` changes — this exact pattern already ships in `openbuild`'s `VirtualApps` page and `softwarecatalog`'s `Organisaties` page).
 2. **Configuration import/export UI** — a new, thin `ConfigurationController` (Controller layer per ADR-008) that wraps the existing, already-tested `ConfigurationService` (Service layer) unchanged, exposed via new routes, consumed by a new manifest page + import-preview modal.
 
 ```
@@ -78,8 +78,8 @@ No native table changes. One new OpenRegister schema fragment (`lib/Settings/reg
 
 ## Nextcloud Integration
 
-- Controllers: `OCA\OpenConnector\Controller\CatalogController` (new — `status`, `instantiate`), `OCA\OpenConnector\Controller\ConfigurationController` (new — `export`, `previewImport`, `import`).
-- Services: `OCA\OpenConnector\Service\CatalogRegistryService` (new), `OCA\OpenConnector\Service\ConfigurationService` (existing, unchanged), `OCA\OpenConnector\Service\ActionAuthService` (**existing, reused** — OpenConnector already ships the ADR-023 implementation at `lib/Service/ActionAuthService.php` with `requireAction()`/`can()` over an `IAppConfig`-stored matrix, an admin matrix editor at `lib/Controller/ActionMatrixController.php`, and seed application via `lib/Repair/InitializeActions.php` from `lib/actions.seed.json`; it is already consumed by SourcesController, MappingsController, EventsController, JobsController and others. No new auth service is introduced by this change).
+- Controllers: `OCA\Integriq\Controller\CatalogController` (new — `status`, `instantiate`), `OCA\Integriq\Controller\ConfigurationController` (new — `export`, `previewImport`, `import`).
+- Services: `OCA\Integriq\Service\CatalogRegistryService` (new), `OCA\Integriq\Service\ConfigurationService` (existing, unchanged), `OCA\Integriq\Service\ActionAuthService` (**existing, reused** — Integriq already ships the ADR-023 implementation at `lib/Service/ActionAuthService.php` with `requireAction()`/`can()` over an `IAppConfig`-stored matrix, an admin matrix editor at `lib/Controller/ActionMatrixController.php`, and seed application via `lib/Repair/InitializeActions.php` from `lib/actions.seed.json`; it is already consumed by SourcesController, MappingsController, EventsController, JobsController and others. No new auth service is introduced by this change).
 - Mappers/Entities: none new — `catalog_item` is an OpenRegister-managed object, no native Doctrine/QBMapper entity.
 - Events/Hooks: repair step registered in `lib/AppInfo/Application.php` alongside the existing `InitializeRegister` repair step registration.
 
@@ -89,11 +89,11 @@ No native table changes. One new OpenRegister schema fragment (`lib/Settings/reg
 - **Data-level auth (unchanged)**: the `source` schema stays admin-only end to end (`99-source-lockdown.json`) — the catalog/import write paths do not introduce a new way to read or write Source credentials that bypasses this lock; they call the same `ObjectService`/`ConfigurationHandlers\SourceHandler` code the existing admin-only Sources UI calls.
 - **Import is untrusted input** (REQ-003 Notes: no schema validation beyond the top-level `components` key) — the new `/preview` endpoint does NOT execute the import; it only reads/diffs. The `/import` endpoint requires `confirmed: true` from a UI that has shown the preview, but this is a UX safeguard, not a security control — the actual security control remains the admin-only action-matrix gate plus OR's own object-write validation. This is called out explicitly rather than treated as a security boundary in itself.
 - **catalog_item objects carry no credentials** — `CatalogRegistryService` writes only metadata (name/category/status/mechanism), never Source config, so `catalog_item` itself does not need the same lockdown as `source`. Confirmed in the schema field list above.
-- No CORS/CSRF changes — both controllers use standard Nextcloud CSRF-protected session auth like every other OpenConnector controller.
+- No CORS/CSRF changes — both controllers use standard Nextcloud CSRF-protected session auth like every other Integriq controller.
 
 ## NL Design System
 
-Catalog cards (`CatalogItemCard.vue`) and the import-preview modal use standard NC components (`NcButton`, `NcModal`/`NcDialog` per the modal-isolation gate — the preview lives in its own `src/dialogs/ImportPreviewDialog.vue`, not inline) and CSS variables only, no hardcoded colors, consistent with every other OpenConnector page.
+Catalog cards (`CatalogItemCard.vue`) and the import-preview modal use standard NC components (`NcButton`, `NcModal`/`NcDialog` per the modal-isolation gate — the preview lives in its own `src/dialogs/ImportPreviewDialog.vue`, not inline) and CSS variables only, no hardcoded colors, consistent with every other Integriq page.
 
 ## File Structure
 
@@ -151,11 +151,11 @@ These are not hand-authored "seed objects" in the usual sense (3-5 illustrative 
 ## Trade-offs
 
 - **Extending `IntegrationRegistry` vs. a new lightweight descriptor list** (Decision, see discovery.md): chose the lightweight list for PDOK/Digikoppeling/Berichtenbox/DSO rather than promoting them to full `IntegrationProvider`s, because `IntegrationProvider`'s interface (auth requirements, storage strategy, health checks) is shaped for the 4 already-registered category adapters and forcing PDOK etc. into that shape is separate, riskier work with no catalog-specific payoff (the catalog only needs name/category/status/standards, not health/storage-strategy). Revisit if a future change needs PDOK health-checked through the same registry OR wants generally does.
-- **Thin `ConfigurationController` wrapping existing service vs. building against OR's generic export/import endpoints**: chose the thin wrapper because OR's endpoints operate at register granularity while OpenConnector's configuration groups span 6 entity types by `configurations[]` membership — not expressible through OR's generic endpoints without re-deriving the same grouping logic client-side, which would duplicate `ConfigurationService` rather than reuse it.
+- **Thin `ConfigurationController` wrapping existing service vs. building against OR's generic export/import endpoints**: chose the thin wrapper because OR's endpoints operate at register granularity while Integriq's configuration groups span 6 entity types by `configurations[]` membership — not expressible through OR's generic endpoints without re-deriving the same grouping logic client-side, which would duplicate `ConfigurationService` rather than reuse it.
 - **`type: "index"` + `viewMode: "cards"` vs. a bespoke `type: "custom"` catalog page**: chose the typed-primitive path per the constraint (#814, hydra custom-widget-ratchet gate) and because two live precedents (openbuild `VirtualApps`, softwarecatalog `Organisaties`) prove it handles a card grid with a custom card component and facet filters without any `nextcloud-vue` change. The one place a custom page remains justified in the ecosystem (openbuild's `Templates`/`TemplateGallery`) is specifically for *remote* template-store search — explicitly out of scope here (proposal Out of Scope), so that justification does not apply to this change.
 
 ## Open Questions
 
 - Exact slug-stability strategy for `catalog_item` re-materialisation (e.g. `adapter:pdok-wms` vs. `source-template:brp-haalcentraal`) needs to be finalized in tasks.md/apply — namespaced by `kind:` prefix is proposed to avoid cross-kind slug collisions.
 
-(Resolved during authoring: OpenConnector already ships the full ADR-023 stack — `lib/Service/ActionAuthService.php`, `lib/Controller/ActionMatrixController.php`, `lib/Repair/InitializeActions.php`, `lib/actions.seed.json` — verified at HEAD; this change only appends three action keys to the existing seed.)
+(Resolved during authoring: Integriq already ships the full ADR-023 stack — `lib/Service/ActionAuthService.php`, `lib/Controller/ActionMatrixController.php`, `lib/Repair/InitializeActions.php`, `lib/actions.seed.json` — verified at HEAD; this change only appends three action keys to the existing seed.)

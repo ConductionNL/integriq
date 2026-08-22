@@ -8,7 +8,7 @@ Specifically, `SourceLogs`, `EndpointLogs`, `JobLogs`, `SynchronizationLogs`,
 and `CloudEventLogs` MUST each be declared in the manifest
 (`src/manifest.json` / `src/manifest.d/*.json`) with a `{ register, schema }`
 config, resolved by `@conduction/nextcloud-vue`'s shared `CnLogsPage`
-component. OpenConnector MUST NOT ship its own bespoke log-index Vue component
+component. Integriq MUST NOT ship its own bespoke log-index Vue component
 or per-`logType` pinia store wiring for this purpose — that responsibility
 belongs to the shared nc-vue component per ADR-036.
 
@@ -18,7 +18,7 @@ belongs to the shared nc-vue component per ADR-036.
   `SynchronizationLogs`, and `CloudEventLogs` as `"type": "logs"` pages
 - **WHEN** a user navigates to any of these five routes
 - **THEN** the page renders via `CnLogsPage` reading directly from the
-  declared OR `{register, schema}` — no openconnector-owned wrapper component
+  declared OR `{register, schema}` — no integriq-owned wrapper component
   is in the render path
 
 #### Scenario: No dead per-logType wrapper code ships in the repo

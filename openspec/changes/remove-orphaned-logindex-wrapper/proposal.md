@@ -51,7 +51,7 @@ current spec text is stale relative to the actual manifest wiring.
   so, keep the store action and only delete the dead Vue wrapper).
 - Update `openspec/specs/app-shell-and-logs-ui/spec.md` REQ-SHELLUI-003 to
   either (a) remove the "Log index viewer" requirement entirely since
-  `CnLogsPage` (a shared nc-vue component, not an openconnector-owned one) now
+  `CnLogsPage` (a shared nc-vue component, not an integriq-owned one) now
   serves this role, or (b) retitle it to describe the actual manifest
   `"type": "logs"` wiring, whichever the spec owner prefers at implementation
   time.

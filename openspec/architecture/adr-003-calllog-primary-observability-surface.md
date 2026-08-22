@@ -8,7 +8,7 @@ Accepted (capturing existing decision)
 
 ## Context
 
-Every outbound HTTP request that openconnector makes to a Source goes through
+Every outbound HTTP request that integriq makes to a Source goes through
 `lib/Service/CallService.php`, which writes a `CallLog` entity for both
 success and error paths. The `CallLog` entity (`lib/Db/CallLog.php`) records:
 
@@ -34,7 +34,7 @@ config schemas.
 ## Decision
 
 `CallLog` is the canonical observability record for any outbound HTTP request
-issued by openconnector. Every code path that issues an HTTP call through
+issued by integriq. Every code path that issues an HTTP call through
 `CallService` MUST produce a `CallLog`; new outbound HTTP integrations MUST go
 through `CallService` (not raw Guzzle) so they appear in the call log surface.
 

@@ -7,9 +7,9 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector exposes two related UI sections — **Consumers** and **Webhooks** —
+Integriq exposes two related UI sections — **Consumers** and **Webhooks** —
 that allow administrators to configure inbound access policies. A Consumer
-describes an external system that is permitted to call OpenConnector's endpoints,
+describes an external system that is permitted to call Integriq's endpoints,
 including its authorization type and allowed domains. Webhooks share the same
 underlying schema (`consumer`) and surface but are presented separately for
 clarity. This spec covers the observable browser UI behaviour and the backend
@@ -18,13 +18,13 @@ authentication enforcement (covered by PHPUnit/Newman). It is a retrofit spec.
 
 ### REQ-CON-UI-001: Consumer Management UI
 
-OpenConnector MUST provide a Consumers section in its SPA where administrators can
+Integriq MUST provide a Consumers section in its SPA where administrators can
 browse, create, edit, and delete consumer configurations.
 
 #### Scenario: consumers list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the Consumers section via the sidebar nav or direct URL `/apps/openconnector/consumers`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the Consumers section via the sidebar nav or direct URL `/apps/integriq/consumers`
 - THEN the Consumers index page renders inside the main content area with content visible
 
 #### Scenario: add consumer button opens the creation modal
@@ -35,13 +35,13 @@ browse, create, edit, and delete consumer configurations.
 
 ### REQ-WBHK-UI-001: Webhook Management UI
 
-OpenConnector MUST provide a Webhooks section in its SPA where administrators can
+Integriq MUST provide a Webhooks section in its SPA where administrators can
 browse, create, edit, and delete webhook consumers.
 
 #### Scenario: webhooks list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the Webhooks section via the sidebar nav or direct URL `/apps/openconnector/webhooks`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the Webhooks section via the sidebar nav or direct URL `/apps/integriq/webhooks`
 - THEN the Webhooks index page renders inside the main content area with content visible
 
 #### Scenario: add webhook button opens the creation modal
@@ -53,7 +53,7 @@ browse, create, edit, and delete webhook consumers.
 ### REQ-CON-001: Consumer authentication enforcement
 
 The system SHALL enforce consumer-level authentication on inbound calls to
-OpenConnector endpoints by resolving the `consumer` record associated with the
+Integriq endpoints by resolving the `consumer` record associated with the
 request and checking that the caller's credentials match the configured
 `authorizationType` (none, apiKey, jwt, basic, oauth2). Requests failing
 consumer auth SHALL receive HTTP 401 (or HTTP 403 when the credential is absent

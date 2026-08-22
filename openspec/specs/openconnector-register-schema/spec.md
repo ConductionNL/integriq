@@ -1,8 +1,8 @@
 # openconnector-register-schema Specification
 
 ## Purpose
-Declare the OpenConnector data model as a single OpenRegister register descriptor
-(`lib/Settings/openconnector_register.json`), replacing the implicit data model
+Declare the Integriq data model as a single OpenRegister register descriptor
+(`lib/Settings/integriq_register.json`), replacing the implicit data model
 encoded across 15 hand-maintained `oc_openconnector_*` tables and their mappers
 with one authoritative OpenAPI 3.0 + `x-openregister` document. This declaration
 is the platform-neutral source of truth from which the companion code chain
@@ -12,16 +12,16 @@ with ADR-001, ADR-031, and ADR-032. Status: implemented.
 ### Requirement: Register descriptor file MUST exist at the canonical path (REQ-A-001)
 
 The system MUST ship a register descriptor file at
-`lib/Settings/openconnector_register.json` that conforms to OpenAPI 3.0 with the
+`lib/Settings/integriq_register.json` that conforms to OpenAPI 3.0 with the
 `x-openregister` vendor extension. The file MUST declare exactly one register
 with slug `openconnector` and a non-empty `schemas` array referencing every
 schema defined in `components.schemas`.
 
 #### Scenario: Descriptor file present at canonical path
 
-- **GIVEN** a fresh checkout of the openconnector repo
-- **WHEN** inspecting `openconnector/lib/Settings/`
-- **THEN** `openconnector_register.json` MUST exist
+- **GIVEN** a fresh checkout of the integriq repo
+- **WHEN** inspecting `integriq/lib/Settings/`
+- **THEN** `integriq_register.json` MUST exist
 - **AND** it MUST parse as valid JSON
 - **AND** its top-level keys MUST be exactly `openapi`, `info`, `x-openregister`,
   `components`
@@ -74,7 +74,7 @@ attribute names follow OR's `archival-destruction-workflow` spec.
 
 ### Requirement: Integer foreign-key columns MUST be relation-annotated (REQ-A-005)
 
-Each integer foreign-key column on an openconnector entity MUST be re-declared in
+Each integer foreign-key column on an integriq entity MUST be re-declared in
 the schema as a UUID property paired with a `$ref` to the target schema. The
 following 6 relations MUST exist:
 
@@ -126,7 +126,7 @@ logic.
 
 ### Requirement: Seed data file MUST exist for mutable schemas only (REQ-A-007)
 
-The system MUST ship `lib/Settings/openconnector_seed_data.json` containing
+The system MUST ship `lib/Settings/integriq_seed_data.json` containing
 3–5 seed objects per mutable config schema. The file MUST be a JSON object keyed
 by schema slug; each value MUST be an array of object literals carrying the
 `@self` envelope (`register`, `schema`, `slug`). Log schemas MUST NOT appear in
@@ -138,7 +138,7 @@ Seed objects MUST use safe placeholder values for any secret-bearing column
 `"<placeholder>"`.
 
 #### Scenario: Seed file contains only mutable schemas
-- GIVEN `openconnector_seed_data.json` is loaded
+- GIVEN `integriq_seed_data.json` is loaded
 - WHEN inspecting the top-level keys
 - THEN they MUST be a subset of the 11 mutable schema slugs
 - AND `call_log`, `job_log`, `synchronization_log`,

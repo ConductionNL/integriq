@@ -27,7 +27,7 @@ prefix. The storage layer is unchanged: `OCP\Files\File::putContent()` already
 accepts `string|resource`, so a resource streams straight to disk.
 
 Two-repo split:
-- **OpenConnector** — `SynchronizationService::fetchFile` drives the streaming.
+- **Integriq** — `SynchronizationService::fetchFile` drives the streaming.
 - **OpenRegister** — `FileService` + `CreateFileHandler`/`UpdateFileHandler`
   relax `string $content` → `string|resource` and branch on `is_resource()`.
 
@@ -65,7 +65,7 @@ None. No tables, columns, migrations, or OpenRegister schemas change.
 
 ## Nextcloud Integration
 - Controllers: none.
-- Services: `OCA\OpenConnector\Service\SynchronizationService` (consumer);
+- Services: `OCA\Integriq\Service\SynchronizationService` (consumer);
   `OCA\OpenRegister\Service\FileService` (provider, resolved via the DI
   container).
 - Handlers: `OCA\OpenRegister\Service\File\CreateFileHandler`,
@@ -93,7 +93,7 @@ is the prefix (~512 bytes), not the whole file. If the guard throws, the temp
 stream is closed in the caller's `finally`.
 
 The string-only base64 auto-decode in `CreateFileHandler` (lines 146–171) is
-**skipped for resources**: OpenConnector has already produced decoded bytes on
+**skipped for resources**: Integriq has already produced decoded bytes on
 the binary-download path, so there is nothing to base64-decode. This is a
 behaviour-preserving skip (not a security control), gated by `is_resource()`.
 
@@ -135,7 +135,7 @@ content is preserved as described above.
 
 ## CallService sink capability (2026-07-16 correction)
 
-The original design assumed the OpenConnector side was "only
+The original design assumed the Integriq side was "only
 `SynchronizationService.php`". Verifying against the code found this is not
 achievable there alone: `fetchFile` reads its bytes from the CallLog
 (`callLogResponse()`), and `CallService::call()` buffers the whole body via
@@ -167,7 +167,7 @@ handle's contents (a bounded, non-persist path) to preserve its return contract.
 
 ## File Structure
 ```
-openconnector/
+integriq/
   lib/Service/
     CallService.php                   # call()/dispatchRequest(): optional $sink → Guzzle 'sink' option, kept out of logged config
     SynchronizationService.php        # callSourceObject(): $sink pass-through; fetchFile: sink→php://temp, rewind, pass resource, fclose in finally

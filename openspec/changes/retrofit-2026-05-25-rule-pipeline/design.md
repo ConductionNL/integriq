@@ -10,7 +10,7 @@
 The `rule-pipeline` cluster (Bucket 2b, 31 methods, no capability owner) is the
 endpoint rule engine. It spans `EndpointService.php` (rule-evaluation methods)
 and `RuleService.php` (custom software-catalogus + external-extension rules).
-ADR-002 establishes that this engine is openconnector-local with no OpenRegister
+ADR-002 establishes that this engine is integriq-local with no OpenRegister
 equivalent — it will not be generalised into OR — so it warrants its own
 capability spec rather than an OR abstraction reference.
 

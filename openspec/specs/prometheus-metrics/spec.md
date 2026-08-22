@@ -13,12 +13,12 @@ Expose application metrics in Prometheus text exposition format at `GET /api/met
 
 ### REQ-PROM-001: Metrics Endpoint
 
-The app MUST expose `GET /index.php/apps/openconnector/api/metrics` returning `text/plain; version=0.0.4; charset=utf-8`. The endpoint MUST require admin authentication (Nextcloud admin session or API token). All metrics MUST follow the Prometheus text exposition format with `# HELP`, `# TYPE`, and metric lines.
+The app MUST expose `GET /index.php/apps/integriq/api/metrics` returning `text/plain; version=0.0.4; charset=utf-8`. The endpoint MUST require admin authentication (Nextcloud admin session or API token). All metrics MUST follow the Prometheus text exposition format with `# HELP`, `# TYPE`, and metric lines.
 
 #### Scenario: authenticated admin scrapes metrics
 
 - **GIVEN** an authenticated Nextcloud admin user
-- **WHEN** they request `GET /index.php/apps/openconnector/api/metrics`
+- **WHEN** they request `GET /index.php/apps/integriq/api/metrics`
 - **THEN** the response has status 200, content-type `text/plain; version=0.0.4; charset=utf-8`, and the body contains valid Prometheus exposition format lines.
 
 #### Scenario: unauthenticated request is rejected
@@ -44,17 +44,17 @@ The app MUST expose `GET /index.php/apps/openconnector/api/metrics` returning `t
 
 - **GIVEN** the metrics endpoint is called frequently (every 15 seconds)
 - **WHEN** each scrape runs the database queries
-- **THEN** query execution completes within 500ms using indexed COUNT queries on the existing OpenConnector tables.
+- **THEN** query execution completes within 500ms using indexed COUNT queries on the existing Integriq tables.
 
 ### REQ-PROM-002: Application Info Gauge
 
-The app MUST expose an `openconnector_info` gauge metric with labels `version` (app version), `php_version`, and `nextcloud_version`. The value is always 1. This enables Prometheus queries like `openconnector_info{version="2.1.0"}` to track which version is deployed.
+The app MUST expose an `integriq_info` gauge metric with labels `version` (app version), `php_version`, and `nextcloud_version`. The value is always 1. This enables Prometheus queries like `integriq_info{version="2.1.0"}` to track which version is deployed.
 
 #### Scenario: info gauge carries version labels
 
-- **GIVEN** OpenConnector version 2.1.0 is installed on Nextcloud 30.0.0 running PHP 8.3.0
+- **GIVEN** Integriq version 2.1.0 is installed on Nextcloud 30.0.0 running PHP 8.3.0
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_info{version="2.1.0",php_version="8.3.0",nextcloud_version="30.0.0"} 1`.
+- **THEN** the output includes `integriq_info{version="2.1.0",php_version="8.3.0",nextcloud_version="30.0.0"} 1`.
 
 #### Scenario: version label updates after upgrade
 
@@ -70,41 +70,41 @@ The app MUST expose an `openconnector_info` gauge metric with labels `version` (
 
 ### REQ-PROM-003: Application Up Gauge
 
-The app MUST expose an `openconnector_up` gauge metric. The value is 1 if the app is healthy (database accessible, core tables exist), 0 if degraded (database errors, missing tables).
+The app MUST expose an `integriq_up` gauge metric. The value is 1 if the app is healthy (database accessible, core tables exist), 0 if degraded (database errors, missing tables).
 
 #### Scenario: healthy app reports up=1
 
 - **GIVEN** the application is running normally with database connectivity
 - **WHEN** the metrics endpoint is called
-- **THEN** `openconnector_up` is 1.
+- **THEN** `integriq_up` is 1.
 
 #### Scenario: lost database connection reports up=0
 
 - **GIVEN** the database connection is lost
 - **WHEN** the metrics endpoint is called
-- **THEN** `openconnector_up` is 0 (the endpoint itself may still respond if the framework can serve the request).
+- **THEN** `integriq_up` is 0 (the endpoint itself may still respond if the framework can serve the request).
 
 #### Scenario: missing sources table reports up=0
 
 - **GIVEN** the sources table is missing (migration not run)
 - **WHEN** the metrics endpoint is called
-- **THEN** `openconnector_up` is 0 and the health check details explain the missing table.
+- **THEN** `integriq_up` is 0 and the health check details explain the missing table.
 
 ### REQ-PROM-004: Sources Gauge by Type
 
-The app MUST expose `openconnector_sources_total` as a gauge with label `type` (rest/soap/graphql/json/xml/ftp/sftp). The value is the current count of configured sources per type, queried from the `openconnector_sources` table grouped by `type` column.
+The app MUST expose `integriq_sources_total` as a gauge with label `type` (rest/soap/graphql/json/xml/ftp/sftp). The value is the current count of configured sources per type, queried from the `openconnector_sources` table grouped by `type` column.
 
 #### Scenario: sources counted per type
 
 - **GIVEN** there are 5 sources of type "json", 2 of type "soap", and 1 of type "xml"
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_sources_total{type="json"} 5`, `openconnector_sources_total{type="soap"} 2`, and `openconnector_sources_total{type="xml"} 1`.
+- **THEN** the output includes `integriq_sources_total{type="json"} 5`, `integriq_sources_total{type="soap"} 2`, and `integriq_sources_total{type="xml"} 1`.
 
 #### Scenario: no sources emits a zero placeholder
 
 - **GIVEN** no sources are configured
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_sources_total{type="rest"} 0` as a zero-value placeholder.
+- **THEN** the output includes `integriq_sources_total{type="rest"} 0` as a zero-value placeholder.
 
 #### Scenario: NULL type counted as rest
 
@@ -114,63 +114,63 @@ The app MUST expose `openconnector_sources_total` as a gauge with label `type` (
 
 ### REQ-PROM-005: Call Counter by Status
 
-The app MUST expose `openconnector_calls_total` as a counter with label `status` (HTTP status code). The value is the total number of API calls logged in the `openconnector_call_logs` table, grouped by `status_code`. This enables monitoring of error rates and API call volumes.
+The app MUST expose `integriq_calls_total` as a counter with label `status` (HTTP status code). The value is the total number of API calls logged in the `openconnector_call_logs` table, grouped by `status_code`. This enables monitoring of error rates and API call volumes.
 
 #### Scenario: calls counted per status code
 
 - **GIVEN** 150 calls with status 200, 30 calls with status 400, and 5 calls with status 500 are logged
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_calls_total{status="200"} 150`, `openconnector_calls_total{status="400"} 30`, and `openconnector_calls_total{status="500"} 5`.
+- **THEN** the output includes `integriq_calls_total{status="200"} 150`, `integriq_calls_total{status="400"} 30`, and `integriq_calls_total{status="500"} 5`.
 
 #### Scenario: no calls emits a zero placeholder
 
 - **GIVEN** no calls have been logged
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_calls_total{status="200"} 0` as a zero-value placeholder.
+- **THEN** the output includes `integriq_calls_total{status="200"} 0` as a zero-value placeholder.
 
 #### Scenario: new status appears on next scrape
 
 - **GIVEN** a new call is logged with status 429 (rate limited)
 - **WHEN** the next metrics scrape runs
-- **THEN** `openconnector_calls_total{status="429"}` appears with count 1.
+- **THEN** `integriq_calls_total{status="429"}` appears with count 1.
 
 ### REQ-PROM-006: Synchronization Metrics
 
-The app MUST expose synchronization metrics: `openconnector_synchronizations_total` (gauge, total configured synchronizations) and `openconnector_synchronization_runs_total` (counter with label `status`, total sync log entries grouped by result). These enable monitoring of sync health and failure rates.
+The app MUST expose synchronization metrics: `integriq_synchronizations_total` (gauge, total configured synchronizations) and `integriq_synchronization_runs_total` (counter with label `status`, total sync log entries grouped by result). These enable monitoring of sync health and failure rates.
 
 #### Scenario: synchronization counts and run results exposed
 
 - **GIVEN** 10 synchronizations are configured **AND** 500 sync log entries exist (400 success, 80 partial, 20 error)
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_synchronizations_total 10`, `openconnector_synchronization_runs_total{status="success"} 400`, `openconnector_synchronization_runs_total{status="partial"} 80`, and `openconnector_synchronization_runs_total{status="error"} 20`.
+- **THEN** the output includes `integriq_synchronizations_total 10`, `integriq_synchronization_runs_total{status="success"} 400`, `integriq_synchronization_runs_total{status="partial"} 80`, and `integriq_synchronization_runs_total{status="error"} 20`.
 
 #### Scenario: no sync logs emit a zero placeholder
 
 - **GIVEN** no sync log entries exist
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_synchronization_runs_total{status="success"} 0` as a zero-value placeholder.
+- **THEN** the output includes `integriq_synchronization_runs_total{status="success"} 0` as a zero-value placeholder.
 
 #### Scenario: failed sync run increments error count
 
 - **GIVEN** a sync run fails due to a source being disabled
 - **WHEN** the sync log records the failure
-- **THEN** the next scrape increments `openconnector_synchronization_runs_total{status="error"}`.
+- **THEN** the next scrape increments `integriq_synchronization_runs_total{status="error"}`.
 
 ### REQ-PROM-007: Endpoint Metrics
 
-The app MUST expose `openconnector_endpoints_total` (gauge) counting the total number of registered endpoints, and `openconnector_endpoint_hits_total` (counter with labels `endpoint`, `method`) tracking request counts per endpoint. This enables monitoring of which endpoints are most active.
+The app MUST expose `integriq_endpoints_total` (gauge) counting the total number of registered endpoints, and `integriq_endpoint_hits_total` (counter with labels `endpoint`, `method`) tracking request counts per endpoint. This enables monitoring of which endpoints are most active.
 
 #### Scenario: endpoint totals and per-endpoint hits exposed
 
 - **GIVEN** 15 endpoints are registered **AND** endpoint "/api/objects" has received 200 GET and 50 POST requests
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_endpoints_total 15`, `openconnector_endpoint_hits_total{endpoint="/api/objects",method="GET"} 200`, and `openconnector_endpoint_hits_total{endpoint="/api/objects",method="POST"} 50`.
+- **THEN** the output includes `integriq_endpoints_total 15`, `integriq_endpoint_hits_total{endpoint="/api/objects",method="GET"} 200`, and `integriq_endpoint_hits_total{endpoint="/api/objects",method="POST"} 50`.
 
 #### Scenario: uncalled endpoint emits no hit metric
 
 - **GIVEN** an endpoint is created but never called
 - **WHEN** the metrics endpoint is called
-- **THEN** it appears in `openconnector_endpoints_total` but not in `openconnector_endpoint_hits_total` (no zero-value emission per endpoint).
+- **THEN** it appears in `integriq_endpoints_total` but not in `integriq_endpoint_hits_total` (no zero-value emission per endpoint).
 
 #### Scenario: hit metrics capped to top 100
 
@@ -180,41 +180,41 @@ The app MUST expose `openconnector_endpoints_total` (gauge) counting the total n
 
 ### REQ-PROM-008: Job Queue Metrics
 
-The app MUST expose `openconnector_jobs_total` (gauge) counting configured jobs, and `openconnector_job_runs_total` (counter with label `status`) counting job execution log entries. This enables monitoring of background job health.
+The app MUST expose `integriq_jobs_total` (gauge) counting configured jobs, and `integriq_job_runs_total` (counter with label `status`) counting job execution log entries. This enables monitoring of background job health.
 
 #### Scenario: job counts and run results exposed
 
 - **GIVEN** 5 jobs are configured **AND** job logs show 100 success runs and 10 error runs
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_jobs_total 5`, `openconnector_job_runs_total{status="success"} 100`, and `openconnector_job_runs_total{status="error"} 10`.
+- **THEN** the output includes `integriq_jobs_total 5`, `integriq_job_runs_total{status="success"} 100`, and `integriq_job_runs_total{status="error"} 10`.
 
 #### Scenario: stuck job surfaced via health check
 
 - **GIVEN** a job has been stuck (no recent runs) for over 1 hour
 - **WHEN** the metrics endpoint is called
-- **THEN** the job appears in `openconnector_jobs_total` but its last run timestamp is available via the health check for alerting.
+- **THEN** the job appears in `integriq_jobs_total` but its last run timestamp is available via the health check for alerting.
 
 #### Scenario: no jobs emits zero total
 
 - **GIVEN** no jobs are configured
 - **WHEN** the metrics endpoint is called
-- **THEN** `openconnector_jobs_total 0` is emitted.
+- **THEN** `integriq_jobs_total 0` is emitted.
 
 ### REQ-PROM-009: Mapping and Rule Metrics
 
-The app MUST expose `openconnector_mappings_total` (gauge) and `openconnector_rules_total` (gauge) counting configured mappings and rules respectively. These are lightweight counters providing operational overview.
+The app MUST expose `integriq_mappings_total` (gauge) and `integriq_rules_total` (gauge) counting configured mappings and rules respectively. These are lightweight counters providing operational overview.
 
 #### Scenario: mapping and rule counts exposed
 
 - **GIVEN** 20 mappings and 8 rules are configured
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_mappings_total 20` and `openconnector_rules_total 8`.
+- **THEN** the output includes `integriq_mappings_total 20` and `integriq_rules_total 8`.
 
 #### Scenario: deleted mapping lowers the count
 
 - **GIVEN** a mapping is deleted
 - **WHEN** the next metrics scrape runs
-- **THEN** `openconnector_mappings_total` reflects the decreased count.
+- **THEN** `integriq_mappings_total` reflects the decreased count.
 
 #### Scenario: mapping count failure falls back to zero
 
@@ -224,7 +224,7 @@ The app MUST expose `openconnector_mappings_total` (gauge) and `openconnector_ru
 
 ### REQ-PROM-010: Health Check Endpoint
 
-The app MUST expose `GET /index.php/apps/openconnector/api/health` returning JSON `{"status": "ok"|"degraded"|"error", "checks": {...}}`. Checks include: database connectivity (SELECT 1), source table accessibility (COUNT from sources table), and optionally source endpoint reachability for critical sources. The health endpoint requires admin authentication.
+The app MUST expose `GET /index.php/apps/integriq/api/health` returning JSON `{"status": "ok"|"degraded"|"error", "checks": {...}}`. Checks include: database connectivity (SELECT 1), source table accessibility (COUNT from sources table), and optionally source endpoint reachability for critical sources. The health endpoint requires admin authentication.
 
 #### Scenario: healthy app reports ok
 
@@ -258,10 +258,10 @@ The app MUST expose `GET /index.php/apps/openconnector/api/health` returning JSO
 
 ### Requirement: Circuit Breaker State Gauge (REQ-PROM-011)
 
-The app MUST expose `openconnector_circuit_breaker_state` as a gauge with
+The app MUST expose `integriq_circuit_breaker_state` as a gauge with
 label `source` (the Source's `name`), queried directly from the
 `openconnector_sources` table's `circuitBreakerState`/`circuitBreakerFailureCount`
-columns (same query-time pattern as `REQ-PROM-004`'s `openconnector_sources_total`
+columns (same query-time pattern as `REQ-PROM-004`'s `integriq_sources_total`
 — no new join, no new table). The value MUST be `1` when
 `circuitBreakerState = 'open'` and `0` when `closed`. Sources with no
 `circuitBreakerState` set (not yet evaluated, or `retryPolicy`/breaker never
@@ -271,19 +271,19 @@ configured) MUST be reported as `0` (closed).
 
 - **GIVEN** a Source named "kvk-api" with `circuitBreakerState = 'open'`
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="kvk-api"} 1`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="kvk-api"} 1`
 
 #### Scenario: a closed breaker is reported as 0
 
 - **GIVEN** a Source named "brp-api" with `circuitBreakerState = 'closed'`
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="brp-api"} 0`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="brp-api"} 0`
 
 #### Scenario: a source with no breaker state defaults to closed
 
 - **GIVEN** a Source that has never had a breaker evaluation recorded
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="<name>"} 0`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="<name>"} 0`
 
 #### Scenario: metrics query failure falls back to zero
 
@@ -295,9 +295,9 @@ configured) MUST be reported as `0` (closed).
 
 ### Requirement: Per-API-Product request and error gauges (REQ-PROM-012)
 
-The app MUST expose `openconnector_api_product_requests_total` as a gauge
+The app MUST expose `integriq_api_product_requests_total` as a gauge
 with labels `product` (the `api_product`'s `productSlug`) and `status`
-(HTTP status code), and `openconnector_api_product_errors_total` as a gauge
+(HTTP status code), and `integriq_api_product_errors_total` as a gauge
 with label `product`, both computed declaratively from inbound `call_log`
 rows carrying a `product` uuid (`endpoint-runtime` `REQ-EP-009`), the same
 `source.kind: "tableCount"` + `groupBy` mechanism that already produces
@@ -309,25 +309,25 @@ the existing label-resolution join pattern.
 
 - GIVEN 40 inbound `call_log` rows for product `woo-publications` with status 200 and 3 with status 429
 - WHEN the metrics endpoint is called
-- THEN the output includes `openconnector_api_product_requests_total{product="woo-publications",status="200"} 40` and `...{product="woo-publications",status="429"} 3`
+- THEN the output includes `integriq_api_product_requests_total{product="woo-publications",status="200"} 40` and `...{product="woo-publications",status="429"} 3`
 
 #### Scenario: error count reflects statusCode >= 400 rows
 
 - GIVEN a product with 100 inbound rows, 5 with `statusCode >= 400`
 - WHEN the metrics endpoint is called
-- THEN `openconnector_api_product_errors_total{product="<slug>"} 5`
+- THEN `integriq_api_product_errors_total{product="<slug>"} 5`
 
 #### Scenario: a product with no inbound traffic emits a zero placeholder
 
 - GIVEN an `api_product` with no inbound `call_log` rows yet
 - WHEN the metrics endpoint is called
-- THEN `openconnector_api_product_requests_total{product="<slug>",status="200"} 0` is emitted, consistent with every other `REQ-PROM-*` zero-placeholder scenario
+- THEN `integriq_api_product_requests_total{product="<slug>",status="200"} 0` is emitted, consistent with every other `REQ-PROM-*` zero-placeholder scenario
 
 ### Requirement: Per-API-Product latency percentile gauges (REQ-PROM-013)
 
-The app MUST expose `openconnector_api_product_latency_seconds` as a gauge
+The app MUST expose `integriq_api_product_latency_seconds` as a gauge
 with labels `product` and `quantile` (`0.5`|`0.95`|`0.99`), produced by the
-`OpenConnectorMetricsProvider` `IMetricsProvider` escape hatch (the same
+`IntegriqMetricsProvider` `IMetricsProvider` escape hatch (the same
 mechanism `circuit_breaker_state` uses, `REQ-PROM-011`) — a percentile
 cannot be expressed by the declarative `tableCount`/`objectCount` `groupBy`
 vocabulary used by `REQ-PROM-012`, since it requires sorting values within a
@@ -340,7 +340,7 @@ converted to seconds for the gauge per Prometheus convention).
 
 - GIVEN a product's 1000 most recent inbound `call_log` rows with `responseTime` ranging 10-500ms
 - WHEN the metrics endpoint is called
-- THEN the output includes `openconnector_api_product_latency_seconds{product="<slug>",quantile="0.5"}`, `...quantile="0.95"`, and `...quantile="0.99"` reflecting those percentiles in seconds
+- THEN the output includes `integriq_api_product_latency_seconds{product="<slug>",quantile="0.5"}`, `...quantile="0.95"`, and `...quantile="0.99"` reflecting those percentiles in seconds
 
 #### Scenario: a product with no traffic reports zero latency, not a missing series
 
@@ -362,7 +362,7 @@ converted to seconds for the gauge per Prometheus convention).
 
 ## Data Model
 
-No new data model entities are required. Metrics are computed at query time from existing OpenConnector tables:
+No new data model entities are required. Metrics are computed at query time from existing Integriq tables:
 - `openconnector_sources` (type column for source counts)
 - `openconnector_call_logs` (status_code column for call counts)
 - `openconnector_synchronizations` (total count)
@@ -376,7 +376,7 @@ No new data model entities are required. Metrics are computed at query time from
 ## Current Implementation Status
 
 ### Implemented
-- **MetricsController** (`lib/Controller/MetricsController.php`): Fully implemented with `index()` method returning Prometheus text format. Exposes `openconnector_info`, `openconnector_up`, `openconnector_sources_total` (by type), `openconnector_calls_total` (by status), `openconnector_synchronizations_total`, and `openconnector_synchronization_runs_total` (by status). Uses IDBConnection query builder for all database queries with proper error handling and zero-value fallbacks.
+- **MetricsController** (`lib/Controller/MetricsController.php`): Fully implemented with `index()` method returning Prometheus text format. Exposes `integriq_info`, `integriq_up`, `integriq_sources_total` (by type), `integriq_calls_total` (by status), `integriq_synchronizations_total`, and `integriq_synchronization_runs_total` (by status). Uses IDBConnection query builder for all database queries with proper error handling and zero-value fallbacks.
 - **HealthController** (`lib/Controller/HealthController.php`): Fully implemented with `index()` method returning JSON health status. Checks database connectivity (SELECT 1) and sources table accessibility (COUNT from sources). Returns `{"status": "ok"|"degraded"|"error", "checks": {...}}`.
 - **Route registration**: Both endpoints are registered and accessible at their respective paths.
 

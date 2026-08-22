@@ -61,7 +61,7 @@ third field in that same family, not a new subsystem.
 **Choice:** Add `cursorWatermark` (string) and `syncMode` (string enum
 `full`|`incremental`, default `full`) as top-level properties on the
 existing `synchronization` schema in
-`lib/Settings/openconnector_register.json`, alongside the pre-existing
+`lib/Settings/integriq_register.json`, alongside the pre-existing
 `currentPage` (pagination-in-progress cursor) and `targetLastSynced` fields.
 
 **Why:** The codebase already has an established, working convention for

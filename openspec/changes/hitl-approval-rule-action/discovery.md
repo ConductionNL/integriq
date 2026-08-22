@@ -3,7 +3,7 @@
 ## Question
 
 Can a HITL approval action be suspended and resumed entirely within
-OpenConnector's existing mechanisms — the rule pipeline's short-circuit
+Integriq's existing mechanisms — the rule pipeline's short-circuit
 contract, the FlowToken snapshot, the ADR-031 declarative notification
 dialect, and the ADR-023 action-authorization matrix — or does it require
 new infrastructure (long-running processes, a new response type, imperative
@@ -27,7 +27,7 @@ notification dispatch, a second authorization system)?
   would sit.
 - Read `openspec/specs/openconnector-notifications/spec.md` and grepped
   every `x-openregister-notifications` occurrence in
-  `lib/Settings/openconnector_register.json` (9 occurrences) to enumerate
+  `lib/Settings/integriq_register.json` (9 occurrences) to enumerate
   every `trigger`/`recipients`/`channels` shape actually in use.
 - Grepped the whole `lib/` tree for `OCP\Notification` / `INotificationManager`
   usage — zero hits. Every existing notification in this app goes through
@@ -67,7 +67,7 @@ notification dispatch, a second authorization system)?
    only carries `trigger`/`enabled`/`channels`/`recipients`/`subject`.
    Approve/reject deep-link actions are not expressible declaratively.
 4. **No imperative-notification precedent exists in this app.** This is a
-   green field for `OCP\Notification\IManager` in OpenConnector. That's a
+   green field for `OCP\Notification\IManager` in Integriq. That's a
    real behavioral departure worth calling out explicitly rather than
    quietly introducing.
 5. **ADR-023's matrix is one flat mapping, not per-instance.** `requireAction()`

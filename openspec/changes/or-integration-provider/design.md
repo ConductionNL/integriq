@@ -13,7 +13,7 @@ surface (`list`/`get`/`create`/`update`/`delete`). Providers register with a
 single per-request `IntegrationRegistry` via `addProvider()` from their owning
 app's bootstrap.
 
-OpenConnector's synchronization engine writes a `SynchronizationContract` per
+Integriq's synchronization engine writes a `SynchronizationContract` per
 (source-object → target-object) pairing. Post chain-B/C cutover these contracts
 live as OR objects under register `openconnector`, schema
 `synchronization_contract`, carrying `targetId` (the OR object that was synced
@@ -24,7 +24,7 @@ projected onto the target object's sidebar.
 ## Goals / Non-Goals
 
 **Goals**
-- Surface a read-only *"Synced from"* leaf on every OR object openconnector has
+- Surface a read-only *"Synced from"* leaf on every OR object integriq has
   synced, across the whole fleet, with zero per-leaf-app coupling.
 - Reuse the existing contract objects as the data source — no parallel link
   table, no duplicated state.
@@ -33,19 +33,19 @@ projected onto the target object's sidebar.
 
 **Non-Goals**
 - No mutation of contracts from the sidebar (the sync engine owns lifecycle).
-- No new REST endpoints or Vue components in openconnector — rendering is OR /
+- No new REST endpoints or Vue components in integriq — rendering is OR /
   nc-vue's job driven by registry metadata.
 - No independent RBAC surface — inherit the object's access control.
 - Consumer / EventSubscription leaves are explicitly deferred (local ADR-013).
 
 ## Decisions
 
-### D1 — Provider lives in openconnector, extends OR's `AbstractIntegrationProvider`
+### D1 — Provider lives in integriq, extends OR's `AbstractIntegrationProvider`
 
-The provider is `OCA\OpenConnector\Service\Integration\SynchronizationContractProvider`
+The provider is `OCA\Integriq\Service\Integration\SynchronizationContractProvider`
 extending `OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider`. The
 owning app hosts the provider (fleet leaf rule / ADR-019) because only
-openconnector knows the contract schema and how to resolve a synchronization's
+integriq knows the contract schema and how to resolve a synchronization's
 display name. Extending the abstract base means the read-only verbs
 (`get`/`create`/`update`/`delete`) inherit the `NotImplementedException` default
 for free.
@@ -69,7 +69,7 @@ query-time providers.
 | `getLabel()` | `l10n->t('Synced from')` | translated; registry does not call `t()` |
 | `getIcon()` | `'SyncOutline'` | MDI name (no `mdi-` prefix); nc-vue resolves it |
 | `getGroup()` | `'workflow'` | clusters with process/automation leaves |
-| `getRequiredApp()` | `'openconnector'` | stage-1 existence filter |
+| `getRequiredApp()` | `'integriq'` | stage-1 existence filter |
 | `getStorageStrategy()` | `'query-time'` | see D2 |
 | `getOpenConnectorSource()` | `null` (base default) | only `external` providers declare one |
 | `requiresPermission()` | `null` (base default) | inherit object RBAC (D5) |
@@ -99,7 +99,7 @@ on the target object's RBAC — no second, drift-prone authorization surface.
 ### D6 — Soft-fail registration
 
 `Application::boot()` guards the registry call with
-`class_exists(IntegrationRegistry::class)` and a try/catch, so openconnector
+`class_exists(IntegrationRegistry::class)` and a try/catch, so integriq
 boots cleanly on an instance whose OpenRegister predates the pluggable registry
 (no leaf, no fatal) — matching the AppHost load-order lesson that a missing OR
 symbol must never brick the app.

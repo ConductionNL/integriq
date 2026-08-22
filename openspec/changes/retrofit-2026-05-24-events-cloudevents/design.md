@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 ## Context
 
-`EventService` (494 LOC, 10 methods) is the producer/dispatcher for openconnector's
+`EventService` (494 LOC, 10 methods) is the producer/dispatcher for integriq's
 CloudEvents implementation, and `EventsController` (313 LOC, 7 methods) is the REST
 surface. Together they implement: (a) OR object lifecycle → CloudEvent conversion,
 (b) subscription filter matching (types/source/filters with exact/prefix/suffix/
@@ -46,7 +46,7 @@ gates the security reviewer will hit are pattern matches for
 ## What the spec deliberately does NOT cover
 
 - The OR `event_subscription` / `event_message` / `event` schemas themselves —
-  those are openregister-side artifacts, not openconnector behaviour.
+  those are openregister-side artifacts, not integriq behaviour.
 - Background job scheduling — `processRetries` is a service method here; the cron
   job wrapper (if any) lives elsewhere (cluster `job-scheduling`, Wave 5).
 - CloudEvents 1.0 spec compliance — this spec captures what the code produces, not

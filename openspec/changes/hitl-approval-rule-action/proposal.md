@@ -2,7 +2,7 @@
 
 ## Summary
 
-Add a human-in-the-loop (HITL) `approval` rule action type to OpenConnector's
+Add a human-in-the-loop (HITL) `approval` rule action type to Integriq's
 endpoint rule pipeline, plus an optional batch-level approval gate on
 Synchronizations. When a pipeline run hits an `approval` rule (timing
 `before` only), the run suspends: an `approval_request` OpenRegister object
@@ -19,7 +19,7 @@ systems (e.g. publish to a WOO portal, outbound Berichtenbox message).
 
 ## Motivation
 
-OpenConnector's rule pipeline (retrofit spec `rule-pipeline`) and
+Integriq's rule pipeline (retrofit spec `rule-pipeline`) and
 Synchronization engine (`synchronization-engine`) currently have no way to
 pause a run for human sign-off — every rule type (`save_object`,
 `synchronization`, `webhook_signature`, `composite_fanout`, etc., 19 types
@@ -27,15 +27,15 @@ verified at HEAD in `EndpointService::processRules()`) runs to completion or
 fails within the same request. Municipal integration flows increasingly need
 "a human approves before data leaves/enters" as a compliance control, not
 just a business nicety. Without this, admins either skip the control
-entirely or bolt it onto the target system (out of OpenConnector's audit
+entirely or bolt it onto the target system (out of Integriq's audit
 trail). Building it as a first-class rule action keeps the approval decision,
-its context snapshot, and its audit trail inside OpenConnector, consistent
+its context snapshot, and its audit trail inside Integriq, consistent
 with how `audit_trail`, `locking`, and the ADR-023 action matrix already
 work.
 
 ## Affected Projects
 
-- [ ] Project: `openconnector` — new `approval` rule action type, suspend/resume
+- [ ] Project: `integriq` — new `approval` rule action type, suspend/resume
   mechanics in `EndpointService`, new `approval_request` register schema
   (register.d fragment), `ApprovalService`, `ApprovalsController` +
   frontend Pending Approvals page, `ApprovalTimeoutSweepJob` cron, ADR-023
@@ -111,7 +111,7 @@ contract in `EndpointService::doHandleRequest()`/`processRules()` so
 suspension doesn't require a new Response subclass. Persist suspension state
 as a normal OpenRegister object (`approval_request`) via a `register.d`
 fragment (ADR-037 pattern, avoids touching the 2000+-line
-`openconnector_register.json` directly). Resume executes synchronously
+`integriq_register.json` directly). Resume executes synchronously
 inside the approving user's own request (a separate PHP process boundary
 from the original suspended request, satisfying "no long-running process"
 without needing NC background-job/cron latency); only timeout sweeping runs
@@ -144,16 +144,16 @@ previously called from this app).
 
 ## Cross-Project Dependencies
 
-None. Self-contained within OpenConnector; consumes only OpenRegister object
+None. Self-contained within Integriq; consumes only OpenRegister object
 persistence/audit (already a dependency) and NC's notification API (already
 a platform dependency).
 
 ## Risks
 
 ### Risk 1: Actionable approver notification needs imperative dispatch, breaking a clean codebase precedent
-**Severity:** Medium — **Mitigation:** every existing OpenConnector
+**Severity:** Medium — **Mitigation:** every existing Integriq
 notification is declarative (`x-openregister-notifications` in
-`lib/Settings/openconnector_register.json`, verified across all 9 current
+`lib/Settings/integriq_register.json`, verified across all 9 current
 occurrences: only `channels`/`recipients` of kind `field` or `groups`/
 `subject` — no interactive-action support, and `groups` recipients are
 static per schema, not resolvable from a per-rule-configured field). Since

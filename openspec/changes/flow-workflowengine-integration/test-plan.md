@@ -6,7 +6,7 @@
 - **spec_ref**: `openspec/changes/flow-workflowengine-integration/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001`
 - **type**: functional
 - **persona**: Noor (Municipal CISO / Functional Admin) — configures Flow rules
-- **preconditions**: OpenConnector and NC core `workflowengine` app both enabled
+- **preconditions**: Integriq and NC core `workflowengine` app both enabled
 - **steps**: Open Settings > Flow as an admin and start creating a new rule
 - **expected result**: "Run synchronization", "Call endpoint", and "Fire CloudEvent" appear in the operation
   dropdown for File-entity rules
@@ -16,9 +16,9 @@
 - **spec_ref**: `openspec/changes/flow-workflowengine-integration/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001`
 - **type**: regression
 - **preconditions**: `workflowengine` app disabled via `occ app:disable workflowengine`
-- **steps**: Restart/re-request OpenConnector's app boot (any authenticated request); check `nextcloud.log`
+- **steps**: Restart/re-request Integriq's app boot (any authenticated request); check `nextcloud.log`
 - **expected result**: No `RegisterOperationsListener` registration occurs; no error-level log entry is
-  written; OpenConnector boots normally (all other capabilities unaffected)
+  written; Integriq boots normally (all other capabilities unaffected)
 - **test command**: `/test-regression`
 
 ### TC-3: "Run synchronization" dispatches to `SynchronizationService` on a matching file event

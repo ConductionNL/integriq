@@ -8,7 +8,7 @@ status: draft
 ## Purpose
 
 `lib/Service/AuthorizationService.php` is the entry point for every authorization
-flavour openconnector accepts on incoming endpoint requests. It supports four
+flavour integriq accepts on incoming endpoint requests. It supports four
 distinct authorization schemes — JWT Bearer (signature-verified via consumer-registered
 public keys), HTTP Basic, OAuth bearer (session-backed), and API key (header-to-uid
 map) — and additionally injects CORS response headers. Endpoint rules in the rule
@@ -232,7 +232,7 @@ does not carry `HTTP_ORIGIN`, the response MUST be returned unchanged.
 #### Notes
 
 - The method echoes any request `Origin` value back as-is — there is no allow-list of
-  acceptable origins. This is wide open by design (openconnector is meant to be reached
+  acceptable origins. This is wide open by design (integriq is meant to be reached
   cross-origin), but operators relying on origin filtering need to add an upstream
   gate. Observed-but-suspicious; flagged.
 - The `$users` parameter on the controller-style middleware does not exist here — CORS

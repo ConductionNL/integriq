@@ -3,7 +3,7 @@
 ## Summary
 
 Adds Nextcloud Tables as a first-class synchronization source and target
-(`sourceType`/`targetType: nextcloud-table`) so OpenConnector can pull rows
+(`sourceType`/`targetType: nextcloud-table`) so Integriq can pull rows
 from a Table into the sync pipeline and push mapped external data into a
 Table's rows, using the same Source → Synchronization → SynchronizationContract
 triad and origin/target-id + hash change detection already used for every
@@ -21,17 +21,17 @@ but no scheduled import from an external system and no way to push synced
 data into a Table. Community demand is documented (nextcloud/tables#2237:
 API ergonomics complaints on the row-write shape; the unofficial
 `n8n-nodes-nextcloud-tables` community package exists precisely to fill this
-gap). For generic (non-government) Nextcloud admins running OpenConnector,
+gap). For generic (non-government) Nextcloud admins running Integriq,
 "sync an external API into a Table" / "push Table rows to an external
 system" is a frequently-requested, currently unsupported automation. No
-Nextcloud Store app currently provides it, and OpenConnector already owns
+Nextcloud Store app currently provides it, and Integriq already owns
 every piece of machinery this needs (mapping, contracts, hash-based change
 detection, credentialed HTTP dispatch) except the Tables-specific read/write
 adapter and editor UI.
 
 ## Affected Projects
 
-- [ ] Project: `openconnector` — new `TablesClientInterface` +
+- [ ] Project: `integriq` — new `TablesClientInterface` +
   `TablesOcsClient` (naming retained for continuity with the brief;
   implementation targets the versioned REST API, see design.md) adapter
   classes; `SynchronizationService` gains `nextcloud-table` source/target
@@ -58,7 +58,7 @@ adapter and editor UI.
 4. Permission model: syncs run under the identity configured on the
    underlying `Source` (Basic Auth / brokered credential per
    `source-broker-credentials`); Tables' own ACLs are the sole
-   authorization authority — OpenConnector never re-implements them.
+   authorization authority — Integriq never re-implements them.
 5. Feature detection: when the Tables app is absent or disabled,
    `nextcloud-table` is hidden from the source/target type pickers and
    rejected server-side with a clear config error if selected anyway.
@@ -140,7 +140,7 @@ dependency.
   row-change events as synchronization triggers; explicitly out of scope
   here to avoid overlap.
 - No other apps in apps-extra are affected; this is fully internal to
-  `openconnector`.
+  `integriq`.
 
 ## Risks
 

@@ -9,7 +9,7 @@ retroactively specifies it. Source: `openspec/coverage-report.md` generated
 
 The mapping authoring + testing UI (detail page, rule editor, edit dialog, test
 modals, result panel) is core platform behaviour with no spec coverage. It is an
-openconnector-local Vue surface, so it gets a foundational capability spec under
+integriq-local Vue surface, so it gets a foundational capability spec under
 `openspec/specs/`.
 
 ## Affected code units

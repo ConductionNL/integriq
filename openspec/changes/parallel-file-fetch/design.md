@@ -153,7 +153,7 @@ behavioural gain. Siblings keep the blast radius inside this feature and remove 
 latent fatal instead of preserving it.
 
 This is the same shape of gap that `stream-file-content` hit: its design assumed
-the OpenConnector side was "only `SynchronizationService`", and the CallService
+the Integriq side was "only `SynchronizationService`", and the CallService
 `sink` option turned out to be a prerequisite. Recording it here so the work is not
 planned as pure refactoring inside one method.
 
@@ -191,8 +191,8 @@ above) is private to `SynchronizationService` and crosses no app boundary.
 
 ## Nextcloud Integration
 - Controllers: none.
-- Services: `OCA\OpenConnector\Service\SynchronizationService` (refactored
-  multi-file path); `OCA\OpenConnector\Service\CallService` (reused async path,
+- Services: `OCA\Integriq\Service\SynchronizationService` (refactored
+  multi-file path); `OCA\Integriq\Service\CallService` (reused async path,
   unchanged); `OCA\OpenRegister\Service\FileService` (consumed via DI, unchanged
   contract).
 - Mappers/Entities: none.

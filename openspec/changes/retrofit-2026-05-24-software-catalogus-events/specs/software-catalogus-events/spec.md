@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-Two concerns wired into the openconnector software-catalogus integration:
+Two concerns wired into the integriq software-catalogus integration:
 ArchiMate-style model graph extension (read OR model + views, walk nodes
 + connections via ReactPHP promises, write per-view "extended" objects)
 and lifecycle-event provisioning (subscribe to OR

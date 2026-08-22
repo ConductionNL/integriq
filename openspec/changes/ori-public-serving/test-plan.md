@@ -1,6 +1,6 @@
 # Test Plan: ori-public-serving
 
-Deploy the 10 openconnector ORI Endpoints under a **non-production path
+Deploy the 10 integriq ORI Endpoints under a **non-production path
 prefix during validation** (e.g. `/api/ori-parity/v1/*`, only re-pointed to
 the real `/api/ori/v1/*` mount by the companion decidesk retirement change
 once every TC below is green) so decidesk's live `OriController` keeps
@@ -87,7 +87,7 @@ diffs the response.
 - **type**: security
 - **preconditions**: a `PublicationPayload` object at id `Z` with `publicationDate` in the future
 - **steps**: `GET /api/ori-parity/v1/publications/Z`
-- **expected result**: HTTP 404. Run this test TWICE — once calling `OriController`'s existing `/api/ori/v1/publications/Z` (control, expected to already 404 via `isPayloadLive()`), once via the new Endpoint. If the new Endpoint returns 200 while the control returns 404, that is empirical proof that Risk 3 (RBAC propagation through openconnector's `ObjectService`) does NOT hold and the publish-window gate needs its own explicit fix, not just REQ-EP-010's discriminator/lifecycle coverage
+- **expected result**: HTTP 404. Run this test TWICE — once calling `OriController`'s existing `/api/ori/v1/publications/Z` (control, expected to already 404 via `isPayloadLive()`), once via the new Endpoint. If the new Endpoint returns 200 while the control returns 404, that is empirical proof that Risk 3 (RBAC propagation through integriq's `ObjectService`) does NOT hold and the publish-window gate needs its own explicit fix, not just REQ-EP-010's discriminator/lifecycle coverage
 - **test command**: `/test-security`
 
 ### TC-11: 404 non-disclosure — no 403 anywhere on the ORI surface
@@ -144,6 +144,6 @@ diffs the response.
   the mapping is composed internally is an implementation detail the test
   plan is deliberately indifferent to.
 - Load/scale testing beyond the rate-limit ceiling (TC-12) — no new
-  performance characteristics are introduced versus openconnector's existing
+  performance characteristics are introduced versus integriq's existing
   endpoint-runtime cache behaviour (`endpoint-runtime` REQ-EP-004), so no
   dedicated load test is added.

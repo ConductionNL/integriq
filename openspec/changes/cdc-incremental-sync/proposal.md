@@ -1,7 +1,7 @@
 # Proposal: cdc-incremental-sync
 
 ## Summary
-Add a cursor-based `incremental` sync mode to OpenConnector's Synchronization
+Add a cursor-based `incremental` sync mode to Integriq's Synchronization
 engine, alongside the existing (default, unchanged) `full` hash-diff mode.
 When `syncMode: incremental`, an extern→intern run requests only source
 records changed since a stored high-watermark cursor (via the engine's
@@ -15,7 +15,7 @@ incremental/CDC sync for large, high-volume sources where full-scan-per-run
 is prohibitively expensive.
 
 ## Motivation
-OpenConnector's current sync model (`SynchronizationService::
+Integriq's current sync model (`SynchronizationService::
 synchronizeExternToIntern()`) always fetches the entire source result set on
 every run, computes an order-independent hash per object, and diffs against
 stored `SynchronizationContract` hashes to detect changes — a correct but
@@ -33,7 +33,7 @@ regressing: fetch-completeness tracking (REQ-009) and deletion gating
 (REQ-010) — this change reuses both rather than inventing parallel ones.
 
 ## Affected Projects
-- [ ] Project: `openconnector` — new `syncMode` field + cursor watermark
+- [ ] Project: `integriq` — new `syncMode` field + cursor watermark
   field on the Synchronization schema, cursor-filtered fetch path in
   `SynchronizationService`, incremental-aware deletion gating, and a
   reset-cursor REST action + SPA control.
@@ -73,7 +73,7 @@ regressing: fetch-completeness tracking (REQ-009) and deletion gating
    incremental runs fetching/writing only the delta between them.
 
 ### Out of Scope
-- Log-based CDC (database binlog / WAL tailing) — OpenConnector has no
+- Log-based CDC (database binlog / WAL tailing) — Integriq has no
   DB-source adapter today (`getAllObjectsFromSource()`'s `database` branch
   is a documented no-op per the base synchronization-engine spec), so
   binlog-based CDC has no source to attach to. Filed as a follow-up once a
@@ -113,7 +113,7 @@ templating engine already wired for endpoint substitution; no new package.
 - `lib/Service/SynchronizationService.php`: `synchronizeExternToIntern()`,
   `getAllObjectsFromApi()`, `deleteInvalidObjects()`, plus new private
   helpers for cursor extraction/persistence.
-- `lib/Settings/openconnector_register.json`: `synchronization` schema gains
+- `lib/Settings/integriq_register.json`: `synchronization` schema gains
   `syncMode` and `cursorWatermark` properties; `sourceConfig`'s free-text
   description gains the new recognised keys (`cursorField`,
   `cursorComparator`).
@@ -125,7 +125,7 @@ templating engine already wired for endpoint substitution; no new package.
   REQ-015 (the current highest numbered requirement in this spec).
 
 ## Cross-Project Dependencies
-None — this is entirely internal to OpenConnector's own sync engine and REST
+None — this is entirely internal to Integriq's own sync engine and REST
 surface; no other apps-extra project consumes a new API from this change.
 
 ## Risks

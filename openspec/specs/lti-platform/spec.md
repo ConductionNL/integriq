@@ -400,7 +400,7 @@ and `source` matching its own deployment.
   `nl.conduction.lti.ags.score.received`
 - **THEN** launches redirect to its `launchTargetUrl`, roster reads are
   served from its `rosterSource`, and AGS scores arrive as CloudEvents at its
-  subscription's sink — with no other openconnector-side configuration
+  subscription's sink — with no other integriq-side configuration
   required
 
 #### Scenario: an lti_deployment without a matching event_subscription still records the score, undelivered

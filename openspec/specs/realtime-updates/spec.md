@@ -15,7 +15,7 @@ The bespoke OR-backed detail pages (Rule / Synchronization / Mapping) stay fresh
 The bespoke detail pages SHALL fetch, save, and subscribe through one app-owned `createObjectStore('openconnector-objects')` instance (`src/store/objectStore.js`). The package's shared `useObjectStore` instance is created without plugins and has no `subscribe()`; splitting fetch and subscription across two store instances would refetch into a cache no page renders.
 
 #### Scenario: fetch and live refetch share one cache
-- **GIVEN** a detail page fetched its object through the openconnector object store
+- **GIVEN** a detail page fetched its object through the integriq object store
 - **WHEN** an or-object event triggers the plugin's refetch
 - **THEN** the refetched object lands in the same store cache the page renders from
 

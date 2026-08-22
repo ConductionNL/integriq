@@ -1,13 +1,13 @@
 # synchronization-files Specification
 
 **Status**: in-progress
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - stream-file-content
 
 ## Purpose
 
-Defines how OpenConnector fetches file content from a synchronization source and
+Defines how Integriq fetches file content from a synchronization source and
 persists it through OpenRegister's `FileService`, with a focus on bounding peak
 memory usage. Large synchronized files (multi-megabyte attachments) MUST not be
 held in memory in their entirety when they can be streamed. This capability

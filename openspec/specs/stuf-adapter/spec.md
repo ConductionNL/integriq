@@ -5,12 +5,12 @@ TBD - created by archiving change stuf-adapter. Update Purpose after archive.
 ## Requirements
 ### Requirement: StUF-BG Inbound Person Query (npsLv01/npsLa01) (REQ-STUF-001)
 
-The adapter MUST expose a SOAP endpoint that accepts StUF-BG 3.10 `npsLv01` (persoon opvragen) requests and returns `npsLa01` (persoon antwoord) responses with correctly formed StUF-BG XML. The endpoint is registered as an OpenConnector Endpoint entity of type "source" with targetType pointing to a SOAP handler. Incoming SOAP XML is parsed by a raw POST handler that extracts the SOAP action and delegates to the appropriate StUF message handler.
+The adapter MUST expose a SOAP endpoint that accepts StUF-BG 3.10 `npsLv01` (persoon opvragen) requests and returns `npsLa01` (persoon antwoord) responses with correctly formed StUF-BG XML. The endpoint is registered as an Integriq Endpoint entity of type "source" with targetType pointing to a SOAP handler. Incoming SOAP XML is parsed by a raw POST handler that extracts the SOAP action and delegates to the appropriate StUF message handler.
 
 @e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Person query by BSN returns npsLa01
-- **WHEN** the StUF-BG endpoint is registered in OpenConnector and a legacy application sends a `npsLv01` SOAP request with BSN `999993653`
+- **WHEN** the StUF-BG endpoint is registered in Integriq and a legacy application sends a `npsLv01` SOAP request with BSN `999993653`
 - **THEN** the adapter extracts the BSN from the StUF-BG XML, queries OpenRegister for the matching person object (using the BRP schema), and returns a `npsLa01` SOAP response with the person's geslachtsnaam, voorvoegsel, voornamen, geboortedatum, and verblijfsadres
 
 #### Scenario: Partial name query returns multiple records
@@ -69,14 +69,14 @@ The adapter MUST expose `adrLv01` (adres opvragen) and `adrLa01` (adres antwoord
 - **WHEN** the BAG register has no matching address and the query is processed
 - **THEN** an empty `adrLa01` response is returned
 
-### Requirement: StUF-BG Outbound Query (OpenConnector Queries Legacy Source) (REQ-STUF-010)
+### Requirement: StUF-BG Outbound Query (Integriq Queries Legacy Source) (REQ-STUF-010)
 
 The adapter MUST support querying external StUF-BG services via SOAP and mapping the responses to OpenRegister objects. Outbound queries use the existing SOAPService (`lib/Service/SOAPService.php`) to send `npsLv01` SOAP requests and parse `npsLa01` responses into JSON objects. The parsed data is stored in OpenRegister via the SynchronizationService.
 
 @e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Outbound person query routes through SOAPService
-- **WHEN** a StUF-BG source is configured in OpenConnector with WSDL URL and endpoint and a workflow requests person data by BSN
+- **WHEN** a StUF-BG source is configured in Integriq with WSDL URL and endpoint and a workflow requests person data by BSN
 - **THEN** CallService routes the request to SOAPService, which sends a `npsLv01` SOAP request, parses the `npsLa01` XML response, and returns a JSON object with mapped person fields
 
 #### Scenario: Fault response mapped to CallLog status
@@ -309,9 +309,9 @@ The adapter MUST support value transformations in field mappings: date format co
 - **WHEN** a concatenation transformation combines voorvoegsel and geslachtsnaam and the adapter maps to a "volledige_naam" field
 - **THEN** it produces "van Moulin" from voorvoegsel "van" and geslachtsnaam "Moulin", handling missing voorvoegsel gracefully
 
-### Requirement: OpenConnector Source Registration (REQ-STUF-060)
+### Requirement: Integriq Source Registration (REQ-STUF-060)
 
-The adapter MUST be registered as an OpenConnector source type, configurable via the connector UI. Connection settings include endpoint URL, authentication method (mTLS or WS-Security), certificates, and zender/ontvanger codes. The source supports health checks validating connectivity and authentication against the StUF endpoint.
+The adapter MUST be registered as an Integriq source type, configurable via the connector UI. Connection settings include endpoint URL, authentication method (mTLS or WS-Security), certificates, and zender/ontvanger codes. The source supports health checks validating connectivity and authentication against the StUF endpoint.
 
 @e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 

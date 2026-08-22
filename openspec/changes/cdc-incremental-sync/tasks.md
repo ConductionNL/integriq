@@ -4,7 +4,7 @@
 
 ### Task 1: Add `syncMode` and `cursorWatermark` fields to the Synchronization schema
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016`
-- **files**: `lib/Settings/openconnector_register.json`
+- **files**: `lib/Settings/integriq_register.json`
 - **acceptance_criteria**:
   - GIVEN the `synchronization` schema WHEN it is inspected THEN it has a
     `syncMode` string property (documented values `full`|`incremental`,

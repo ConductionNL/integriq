@@ -41,7 +41,7 @@
 - **spec_ref**: `openspec/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension`
 - **files**: `lib/Service/ApprovalService.php`
 - **acceptance_criteria**:
-  - GIVEN an `approval_request` created with `approverGroup: "woo-approvers"` WHEN `notifyApprovers()` runs THEN every member of that NC group receives a notification with approve/reject actions deep-linking to `/apps/openconnector/approvals/{id}`
+  - GIVEN an `approval_request` created with `approverGroup: "woo-approvers"` WHEN `notifyApprovers()` runs THEN every member of that NC group receives a notification with approve/reject actions deep-linking to `/apps/integriq/approvals/{id}`
 - [ ] Implement
 - [ ] Test
 
@@ -127,7 +127,7 @@
 
 ### Task 15: Seed data
 - **spec_ref**: `openspec/changes/hitl-approval-rule-action/design.md#seed-data`
-- **files**: `lib/Settings/register.d/hitl-approval-rule-action.json` (or `openconnector_seed_data.json`, per existing seed convention)
+- **files**: `lib/Settings/register.d/hitl-approval-rule-action.json` (or `integriq_seed_data.json`, per existing seed convention)
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the app boots THEN three `approval_request` seed objects exist (pending/approved/rejected) matching design.md's Seed Data table
 - [ ] Implement

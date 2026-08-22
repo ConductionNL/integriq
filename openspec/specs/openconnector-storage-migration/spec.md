@@ -9,13 +9,13 @@ The system MUST ship a Nextcloud migration class at
 `lib/Migration/Version2Date20260520xxxxxx.php` that on its `postSchemaChange`
 hook calls
 `OCA\OpenRegister\Service\ConfigurationService::importFromApp('openconnector',
-<absolute-path-to-openconnector_register.json>, <openconnector-app-version>,
+<absolute-path-to-integriq_register.json>, <integriq-app-version>,
 false)` exactly once per upgrade. The call MUST be idempotent — re-running the
 migration is a no-op.
 
 #### Scenario: Fresh install
-- GIVEN openconnector is being installed for the first time
-- WHEN Nextcloud runs `occ app:enable openconnector`
+- GIVEN integriq is being installed for the first time
+- WHEN Nextcloud runs `occ app:enable integriq`
 - THEN the migration class executes
 - AND `oc_openregister_registers` gains one row with `slug='openconnector'`
 - AND `oc_openregister_schemas` gains 15 rows
@@ -121,7 +121,7 @@ object's payload, per chain A REQ-A-008.
 The migrator MUST detect the format of every
 `oc_openconnector_synchronizations.source_id` and `target_id` value and
 rewrite according to the same logic as
-`OCA\OpenConnector\Service\SynchronizationService` lines 141–545:
+`OCA\Integriq\Service\SynchronizationService` lines 141–545:
 
 | Pattern                              | Action                                                   |
 |--------------------------------------|----------------------------------------------------------|
@@ -194,7 +194,7 @@ methods that match the existing mapper API:
 - `delete(string $registerSlug, string $schemaSlug, string $uuid): void`
 
 Each method MUST internally invoke OR's `ObjectService` with the appropriate
-filter, then hydrate the returned `ObjectEntity` into the openconnector
+filter, then hydrate the returned `ObjectEntity` into the integriq
 typed entity class (`Source`, `Job`, …) via the entity's `hydrate(array)`
 method (already exists on all 15 entities).
 
@@ -266,7 +266,7 @@ preserved byte-for-byte from before this change.
 
 The system MUST ship an OCC command at
 `lib/Command/MigrateToOpenRegister.php` invokable as
-`occ openconnector:migrate-storage [--dry-run] [--entity=<slug>] [--batch-size=<n>]`.
+`occ integriq:migrate-storage [--dry-run] [--entity=<slug>] [--batch-size=<n>]`.
 The command MUST:
 
 - Validate args (entity in the 15 slugs, batch-size in [100, 100000]).
@@ -277,7 +277,7 @@ The command MUST:
 
 #### Scenario: Dry-run reports counts without writing
 - GIVEN `oc_openconnector_sources` has 12 rows
-- WHEN an admin runs `occ openconnector:migrate-storage --entity=source --dry-run`
+- WHEN an admin runs `occ integriq:migrate-storage --entity=source --dry-run`
 - THEN the command exits 0
 - AND output reports "source: 12 rows would migrate"
 - AND `oc_openregister_objects` count for the source schema is unchanged
@@ -286,7 +286,7 @@ The command MUST:
 #### Scenario: Per-entity retry after partial failure
 - GIVEN a previous migration failed during the `job` entity, leaving
   `storage_migrated` unset
-- WHEN an admin runs `occ openconnector:migrate-storage --entity=job`
+- WHEN an admin runs `occ integriq:migrate-storage --entity=job`
 - THEN only the `job` entity migrates
 - AND on success, the flag is NOT flipped (because other entities are still
   legacy); a follow-up full run is required
@@ -323,12 +323,12 @@ The 6 string columns on `Source` that store credentials (`apikey`,
 `password`, `secret`, `jwt`, `username`, plus any string-typed entries inside
 `authenticationConfig`) are currently stored as **plaintext** in
 `oc_openconnector_sources` — per ADR-007, no `EncryptionService` class exists
-in openconnector, and `SourceMapper::insert()` does NOT apply encryption.
+in integriq, and `SourceMapper::insert()` does NOT apply encryption.
 The migrator MUST copy these columns into OR storage exactly as they appear
 in the legacy tables, preserving the plaintext content as-is.
 
 The migrator MUST assert (at startup) that the codebase is in the expected
-state (no `OCA\OpenConnector\Service\EncryptionService` class present, no
+state (no `OCA\Integriq\Service\EncryptionService` class present, no
 encryption hook in `lib/Db/Source.php` setters). If the assertion fails —
 indicating encryption has been introduced since this spec was written — the
 migrator MUST abort BEFORE any write to OR storage and emit a message
@@ -340,14 +340,14 @@ during migration and re-encrypt via OR, or keep verbatim copy. That decision
 belongs in the follow-up change, not here.
 
 #### Scenario: Plaintext-credentials state confirmed at startup (current codebase)
-- GIVEN no `OCA\OpenConnector\Service\EncryptionService` class exists in the codebase
+- GIVEN no `OCA\Integriq\Service\EncryptionService` class exists in the codebase
 - AND `lib/Db/Source.php` setters apply no encryption (verified by grep for `encrypt(` returning zero matches in `lib/Db/Source.php`)
 - WHEN the migrator's startup assertion runs
 - THEN the assertion passes
 - AND the migrator copies the credential columns verbatim from `oc_openconnector_sources` to `oc_openregister_objects` with no transformation
 
 #### Scenario: Encryption-was-introduced-since-this-spec aborts (defensive)
-- GIVEN an `OCA\OpenConnector\Service\EncryptionService` class HAS BEEN ADDED to the codebase since this spec was written (hypothetical future state)
+- GIVEN an `OCA\Integriq\Service\EncryptionService` class HAS BEEN ADDED to the codebase since this spec was written (hypothetical future state)
 - WHEN the migrator's startup assertion runs and detects the class
 - THEN it raises `\LogicException` "encryption layer introduced since chain B spec was written; the verbatim-copy strategy no longer applies — see ADR-007 follow-up and revise this requirement"
 - AND no rows are written to OR
@@ -356,7 +356,7 @@ belongs in the follow-up change, not here.
 
 Every OR object the migrator writes MUST have its `owner` column set to NULL, regardless of whether the source row carries a `userId` value.
 
-Openconnector is a system-level integration platform; rows are not user-owned
+Integriq is a system-level integration platform; rows are not user-owned
 data. The migrator MUST leave OR's `owner` column null (treated by OR as
 system-owned) for every migrated object, regardless of whether the source row
 has a `userId` value. The legacy `userId` value (where present on log entities

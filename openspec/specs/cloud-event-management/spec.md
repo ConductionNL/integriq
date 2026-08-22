@@ -7,7 +7,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector provides a Cloud Events section in its SPA where administrators
+Integriq provides a Cloud Events section in its SPA where administrators
 can browse incoming CloudEvents (CloudEvents spec v1.0), inspect their payload,
 and view associated call logs. Cloud Events are stored as `event` objects in
 the `openconnector` OpenRegister register. This spec covers the observable
@@ -18,13 +18,13 @@ PHPUnit/Newman). It is a retrofit spec.
 
 ### REQ-CE-UI-001: Cloud Event Management UI
 
-OpenConnector MUST provide a Cloud Events section in its SPA where administrators
+Integriq MUST provide a Cloud Events section in its SPA where administrators
 can browse, inspect, and manage incoming cloud events and their logs.
 
 #### Scenario: cloud events list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the Cloud Events section via the sidebar nav or direct URL `/apps/openconnector/cloud-events/events`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the Cloud Events section via the sidebar nav or direct URL `/apps/integriq/cloud-events/events`
 - THEN the Cloud Events index page renders inside the main content area with content visible
 
 #### Scenario: add cloud event button opens the creation modal
@@ -36,7 +36,7 @@ can browse, inspect, and manage incoming cloud events and their logs.
 #### Scenario: cloud event logs sub-page mounts
 
 - GIVEN an authenticated admin
-- WHEN they navigate to the Cloud Event logs page at `/apps/openconnector/cloud-events/logs`
+- WHEN they navigate to the Cloud Event logs page at `/apps/integriq/cloud-events/logs`
 - THEN the page mounts and renders the main content area
 
 ### REQ-CE-001: CloudEvents inbound routing

@@ -8,7 +8,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 1. **MongoDB Data API client** (REQ-001, REQ-002, REQ-003) — five CRUD methods plus an
    aggregation method, all routing through Guzzle to the MongoDB Atlas Data API. Used
-   when an operator configures a Mongo source via the openconnector Source UI.
+   when an operator configures a Mongo source via the integriq Source UI.
 2. **OpenRegister bridge** (REQ-004, REQ-005) — two methods that lazily resolve OR's
    own `ObjectService` and delegate mapper lookups to it.
 

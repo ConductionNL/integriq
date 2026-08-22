@@ -6,14 +6,14 @@ status: done
 
 ## Purpose
 
-OpenConnector connects to a live payment service provider (PSP) so sibling
+Integriq connects to a live payment service provider (PSP) so sibling
 apps can create a payment, present a checkout URL, and reliably learn the
 outcome — without embedding a PSP client of their own. It is delivered in the
 same family as `peppol-access-point-connector` and
 `psd2-ais-bank-feed-connector`: a provider abstraction (interface + sandbox
 `log` binding + a real REST binding), PSP credentials resolved through the
 OpenRegister credential broker (ADR-007), and integration via CloudEvents
-(`events-cloudevents`) and the openconnector HMAC webhook-signature pattern
+(`events-cloudevents`) and the integriq HMAC webhook-signature pattern
 (`webhook-signing`) — not a parallel framework. Mollie is the first real
 binding (dominant NL PSP; iDEAL the dominant NL method).
 
@@ -47,7 +47,7 @@ reconcile()`'s `$event` parameter.
 ## Requirements
 ### Requirement: Payment creation endpoint accepting shillinq's payload contract (REQ-LPP-001)
 
-OpenConnector MUST expose `POST /api/payments` that creates a payment against
+Integriq MUST expose `POST /api/payments` that creates a payment against
 the configured PSP source and returns a checkout URL. The request body MUST
 accept exactly the envelope shillinq's `MolliePaymentAdapterInterface::
 createPayment()` already documents: `amount{value, currency}`, `description`,

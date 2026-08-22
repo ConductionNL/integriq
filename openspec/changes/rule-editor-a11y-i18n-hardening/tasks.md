@@ -1,13 +1,13 @@
 ## 1. Fix untranslated literals
 
-- [x] 1.1 In `src/modals/Rule/EditRule.vue:599`, replace the bare `Cancel` text node with `{{ t('openconnector', 'Cancel') }}`
-- [x] 1.2 In `src/modals/Rule/EditRule.vue:619`, replace the bare `Save` text node with `{{ t('openconnector', 'Save') }}`
+- [x] 1.1 In `src/modals/Rule/EditRule.vue:599`, replace the bare `Cancel` text node with `{{ t('integriq', 'Cancel') }}`
+- [x] 1.2 In `src/modals/Rule/EditRule.vue:619`, replace the bare `Save` text node with `{{ t('integriq', 'Save') }}`
 - [x] 1.3 Ran `npm run test:l10n` — both keys already existed in `l10n/en.json` and all 36 locales (no new key needed for these two).
 
 ## 2. Fix icon-only remove buttons
 
-- [x] 2.1 Added `:aria-label="t('openconnector', 'Remove property')"` to the `NcButton` at `src/modals/Rule/EditRule.vue:277` (extend_input remove row)
-- [x] 2.2 Added the same `:aria-label="t('openconnector', 'Remove property')"` to the `NcButton` at `src/modals/Rule/EditRule.vue:313` (extend_external_input remove row)
+- [x] 2.1 Added `:aria-label="t('integriq', 'Remove property')"` to the `NcButton` at `src/modals/Rule/EditRule.vue:277` (extend_input remove row)
+- [x] 2.2 Added the same `:aria-label="t('integriq', 'Remove property')"` to the `NcButton` at `src/modals/Rule/EditRule.vue:313` (extend_external_input remove row)
 - [x] 2.3 Added `"Remove property": "Remove property"` to `l10n/en.json` (alphabetical position, between "Remove group" and "Remove row"), then hand-translated and added the key to all 36 required-locale `l10n/<locale>.json` files (real translations, not copies of the English source).
 - [x] 2.4 Ran `npm run test:l10n` — full parity confirmed, no missing/empty keys.
       NOTE: this same `npm run test:l10n` run also caught 16 PRE-EXISTING missing keys

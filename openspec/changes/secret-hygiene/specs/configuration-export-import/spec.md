@@ -4,7 +4,7 @@
 
 ### Requirement: REQ-005 — Redact source credentials from exported configurations
 
-The system SHALL strip or mask every sensitive value it can detect when exporting any of the six OpenConnector entity types (Source, Endpoint, Mapping, Rule, Job, Synchronization), via a single shared sensitive-field registry (`SensitiveFieldRegistry`), used identically by every `ConfigurationHandler`.
+The system SHALL strip or mask every sensitive value it can detect when exporting any of the six Integriq entity types (Source, Endpoint, Mapping, Rule, Job, Synchronization), via a single shared sensitive-field registry (`SensitiveFieldRegistry`), used identically by every `ConfigurationHandler`.
 
 For Source specifically, the system SHALL continue to strip the following
 top-level fields entirely (`unset`, field absent from the export — unchanged

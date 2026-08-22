@@ -3,7 +3,7 @@
 ## Purpose
 
 Provides a lightweight, declarative multi-step pipeline entity (`flow`) for
-OpenConnector: an ordered list of steps, each referencing an existing
+Integriq: an ordered list of steps, each referencing an existing
 Source/Mapping/Synchronization/Endpoint/Approval by id, with an optional
 JsonLogic run-if condition, a single-target `branch` step for non-linear
 control flow, and a per-step `onError` policy. `FlowRunnerService`
@@ -22,20 +22,20 @@ canvas...)". The **canvas** exclusion is withdrawn — see REQ-009 — because
 a shared canvas (`CnGraphCanvas` in `@conduction/nextcloud-vue`) is now the
 fleet-standard authoring surface and a per-app opt-out defeats it. The
 **engine** exclusion stands and in fact hardens: ADR-065 relocates flow
-execution to OpenRegister, so OpenConnector must not grow a general-purpose
+execution to OpenRegister, so Integriq must not grow a general-purpose
 workflow engine here or anywhere (ADR-022). Parallel/fan-out and loops
 remain out of scope *for this model* — the `order`-as-identity step list
 cannot express them — and are delivered by the OpenRegister engine, whose
 Petri-net core supports parallel splits and synchronising joins natively.
 
 **Disambiguation:** this capability is unrelated to `flow-workflowengine-integration`
-(a separate, sibling change that registers OpenConnector operations as
+(a separate, sibling change that registers Integriq operations as
 adapters inside Nextcloud core's own `files_workflowengine` UI). Both use
 the word "flow"; neither touches the other's code.
 
 **Scope note (2026-08-16, flow-engine-unification task 6.2).** The frontend
 described by REQ-009 (the step-list editor UI, `FlowStepRow`, the
-dirty/canSave contract) no longer exists in OpenConnector. `#/flows` now
+dirty/canSave contract) no longer exists in Integriq. `#/flows` now
 renders the shared `CnFlowIndexPage`/`CnFlowDetail`/`CnFlowSidebar`
 components from `@conduction/nextcloud-vue`, reading and writing
 OpenRegister's own native flow store (`nodes[]`/`edges[]` via
@@ -45,7 +45,7 @@ and the `register=openconnector, schema=flow` schema are **still live in
 the backend** (REQ-001 through REQ-008 remain accurate for that backend
 in isolation) but are no longer reachable through any UI, and no
 automated migration exists between the two stores. This is tracked, not
-silently accepted — see openconnector#1255 for the current state, what
+silently accepted — see integriq#1255 for the current state, what
 was hand-migrated, and what is still open. Treat REQ-001–008 as
 describing a legacy, UI-unreachable backend; treat REQ-009–011 as
 superseded and no longer testable against this app's own UI (the shared
@@ -293,7 +293,7 @@ MUST catch the throwable, record `flow_run_log` for that step with
 The system MUST support triggering `FlowRunnerService::run()` from four
 surfaces, each reusing an existing trigger mechanism rather than
 introducing a new scheduler: (a) a cron-scheduled `job` OR object whose
-`jobClass` is `OCA\OpenConnector\Action\FlowAction`, resolved and
+`jobClass` is `OCA\Integriq\Action\FlowAction`, resolved and
 `run($arguments)`-invoked by `JobService::executeJob()` exactly as any
 other job action; (b) a `flow` rule action type added to
 `EndpointService::processRules()`'s existing type dispatch, valid for
@@ -311,7 +311,7 @@ Flow detail page calling `POST /api/flows/{id}/run`, which invokes
 #### Scenario: a cron job triggers a flow
 
 - **GIVEN** an enabled `job` OR object with `jobClass:
-  'OCA\OpenConnector\Action\FlowAction'` and `arguments: { flowId: '<uuid>' }`
+  'OCA\Integriq\Action\FlowAction'` and `arguments: { flowId: '<uuid>' }`
 - **WHEN** `JobService::run()` sweeps due jobs and calls
   `FlowAction::run($arguments)`
 - **THEN** `FlowRunnerService::run()` is invoked for the referenced flow
@@ -359,7 +359,7 @@ and `error` (present only when `status: failed`).
 
 ### Requirement: Flows index and detail UI provide a typed step-list editor (REQ-009)
 
-OpenConnector MUST provide a `Flows` section in its SPA: an index page
+Integriq MUST provide a `Flows` section in its SPA: an index page
 (`type: index`, listing `name`, `isEnabled`, last-run status/time) and a
 detail page (`type: custom`, component `FlowDetailPage`) where an admin
 can add, remove, reorder, and configure steps. Each step row MUST use an
@@ -379,7 +379,7 @@ was a reasonable v1 scope constraint, but it now contradicts the fleet
 decision that a canvas is the standard flow-authoring surface. It is
 replaced by a uniformity rule:
 
-- OpenConnector MUST NOT hand-roll a node-graph canvas. If and when the
+- Integriq MUST NOT hand-roll a node-graph canvas. If and when the
   Flow pages offer graph editing, they MUST consume `CnGraphCanvas` from
   `@conduction/nextcloud-vue` (ADR-065), which owns geometry and
   interaction only; step semantics stay app-owned.
@@ -397,9 +397,9 @@ replaced by a uniformity rule:
 
 #### Scenario: Flows index page mounts and lists flows
 
-- **GIVEN** an authenticated admin visits the openconnector app
+- **GIVEN** an authenticated admin visits the integriq app
 - **WHEN** they navigate to the Flows section via the sidebar nav or
-  direct URL `/apps/openconnector/flows`
+  direct URL `/apps/integriq/flows`
 - **THEN** the Flows index page renders inside the main content area,
   listing each flow's name, enabled state, and last-run status
 
@@ -633,7 +633,7 @@ would be the regression this requirement exists to prevent.
 
 ### Requirement: A node contributes its own run-log links (REQ-016)
 
-A run log entry written by `SourceCallNode` concerns openconnector records —
+A run log entry written by `SourceCallNode` concerns integriq records —
 the Source that was called and the CallLog that was written — which OpenRegister
 cannot know about. The node therefore implements OpenRegister's
 `IFlowNodeLogActions` and answers with its own links, resolved from the entry's
@@ -659,9 +659,9 @@ the editor holds unsaved state.
 - **THEN** no links are returned, rather than links built from absent ids
 - @e2e exclude covered by `tests/Unit/Flow/SourceCallNodeTest.php`
 
-### Requirement: OpenConnector's Flow pages are the shared canvas over the one native flow store (REQ-017)
+### Requirement: Integriq's Flow pages are the shared canvas over the one native flow store (REQ-017)
 
-OpenConnector MUST NOT own a second flow-authoring surface. Its Flow pages are thin scopings of
+Integriq MUST NOT own a second flow-authoring surface. Its Flow pages are thin scopings of
 the components `@conduction/nextcloud-vue` already ships over OpenRegister's one native flow
 store (ADR-065): `CnFlowIndexPage` for the index, `CnFlowDetail` for the canvas, and
 `CnFlowSidebar` for the controls. This supersedes REQ-009's bespoke ordered step-list editor
@@ -678,7 +678,7 @@ the full width. The sidebar and the canvas MUST share state through `useFlowStor
 through props: one store is what makes every app's sidebar behave identically.
 
 Save and run MUST go through that shared store — `store.save()` and `store.run({})` — and
-OpenConnector MUST add no flow-writing path of its own. After a save that CREATES a flow, the
+Integriq MUST add no flow-writing path of its own. After a save that CREATES a flow, the
 route MUST be replaced with the server-assigned id: the create route is `/flows/new`, and
 leaving it there would send a reload back to an empty new-flow shell instead of the flow the
 operator just created.

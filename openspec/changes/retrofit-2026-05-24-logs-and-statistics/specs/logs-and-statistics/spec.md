@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-The HTTP surface and service layer for openconnector's log management,
+The HTTP surface and service layer for integriq's log management,
 log statistics, and retention configuration. Listings, individual
 reads / deletes, level-aggregated stats, CSV exports, per-source call
 logs, source connectivity test calls, and the admin `rebase` action that

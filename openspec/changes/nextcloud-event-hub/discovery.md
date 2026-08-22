@@ -3,11 +3,11 @@
 ## Question
 Which Nextcloud core/bundled-app event classes for files, calendar, Tables, and Forms actually exist and
 are stable enough to build in-process `IEventListener`s against, across the NC 28–34 range this app
-targets — and does OpenConnector already have any of the "reuse" machinery (JsonLogic filters, dead-letter
+targets — and does Integriq already have any of the "reuse" machinery (JsonLogic filters, dead-letter
 UI, HMAC signing) the context brief assumes, or would those need to be built fresh?
 
 ## Approach Taken
-- Read `lib/Settings/openconnector_register.json`, `lib/Service/EventService.php`,
+- Read `lib/Settings/integriq_register.json`, `lib/Service/EventService.php`,
   `lib/Cron/EventRetryJob.php`, `lib/Controller/EventsController.php`,
   `lib/Service/WebhookSignatureService.php`, `lib/EventListener/*.php`, `lib/AppInfo/Application.php`,
   `appinfo/routes.php`, `appinfo/info.xml` in this checkout at HEAD.
@@ -18,7 +18,7 @@ UI, HMAC signing) the context brief assumes, or would those need to be built fre
   for `OCP\Files\Events\Node\*`, `OCA\DAV\Events\*`, `apps/tables`, `apps/forms`.
 - Searched this repo and sibling app repos for existing JsonLogic usage and existing OR-object-lifecycle
   listener registration idiom.
-- Verified openconnector's existing ADR-023 (action authorization matrix) implementation by reading
+- Verified integriq's existing ADR-023 (action authorization matrix) implementation by reading
   `lib/Service/ActionAuthService.php`, `lib/Controller/ActionMatrixController.php`,
   `lib/Repair/InitializeActions.php`, `lib/actions.seed.json`, the `EventsController` call sites, and the
   `/api/admin/action-matrix` route registrations in `appinfo/routes.php`.
@@ -60,7 +60,7 @@ UI, HMAC signing) the context brief assumes, or would those need to be built fre
   `exact`/`prefix`/`suffix`/`expression` dialect switch. Adding `jsonlogic` as a new case in that switch is
   a small, additive change reusing the already-present library — not a new dependency, but also not
   something that "just works today" as the brief's phrasing might suggest.
-- **ADR-023 is FULLY implemented in openconnector at HEAD** (correcting this discovery's own first research
+- **ADR-023 is FULLY implemented in integriq at HEAD** (correcting this discovery's own first research
   pass, which wrongly reported it absent): `lib/Service/ActionAuthService.php` (`requireAction()`, `can()`,
   `getMatrix()`/`setMatrix()`; admin always passes; matrix stored in `IAppConfig` key `actions`; any action
   missing from the matrix defaults to `["admin"]` — default-deny by construction),

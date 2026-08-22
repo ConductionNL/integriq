@@ -4,9 +4,9 @@
 
 ### Requirement: Per-API-Product request and error gauges (REQ-PROM-012)
 
-The app MUST expose `openconnector_api_product_requests_total` as a gauge
+The app MUST expose `integriq_api_product_requests_total` as a gauge
 with labels `product` (the `api_product`'s `productSlug`) and `status`
-(HTTP status code), and `openconnector_api_product_errors_total` as a gauge
+(HTTP status code), and `integriq_api_product_errors_total` as a gauge
 with label `product`, both computed declaratively from inbound `call_log`
 rows carrying a `product` uuid (`endpoint-runtime` `REQ-EP-009`), the same
 `source.kind: "tableCount"` + `groupBy` mechanism that already produces
@@ -18,25 +18,25 @@ the existing label-resolution join pattern.
 
 - GIVEN 40 inbound `call_log` rows for product `woo-publications` with status 200 and 3 with status 429
 - WHEN the metrics endpoint is called
-- THEN the output includes `openconnector_api_product_requests_total{product="woo-publications",status="200"} 40` and `...{product="woo-publications",status="429"} 3`
+- THEN the output includes `integriq_api_product_requests_total{product="woo-publications",status="200"} 40` and `...{product="woo-publications",status="429"} 3`
 
 #### Scenario: error count reflects statusCode >= 400 rows
 
 - GIVEN a product with 100 inbound rows, 5 with `statusCode >= 400`
 - WHEN the metrics endpoint is called
-- THEN `openconnector_api_product_errors_total{product="<slug>"} 5`
+- THEN `integriq_api_product_errors_total{product="<slug>"} 5`
 
 #### Scenario: a product with no inbound traffic emits a zero placeholder
 
 - GIVEN an `api_product` with no inbound `call_log` rows yet
 - WHEN the metrics endpoint is called
-- THEN `openconnector_api_product_requests_total{product="<slug>",status="200"} 0` is emitted, consistent with every other `REQ-PROM-*` zero-placeholder scenario
+- THEN `integriq_api_product_requests_total{product="<slug>",status="200"} 0` is emitted, consistent with every other `REQ-PROM-*` zero-placeholder scenario
 
 ### Requirement: Per-API-Product latency percentile gauges (REQ-PROM-013)
 
-The app MUST expose `openconnector_api_product_latency_seconds` as a gauge
+The app MUST expose `integriq_api_product_latency_seconds` as a gauge
 with labels `product` and `quantile` (`0.5`|`0.95`|`0.99`), produced by the
-`OpenConnectorMetricsProvider` `IMetricsProvider` escape hatch (the same
+`IntegriqMetricsProvider` `IMetricsProvider` escape hatch (the same
 mechanism `circuit_breaker_state` uses, `REQ-PROM-011`) — a percentile
 cannot be expressed by the declarative `tableCount`/`objectCount` `groupBy`
 vocabulary used by `REQ-PROM-012`, since it requires sorting values within a
@@ -49,7 +49,7 @@ converted to seconds for the gauge per Prometheus convention).
 
 - GIVEN a product's 1000 most recent inbound `call_log` rows with `responseTime` ranging 10-500ms
 - WHEN the metrics endpoint is called
-- THEN the output includes `openconnector_api_product_latency_seconds{product="<slug>",quantile="0.5"}`, `...quantile="0.95"`, and `...quantile="0.99"` reflecting those percentiles in seconds
+- THEN the output includes `integriq_api_product_latency_seconds{product="<slug>",quantile="0.5"}`, `...quantile="0.95"`, and `...quantile="0.99"` reflecting those percentiles in seconds
 
 #### Scenario: a product with no traffic reports zero latency, not a missing series
 

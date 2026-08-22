@@ -9,7 +9,7 @@ retroactively specifies it. Source: `openspec/coverage-report.md` generated
 
 The rule authoring UI (detail page, JsonLogic condition tree, action-type forms,
 edit modal, endpoint-attach dialogs) is core platform behaviour with no spec
-coverage. It is an openconnector-local Vue surface (no OpenRegister equivalent),
+coverage. It is an integriq-local Vue surface (no OpenRegister equivalent),
 so it gets a foundational capability spec under `openspec/specs/`.
 
 ## Affected code units

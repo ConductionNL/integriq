@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 ## Context
 
-Three controllers + one service make up the openconnector logs / stats /
+Three controllers + one service make up the integriq logs / stats /
 retention surface:
 
 - `LogsController` — CRUD + stats + CSV export over synchronization logs

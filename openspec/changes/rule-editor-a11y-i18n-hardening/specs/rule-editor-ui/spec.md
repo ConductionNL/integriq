@@ -8,7 +8,7 @@ WCAG AA)
 ### Requirement: EditRule modal footer actions are translated
 
 The `EditRule.vue` modal's footer Cancel and Save actions MUST render their labels via
-`t('openconnector', ...)`, not as hardcoded English text nodes, so non-English locales
+`t('integriq', ...)`, not as hardcoded English text nodes, so non-English locales
 display the correct translated label like every other modal in the app.
 
 #### Scenario: Non-English locale shows translated Cancel/Save

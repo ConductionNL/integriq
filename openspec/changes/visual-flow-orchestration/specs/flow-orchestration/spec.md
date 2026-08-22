@@ -1,14 +1,14 @@
 # flow-orchestration Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - visual-flow-orchestration (this change)
 
 ## Purpose
 
 Provides a lightweight, declarative multi-step pipeline entity (`flow`) for
-OpenConnector: an ordered list of steps, each referencing an existing
+Integriq: an ordered list of steps, each referencing an existing
 Source/Mapping/Synchronization/Endpoint/Approval by id, with an optional
 JsonLogic run-if condition, a single-target `branch` step for non-linear
 control flow, and a per-step `onError` policy. `FlowRunnerService`
@@ -24,7 +24,7 @@ proposal for the explicit v1/v2 scope boundary (no canvas, no
 parallel/fan-out, no loops in v1).
 
 **Disambiguation:** this capability is unrelated to `flow-workflowengine-integration`
-(a separate, sibling change that registers OpenConnector operations as
+(a separate, sibling change that registers Integriq operations as
 adapters inside Nextcloud core's own `files_workflowengine` UI). Both use
 the word "flow"; neither touches the other's code.
 
@@ -270,7 +270,7 @@ MUST catch the throwable, record `flow_run_log` for that step with
 The system MUST support triggering `FlowRunnerService::run()` from four
 surfaces, each reusing an existing trigger mechanism rather than
 introducing a new scheduler: (a) a cron-scheduled `job` OR object whose
-`jobClass` is `OCA\OpenConnector\Action\FlowAction`, resolved and
+`jobClass` is `OCA\Integriq\Action\FlowAction`, resolved and
 `run($arguments)`-invoked by `JobService::executeJob()` exactly as any
 other job action; (b) a `flow` rule action type added to
 `EndpointService::processRules()`'s existing type dispatch, valid for
@@ -288,7 +288,7 @@ Flow detail page calling `POST /api/flows/{id}/run`, which invokes
 #### Scenario: a cron job triggers a flow
 
 - **GIVEN** an enabled `job` OR object with `jobClass:
-  'OCA\OpenConnector\Action\FlowAction'` and `arguments: { flowId: '<uuid>' }`
+  'OCA\Integriq\Action\FlowAction'` and `arguments: { flowId: '<uuid>' }`
 - **WHEN** `JobService::run()` sweeps due jobs and calls
   `FlowAction::run($arguments)`
 - **THEN** `FlowRunnerService::run()` is invoked for the referenced flow
@@ -336,7 +336,7 @@ and `error` (present only when `status: failed`).
 
 ### Requirement: Flows index and detail UI provide a typed step-list editor (REQ-009)
 
-OpenConnector MUST provide a `Flows` section in its SPA: an index page
+Integriq MUST provide a `Flows` section in its SPA: an index page
 (`type: index`, listing `name`, `isEnabled`, last-run status/time) and a
 detail page (`type: custom`, component `FlowDetailPage`) where an admin
 can add, remove, reorder, and configure steps. Each step row MUST use an
@@ -350,9 +350,9 @@ own file under `src/modals/Flow/`, not inline in the page component.
 
 #### Scenario: Flows index page mounts and lists flows
 
-- **GIVEN** an authenticated admin visits the openconnector app
+- **GIVEN** an authenticated admin visits the integriq app
 - **WHEN** they navigate to the Flows section via the sidebar nav or
-  direct URL `/apps/openconnector/flows`
+  direct URL `/apps/integriq/flows`
 - **THEN** the Flows index page renders inside the main content area,
   listing each flow's name, enabled state, and last-run status
 

@@ -5,7 +5,7 @@ TBD - created by archiving change zgw-version-translation. Update Purpose after 
 ## Requirements
 ### Requirement: Per-resource translator seam with a literal-leak guard (REQ-001)
 
-OpenConnector MUST define a `ZgwResourceTranslatorInterface`
+Integriq MUST define a `ZgwResourceTranslatorInterface`
 (`lib/Service/ZgwVersion/ZgwResourceTranslatorInterface.php`) with
 `getResource(): string`, `translateToV16(array $payload): array`, and
 `translateToV1x(array $payload): array`. One implementation MUST exist per

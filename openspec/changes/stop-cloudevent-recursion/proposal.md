@@ -46,7 +46,7 @@ latter — they were generated *from other events*.
 
 Related defects already fixed while diagnosing this (they amplified the cost
 but were not the loop): a docudesk array-to-string flood on the same write
-path (6,240 warnings/create), openconnector writing a UUID into the legacy
+path (6,240 warnings/create), integriq writing a UUID into the legacy
 integer `eventId` column (~697 validation failures/create), `debug=true`
 forcing hot-path debug logging to disk, and a stale exclusive
 `openregister/audit-seal` lock costing 150 ms per audit row.

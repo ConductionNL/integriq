@@ -7,15 +7,15 @@
 - **type**: api
 - **persona**: N/A
 - **preconditions**: an endpoint with a `mapping` rule (before) and a `save_object` rule (before) that dispatches one outbound `CallService` call via a `synchronization` rule
-- **steps**: call the endpoint via `POST /apps/openconnector/api/endpoints/{id}/...`
-- **expected result**: the rule step, mapping step, and outbound-call step recorded for the request all carry the same `traceId`; `GET /apps/openconnector/api/execution-traces/{traceId}` returns all three
+- **steps**: call the endpoint via `POST /apps/integriq/api/endpoints/{id}/...`
+- **expected result**: the rule step, mapping step, and outbound-call step recorded for the request all carry the same `traceId`; `GET /apps/integriq/api/execution-traces/{traceId}` returns all three
 - **test command**: /test-api
 
 ### TC-2: Untraced ad-hoc call produces no trace
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001`
 - **type**: api
 - **preconditions**: a configured Source
-- **steps**: `POST /apps/openconnector/api/sources/{id}/test`
+- **steps**: `POST /apps/integriq/api/sources/{id}/test`
 - **expected result**: no new `execution_trace` object is created for this call
 - **test command**: /test-api
 
@@ -71,7 +71,7 @@
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005`
 - **type**: api
 - **preconditions**: a `failed` `execution_trace` with `entryPoint: 'sync'`
-- **steps**: `POST /apps/openconnector/api/execution-traces/{id}/replay` with no body
+- **steps**: `POST /apps/integriq/api/execution-traces/{id}/replay` with no body
 - **expected result**: no `synchronization_contract`/target object created or updated; a new `execution_trace` is persisted with `isReplay: true, dryRun: true, replayOf: '<original id>'`
 - **test command**: /test-api
 
@@ -129,15 +129,15 @@
 - **type**: accessibility
 - **preconditions**: Traces list page loaded
 - **steps**: inspect the entryPoint filter control
-- **expected result**: the `NcSelect` carries `:input-label="t('openconnector', 'Entry point')"`, matching `EventDeliveriesPage.vue:28-31`; no bare `<label>` + `@keydown.enter` pattern
+- **expected result**: the `NcSelect` carries `:input-label="t('integriq', 'Entry point')"`, matching `EventDeliveriesPage.vue:28-31`; no bare `<label>` + `@keydown.enter` pattern
 - **test command**: /test-accessibility
 
 ### TC-17: traces_total is scraped per status
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-traces_total-prometheus-counter-via-the-apphost-observability-engine-req-008`
 - **type**: api
 - **preconditions**: 10 `execution_trace` objects: 7 `success`, 2 `failed`, 1 `running`
-- **steps**: `GET /apps/openconnector/api/metrics` as admin
-- **expected result**: output includes `openconnector_traces_total{status="success"} 7`, `{status="failed"} 2`, `{status="running"} 1`
+- **steps**: `GET /apps/integriq/api/metrics` as admin
+- **expected result**: output includes `integriq_traces_total{status="success"} 7`, `{status="failed"} 2`, `{status="running"} 1`
 - **test command**: /test-api
 
 ### TC-18: Retention rules match the design's condition-branched schedule

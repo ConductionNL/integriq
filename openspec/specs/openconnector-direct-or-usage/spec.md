@@ -38,7 +38,7 @@ THEN `composer check:strict` fails with a human-readable error identifying the f
 ### Requirement: All 15 entity files MUST be deleted
 
 All fifteen `lib/Db/<Entity>.php` domain-data entity classes MUST be deleted
-from the openconnector repository, per ADR-001 ("ALL domain data → OpenRegister
+from the integriq repository, per ADR-001 ("ALL domain data → OpenRegister
 objects. NO custom Entity/Mapper for domain data."). After this change ships,
 no file under `lib/` or `tests/` SHALL reference any of these entity class names
 in a `use` statement, type hint, or `new` expression.
@@ -429,9 +429,9 @@ THEN the command produces zero NEW occurrences outside of the known pre-existing
 
 ### Requirement: Per-schema CRUD controllers MUST be deleted; only connector-specific action endpoints remain
 
-Controllers under `lib/Controller/` that exposed only standard CRUD operations over a single integriq domain entity MUST be deleted. OR's `/api/objects/{register}/{schema}/*` route family already exposes generic CRUD; per-schema duplication in openconnector is redundant. Connector-specific action endpoints (`/api/jobs/{id}/run`, `/api/sources/{id}/test`, `/api/synchronizations/{id}/trigger`, `/api/import`, `/api/export`, `/api/endpoint/{...}` inbound dispatch, etc.) MUST be preserved.
+Controllers under `lib/Controller/` that exposed only standard CRUD operations over a single integriq domain entity MUST be deleted. OR's `/api/objects/{register}/{schema}/*` route family already exposes generic CRUD; per-schema duplication in integriq is redundant. Connector-specific action endpoints (`/api/jobs/{id}/run`, `/api/sources/{id}/test`, `/api/synchronizations/{id}/trigger`, `/api/import`, `/api/export`, `/api/endpoint/{...}` inbound dispatch, etc.) MUST be preserved.
 
-Schema-driven input validation (rejecting missing required fields, type-coercing inputs, etc.) is handled by OR's built-in schema validator when `ObjectService::saveObject()` is called against a register+schema with declared `required` and typed `properties`. The chain A descriptor at `lib/Settings/integriq_register.json` defines those constraints. **No openconnector-side DTO layer is needed at CRUD boundaries.** Dedicated DTO classes MAY be introduced ONLY at the input boundary of connector-specific actions (e.g. a `SyncTriggerDto` for the body of `POST /api/synchronizations/{id}/trigger`) when the action's input shape doesn't match any single schema.
+Schema-driven input validation (rejecting missing required fields, type-coercing inputs, etc.) is handled by OR's built-in schema validator when `ObjectService::saveObject()` is called against a register+schema with declared `required` and typed `properties`. The chain A descriptor at `lib/Settings/integriq_register.json` defines those constraints. **No integriq-side DTO layer is needed at CRUD boundaries.** Dedicated DTO classes MAY be introduced ONLY at the input boundary of connector-specific actions (e.g. a `SyncTriggerDto` for the body of `POST /api/synchronizations/{id}/trigger`) when the action's input shape doesn't match any single schema.
 
 #### Scenario: per-schema CRUD controller is deleted
 
@@ -460,8 +460,8 @@ AND no integriq-side controller MUST be involved in serving this request
 
 `lib/Controller/ImportController.php`, `lib/Service/ImportService.php`, `lib/Controller/ExportController.php`, `lib/Service/ExportService.php`, and `lib/Controller/DashboardController.php` MUST all be deleted. The corresponding `appinfo/routes.php` entries MUST be removed. The total deletion is approximately 837 LOC.
 
-- **Import/Export deletions are justified by OR coverage:** OR exposes `POST /api/registers/{id}/import`, `POST /api/configurations/{id}/import`, `POST /api/objects/{register}/{schema}/` (single-object create), `GET /api/registers/{id}/export`, `GET /api/objects/{register}/{schema}/export`, and `GET /api/objects/{register}/{schema}/{id}` (single-object read) routes that cover every use case openconnector's `ImportController`/`ExportController` served. Slug-translation logic (per local ADR-015) is preserved by a thin `SlugTranslatorService` decorator (see separate requirement below).
-- **DashboardController deletion is justified by manifest declarative widgets:** the post-D2 `src/manifest.json` `Dashboard` page uses `type: dashboard` and declares its widgets via `dataSource: { register, schema, filter, aggregate: 'count' }` blocks resolved by `CnStatsBlockWidget` from `@conduction/nextcloud-vue` against OR's generic aggregate endpoint. Decidesk's manifest (`/decidesk/src/manifest.json` Dashboard entry) demonstrates the working pattern with stats-block widgets for review/published/open-items counts — analogous widgets cover openconnector's CallStats, JobStats, SyncStats.
+- **Import/Export deletions are justified by OR coverage:** OR exposes `POST /api/registers/{id}/import`, `POST /api/configurations/{id}/import`, `POST /api/objects/{register}/{schema}/` (single-object create), `GET /api/registers/{id}/export`, `GET /api/objects/{register}/{schema}/export`, and `GET /api/objects/{register}/{schema}/{id}` (single-object read) routes that cover every use case integriq's `ImportController`/`ExportController` served. Slug-translation logic (per local ADR-015) is preserved by a thin `SlugTranslatorService` decorator (see separate requirement below).
+- **DashboardController deletion is justified by manifest declarative widgets:** the post-D2 `src/manifest.json` `Dashboard` page uses `type: dashboard` and declares its widgets via `dataSource: { register, schema, filter, aggregate: 'count' }` blocks resolved by `CnStatsBlockWidget` from `@conduction/nextcloud-vue` against OR's generic aggregate endpoint. Decidesk's manifest (`/decidesk/src/manifest.json` Dashboard entry) demonstrates the working pattern with stats-block widgets for review/published/open-items counts — analogous widgets cover integriq's CallStats, JobStats, SyncStats.
 
 #### Scenario: ImportController + ExportController files are absent post-merge
 
@@ -487,7 +487,7 @@ AND the page's widgets MUST resolve their counts via `dataSource` blocks pointin
 
 ### Requirement: SettingsController MUST shrink to connector-specific actions only
 
-`lib/Controller/SettingsController.php` MUST be reduced from ~200 LOC to ~80 LOC. The methods `stats()`, `getSettings()`, `updateSettings()`, and `rebase()` MUST be deleted — they reimplement OR's `/api/settings/*` surface or are superseded by other chain-C deliverables. The ONLY method preserved on the controller is the openconnector-specific `applyRetention()` action (itself flagged for follow-up replacement per [#822](https://github.com/ConductionNL/openconnector/issues/822) Postgres portability).
+`lib/Controller/SettingsController.php` MUST be reduced from ~200 LOC to ~80 LOC. The methods `stats()`, `getSettings()`, `updateSettings()`, and `rebase()` MUST be deleted — they reimplement OR's `/api/settings/*` surface or are superseded by other chain-C deliverables. The ONLY method preserved on the controller is the integriq-specific `applyRetention()` action (itself flagged for follow-up replacement per [#822](https://github.com/ConductionNL/integriq/issues/822) Postgres portability).
 
 #### Scenario: SettingsController only exposes the applyRetention action
 

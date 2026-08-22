@@ -5,7 +5,7 @@ TBD - created by archiving change open-formulieren-intake. Update Purpose after 
 ## Requirements
 ### Requirement: Signed inbound submission webhook (REQ-001)
 
-OpenConnector MUST expose `POST /api/open-formulieren/submissions` as a
+Integriq MUST expose `POST /api/open-formulieren/submissions` as a
 `#[PublicPage]` endpoint (no NC session — mirrors
 `PeppolController::inbound()` / `NotifyNlController::inbound()`) gated by
 HMAC verification via the existing `WebhookSignatureService`, reading the
@@ -51,7 +51,7 @@ any state change.
 
 ### Requirement: Per-form mapping onto `ns#Case` contract fields (REQ-002)
 
-OpenConnector MUST persist per-form mapping configuration as
+Integriq MUST persist per-form mapping configuration as
 `openformulieren_form_mapping` OR records (keyed by `formSlug`) and provide
 a single testable `FormFieldMapper` class resolving a submission's raw
 `values` onto the mandatory `ns#Case` contract fields `title`/`summary`/
@@ -108,7 +108,7 @@ path/template string as if it were resolved data (the known
 
 ### Requirement: `openformulieren_submission` lifecycle with per-submission isolation (REQ-003)
 
-OpenConnector MUST persist one `openformulieren_submission` OR record per
+Integriq MUST persist one `openformulieren_submission` OR record per
 inbound webhook call, tracking `status` through
 `received → mapped → handed_off | failed`. A mapping or attachment failure
 for one submission MUST NOT affect any other submission's processing or
@@ -153,7 +153,7 @@ The `openformulieren_submission` schema MUST declare an
 plus the engine-filled `source` (`{"provenance": true}`) — the `requester`
 contract field is deliberately not mapped (no OR-managed party register to
 resolve a BSN/KvK auth context against; anonymous requester is the supported
-path). OpenConnector MUST expose an authenticated
+path). Integriq MUST expose an authenticated
 `POST /api/open-formulieren/submissions/{id}/handoff` endpoint that calls
 OpenRegister's `HandoffService::execute()` under the calling user's own
 session/RBAC — never a system-account/impersonation shortcut, per
@@ -191,14 +191,14 @@ system-user lane).
 
 ### Requirement: Best-effort attachment handling (REQ-005)
 
-OpenConnector MUST best-effort fetch each attachment ref present in a
+Integriq MUST best-effort fetch each attachment ref present in a
 submission payload and store it via OpenRegister's `FileService::addFile()`
 onto the submission object, recording per-attachment outcome
 (`fetched`/`failed`) independently of the submission's mapping outcome (an
 attachment fetch failure MUST NOT fail the submission's `mapped` status).
 Because the `ns#Case` contract has no attachment-carrying field, attachments
 cannot flow through the handoff mapping itself; on a successful handoff,
-OpenConnector MUST best-effort copy each successfully stored file onto the
+Integriq MUST best-effort copy each successfully stored file onto the
 created Case object via `FileService::copyFile()`, isolated per file (a copy
 failure MUST NOT fail the already-completed handoff).
 

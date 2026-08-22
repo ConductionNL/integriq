@@ -1,4 +1,4 @@
-# Contract: openconnector-flow-nodes
+# Contract: integriq-flow-nodes
 
 ## What kind of contract this is
 
@@ -196,7 +196,7 @@ compatibility rules over the node ids and their config schemas:
   referencing flow then fails at dispatch with an unknown step type — loud and
   contained to that flow, which is the correct failure for a removed step.
 - **Not versioned:** the internals it delegates to. `CallService`'s behaviour is
-  OpenConnector's own contract with itself; this change is a caller. The
+  Integriq's own contract with itself; this change is a caller. The
   checkout lags the deployed app (0.2.19 vs 0.3.3), so implementers re-verify
   signatures against the deployed tree, and a behaviour change found in 0.3.x is
   a finding to raise, not a spec to force through.
@@ -221,7 +221,7 @@ compatibility rules over the node ids and their config schemas:
 
 *(The template asks for response-time and availability commitments. Deviation,
 stated rather than filled: there is no service here to be available. The node
-runs in-process inside a flow run; if OpenConnector is installed and enabled,
+runs in-process inside a flow run; if Integriq is installed and enabled,
 the node exists, and if it is not, the flow fails at dispatch. Latency and
 availability belong to the **remote host behind the Source**, which this project
 neither operates nor speaks for.)*
@@ -232,7 +232,7 @@ What is committed instead, and is testable:
 | --- | --- |
 | Node overhead per item — resolution, templating, mapping | Under 5 ms for an item of ordinary size; end-to-end step time is dominated by the remote host. |
 | Timeouts, retries, rate limiting | Owned by the Source and `CallService`. The node adds none and bypasses none. |
-| Auditability | Every flow-originated call writes the same CallLog an ordinary OpenConnector call writes. A flow-originated call is auditable by exactly the same means. |
+| Auditability | Every flow-originated call writes the same CallLog an ordinary Integriq call writes. A flow-originated call is auditable by exactly the same means. |
 | Memory ceiling for a fanned-out run | Bounded by `config.maxItems` (default 1000), an author-visible number — not by the remote system's page count. |
 
 Explicitly **not** committed: uptime, throughput, or response time of any Source

@@ -3,14 +3,14 @@ kind: code
 depends_on: []
 ---
 
-# Proposal: openconnector-flow-nodes
+# Proposal: integriq-flow-nodes
 
 ## Summary
 
-OpenConnector contributes **zero** node types to OpenRegister's flow engine
+Integriq contributes **zero** node types to OpenRegister's flow engine
 today. This change adds an `openconnector.source-call` flow node (plus a
 companion `openconnector.synchronization-run` node) so an OpenRegister flow can
-make an outbound API call through OpenConnector's governed machinery — a
+make an outbound API call through Integriq's governed machinery — a
 configured Source, `CallService`, brokered credentials, source-level enable /
 host / rate-limit guards — instead of not being able to make one at all. The
 node never accepts a raw URL and never handles a secret: it names a Source, and
@@ -19,15 +19,15 @@ the Source governs the host and the credential.
 ## Motivation
 
 The fleet architecture decision of 2026-07-27 (PO, hydra-console flows-first
-wave) reads: *"API calls go through OpenConnector nodes; porting apps onto the
+wave) reads: *"API calls go through Integriq nodes; porting apps onto the
 control plane creates no code, just flows."* That sentence describes a
 capability that does not exist.
 
 Verified against the checkout on 2026-07-27:
 
-- A sweep of `openconnector/lib` for `IFlowNode`, `RegisterFlowNodesEvent`,
+- A sweep of `integriq/lib` for `IFlowNode`, `RegisterFlowNodesEvent`,
   `RegisterFlowResolversEvent` and `IMcpToolProvider` returns **nothing**.
-  OpenConnector registers no flow nodes and no flow resolvers.
+  Integriq registers no flow nodes and no flow resolvers.
 - OpenRegister's built-in node set
   (`openregister/lib/Service/Flow/Nodes/`) is Filter, Loop, Merge, Router,
   SetFields, Stop, SubFlow, Switch, Wait — nine nodes, **none of which makes an
@@ -46,7 +46,7 @@ step must flip a label on a forge issue by calling the configured forge Source.
 Today that flow can only *record* the proposed label; the flip needs a human or
 bespoke code. See hermiq's `hydra-console-agent-leaves` change (hermiq repo,
 `openspec/changes/`), Risk 1 and its `nc-native-tools` delta, which states that
-outbound commands are "OpenConnector-backed flow/endpoint territory". This
+outbound commands are "Integriq-backed flow/endpoint territory". This
 change is the territory being built.
 
 The node is deliberately *not* the only intended user of this. Any flow in any
@@ -55,7 +55,7 @@ government register — becomes expressible without new PHP once a Source exists
 
 ## Affected Projects
 
-- [ ] Project: `openconnector` — adds `lib/Flow/` with `SourceCallNode`,
+- [ ] Project: `integriq` — adds `lib/Flow/` with `SourceCallNode`,
       `SynchronizationRunNode` and `FlowNodeListener`; registers the listener in
       `AppInfo/Application.php` behind a `class_exists` guard; adds node icons.
 - [ ] Project: `openregister` — **no code change required**. Consumes the
@@ -118,7 +118,7 @@ government register — becomes expressible without new PHP once a Source exists
   already declares is resolved by the existing broker path.
 - **No changes to `CallService` semantics.** The node is a caller, not a
   refactor of the call engine.
-- **No endpoint-dispatch (inbound) node.** OpenConnector Endpoints are the
+- **No endpoint-dispatch (inbound) node.** Integriq Endpoints are the
   *inbound* surface; a flow calling its own instance's endpoint is deliberately
   deferred.
 - **No flow-authoring UI work.** The node appears in OpenRegister's palette
@@ -130,10 +130,10 @@ Mirror the one proven contributed-node implementation in the fleet
 (`hermiq/lib/Flow/HermiqAgentNode.php` + `HermiqFlowNodeListener.php`):
 
 1. A listener on `RegisterFlowNodesEvent` registers the node objects. Both the
-   listener registration and the node classes are guarded so that OpenConnector
+   listener registration and the node classes are guarded so that Integriq
    still boots on an instance where OpenRegister's flow engine is absent or
    older — the same `class_exists` posture hermiq uses.
-2. The node resolves its Source the way OpenConnector already resolves Sources
+2. The node resolves its Source the way Integriq already resolves Sources
    internally: as an OpenRegister object in register `openconnector`, schema
    `source` (see `SynchronizationService::findSourceObject()`), yielding the
    `ObjectEntity` that `CallService::call()` takes as its first argument.
@@ -150,11 +150,11 @@ retry/rate-limit, credential resolution, call logging — all already exist in
 
 None. No new composer packages. The only new *coupling* is a soft, guarded
 compile-time reference to OpenRegister's `IFlowNode` interface — OpenRegister is
-already a hard runtime dependency of OpenConnector.
+already a hard runtime dependency of Integriq.
 
 ## Impact
 
-- **New code**: `openconnector/lib/Flow/` (nodes + listener), one listener
+- **New code**: `integriq/lib/Flow/` (nodes + listener), one listener
   registration line in `lib/AppInfo/Application.php`, node icons under `img/`.
 - **No API surface change**: no new routes, no new controllers, no schema
   changes, no migrations.

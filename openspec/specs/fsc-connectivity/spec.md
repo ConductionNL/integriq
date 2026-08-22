@@ -5,7 +5,7 @@ TBD - created by archiving change fsc-connectivity. Update Purpose after archive
 ## Requirements
 ### Requirement: FSC provider abstraction with log and REST bindings (REQ-001)
 
-OpenConnector MUST define an `FscConnectivityProviderInterface`
+Integriq MUST define an `FscConnectivityProviderInterface`
 (`lib/Service/Fsc/FscConnectivityProviderInterface.php`) with
 `getProviderId()`, `getConfigSchema()`, `resolveService(directoryConfiguration,
 organisation, service)`, and `call(directoryConfiguration, resolution,

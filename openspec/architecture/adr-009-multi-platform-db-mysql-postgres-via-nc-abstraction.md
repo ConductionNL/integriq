@@ -9,7 +9,7 @@ Accepted (capturing existing decision, with known violations)
 ## Context
 
 Nextcloud supports MySQL/MariaDB and PostgreSQL as database backends. All
-openconnector `lib/Db/` mapper classes extend `QBMapper` and inject
+integriq `lib/Db/` mapper classes extend `QBMapper` and inject
 `OCP\IDBConnection`, using `OCP\DB\QueryBuilder\IQueryBuilder` for
 query construction. This is the correct cross-platform approach:
 `IQueryBuilder` abstracts dialect differences, and `QBMapper` handles entity
@@ -67,7 +67,7 @@ For the three known MySQL-only leaks:
 
 These fixes are deferred to the in-flight `openconnector-adopt-or-abstractions`
 cleanup or a dedicated "Postgres portability" ticket; they MUST be fixed before
-official Postgres support is declared for openconnector.
+official Postgres support is declared for integriq.
 
 The `SearchService` method names (`createMySQLSearchConditions`,
 `createMySQLSearchParams`) are misleading but functional on both platforms;
@@ -76,7 +76,7 @@ they may be renamed during the D2 frontend rewrite (chain
 
 ## Consequences
 
-- Running openconnector against a Postgres-backed Nextcloud will currently
+- Running integriq against a Postgres-backed Nextcloud will currently
   fail when `SettingsService::applyRetention()` is called (the `SHOW COLUMNS`
   and `DATE_ADD` queries will throw `\Doctrine\DBAL\Exception`).
 - All new migration files (under `lib/Migration/`) MUST use the Nextcloud
@@ -87,7 +87,7 @@ they may be renamed during the D2 frontend rewrite (chain
 - Cross-reference: `openspec/changes/openconnector-register-storage/` — chain
   B introduced a dual-platform JSON-build path for OR object storage
   (`MySQL JSON_OBJECT vs Postgres jsonb_build_object`) as a downstream
-  consequence of this constraint; openconnector's own mapper layer must reach
+  consequence of this constraint; integriq's own mapper layer must reach
   the same level of portability.
 
 ## Evidence

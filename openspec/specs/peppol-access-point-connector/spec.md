@@ -6,7 +6,7 @@ status: done
 
 ## Purpose
 
-OpenConnector connects to the Peppol network through a certified Access Point
+Integriq connects to the Peppol network through a certified Access Point
 (AP) so sibling apps can look up Peppol participants, transmit UBL documents
 (e-invoices, orders), and receive inbound documents without embedding an
 AS4/Peppol client. It is an NL-infrastructure adapter in the same family as
@@ -33,7 +33,7 @@ REST surface. This capability owns the cross-app Peppol transport contract
 
 ### Requirement: Peppol participant / SMP lookup endpoint (REQ-001)
 
-OpenConnector MUST expose `GET /api/peppol/participants/{peppolId}` that
+Integriq MUST expose `GET /api/peppol/participants/{peppolId}` that
 resolves a Peppol participant identifier (`scheme:identifier`, e.g.
 `0192:1234567890`) against the configured AP's SMP/directory and returns
 `{exists: bool, supportedDocTypes: string[]}`. The lookup MUST be performed

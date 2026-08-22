@@ -7,7 +7,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector exposes configurable endpoints under `/api/endpoint/{path}`. At
+Integriq exposes configurable endpoints under `/api/endpoint/{path}`. At
 request time the runtime resolves the path to a registered endpoint, applies
 CORS, optionally short-circuits "simple" schema CRUD, and otherwise runs the
 full request pipeline — condition checks, before/after rule processing, and
@@ -26,13 +26,13 @@ itself is specified separately under the `rule-pipeline` capability.
 
 ### REQ-EP-UI-001: Endpoint Management UI
 
-OpenConnector MUST provide an Endpoints section in its SPA where administrators can
+Integriq MUST provide an Endpoints section in its SPA where administrators can
 browse, create, edit, and delete endpoint configurations. This requirement covers
 the observable browser UI behaviour — navigation, list rendering, and CRUD modals.
 
 #### Scenario: endpoints list page mounts and shows navigation item
 
-- GIVEN an authenticated admin visits the openconnector app
+- GIVEN an authenticated admin visits the integriq app
 - WHEN they navigate to the Endpoints section via the sidebar nav or direct URL
 - THEN the Endpoints index page renders inside the app-content area with content visible
 

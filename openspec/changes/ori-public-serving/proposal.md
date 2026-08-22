@@ -2,13 +2,13 @@
 
 ## Summary
 
-OpenConnector serves the public ORI 1.4 API (`/api/ori/v1/*` — Popolo-flavoured
+Integriq serves the public ORI 1.4 API (`/api/ori/v1/*` — Popolo-flavoured
 meetings, agenda items, decisions, votes) on decidesk's behalf: decidesk keeps
 owning the DATA (its OpenRegister objects) and the CONFIGURATION (which
-Endpoints/Mappings exist and what they expose), while openconnector owns the
+Endpoints/Mappings exist and what they expose), while integriq owns the
 ENDPOINT/serving MACHINERY (public dispatch, anonymous auth handling, response
 shaping) it already runs for every other integration. This change specs a set
-of openconnector Endpoint + Mapping configurations that reproduce decidesk's
+of integriq Endpoint + Mapping configurations that reproduce decidesk's
 current `OriController`/`OriSerializer` surface, names the concrete places the
 existing mapping/rule engine cannot express that surface unmodified, and
 defines the parity test plan that must pass before decidesk's controller is
@@ -19,7 +19,7 @@ retired.
 decidesk currently self-serves ORI 1.4 from `lib/Controller/OriController.php`
 (5 `#[PublicPage]` endpoints), `lib/Service/OriSerializer.php`, and
 `lib/Service/OriPublicationService.php` — roughly 800 lines of bespoke HTTP
-dispatch, JSON-LD field mapping, and public-caller safety logic. openconnector
+dispatch, JSON-LD field mapping, and public-caller safety logic. integriq
 already owns exactly this kind of machinery for every other integration it
 serves: public path dispatch with cache-backed resolution
 (`endpoint-runtime` REQ-EP-001/004), an anonymous-serving auth model (no
@@ -30,7 +30,7 @@ mapping engine (`mapping-and-search` REQ-001/002) for exactly the kind of
 hand-codes.
 
 Per Hydra ADR-091 (proposed), externally-facing API surface belongs to
-openconnector; app repos consume it rather than re-implementing dispatch. The
+integriq; app repos consume it rather than re-implementing dispatch. The
 decidesk "Back to Six" programme (product-owner decision, 2026-08-19) makes
 decidesk the sole home of raadsinformatie once the in-flight `ori-adoption`
 (decidesk) / `ori-removal` (procest) pair lands, which is the right moment to
@@ -39,7 +39,7 @@ over.
 
 Separately, decidesk carries a pending change `notubiz-ibabs-griffie-koppeling`
 (`kind: openconnector`) that proposes NEW NOTUBIZ/iBabs adapters, a sync
-engine, and four new OpenRegister schemas. openconnector already ships
+engine, and four new OpenRegister schemas. integriq already ships
 `lib/Service/NotuBizConnectorService.php`, `lib/Service/IBabsConnectorService.php`,
 and `lib/Cron/RISPollJob.php` (archived changes
 `2026-06-14-ibabs-notubiz-connector`, `2026-06-15-decidesk-ris-import-bundle`).
@@ -51,7 +51,7 @@ a task to close/fold the duplicate — see Impact and `tasks.md`.
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — new Endpoint + Mapping configurations serving
+- [x] Project: `integriq` — new Endpoint + Mapping configurations serving
       `/api/ori/v1/*` from decidesk's OpenRegister data; no new PHP classes for
       the happy path, two small, named engine gaps (see design.md) that need
       either a new rule type or an accepted scope reduction.
@@ -67,7 +67,7 @@ a task to close/fold the duplicate — see Impact and `tasks.md`.
 
 ### In Scope
 
-- An openconnector Endpoint configuration per ORI resource (organizations,
+- An integriq Endpoint configuration per ORI resource (organizations,
   persons, memberships, events, agendaitems, motions, amendments,
   voteevents, votes, reports, publications — 10 resources, `motions` and
   `amendments` sharing the `decision` schema like today) serving GET
@@ -76,7 +76,7 @@ a task to close/fold the duplicate — see Impact and `tasks.md`.
   rule).
 - Mapping objects (`mapping` schema) that reproduce `OriSerializer`'s
   `FIELD_RULES` / `PAYLOAD_FIELD_RULES` / `EMAIL_TYPES` field-projection logic
-  as openconnector mapping recipes, evaluated honestly against what
+  as integriq mapping recipes, evaluated honestly against what
   `MappingService::executeMapping()` can express today.
 - A named, itemised list of the specific `OriController`/`OriSerializer`
   behaviours the current endpoint-runtime + mapping engine **cannot**
@@ -86,10 +86,10 @@ a task to close/fold the duplicate — see Impact and `tasks.md`.
   either closed with a small, named engine change proposed in `tasks.md`, or
   explicitly deferred with the resulting behavioural difference documented.
 - A parity test plan (`test-plan.md`) that runs the same requests against the
-  existing decidesk `OriController` and the new openconnector Endpoints and
+  existing decidesk `OriController` and the new integriq Endpoints and
   diffs the responses, required to pass green before any cutover.
 - A task naming the overlap between decidesk's pending
-  `notubiz-ibabs-griffie-koppeling` change and openconnector's already-shipped
+  `notubiz-ibabs-griffie-koppeling` change and integriq's already-shipped
   NOTUBIZ/iBabs connectors, for decidesk to fold or close.
 
 ### Out of Scope
@@ -111,7 +111,7 @@ a task to close/fold the duplicate — see Impact and `tasks.md`.
 
 ## Approach
 
-Model each ORI resource as one openconnector `Endpoint` (`targetType:
+Model each ORI resource as one integriq `Endpoint` (`targetType:
 register/schema`, `targetId` pointing at the decidesk register/schema pair)
 with an `inputMapping` that injects the resource's fixed query filters
 (`lifecycle=published`, `isPublished=public` + `decisionType=motion|amendment`,
@@ -127,12 +127,12 @@ silently shipping a narrower public API than the one being replaced.
 
 ## New Dependencies
 
-None. Uses openconnector's existing Endpoint/Mapping/rule-pipeline
+None. Uses integriq's existing Endpoint/Mapping/rule-pipeline
 infrastructure.
 
 ## Impact
 
-- **openconnector**: new `register.d` seed content (Endpoint + Mapping
+- **integriq**: new `register.d` seed content (Endpoint + Mapping
   objects) under a decidesk-facing configuration bundle; no schema changes.
   Two small, named additions to `EndpointService`/`MappingService` if the
   identified gaps are closed rather than deferred (see design.md; sized in
@@ -179,11 +179,11 @@ needs implementation-time verification — documented as Gap 1 in design.md
 with a two-rule fallback (list-mapping rule + envelope-mapping rule) if a
 single recipe cannot do it.
 
-### Risk 3: Anonymous RBAC propagation through openconnector unverified for the publish-window gate
+### Risk 3: Anonymous RBAC propagation through integriq unverified for the publish-window gate
 **Severity:** Medium — **Mitigation:** decidesk's own code comments that OR's
 `x-openregister-authorization` RBAC on `PublicationPayload` (publish-window
 gate) already denies anonymous reads at the OR storage layer, independent of
-caller. If that holds when the read is routed through openconnector's
+caller. If that holds when the read is routed through integriq's
 `ObjectService`/mapper rather than decidesk's own controller, the RBAC-backed
 part of Gap 2 is already covered "for free" and only the non-RBAC
 lifecycle/decisionType gates remain a genuine gap. This must be verified
@@ -195,7 +195,7 @@ Config-only change (Endpoint/Mapping objects in `register.d`). Rollback is
 deleting or disabling the ORI Endpoint objects — decidesk's existing
 `OriController` is untouched by this proposal and keeps serving
 `/api/ori/v1/*` throughout, so there is no cutover risk until the companion
-decidesk change actually removes it. If the openconnector Endpoints are wired
+decidesk change actually removes it. If the integriq Endpoints are wired
 to a *different* path prefix during validation (recommended — see
 test-plan.md), rollback is simply not switching decidesk's public
 `/api/ori/v1/*` mount over to them.
@@ -204,14 +204,14 @@ test-plan.md), rollback is simply not switching decidesk's public
 
 - Does OR's RBAC on `PublicationPayload` (`authorization.read`) actually
   evaluate against an anonymous/public identity when the read is issued via
-  openconnector's `ObjectService` rather than decidesk's own controller
+  integriq's `ObjectService` rather than decidesk's own controller
   context? (Risk 3 — needs empirical verification, task added.)
 - Can a single `mapping`-type after-rule express both list-mode per-item
   mapping and root-level envelope reshaping in one recipe, or does it need to
   be split into two chained after-rules? (Risk 2 — needs implementation-time
   verification, task added.)
 - Should the single-item discriminator/lifecycle/publish-window gate (Risk 1)
-  be closed by a new declarative rule type in openconnector, or by pushing
+  be closed by a new declarative rule type in integriq, or by pushing
   `lifecycle`/`decisionType` into OR-level `x-openregister-authorization` on
   the decidesk schemas so OR enforces it unconditionally (mirroring how
   `PublicationPayload`'s publish-window already works)? The latter would also

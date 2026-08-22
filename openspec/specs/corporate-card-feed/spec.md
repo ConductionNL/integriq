@@ -6,14 +6,14 @@ status: done
 
 ## Purpose
 
-OpenConnector ingests corporate/credit-card statement feeds from a card-program
+Integriq ingests corporate/credit-card statement feeds from a card-program
 provider and exposes them to sibling apps as card transactions, per ADR-022. It
 owns the card-provider abstraction, program API-key storage (credential broker,
 ADR-007), card discovery, and the scheduled transaction sync that emits
 `nl.conduction.cardfeed.transactions.synced`. A card feed is structurally a
 transaction feed like `psd2-ais-bank-feed-connector` and is built on the same
 `source-management`, `job-scheduling`, and `events-cloudevents` capabilities —
-not a parallel framework. shillinq references the openconnector `Source` slug and
+not a parallel framework. shillinq references the integriq `Source` slug and
 consumes the events from a separate follow-up (`bookkeeping-card-reconciliation`);
 no provider client or credential lives in shillinq.
 

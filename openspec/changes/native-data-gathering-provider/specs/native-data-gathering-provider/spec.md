@@ -1,26 +1,26 @@
-# native-data-gathering-provider — Delta: OpenConnector as the fleet's scheduled gather layer
+# native-data-gathering-provider — Delta: Integriq as the fleet's scheduled gather layer
 
 ## Purpose
 
-Positions OpenConnector as the fleet's native "get this / crawl that" data
+Positions Integriq as the fleet's native "get this / crawl that" data
 gathering provider: a scheduled Source (fetch) plus Mapping (transform) plus
 Synchronization (keyed-upsert into an OpenRegister register/schema) plus Job
-(OpenConnector cron) is the sanctioned replacement for a Specter `sync_*.py`
+(Integriq cron) is the sanctioned replacement for a Specter `sync_*.py`
 ingestion script. Establishes the gather contract, formalizes the live-verified
 connectors as shipped app fragments, draws the boundary against OpenRegister's
 per-object leaf data-providers, and governs how a connector blocked on a
-not-yet-built capability must behave. Data gathering runs on OpenConnector's own
+not-yet-built capability must behave. Data gathering runs on Integriq's own
 cron and has no flow-engine dependency; flows react to the objects it writes
 through OpenRegister events.
 
 @e2e exclude backend and configuration governance surface — covered by connector
-import/run verification and PHPUnit, no dedicated OpenConnector browser-UI flow
+import/run verification and PHPUnit, no dedicated Integriq browser-UI flow
 
 ## ADDED Requirements
 
 ### Requirement: Scheduled gather pipeline replaces a Specter ingestion script
 
-A data-gathering connector MUST be expressed as one OpenConnector Source, one or
+A data-gathering connector MUST be expressed as one Integriq Source, one or
 more Mappings, one Synchronization, and one Job, all persisted as OpenRegister
 objects in register `openconnector`. The Source SHALL fetch an external
 HTTP/REST/file endpoint; a Mapping SHALL transform the fetched payload; the
@@ -28,7 +28,7 @@ Synchronization SHALL upsert each mapped record into an OpenRegister
 register/schema target declared by a `targetType` of `register/schema` and a
 `targetId` naming the target register and schema as one slash-joined string (for
 example the string `spectr/tender`); and the Job SHALL run the Synchronization on
-a recurring interval using OpenConnector's own cron. Re-running the same
+a recurring interval using Integriq's own cron. Re-running the same
 Synchronization MUST reuse the same target objects rather than creating
 duplicates, keyed on the synchronization contract identity (`synchronizationId`
 plus `originId`) with `sourceHash` change-detection. A connector MUST NOT require
@@ -40,7 +40,7 @@ any flow-engine component to fetch, transform, upsert, or schedule.
   Synchronization carries `targetType: "register/schema"` and
   `targetId: "spectr/tender"`, and whose Job carries a non-zero `interval` and
   `isEnabled: true`
-- **WHEN** OpenConnector's cron reaches the Job's `nextRun`
+- **WHEN** Integriq's cron reaches the Job's `nextRun`
 - **THEN** the Synchronization fetches the endpoint, maps each record, and upserts
   it into the `tender` schema of the `spectr` register
 - **AND** the run needs no flow-engine trigger, node, or runtime
@@ -54,7 +54,7 @@ any flow-engine component to fetch, transform, upsert, or schedule.
 
 ### Requirement: Gathering connectors ship as register.d fragments
 
-Each formalized connector MUST be shipped inside OpenConnector as an ADR-037
+Each formalized connector MUST be shipped inside Integriq as an ADR-037
 `register.d` fragment at `lib/Settings/register.d/` carrying a `$comment` and a
 `components.objects` array, where every object declares an `@self` triplet of
 register, schema, and slug. On `occ app:enable` or upgrade the fragment SHALL be
@@ -66,7 +66,7 @@ than or equal to the existing one.
 
 #### Scenario: Fresh install self-provisions a Wave-0 connector
 
-- **GIVEN** a fresh OpenConnector install that ships the TenderNed connector as a
+- **GIVEN** a fresh Integriq install that ships the TenderNed connector as a
   `register.d` fragment
 - **WHEN** the app is enabled
 - **THEN** the TenderNed Source, Mapping(s), Synchronization, and Job exist as
@@ -82,7 +82,7 @@ than or equal to the existing one.
 
 ### Requirement: Bulk-ingestion sources are distinct from transport-only leaf sources
 
-The system MUST keep two roles of an OpenConnector `source` distinct. A
+The system MUST keep two roles of an Integriq `source` distinct. A
 bulk-ingestion source SHALL always carry a Synchronization and a Job and pull
 many records onto a schedule into a register/schema target. A transport-only
 source SHALL carry neither a Synchronization nor a Job and exists solely as the
@@ -119,7 +119,7 @@ Nextcloud-native trigger set without any coupling from the flow engine back into
 the gather layer. The gather layer MUST NOT depend on, import, or embed any
 flow-engine trigger, node, or runtime to emit these events. An on-demand fetch
 MAY be requested through the existing synchronization run endpoint
-(`POST /apps/openconnector/api/synchronizations/{id}/run`); wiring that endpoint
+(`POST /apps/integriq/api/synchronizations/{id}/run`); wiring that endpoint
 to a flow trigger is out of scope for this change and is named only as a forward
 hook.
 
@@ -143,7 +143,7 @@ hook.
 
 A connector MUST ship with its Source and its Job `isEnabled: false` and a
 `$comment` documenting the gap whenever its source shape needs a capability
-OpenConnector does not yet have — for example CSV parsing, multi-member `.zip`
+Integriq does not yet have — for example CSV parsing, multi-member `.zip`
 archives, offset or cursor pagination beyond page one, incremental
 since-watermark fetch, N+1 two-hop detail fetch, wildcard `resultsPosition`, a
 post-fetch loop transform, JS-rendered SPA rendering, or streaming of very large

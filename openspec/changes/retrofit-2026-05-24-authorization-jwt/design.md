@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 ## Context
 
-`lib/Service/AuthorizationService.php` is openconnector's authorization handler for
+`lib/Service/AuthorizationService.php` is integriq's authorization handler for
 incoming endpoint requests. It supports four authorization schemes plus CORS header
 injection, all in one class. Endpoint rules in the rule pipeline (cluster
 `rule-pipeline`, REQ retro-spec pending) decide which scheme to invoke and supply the

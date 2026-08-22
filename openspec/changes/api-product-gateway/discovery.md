@@ -19,7 +19,7 @@ percentiles, and what's the correct extension seam on
 - Read `lib/Service/EndpointService.php`'s `enforceInboundRateLimit()` /
   `recordInboundThrottle()` / `handleRequest()` (the RateLimit-header
   choke point).
-- Read the `call_log` schema block in `lib/Settings/openconnector_register.json`
+- Read the `call_log` schema block in `lib/Settings/integriq_register.json`
   and the outbound `responseTime` write site in `CallService::buildResponseData()`.
 - Read `openspec/specs/openconnector-storage-migration/spec.md` to confirm
   `call_log` is now an OpenRegister object (not the legacy `lib/Db/CallLog.php`
@@ -30,7 +30,7 @@ percentiles, and what's the correct extension seam on
 - Read `lib/Service/ApprovalService.php` and the archived
   `2026-07-15-hitl-approval-rule-action` `approval-workflow` spec in full to
   find a subject-agnostic (non-FlowToken) approval seam.
-- Read `lib/Observability/OpenConnectorMetricsProvider.php` and
+- Read `lib/Observability/IntegriqMetricsProvider.php` and
   `src/manifest.json`'s `observability.metrics` block to find the declarative
   vs. escape-hatch split for Prometheus gauges.
 - Read `lib/Settings/register.d/hitl-approval-rule-action.json` and
@@ -91,8 +91,8 @@ percentiles, and what's the correct extension seam on
    within a group — so it cannot be expressed by the declarative
    `tableCount`/`objectCount`/`orAvailable` `source.kind` vocabulary. This is
    exactly the situation `circuit_breaker_state` already solved: it uses
-   `source.kind: "provider"`, resolved to `OpenConnectorMetricsProvider`
-   (`OCA\OpenRegister\AppHost\IMetricsProvider::openconnector` container
+   `source.kind: "provider"`, resolved to `IntegriqMetricsProvider`
+   (`OCA\OpenRegister\AppHost\IMetricsProvider::integriq` container
    alias). Latency percentiles will use the same escape hatch.
 
 5. **The register fragment mechanism (ADR-037,
@@ -100,7 +100,7 @@ percentiles, and what's the correct extension seam on
    and deep-merge onto an existing schema's `properties`** —
    `99-source-secrets-writeonly.json` deep-merges `writeOnly: true` onto five
    existing `source` properties without touching the monolith. This is the
-   documented reason to avoid editing `openconnector_register.json` directly
+   documented reason to avoid editing `integriq_register.json` directly
    (a `SchemaMapper` `$ref`-resolution bug on re-parse). The new
    `api_product`/`api_product_subscription` schemas and the three new
    `call_log` fields (`product`, `endpoint`, `responseTime`) will all ship in

@@ -72,7 +72,7 @@
     listener via `IEventDispatcher::addServiceListener()` ONLY when
     `IAppManager::isEnabledForAnyUser('workflowengine') === true`, wrapped in `try/catch (\Throwable)`
     mirroring the existing Tables/Forms gate in `registerNextcloudEventTriggers()`
-  - GIVEN `workflowengine` disabled or `IAppManager` resolution throwing WHEN OpenConnector boots THEN no
+  - GIVEN `workflowengine` disabled or `IAppManager` resolution throwing WHEN Integriq boots THEN no
     registration occurs, no exception propagates, and no error-level log is written
 - [ ] Implement
 - [ ] Test
@@ -102,7 +102,7 @@
       feature-detection gating (registered when enabled, skipped when disabled, no throw when
       `IAppManager` resolution fails)
 - [ ] Newman/Postman tests for new/changed API endpoints — N/A, no new REST endpoints are introduced
-- [ ] Browser tests (Playwright MCP) for UI changes — N/A, no new OpenConnector frontend surface; the three
+- [ ] Browser tests (Playwright MCP) for UI changes — N/A, no new Integriq frontend surface; the three
       operations render inside NC core's own Flow editor, which owns its own test coverage
 - [ ] All tests pass (`composer test`)
 

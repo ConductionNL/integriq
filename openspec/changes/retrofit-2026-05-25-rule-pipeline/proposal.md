@@ -8,7 +8,7 @@ Bucket 2b cluster `rule-pipeline` (no capability owner).
 ## Motivation
 
 The endpoint rule engine is core platform behaviour with no spec coverage. Per
-ADR-002 it is an openconnector-local concept (no OpenRegister equivalent), so it
+ADR-002 it is an integriq-local concept (no OpenRegister equivalent), so it
 needs a foundational capability spec under `openspec/specs/`. This is the first
 of two shared-`EndpointService` clusters; the endpoint dispatch / caching half
 is covered separately by the `endpoint-runtime` cluster.

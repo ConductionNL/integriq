@@ -1,13 +1,13 @@
 # Proposal: retry-and-circuit-breaker-policies
 
 ## Summary
-Add a configurable retry policy (max attempts, backoff strategy, jitter, retryable HTTP codes/timeouts) and a generalized circuit breaker to `CallService`'s outbound HTTP dispatch, extend the dead-letter/replay pattern already shipped for events to per-item synchronization failures, and correct/harden cron-sweep isolation in `JobService`. This closes the gap between OpenConnector and competitor iPaaS reliability features (n8n per-node retries/error triggers, Camel/NiFi DLQ, Workato enterprise error handling) called out in issue #863, and verifies/documents the fixes already shipped for #1005 (one throwing job aborting the whole cron pass) and #1006 (cross-job session-identity bleed).
+Add a configurable retry policy (max attempts, backoff strategy, jitter, retryable HTTP codes/timeouts) and a generalized circuit breaker to `CallService`'s outbound HTTP dispatch, extend the dead-letter/replay pattern already shipped for events to per-item synchronization failures, and correct/harden cron-sweep isolation in `JobService`. This closes the gap between Integriq and competitor iPaaS reliability features (n8n per-node retries/error triggers, Camel/NiFi DLQ, Workato enterprise error handling) called out in issue #863, and verifies/documents the fixes already shipped for #1005 (one throwing job aborting the whole cron pass) and #1006 (cross-job session-identity bleed).
 
 ## Motivation
 Today, outbound calls have no generic retry policy — `CallService` only does source-level rate-limit bookkeeping (synthetic 409/429 `CallLog`s) with no attempt/backoff loop, and the only circuit breaker in the codebase lives entirely inside `PdokConnector` (APCu-backed, single global key, not reusable by any other Source). Synchronization item failures (mapping/write errors for one source object) are not isolated: `SynchronizationService::processSynchronizationObject()` is called in an un-guarded `foreach` inside `synchronizeExternToIntern()` — one item's exception aborts the entire sync pass for every remaining object, with no captured record of what failed or a way to replay just that item. Event delivery already has a full dead-letter/replay UI and backoff schedule (`openconnector-dead-letter-replay`, `openconnector-event-retry-hardening`) but nothing analogous exists for synchronization data. This is table-stakes reliability tooling other iPaaS/integration platforms ship natively.
 
 ## Affected Projects
-- [x] Project: `openconnector` — RetryPolicy schema fields, generalized circuit breaker in `CallService`, per-source breaker state + manual trip/reset endpoints, sync-item dead-letter schema + replay endpoints + UI, cron isolation verification/hardening in `JobService`, new Prometheus breaker metric.
+- [x] Project: `integriq` — RetryPolicy schema fields, generalized circuit breaker in `CallService`, per-source breaker state + manual trip/reset endpoints, sync-item dead-letter schema + replay endpoints + UI, cron isolation verification/hardening in `JobService`, new Prometheus breaker metric.
 
 ## Scope
 
@@ -15,7 +15,7 @@ Today, outbound calls have no generic retry policy — `CallService` only does s
 - `RetryPolicy` config object stored on the `source` schema (`retryPolicy`: maxAttempts, backoffStrategy `fixed|exponential`, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout), with an optional per-`synchronization` override (`retryPolicyOverride`) merged in by the caller via `$config['retryPolicy']` on `CallService::call()`.
 - Retry loop enforced centrally in `CallService` around the existing single-attempt `dispatchRequest()`, honouring the resolved policy (source default, synchronization override, or built-in default when neither is configured).
 - Circuit breaker generalized into `CallService`, keyed per-Source (not global like `PdokConnector`'s), state persisted on the `source` OR object (`circuitBreakerState`, `circuitBreakerFailureCount`, `circuitBreakerOpenedAt`, `circuitBreakerLastProbeAt`) so it survives across PHP-FPM workers and cron processes — closed/open/half-open state machine mirroring `PdokConnector`'s existing threshold/cooldown/probe shape.
-- Breaker state surfaced in the Source detail UI (badge + failure count + cooldown countdown) and via a new `openconnector_circuit_breaker_state` Prometheus gauge.
+- Breaker state surfaced in the Source detail UI (badge + failure count + cooldown countdown) and via a new `integriq_circuit_breaker_state` Prometheus gauge.
 - Manual trip/reset admin endpoints (`POST .../sources/{id}/circuit-breaker/trip` and `/reset`) for the "manually trigger circuit breaker for a failing upstream" user story.
 - New `sync_item_dead_letter` OR schema + `SynchronizationsController` endpoints (list/detail/replay/discard, singular + bulk) reusing the `openconnector-dead-letter-replay` UI/API pattern, capturing failed per-object mapping/write attempts instead of aborting the whole sync pass.
 - Per-item isolation in `SynchronizationService::synchronizeExternToIntern()`'s object loop: a `try/catch` around `processSynchronizationObject()` that captures the failure to `sync_item_dead_letter` and continues to the next object.
@@ -36,15 +36,15 @@ None.
 
 ## Impact
 - `lib/Service/CallService.php` — retry loop + circuit breaker integration around `dispatchRequest()`.
-- `lib/Settings/openconnector_register.json` — `source.retryPolicy`, `source.circuitBreakerState`/`circuitBreakerFailureCount`/`circuitBreakerOpenedAt`/`circuitBreakerLastProbeAt`, `synchronization.retryPolicyOverride`, new `sync_item_dead_letter` schema.
+- `lib/Settings/integriq_register.json` — `source.retryPolicy`, `source.circuitBreakerState`/`circuitBreakerFailureCount`/`circuitBreakerOpenedAt`/`circuitBreakerLastProbeAt`, `synchronization.retryPolicyOverride`, new `sync_item_dead_letter` schema.
 - `lib/Service/SynchronizationService.php` — per-item try/catch + dead-letter capture in `synchronizeExternToIntern()`.
 - New `lib/Service/SyncItemDeadLetterService.php`, new controller endpoints (likely additions to `SynchronizationsController` or a new `SyncDeadLetterController`), new Vue sub-view under `src/` Synchronizations section.
-- `lib/Controller/MetricsController.php` — new `openconnector_circuit_breaker_state` gauge.
+- `lib/Controller/MetricsController.php` — new `integriq_circuit_breaker_state` gauge.
 - `lib/Service/JobService.php` — test coverage only (behavior already correct); no functional change expected unless review surfaces a residual gap.
 - Spec deltas: `http-call-engine`, `synchronization-engine`, `job-scheduling`, `dead-letter-replay`, `prometheus-metrics`.
 
 ## Cross-Project Dependencies
-None. This is a self-contained OpenConnector change; no other apps-extra project consumes these new endpoints or schema fields directly.
+None. This is a self-contained Integriq change; no other apps-extra project consumes these new endpoints or schema fields directly.
 
 ## Risks
 

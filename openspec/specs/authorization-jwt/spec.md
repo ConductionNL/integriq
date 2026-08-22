@@ -5,7 +5,7 @@ status: done
 # authorization-jwt Specification
 
 ## Purpose
-Authorizes inbound API requests against OpenConnector endpoints using consumer-registered credentials. It verifies JWT bearer tokens against a consumer's registered public key and algorithm, supports HTTP Basic, OAuth-session, and API-key authorization schemes, maps a successful caller to a Nextcloud user session, and injects CORS response headers with a credentials guard for cross-origin callers.
+Authorizes inbound API requests against Integriq endpoints using consumer-registered credentials. It verifies JWT bearer tokens against a consumer's registered public key and algorithm, supports HTTP Basic, OAuth-session, and API-key authorization schemes, maps a successful caller to a Nextcloud user session, and injects CORS response headers with a credentials guard for cross-origin callers.
 
 @e2e exclude backend JWT authorization service (token verification, no browser UI) — covered by PHPUnit/Newman
 
@@ -16,7 +16,7 @@ Authorizes inbound API requests against OpenConnector endpoints using consumer-r
 unserialize it via JWS compact serialization, and verify the signature using a JWK
 built from the issuer consumer's `authorizationConfiguration.publicKey` /
 `authorizationConfiguration.algorithm`. The issuer (`iss` claim) MUST be resolved by
-querying the openconnector `consumer` schema in OR via `ObjectService::findAll`.
+querying the integriq `consumer` schema in OR via `ObjectService::findAll`.
 Supported algorithms are HS256/HS384/HS512 (HMAC), RS256/RS384/RS512 (PKCS#1), and
 PS256/PS384/PS512 (PSS). On every failure path the method MUST throw
 `AuthenticationException` with a non-empty `message` and a `details` array that names
@@ -222,7 +222,7 @@ does not carry `HTTP_ORIGIN`, the response MUST be returned unchanged.
 #### Notes
 
 - The method echoes any request `Origin` value back as-is — there is no allow-list of
-  acceptable origins. This is wide open by design (openconnector is meant to be reached
+  acceptable origins. This is wide open by design (integriq is meant to be reached
   cross-origin), but operators relying on origin filtering need to add an upstream
   gate. Observed-but-suspicious; flagged.
 - The `$users` parameter on the controller-style middleware does not exist here — CORS

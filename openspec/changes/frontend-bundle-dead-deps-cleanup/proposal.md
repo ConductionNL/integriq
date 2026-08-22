@@ -5,7 +5,7 @@ depends_on: []
 
 ## Why
 
-Three `package.json` dependency issues inflate openconnector's install size and
+Three `package.json` dependency issues inflate integriq's install size and
 `node_modules` footprint with weight the bundle never uses or duplicates what
 `@conduction/nextcloud-vue` already ships:
 
@@ -14,7 +14,7 @@ Three `package.json` dependency issues inflate openconnector's install size and
   --include=*.js --include=*.vue` returns no matches. Per fleet convention
   (`feedback_shared-deps.md`: "apexcharts from nc-vue, fortawesome NOT"), charting
   should come from `@conduction/nextcloud-vue`, which already bundles `apexcharts@^4.7.0`
-  / `vue-apexcharts@^1.7.0` (`nextcloud-vue/package.json:80,90`) — openconnector's own
+  / `vue-apexcharts@^1.7.0` (`nextcloud-vue/package.json:80,90`) — integriq's own
   copies are pure dead weight in `npm install` and the dependency tree, and if anyone
   ever does start using charts here without noticing the nc-vue copy, webpack would
   bundle **two different major versions of apexcharts** (3.x app-local + 4.x via

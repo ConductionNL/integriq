@@ -8,19 +8,19 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector ships 16+ Pinia store modules under `src/store/modules/` — one per
+Integriq ships 16+ Pinia store modules under `src/store/modules/` — one per
 resource family (`source.ts`, `endpoint.ts`, `mapping.ts`, `synchronization.ts`,
 `contract.ts`, `rule.ts`, `job.ts`, `log.ts`, `consumer.ts`, `event.ts`,
 `webhooks.ts`, `importExport.js`, `search.ts`, `navigation.js`, `settings.js`).
 Each store wraps a Nextcloud REST endpoint (e.g. `apiEndpoint =
-'/index.php/apps/openconnector/api/sources'` in `source.ts:8`) plus
+'/index.php/apps/integriq/api/sources'` in `source.ts:8`) plus
 resource-specific UX state (`viewMode`, `sourceLog`, `sourceLogs`,
 `sourceConfigurationKey`).
 
 The fleet-wide pattern (hydra ADR-022, project memory "Store pattern guidance")
 is for object-oriented apps to consume OpenRegister's `createObjectStore`
 exemplar rather than rolling per-resource stores. The 2026-05-03 OR-abstraction
-audit (stream 1) explicitly classified openconnector's stores as intentionally
+audit (stream 1) explicitly classified integriq's stores as intentionally
 domain-specific and recommended KEEPING them, because the resources are not
 generic register objects — they are integration-domain concepts (sources,
 endpoints, mappings) with bespoke behaviour (test runs, logs, contracts,
@@ -34,7 +34,7 @@ follow the same per-resource store pattern.
 
 The future direction once chain `openconnector-services-direct-or-usage` lands
 is the BACKEND moves to OR's `ObjectService`. The frontend stores continue to
-front the openconnector REST API, which is in turn backed by OR. The store
+front the integriq REST API, which is in turn backed by OR. The store
 layer stays intentionally connector-shaped.
 
 ## Consequences
@@ -48,10 +48,10 @@ layer stays intentionally connector-shaped.
   rather than forcing the createObjectStore generic shape.
 - Future audits should cite this ADR to skip re-flagging the pattern.
 - Cross-reference: hydra ADR-022 (apps consume OR abstractions) — the OR
-  abstraction openconnector consumes is the BACKEND service, not the store
-  layer; openconnector specialises ADR-022 for the connector-domain context.
+  abstraction integriq consumes is the BACKEND service, not the store
+  layer; integriq specialises ADR-022 for the connector-domain context.
 - Cross-reference: in-flight change
-  `openconnector/openspec/changes/openconnector-adopt-or-abstractions/`
+  `integriq/openspec/changes/openconnector-adopt-or-abstractions/`
   proposal.md §"Findings explicitly KEPT" — this ADR is the spec home for that
   KEEP finding.
 

@@ -6,13 +6,13 @@ status: proposed
 
 ## Purpose
 
-openconnector serves the public ORI 1.4 API (`/api/ori/v1/*`) on decidesk's
+integriq serves the public ORI 1.4 API (`/api/ori/v1/*`) on decidesk's
 behalf: 10 anonymous, read-only Endpoint configurations that read decidesk's
 OpenRegister data and project it into ORI/Popolo JSON-LD, reproducing
 decidesk's current `OriController`/`OriSerializer` observable behaviour as
 declarative configuration rather than a bespoke controller. decidesk retains
 ownership of the underlying data and of the configuration content; this
-capability describes the serving contract openconnector fulfils.
+capability describes the serving contract integriq fulfils.
 
 ## ADDED Requirements
 
@@ -22,7 +22,7 @@ The system MUST serve `GET /api/ori/v1/{resource}` and
 `GET /api/ori/v1/{resource}/{id}` for each of the 10 ORI resources
 (`organizations`, `persons`, `memberships`, `events`, `agendaitems`,
 `motions`, `amendments`, `voteevents`, `votes`, `reports`, `publications`) as
-openconnector Endpoint configurations carrying no `authentication` rule, so
+integriq Endpoint configurations carrying no `authentication` rule, so
 the requests are dispatched without any authentication check, matching
 decidesk's current `#[PublicPage]` posture.
 
@@ -75,7 +75,7 @@ the `publications`-specific field set), using the first present source
 property per target key (matching `OriSerializer::FIELD_RULES`/
 `PAYLOAD_FIELD_RULES` semantics), and MUST wrap collection responses in a
 `{"@context", "@type", "count", "items"}` envelope and single-item responses
-in a `{"@context", "@type", ...fields}` shape — not openconnector's default
+in a `{"@context", "@type", ...fields}` shape — not integriq's default
 `{count, results, next, previous}` pagination envelope.
 
 #### Scenario: title maps to name when name is absent
@@ -133,7 +133,7 @@ this change's design.md (Gap 2) via `endpoint-runtime` REQ-EP-010.
 
 ## Non-Functional Requirements
 
-- **Performance:** dispatch reuses openconnector's existing endpoint
+- **Performance:** dispatch reuses integriq's existing endpoint
   resolution cache (`endpoint-runtime` REQ-EP-004) — no new per-request
   OpenRegister query beyond what the default Endpoint dispatch already does.
 - **Internationalization:** ORI field names and the JSON-LD vocabulary are
@@ -145,7 +145,7 @@ this change's design.md (Gap 2) via `endpoint-runtime` REQ-EP-010.
 
 - [ ] Every scenario above passes against the parity test plan
       (`test-plan.md`) run against both `OriController` and the new
-      openconnector Endpoints, with zero response diffs.
+      integriq Endpoints, with zero response diffs.
 - [ ] REQ-ORIPUB-004 (Gap 2) is closed before the companion decidesk
       retirement change cuts the public `/api/ori/v1/*` mount over —
       documented, not silently deferred.

@@ -5,7 +5,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 ## Context
 
 `lib/Service/Helper/FlowToken.php` is a mutable value-bag passed
-through the openconnector rule pipeline. It carries four PAIRED
+through the integriq rule pipeline. It carries four PAIRED
 slots — `request`, `response`, `syncInput`, `syncOutput` — each with
 an `original` snapshot (the value as it entered the pipeline) and an
 `amended` snapshot (what subsequent rules may have rewritten). The

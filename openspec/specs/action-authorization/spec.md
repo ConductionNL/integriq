@@ -2,7 +2,7 @@
 
 ## Purpose
 
-OpenConnector's adoption of ADR-023 (action-level authorization via
+Integriq's adoption of ADR-023 (action-level authorization via
 admin-configured action/group mappings), which is owned company-wide in
 `hydra/openspec/architecture/adr-023-action-authorization.md`.
 
@@ -22,7 +22,7 @@ OpenRegister's job (ADR-022), and this app does not re-implement it.
 
 ### Requirement: The action registry is declared, seeded admin-only, and stored in IAppConfig
 
-OpenConnector SHALL declare its actions in `lib/actions.seed.json` as
+Integriq SHALL declare its actions in `lib/actions.seed.json` as
 dot-separated names (`source.test`, `synchronization.run`, `mapping.test`, …),
 each seeded with `["admin"]`, and SHALL store the live matrix as JSON in
 `IAppConfig` under app id `openconnector`, key `actions`.
@@ -33,7 +33,7 @@ change MUST NOT relax that default.
 
 #### Scenario: A fresh install starts admin-only
 
-- **GIVEN** an instance where OpenConnector has just been installed
+- **GIVEN** an instance where Integriq has just been installed
 - **WHEN** the `InitializeActions` repair step runs
 - **THEN** every action named in `lib/actions.seed.json` MUST be present in the
   stored matrix with `["admin"]` as its group list
@@ -57,7 +57,7 @@ carry their own group checks for these actions.
 
 Admin-only operations that are not actions — editing the matrix, app config,
 rebase — SHALL instead be declared at the route layer with
-`#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` and bypass this service.
+`#[AuthorizedAdminSetting(IntegriqAdmin::class)]` and bypass this service.
 
 #### Scenario: A Nextcloud admin always passes
 
@@ -100,8 +100,8 @@ rebase — SHALL instead be declared at the route layer with
 
 The admin settings panel SHALL present every declared action with its group
 list, and SHALL persist edits through `GET`/`PUT
-/apps/openconnector/api/admin/action-matrix`. Both routes SHALL be declared
-`#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`, so the framework rejects
+/apps/integriq/api/admin/action-matrix`. Both routes SHALL be declared
+`#[AuthorizedAdminSetting(IntegriqAdmin::class)]`, so the framework rejects
 a non-admin before the controller body runs.
 
 Editing the matrix is the only supported way to broaden an action.
@@ -109,7 +109,7 @@ Editing the matrix is the only supported way to broaden an action.
 #### Scenario: An administrator sees the action matrix in settings
 
 - **GIVEN** an authenticated administrator
-- **WHEN** they open Administration settings → OpenConnector
+- **WHEN** they open Administration settings → Integriq
 - **THEN** the Action authorization panel MUST render, listing the declared
   actions with their currently allowed groups
 - @e2e action-authorization::an-administrator-sees-the-action-matrix-in-settings
@@ -121,4 +121,4 @@ Editing the matrix is the only supported way to broaden an action.
 - **THEN** the framework MUST reject the request on the attribute, before the
   controller body runs
 - @e2e exclude requires a second, non-admin session — covered by
-  `tests/integration/openconnector.postman_collection.json`
+  `tests/integration/integriq.postman_collection.json`

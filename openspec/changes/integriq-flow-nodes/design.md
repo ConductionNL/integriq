@@ -1,10 +1,10 @@
-# Design: openconnector-flow-nodes
+# Design: integriq-flow-nodes
 
 ## Architecture Overview
 
 OpenRegister owns the fleet's one flow engine (ADR-065). Apps do not run graphs;
 they *contribute node types* to it and let the engine walk the graph. This
-change makes OpenConnector one of those contributors.
+change makes Integriq one of those contributors.
 
 ```
                      OpenRegister flow engine
@@ -24,7 +24,7 @@ change makes OpenConnector one of those contributors.
                     hermiq ─────────┘                │
               HermiqAgentNode                        │
                                                      │
-                    openconnector ───────────────────┘   ← THIS CHANGE
+                    integriq ────────────────────────┘   ← THIS CHANGE
                       FlowNodeListener
                         ├── SourceCallNode          (openconnector.source-call)
                         └── SynchronizationRunNode  (openconnector.synchronization-run)
@@ -42,16 +42,16 @@ change makes OpenConnector one of those contributors.
 
 | Question | Answer |
 | --- | --- |
-| Does `openconnector/lib` reference `IFlowNode`? | No — grep for `IFlowNode`, `RegisterFlowNodesEvent`, `RegisterFlowResolversEvent`, `IMcpToolProvider` returns zero hits. |
+| Does `integriq/lib` reference `IFlowNode`? | No — grep for `IFlowNode`, `RegisterFlowNodesEvent`, `RegisterFlowResolversEvent`, `IMcpToolProvider` returns zero hits. |
 | Do OpenRegister's built-in nodes make HTTP calls? | No — `Nodes/` is Filter, Loop, Merge, Router, SetFields, Stop, SubFlow, Switch, Wait. |
 | Is there a reference contributed node? | Yes — `hermiq/lib/Flow/HermiqAgentNode.php` + `HermiqFlowNodeListener.php`. |
 
-So "API calls go through OpenConnector nodes" describes nothing that exists.
+So "API calls go through Integriq nodes" describes nothing that exists.
 This design builds it.
 
 ### Version drift in this checkout
 
-The `openconnector` working copy is on branch `chore/ncvue-beta190` at
+The `integriq` working copy is on branch `chore/ncvue-beta190` at
 `info.xml` version **0.2.19**, while the app installed on the dev instance
 reports **0.3.3** (`occ app:list`). OpenRegister's checkout reads
 `0.2.17-unstable.17`. The checkout therefore **lags the deployed app by at least
@@ -78,19 +78,19 @@ Consequences that shape this document, deliberately:
 
 - **Controllers:** none. This change adds no routes and no controllers.
 - **Services:**
-  - `OCA\OpenConnector\Service\CallService` — the outbound call, unchanged.
-  - `OCA\OpenConnector\Service\BrokeredCallService` — reached transitively;
+  - `OCA\Integriq\Service\CallService` — the outbound call, unchanged.
+  - `OCA\Integriq\Service\BrokeredCallService` — reached transitively;
     never called directly by a node.
   - `OCA\OpenRegister\Service\ObjectService` — Source lookup (register
     `openconnector`, schema `source`).
-  - `OCA\OpenConnector\Service\SynchronizationService` — for the second node.
+  - `OCA\Integriq\Service\SynchronizationService` — for the second node.
 - **Mappers/Entities:** none new. Sources and CallLogs are OpenRegister
   `ObjectEntity` rows (ADR-022: no app-local reimplementation).
 - **Events/Hooks:**
   - Listener on `OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent`,
     registered in `lib/AppInfo/Application.php`.
   - Registration is guarded with `class_exists(RegisterFlowNodesEvent::class)`
-    so OpenConnector still boots when OpenRegister's flow engine is absent or
+    so Integriq still boots when OpenRegister's flow engine is absent or
     predates it — the same posture as `HermiqFlowNodeListener`.
 - **OCP interfaces used:** `IEventListener`, `IL10N`, `IURLGenerator`,
   `OCP\WorkflowEngine\IManager` (for the `SCOPE_ADMIN` / `SCOPE_USER`
@@ -145,7 +145,7 @@ added.
 ## File Structure
 
 ```
-openconnector/
+integriq/
   lib/
     AppInfo/
       Application.php                 # MODIFIED: +1 guarded listener registration
@@ -170,7 +170,7 @@ openconnector/
 `CallService` already renders the *Source's own* configuration through Twig
 (`ArrayLoader`, `renderConfiguration()`) with the *source data* as context —
 a different context and a different stage. See
-`OCA\OpenConnector\Service\CallService::renderConfiguration()` for the
+`OCA\Integriq\Service\CallService::renderConfiguration()` for the
 canonical source-config rendering; `FlowTemplate` covers the item-to-request
 substitution that has no existing implementation. If a shared item-templating
 helper lands in OpenRegister's flow package, `FlowTemplate` MUST be deleted in
@@ -238,7 +238,7 @@ than discovered in production.
 **Chosen:** yes, specified here, sequenced after `source-call`.
 
 **Rationale.** `source-call` covers "make one request and put the answer on the
-item". It does **not** cover OpenConnector's other governed outbound capability:
+item". It does **not** cover Integriq's other governed outbound capability:
 running a configured Synchronization — pagination across pages, mapping,
 contract/state tracking, `SynchronizationLog`. Expressing that as a chain of
 `source-call` steps would require the flow author to re-implement pagination and
@@ -316,11 +316,11 @@ mistaken for a synchronised object.
 Rejected: it makes the useful shape the one nobody discovers, and it doubles the
 output contract for every consumer of the node.
 
-### Decision 6: Guarded registration, so OpenConnector still boots without the flow engine
+### Decision 6: Guarded registration, so Integriq still boots without the flow engine
 
 **Chosen:** `class_exists()` guard around listener registration in
 `Application.php`, mirroring `HermiqFlowNodeListener`. OpenRegister is a hard
-runtime dependency of OpenConnector, but its *flow engine* is a newer, moving
+runtime dependency of Integriq, but its *flow engine* is a newer, moving
 surface — and the version drift documented above is exactly the situation where
 an unguarded compile-time reference to a class that is not there turns a missing
 node into a dead app.
@@ -338,7 +338,7 @@ system outside it — connection handling, retries, rate-limit headers, auth
 schemes, certificates, response decoding — is irreducibly imperative. It cannot
 be expressed as configuration because it *is* the boundary at which
 configuration stops. ADR-031's external-integration exception exists precisely
-for this class of code, and OpenConnector is the app the fleet already
+for this class of code, and Integriq is the app the fleet already
 designated to own it.
 
 **Why the exception stays narrow.** The imperative surface added here is
@@ -350,8 +350,8 @@ deliberately small and sits at the boundary only:
 | Which credential | **Declarative** — `credentialRef` → broker | administrator |
 | Which endpoint, method, payload, mapping | **Declarative** — node config in the flow document | flow author |
 | When it runs, what precedes/follows it, what happens on failure | **Declarative** — the flow document's graph and `onError` | flow author |
-| Speaking HTTP | **Imperative** — `CallService`, already existing | OpenConnector |
-| Adapting HTTP to the item model | **Imperative** — this change, ~2 classes | OpenConnector |
+| Speaking HTTP | **Imperative** — `CallService`, already existing | Integriq |
+| Adapting HTTP to the item model | **Imperative** — this change, ~2 classes | Integriq |
 
 Everything *consuming* this stays declarative. hydra-console's triage flow gets
 no new PHP: it gains a step in a JSON flow document. The same holds for every
@@ -494,7 +494,7 @@ manual so nothing fires by itself.
 {
   "@self": { "register": "openregister", "schema": "flow", "slug": "demo-outbound-call" },
   "id": "00000000-0000-0000-0000-000000000000",
-  "name": "Demo — call an API through OpenConnector",
+  "name": "Demo — call an API through Integriq",
   "description": "Shows a flow making a governed outbound call. Safe to delete.",
   "trigger": { "type": "manual" },
   "steps": [
@@ -583,7 +583,7 @@ Source; `synchronization-run` after it, reusing the shared owner/error helpers.
   under author-named keys); the exact grammar settles at implementation and a
   deviation there is a spec update, not a silent divergence.
 - **`spec_ref` paths in `tasks.md`.** **Confirmed:** they stay pointed at the
-  change directory (`openspec/changes/openconnector-flow-nodes/specs/...`) until
+  change directory (`openspec/changes/integriq-flow-nodes/specs/...`) until
   this change is archived, at which point they move to the canonical
   `openspec/specs/` home.
 
@@ -603,6 +603,6 @@ the omissions read as decisions rather than gaps.
 | Artifact | Decision | Reason |
 | --- | --- | --- |
 | `contract.md` | **Written** | Originally skipped on the grounds that the template documents HTTP endpoints and an SLA, and this change adds no HTTP surface. Overridden by the PO on 2026-07-27: the cross-project interface here is the **node contract itself** — node ids, per-node config schema, item in/out shapes, error semantics, versioning — and it has a named first consumer (hermiq's `hydra-console-agent-leaves`, whose triage agentflow's terminal label-write step calls `openconnector.source-call`). The artifact adapts the template to a non-HTTP contract and states per section where and why it deviates, rather than filling endpoint/SLA boilerplate that does not apply. |
-| `discovery.md` | Skipped | Discovery exists to resolve uncertainty about API availability or feasibility before committing to a spec. That research was already done and its result is recorded verbatim: the `IFlowNode` / `RegisterFlowNodesEvent` / `FlowNodeRegistry` contract exists and is in use by hermiq; OpenConnector contributes nothing; none of the nine built-in nodes calls out. See the verification table in Architecture Overview and the Motivation section of `proposal.md`. There is no open feasibility question left to time-box. |
+| `discovery.md` | Skipped | Discovery exists to resolve uncertainty about API availability or feasibility before committing to a spec. That research was already done and its result is recorded verbatim: the `IFlowNode` / `RegisterFlowNodesEvent` / `FlowNodeRegistry` contract exists and is in use by hermiq; Integriq contributes nothing; none of the nine built-in nodes calls out. See the verification table in Architecture Overview and the Motivation section of `proposal.md`. There is no open feasibility question left to time-box. |
 | `migration.md` | Skipped | No schema change, no new table or column, no `Version*Date*.php`. The change is additive code plus seed data. Deployment and rollback are documented in the Migration Plan section above and in `proposal.md`'s Rollback Strategy. |
 | `test-plan.md` | Skipped | Its job — pre-defining what "done" means by mapping scenarios to test cases — is already served without duplication: `specs/flow-nodes/spec.md` carries 32 GIVEN/WHEN/THEN scenarios across 9 requirements and a 28-item Acceptance Criteria list, and every task in `tasks.md` carries its own acceptance criteria plus an `- [ ] Test` gate. A separate mapping document would restate those and then drift from them. |

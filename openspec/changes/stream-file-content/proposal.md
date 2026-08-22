@@ -7,7 +7,7 @@ kind: code
 ## Summary
 Reduce peak memory usage during file synchronization by streaming downloaded
 file content through a disk-backed temporary stream instead of buffering the
-entire file in a PHP string. Today OpenConnector's `fetchFile` pulls a whole
+entire file in a PHP string. Today Integriq's `fetchFile` pulls a whole
 file into memory as a string and then makes a second full copy via
 `base64_decode`, so a single large file is held 2–3× in memory. This change
 streams the true binary-download path into a `php://temp` handle (spilling to
@@ -15,14 +15,14 @@ disk past ~2 MB) and passes the stream resource through to OpenRegister's
 `FileService`, whose underlying `putContent()` already accepts a resource.
 
 This change spans **two repositories**:
-- **OpenConnector** (consumer / driver): rewrites `fetchFile` to stream.
+- **Integriq** (consumer / driver): rewrites `fetchFile` to stream.
 - **OpenRegister** (provider): relaxes the hard `string $content` type on
   `FileService::saveFile`/`addFile` and their handlers to accept
   `string|resource`, while remaining fully backward compatible with existing
   string callers.
 
 ## Motivation
-File synchronization is the most memory-intensive path in OpenConnector.
+File synchronization is the most memory-intensive path in Integriq.
 `SynchronizationService::fetchFile` currently does
 `$body = ...getContents()` (or reads the whole call-log body into a string),
 then `base64_decode(...)` produces a second full copy, and the string is then
@@ -37,10 +37,10 @@ exactly where files are largest.
 
 ## Capabilities
 - `synchronization-files` — synchronization file-fetch and persistence behaviour
-  in OpenConnector (new capability spec created by this change).
+  in Integriq (new capability spec created by this change).
 
 ## Affected Projects
-- [ ] Project: `openconnector` — rewrite `SynchronizationService::fetchFile` to
+- [ ] Project: `integriq` — rewrite `SynchronizationService::fetchFile` to
   stream the binary-download path into a `php://temp` handle and pass the
   stream resource to `FileService`; close the stream after save.
 - [ ] Project: `openregister` — relax `string $content` → `string|resource` on
@@ -70,7 +70,7 @@ exactly where files are largest.
   not pulled in here.
 
 ## Approach
-In OpenConnector `fetchFile`, replace the "read entire body into a string"
+In Integriq `fetchFile`, replace the "read entire body into a string"
 step for binary downloads with a disk-backed temp stream
 (`$tmp = fopen('php://temp/maxmemory:2097152', 'r+')`), have the HTTP client
 write the response body into it (Guzzle `sink` request option), rewind, and
@@ -85,7 +85,7 @@ None. Uses PHP built-in `php://temp` streams and Guzzle's existing `sink`
 option; `OCP\Files\File::putContent()` already supports resources.
 
 ## Impact
-- OpenConnector: `lib/Service/SynchronizationService.php` (`fetchFile`).
+- Integriq: `lib/Service/SynchronizationService.php` (`fetchFile`).
 - OpenRegister: `lib/Service/FileService.php`,
   `lib/Service/File/CreateFileHandler.php`,
   `lib/Service/File/UpdateFileHandler.php`.
@@ -94,11 +94,11 @@ option; `OCP\Files\File::putContent()` already supports resources.
   affected only in that their type contract widens (no behaviour change).
 
 ## Cross-Project Dependencies
-OpenConnector depends on the widened OpenRegister `FileService` signature to
+Integriq depends on the widened OpenRegister `FileService` signature to
 accept a resource. The exact before/after signatures and the backward-compat
 guarantee are captured in `contract.md`. The OpenRegister type relaxation MUST
-land (or be co-deployed) before OpenConnector begins passing a resource;
-because the change is additive (union widening), a string-only OpenConnector
+land (or be co-deployed) before Integriq begins passing a resource;
+because the change is additive (union widening), a string-only Integriq
 continues to work against a widened OpenRegister, so deploy order is flexible.
 
 ## Risks
@@ -122,9 +122,9 @@ bodies) up front and keep that branch on the existing string path; unit test
 asserts the base64-in-JSON path still works unchanged.
 
 ## Rollback Strategy
-Revert the two commits (OpenConnector `fetchFile` and OpenRegister
+Revert the two commits (Integriq `fetchFile` and OpenRegister
 `FileService`/handlers). Because the OpenRegister change only widens a type
-(string remains accepted), reverting OpenRegister after reverting OpenConnector
+(string remains accepted), reverting OpenRegister after reverting Integriq
 is safe and non-breaking. No data migration is involved.
 
 ## Open Questions

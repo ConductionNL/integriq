@@ -14,7 +14,7 @@ information) to build a synchronization source/target on top of it?
   for any existing Tables integration, PHP class references
   (`OCA\Tables\*`), or prior research notes — none found; this is greenfield.
 - Confirmed the existing feature-detection idiom used elsewhere in
-  OpenConnector for optional Nextcloud-app dependencies:
+  Integriq for optional Nextcloud-app dependencies:
   `HealthController` (`lib/Controller/HealthController.php`) and
   `SourceMappingService`/`OrganisationBridgeService`/`BrokeredCallService`
   all guard on `IAppManager::isInstalled()` /
@@ -81,7 +81,7 @@ information) to build a synchronization source/target on top of it?
   `{columnId, value}` — a friendlier read shape useful for the editor's
   live preview, but writes still require the `columnId`-keyed shape).
 - Auth: the OpenAPI `securitySchemes` declare `basic_auth` (HTTP Basic) and
-  `bearer_auth` (HTTP Bearer) — the same two mechanisms OpenConnector's
+  `bearer_auth` (HTTP Bearer) — the same two mechanisms Integriq's
   `Source` entity already supports for any `api`-type source. No
   Tables-specific auth scheme exists; a Tables `Source` is configured
   exactly like any other HTTP source (app-password Basic Auth, or a

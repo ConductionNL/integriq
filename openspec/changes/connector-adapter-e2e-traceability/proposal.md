@@ -5,7 +5,7 @@ depends_on: []
 
 ## Why
 
-Three of openconnector's largest capability specs — `stuf-adapter` (58 scenarios,
+Three of integriq's largest capability specs — `stuf-adapter` (58 scenarios,
 `openspec/specs/stuf-adapter/spec.md`), `dso-omgevingsloket` (52 scenarios,
 `openspec/specs/dso-omgevingsloket/spec.md`), and `ibabs-notubiz-connector` (46
 scenarios, `openspec/specs/ibabs-notubiz-connector/spec.md`) — carry **zero** `@e2e`

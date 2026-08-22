@@ -1,13 +1,13 @@
 # nextcloud-forms-connector Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - nextcloud-forms-connector (this change)
 
 ## Purpose
 
-Lets OpenConnector read Nextcloud Forms submissions as a synchronization
+Lets Integriq read Nextcloud Forms submissions as a synchronization
 source, and map a Forms submission's answers (resolved by question, not raw
 numeric position) into an outbound call to an external system on the
 already-merged Forms submission trigger (`nextcloud-event-triggers`

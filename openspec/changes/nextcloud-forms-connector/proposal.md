@@ -31,7 +31,7 @@ the synchronization engine) — no new external dependency.
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — new `FormsClientInterface` + OCS client,
+- [x] Project: `integriq` — new `FormsClientInterface` + OCS client,
   `nextcloud-form` synchronization source type, Forms-answer mapping/resolution
   helper, a new `event_subscription.action.kind = 'mapping'` outbound dispatch
   path, and sync-editor-ui field-mapping helper prefilled from a form's
@@ -73,7 +73,7 @@ the synchronization engine) — no new external dependency.
   expose `POST .../submissions`, but per the original brief this direction
   is explicitly excluded, and there is no user story motivating it in this
   change — deferred to a follow-up if a concrete need emerges.
-- Building/editing forms in OpenConnector.
+- Building/editing forms in Integriq.
 - Changing `NextcloudFormsEventListener` or `nextcloud-event-triggers`
   REQ-004's event shape — see design.md for why the outbound path fetches
   the submission independently rather than relying on the event payload.
@@ -116,7 +116,7 @@ triad.
 
 ## Cross-Project Dependencies
 
-None outside `openconnector`. Depends on the `forms` app being installed
+None outside `integriq`. Depends on the `forms` app being installed
 for the feature to activate (soft dependency, degrades to hidden/disabled
 otherwise) — same posture as `tables-bridge`'s `tables` dependency.
 

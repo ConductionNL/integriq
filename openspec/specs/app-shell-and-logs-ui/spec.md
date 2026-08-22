@@ -5,7 +5,7 @@ status: done
 # app-shell-and-logs-ui Specification
 
 ## Purpose
-Provides the OpenConnector application shell and log viewer UI. The root component resolves the current user's effective permissions (injecting an admin marker when applicable) and supplies an app-scoped translate adapter, a modal host opens test-mapping, add-endpoint-rule and run/test dialogs in response to a shared event bus, and a unified log index page lists, paginates, and drills into call, endpoint, job, and sync logs.
+Provides the Integriq application shell and log viewer UI. The root component resolves the current user's effective permissions (injecting an admin marker when applicable) and supplies an app-scoped translate adapter, a modal host opens test-mapping, add-endpoint-rule and run/test dialogs in response to a shared event bus, and a unified log index page lists, paginates, and drills into call, endpoint, job, and sync logs.
 
 @e2e exclude Vue component-internal method/computed behaviour (permissions admin-marker, translateForApp adapter, modal-bus subscribe/unsubscribe, LogIndex config/refresh/pagination/openDetail) reverse-engineered from App.vue/ModalHost.vue/LogIndex.vue — unit-level (vitest), not browser-observable; the app shell render + log sub-page renders are covered by manifest-pages e2e
 
@@ -23,7 +23,7 @@ translate adapter that closes over the app id for the design-system components.
 
 #### Scenario: Translate adapter
 - WHEN a design-system component calls the injected translate function with a key
-- THEN `translateForApp` returns the openconnector-scoped translation (or the key on miss)
+- THEN `translateForApp` returns the integriq-scoped translation (or the key on miss)
 
 Notes: `App.vue` (2).
 
@@ -50,7 +50,7 @@ Specifically, `SourceLogs`, `EndpointLogs`, `JobLogs`, `SynchronizationLogs`,
 and `CloudEventLogs` MUST each be declared in the manifest
 (`src/manifest.json` / `src/manifest.d/*.json`) with a `{ register, schema }`
 config, resolved by `@conduction/nextcloud-vue`'s shared `CnLogsPage`
-component. OpenConnector MUST NOT ship its own bespoke log-index Vue component
+component. Integriq MUST NOT ship its own bespoke log-index Vue component
 or per-`logType` pinia store wiring for this purpose — that responsibility
 belongs to the shared nc-vue component per ADR-036.
 
@@ -60,7 +60,7 @@ belongs to the shared nc-vue component per ADR-036.
   `SynchronizationLogs`, and `CloudEventLogs` as `"type": "logs"` pages
 - **WHEN** a user navigates to any of these five routes
 - **THEN** the page renders via `CnLogsPage` reading directly from the
-  declared OR `{register, schema}` — no openconnector-owned wrapper component
+  declared OR `{register, schema}` — no integriq-owned wrapper component
   is in the render path
 
 #### Scenario: No dead per-logType wrapper code ships in the repo

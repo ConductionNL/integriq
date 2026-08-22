@@ -4,7 +4,7 @@ retrofit: true
 
 # rule-editor-ui
 
-The Vue surface for authoring OpenConnector rules: the rule detail page, the
+The Vue surface for authoring Integriq rules: the rule detail page, the
 JsonLogic condition-tree editor, the action-type configuration panel with its
 per-action-type forms, the rule edit modal, and the dialogs that attach existing
 rules to an endpoint. This spec describes the observed behaviour of the

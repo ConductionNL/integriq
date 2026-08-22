@@ -1,17 +1,17 @@
 # flow-nodes Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
-- `openconnector-flow-nodes`
+- `integriq-flow-nodes`
 
 ## Purpose
 
-OpenConnector contributes node types to OpenRegister's flow engine so a flow can
+Integriq contributes node types to OpenRegister's flow engine so a flow can
 make a **governed** outbound API call. The fleet has one flow engine (ADR-065);
-apps do not run graphs, they contribute nodes to it. Today OpenConnector
+apps do not run graphs, they contribute nodes to it. Today Integriq
 contributes none, and none of OpenRegister's nine built-in nodes makes an HTTP
-call — so "API calls go through OpenConnector nodes" describes a capability that
+call — so "API calls go through Integriq nodes" describes a capability that
 does not exist. This capability creates it: `openconnector.source-call` performs
 one request per item through a configured Source and `CallService`, and
 `openconnector.synchronization-run` runs a configured Synchronization as a step.
@@ -21,13 +21,13 @@ brokered credentials. Per ADR-031 the node itself is the listed
 external-integration exception to declarative-first; everything consuming it
 stays a flow document.
 
-@e2e exclude backend flow-node contribution and outbound call execution — no OpenConnector browser UI is added; palette visibility is rendered by OpenRegister's flow editor and covered there. Covered by PHPUnit plus a live flow run against the seeded demo Source.
+@e2e exclude backend flow-node contribution and outbound call execution — no Integriq browser UI is added; palette visibility is rendered by OpenRegister's flow editor and covered there. Covered by PHPUnit plus a live flow run against the seeded demo Source.
 
 ## ADDED Requirements
 
-### Requirement: OpenConnector contributes flow nodes to OpenRegister's flow engine
+### Requirement: Integriq contributes flow nodes to OpenRegister's flow engine
 
-OpenConnector MUST register its node types on OpenRegister's
+Integriq MUST register its node types on OpenRegister's
 `RegisterFlowNodesEvent`, implementing
 `OCA\OpenRegister\Service\Flow\IFlowNode` in full: `getId()`,
 `getDisplayName()`, `getDescription()`, `getIcon()`, `isAvailableForScope()`,
@@ -38,7 +38,7 @@ Node type identifiers MUST be namespaced with the owning app —
 registry's collision refusal is a boot-time error rather than a silent
 displacement by load order.
 
-Registration MUST be guarded so that OpenConnector still boots when
+Registration MUST be guarded so that Integriq still boots when
 OpenRegister's flow engine classes are absent (an older OpenRegister, or one
 installed without the flow engine). The guard MUST NOT be a caught-and-ignored
 error at call time; it MUST prevent the compile-time reference from being
@@ -49,24 +49,24 @@ through `IL10N`, so Dutch and English are both available (ADR-007).
 
 #### Scenario: Nodes appear in the flow palette
 
-- GIVEN OpenRegister with its flow engine and OpenConnector are both installed and enabled
+- GIVEN OpenRegister with its flow engine and Integriq are both installed and enabled
 - WHEN OpenRegister builds its node palette by dispatching `RegisterFlowNodesEvent`
 - THEN the palette contains a node with id `openconnector.source-call`
 - AND the palette contains a node with id `openconnector.synchronization-run`
 - AND each carries a non-empty display name, description and icon URL
 
-#### Scenario: OpenConnector boots without OpenRegister's flow engine
+#### Scenario: Integriq boots without OpenRegister's flow engine
 
 - GIVEN an instance where `OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent` does not exist
-- WHEN OpenConnector's `Application::register()` runs
-- THEN OpenConnector boots without error
+- WHEN Integriq's `Application::register()` runs
+- THEN Integriq boots without error
 - AND no flow-node listener is registered
 - AND no fatal error is written to the log
 
 #### Scenario: Duplicate node id is refused at registration
 
 - GIVEN another app has already registered a node whose id is `openconnector.source-call`
-- WHEN OpenConnector registers its node on the registry
+- WHEN Integriq registers its node on the registry
 - THEN registration is refused with an error naming the colliding id
 - AND neither node is silently replaced by the other
 
@@ -361,7 +361,7 @@ OpenRegister's convention, and MUST return false for any other value.
 
 ### Requirement: A synchronization-run node runs a configured synchronization as a step
 
-OpenConnector MUST also contribute `openconnector.synchronization-run`, a node
+Integriq MUST also contribute `openconnector.synchronization-run`, a node
 that runs an already-configured Synchronization as one flow step, so a flow
 author does not re-implement pagination, mapping or contract tracking as a chain
 of individual call steps.
@@ -481,11 +481,11 @@ engine does not advance the marking for a suspended step, so on resume this node
 while the steps that already completed do not — which is what makes starvation impossible
 rather than merely less likely.
 
-This is the OpenConnector-side use of OpenRegister's "a node MUST be able to resume from where
+This is the Integriq-side use of OpenRegister's "a node MUST be able to resume from where
 it stopped" engine requirement (`openregister/openspec/specs/flow-engine/spec.md`). That
 requirement lives in OpenRegister's repository and cannot be named by a repository-relative
 `@spec` path from here; this requirement is its consumer-side counterpart and is what
-OpenConnector's own code is annotated against.
+Integriq's own code is annotated against.
 
 The mechanism matters more than it looks. `checkRateLimit()` throws BEFORE the first request
 of a synchronisation, so a refused shard never starts and has no page to resume from — the
@@ -498,7 +498,7 @@ repositories.
 
 The suspension's `resumeAt` MUST come from the source's own `X-RateLimit-Reset`, which
 `CallService::sourceRateLimit()` already reads and stores, and MUST be clamped at both ends
-against a header OpenConnector does not control: a reset already in the past MUST be floored to
+against a header Integriq does not control: a reset already in the past MUST be floored to
 a real wait rather than making the run due immediately and spinning against a source that is
 still refusing it, and an absurd reset — the shape an epoch/milliseconds mix-up takes — MUST be
 capped rather than parking the run effectively forever. A source that reports no usable reset
@@ -550,7 +550,7 @@ identical to one that is merely slow.
   fan-out is bounded by `config.maxItems` (default 1000): memory held by the
   emitted list is therefore bounded by an author-visible number rather than by
   the remote system's page count.
-- **Accessibility:** no OpenConnector UI is added by this change, so there is no
+- **Accessibility:** no Integriq UI is added by this change, so there is no
   new interactive surface to audit. The node's display name, description and
   icon MUST be meaningful when rendered in OpenRegister's flow palette; the icon
   MUST NOT be the sole carrier of the node's meaning (WCAG 2.1 AA 1.1.1), which
@@ -563,12 +563,12 @@ identical to one that is merely slow.
   target a host that is not a configured Source's `location`.
 - **Observability:** every call made by a node MUST produce the same CallLog the
   call engine already writes, so a flow-originated call is auditable by exactly
-  the means an ordinary OpenConnector call is.
+  the means an ordinary Integriq call is.
 
 ## Acceptance Criteria
 
 - [ ] `openconnector.source-call` and `openconnector.synchronization-run` appear in OpenRegister's flow palette when both apps are enabled
-- [ ] OpenConnector boots cleanly on an instance whose OpenRegister has no flow engine
+- [ ] Integriq boots cleanly on an instance whose OpenRegister has no flow engine
 - [ ] A seeded demo flow runs end to end and puts a real response on the item
 - [ ] The node calls a configured Source and passes the resolved Source object to `CallService::call()`
 - [ ] A configuration containing an absolute URL as `endpoint` is rejected at save

@@ -45,7 +45,7 @@ a Source-to-external-API call already uses.
 
 Rationale:
 - ADR-008 / `openconnector-direct-or-usage` establish OpenRegister as the
-  required persistence layer for every OpenConnector entity; app-local
+  required persistence layer for every Integriq entity; app-local
   reimplementation of storage (which `IAppConfig` effectively is here — a
   flat key/value store) is the pattern this change must NOT introduce.
 - `IAppConfig` stores scalar key→value pairs per app; it has no native
@@ -56,7 +56,7 @@ Rationale:
   serialisation into a single config key — exactly the kind of
   app-local-reimplementation ADR-008 forbids.
 - OR objects give environments a slug (consistent with every other
-  OpenConnector entity — sources, endpoints, jobs — for free), standard
+  Integriq entity — sources, endpoints, jobs — for free), standard
   CRUD via `ObjectService`, and RBAC through the same schema-lock mechanism
   already used for `source` (admin-only writes, `99-source-lockdown.json`
   precedent).
@@ -222,7 +222,7 @@ writes a `promotion_audit` object.
 ```
 
 ## Database Changes
-Two new OpenRegister schemas added to `lib/Settings/openconnector_register.json`
+Two new OpenRegister schemas added to `lib/Settings/integriq_register.json`
 (REQ-A-001/REQ-A-005 conventions from `openconnector-register-schema`):
 - `environment` (mutable config schema — `appendOnly: false`, `immutable: false`):
   `name`, `slug`, `role` (enum `source`|`target`|`both`), `sourceRef` (UUID,
@@ -244,7 +244,7 @@ Two new OpenRegister schemas added to `lib/Settings/openconnector_register.json`
   `BrokeredCallService` (transitively, via `CallService::call()`),
   `ActionAuthService`.
 - Mappers/Entities: none new — `environment` and `promotion_audit` are plain
-  OR objects via `ObjectService`, consistent with every other OpenConnector
+  OR objects via `ObjectService`, consistent with every other Integriq
   schema (no bespoke Doctrine mapper).
 - Events/Hooks: none new.
 
@@ -290,7 +290,7 @@ lib/
   Service/
     PromotionService.php
   Settings/
-    openconnector_register.json          (add environment, promotion_audit schemas)
+    integriq_register.json          (add environment, promotion_audit schemas)
   actions.seed.json                      (add environment.manage, environment.promote)
 appinfo/
   routes.php                             (add /api/environments*, /api/promotions*)
@@ -326,7 +326,7 @@ No seed rows — append-only log schema, populated only by real promotions
 - Reusing `CallService::call()` for promotion dispatch means promotion
   inherits Source-call semantics (retry, rate limit, CallLog) that were
   designed for arbitrary external APIs, not specifically for
-  instance-to-instance OpenConnector calls — accepted because the
+  instance-to-instance Integriq calls — accepted because the
   alternative (new dispatch code) duplicates a large, already-hardened
   pipeline for a narrower use case.
 - Diff preview requires a live round-trip to the target environment before

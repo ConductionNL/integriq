@@ -50,7 +50,7 @@ HTTP client to the SaaS vendor.
   `Atlassian\\*`, `Notion\\*`, `Twinfield\\*`, `Exact\\*`,
   `Afas\\*`
 - **THEN** no such imports SHALL exist; SaaS access MUST route
-  through openconnector by integration slot slug.
+  through integriq by integration slot slug.
 
 ### Requirement: Each SPC adapter manifest entry SHALL declare a fixed capability vocabulary across record-crud, event-subscribe, search-lookup, and bulk operations (REQ-SPC-002)
 
@@ -99,10 +99,10 @@ manifest validator MUST reject any unknown capability literal.
 
 Per ADR-005 (security), SPC adapters MUST default to OAuth 2.0
 authorization-code flow with PKCE. The OAuth flow MUST be
-hosted by openconnector — no sibling app MUST open an OAuth
+hosted by integriq — no sibling app MUST open an OAuth
 browser window, hold an OAuth client secret, or refresh tokens.
-Per ADR-019 §"External integrations route through OpenConnector",
-the openconnector source is the canonical credential home.
+Per ADR-019 §"External integrations route through Integriq",
+the integriq source is the canonical credential home.
 
 The manifest entry's `authModes[]` MUST list `oauth2` first
 when supported, and MAY include the alternate auth modes
@@ -115,7 +115,7 @@ in the manifest entry with `"deprecated": true` and an ADR-005
 exception reference.
 
 When the adapter supports `oauth-userlevel` per REQ-SPC-002,
-per-user token storage MUST also live in openconnector via the
+per-user token storage MUST also live in integriq via the
 existing `Source` extension for per-user credentials; sibling
 apps reference the per-user token by NC user id + source slug,
 they MUST NOT cache the token themselves.
@@ -128,7 +128,7 @@ they MUST NOT cache the token themselves.
   references like `*_OAUTH_CLIENT_SECRET` in `.env` examples
   or appinfo/info.xml descriptions
 - **THEN** no such references SHALL exist; OAuth client
-  credentials live only in openconnector source records.
+  credentials live only in integriq source records.
 
 #### Scenario: A SaaS source supports OAuth as the default auth mode
 
@@ -150,7 +150,7 @@ Salesforce accounts, Notion pages, ServiceNow tickets):
 | `recordKey` | string | The remote system's human-readable key (e.g. `PROJ-1234`, `OPP-5678`) |
 | `actorLabel` | string or null | Best-available "owner" label for the record (assignee, owner, last-modified-by) |
 
-Per ADR-022, the normalisation logic lives in openconnector;
+Per ADR-022, the normalisation logic lives in integriq;
 sibling apps consume only the envelope shape. The federation
 MUST allow mixed-category queries (DCC + SPC + EWC results
 in one query) — `sourceSlug` distinguishes the source and the
@@ -179,7 +179,7 @@ type `com.conduction.saas.<sub-category>.<event-kind>` (e.g.
 `com.conduction.saas.crm.opportunity-stage-changed`,
 `com.conduction.saas.chat-collab.message-mentioned`).
 
-Openconnector MUST NOT author a new event table for SPC
+Integriq MUST NOT author a new event table for SPC
 events — every event lands in the existing `CallLog` (for
 raw transport audit) and in the CloudEvent dispatcher (for
 sibling-app reaction). Sibling apps subscribe through the
@@ -191,10 +191,10 @@ audit-trail-immutable per ADR-022.
 
 - **GIVEN** a Jira source declaring `event-subscribe`
 - **WHEN** Jira POSTs an issue-updated webhook
-- **THEN** openconnector MUST normalise to a CloudEvent of type
+- **THEN** integriq MUST normalise to a CloudEvent of type
   `com.conduction.saas.work-management.issue-status-changed`;
   any subscribed sibling app MUST receive it; no SPC-specific
-  event table SHALL be created in openconnector.
+  event table SHALL be created in integriq.
 
 ### Requirement: Mutative bulk operations SHALL be opt-in per source AND gated by an admin-configured action authorisation per ADR-023 (REQ-SPC-006)
 
@@ -211,7 +211,7 @@ be:
    omitting the action name MUST cause the adapter to throw
    `MutativeBulkActionDisabledException` on invocation.
 2. Gated by an admin-configured action-to-group mapping per
-   ADR-023 — the openconnector admin settings MUST list the
+   ADR-023 — the integriq admin settings MUST list the
    bulk action and let the operator bind it to a Nextcloud
    group; the adapter MUST verify membership at invocation
    time.
@@ -234,10 +234,10 @@ long-term storage MUST go through docudesk per ADR-022.
 Per REQ-DCC-006 (same shape across the family), when an SPC
 adapter exposes `attachment-fetch`, the bytes MUST be returned
 as a stream to the caller without local persistence in
-openconnector. Sibling apps that need to retain the attachment
-MUST route it to docudesk's file API per ADR-022. Openconnector
+integriq. Sibling apps that need to retain the attachment
+MUST route it to docudesk's file API per ADR-022. Integriq
 MUST NOT write attachment bytes to its app data directory or to
-any openconnector-owned table.
+any integriq-owned table.
 
 #### Scenario: A workflow stores a Jira attachment as a docudesk file
 
@@ -246,8 +246,8 @@ any openconnector-owned table.
 - **WHEN** the workflow persists the file
 - **THEN** the file bytes MUST be POSTed to docudesk; the OR
   object that references the attachment MUST carry a docudesk
-  URI; no file bytes SHALL be written under openconnector's
-  app data or any openconnector-owned table.
+  URI; no file bytes SHALL be written under integriq's
+  app data or any integriq-owned table.
 
 ### Requirement: Individual per-vendor adapters are explicitly out of scope for this spec — each adapter MUST ship in its own `add-openconnector-{slug}-adapter` change (REQ-SPC-008)
 
@@ -266,7 +266,7 @@ contract.
   `openspec/changes/add-openconnector-microsoft365-adapter/`
 - **WHEN** its proposal.md is inspected
 - **THEN** the `Depends on` line MUST include
-  `saas-productivity-connectors (openconnector)`; the proposal
+  `saas-productivity-connectors (integriq)`; the proposal
   MUST cite REQ-SPC-002 (capabilities), REQ-SPC-003 (OAuth
   default), REQ-SPC-005 (CloudEvent normalisation),
   REQ-SPC-006 (bulk-action authorisation), and REQ-SPC-007

@@ -17,7 +17,7 @@ move into the OpenRegister credential broker (Doriath), leaving only a
   organisation-scoped broker credential, verifies the secret round-trips, and
   only then writes the nested `{credentialRef}` and nulls the inline value. It is
   idempotent, per-source/per-field isolated, and fails closed.
-- The `occ openconnector:migrate-inline-secrets` command drives the planner
+- The `occ integriq:migrate-inline-secrets` command drives the planner
   (`--dry-run`) and the executor (real run), with `--json` for machines.
 - A repair step + the real run persist the **Phase D gate**
   (`openconnector / inline_secrets_clean`) so a later change may remove the

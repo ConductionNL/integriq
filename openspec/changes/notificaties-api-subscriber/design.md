@@ -1,7 +1,7 @@
 # Design: notificaties-api-subscriber
 
 ## Context
-OpenConnector already runs a full internal CloudEvents bus (`events-cloudevents` spec, `EventService`):
+Integriq already runs a full internal CloudEvents bus (`events-cloudevents` spec, `EventService`):
 OR object lifecycle changes and NC-native events (`nextcloud-event-triggers`) are normalized into an
 `event` OR-object, fanned out to matching `event_subscription`s, and delivered via
 `action.kind ∈ {webhook, synchronization, job}` (REQ-008), with retry/backoff/dead-letter/replay for free.
@@ -127,7 +127,7 @@ controller's header-name and scheme MUST be made configurable per-abonnement bef
 tracked as a task, not designed away here.
 
 ### Decision 5 — Abonnement lifecycle is an OR object, not app-config
-`notificaties_abonnement` is a new schema in `lib/Settings/openconnector_register.json` (same register as
+`notificaties_abonnement` is a new schema in `lib/Settings/integriq_register.json` (same register as
 `event_subscription`/`consumer`/`source`), following the existing lifecycle-status convention used by
 `bankfeed_connection` (`pending → active → expired/revoked`): `pending` (not yet confirmed registered) →
 `active` (registered, remote API accepted it) → `error` (registration/verify/delete call failed — retains
@@ -200,7 +200,7 @@ lib/
     NotificatiesSubscriberService.php      # NEW — abonnement lifecycle + notification normalization
     EventService.php                        # + dispatchNotificatiesAction() switch case (REQ-008 extension)
   Settings/
-    openconnector_register.json             # + notificaties_abonnement schema;
+    integriq_register.json             # + notificaties_abonnement schema;
                                              #   event_subscription.action.kind + 'notificaties' enum value
 src/
   views/NotificatiesAbonnement/

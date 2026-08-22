@@ -4,7 +4,7 @@
 
 ### Task 1: Register descriptor — notificaties_abonnement schema + action.kind enum
 - **spec_ref**: `openspec/changes/notificaties-api-subscriber/migration.md`
-- **files**: `lib/Settings/openconnector_register.json`
+- **files**: `lib/Settings/integriq_register.json`
 - **acceptance_criteria**:
   - GIVEN the app is upgraded WHEN the register-sync repair step runs THEN `notificaties_abonnement`
     appears in the `openconnector` register's schemas
@@ -122,7 +122,7 @@
 - **spec_ref**: `openspec/changes/notificaties-api-subscriber/specs/notificaties-api-connector/spec.md#requirement-abonnementen-config-ui-req-008`
 - **files**: `src/views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue`, `src/modals/NotificatiesAbonnement/NotificatiesAbonnementForm.vue`, manifest/route registration
 - **acceptance_criteria**:
-  - GIVEN an authenticated admin WHEN they navigate to `/apps/openconnector/notificaties/abonnementen`
+  - GIVEN an authenticated admin WHEN they navigate to `/apps/integriq/notificaties/abonnementen`
     THEN the Abonnementen index page renders with content visible
   - GIVEN the index page is loaded WHEN the user clicks "Add Item" THEN the creation modal opens with a
     kanalen `NcSelect` carrying a non-empty `inputLabel`

@@ -2,7 +2,7 @@
 
 ## Summary
 
-OpenConnector already lets an administrator define individual inbound
+Integriq already lets an administrator define individual inbound
 `Endpoint`s and gate them behind a `Consumer`'s authentication, per-consumer
 rate limit, and quota (`consumer-management`, `endpoint-runtime`). It has no
 concept of an **API Product** — a named, versioned bundle of endpoints that a
@@ -29,12 +29,12 @@ gateway as a product.
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — new `api_product` and
+- [x] Project: `integriq` — new `api_product` and
   `api_product_subscription` OR schemas, extended `call_log` schema, extended
   `InboundRateLimitService` call site (not the service itself),
   `EndpointService` dispatch (deprecation headers + product-scoped inbound
   logging), `ApprovalService` (one new subscription-approval creation
-  method), `OpenConnectorMetricsProvider` (latency percentile gauges), SPA
+  method), `IntegriqMetricsProvider` (latency percentile gauges), SPA
   manifest (`API Products` page).
 
 ## Scope
@@ -103,13 +103,13 @@ None. No new packages, libraries, or external services.
 
 ## Impact
 
-- **Schema**: `openconnector_register.json` gains `product`/`endpoint`/
+- **Schema**: `integriq_register.json` gains `product`/`endpoint`/
   `responseTime` on `call_log` (register.d fragment). New `api_product`,
   `api_product_subscription` schemas.
 - **Backend**: `lib/Service/EndpointService.php` (tier-policy resolution,
   deprecation headers, product-scoped inbound logging),
   `lib/Service/ApprovalService.php` (one new method),
-  `lib/Observability/OpenConnectorMetricsProvider.php` (percentile gauges),
+  `lib/Observability/IntegriqMetricsProvider.php` (percentile gauges),
   `src/manifest.json` (declarative `calls_total` groupBy extension + new
   metric descriptor).
 - **Frontend**: new `ApiProducts` (index) and `ApiProductDetail` (custom)
@@ -119,7 +119,7 @@ None. No new packages, libraries, or external services.
 
 ## Cross-Project Dependencies
 
-None. This is entirely within OpenConnector; the API Products surface is
+None. This is entirely within Integriq; the API Products surface is
 consumed by external API clients, not by other apps-extra projects.
 
 ## Risks
@@ -151,7 +151,7 @@ cache, so they cannot collide or double-count against each other.
 
 Revert the `register.d` fragment (drops the two new schemas and the three
 new `call_log` fields — additive fields, no data loss for existing rows),
-revert the `EndpointService`/`ApprovalService`/`OpenConnectorMetricsProvider`
+revert the `EndpointService`/`ApprovalService`/`IntegriqMetricsProvider`
 changes, and remove the manifest page/menu entries. No endpoint that is not
 attached to an `api_product` observes any behaviour change, so rollback is
 safe on a live instance with active traffic.

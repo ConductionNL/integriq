@@ -1,7 +1,7 @@
 # Contract: stream-file-content
 
 This change alters a **public PHP service interface in OpenRegister** that
-OpenConnector consumes across the app boundary via the DI container
+Integriq consumes across the app boundary via the DI container
 (`OCA\OpenRegister\Service\FileService`). The interface is a PHP method
 surface, not a REST endpoint, so this contract documents the exact method
 signatures (before/after) and the backward-compatibility guarantee rather than
@@ -23,7 +23,7 @@ runtime spelling PHP forces on us; the enforced contract remains
 `string|resource`.
 
 ## Consumers
-- `openconnector`: `SynchronizationService::fetchFile` resolves
+- `integriq`: `SynchronizationService::fetchFile` resolves
   `OCA\OpenRegister\Service\FileService` from the container and calls
   `saveFile(...)` and `addFile(...)` to persist synchronized files. After this
   change it passes a **stream resource** (disk-backed `php://temp`) as
@@ -114,17 +114,17 @@ string it keeps the existing behaviour exactly.
 
 ## Versioning
 - No API/route/schema version bump. This is an additive PHP type relaxation.
-- OpenConnector's `openspec/manifest.yaml` declares `or_min_version: "^v0.2.10"`;
+- Integriq's `openspec/manifest.yaml` declares `or_min_version: "^v0.2.10"`;
   the OpenRegister release that ships the widened signature becomes the new
   effective minimum for the streaming behaviour. Because a string-only
-  OpenConnector still works against the widened OpenRegister, and a widened
+  Integriq still works against the widened OpenRegister, and a widened
   OpenRegister still accepts strings, the two apps can deploy in either order.
 
 ## Breaking Change Policy
 This is explicitly non-breaking. If a future change ever narrows the type back
 to `string`-only (e.g. dropping resource support), that WOULD be breaking and
 MUST be coordinated: announced in the OpenRegister changelog, gated behind an
-`or_min_version` bump in OpenConnector's manifest, and paired with a
+`or_min_version` bump in Integriq's manifest, and paired with a
 consumer-side migration off resources first.
 
 ## SLA

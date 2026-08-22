@@ -3,9 +3,9 @@
 ## Purpose
 TBD - created by archiving change portal-idp-broker. Update Purpose after archive.
 ## Requirements
-### Requirement: Broker boundary — openconnector owns the government IdP conversation
+### Requirement: Broker boundary — integriq owns the government IdP conversation
 
-Openconnector SHALL host the SAML Service Provider and/or OIDC Relying Party
+Integriq SHALL host the SAML Service Provider and/or OIDC Relying Party
 for the DigiD, eHerkenning, and eIDAS-inbound conversations (typically via a
 commercial broker), and SHALL be the only component in the fleet that
 processes raw IdP assertions. Consuming apps SHALL receive only the verified
@@ -21,24 +21,24 @@ attribute not projected into the envelope.
 
 - GIVEN a live eHerkenning broker configuration for organisation `gemeente-x`
 - WHEN a user completes eHerkenning authentication at level EH3 for a portal initiated by portaliq
-- THEN openconnector verifies the assertion and issues a subject envelope with `sub` = the KvK number, `subType` = `kvk`, `provider` = `eherkenning`, `organisation` = `gemeente-x`, and `trust` = `substantial`
+- THEN integriq verifies the assertion and issues a subject envelope with `sub` = the KvK number, `subType` = `kvk`, `provider` = `eherkenning`, `organisation` = `gemeente-x`, and `trust` = `substantial`
 - AND portaliq receives only the envelope, never the SAML assertion
 
 #### Scenario: DigiD login never exposes the BSN downstream
 
 - GIVEN a live DigiD connection whose assertion carries a BSN-derived identity
-- WHEN openconnector processes the callback and issues the subject envelope
+- WHEN integriq processes the callback and issues the subject envelope
 - THEN the envelope's `sub` is a pseudonym with `subType` = `bsn-pseudonym`
 - AND the raw BSN appears in no envelope claim, no log line, no OpenRegister object, and no error message
 
 ### Requirement: BSN pseudonymisation at the broker edge
 
-For DigiD authentications, openconnector SHALL convert the citizen identity to
+For DigiD authentications, integriq SHALL convert the citizen identity to
 a pseudonym at the broker edge before any other processing. When polymorphic
 pseudonymisation (eToegang polymorphe pseudoniemen) is contracted with the
-broker, openconnector SHALL use the decrypted per-service-provider pseudonym
+broker, integriq SHALL use the decrypted per-service-provider pseudonym
 and the BSN SHALL never materialise in the stack. When polymorphie is not
-contracted, openconnector SHALL compute `HMAC-SHA256(salt_organisation, bsn)`
+contracted, integriq SHALL compute `HMAC-SHA256(salt_organisation, bsn)`
 in memory during callback processing only, using a per-organisation salt from
 the encrypted credential store (ADR-016), and SHALL discard the BSN before the
 callback request completes. The same subject SHALL map to the same pseudonym
@@ -52,7 +52,7 @@ different organisations.
 - GIVEN a broker contract that includes polymorphic pseudonymisation
 - WHEN a DigiD assertion is processed
 - THEN the envelope `sub` is the per-service-provider pseudonym delivered by the polymorphie decryption
-- AND no BSN is ever present in openconnector's memory beyond the broker library boundary
+- AND no BSN is ever present in integriq's memory beyond the broker library boundary
 
 #### Scenario: Salted-HMAC fallback pseudonym when polymorphie is not contracted
 
@@ -63,7 +63,7 @@ different organisations.
 
 ### Requirement: Trust levels map to the eIDAS-aligned vocabulary
 
-Openconnector SHALL map provider assurance levels to the fleet trust
+Integriq SHALL map provider assurance levels to the fleet trust
 vocabulary `low | substantial | high` (portaliq's `TRUST_ORDER`) exactly as
 follows: DigiD Basis → `low`, DigiD Midden → `low`, DigiD Substantieel →
 `substantial`, DigiD Hoog → `high`, eHerkenning EH2/EH2+ → `low`, eHerkenning
@@ -90,13 +90,13 @@ side).
 #### Scenario: Unknown assurance level is rejected fail-closed
 
 - GIVEN a verified assertion whose assurance level is absent or not in the mapping table
-- WHEN openconnector processes the callback
+- WHEN integriq processes the callback
 - THEN no subject envelope is issued and the login fails with an auditable error
 - AND the failure reason does not leak assertion contents
 
 ### Requirement: One-time signed subject envelope handoff
 
-Openconnector SHALL hand the subject envelope to the consuming app via a
+Integriq SHALL hand the subject envelope to the consuming app via a
 one-time opaque code (at least 256 bits of entropy, single-use, TTL of at most
 60 seconds) returned through the browser redirect, redeemed server-to-server
 at an exchange endpoint authenticated with a per-consumer shared secret
@@ -133,7 +133,7 @@ contract v2 A6).
 
 ### Requirement: Replay, audience confusion, and IdP-initiated flows are rejected
 
-Openconnector SHALL reject: (a) any SAML Response or OIDC callback whose
+Integriq SHALL reject: (a) any SAML Response or OIDC callback whose
 `InResponseTo`/`state` does not match an outstanding authentication request it
 initiated — IdP-initiated (unsolicited) flows are not supported by design;
 (b) any assertion whose `AudienceRestriction`/`aud` does not match the
@@ -147,7 +147,7 @@ redeemed in another tenant's context.
 
 #### Scenario: Unsolicited IdP-initiated response is refused
 
-- GIVEN a syntactically valid, correctly signed SAML Response that openconnector never requested
+- GIVEN a syntactically valid, correctly signed SAML Response that integriq never requested
 - WHEN it is POSTed to the assertion consumer endpoint
 - THEN it is rejected because no outstanding request matches its `InResponseTo`
 - AND no envelope is issued
@@ -155,7 +155,7 @@ redeemed in another tenant's context.
 #### Scenario: Wrong-audience assertion is refused
 
 - GIVEN a valid assertion issued for a different Service Provider EntityID
-- WHEN openconnector verifies it
+- WHEN integriq verifies it
 - THEN verification fails on the audience restriction and no envelope is issued
 
 #### Scenario: Cross-tenant envelope redemption is refused
@@ -221,9 +221,9 @@ TTL ≤ 60s, consumer session TTL per the consumer's own policy (portaliq: 2h,
 revocable via the `portalSession` jti record), and the envelope `trust` frozen
 into the session — a level step-up SHALL require a new authentication flow,
 never an in-place trust mutation. User-initiated logout SHALL always end the
-local consumer session; where the broker contract supports it, openconnector
+local consumer session; where the broker contract supports it, integriq
 SHOULD propagate SP-initiated single logout, and IdP-initiated SLO received by
-openconnector SHOULD propagate a revocation signal to consumers.
+integriq SHOULD propagate a revocation signal to consumers.
 
 @e2e exclude Spec-first: SLO depth is vendor-dependent (Open Decision D1); only local logout exists today on the portaliq side.
 

@@ -31,7 +31,7 @@
       not `src/components/`) renders `type: 'select'` + `optionsFrom` as a
       picker, resolving a stored uuid to the object's NAME. nc-vue#732, which
       would have rendered the `reference` type, is closed with or#2698.
-- [x] 0.4 openconnector: register the Synchronization dialog as the editor for
+- [x] 0.4 integriq: register the Synchronization dialog as the editor for
       `synchronization-run` (node fields output/maxItems/onError alongside);
       Source picker for `source-call`. Live: `src/main.js` calls
       `registerFlowNodeEditor` for `src/modals/v2/SynchronizationNodeEditor.vue`.
@@ -132,7 +132,7 @@
 
 - [x] 3.1 Generator: Synchronization entity → generated flow (named,
       disabled-until-reviewed), task-6.2 precedent; contracts untouched.
-      `SynchronizationFlowGenerator` + `occ openconnector:synchronization-to-flow`.
+      `SynchronizationFlowGenerator` + `occ integriq:synchronization-to-flow`.
       It REFUSES anything the decomposed flow cannot express rather than
       emitting a flow that would do less. Two gaps found and recorded on the
       PR: the engine cannot branch per item (`FlowTokenRouter::takenExits()`
@@ -149,8 +149,8 @@
       already under Automation. Reversing a documented decision to satisfy one
       line of design.md — on pages 3.4 removes anyway — needs a human call.
 - [x] 3.3 Jobs → trigger-schedule flows; Rules → trigger-object + switch.
-      `JobToFlowGenerator` + `occ openconnector:job-to-flow`, and
-      `RuleToFlowGenerator` + `occ openconnector:rule-to-flow <rule> <endpoint>`.
+      `JobToFlowGenerator` + `occ integriq:job-to-flow`, and
+      `RuleToFlowGenerator` + `occ integriq:rule-to-flow <rule> <endpoint>`.
       Both follow the 3.1 pattern: refusal-first, `enabled: false`, nothing
       persisted, the source entity's id recorded in the description. A Job has
       no cron — it has an `interval` in SECONDS measured from the END of the

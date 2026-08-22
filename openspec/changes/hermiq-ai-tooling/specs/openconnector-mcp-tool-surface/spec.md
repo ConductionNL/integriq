@@ -9,34 +9,34 @@ attribution). REQ-MCP-102 and REQ-MCP-104 are unchanged. This delta ADDS REQ-MCP
 
 ## MODIFIED Requirements
 
-### Requirement: REQ-MCP-101 — OpenConnector's MCP tool surface MUST be declared on the schema via the `x-openregister-mcp` dialect and MUST NOT be hand-written in PHP, except for curated action tools
+### Requirement: REQ-MCP-101 — Integriq's MCP tool surface MUST be declared on the schema via the `x-openregister-mcp` dialect and MUST NOT be hand-written in PHP, except for curated action tools
 
-OpenConnector MUST NOT ship an MCP tool provider or an `IMcpToolProvider` implementation
+Integriq MUST NOT ship an MCP tool provider or an `IMcpToolProvider` implementation
 (ADR-063); every **read over a schema** MUST remain derived by OpenRegister from the per-schema
-`configuration["x-openregister-mcp"]` block, producing `openconnector.{schema}.{verb}` ids, and a
-schema without the dialect MUST produce no derived tools. OpenConnector MAY ship curated
-`#[McpTool]`-annotated methods on `lib/Mcp/OpenConnectorAgentTools.php`, discovered through
-`lib/Mcp/OpenConnectorScannableServices.php` registered under
-`OCA\OpenRegister\Mcp\IMcpScannableServices::openconnector`, and MUST do so only for the action
+`configuration["x-openregister-mcp"]` block, producing `integriq.{schema}.{verb}` ids, and a
+schema without the dialect MUST produce no derived tools. Integriq MAY ship curated
+`#[McpTool]`-annotated methods on `lib/Mcp/IntegriqAgentTools.php`, discovered through
+`lib/Mcp/IntegriqScannableServices.php` registered under
+`OCA\OpenRegister\Mcp\IMcpScannableServices::integriq`, and MUST do so only for the action
 tools and the payload-free read enumerated in REQ-MCP-105. Every curated tool id MUST be
-2-segment (`openconnector.{toolName}`) so it can never shadow a derived 3-segment id.
+2-segment (`integriq.{toolName}`) so it can never shadow a derived 3-segment id.
 
 #### Scenario: the read surface is still schema-declared, not coded
 - **WHEN** the tool list is enumerated
-- **THEN** every `openconnector.{schema}.{verb}` tool comes from the register dialect
+- **THEN** every `integriq.{schema}.{verb}` tool comes from the register dialect
 - **AND** `lib/Mcp/` contains no `IMcpToolProvider` implementation and no derived-read reimplementation
 - @e2e exclude backend catalogue/DI shape — covered by PHPUnit
 
 #### Scenario: curated action tools are discovered, not registered as a provider
 - **GIVEN** the app is installed and enabled
-- **WHEN** the container is asked for `IMcpToolProvider::openconnector`
+- **WHEN** the container is asked for `IMcpToolProvider::integriq`
 - **THEN** no service exists under that alias
-- **AND** `IMcpScannableServices::openconnector` resolves to `OpenConnectorScannableServices` returning `[OpenConnectorAgentTools::class]`
+- **AND** `IMcpScannableServices::integriq` resolves to `IntegriqScannableServices` returning `[IntegriqAgentTools::class]`
 - @e2e exclude backend DI registration — covered by PHPUnit bootstrap assertions
 
-### Requirement: REQ-MCP-103 — OpenConnector MUST NOT expose any MCP object-write verb on any schema, because its objects are the integration control plane; action execution is admitted only under approval and attribution
+### Requirement: REQ-MCP-103 — Integriq MUST NOT expose any MCP object-write verb on any schema, because its objects are the integration control plane; action execution is admitted only under approval and attribution
 
-No `create`, `update`, or `delete` verb MUST be declared on any openconnector schema, and no
+No `create`, `update`, or `delete` verb MUST be declared on any integriq schema, and no
 curated tool MUST create, update, or delete a `source`, `endpoint`, `mapping`, `rule`,
 `consumer`, `event_subscription`, `synchronization`, `synchronization_contract`, `job`, or any
 log object — including toggling `job.isEnabled`, which is a persistent control-plane mutation
@@ -47,9 +47,9 @@ through curated action tools (REQ-MCP-105), and only because both re-enabling co
 mechanically: a server-verified human approval on every effectful path (REQ-MCP-107) and
 agent-principal attribution in the audit trail (REQ-MCP-108).
 
-#### Scenario: no openconnector object-write tool is derivable or curated
+#### Scenario: no integriq object-write tool is derivable or curated
 - **WHEN** the MCP tool list is enumerated
-- **THEN** no `openconnector.*.create`, `openconnector.*.update`, or `openconnector.*.delete` tool exists
+- **THEN** no `integriq.*.create`, `integriq.*.update`, or `integriq.*.delete` tool exists
 - **AND** no curated tool accepts an argument that names a schema property to write
 - @e2e exclude backend catalogue assertion — covered by PHPUnit
 
@@ -63,13 +63,13 @@ agent-principal attribution in the audit trail (REQ-MCP-108).
 
 ### Requirement: REQ-MCP-105 — Exactly six curated tools MUST exist, each an action over existing configuration or a payload-free read, with honest scope and reach
 
-`OpenConnectorAgentTools` MUST expose exactly: `openconnector.runSynchronization` (scope
-`update`, reach `external`, approval-gated), `openconnector.testSynchronization` (scope `read`,
-reach `external`, confirm-classified), `openconnector.testSource` (scope `read`, reach
-`external`, confirm-classified), `openconnector.replayDeadLetters` (scope `update`, reach
-`external`, approval-gated, batch of ids), `openconnector.discardDeadLetters` (scope `delete`,
+`IntegriqAgentTools` MUST expose exactly: `integriq.runSynchronization` (scope
+`update`, reach `external`, approval-gated), `integriq.testSynchronization` (scope `read`,
+reach `external`, confirm-classified), `integriq.testSource` (scope `read`, reach
+`external`, confirm-classified), `integriq.replayDeadLetters` (scope `update`, reach
+`external`, approval-gated, batch of ids), `integriq.discardDeadLetters` (scope `delete`,
 reach `instance`, `destructiveHint: true`, approval-gated, batch of ids), and
-`openconnector.listDeadLetters` (scope `read`, reach `instance`). Reach MUST use Hermiq's
+`integriq.listDeadLetters` (scope `read`, reach `instance`). Reach MUST use Hermiq's
 `ToolReachResolver` vocabulary; every tool that calls a remote system MUST declare `external`.
 `runSynchronization` MUST NOT expose `forceDeletion` (the deletion-ratio-guard override stays a
 human, UI-only act) and MUST run with the sync-safety guardrails unchanged. The following actions
@@ -80,12 +80,12 @@ import/export (deferred — each needs its own risk argument).
 
 #### Scenario: the curated surface is exactly six tools with the declared metadata
 - **WHEN** the tool list is enumerated
-- **THEN** exactly six 2-segment `openconnector.*` tools exist beside the 16 derived reads
+- **THEN** exactly six 2-segment `integriq.*` tools exist beside the 16 derived reads
 - **AND** their scope, reach, and hints match this requirement (run/test/replay = `external`)
 - @e2e exclude backend catalogue metadata — covered by PHPUnit
 
 #### Scenario: `forceDeletion` is unreachable through MCP
-- **GIVEN** an agent calls `openconnector.runSynchronization` with a `forceDeletion` argument
+- **GIVEN** an agent calls `integriq.runSynchronization` with a `forceDeletion` argument
 - **WHEN** arguments are validated
 - **THEN** the call is rejected as invalid arguments and nothing is staged
 - @e2e exclude backend argument validation — covered by PHPUnit
@@ -105,13 +105,13 @@ pass; neither may be bypassed by the other.
 
 #### Scenario: the matrix denies before anything is staged
 - **GIVEN** a granting user whose groups lack `synchronization.run`
-- **WHEN** an agent invokes `openconnector.runSynchronization`
+- **WHEN** an agent invokes `integriq.runSynchronization`
 - **THEN** `requireAction()` denies with the forbidden error and no proposal is staged
 - @e2e exclude backend authorization — covered by PHPUnit
 
 #### Scenario: gate parity with the UI path
 - **GIVEN** a synchronization whose test run the UI path refuses for a fixture user
-- **WHEN** the same user's agent invokes `openconnector.testSynchronization`
+- **WHEN** the same user's agent invokes `integriq.testSynchronization`
 - **THEN** the tool returns the same domain error and no remote call is made
 - @e2e exclude backend gate parity — covered by PHPUnit against the same fixture
 
@@ -121,7 +121,7 @@ pass; neither may be bypassed by the other.
 validates ids, passes REQ-MCP-106, and stages a proposal (tool, target ids, requesting agent,
 granting user) without executing anything; phase 2 executes only when presented with an approval
 token the server verifies was minted for a human approver distinct from the acting agent,
-unexpired, and bound to that exact staged batch. The gate MUST be enforced in OpenConnector's tool
+unexpired, and bound to that exact staged batch. The gate MUST be enforced in Integriq's tool
 path so a non-Hermiq MCP client without a token can never execute. The batch is the approval
 unit; the approver MUST see the full id list, and reviews dead-letter payloads in the existing
 DeadLetters UI, never through the agent. `testSynchronization`, `testSource`, and
@@ -169,7 +169,7 @@ approver B approved, on behalf of user C", never as a purely human act.
 
 ### Requirement: REQ-MCP-109 — The dead-letter read MUST be payload-free, and no tool may return or accept payload content
 
-`openconnector.listDeadLetters` MUST be the only dead-letter-reading tool and MUST return per
+`integriq.listDeadLetters` MUST be the only dead-letter-reading tool and MUST return per
 row exactly: `id`, `store` (`sync`/`event`), the `synchronization` or `subscription` reference,
 `phase`, `error` (truncated to a fixed length), `attempts`/`retryCount`, `status`, `created`,
 `replayedAt`, `discardedAt`. It MUST NOT return `payload` or `lastResponse`, and no curated tool
@@ -180,11 +180,11 @@ does not control; what reaches the agent's context can steer the agent, so it mu
 
 #### Scenario: triage works on metadata alone
 - **GIVEN** pending dead letters with upstream error responses
-- **WHEN** an agent calls `openconnector.listDeadLetters` filtered by synchronization and status
+- **WHEN** an agent calls `integriq.listDeadLetters` filtered by synchronization and status
 - **THEN** each row carries the projection above and no `payload` or `lastResponse` key
 - @e2e exclude backend projection key-set assertion — covered by PHPUnit
 
 #### Scenario: no derived dead-letter tool exists
 - **WHEN** the tool list is enumerated
-- **THEN** no `openconnector.sync_item_dead_letter.*` or `openconnector.event_message.*` tool exists
+- **THEN** no `integriq.sync_item_dead_letter.*` or `integriq.event_message.*` tool exists
 - @e2e exclude backend catalogue assertion — covered by PHPUnit

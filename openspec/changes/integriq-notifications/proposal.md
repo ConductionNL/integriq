@@ -3,15 +3,15 @@ kind: config
 depends_on: []
 ---
 
-# openconnector — schema-declared notifications
+# integriq — schema-declared notifications
 
 ## Why
 
-OpenConnector is the fleet's integration gateway / sync hub. Its strongest
+Integriq is the fleet's integration gateway / sync hub. Its strongest
 notification fit is **operational failure alerting**: integration engineers and
 ops need to know when a call, job, or synchronization fails, when an event
 message exhausts its delivery retries, and when a scheduled job runs overdue.
-Today none of OpenConnector's schemas declare any `x-openregister-notifications`,
+Today none of Integriq's schemas declare any `x-openregister-notifications`,
 so the OpenRegister notification engine has nothing to dispatch on. This change
 declares schema-level notification rules so the engine emits push (and optional
 email/activity) notifications on these operational events.
@@ -23,7 +23,7 @@ condition, so this change carries **no** `depends_on`.
 ## What Changes
 
 Add a top-level `x-openregister-notifications` key to the relevant schemas in
-`lib/Settings/openconnector_register.json`, using the verified engine dialect.
+`lib/Settings/integriq_register.json`, using the verified engine dialect.
 
 ### `call_log` — failed API call (created + filter)
 
@@ -159,18 +159,18 @@ see Caveats.
 
 ## Impact
 
-- **File:** `lib/Settings/openconnector_register.json` — adds `x-openregister-notifications`
+- **File:** `lib/Settings/integriq_register.json` — adds `x-openregister-notifications`
   blocks to `call_log`, `job_log`, `synchronization_log`, `event_message`, `job`.
 - The OpenRegister notification engine (schema-rule source + override-only
   user-config prefs, shipped in OR change `notification-schema-rules-and-userconfig-prefs`)
-  consumes these blocks at runtime. No PHP/Vue changes in OpenConnector.
+  consumes these blocks at runtime. No PHP/Vue changes in Integriq.
 - Users **opt out** per `(schema, rule)` via override-only user-config prefs;
   schema `enabled` is only the default.
 - Two rules ship **disabled by default** (`sync-failed`, `job-overdue`) — see Caveats.
 
 ## Caveats
 
-- **No assignee/owner field on the operational schemas.** OpenConnector has no
+- **No assignee/owner field on the operational schemas.** Integriq has no
   per-record "assignee". Recipients fall back to `field:userId` (the user who
   triggered the call/job/sync, where present) plus a `groups` recipient pointed
   at an `openconnector-ops` group. **That group must exist** (or be remapped to a
@@ -179,7 +179,7 @@ see Caveats.
   `event_subscription` have **no** `userId`, which is why the rules live on the
   log rows / job / event_message instead.
 - **No `status` enums and no named lifecycle/`transition` actions** on any
-  OpenConnector schema. The plan's "call/job/sync failures (created+filter or
+  Integriq schema. The plan's "call/job/sync failures (created+filter or
   threshold)" headline is therefore implemented via `created`+filter and
   `threshold`, not `transition`. A precise "status changed to failed" rule would
   need either named transition actions on the schema or the unshipped

@@ -5,7 +5,7 @@ status: done
 # sync-editor-ui Specification
 
 ## Purpose
-Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists. Two surfaces share those components: the detail page at `/synchronizations/:id`, and a wide three-column create/edit modal on the Synchronizations index. Run and dry-run test are triggered from the index row actions, and the dry-run result is rendered in the modal.
+Provides the synchronization editor frontend for Integriq, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists. Two surfaces share those components: the detail page at `/synchronizations/:id`, and a wide three-column create/edit modal on the Synchronizations index. Run and dry-run test are triggered from the index row actions, and the dry-run result is rendered in the modal.
 
 @e2e exclude Vue component-internal method/computed behaviour (updateDraft, normalizeForDiff dirty flag, normaliseConditions/serializeConditions round-trip, save guards) reverse-engineered from the synchronization detail-page .vue components — unit-level (vitest), not browser-observable; the synchronization detail-page render surface is covered by manifest-pages e2e under synchronization-engine
 ## Requirements

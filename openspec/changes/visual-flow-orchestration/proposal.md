@@ -2,7 +2,7 @@
 
 ## Summary
 
-OpenConnector has no multi-step workflow entity: a `synchronization` is one
+Integriq has no multi-step workflow entity: a `synchronization` is one
 source → one target → one mapping, and chaining steps together today only
 happens indirectly through endpoint rules or events. This change adds a
 `flow` OpenRegister entity — an ordered list of steps, each referencing an
@@ -16,16 +16,16 @@ insight #1249) without building a new execution engine or a drag-and-drop
 canvas.
 
 **Disambiguation:** this is NOT the same as the sibling change
-`flow-workflowengine-integration`, which registers OpenConnector operations
+`flow-workflowengine-integration`, which registers Integriq operations
 as adapters inside Nextcloud core's own `files_workflowengine` "Flow" UI.
-This change introduces OpenConnector's own `flow` entity and runner; the two
+This change introduces Integriq's own `flow` entity and runner; the two
 share the word "flow" but touch unrelated code paths and have no scope
 overlap.
 
 ## Motivation
 
 Competitors model multi-step pipelines as first-class entities with
-per-step logs and branching. Today, an OpenConnector admin who wants
+per-step logs and branching. Today, an Integriq admin who wants
 "call an external API, map the result, then synchronize it into a
 register" has to either write three separate endpoint rules glued together
 through the `synchronization`/`mapping`/`extend_external_input` rule types,
@@ -40,7 +40,7 @@ workflow engine's feature set.
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — new `flow` OR entity + `FlowRunnerService`
+- [x] Project: `integriq` — new `flow` OR entity + `FlowRunnerService`
   + `flow` rule-pipeline action type + `flow` job Action + Flows index/detail
   UI.
 
@@ -152,7 +152,7 @@ entities.
 ## New Dependencies
 
 None. Reuses `jwadhams/json-logic-php` (already a dependency, used for
-rule conditions) and all existing OpenConnector services.
+rule conditions) and all existing Integriq services.
 
 ## Impact
 
@@ -175,7 +175,7 @@ rule conditions) and all existing OpenConnector services.
 
 ## Cross-Project Dependencies
 
-None outside `openconnector`. Within `openconnector`, this change
+None outside `integriq`. Within `integriq`, this change
 references (but does not modify) `flow-token-helper`, `hitl-approval`
 (`ApprovalService`), `rule-pipeline`, `job-management`/`job-scheduling`,
 `synchronization-engine`, and `openconnector-app-manifest`. It SHOULD

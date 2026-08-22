@@ -4,7 +4,7 @@ retrofit: true
 
 # mapping-editor-ui
 
-The Vue surface for authoring and testing OpenConnector mappings: the mapping
+The Vue surface for authoring and testing Integriq mappings: the mapping
 detail page, the mapping/cast/unset rule editor, the edit-rule dialog, and the
 test-mapping modals (input object, mapping/schema selectors, result panel). This
 spec describes the observed behaviour of the already-shipping components.

@@ -2,7 +2,7 @@
 
 ## Consumers
 
-- `openconnector` (this repo's own SPA, `src/`) — the only consumer. No other `apps-extra` project calls these endpoints today (verified in discovery.md: no other app currently consumes OpenConnector's configuration export/import surface, and the catalog endpoints are new). This contract is recorded for internal front/back alignment, not cross-project coordination — see company-wide ADR-002 for the conventions it follows.
+- `integriq` (this repo's own SPA, `src/`) — the only consumer. No other `apps-extra` project calls these endpoints today (verified in discovery.md: no other app currently consumes Integriq's configuration export/import surface, and the catalog endpoints are new). This contract is recorded for internal front/back alignment, not cross-project coordination — see company-wide ADR-002 for the conventions it follows.
 
 ## Endpoints
 
@@ -109,7 +109,7 @@
 
 ## Versioning
 
-These endpoints ship as part of OpenConnector's existing unversioned `/api/*` surface (matching every other OpenConnector controller — no `/v1/` prefix in use anywhere in `appinfo/routes.php` today). No version negotiation is introduced.
+These endpoints ship as part of Integriq's existing unversioned `/api/*` surface (matching every other Integriq controller — no `/v1/` prefix in use anywhere in `appinfo/routes.php` today). No version negotiation is introduced.
 
 ## Breaking Change Policy
 

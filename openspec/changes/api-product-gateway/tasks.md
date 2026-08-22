@@ -6,8 +6,8 @@
 - **spec_ref**: `openspec/changes/api-product-gateway/migration.md`, `openspec/changes/api-product-gateway/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001`
 - **files**: `lib/Settings/register.d/api-product-gateway.json`
 - **acceptance_criteria**:
-  - GIVEN the app is upgraded WHEN `occ app:update openconnector` runs THEN `api_product` and `api_product_subscription` schemas are registered AND `call_log` gains `product`/`endpoint`/`responseTime` properties without any existing `call_log` row being modified
-  - GIVEN the migration re-runs a second time WHEN `occ app:update openconnector` runs again THEN no error occurs and no duplicate schema rows are created
+  - GIVEN the app is upgraded WHEN `occ app:update integriq` runs THEN `api_product` and `api_product_subscription` schemas are registered AND `call_log` gains `product`/`endpoint`/`responseTime` properties without any existing `call_log` row being modified
+  - GIVEN the migration re-runs a second time WHEN `occ app:update integriq` runs again THEN no error occurs and no duplicate schema rows are created
 - [ ] Implement
 - [ ] Test
 
@@ -61,9 +61,9 @@
 
 ### Task 7: Add per-product latency percentile gauges (AppHost provider escape hatch)
 - **spec_ref**: `openspec/changes/api-product-gateway/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013`
-- **files**: `lib/Observability/OpenConnectorMetricsProvider.php`
+- **files**: `lib/Observability/IntegriqMetricsProvider.php`
 - **acceptance_criteria**:
-  - GIVEN a product's inbound `call_log` rows with varying `responseTime` WHEN `/api/metrics` is scraped THEN `openconnector_api_product_latency_seconds{product,quantile}` reflects p50/p95/p99 in seconds
+  - GIVEN a product's inbound `call_log` rows with varying `responseTime` WHEN `/api/metrics` is scraped THEN `integriq_api_product_latency_seconds{product,quantile}` reflects p50/p95/p99 in seconds
   - GIVEN a product with zero traffic WHEN scraped THEN all three quantile samples are `0`, not omitted
   - GIVEN the underlying query throws WHEN scraped THEN a zero-value fallback is emitted with a warning logged and the endpoint still returns HTTP 200
 - [ ] Implement
@@ -73,7 +73,7 @@
 - **spec_ref**: `openspec/changes/api-product-gateway/specs/prometheus-metrics/spec.md#requirement-per-api-product-request-and-error-gauges-req-prom-012`
 - **files**: `src/manifest.json`
 - **acceptance_criteria**:
-  - GIVEN inbound `call_log` rows carrying a `product` uuid WHEN `/api/metrics` is scraped THEN `openconnector_api_product_requests_total{product,status}` and `openconnector_api_product_errors_total{product}` are exposed
+  - GIVEN inbound `call_log` rows carrying a `product` uuid WHEN `/api/metrics` is scraped THEN `integriq_api_product_requests_total{product,status}` and `integriq_api_product_errors_total{product}` are exposed
   - GIVEN a product with no traffic WHEN scraped THEN a zero-value placeholder is emitted
 - [ ] Implement
 - [ ] Test
@@ -82,7 +82,7 @@
 - **spec_ref**: `openspec/changes/api-product-gateway/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002`
 - **files**: `src/manifest.json`, `src/views/ApiProducts/ApiProductDetail.vue`
 - **acceptance_criteria**:
-  - GIVEN an authenticated admin WHEN they navigate to `/apps/openconnector/products` THEN the API Products index page renders with content visible
+  - GIVEN an authenticated admin WHEN they navigate to `/apps/integriq/products` THEN the API Products index page renders with content visible
   - GIVEN a product's detail page WHEN opened THEN the admin can add/remove endpoints and add/edit named tiers, and see the analytics panel (request count, error rate, p50/p95/p99) and pending subscriptions with approve/reject actions
 - [ ] Implement
 - [ ] Test
@@ -112,7 +112,7 @@
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/Service/EndpointServiceTierPolicyTest.php`, `tests/Unit/Service/ApprovalServiceSubscriptionTest.php`, `tests/Unit/Observability/OpenConnectorMetricsProviderTest.php`, `tests/Unit/Controller/ProductSubscriptionsControllerTest.php`)
+- [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/Service/EndpointServiceTierPolicyTest.php`, `tests/Unit/Service/ApprovalServiceSubscriptionTest.php`, `tests/Unit/Observability/IntegriqMetricsProviderTest.php`, `tests/Unit/Controller/ProductSubscriptionsControllerTest.php`)
 - [ ] Newman/Postman tests for the new API endpoints (subscribe/approve/reject/analytics; over-tier 429; deprecated-product headers)
 - [ ] Browser tests (Playwright MCP) for the API Products index/detail pages and the Consumer detail subscription list
 - [ ] All tests pass (`composer test`, `newman run`)

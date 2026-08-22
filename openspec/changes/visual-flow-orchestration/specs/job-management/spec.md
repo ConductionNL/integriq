@@ -4,12 +4,12 @@
 
 ### Requirement: `FlowAction` runs a flow as a scheduled job (REQ-JOB-003)
 
-The system MUST provide `OCA\OpenConnector\Action\FlowAction`
+The system MUST provide `OCA\Integriq\Action\FlowAction`
 implementing the same duck-typed `run(array $arguments): array` contract
 as the existing `SynchronizationAction`/`PingAction` (no new Action
 interface is introduced — `jobClass` resolution via the DI container is
 unchanged). A `job` OR object configured with `jobClass:
-'OCA\OpenConnector\Action\FlowAction'` and `arguments: { flowId: '<uuid>'
+'OCA\Integriq\Action\FlowAction'` and `arguments: { flowId: '<uuid>'
 }` MUST, when executed by `JobService::executeJob()` (on its normal cron
 cadence, on-demand `run`, or forced `test`), resolve the referenced
 `flow` OR object and call `FlowRunnerService::run($flow, triggerSource:
@@ -26,7 +26,7 @@ handle flow-backed jobs.
 #### Scenario: a job configured with FlowAction runs the referenced flow
 
 - **GIVEN** an enabled `job` OR object with `jobClass:
-  'OCA\OpenConnector\Action\FlowAction'`, `arguments: { flowId: '<uuid>'
+  'OCA\Integriq\Action\FlowAction'`, `arguments: { flowId: '<uuid>'
   }`, and `nextRun` in the past
 - **WHEN** `JobService::run()` sweeps due jobs
 - **THEN** `FlowAction::run({ flowId: '<uuid>' })` is invoked

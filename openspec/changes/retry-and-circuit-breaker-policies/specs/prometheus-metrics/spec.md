@@ -4,10 +4,10 @@
 
 ### Requirement: Circuit Breaker State Gauge (REQ-PROM-011)
 
-The app MUST expose `openconnector_circuit_breaker_state` as a gauge with
+The app MUST expose `integriq_circuit_breaker_state` as a gauge with
 label `source` (the Source's `name`), queried directly from the
 `openconnector_sources` table's `circuitBreakerState`/`circuitBreakerFailureCount`
-columns (same query-time pattern as `REQ-PROM-004`'s `openconnector_sources_total`
+columns (same query-time pattern as `REQ-PROM-004`'s `integriq_sources_total`
 — no new join, no new table). The value MUST be `1` when
 `circuitBreakerState = 'open'` and `0` when `closed`. Sources with no
 `circuitBreakerState` set (not yet evaluated, or `retryPolicy`/breaker never
@@ -17,19 +17,19 @@ configured) MUST be reported as `0` (closed).
 
 - **GIVEN** a Source named "kvk-api" with `circuitBreakerState = 'open'`
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="kvk-api"} 1`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="kvk-api"} 1`
 
 #### Scenario: a closed breaker is reported as 0
 
 - **GIVEN** a Source named "brp-api" with `circuitBreakerState = 'closed'`
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="brp-api"} 0`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="brp-api"} 0`
 
 #### Scenario: a source with no breaker state defaults to closed
 
 - **GIVEN** a Source that has never had a breaker evaluation recorded
 - **WHEN** the metrics endpoint is called
-- **THEN** the output includes `openconnector_circuit_breaker_state{source="<name>"} 0`
+- **THEN** the output includes `integriq_circuit_breaker_state{source="<name>"} 0`
 
 #### Scenario: metrics query failure falls back to zero
 

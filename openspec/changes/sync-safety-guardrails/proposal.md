@@ -2,7 +2,7 @@
 
 ## Summary
 
-`SynchronizationService::deleteInvalidObjects()` — the cleanup pass that garbage-collects target objects no longer present in the source — is called unconditionally from `synchronizeExternToIntern()`, with no way to know whether the preceding fetch actually succeeded. When a source errors mid-fetch, is rate-limited (HTTP 429), or fails partway through pagination, the engine still diffs the (empty or truncated) fetch result against every existing `SynchronizationContract` and deletes everything it didn't just see — including on a "Test (dry run)" click, which today deletes real objects because the cleanup call carries no test-mode guard at all. This change adds fetch-completeness tracking, a configurable deletion-ratio guard with an explicit override, an absolute no-write guarantee for test runs, and removes silent auto-persistence of ad-hoc Source objects, closing ConductionNL/openconnector#1000, #1001, #1002, #1008, #1009, #1016, and #1017.
+`SynchronizationService::deleteInvalidObjects()` — the cleanup pass that garbage-collects target objects no longer present in the source — is called unconditionally from `synchronizeExternToIntern()`, with no way to know whether the preceding fetch actually succeeded. When a source errors mid-fetch, is rate-limited (HTTP 429), or fails partway through pagination, the engine still diffs the (empty or truncated) fetch result against every existing `SynchronizationContract` and deletes everything it didn't just see — including on a "Test (dry run)" click, which today deletes real objects because the cleanup call carries no test-mode guard at all. This change adds fetch-completeness tracking, a configurable deletion-ratio guard with an explicit override, an absolute no-write guarantee for test runs, and removes silent auto-persistence of ad-hoc Source objects, closing ConductionNL/integriq#1000, #1001, #1002, #1008, #1009, #1016, and #1017.
 
 ## Motivation
 
@@ -10,7 +10,7 @@ This is the synchronization engine's only organic-customer surface today — the
 
 ## Affected Projects
 
-- [x] Project: `openconnector` — `SynchronizationService`, `SynchronizationsController`, and the synchronization-engine cleanup/fetch/test-run/source-resolution paths gain fetch-completeness tracking, a deletion-ratio guard, an absolute test-run no-write guarantee, and non-persistent ad-hoc Source resolution.
+- [x] Project: `integriq` — `SynchronizationService`, `SynchronizationsController`, and the synchronization-engine cleanup/fetch/test-run/source-resolution paths gain fetch-completeness tracking, a deletion-ratio guard, an absolute test-run no-write guarantee, and non-persistent ad-hoc Source resolution.
 
 ## Scope
 
@@ -28,7 +28,7 @@ This is the synchronization engine's only organic-customer surface today — the
 
 - Retry/backoff/circuit-breaker behaviour for failed fetches (tracked separately as `retry-and-circuit-breaker-policies`) — this change only ensures a failed/incomplete fetch never triggers deletion; it does not make the fetch itself more resilient.
 - `fetchAllPagesOptimized()` memory/streaming rework for very large result sets (oc#1010) — noted as a follow-up, not addressed here.
-- A user-facing notification/inbox UI for the new deletion-guard event — this change dispatches an `OCP\EventDispatcher` event; wiring it to Nextcloud's `INotificationManager` or an admin-facing UI is deferred (no such consumer exists in OpenConnector today for any event).
+- A user-facing notification/inbox UI for the new deletion-guard event — this change dispatches an `OCP\EventDispatcher` event; wiring it to Nextcloud's `INotificationManager` or an admin-facing UI is deferred (no such consumer exists in Integriq today for any event).
 
 ## Approach
 
@@ -43,12 +43,12 @@ None. Reuses `OCP\EventDispatcher\IEventDispatcher`, already used elsewhere in t
 - `lib/Service/SynchronizationService.php` — `deleteInvalidObjects()`, `synchronizeExternToIntern()`, `getAllObjectsFromSource()`, `getAllObjectsFromApi()`, `fetchAllPages()`, `fetchAllPagesOptimized()`, `fetchSinglePageData()`, `findOrCreateSourceByLocation()`, `processSynchronizationObject()`, `synchronize()`.
 - `lib/Controller/SynchronizationsController.php` — `run()` gains a `forceDeletion` request parameter, threaded through to `synchronize()`.
 - New: `lib/Event/SynchronizationDeletionGuardedEvent.php`.
-- `lib/Settings/openconnector_register.json` — documentation-only addition of the new recognised `sourceConfig.deletionRatioThreshold` key to the existing free-form `sourceConfig` description; no schema/field migration (the property is already `type: object`).
+- `lib/Settings/integriq_register.json` — documentation-only addition of the new recognised `sourceConfig.deletionRatioThreshold` key to the existing free-form `sourceConfig` description; no schema/field migration (the property is already `type: object`).
 - Tests: new files under `tests/Unit/Service/` alongside the existing `SynchronizationServiceTest.php` and `SynchronizationServiceCleanupTest.php`.
 
 ## Cross-Project Dependencies
 
-None directly — no other apps-extra project calls `SynchronizationService` methods directly. Indirect beneficiaries: any app relying on OpenConnector-driven pull synchronizations (the WOO publishing pipelines noted above, and any future consumer of the `synchronizations/{id}/run` and `synchronizations/{id}/test` REST endpoints) gain protection from silent mass-deletion without any contract change on their side — `forceDeletion` is a new optional parameter, and the deletion-guard behaviour is a strict narrowing of when deletion happens, not a new required step for existing callers.
+None directly — no other apps-extra project calls `SynchronizationService` methods directly. Indirect beneficiaries: any app relying on Integriq-driven pull synchronizations (the WOO publishing pipelines noted above, and any future consumer of the `synchronizations/{id}/run` and `synchronizations/{id}/test` REST endpoints) gain protection from silent mass-deletion without any contract change on their side — `forceDeletion` is a new optional parameter, and the deletion-guard behaviour is a strict narrowing of when deletion happens, not a new required step for existing callers.
 
 ## Risks
 
@@ -70,4 +70,4 @@ Pure PHP application-code change with no schema/data migration. Revert the commi
 
 ## Open Questions
 
-- Should the deletion-guard event eventually surface in Nextcloud's notification centre (`INotificationManager`)? Deferred — no notification consumer exists for any OpenConnector event today; tracked as a natural follow-up once a UI exists to display it.
+- Should the deletion-guard event eventually surface in Nextcloud's notification centre (`INotificationManager`)? Deferred — no notification consumer exists for any Integriq event today; tracked as a natural follow-up once a UI exists to display it.

@@ -3,10 +3,10 @@
 > **Split delivery (2026-07-16):** Tasks 1–3 (the OpenRegister provider side)
 > ship as their own PR from the `openregister` repo (branch
 > `feature/stream-file-content`, commit `1c938ed52`) and are marked done below.
-> Tasks 4–6 (the OpenConnector consumer side) are implemented on this branch
+> Tasks 4–6 (the Integriq consumer side) are implemented on this branch
 > (`feature/110/stream-file-content`).
 >
-> **Design correction (2026-07-16):** the original design assumed the OpenConnector
+> **Design correction (2026-07-16):** the original design assumed the Integriq
 > side was "only `SynchronizationService.php`". In fact `fetchFile` obtains its
 > bytes from the CallLog, which `CallService` buffers via
 > `$response->getBody()->getContents()` — there is no streaming path today. True
@@ -43,9 +43,9 @@
 - [x] Implement — shipped via openregister PR
 - [x] Test — `UpdateFileHandlerTest` (resource stream, md5-skip, exec-block, string BC)
 
-### Task 4: [OpenConnector] Add a `sink` option to `CallService`
+### Task 4: [Integriq] Add a `sink` option to `CallService`
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering`
-- **files**: `openconnector/lib/Service/CallService.php`
+- **files**: `integriq/lib/Service/CallService.php`
 - **acceptance_criteria**:
   - GIVEN a caller passes a stream resource as a new `$sink` argument to `CallService::call()` WHEN the request is dispatched THEN the resource is passed to Guzzle as its `sink` request option so the response body streams into that resource instead of being buffered into a string
   - GIVEN a `$sink` is supplied THEN the resource MUST NOT be merged into the `$config` that `buildResponseData()` logs/redacts/persists (a resource is not JSON-persistable); the CallLog records an empty body (bytes went to the sink) with the status, headers, and size preserved
@@ -53,9 +53,9 @@
 - [x] Implement — `call()` → `dispatchWithRetry()` → `dispatchRequest()` thread `$sink` into the Guzzle `sink` option, kept out of the logged `$config`
 - [x] Test — `CallServiceTest::testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog` + `testCallWithoutSinkPassesNoSinkOptionToGuzzle` (green; full suite 37/37)
 
-### Task 5: [OpenConnector] Stream the binary-download path in `fetchFile`
+### Task 5: [Integriq] Stream the binary-download path in `fetchFile`
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering`
-- **files**: `openconnector/lib/Service/SynchronizationService.php`
+- **files**: `integriq/lib/Service/SynchronizationService.php`
 - **acceptance_criteria**:
   - GIVEN a binary-download response (no `config['contentPath']`/`config['filenamePath']`) WHEN `fetchFile` runs THEN a `fopen('php://temp/maxmemory:2097152','r+')` handle is opened, passed as the `$sink` through `callSourceObject` → `CallService::call`, rewound, passed as `$content` (resource) to `FileService::saveFile`/`addFile`, and closed in a `finally`
   - GIVEN a base64-in-JSON response addressed by `config['contentPath']` (or `filenamePath`) WHEN `fetchFile` runs THEN the existing in-memory string path is used unchanged (no sink)
@@ -66,7 +66,7 @@
 
 ### Task 6: Tests for streaming, dual-type acceptance, and preserved behaviour
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path`
-- **files**: `openconnector/tests/Unit/Service/CallServiceTest.php` (or existing), `openconnector/tests/Unit/Service/SynchronizationServiceTest.php`, `openregister/tests/Unit/Service/File/CreateFileHandlerTest.php` *(done)*, `openregister/tests/Unit/Service/File/UpdateFileHandlerTest.php` *(done)*
+- **files**: `integriq/tests/Unit/Service/CallServiceTest.php` (or existing), `integriq/tests/Unit/Service/SynchronizationServiceTest.php`, `openregister/tests/Unit/Service/File/CreateFileHandlerTest.php` *(done)*, `openregister/tests/Unit/Service/File/UpdateFileHandlerTest.php` *(done)*
 - **acceptance_criteria**:
   - `CallService::call` passes a supplied `$sink` to Guzzle as its `sink` option and keeps it out of the persisted config
   - `fetchFile` uses the sink/resource path when no `contentPath`/`filenamePath` is set and the string path when one is
@@ -74,7 +74,7 @@
   - A blocked executable is rejected on the resource path by extension and by magic bytes — *covered (done)*
   - An unchanged file re-synced on the resource path performs no write (md5 skip) — *covered (done)*
   - The base64-in-JSON path persists content identically to pre-change behaviour
-- [x] Implement — CallService sink tests (openconnector) + Create/UpdateFileHandler resource tests (openregister, 8 green)
+- [x] Implement — CallService sink tests (integriq) + Create/UpdateFileHandler resource tests (openregister, 8 green)
 - [x] Test — transport (`sink` option), branch selection (both `fetchFile` tests, see Task 5) and write side (resource stream, exec-block, md5-skip, dual-type) are all unit-covered across the two repos.
 
 ## Verification

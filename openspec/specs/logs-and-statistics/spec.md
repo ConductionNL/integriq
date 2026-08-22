@@ -5,7 +5,7 @@ status: done
 # logs-and-statistics Specification
 
 ## Purpose
-Exposes the log, statistics, and retention-management APIs for OpenConnector. It lists, retrieves, and deletes synchronization and per-source call logs, aggregates per-level log statistics and CSV exports, reads and updates app-wide retention settings, and reports instance-wide totals and sizes while rebasing log expiry dates with database-vendor-aware SQL.
+Exposes the log, statistics, and retention-management APIs for Integriq. It lists, retrieves, and deletes synchronization and per-source call logs, aggregates per-level log statistics and CSV exports, reads and updates app-wide retention settings, and reports instance-wide totals and sizes while rebasing log expiry dates with database-vendor-aware SQL.
 
 @e2e exclude backend logs/statistics API (LogsController + StatisticsService aggregation + CSV export, no browser UI) — covered by Newman/PHPUnit; the log sub-pages render is covered by manifest-pages e2e
 
@@ -63,7 +63,7 @@ answering `403 { error: <the refusal message> }` when it throws.
 
 #### Notes
 
-- ✅ **RESOLVED (openconnector#1217, PR #1218).** The IDOR described below was
+- ✅ **RESOLVED (integriq#1217, PR #1218).** The IDOR described below was
   real and was confirmed by live exploitation with two non-admin accounts
   before being fixed: a stranger reading another account's log returned
   **HTTP 200** with the payload, and `DELETE` returned **HTTP 200 "Log deleted
@@ -155,7 +155,7 @@ directly.
 - **MEDIUM (soft DoS):** `export` materialises the entire matching
   dataset in PHP memory and returns it in the JSON body. Large
   datasets OOM the worker.
-- ✅ **RESOLVED (openconnector#1217, PR #1218)** — see the REQ-001 notes. Both
+- ✅ **RESOLVED (integriq#1217, PR #1218)** — see the REQ-001 notes. Both
   endpoints now answer **403** to a caller the action matrix does not permit.
 - **Was: HIGH (IDOR):** like REQ-001, both endpoints were `@NoAdminRequired`
   — any user could extract every log on the instance via CSV, including the

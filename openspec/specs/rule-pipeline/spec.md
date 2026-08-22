@@ -7,7 +7,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector endpoints can carry an ordered list of rules that run before and
+Integriq endpoints can carry an ordered list of rules that run before and
 after the request reaches its target (a register/schema or an external source).
 Rules implement endpoint-level business logic — authentication enforcement,
 data mapping, object persistence, file handling, synchronisation triggers,
@@ -16,7 +16,7 @@ This capability describes the **observed behaviour** of the rule-processing
 engine (`EndpointService` rule methods + `RuleService` custom rules) as it
 exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
-openconnector-local concept with no OpenRegister equivalent.
+integriq-local concept with no OpenRegister equivalent.
 
 **OpenSpec changes**
 - [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added a composite transactional fan-out Rule type (REQ-RULE-006, used for VNG's composite `maak-klantcontact`) and a `referentienummer` generation Rule (REQ-RULE-007). Both are dialect-agnostic gateway mechanics (ADR-031 external-integration exception).
@@ -24,12 +24,12 @@ openconnector-local concept with no OpenRegister equivalent.
 
 ### REQ-RULE-UI-001: Rule Management UI
 
-OpenConnector MUST provide a Rules section in its SPA where administrators can
+Integriq MUST provide a Rules section in its SPA where administrators can
 browse, create, edit, and configure rule objects that are referenced by endpoints.
 
 #### Scenario: rules list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
+- GIVEN an authenticated admin visits the integriq app
 - WHEN they navigate to the Rules section via the sidebar or direct URL
 - THEN the Rules index page renders inside the app-content area with content visible
 

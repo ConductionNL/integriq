@@ -8,7 +8,7 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector's data model contains 15 schemas. ADR-005 documents the core
+Integriq's data model contains 15 schemas. ADR-005 documents the core
 triad (Source → Synchronization → SynchronizationContract) and notes that
 "Consumer + EventSubscription are the event-bus counterparts (see ADR-008)".
 ADR-008 covers Endpoint dispatch. No ADR has ever documented the five
@@ -23,7 +23,7 @@ The five event-bus entities are:
 - `lib/Db/EventMessage.php` — a delivery record: one row per (Event ×
   matched Subscription).
 - `lib/Db/Consumer.php` — an outbound subscriber identity: a service or
-  application that authenticates against openconnector and holds endpoint/mapping
+  application that authenticates against integriq and holds endpoint/mapping
   access rights.
 - `lib/Service/EventService.php` — the service that fans Events out to
   matching Subscriptions and attempts delivery.
@@ -40,14 +40,14 @@ The event-bus model is defined as follows:
 **Event** (`lib/Db/Event.php`) implements the
 [CloudEvents v1.0 specification](https://cloudevents.io/). Required attributes
 are `uuid`, `source` (URI), `type`, `specversion` (`"1.0"`), and `time`. The
-`data` field carries a JSON payload. OpenConnector-specific tracking fields
+`data` field carries a JSON payload. Integriq-specific tracking fields
 `userId`, `created`, `updated`, `processed`, and `status` (`"pending"` →
 `"processed"` / `"failed"`) are added on top of the CloudEvents envelope; they
 are NOT part of the CloudEvents spec and MUST NOT be forwarded to subscribers.
 
 **Consumer** (`lib/Db/Consumer.php`) is an outbound subscriber identity. It
 stores `authorizationType` / `authorizationConfiguration` (the auth credentials
-the Consumer uses when openconnector pushes to it) and access-control constraints
+the Consumer uses when integriq pushes to it) and access-control constraints
 (`domains`, `ips`). A Consumer is NOT a Nextcloud user; it represents an
 external service that receives pushed events. Multiple subscriptions can share
 one Consumer identity.
@@ -71,10 +71,10 @@ now`, and sets `nextAttempt = now + backoffMinutes`. Integer FKs `eventId`,
 
 **Why these four entities are separate from the Source/Sync/Contract triad**:
 - The sync triad (Source → Synchronization → SynchronizationContract) is a
-  PULL model: openconnector reaches out to a remote source to fetch and
+  PULL model: integriq reaches out to a remote source to fetch and
   normalise data, then persists a per-object hash for change detection.
 - The event-bus (Event → EventSubscription → EventMessage + Consumer) is a PUSH
-  model: openconnector is the origin; external systems register to receive
+  model: integriq is the origin; external systems register to receive
   notifications. The data direction is reversed and the delivery guarantees
   (retry, at-least-once) are different from sync semantics.
 - Mixing the two models into shared schemas would conflate "remote data source"

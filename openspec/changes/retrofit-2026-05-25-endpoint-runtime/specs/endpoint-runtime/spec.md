@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector exposes configurable endpoints under `/api/endpoint/{path}`. At
+Integriq exposes configurable endpoints under `/api/endpoint/{path}`. At
 request time the runtime resolves the path to a registered endpoint, applies
 CORS, optionally short-circuits "simple" schema CRUD, and otherwise runs the
 full request pipeline — condition checks, before/after rule processing, and

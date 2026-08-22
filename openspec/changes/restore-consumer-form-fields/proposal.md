@@ -95,7 +95,7 @@ module, one new SFC, one new test suite.
 - **`tests/vitest/editorModalSlotContract.spec.js`** — `ConsumerEditorModal` added to
   `MODALS`, so its `canSave` is pinned against both slot scopes. `confirm` was verified
   present in the installed `dist/esm` build before relying on it; without that binding this
-  modal would have shipped the openconnector#1150 defect.
+  modal would have shipped the integriq#1150 defect.
 
 - **l10n** — 38 new `t()` literals extracted into `l10n/en.json`, and added to `l10n/en.js`,
   `l10n/nl.js` and `l10n/nl.json`. The chip-input examples (`example.com, *.example.org`,

@@ -1,7 +1,7 @@
 # synchronization-files Specification
 
 **Status**: in-progress
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - parallel-file-fetch
 
@@ -52,7 +52,7 @@ The system MUST cap the number of in-flight file fetches for one object at a
 per-source configurable limit, defaulting to 5 and never exceeding a hard maximum
 of 20, so that the source is not overloaded. The cap MUST be read from
 `source.configuration`, because politeness is a property of the upstream rather
-than of OpenConnector.
+than of Integriq.
 
 The system MUST additionally gate admission on a total in-flight BYTE budget
 (default ~256 MB), derived from `Content-Length` where the source provides it and

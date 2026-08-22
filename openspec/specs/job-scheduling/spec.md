@@ -5,7 +5,7 @@ status: done
 # job-scheduling Specification
 
 ## Purpose
-Schedules, runs, and logs OpenConnector background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.
+Schedules, runs, and logs Integriq background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.
 
 @e2e exclude backend job log API + cron scheduling internals (no browser UI) — covered by PHPUnit/Newman
 ## Requirements
@@ -308,7 +308,7 @@ return `new DateTime('now +' . max($retentions) . 'milliseconds')`.
 #### Notes
 
 - **HIGH (disable doesn't actually disable):** `scheduleJob`'s disable
-  path clears the openconnector-side `jobListId` but leaves the
+  path clears the integriq-side `jobListId` but leaves the
   underlying NC `oc_jobs` row in place (the commented-out
   `removeById` call). The next `JobTask::run` sweep walks OR for
   `isEnabled = true`, so the disabled job will be skipped — but a
@@ -387,7 +387,7 @@ permanently-`running` row is indistinguishable from a genuinely live one, so the
 UI built to answer *"is my sync still going?"* answers it wrongly.
 
 `StaleRunSweepJob` (registered in `appinfo/info.xml` as
-`OCA\OpenConnector\Cron\StaleRunSweepJob`) MUST close such records.
+`OCA\Integriq\Cron\StaleRunSweepJob`) MUST close such records.
 
 **Trigger.** An `OCP\BackgroundJob\TimedJob` with `setInterval(seconds: 300)` —
 every five minutes. It sets neither `setTimeSensitivity()` nor
