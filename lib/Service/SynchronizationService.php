@@ -4055,7 +4055,7 @@ class SynchronizationService {
 						continue;
 					}
 
-					// updateTarget() returns an array, so no is_array() guard.
+					// The updateTarget() call returns an array, so no is_array() guard.
 					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
 					$this->persistContract(contract: $synchronizationContract);
 
@@ -4149,7 +4149,7 @@ class SynchronizationService {
 				continue;
 			}
 
-			// updateTarget() returns an array, so no is_array() guard.
+			// The updateTarget() call returns an array, so no is_array() guard.
 			$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
 			$this->persistContract(contract: $synchronizationContract);
 
@@ -4422,7 +4422,7 @@ class SynchronizationService {
 		if (($synchronization['actions'] ?? []) !== []) {
 			$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
 
-			// processRules() returns a JSONResponse INSTEAD of an array when a
+			// The processRules() call returns a JSONResponse INSTEAD of an array when a
 			// rule fails. This used to be assigned straight into $object, which
 			// then went into md5(serialize($object)) and on to updateTarget() —
 			// where a JSONResponse hit an `array|null` parameter and surfaced as
@@ -4630,13 +4630,14 @@ class SynchronizationService {
 	 *
 	 * @param array $synchronizationContract The synchronization contract being updated.
 	 * @param array $synchronization The synchronization entity containing the target ID.
-	 * @param array|null $targetObject An optional array containing the data for the target object.
+	 * @param array|null $targetObject An optional array containing the data for the
+	 *                                 target object. Defaults to an empty array.
+	 * @param string|null $action The action to perform: 'save' (default) to update or
+	 *                            'delete' to remove the target object.
+	 *
 	 * @param-out array $targetObject Every write-back in here assigns an array
 	 *        (updateIdsOnSubObjects(), replaceRelatedOriginIds(), renderEntity()),
 	 *        so null never comes back out even though it may go in.
-	 *                                 Defaults to an empty array.
-	 * @param string|null $action The action to perform: 'save' (default) to update or
-	 *                            'delete' to remove the target object.
 	 *
 	 * @return array The updated synchronization contract payload array with the modified target ID.
 	 *
@@ -5462,10 +5463,6 @@ class SynchronizationService {
 	 *
 	 * @param array $synchronizationContract The contract payload array to write.
 	 * @param array|null $targetObject The object data to write to the target.
-	 * @param-out array $targetObject Callers may pass null IN (the parameter also
-	 *        defaults to []), but nothing in here ever assigns null back out. Without
-	 *        this, every caller that hands over an `array` by reference is reported as
-	 *        possibly getting null back.
 	 * @param string|null $action Determines what needs to be done with the target object,
 	 *                            defaults to 'save'.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type
@@ -5478,6 +5475,11 @@ class SynchronizationService {
 	 *                                    the contract when omitted, so standalone callers keep
 	 *                                    working. Batch callers pass the array they already hold
 	 *                                    rather than making this re-read it once per record.
+	 *
+	 * @param-out array $targetObject Callers may pass null IN (the parameter also
+	 *        defaults to []), but nothing in here ever assigns null back out. The
+	 *        normalisation at the top of the body is what makes that true on the
+	 *        `database` and `nextcloud-table` paths, which never write it back.
 	 *
 	 * @return array
 	 *
@@ -7894,8 +7896,6 @@ class SynchronizationService {
 	 * @param array $contract The contract to enforce.
 	 * @param string $endpoint The endpoint to write the object to.
 	 * @param array|null $targetObject Update referenced targetObject so we can return response here.
-	 * @param-out array $targetObject The single write-back assigns array_merge(...),
-	 *        so null never comes back out even though it may go in.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the
 	 *                                  mutation that will be handled, 'create', 'update' or 'delete'.
 	 *                                  Used for syncs to extern sources.
@@ -7903,6 +7903,9 @@ class SynchronizationService {
 	 *                                          `CallService::call()` so the outbound dispatch is
 	 *                                          captured as a `call` step (execution-trace
 	 *                                          REQ-001/REQ-002).
+	 *
+	 * @param-out array $targetObject The single write-back assigns array_merge(...),
+	 *        so null never comes back out even though it may go in.
 	 *
 	 * @return array The updated contract payload array.
 	 *
