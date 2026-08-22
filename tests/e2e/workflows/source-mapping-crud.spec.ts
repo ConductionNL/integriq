@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * DEEP, DATA-DEPENDENT e2e — full CRUD-with-PERSISTENCE for the two core
- * openconnector entities a user authors by hand: Source and Mapping.
+ * integriq entities a user authors by hand: Source and Mapping.
  *
  * Unlike a page-render smoke, every leg asserts the data actually persisted:
  *   create via the real UI form  -> the ROW appears in the list (not empty-state)
@@ -11,7 +11,7 @@
  *   edit a field                 -> the change is persisted (re-read via the OR API)
  *   delete                       -> the row is gone from the list
  *
- * openconnector resolves Sources/Mappings through OpenRegister
+ * integriq resolves Sources/Mappings through OpenRegister
  * (register `openconnector`, schema `source` / `mapping`); the OR object API
  * is used only to (a) verify persistence after a UI edit and (b) clean up.
  *
@@ -27,7 +27,7 @@
  * sorts CLIENT-SIDE over only the already-loaded page — clicking a column header
  * fires NO server re-query — and the in-list search box is likewise NOT wired to
  * a server `_search`. Tracked as the #996 table-view family; the fix lives in
- * @conduction/nextcloud-vue, not openconnector.
+ * @conduction/nextcloud-vue, not integriq.
  *
  * This file used to work around that by naming rows `zzz-…` and clicking the
  * Name header twice to sort descending, betting the new row would land on
@@ -86,11 +86,11 @@ async function gotoIndex(page: Page, route: string): Promise<void> {
 	//     deep-link (`#/<route>`) sets location.hash, which the router never
 	//     reads, and is ignored — the index list never renders. Hence NO `#`.
 	//   * The `/index.php/` prefix: CI serves Nextcloud with `php -S` and no
-	//     router script, where `/apps/openconnector/` is a real directory with
+	//     router script, where `/apps/integriq/` is a real directory with
 	//     no index.php inside and 404s outright (measured). The pretty form
 	//     only resolves behind Apache + `.htaccess`; the `/index.php/` form
 	//     works in both.
-	await page.goto(`/index.php/apps/openconnector/${route}`, {
+	await page.goto(`/index.php/apps/integriq/${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	// ADR-074 rule 4: networkidle never settles on Nextcloud — this only ever
@@ -310,7 +310,7 @@ test.describe('Mapping — full CRUD with persistence', () => {
 	// this spec a mapping-specific create leg through MappingDetail; both are
 	// larger than the CI repair this file was touched for.
 	//
-	// Tracked as ConductionNL/openconnector#1129. CRUD persistence itself is not
+	// Tracked as ConductionNL/integriq#1129. CRUD persistence itself is not
 	// unverified — the OR-persistence cross-checks in this file cover it, and
 	// the Newman collection creates and reads mappings through the object API.
 	test.fixme()

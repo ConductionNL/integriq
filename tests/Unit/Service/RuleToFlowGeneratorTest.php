@@ -119,7 +119,6 @@ class RuleToFlowGeneratorTest extends TestCase {
 		);
 
 		return $l10n;
-
 	}//end translations()
 
 	/**
@@ -365,7 +364,6 @@ class RuleToFlowGeneratorTest extends TestCase {
 	 */
 	public static function absentConditions(): array {
 		return ['null' => [null], 'empty array' => [[]], 'empty string' => ['']];
-
 	}//end absentConditions()
 
 	/**

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK Connector Test
+ * Integriq PDOK Connector Test
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Connectors

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — Grote Berichten reference tests.
+ * Integriq — Grote Berichten reference tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

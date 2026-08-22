@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — ebMS2 reliable-messaging state-machine tests.
+ * Integriq — ebMS2 reliable-messaging state-machine tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

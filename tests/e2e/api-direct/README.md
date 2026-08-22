@@ -6,10 +6,10 @@
 # api-direct — API/HTTP-contract specs (excluded from the gate-19 UI run)
 
 These Playwright specs assert **raw HTTP status codes / JSON shapes** against the
-openconnector and OpenRegister REST surfaces. They do **not** drive the UI.
+integriq and OpenRegister REST surfaces. They do **not** drive the UI.
 
 Per the gate-19 e2e-coverage program, API/contract assertions belong in the
-**Newman** suite (`tests/postman/openconnector.postman_collection.json`), not the
+**Newman** suite (`tests/postman/integriq.postman_collection.json`), not the
 Playwright UI gate. These files are kept here for reference / local debugging but
 are excluded from every Playwright project via the `**/api-direct/**`
 `testIgnore` in `playwright.config.ts`.

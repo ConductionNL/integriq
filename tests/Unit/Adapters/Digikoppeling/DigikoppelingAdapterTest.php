@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — Digikoppeling adapter catalogue descriptor tests.
+ * Integriq — Digikoppeling adapter catalogue descriptor tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

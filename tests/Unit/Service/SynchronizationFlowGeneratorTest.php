@@ -36,9 +36,9 @@ use OCA\Integriq\Flow\FetchFileNode;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationActionRules;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Service\SynchronizationFlowGenerator;
-use OCA\Integriq\Service\SynchronizationActionRules;
 use OCA\Integriq\Service\SynchronizationSemanticRefusals;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
@@ -135,7 +135,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		);
 
 		return $l10n;
-
 	}//end translations()
 
 	/**
@@ -172,7 +171,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		);
 
 		return $mapping;
-
 	}//end mappingDouble()
 
 	/**
@@ -392,7 +390,7 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 	}//end testGeneratedConfigPassesEveryNodesOwnValidateConfig()
 
 	/**
-	 * The OpenConnector page nodes, constructed over doubles.
+	 * The Integriq page nodes, constructed over doubles.
 	 *
 	 * @return array<string, object> Node id => node.
 	 */
@@ -959,7 +957,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_WRITTEN, $encoded);
 		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_TARGET_UUID, $encoded);
 	}
-
 
 	/**
 	 * AN UNMAPPED SYNCHRONIZATION NOW GENERATES. This one refusal accounted for 98

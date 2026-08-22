@@ -4,15 +4,15 @@
  *
  * Chain E regression: migration round-trip.
  *
- * Spec: openconnector-comprehensive-tests
+ * Spec: openconnector-comprehensive-tests (openspec/specs/ dir name, unrenamed)
  *   "Playwright MUST include a migration round-trip spec" — install with legacy
  *   data present → run the chain-B storage migration → all resource pages still
  *   show the same data counts as before migration.
  *
  * On the dev/CI container the chain-B migration runs automatically as a repair
  * step (lib/Migration/Version2Date20260520000001.php) during `occ upgrade` /
- * app enable — it sets `openconnector.storage_migrated = 'true'` on a clean run.
- * There is currently NO standalone `occ openconnector:migrate-storage` console
+ * app enable — it sets `integriq.storage_migrated = 'true'` on a clean run.
+ * There is currently NO standalone `occ integriq:migrate-storage` console
  * command registered in this repo (the migration is invoked from the repair
  * step, not a Command class) — see the migrator's own log message which still
  * references that command as a future per-entity retry hook. This spec therefore
@@ -75,7 +75,7 @@ async function apiContext(): Promise<APIRequestContext> {
 }
 
 /**
- * Read `openconnector.storage_migrated`.
+ * Read `integriq.storage_migrated`.
  *
  * ⚠️ This used to probe `GET /index.php/apps/integriq/api/settings` and
  * fall back to `false` "when the endpoint is unavailable so the test skips
@@ -168,7 +168,7 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 	test('chain-B migration completed (storage_migrated === true)', async () => {
 		test.skip(
 			!storageMigrated,
-			'openconnector.storage_migrated is not true on this instance',
+			'integriq.storage_migrated is not true on this instance',
 		)
 		expect(
 			storageMigrated,
@@ -179,7 +179,7 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 	test('every migrated schema is queryable without page regression', async () => {
 		test.skip(
 			!storageMigrated,
-			'openconnector.storage_migrated is not true on this instance',
+			'integriq.storage_migrated is not true on this instance',
 		)
 		const ctx = await apiContext()
 		for (const schema of MIGRATED_SCHEMAS) {
@@ -195,7 +195,7 @@ test.describe('Migration round-trip — post chain-B invariants', () => {
 	test('object counts are stable across consecutive reads (round-trip invariant)', async () => {
 		test.skip(
 			!storageMigrated,
-			'openconnector.storage_migrated is not true on this instance',
+			'integriq.storage_migrated is not true on this instance',
 		)
 		const ctx = await apiContext()
 

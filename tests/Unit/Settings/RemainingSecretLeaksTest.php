@@ -58,7 +58,7 @@ class RemainingSecretLeaksTest extends TestCase {
 	 */
 	private function effectiveSchema(string $name): array {
 		$root = dirname(__DIR__, 3);
-		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 
 		$fragments = glob($root . '/lib/Settings/register.d/*.json');
 		sort($fragments);

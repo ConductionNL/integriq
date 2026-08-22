@@ -6,7 +6,7 @@
  *
  * NOT UI-driving Playwright tests — raw HTTP status assertions covered
  * canonically by the Newman suite
- * (tests/postman/openconnector.postman_collection.json). Excluded from the
+ * (tests/postman/integriq.postman_collection.json). Excluded from the
  * gate-19 UI run via the `**​/api-direct/**` testIgnore (gate-19: API-direct →
  * Newman). The UI scenarios for synchronization-engine carry @e2e tags and
  * remain in tests/e2e/spec-coverage/synchronization-engine.spec.ts.

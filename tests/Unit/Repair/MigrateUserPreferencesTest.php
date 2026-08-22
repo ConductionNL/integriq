@@ -90,8 +90,8 @@ class MigrateUserPreferencesTest extends TestCase {
 	/**
 	 * Build an IConfig double backed by a per-user, per-app array store.
 	 *
-	 * @param array<string,array<string,array<string,string>>> $store   [uid][app][key] => value.
-	 * @param array<string,string>                             $writes  Receives every setUserValue call.
+	 * @param array<string,array<string,array<string,string>>> $store [uid][app][key] => value.
+	 * @param array<string,string> $writes Receives every setUserValue call.
 	 *
 	 * @return IConfig
 	 */

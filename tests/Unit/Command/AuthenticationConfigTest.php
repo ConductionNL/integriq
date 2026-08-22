@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:authentication-config command (ocon#232).
+ * Tests for the integriq:authentication-config command (ocon#232).
  *
  * THE LOAD-BEARING TEST IS {@see testWithoutTheFlagNothingIsEverWritten()}: this
  * command can DELETE credential data, and the flag is the only thing standing
@@ -305,7 +305,7 @@ class AuthenticationConfigTest extends TestCase {
 			. 'unattended on every upgrade, with no human to authorise the deletion.'
 		);
 		$this->assertInstanceOf(Command::class, $command);
-		$this->assertSame('openconnector:authentication-config', $command->getName());
+		$this->assertSame('integriq:authentication-config', $command->getName());
 	}//end testTheCommandIsNotAndMustNotBecomeARepairStep()
 
 	/**

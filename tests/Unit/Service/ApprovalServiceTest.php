@@ -87,7 +87,7 @@ class ApprovalServiceTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->notificationManager = $this->createMock(INotificationManager::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/integriq/');
 
 		$this->service = new ApprovalService(
 			$this->objectService,
@@ -257,7 +257,7 @@ class ApprovalServiceTest extends TestCase {
 		$group->method('getUsers')->willReturn([$userA, $userB]);
 		$this->groupManager->method('get')->willReturn($group);
 
-		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/dashboard');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/integriq/dashboard');
 
 		$recordedUsers = [];
 		$recordedSubjects = [];

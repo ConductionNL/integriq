@@ -48,7 +48,7 @@ class SourceLockdownTest extends TestCase {
 	private function effectiveSourceSchema(): array {
 		$root = dirname(__DIR__, 3);
 
-		$base = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$base = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 		$schema = $base['components']['schemas']['source'];
 
 		foreach (glob($root . '/lib/Settings/register.d/*.json') as $fragmentPath) {

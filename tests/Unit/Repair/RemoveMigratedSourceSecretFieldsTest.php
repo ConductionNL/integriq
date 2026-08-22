@@ -603,7 +603,7 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegisterJsonStillDeclaresAllFiveFields(): void {
-		$path = __DIR__ . '/../../../lib/Settings/openconnector_register.json';
+		$path = __DIR__ . '/../../../lib/Settings/integriq_register.json';
 		$this->assertFileExists($path);
 
 		$data = json_decode((string)file_get_contents($path), true);

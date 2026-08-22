@@ -108,7 +108,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('catalog renders cards and the kind quick-filter narrows the grid', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
@@ -144,7 +144,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('PDOK card shows a dormant badge while pdok.feature_flag is off', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
@@ -167,7 +167,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('BRP HaalCentraal card shows available (mock mode is not dormant)', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
@@ -190,7 +190,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('typing "brp" into the search narrows the grid to matching items', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
@@ -230,7 +230,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
@@ -266,7 +266,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	test('instantiating a dormant source-template creates the Source (visible on Sources page)', async ({
 		page,
 	}) => {
-		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
+		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
 		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we

@@ -56,7 +56,7 @@ class SynchronizationLogActionsTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$urls = $this->createMock(IURLGenerator::class);
-		$urls->method('linkToRoute')->willReturn('/index.php/apps/openconnector/');
+		$urls->method('linkToRoute')->willReturn('/index.php/apps/integriq/');
 
 		$this->node = new class($l10n, $urls) {
 			use SynchronizationLogActions;
@@ -64,7 +64,7 @@ class SynchronizationLogActionsTest extends TestCase {
 			/**
 			 * Constructor.
 			 *
-			 * @param IL10N         $l10n         Translations.
+			 * @param IL10N $l10n Translations.
 			 * @param IURLGenerator $urlGenerator The app root.
 			 */
 			public function __construct(
@@ -80,14 +80,13 @@ class SynchronizationLogActionsTest extends TestCase {
 	/**
 	 * Wrap one item's json as a log entry.
 	 *
-	 * @param array  $json The item's json.
+	 * @param array $json The item's json.
 	 * @param string $side 'output' or 'input'.
 	 *
 	 * @return array The log entry.
 	 */
 	private function entryWith(array $json, string $side = 'output'): array {
 		return [$side => ['items' => [['json' => $json]]]];
-
 	}//end entryWith()
 
 	/**
@@ -115,7 +114,7 @@ class SynchronizationLogActionsTest extends TestCase {
 		$this->assertCount(1, $actions);
 		$this->assertSame('Open the synchronization', $actions[0]['label']);
 		$this->assertSame(
-			'/index.php/apps/openconnector#/synchronizations/sync-123',
+			'/index.php/apps/integriq#/synchronizations/sync-123',
 			$actions[0]['href']
 		);
 
@@ -136,7 +135,7 @@ class SynchronizationLogActionsTest extends TestCase {
 		);
 
 		$this->assertSame(
-			'/index.php/apps/openconnector#/synchronizations/sync-9',
+			'/index.php/apps/integriq#/synchronizations/sync-9',
 			$actions[0]['href']
 		);
 
@@ -156,7 +155,7 @@ class SynchronizationLogActionsTest extends TestCase {
 		);
 
 		$this->assertSame(
-			'/index.php/apps/openconnector#/synchronizations/sync-in',
+			'/index.php/apps/integriq#/synchronizations/sync-in',
 			$actions[0]['href']
 		);
 
@@ -195,7 +194,7 @@ class SynchronizationLogActionsTest extends TestCase {
 		);
 
 		$this->assertSame(
-			'/index.php/apps/openconnector#/synchronizations/..%2F..%2Fevil%3Fx%3D1%26y%3D2',
+			'/index.php/apps/integriq#/synchronizations/..%2F..%2Fevil%3Fx%3D1%26y%3D2',
 			$actions[0]['href']
 		);
 

@@ -3,7 +3,7 @@
 /**
  * Unit tests for SynchronizationService::deleteInvalidObjects scope-check guard.
  *
- * Ported from openconnector PR #733 (author @rjzondervan), adapted to the
+ * Ported from integriq PR #733 (author @rjzondervan), adapted to the
  * post-cutover OR-object-based contract layer. The original test mocked the
  * deleted SynchronizationContractMapper; here we mock the OR ObjectService
  * which the cleanup path uses to look up contract and target objects.

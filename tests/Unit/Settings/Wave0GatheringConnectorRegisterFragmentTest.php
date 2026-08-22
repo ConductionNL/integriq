@@ -139,7 +139,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	 * Mapping, one Synchronization wired sourceId -> targetId, and one
 	 * enabled Job with a real (non-zero) interval whose
 	 * `arguments.synchronizationId` matches the Synchronization's own slug
-	 * — i.e. it genuinely self-schedules via OpenConnector's Job/cron path
+	 * — i.e. it genuinely self-schedules via Integriq's Job/cron path
 	 * rather than requiring a manual trigger.
 	 *
 	 * @dataProvider fragmentProvider

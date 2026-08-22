@@ -35,7 +35,7 @@ const REPO_ROOT = path.resolve(__dirname, '..')
 
 const MANIFEST_PATH = path.join(REPO_ROOT, 'src', 'manifest.json')
 
-// OpenConnector ships a v2 manifest (`$schema` references
+// Integriq ships a v2 manifest (`$schema` references
 // `app-manifest-v2.schema.json`). Pick the schema file from the manifest's
 // own `$schema` so this validator follows the manifest version rather than
 // hardcoding v1 — falling back to v1 when the manifest doesn't declare one.

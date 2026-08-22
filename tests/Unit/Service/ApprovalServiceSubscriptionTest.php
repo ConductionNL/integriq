@@ -72,7 +72,7 @@ class ApprovalServiceSubscriptionTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->notificationManager = $this->createMock(INotificationManager::class);
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/');
+		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/integriq/');
 
 		$this->service = new ApprovalService(
 			$this->objectService,

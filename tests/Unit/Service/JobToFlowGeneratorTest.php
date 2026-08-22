@@ -33,9 +33,9 @@ use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SynchronizationRunNode;
 use OCA\Integriq\Service\JobIntervalCron;
+use OCA\Integriq\Service\JobToFlowGenerator;
 use OCA\Integriq\Service\MigrationEntityReader;
 use OCA\Integriq\Service\MigrationSubject;
-use OCA\Integriq\Service\JobToFlowGenerator;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -131,7 +131,6 @@ class JobToFlowGeneratorTest extends TestCase {
 		);
 
 		return $l10n;
-
 	}//end translations()
 
 	/**
@@ -529,7 +528,6 @@ class JobToFlowGeneratorTest extends TestCase {
 	 */
 	public static function singleRunSpellings(): array {
 		return ['schema property' => ['singleRun'], 'what JobService reads' => ['isSingleRun']];
-
 	}//end singleRunSpellings()
 
 	/**

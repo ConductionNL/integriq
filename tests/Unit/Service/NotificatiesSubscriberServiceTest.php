@@ -93,7 +93,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		$this->eventService = $this->createMock(EventService::class);
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/openconnector/api/notificaties/callback/abon-1');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/integriq/api/notificaties/callback/abon-1');
 
 		$this->service = new NotificatiesSubscriberService(
 			$this->objectService,

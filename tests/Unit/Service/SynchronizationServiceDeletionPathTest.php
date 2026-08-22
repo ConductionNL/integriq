@@ -117,7 +117,7 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 	 *
 	 * @param array<int, string> $targetIds Contracts to seed, one per target.
 	 * @param array<int, string>|null $inScope Targets the scope-check resolves;
-	 *                                        null means all of them.
+	 *                                         null means all of them.
 	 *
 	 * @return void
 	 */

@@ -71,7 +71,7 @@ class FscCallServiceTest extends TestCase {
 	private array $saved = [];
 
 	/**
-	 * Pre-seeded openconnector `source` rows returned for schema=source lookups.
+	 * Pre-seeded `openconnector` register `source` rows returned for schema=source lookups.
 	 *
 	 * @var array<int, ObjectEntity>
 	 */

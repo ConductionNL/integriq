@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:migrate-inline-secrets command glue.
+ * Tests for the integriq:migrate-inline-secrets command glue.
  *
  * These cover the COMMAND's responsibilities only — the dry-run/real-run dispatch,
  * the fail-closed drive, and (item 3 of ocon#151 phase C) persisting the TRUE

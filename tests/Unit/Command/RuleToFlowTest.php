@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:rule-to-flow command.
+ * Tests for the integriq:rule-to-flow command.
  *
  * The endpoint is a REQUIRED argument, and
  * {@see testTheEndpointArgumentIsRequired()} pins that: a rule carries no

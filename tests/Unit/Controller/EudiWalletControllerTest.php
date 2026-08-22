@@ -29,8 +29,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use PHPUnit\Framework\TestCase;
 use OCP\Security\Bruteforce\IThrottler;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -295,11 +295,11 @@ class EudiWalletControllerTest extends TestCase {
 
 		$this->assertSame('https://example.test', $data['credential_issuer']);
 		$this->assertSame(
-			'https://example.test/index.php/apps/openconnector/api/eudi/credential',
+			'https://example.test/index.php/apps/integriq/api/eudi/credential',
 			$data['credential_endpoint']
 		);
 		$this->assertSame(
-			'https://example.test/index.php/apps/openconnector/api/eudi/token',
+			'https://example.test/index.php/apps/integriq/api/eudi/token',
 			$data['token_endpoint']
 		);
 		$this->assertSame(['keys' => []], $data['jwks']);

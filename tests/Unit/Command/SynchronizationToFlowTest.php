@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:synchronization-to-flow command.
+ * Tests for the integriq:synchronization-to-flow command.
  *
  * The command's whole contract is that it WRITES NOTHING and that a refusal is
  * visible: {@see testARefusalNamesEveryUnsupportedFeatureAndFails()} asserts the

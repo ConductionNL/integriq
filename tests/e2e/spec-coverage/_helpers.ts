@@ -2,19 +2,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Shared helpers for genuine behavioral UI coverage of openconnector.
+ * Shared helpers for genuine behavioral UI coverage of integriq.
  *
  * Design goals (gate-19 honest coverage):
  *  - Navigate via real nav-clicks from the in-app navigation, not just
  *    deep-link page.goto, so the test exercises the router + nav wiring.
  *  - Filter out Nextcloud core framework noise (user_status 500s, etc.)
- *    so console-error / 500 assertions only fail on openconnector-origin
+ *    so console-error / 500 assertions only fail on integriq-origin
  *    problems.
  */
 import { type Page, expect } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
 
-// The one openconnector URL base for the whole spec-coverage suite. Two
+// The one integriq URL base for the whole spec-coverage suite. Two
 // separate things are encoded here, and both were learned from a failing run.
 //
 // 1. THE `/index.php/` PREFIX IS NOT OPTIONAL.
@@ -53,10 +53,10 @@ import { appDialog } from '../support/dialogs'
 //
 //    The in-app router ran in HASH mode (`createWebHashHistory()`) when this
 //    comment was written, so a path-form deep-link such as
-//    `…/openconnector/sources` was ignored by the router and silently landed
+//    `…/integriq/sources` was ignored by the router and silently landed
 //    on the dashboard — only the hash form rendered the target page.
 //
-//    openconnector switched to `createWebHistory()` in src/main.js
+//    integriq switched to `createWebHistory()` in src/main.js
 //    (flow-engine-unification / router-history-mode convention,
 //    docs/claude/frontend-standards.md#routing-history-mode), backed by the
 //    `ui#dashboard` `/{path}` catch-all in appinfo/routes.php, verified live
@@ -73,7 +73,7 @@ import { appDialog } from '../support/dialogs'
 export const APP_BASE = '/index.php/apps/integriq'
 
 /**
- * The openconnector app root, without the router hash.
+ * The integriq app root, without the router hash.
  *
  * Same `/index.php/` reasoning as APP_BASE above: use this anywhere a spec
  * needs the app entry point itself rather than a route inside it.
@@ -82,9 +82,9 @@ export const APP_ROOT_URL = '/index.php/apps/integriq/'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
- * unrelated to the openconnector app under test. The dev container's
+ * unrelated to the integriq app under test. The dev container's
  * user_status OCS endpoint reliably 500s and core logs a matching error;
- * these must NOT fail an openconnector UI assertion.
+ * these must NOT fail an integriq UI assertion.
  */
 const NOISE_URL =
 	/\/(user_status|heartbeat|notifications|core\/preview|avatar|files\/api)/i
@@ -99,7 +99,7 @@ const NOISE_CONSOLE = [
 	// NC theming/nldesign stylesheet noise: when the active theme's token CSS
 	// is briefly unavailable mid-run it serves the 404 HTML page, tripping a
 	// "Refused to apply style … MIME type ('text/html')" console error. This is
-	// NC theme/environment noise, never an openconnector-origin failure.
+	// NC theme/environment noise, never an integriq-origin failure.
 	'Refused to apply style',
 	'is not a supported stylesheet MIME type',
 ]
@@ -130,13 +130,13 @@ export function trackErrors(page: Page): ErrorSink {
 }
 
 /**
- * Assert the sink saw no openconnector-origin console errors or 5xx.
+ * Assert the sink saw no integriq-origin console errors or 5xx.
  * Specifically calls out any /apps/integriq/ 5xx as a hard failure
  * (catches sync/endpoint dispatch regressions).
  */
 export function assertNoAppErrors(sink: ErrorSink): void {
 	const appServerErrors = sink.serverErrors.filter((e) =>
-		/openconnector|openregister/.test(e),
+		/integriq|openconnector|openregister/.test(e),
 	)
 	expect(
 		appServerErrors,

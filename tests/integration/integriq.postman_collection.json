@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "OpenConnector API Contract Suite",
-		"description": "Newman/Postman API-contract tests for the OpenConnector Nextcloud app. Locks the HTTP contract of openconnector's integration surface: Sources, Mappings, Rules, Endpoints, Jobs, Synchronizations, Webhooks (event_subscription), CloudEvents (event) and Consumers.\n\nARCHITECTURE: After the chain-C OR-cutover, per-schema CRUD no longer lives in openconnector controllers — it is delegated to OpenRegister's object API at /api/objects/openconnector/{schema}/* (ADR-022). openconnector's own controllers now only expose the integration ACTIONS: sources#test, jobs#run/test, synchronizations#run/test/contracts/statistics/logs, mappings#test, and the events (webhook subscription) lifecycle. This suite covers both: OR-delegated CRUD for every schema, and the openconnector action endpoints.\n\nAUTH MODEL: collection auth is noauth; every authenticated request carries an EXPLICIT basic-auth block (admin:admin via adminUser/adminPass). Authorization (no-auth) requests use {{noAuthBase}} (127.0.0.1) so the host-scoped NC session cookie established by authed {{baseUrl}} (localhost) requests is never sent to them — keeping them genuinely unauthenticated. --ignore-redirects + Accept: application/json make NC return JSON 401 instead of a 303->login 200 HTML page.\n\nPHASE-0 FIX LOCKED: POST /api/synchronizations/{id}/run no longer 500s on the run-log/hydrate path (commit b855af5b 'restore run-log write path to OpenRegister + nullable-safe hydrate'). The run happy-path test asserts a graceful 2xx/4xx (NOT 500) on a synchronization missing a source — i.e. the controller reaches the synchronize() service, writes a run-log and returns a clean validation error rather than crashing.\n\nQUARANTINED REAL BUGS (asserted as the CURRENT 500, NOT faked passes — flip to happy-path when fixed):\n - synchronizations#test: catches Exception with statusCode:($e->getCode() ?? 400); getCode() returns 0 (not null) -> JSONResponse(status 0) -> NC Http.php#106 'Undefined array key 0' -> 500.\n - mappings#test: builds an OCA\\OpenRegister\\Db\\ObjectEntity and passes it to MappingService::executeMapping() which requires OCA\\OpenConnector\\Db\\Mapping -> TypeError -> 500 (always, regardless of body). Also throws InvalidArgumentException (uncaught -> 500) on missing params instead of returning 400.\n - jobs#run / jobs#test: JobService::executeJob writes a job_log with executionTime as a float where the job_log schema requires 'integer or null' -> OR validation failure -> 500.\n\nfindObjects/findObject NOTE: the OR-method findObjects()/findObject() non-existent-method calls were ALREADY migrated off development (commit 139423f6 'migrate Source/Mapping/Rule/Contract(Log) mappers onto OpenRegister'). No controller-reachable endpoint in 0.2.15 500s on a findObject OR-method call. The only remaining findObject* symbols are openconnector's local MongoDB ObjectService shim and SourceMapper::findObject (a real method on that class).\n\nUsage: see run-newman.sh.",
+		"name": "Integriq API Contract Suite",
+		"description": "Newman/Postman API-contract tests for the Integriq Nextcloud app. Locks the HTTP contract of integriq's integration surface: Sources, Mappings, Rules, Endpoints, Jobs, Synchronizations, Webhooks (event_subscription), CloudEvents (event) and Consumers.\n\nARCHITECTURE: After the chain-C OR-cutover, per-schema CRUD no longer lives in integriq controllers — it is delegated to OpenRegister's object API at /api/objects/openconnector/{schema}/* (ADR-022). integriq's own controllers now only expose the integration ACTIONS: sources#test, jobs#run/test, synchronizations#run/test/contracts/statistics/logs, mappings#test, and the events (webhook subscription) lifecycle. This suite covers both: OR-delegated CRUD for every schema, and the integriq action endpoints.\n\nAUTH MODEL: collection auth is noauth; every authenticated request carries an EXPLICIT basic-auth block (admin:admin via adminUser/adminPass). Authorization (no-auth) requests use {{noAuthBase}} (127.0.0.1) so the host-scoped NC session cookie established by authed {{baseUrl}} (localhost) requests is never sent to them — keeping them genuinely unauthenticated. --ignore-redirects + Accept: application/json make NC return JSON 401 instead of a 303->login 200 HTML page.\n\nPHASE-0 FIX LOCKED: POST /api/synchronizations/{id}/run no longer 500s on the run-log/hydrate path (commit b855af5b 'restore run-log write path to OpenRegister + nullable-safe hydrate'). The run happy-path test asserts a graceful 2xx/4xx (NOT 500) on a synchronization missing a source — i.e. the controller reaches the synchronize() service, writes a run-log and returns a clean validation error rather than crashing.\n\nQUARANTINED REAL BUGS (asserted as the CURRENT 500, NOT faked passes — flip to happy-path when fixed):\n - synchronizations#test: catches Exception with statusCode:($e->getCode() ?? 400); getCode() returns 0 (not null) -> JSONResponse(status 0) -> NC Http.php#106 'Undefined array key 0' -> 500.\n - mappings#test: builds an OCA\\OpenRegister\\Db\\ObjectEntity and passes it to MappingService::executeMapping() which requires OCA\\OpenConnector\\Db\\Mapping -> TypeError -> 500 (always, regardless of body). Also throws InvalidArgumentException (uncaught -> 500) on missing params instead of returning 400.\n - jobs#run / jobs#test: JobService::executeJob writes a job_log with executionTime as a float where the job_log schema requires 'integer or null' -> OR validation failure -> 500.\n\nfindObjects/findObject NOTE: the OR-method findObjects()/findObject() non-existent-method calls were ALREADY migrated off development (commit 139423f6 'migrate Source/Mapping/Rule/Contract(Log) mappers onto OpenRegister'). No controller-reachable endpoint in 0.2.15 500s on a findObject OR-method call. The only remaining findObject* symbols are integriq's local MongoDB ObjectService shim and SourceMapper::findObject (a real method on that class).\n\nUsage: see run-newman.sh.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -105,7 +105,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
-						"body": { "mode": "raw", "raw": "{\n  \"name\": \"newman-job\",\n  \"jobClass\": \"OCA\\\\OpenConnector\\\\Action\\\\PingAction\",\n  \"isEnabled\": true,\n  \"interval\": 3600\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"newman-job\",\n  \"jobClass\": \"OCA\\\\Integriq\\\\Action\\\\PingAction\",\n  \"isEnabled\": true,\n  \"interval\": 3600\n}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/job", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "{{register}}", "job" ] }
 					}
 				},
@@ -187,7 +187,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/test/{{sourceId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "sources", "test", "{{sourceId}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/sources/test/{{sourceId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "sources", "test", "{{sourceId}}" ] }
 					}
 				},
 				{
@@ -201,7 +201,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/test/newman-nonexistent-id", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "sources", "test", "newman-nonexistent-id" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/sources/test/newman-nonexistent-id", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "sources", "test", "newman-nonexistent-id" ] }
 					}
 				},
 				{
@@ -213,7 +213,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "sources", "logs" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/sources/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "sources", "logs" ] }
 					}
 				},
 				{
@@ -224,7 +224,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/sources/logs", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "sources", "logs" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/sources/logs", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "sources", "logs" ] }
 					}
 				}
 			]
@@ -241,7 +241,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/mappings/objects", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "mappings", "objects" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/mappings/objects", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "mappings", "objects" ] }
 					}
 				},
 				{
@@ -260,7 +260,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{\n  \"inputObject\": { \"name\": \"Jane\", \"age\": 30 },\n  \"mapping\": { \"mapping\": { \"fullName\": \"{{ name }}\" } }\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/mappings/test", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "mappings", "test" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/mappings/test", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "mappings", "test" ] }
 					}
 				},
 				{
@@ -272,7 +272,7 @@
 						"method": "POST",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/mappings/test", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "mappings", "test" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/mappings/test", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "mappings", "test" ] }
 					}
 				}
 			]
@@ -333,7 +333,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoints/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "endpoints", "logs" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/endpoints/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "endpoints", "logs" ] }
 					}
 				},
 				{
@@ -346,7 +346,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoint/newman/no-such-endpoint-xyz", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "endpoint", "newman", "no-such-endpoint-xyz" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/endpoint/newman/no-such-endpoint-xyz", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "endpoint", "newman", "no-such-endpoint-xyz" ] }
 					}
 				}
 			]
@@ -363,7 +363,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "jobs", "logs" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/jobs/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "jobs", "logs" ] }
 					}
 				},
 				{
@@ -376,7 +376,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/run/newman-nonexistent", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "jobs", "run", "newman-nonexistent" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/jobs/run/newman-nonexistent", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "jobs", "run", "newman-nonexistent" ] }
 					}
 				},
 				{
@@ -395,7 +395,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/run/{{jobId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "jobs", "run", "{{jobId}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/jobs/run/{{jobId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "jobs", "run", "{{jobId}}" ] }
 					}
 				},
 				{
@@ -407,7 +407,7 @@
 						"method": "POST",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/jobs/run/{{jobId}}", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "jobs", "run", "{{jobId}}" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/jobs/run/{{jobId}}", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "jobs", "run", "{{jobId}}" ] }
 					}
 				}
 			]
@@ -434,7 +434,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/{{syncId}}/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "{{syncId}}", "run" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/{{syncId}}/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "{{syncId}}", "run" ] }
 					}
 				},
 				{
@@ -453,7 +453,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{\"forceDeletion\": true}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/{{syncId}}/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "{{syncId}}", "run" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/{{syncId}}/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "{{syncId}}", "run" ] }
 					}
 				},
 				{
@@ -467,7 +467,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/newman-nonexistent/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "newman-nonexistent", "run" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/newman-nonexistent/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "newman-nonexistent", "run" ] }
 					}
 				},
 				{
@@ -479,7 +479,7 @@
 						"method": "POST",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/synchronizations/{{syncId}}/run", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "{{syncId}}", "run" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/synchronizations/{{syncId}}/run", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "{{syncId}}", "run" ] }
 					}
 				},
 				{
@@ -493,7 +493,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/{{syncId}}/test", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "{{syncId}}", "test" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/{{syncId}}/test", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "{{syncId}}", "test" ] }
 					}
 				},
 				{
@@ -505,7 +505,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/contracts/{{syncId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "contracts", "{{syncId}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/contracts/{{syncId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "contracts", "{{syncId}}" ] }
 					}
 				},
 				{
@@ -517,7 +517,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/statistics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "statistics" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/statistics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "statistics" ] }
 					}
 				},
 				{
@@ -529,7 +529,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "logs" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/synchronizations/logs", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "logs" ] }
 					}
 				},
 				{
@@ -540,7 +540,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/synchronizations/statistics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "statistics" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/synchronizations/statistics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "synchronizations", "statistics" ] }
 					}
 				}
 			]
@@ -557,7 +557,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions" ] }
 					}
 				},
 				{
@@ -573,7 +573,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{\n  \"reference\": \"newman-sub\",\n  \"types\": [\"com.example.newman\"],\n  \"sink\": \"https://example.com/newman-hook\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions" ] }
 					}
 				},
 				{
@@ -587,7 +587,7 @@
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/events/subscriptions", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions" ] }
 					}
 				},
 				{
@@ -599,7 +599,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "DELETE",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions/{{subRef}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions", "{{subRef}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/events/subscriptions/{{subRef}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions", "{{subRef}}" ] }
 					}
 				},
 				{
@@ -612,7 +612,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions/newman-nonexistent/pull", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions", "newman-nonexistent", "pull" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/events/subscriptions/newman-nonexistent/pull", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions", "newman-nonexistent", "pull" ] }
 					}
 				},
 				{
@@ -623,7 +623,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/events/subscriptions", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "events", "subscriptions" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/events/subscriptions", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "events", "subscriptions" ] }
 					}
 				}
 			]
@@ -727,7 +727,7 @@
 						"method": "PUT",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{\n  \"mode\": \"hmac\",\n  \"hmacSecret\": \"{{dsoHmacSecret}}\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/admin/dso-pki-config", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "admin", "dso-pki-config" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/admin/dso-pki-config", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "admin", "dso-pki-config" ] }
 					}
 				},
 				{
@@ -737,7 +737,7 @@
 						"method": "POST",
 						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }, { "key": "X-DSO-Signature", "value": "sha256=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" } ],
 						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-forged-1\",\"type\":\"aanvraag\"}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "dso", "stam", "verzoeken" ] }
 					}
 				},
 				{
@@ -747,7 +747,7 @@
 						"method": "POST",
 						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
 						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-nosig-1\",\"type\":\"aanvraag\"}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "dso", "stam", "verzoeken" ] }
 					}
 				},
 				{
@@ -760,7 +760,7 @@
 						"method": "POST",
 						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }, { "key": "X-DSO-Signature", "value": "{{dsoSignature}}" } ],
 						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\"}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "dso", "stam", "verzoeken" ] }
 					}
 				}
 			]
@@ -774,7 +774,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/health", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "health" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/health", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "health" ] }
 					}
 				},
 				{
@@ -784,7 +784,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "text/plain" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/metrics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/metrics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "metrics" ] }
 					}
 				},
 				{
@@ -793,7 +793,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "text/plain" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/metrics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/metrics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "metrics" ] }
 					}
 				}
 			]

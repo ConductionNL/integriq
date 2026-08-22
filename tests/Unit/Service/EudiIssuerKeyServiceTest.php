@@ -92,7 +92,7 @@ class EudiIssuerKeyServiceTest extends TestCase {
 		// (design.md D-KEY), but the PRIVATE key PEM header must never
 		// appear verbatim — only through the (fake, but real-shaped)
 		// ICrypto-encrypted ciphertext.
-		$stored = $this->configStore['openconnector.eudi_issuer_key_org-1'];
+		$stored = $this->configStore['integriq.eudi_issuer_key_org-1'];
 		$this->assertStringNotContainsString('-----BEGIN PRIVATE KEY-----', $stored, 'stored blob must not contain a raw private-key PEM header');
 		$this->assertStringContainsString('enc:', $stored, 'stored blob must carry the ICrypto-encrypted ciphertext');
 
@@ -147,7 +147,7 @@ class EudiIssuerKeyServiceTest extends TestCase {
 		$this->assertSame($first['publicKeyPem'], $archivedPublic);
 
 		// ...but the archived entry itself never carries the encrypted private key.
-		$stored = json_decode($this->configStore['openconnector.eudi_issuer_key_org-1'], true);
+		$stored = json_decode($this->configStore['integriq.eudi_issuer_key_org-1'], true);
 		$archivedRow = $stored['archived'][0];
 		$this->assertArrayNotHasKey('encryptedPrivateKey', $archivedRow, 'archived key MUST NOT retain private key material');
 
@@ -171,7 +171,7 @@ class EudiIssuerKeyServiceTest extends TestCase {
 			$kids[] = $service->rotateKey('org-1')['kid'];
 		}
 
-		$stored = json_decode($this->configStore['openconnector.eudi_issuer_key_org-1'], true);
+		$stored = json_decode($this->configStore['integriq.eudi_issuer_key_org-1'], true);
 		$this->assertCount(EudiIssuerKeyService::MAX_ARCHIVED_KEYS, $stored['archived']);
 
 		// The oldest archived entries (from the earliest rotations) must have been pruned.
@@ -209,7 +209,7 @@ class EudiIssuerKeyServiceTest extends TestCase {
 
 		$entry = $service->generateKey(null);
 
-		$this->assertArrayHasKey('openconnector.eudi_issuer_key_' . EudiIssuerKeyService::DEFAULT_ORGANISATION_SCOPE, $this->configStore);
+		$this->assertArrayHasKey('integriq.eudi_issuer_key_' . EudiIssuerKeyService::DEFAULT_ORGANISATION_SCOPE, $this->configStore);
 		$active = $service->resolveActiveKey(null);
 		$this->assertSame($entry['kid'], $active['kid']);
 

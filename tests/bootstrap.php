@@ -1,10 +1,10 @@
 <?php
 
 /**
- * PHPUnit bootstrap for OpenConnector unit tests.
+ * PHPUnit bootstrap for Integriq unit tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests
+ * @package  OCA\Integriq\Tests
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -98,14 +98,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		}//end if
 
 		// OCA\OpenRegister AppHost stubs — peer app not in vendor. Used by the
-		// openconnector HealthController delegation path (licence-and-or-
+		// integriq HealthController delegation path (licence-and-or-
 		// requirement-honesty change).
 		if (class_exists('OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
 		}
 
 		// OCA\OpenRegister AppHost observability stubs — peer app not in
-		// vendor. OpenConnectorMetricsProvider implements IMetricsProvider
+		// vendor. IntegriqMetricsProvider implements IMetricsProvider
 		// and returns MetricSample instances (retry-and-circuit-breaker-policies,
 		// REQ-PROM-011); MetricSample must load before IMetricsProvider's
 		// docblock @return type is referenced.
@@ -323,7 +323,7 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		}
 
 		// adopt-apphost: AppHost boilerplate stubs (peer app not in vendor).
-		// The leaf `OpenConnectorAdmin` (Settings + Sections) and
+		// The leaf `IntegriqAdmin` (Settings + Sections) and
 		// `InitializeActions` classes extend these directly, so autoloading
 		// the subclass requires the parent to resolve.
 		if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
@@ -342,7 +342,7 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/AppHost/Repair/GenericInitializeActions.php';
 		}
 
-		// Flow-engine stubs (openconnector-flow-nodes change). The two
+		// Flow-engine stubs (integriq-flow-nodes change). The two
 		// contributed node classes `implements IFlowNode`, so the interface
 		// must exist before they are parsed — exactly the compile-time
 		// reference the runtime `class_exists()` guard in Application.php
@@ -420,7 +420,7 @@ if ($ncPresent === true) {
 		\OC_App::loadApps();
 
 		// Load our specific app.
-		\OC_App::loadApp('openconnector');
+		\OC_App::loadApp('integriq');
 
 		// Clear hooks for testing.
 		OC_Hook::clear();

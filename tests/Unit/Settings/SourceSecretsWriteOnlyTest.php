@@ -50,7 +50,7 @@ class SourceSecretsWriteOnlyTest extends TestCase {
 	 */
 	private function sourceProperties(): array {
 		$root = dirname(__DIR__, 3);
-		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 
 		$fragments = glob($root . '/lib/Settings/register.d/*.json');
 		sort($fragments);
@@ -113,7 +113,7 @@ class SourceSecretsWriteOnlyTest extends TestCase {
 	 * `authenticationConfig` even though the app can now remove it per-instance.
 	 *
 	 * ocon#232 makes `authenticationConfig` removable — it is vestigial (no code
-	 * authenticates from it), so `occ openconnector:authentication-config
+	 * authenticates from it), so `occ integriq:authentication-config
 	 * --drop-schema-property` drops it from the LIVE schema on one instance. The
 	 * tempting "tidy-up" is to delete the property from this JSON too. THAT WOULD BE
 	 * A FLEET-WIDE, UNGATED DATA-LOSS BUG:
@@ -135,14 +135,14 @@ class SourceSecretsWriteOnlyTest extends TestCase {
 	 */
 	public function testTheBaseRegisterStillDeclaresAuthenticationConfig(): void {
 		$root = dirname(__DIR__, 3);
-		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 
 		$properties = $descriptor['components']['schemas']['source']['properties'];
 
 		$this->assertArrayHasKey(
 			'authenticationConfig',
 			$properties,
-			'openconnector_register.json MUST keep declaring `authenticationConfig`. Schema::hydrate() '
+			'integriq_register.json MUST keep declaring `authenticationConfig`. Schema::hydrate() '
 			. 'REPLACES properties wholesale, so removing it here prunes the property fleet-wide on the next '
 			. 'version-bumping import — ungated, on instances that never opted in. Per-instance removal is the '
 			. 'ONLY sanctioned path (ocon#232).'

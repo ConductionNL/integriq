@@ -5,8 +5,8 @@
  * Chain E regression: end-to-end user journeys (UI-driven).
  *
  * Counterpart to the Newman API suite (folder 13 of
- * `tests/postman/openconnector.postman_collection.json`). Where Newman
- * exercises the HTTP surface, this spec drives the openconnector Vue
+ * `tests/postman/integriq.postman_collection.json`). Where Newman
+ * exercises the HTTP surface, this spec drives the integriq Vue
  * frontend — the nc-vue manifest-renderer (`CnIndexPage` /
  * `CnFormDialog`) — so a visual click-through is what creates the
  * objects. The dialog's Save handler posts to OR's
@@ -44,7 +44,7 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 const OR = '/index.php/apps/openregister/api/objects/openconnector'
 
 /**
- * Compute the openconnector URL base for the current Nextcloud install.
+ * Compute the integriq URL base for the current Nextcloud install.
  *
  * Apache + mod_rewrite (local dev container): NC's `generateUrl` returns
  * `/apps/integriq` — htaccess maps that to `/index.php/apps/integriq`
@@ -73,7 +73,7 @@ async function resolveAppBase(page: Page): Promise<string> {
  *
  * ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A HASH-form
  * deep-link such as `<base>/#/sources` would now be served by the SPA shell —
- * status 200, `openconnector` in the HTML, everything a smoke check looks
+ * status 200, `integriq` in the HTML, everything a smoke check looks
  * at — and then ignored by the router, which reads `location.pathname`, not
  * `location.hash`, and renders the dashboard instead. The plain path form
  * used below is correct for this router mode; do not add a `#` back in.
@@ -129,7 +129,7 @@ async function createViaUi(
 	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
-	// Fill `name` first; every openconnector schema exposes a top-level
+	// Fill `name` first; every integriq schema exposes a top-level
 	// `name` field as the title.
 	//
 	// ⚠️ KEYS HERE ARE RENDERED LABELS, NOT PROPERTY NAMES. CnFormDialog
@@ -931,7 +931,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => {
 	// '/' is the SPA dashboard route. The server-side URL for it is the
 	// app base WITHOUT a trailing slash — Nextcloud's PageController only
-	// matches `apps/openconnector`, not `apps/openconnector/` (the latter
+	// matches `apps/integriq`, not `apps/integriq/` (the latter
 	// 404s through .htaccess rewriting). Use '' here, not '/'.
 	for (const route of [
 		'',
@@ -950,7 +950,7 @@ test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => 
 			})
 			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
-			expect(html.toLowerCase()).toContain('openconnector')
+			expect(html.toLowerCase()).toContain('integriq')
 		})
 	}
 })

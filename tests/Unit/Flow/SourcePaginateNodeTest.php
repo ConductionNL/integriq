@@ -100,7 +100,7 @@ class SourcePaginateNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new SourcePaginateNode(
 			synchronizationService: $this->synchronizationService,
@@ -687,7 +687,6 @@ class SourcePaginateNodeTest extends TestCase {
 	 */
 	private function serviceDouble(): SynchronizationService {
 		return new class extends SynchronizationService {
-
 			/**
 			 * The calls this double received, keyed by method.
 			 *

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — PKIoverheid credential resolver tests.
+ * Integriq — PKIoverheid credential resolver tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

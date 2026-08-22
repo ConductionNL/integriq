@@ -34,8 +34,8 @@ class DedupeContractsTest extends TestCase {
 	/**
 	 * Build a contract payload.
 	 *
-	 * @param string $uuid    The contract uuid.
-	 * @param string $origin  The origin id.
+	 * @param string $uuid The contract uuid.
+	 * @param string $origin The origin id.
 	 * @param string $checked The sourceLastChecked stamp.
 	 *
 	 * @return array The payload.

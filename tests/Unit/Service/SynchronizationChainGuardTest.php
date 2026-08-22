@@ -3,7 +3,7 @@
 /**
  * The cycle guard shared by both synchronization-chaining mechanisms.
  *
- * OpenConnector chains synchronizations two ways — a `synchronization` rule and
+ * Integriq chains synchronizations two ways — a `synchronization` rule and
  * a `followUps` entry — and both re-enter `synchronize()` on the same service.
  * Neither had a guard, so A -> B -> A recursed until the process died. These
  * tests pin the guard's behaviour without standing up the whole service graph:

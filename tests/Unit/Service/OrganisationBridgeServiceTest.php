@@ -9,7 +9,7 @@ declare(strict_types=1);
  * functionality integration with OpenRegister app.
  *
  * @category  Test
- * @package   OpenConnector
+ * @package   Integriq
  * @author    Conduction <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
@@ -43,7 +43,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return false for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'files']);
+			->willReturn(['integriq', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);
@@ -63,7 +63,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return true for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'openregister', 'files']);
+			->willReturn(['integriq', 'openregister', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$container->method('get')
@@ -90,7 +90,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return false for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'files']);
+			->willReturn(['integriq', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);
@@ -115,7 +115,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return false for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'files']);
+			->willReturn(['integriq', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);
@@ -139,7 +139,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return true for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'openregister', 'files']);
+			->willReturn(['integriq', 'openregister', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$container->method('get')
@@ -163,7 +163,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return false for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'files']);
+			->willReturn(['integriq', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);
@@ -184,7 +184,7 @@ class OrganisationBridgeServiceTest extends TestCase {
 		// Mock app manager to return false for openregister
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')
-			->willReturn(['openconnector', 'files']);
+			->willReturn(['integriq', 'files']);
 
 		$container = $this->createMock(IContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);

@@ -19,11 +19,11 @@ class UiControllerTest extends TestCase {
 
 	/**
 	 * Every SPA route returns the same shell: the `index` template of the
-	 * `openconnector` app, with no server-rendered parameters.
+	 * `integriq` app, with no server-rendered parameters.
 	 */
 	private function assertSpaShell(TemplateResponse $response, string $route): void {
 		$this->assertInstanceOf(TemplateResponse::class, $response, $route . ' should return a TemplateResponse');
-		$this->assertSame('openconnector', $response->getApp(), $route . ' should render the openconnector app');
+		$this->assertSame('integriq', $response->getApp(), $route . ' should render the integriq app');
 		$this->assertSame('index', $response->getTemplateName(), $route . ' should render the index template');
 		$this->assertSame([], $response->getParams(), $route . ' should render no server-side parameters');
 	}

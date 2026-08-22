@@ -60,9 +60,9 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 	/**
 	 * Invoke the private persistContract().
 	 *
-	 * @param SynchronizationService $service    The instance.
-	 * @param array                  $contract   The contract payload.
-	 * @param bool                   $ensureUuid Whether to mint a missing identity.
+	 * @param SynchronizationService $service The instance.
+	 * @param array $contract The contract payload.
+	 * @param bool $ensureUuid Whether to mint a missing identity.
 	 *
 	 * @return array The persisted payload.
 	 */

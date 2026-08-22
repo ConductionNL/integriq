@@ -335,7 +335,7 @@ class PromotionServiceTest extends TestCase {
 			->method('call')
 			->with(
 				source: $source,
-				endpoint: '/index.php/apps/openconnector/api/configurations/import/preview',
+				endpoint: '/index.php/apps/integriq/api/configurations/import/preview',
 				method: 'POST',
 				config: $this->anything()
 			)
@@ -397,7 +397,7 @@ class PromotionServiceTest extends TestCase {
 
 	/**
 	 * REQ-006 — a failed promotion (target returns 404, e.g. an older
-	 * OpenConnector without the import routes) still writes exactly one
+	 * Integriq without the import routes) still writes exactly one
 	 * promotion_audit object, with outcome failed and no fabricated
 	 * written summary, and the failure propagates to the caller.
 	 *

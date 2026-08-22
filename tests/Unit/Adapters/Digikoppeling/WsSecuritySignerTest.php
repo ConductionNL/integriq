@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — WS-Security signer/verifier tests.
+ * Integriq — WS-Security signer/verifier tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

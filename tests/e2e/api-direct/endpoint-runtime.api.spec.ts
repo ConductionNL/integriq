@@ -5,9 +5,9 @@
  * API-direct HTTP-contract assertions for the endpoint-runtime surface.
  *
  * These are NOT UI-driving Playwright tests — they assert raw HTTP status
- * codes against the openconnector / OpenRegister REST surfaces. The canonical
+ * codes against the integriq / OpenRegister REST surfaces. The canonical
  * home for API/contract assertions is the Newman suite
- * (tests/postman/openconnector.postman_collection.json); this file is excluded
+ * (tests/postman/integriq.postman_collection.json); this file is excluded
  * from the gate-19 UI run via the `**​/api-direct/**` testIgnore in
  * playwright.config.ts (gate-19: API-direct → Newman).
  *

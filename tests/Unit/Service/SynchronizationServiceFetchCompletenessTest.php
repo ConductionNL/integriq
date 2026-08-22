@@ -3,7 +3,7 @@
 /**
  * Unit tests for fetch-completeness tracking and the fetch-incomplete deletion gate.
  *
- * Reproduces the ConductionNL/openconnector#1000/#1001/#1002 mass-deletion
+ * Reproduces the ConductionNL/integriq#1000/#1001/#1002 mass-deletion
  * scenarios: a source erroring mid-fetch, failing partway through pagination,
  * or rate-limiting (HTTP 429) must never cause `deleteInvalidObjects()` to
  * garbage-collect the objects the failed fetch did not see (spec REQ-009 +

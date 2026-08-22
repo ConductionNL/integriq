@@ -3,7 +3,7 @@
 /**
  * Unit tests for the absolute no-write guarantee of test (dry) runs.
  *
- * Reproduces ConductionNL/openconnector#1008/#1017: before the
+ * Reproduces ConductionNL/integriq#1008/#1017: before the
  * sync-safety-guardrails change, a "Test (dry run)" click ran the
  * `deleteInvalidObjects()` cleanup unconditionally — diffing the test fetch's
  * single sampled object against every existing contract and deleting real

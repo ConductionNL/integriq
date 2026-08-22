@@ -84,7 +84,7 @@ class FlowNodeListenerTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/icon.svg');
 
 		$flowOwner = new FlowOwner(
 			userManager: $this->createMock(IUserManager::class),

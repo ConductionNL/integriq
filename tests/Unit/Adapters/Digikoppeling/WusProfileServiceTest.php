@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — WUS profile service tests.
+ * Integriq — WUS profile service tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling

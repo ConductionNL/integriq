@@ -47,11 +47,11 @@ abstract class ActorForwardedJob extends QueuedJob {
 	/**
 	 * Wire the identity plumbing shared by all actor-forwarded jobs.
 	 *
-	 * @param ITimeFactory        $time         Time factory for the parent job class.
-	 * @param IUserSession        $userSession  Session to impersonate on / restore.
-	 * @param IUserManager        $userManager  Resolver for the captured user id.
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationService $organisation Active-organisation resolver (drift detection).
-	 * @param LoggerInterface     $logger       PSR logger (shared with subclasses).
+	 * @param LoggerInterface $logger PSR logger (shared with subclasses).
 	 */
 	public function __construct(
 		ITimeFactory $time,

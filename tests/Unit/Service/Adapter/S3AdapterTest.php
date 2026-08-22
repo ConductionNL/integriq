@@ -250,7 +250,7 @@ XML;
 	}//end testListRequiresBucketFilter()
 
 	// ---------------------------------------------------------------------
-	// The write seam (openconnector#1191).
+	// The write seam (integriq#1191).
 	//
 	// `object-write` has been advertised by getCapabilities() and implemented
 	// by writeObject() since this adapter was scaffolded, but create()/update()

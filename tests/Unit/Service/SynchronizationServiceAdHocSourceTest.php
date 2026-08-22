@@ -3,7 +3,7 @@
 /**
  * Unit tests for ad-hoc Source resolution non-persistence.
  *
- * Reproduces ConductionNL/openconnector#1009: a caller-supplied ad-hoc
+ * Reproduces ConductionNL/integriq#1009: a caller-supplied ad-hoc
  * `source` location string that matches no configured Source must resolve to
  * a transient, in-memory source for that call only — it must never silently
  * persist a new, enabled Source object. Resolution against an existing,

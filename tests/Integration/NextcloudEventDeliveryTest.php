@@ -8,7 +8,7 @@
  * the outbound HTTP client — are test doubles).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration
+ * @package  OCA\Integriq\Tests\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,16 +31,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration;
+namespace OCA\Integriq\Tests\Integration;
 
-use OCA\OpenConnector\EventListener\NextcloudFileEventListener;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\EventListener\NextcloudFileEventListener;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Node;
 use OCP\Http\Client\IClient;

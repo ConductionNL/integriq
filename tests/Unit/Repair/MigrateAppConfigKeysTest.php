@@ -63,8 +63,8 @@ class MigrateAppConfigKeysTest extends TestCase {
 	 *
 	 * @param array<string,string> $oldValues Values stored under the old app id.
 	 * @param array<string,string> $newValues Values already stored under the new app id.
-	 * @param array<string,string> $writes    Receives every setValueString call.
-	 * @param array<int,string>    $deletes   Receives every delete call.
+	 * @param array<string,string> $writes Receives every setValueString call.
+	 * @param array<int,string> $deletes Receives every delete call.
 	 *
 	 * @return IAppConfig
 	 */

@@ -36,7 +36,7 @@ class SynchronizationServiceTimestampComparisonTest extends TestCase {
 	/**
 	 * Call the private isBefore() helper.
 	 *
-	 * @param mixed $moment    The earlier candidate.
+	 * @param mixed $moment The earlier candidate.
 	 * @param mixed $reference The later candidate.
 	 *
 	 * @return bool The helper's verdict.
@@ -118,7 +118,7 @@ class SynchronizationServiceTimestampComparisonTest extends TestCase {
 	/**
 	 * Call the private mappingUnchangedSince() helper.
 	 *
-	 * @param mixed $mapping     The mapping (or null).
+	 * @param mixed $mapping The mapping (or null).
 	 * @param mixed $lastChecked The contract's sourceLastChecked.
 	 *
 	 * @return bool The helper's verdict.

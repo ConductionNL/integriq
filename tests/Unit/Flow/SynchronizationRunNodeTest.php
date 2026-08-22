@@ -103,7 +103,7 @@ class SynchronizationRunNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new SynchronizationRunNode(
 			synchronizationService: $this->synchronizationService,
@@ -134,7 +134,6 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->assertFalse($this->node->isAvailableForScope(-1));
 
 	}//end testPaletteMetadata()
-
 
 	/**
 	 * The declared vocabulary is what the node actually reads.
@@ -172,7 +171,7 @@ class SynchronizationRunNodeTest extends TestCase {
 
 		$this->assertSame('select', $byKey['synchronization']['type']);
 		$this->assertTrue($byKey['synchronization']['required']);
-		$this->assertNotSame('', (string) ($byKey['synchronization']['optionsFrom'] ?? ''));
+		$this->assertNotSame('', (string)($byKey['synchronization']['optionsFrom'] ?? ''));
 
 	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
 

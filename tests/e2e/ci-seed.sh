@@ -3,14 +3,14 @@
 # SPDX-FileCopyrightText: 2026 Conduction B.V.
 # SPDX-License-Identifier: EUPL-1.2
 #
-# Provision OpenConnector's OpenRegister register + schemas on a freshly
+# Provision Integriq's OpenRegister register + schemas on a freshly
 # installed Nextcloud, for the shared `E2E Tests (Playwright)` CI job.
 #
 # Wired up as the workflow's `playwright-seed-command`. That step runs AFTER
 # `php -S` is up and with cwd set to the Nextcloud server root, so it is
 # invoked as:
 #
-#     playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
+#     playwright-seed-command: 'bash apps/integriq/tests/e2e/ci-seed.sh'
 #
 # The `Integration Tests (Newman)` job needs the SAME register provisioning —
 # its collection drives /apps/openregister/api/objects/openconnector/<schema>
@@ -18,7 +18,7 @@
 # job never builds the frontend. It therefore invokes this same script with
 # the register-only scope:
 #
-#     newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
+#     newman-seed-command: 'SEED_SCOPE=register bash apps/integriq/tests/e2e/ci-seed.sh'
 #
 # SEED_SCOPE=register  -> steps 1-3 only (build descriptor, import, verify).
 # SEED_SCOPE unset/full -> steps 1-5 (adds SPA warm-up + bundle gate).
@@ -30,7 +30,7 @@
 #
 # WHY THIS IS NEEDED
 # ------------------
-# Since the chain-C OR-cutover, openconnector's Sources, Mappings,
+# Since the chain-C OR-cutover, integriq's Sources, Mappings,
 # Synchronizations, Jobs, Rules, Endpoints and Consumers are OpenRegister
 # OBJECTS. There is no `oc_openconnector_sources` table any more — they live in
 # `oc_openregister_table_<register>_<schema>` under register `openconnector`.
@@ -40,8 +40,8 @@
 # Nothing in a fresh CI install reliably creates it:
 #
 #   * The `InitializeRegister` post-migration repair step is the correct home
-#     for the import, but `occ app:enable openconnector` does not run it — a
-#     run on a clean NC 31 checkout produced `openconnector 0.3.4 enabled` and
+#     for the import, but `occ app:enable integriq` does not run it — a
+#     run on a clean NC 31 checkout produced `integriq 0.3.4 enabled` and
 #     no register at all, and `occ maintenance:repair` (which does iterate
 #     enabled apps' `repair-steps.post-migration`) also came back with the
 #     register absent. Both commands exit 0 either way. Measured, not assumed:
@@ -109,7 +109,7 @@ echo "[ci-seed] target:  ${BASE}"
 echo "[ci-seed] app dir: ${APP_DIR}"
 
 # ── 1. Build the register descriptor exactly as the repair step would ────────
-# ADR-037: the shipped descriptor is `lib/Settings/openconnector_register.json`
+# ADR-037: the shipped descriptor is `lib/Settings/integriq_register.json`
 # with every `lib/Settings/register.d/*.json` fragment deep-merged over it in
 # sorted filename order. Each OpenSpec change drops its own fragment instead of
 # editing the monolith, and the fragments carry real content the suite depends
@@ -152,7 +152,7 @@ def deep_merge(base, overlay):
     return base
 
 
-descriptor_path = os.path.join(settings, 'openconnector_register.json')
+descriptor_path = os.path.join(settings, 'integriq_register.json')
 if not os.path.isfile(descriptor_path):
     print(f'::error::register descriptor missing at {descriptor_path}')
     sys.exit(1)
@@ -281,7 +281,7 @@ echo "[ci-seed] import HTTP ${IMPORT_CODE}"
 head -c 1500 "$IMPORT_BODY"; echo
 
 if [ "$IMPORT_CODE" != "200" ]; then
-	echo "::error::OpenConnector register import failed (HTTP ${IMPORT_CODE}). Every openconnector entity is an OpenRegister object; without the register the e2e suite has nothing to read or create."
+	echo "::error::Integriq register import failed (HTTP ${IMPORT_CODE}). Every integriq entity is an OpenRegister object; without the register the e2e suite has nothing to read or create."
 	exit 1
 fi
 
@@ -410,7 +410,7 @@ if advisory:
         print(f'[ci-seed] all {len(advisory)} manifest-bound schema(s) resolve.')
 
 if missing:
-    print(f'::error::OpenConnector {kind} missing after import: {missing}')
+    print(f'::error::Integriq {kind} missing after import: {missing}')
     sys.exit(1)
 print(f'[ci-seed] {kind} OK ({len(required)} required slug(s) present)')
 PY
@@ -497,7 +497,7 @@ else
 	echo "[ci-seed] probed ${PROBE_TOTAL} collection endpoint(s); ${PROBE_BAD} not fetchable."
 fi
 
-echo "[ci-seed] OpenConnector register + schemas provisioned."
+echo "[ci-seed] Integriq register + schemas provisioned."
 
 # ── 3b. Stop here for API-only consumers (SEED_SCOPE=register) ───────────────
 # The `Integration Tests (Newman)` job needs EXACTLY steps 1-3 and nothing
@@ -521,7 +521,7 @@ fi
 # spec happens to sort first. Failures are ignored on purpose: this is a
 # warm-up, not a gate — the real checks are above and below.
 for path in \
-	"/index.php/apps/openconnector/" \
+	"/index.php/apps/integriq/" \
 	"/index.php/apps/openregister/api/registers?_limit=1" \
 	"/index.php/apps/openregister/api/objects/openconnector/source?_limit=1" \
 	"/index.php/apps/openregister/api/objects/openconnector/mapping?_limit=1"
@@ -545,13 +545,13 @@ done
 # response Content-Type.
 APP_HTML="$(mktemp)"
 curl -sS -u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openconnector/" -o "$APP_HTML" || true
+	"${BASE}/index.php/apps/integriq/" -o "$APP_HTML" || true
 
 # `|| true` is load-bearing: grep exits 1 when it matches nothing, and under
 # `set -euo pipefail` that aborts the script right here — so the case the gate
 # below exists to explain (no bundle) would die with a bare non-zero exit and
 # none of the diagnosis. Let it fall through to the gate instead.
-BUNDLE_SRC="$(grep -oE 'src="[^"]*openconnector-main[^"]*"' "$APP_HTML" \
+BUNDLE_SRC="$(grep -oE 'src="[^"]*integriq-main[^"]*"' "$APP_HTML" \
 	| head -1 | sed 's/^src="//; s/"$//' || true)"
 
 if [ -n "$BUNDLE_SRC" ]; then
@@ -580,7 +580,7 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 			echo "[ci-seed] bundle verified as JavaScript."
 			;;
 		*)
-			echo "::error::The OpenConnector frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
+			echo "::error::The Integriq frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
 			echo "::error::The SPA cannot mount, so every UI spec would fail on a selector timeout with a misleading cause."
 			echo "::error::Check the 'Build app frontend' step — a missing bundle returns HTTP 200 text/html, not 404."
 			exit 1

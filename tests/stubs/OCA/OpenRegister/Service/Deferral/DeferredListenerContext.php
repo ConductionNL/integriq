@@ -28,8 +28,8 @@ final class DeferredListenerContext {
 	/**
 	 * Wrap a captured acting context.
 	 *
-	 * @param string|null                      $userId  Acting user id at dispatch time.
-	 * @param string|null                      $orgUuid Active organisation uuid at dispatch time.
+	 * @param string|null $userId Acting user id at dispatch time.
+	 * @param string|null $orgUuid Active organisation uuid at dispatch time.
 	 * @param array<int, array<string, mixed>> $entries Per-object entries for the job to process.
 	 */
 	public function __construct(

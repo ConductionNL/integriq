@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Seeded-fixture helper for the DEEP, DATA-DEPENDENT openconnector e2e layer
+ * Seeded-fixture helper for the DEEP, DATA-DEPENDENT integriq e2e layer
  * (tests/e2e/workflows/).
  *
  * WHY THIS EXISTS
  * ---------------
- * The high-value openconnector checks are not "does the page render" but
+ * The high-value integriq checks are not "does the page render" but
  * "does the integration actually MOVE DATA end-to-end": create a Source +
  * Mapping, link them in a Synchronization, RUN it, and assert the target
  * register gains the synced objects with the mapped values, and that a
@@ -15,12 +15,12 @@
  *
  * To drive that deterministically we need to create/clean up Sources,
  * Mappings, Synchronizations and seed source data through the REST API.
- * openconnector resolves all of its core entities through OpenRegister
+ * integriq resolves all of its core entities through OpenRegister
  * (register `openconnector`, schema {source,mapping,synchronization,...}):
  *
  *     /index.php/apps/openregister/api/objects/openconnector/<schema>
  *
- * The real OpenRegister/openconnector verbs are find / findAll /
+ * The real OpenRegister/integriq verbs are find / findAll /
  * searchObjects / saveObject / createObject / updateObject / deleteObject.
  * The REST surface maps to:
  *   - createObject  -> POST   .../objects/openconnector/<schema>

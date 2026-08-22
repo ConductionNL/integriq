@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — inbound rate-limit service tests.
+ * Integriq — inbound rate-limit service tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Service\RateLimit

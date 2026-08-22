@@ -79,7 +79,7 @@ class StufZknSyncServiceTest extends TestCase {
 	private array $saved = [];
 
 	/**
-	 * Pre-seeded openconnector `source` rows.
+	 * Pre-seeded `openconnector` register `source` rows.
 	 *
 	 * @var array<int, ObjectEntity>
 	 */

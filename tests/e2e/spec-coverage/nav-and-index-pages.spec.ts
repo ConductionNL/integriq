@@ -5,7 +5,7 @@
  * Genuine behavioral UI coverage: drive each main-navigation index page
  * through a REAL nav-click (not a deep-link goto), assert the page-specific
  * heading and the page-specific primary "Add X" create button render, and
- * that no openconnector-origin console error or 5xx occurred.
+ * that no integriq-origin console error or 5xx occurred.
  *
  * This upgrades the prior per-feature specs (which deep-linked and only
  * asserted `main` was visible) to nav-wiring + distinct-content checks,
@@ -90,7 +90,7 @@ for (const p of INDEX_PAGES) {
 
 			// NB: schema-driven index pages render via nc-vue `CnIndexPage`,
 			// whose title header (`CnPageHeader`) is gated behind `showTitle`,
-			// which defaults to FALSE and is not set by the openconnector
+			// which defaults to FALSE and is not set by the integriq
 			// manifest — so an index page has NO `<h1>/<h2>` page-title heading
 			// element (this is unchanged between the Vue 2 and Vue 3 builds, i.e.
 			// not a migration regression). navTo already asserts the route

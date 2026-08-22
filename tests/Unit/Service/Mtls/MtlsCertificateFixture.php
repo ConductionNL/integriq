@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector mTLS test certificate fixtures.
+ * Integriq mTLS test certificate fixtures.
  *
  * Generates small, throwaway self-signed certificates/keys at test-runtime
  * via PHP's `openssl_*` functions — never committed binary certs, per the

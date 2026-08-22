@@ -7,7 +7,7 @@
  * CI gate: enforce the chain-E merge-blocking coverage thresholds against the
  * clover report produced by `composer test:coverage`.
  *
- * Thresholds (ADR-008 / openconnector-comprehensive-tests spec, Decision 4):
+ * Thresholds (ADR-008 / openconnector-comprehensive-tests spec dir, Decision 4):
  *   - line coverage   >= 80%  (merge-blocking)
  *   - branch coverage >= 70%  (merge-blocking)
  *

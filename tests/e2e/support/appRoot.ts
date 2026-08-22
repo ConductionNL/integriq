@@ -21,12 +21,12 @@
  * Six spec files each kept a private copy of this probe:
  *
  *     for (const candidate of ['/apps/integriq', '/index.php/apps/integriq'])
- *         if (res.ok() && (await res.text()).includes('openconnector-main.js'))
+ *         if (res.ok() && (await res.text()).includes('integriq-main.js'))
  *             return candidate
  *
  * 🔴 That probe CANNOT WORK, and it fails towards green. Nextcloud serves the
  * identical SPA shell under BOTH prefixes — same 200, same
- * `openconnector-main.js` — so the loop always stops at the first candidate,
+ * `integriq-main.js` — so the loop always stops at the first candidate,
  * `/apps/integriq`, which is the one CI's router will not honour. Every
  * caller then loaded the Dashboard while believing it was on the page it named.
  * Measured in run 31929156734: the browser sat at
@@ -46,7 +46,7 @@ import { expect, type Page } from '@playwright/test'
 /**
  * The app id, and therefore the path `generateUrl` is asked to resolve.
  */
-const APP_ID = 'openconnector'
+const APP_ID = 'integriq'
 
 /**
  * The entry point used to ASK the instance for its webroot.

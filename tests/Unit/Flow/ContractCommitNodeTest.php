@@ -87,7 +87,7 @@ class ContractCommitNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new ContractCommitNode(
 			synchronizationContractService: $this->contractService,

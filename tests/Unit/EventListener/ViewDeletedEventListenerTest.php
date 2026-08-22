@@ -39,7 +39,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 	/**
 	 * A tiny id+slug value object standing in for a Register/Schema row.
 	 *
-	 * @param int    $id   The row id.
+	 * @param int $id The row id.
 	 * @param string $slug The slug to return.
 	 *
 	 * @return object
@@ -106,8 +106,8 @@ class ViewDeletedEventListenerTest extends TestCase {
 				DeferredViewCascadeJob::class,
 				[
 					'identifier' => 'gemma-view-1',
-					'register'   => 7,
-					'schema'     => 42,
+					'register' => 7,
+					'schema' => 42,
 				],
 				ListenerDeferralService::DEFAULT_CHUNK_SIZE,
 				'7|42|gemma-view-1'

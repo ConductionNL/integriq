@@ -250,7 +250,7 @@ class ObjectService {
 	 * real OCA\OpenRegister\Service\ObjectService, and no __call() either. This
 	 * stub deliberately does not invent one.
 	 *
-	 * @param string|null     $uuid
+	 * @param string|null $uuid
 	 * @param string|int|null $register
 	 * @param string|int|null $schema
 	 * @return bool

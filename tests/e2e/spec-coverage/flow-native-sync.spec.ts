@@ -80,10 +80,10 @@ import { expectRouteMatched, resolveAppRoot } from '../support/appRoot'
 /** OpenRegister's API root — registers, schemas, objects, flows and preflight. */
 const OR = '/index.php/apps/openregister/api'
 
-/** OpenConnector's own API root — used only for the Source connectivity probe. */
+/** Integriq's own API root — used only for the Source connectivity probe. */
 const OC = '/index.php/apps/integriq/api'
 
-/** The register/schema pair openconnector's own entities live in. */
+/** The register/schema pair integriq's own entities live in. */
 const OC_REGISTER = 'openconnector'
 
 /** The contract table, as an OpenRegister schema slug. */
@@ -127,7 +127,7 @@ const SEED = [
  * used to say the file EXISTING made a wrong answer "impossible". It does not.
  * `server/occ` exists on this box and its Nextcloud is not installed, so it
  * answers every app command with `There are no commands defined in the
- * "openconnector" namespace` — a present instrument wired to nothing, while a
+ * "integriq" namespace` — a present instrument wired to nothing, while a
  * working container sat one branch further down and was never reached. An
  * existence check is not a functional check, so candidate 2 now has to prove
  * it can see the app before it is accepted.
@@ -157,16 +157,16 @@ let occRunner: OccRunner | null = null
  */
 function occAnswers(candidate: string, dir: string): boolean {
 	try {
-		const listed = execFileSync('php', [candidate, 'list', 'openconnector'], {
+		const listed = execFileSync('php', [candidate, 'list', 'integriq'], {
 			encoding: 'utf8',
 			cwd: dir,
 			maxBuffer: 32 * 1024 * 1024,
 			stdio: ['ignore', 'pipe', 'pipe'],
 		})
-		return listed.includes('openconnector:synchronization-to-flow')
+		return listed.includes('integriq:synchronization-to-flow')
 	} catch {
 		// A non-zero exit is the uninstalled case ("There are no commands
-		// defined in the \"openconnector\" namespace") and also the
+		// defined in the \"integriq\" namespace") and also the
 		// no-PHP/broken-config case. All of them mean: not this one.
 		return false
 	}
@@ -784,13 +784,13 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		test.setTimeout(120_000)
 
 		const raw = occ().run([
-			'openconnector:synchronization-to-flow',
+			'integriq:synchronization-to-flow',
 			pipeline.syncId,
 			'--json',
 		])
 		generated = parseOccJson(
 			raw,
-			'openconnector:synchronization-to-flow',
+			'integriq:synchronization-to-flow',
 		) as Record<string, unknown>
 
 		// SHAPE FIRST. A document that preflights green while missing `explode`
@@ -895,7 +895,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 
 		// The document is created verbatim apart from the two fields a
 		// generated flow deliberately does NOT carry: `app` (which scopes it to
-		// openconnector's Flows list) and `enabled` (false by design — a review
+		// integriq's Flows list) and `enabled` (false by design — a review
 		// gate, which this test is the review of).
 		const created = await post(
 			`${OR}/flows`,
@@ -1169,7 +1169,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		test.setTimeout(120_000)
 
 		// THIS TEST EXISTS BECAUSE THE UNIT SUITE CANNOT DO IT.
-		// SynchronizationFlowGeneratorTest constructs the five OPENCONNECTOR
+		// SynchronizationFlowGeneratorTest constructs the five INTEGRIQ
 		// nodes and hands them their generated config, so it catches a key that
 		// drifts out of THEIR vocabulary. `openregister.object-write` is not
 		// among them, so a `payloadFrom` that the deployed node does not read
@@ -1200,11 +1200,11 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 
 		const doc = parseOccJson(
 			occ().run([
-				'openconnector:synchronization-to-flow',
+				'integriq:synchronization-to-flow',
 				unmappedSyncId,
 				'--json',
 			]),
-			'openconnector:synchronization-to-flow (unmapped)',
+			'integriq:synchronization-to-flow (unmapped)',
 		) as Record<string, unknown>
 
 		const nodes = doc.nodes as Array<Record<string, unknown>>

@@ -94,7 +94,7 @@ class FetchFileNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/icon.svg');
 
 		$this->node = new FetchFileNode(
 			synchronizations: $this->synchronizations,
@@ -117,7 +117,6 @@ class FetchFileNodeTest extends TestCase {
 	 */
 	private function context(): array {
 		return ['triggeredBy' => 'alice', 'stepId' => 'step-files'];
-
 	}//end context()
 
 	/**
@@ -141,7 +140,6 @@ class FetchFileNodeTest extends TestCase {
 	 */
 	private function item(array $json): array {
 		return ['json' => $json, 'binary' => []];
-
 	}//end item()
 
 	/**

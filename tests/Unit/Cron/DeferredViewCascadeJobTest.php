@@ -96,10 +96,10 @@ class DeferredViewCascadeJobTest extends TestCase {
 	/**
 	 * Assemble the job with a given OpenRegister service and session.
 	 *
-	 * @param ObjectService|null $openRegister  What getOpenRegisters() answers.
-	 * @param IUserManager       $userManager   Resolver for the captured user id.
-	 * @param IUserSession       $userSession   Session to impersonate on.
-	 * @param LoggerInterface    $logger        The logger.
+	 * @param ObjectService|null $openRegister What getOpenRegisters() answers.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param IUserSession $userSession Session to impersonate on.
+	 * @param LoggerInterface $logger The logger.
 	 *
 	 * @return DeferredViewCascadeJob
 	 */
@@ -107,7 +107,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 		?ObjectService $openRegister,
 		IUserManager $userManager,
 		IUserSession $userSession,
-		LoggerInterface $logger
+		LoggerInterface $logger,
 	): DeferredViewCascadeJob {
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($openRegister);
@@ -132,8 +132,8 @@ class DeferredViewCascadeJobTest extends TestCase {
 	 * resolved, impersonation happens and the session is restored, exactly as
 	 * in a cron worker.
 	 *
-	 * @param DeferredViewCascadeJob $job      The job under test.
-	 * @param mixed                  $argument The raw `oc_jobs.argument` payload.
+	 * @param DeferredViewCascadeJob $job The job under test.
+	 * @param mixed $argument The raw `oc_jobs.argument` payload.
 	 *
 	 * @return void
 	 */
@@ -146,7 +146,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 	/**
 	 * Build the job argument exactly as ListenerDeferralService serialises it.
 	 *
-	 * @param string|null                      $userId  Captured acting user.
+	 * @param string|null $userId Captured acting user.
 	 * @param array<int, array<string, mixed>> $entries Captured entries.
 	 *
 	 * @return array<string, mixed>
@@ -331,7 +331,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 		);
 
 		$this->assertContains(
-			'warning:OpenConnector: extended-view cascade hit its row cap — some rows may remain',
+			'warning:Integriq: extended-view cascade hit its row cap — some rows may remain',
 			$this->trace
 		);
 		// The capped batch is still deleted — a warning is not a refusal.
@@ -363,7 +363,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 		);
 
 		$this->assertContains(
-			'warning:OpenConnector: extended-view cascade skipped, OpenRegister object service unavailable',
+			'warning:Integriq: extended-view cascade skipped, OpenRegister object service unavailable',
 			$this->trace
 		);
 		$this->assertSame(
@@ -432,7 +432,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 			)
 		);
 
-		$this->assertContains('warning:OpenConnector: extended-view cascade lookup failed', $this->trace);
+		$this->assertContains('warning:Integriq: extended-view cascade lookup failed', $this->trace);
 		$this->assertContains('deleteObject:ev-9@7/42', $this->trace);
 	}//end testALookupFailureDoesNotStrandTheRestOfTheBatch()
 
@@ -484,7 +484,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 		);
 
 		$this->assertContains(
-			'warning:OpenConnector: failed to delete an extended view during cascade',
+			'warning:Integriq: failed to delete an extended view during cascade',
 			$this->trace
 		);
 		$this->assertContains('deleteObject:ev-good@7/42', $this->trace);
@@ -622,7 +622,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 		);
 
 		$this->assertContains(
-			'warning:OpenConnector: failed to delete an extended view during cascade',
+			'warning:Integriq: failed to delete an extended view during cascade',
 			$this->trace
 		);
 		// And the session was still restored — the job completed normally.

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for the openconnector:migrate-storage OCC command.
+ * Unit tests for the integriq:migrate-storage OCC command.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Command

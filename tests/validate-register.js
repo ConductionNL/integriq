@@ -67,7 +67,7 @@ function appNamespace() {
 	if (!fs.existsSync(infoXml)) return null
 	const m = fs.readFileSync(infoXml, 'utf8').match(/<id>([^<]+)<\/id>/)
 	if (!m) return null
-	// app id like "openconnector" or "app-template" → namespace "OpenConnector" / "AppTemplate"
+	// app id like "integriq" or "app-template" → namespace "Integriq" / "AppTemplate"
 	const camel = m[1]
 		.split(/[-_]/)
 		.map((s) => s.charAt(0).toUpperCase() + s.slice(1))

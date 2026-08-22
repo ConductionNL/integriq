@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The Tool-role half of REQ-LTI-008 had no route at all until
- * openconnector#1192: `LtiAgsService::publishScore()` was implemented and
+ * integriq#1192: `LtiAgsService::publishScore()` was implemented and
  * unit-tested by calling the service directly, while every `lti#*` route was
  * the Platform (inbound) role — so nothing in production could reach it.
  *

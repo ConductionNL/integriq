@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — OpenRegister dependency setup-check tests.
+ * Integriq — OpenRegister dependency setup-check tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\SetupCheck

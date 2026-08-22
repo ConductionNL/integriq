@@ -17,7 +17,7 @@
  * native flow store (nodes[]/edges[]), not this app's own `flow`/`steps[]`
  * schema the old editor was built on. See
  * openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note and
- * openconnector#1255 for the full backend-state writeup.
+ * integriq#1255 for the full backend-state writeup.
  *
  * The shared canvas's own editor behaviour (dirty tracking, node palette,
  * keyboard operability) is `@conduction/nextcloud-vue`'s to test — duplicating
@@ -32,7 +32,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * The index list's exact columns (Name / Trigger / Status, measured
  * 2026-08-16 — a different shape than the old Name/Enabled/Description table
- * openconnector#1214 was filed against) are not pinned here. `CnFlowIndexPage`
+ * integriq#1214 was filed against) are not pinned here. `CnFlowIndexPage`
  * owns that presentation; pinning its column set from a consumer app couples
  * this file to a shared-library layout choice it doesn't control.
  *

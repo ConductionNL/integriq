@@ -401,8 +401,8 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 				bool $_render = true,
-			bool $_audit = true,
-			?array $_extend = [],
+				bool $_audit = true,
+				?array $_extend = [],
 			): ?ObjectEntity {
 				if ((string)$id === 'bad') {
 					throw new \RuntimeException('boom');

@@ -44,7 +44,7 @@ class IntegriqMetricsProviderTest extends TestCase {
 	 *
 	 * @return IntegriqMetricsProvider
 	 */
-	private function buildProvider(?object $objectService, array $schemas, array $registers): IntegriqMetricsProvider{
+	private function buildProvider(?object $objectService, array $schemas, array $registers): IntegriqMetricsProvider {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findAll')->willReturn($schemas);
 

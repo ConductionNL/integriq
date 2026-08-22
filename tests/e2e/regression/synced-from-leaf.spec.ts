@@ -6,7 +6,7 @@
  * contract on the OpenRegister object it syncs.
  *
  * This is the cross-app provenance promise of the integration registry:
- * OpenConnector registers a Path-2 leaf (SynchronizationContractProvider)
+ * Integriq registers a Path-2 leaf (SynchronizationContractProvider)
  * with OpenRegister; any app that renders an OR object's integration
  * surface (OpenCatalogi publication detail, OpenRegister object detail,
  * decidesk, …) then shows "Synced from" with the contract — with no code
@@ -25,7 +25,7 @@
  *     always empty);
  *   - getUuid() via Entity __call (method_exists false → HTTP 500).
  *
- * The provider gates on `openconnector.storage_migrated === 'true'`; the
+ * The provider gates on `integriq.storage_migrated === 'true'`; the
  * suite skips (not fails) when that flag isn't set on the instance.
  */
 
@@ -49,7 +49,7 @@ const OC_REGISTER = 'openconnector'
 // This used to be `publication`/`publication` — OpenCatalogi's register. That
 // made the suite silently depend on OpenCatalogi being installed AND its
 // register imported, which is true on a developer's full-fleet container and
-// false in openconnector's own CI (`additional-apps` carries OpenRegister
+// false in integriq's own CI (`additional-apps` carries OpenRegister
 // only). The failure was not a skip: `beforeAll` seeds the target object
 // first, so the create returned `{"message":"Register not found:
 // 'publication'"}` and took the whole describe down with it.
@@ -63,7 +63,7 @@ const OC_REGISTER = 'openconnector'
 // integration surface (OpenCatalogi publication detail, OpenRegister object
 // detail, decidesk, …)".
 //
-// So the target is now an object in openconnector's own register, which the
+// So the target is now an object in integriq's own register, which the
 // CI seed provisions. Every assertion below is unchanged in meaning: the leaf
 // still has to find the contract by targetId, still has to render it, and
 // still has to return nothing for an unrelated id.
@@ -115,7 +115,7 @@ let targetId = ''
  * whether an object it cannot resolve exists.
  *
  * It only ever passed by accident, because the endpoint used to answer 500 for
- * a missing object and this suite never ran (openconnector.storage_migrated
+ * a missing object and this suite never ran (integriq.storage_migrated
  * was never set on a fresh install, ocon#1180). With that 500 fixed in
  * ConductionNL/openregister#2441 the honest answer arrived and the assertion
  * had nothing left to stand on.
@@ -126,15 +126,15 @@ let targetId = ''
 let unrelatedId = ''
 let syncId = ''
 let storageMigrated = false
-let skipReason = 'openconnector.storage_migrated is not true on this instance'
+let skipReason = 'integriq.storage_migrated is not true on this instance'
 
 test.describe('Synced-from leaf — contract provenance on objects', () => {
 	test.beforeAll(async () => {
 		const ctx = await apiContext()
 
-		// The provider only emits contracts once OpenConnector storage has
+		// The provider only emits contracts once Integriq storage has
 		// migrated into OR (`SynchronizationContractProvider::isEnabled()`
-		// returns `openconnector.storage_migrated === 'true'`). The file header
+		// returns `integriq.storage_migrated === 'true'`). The file header
 		// says this suite skips, rather than fails, when that flag isn't set.
 		//
 		// It did not, because the gate measured the wrong thing: it probed
@@ -147,7 +147,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// OpenRegister publishes the authoritative answer:
 		// `GET /api/integrations` lists every registered provider with its
 		// `enabled` state and, when disabled, a reason. For this one it reads
-		// "OpenConnector storage migration has not yet run on this instance.
+		// "Integriq storage migration has not yet run on this instance.
 		// Sync contract leaves will appear after `occ upgrade` runs the
 		// chain-C cutover." Read that.
 		//
@@ -156,11 +156,11 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// `Version2Date20260520000001` only sets `storage_migrated=true` after
 		// it successfully copies all 15 entities out of the legacy
 		// `oc_openconnector_*` tables — and a fresh install has none to copy.
-		// A brand-new openconnector therefore never surfaces "Synced from" on
+		// A brand-new integriq therefore never surfaces "Synced from" on
 		// any OpenRegister object. That is a product defect, not a test
 		// problem, and it is why this suite skips in CI rather than passing.
 		let disabledReason =
-			'openconnector.storage_migrated is not true on this instance'
+			'integriq.storage_migrated is not true on this instance'
 		try {
 			const probe = await ctx.get(
 				'/index.php/apps/openregister/api/integrations',
@@ -296,7 +296,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	 * QUARANTINED — ocon#1228. Its SELECTORS have never been validated.
 	 *
 	 * This assertion has never executed: the whole suite skipped unless
-	 * `openconnector.storage_migrated` was true, and no fresh install set it
+	 * `integriq.storage_migrated` was true, and no fresh install set it
 	 * (ocon#1180). So `getByRole('tab', { name: 'Integrations' })` was written
 	 * speculatively and has never once matched anything.
 	 *

@@ -354,7 +354,7 @@ class EndpointServiceTest extends TestCase {
 	public function testProcessApprovalRuleBeforeSuspendsWith202(): void {
 		$created = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-created');
 		$this->approvalService->expects($this->once())->method('suspend')->willReturn($created);
-		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/api/approvals/approval-created');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/integriq/api/approvals/approval-created');
 
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'WOO Publish'], 'endpoint-1');
 		$rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => ['approval' => ['approverGroup' => 'woo-approvers']]], 'rule-1');
@@ -477,7 +477,7 @@ class EndpointServiceTest extends TestCase {
 
 		$result = $this->service->renderSelfUrlAndHal(['id' => 'resource-1', 'onderwerp' => 'x'], $endpoint);
 
-		$this->assertSame('https://example.org/apps/openconnector/api/endpoint/klantinteracties/klantcontacten/resource-1', $result['url']);
+		$this->assertSame('https://example.org/apps/integriq/api/endpoint/klantinteracties/klantcontacten/resource-1', $result['url']);
 		$this->assertSame($result['url'], $result['_links']['self']['href']);
 	}//end testRenderSelfUrlAndHalStampsAbsoluteSelfLink()
 

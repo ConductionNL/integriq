@@ -116,7 +116,7 @@ class SourceCallNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-source-call.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-source-call.svg');
 
 		$this->node = new SourceCallNode(
 			callService: $this->callService,
@@ -146,7 +146,6 @@ class SourceCallNodeTest extends TestCase {
 		$this->assertNotSame('', $this->node->getIcon());
 
 	}//end testPaletteMetadata()
-
 
 	/**
 	 * The declared vocabulary is what the node actually reads.
@@ -184,7 +183,7 @@ class SourceCallNodeTest extends TestCase {
 
 		$this->assertSame('select', $byKey['source']['type']);
 		$this->assertTrue($byKey['source']['required']);
-		$this->assertNotSame('', (string) ($byKey['source']['optionsFrom'] ?? ''));
+		$this->assertNotSame('', (string)($byKey['source']['optionsFrom'] ?? ''));
 
 	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
 

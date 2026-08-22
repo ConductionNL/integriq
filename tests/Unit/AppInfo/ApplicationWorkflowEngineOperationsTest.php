@@ -159,7 +159,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end invokeRegister()
 
 	/**
-	 * GIVEN `workflowengine` is enabled WHEN OpenConnector boots THEN
+	 * GIVEN `workflowengine` is enabled WHEN Integriq boots THEN
 	 * RegisterOperationsListener IS registered against RegisterOperationsEvent.
 	 *
 	 * @return void
@@ -180,7 +180,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end testRegistersListenerWhenWorkflowEngineEnabled()
 
 	/**
-	 * GIVEN `workflowengine` is disabled WHEN OpenConnector boots THEN no
+	 * GIVEN `workflowengine` is disabled WHEN Integriq boots THEN no
 	 * registration occurs and nothing is logged (a disabled app is a normal
 	 * state, not a fault).
 	 *
@@ -201,7 +201,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end testNoRegistrationAndNoLogWhenWorkflowEngineDisabled()
 
 	/**
-	 * GIVEN IAppManager resolution throws WHEN OpenConnector boots THEN no
+	 * GIVEN IAppManager resolution throws WHEN Integriq boots THEN no
 	 * registration occurs, a warning (not error) is logged, and no exception
 	 * propagates.
 	 *

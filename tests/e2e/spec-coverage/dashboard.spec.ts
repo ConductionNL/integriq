@@ -2,13 +2,13 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Genuine behavioral UI coverage for the openconnector Dashboard page.
+ * Genuine behavioral UI coverage for the integriq Dashboard page.
  *
  * The Dashboard (manifest type "dashboard") renders KPI stats-block
  * widgets (Sources / Mappings / etc.) plus chart widgets (outgoing calls,
  * job executions, synchronization runs) behind a date-range picker. These
  * tests navigate to it via the real nav-click, assert the heading and the
- * KPI/chart surface render, and that no openconnector-origin error or 5xx
+ * KPI/chart surface render, and that no integriq-origin error or 5xx
  * occurs.
  */
 import { test } from '@playwright/test'

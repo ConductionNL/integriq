@@ -368,7 +368,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testDescriptorFileDoesNotDeclareEolProductOrEolCycleDirectly(): void {
-		$descriptorPath = __DIR__ . '/../../../lib/Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../../../lib/Settings/integriq_register.json';
 		$descriptor = json_decode((string)file_get_contents($descriptorPath), true);
 
 		$this->assertArrayNotHasKey('eolProduct', $descriptor['components']['schemas'] ?? []);

@@ -1,18 +1,18 @@
-# OpenConnector API-contract tests (Newman)
+# Integriq API-contract tests (Newman)
 
-Newman/Postman contract tests that exercise openconnector's integration HTTP
+Newman/Postman contract tests that exercise integriq's integration HTTP
 surface directly, locking the API contract. Per the gate-19 split, **API/contract
 correctness lives in Newman**; Playwright drives the UI only.
 
 ## Architecture note (read first)
 
-After the chain-C OR-cutover, openconnector controllers no longer own per-schema
+After the chain-C OR-cutover, integriq controllers no longer own per-schema
 CRUD — it is delegated to **OpenRegister's object API** at
-`/api/objects/openconnector/{schema}/*` (ADR-022). openconnector's own controllers
+`/api/objects/openconnector/{schema}/*` (ADR-022). integriq's own controllers
 now expose only the integration **actions**: `sources#test`, `jobs#run/test`,
 `synchronizations#run/test/contracts/statistics/logs`, `mappings#test/getObjects`,
 and the events (webhook subscription) lifecycle. This suite covers **both**: the
-OR-delegated CRUD for every schema, and the openconnector action endpoints.
+OR-delegated CRUD for every schema, and the integriq action endpoints.
 
 The `register` collection variable is the **slug** `openconnector` (OR register
 id 65), and the schema slugs used are: `source`, `mapping`, `rule`, `endpoint`,
@@ -59,7 +59,7 @@ The OR-method `findObjects()` / `findObject()` non-existent-method calls were
 **already migrated off `development`** (commit `139423f6` *"migrate
 Source/Mapping/Rule/Contract(Log) mappers onto OpenRegister"*). **No
 controller-reachable endpoint in 0.2.15 500s on a findObject OR-method call.** The
-only remaining `findObject*` symbols in `lib/` are openconnector's local MongoDB
+only remaining `findObject*` symbols in `lib/` are integriq's local MongoDB
 `Service\ObjectService` shim (its own method) and `Db\SourceMapper::findObject`
 (a real method defined on that class). So the warned-about sweep target is, for
 the API surface, already resolved on `development`.
@@ -99,7 +99,7 @@ each carries an inline comment describing the fix and the assertion to flip to.
 ./run-newman.sh
 
 # or directly:
-npx newman run openconnector.postman_collection.json \
+npx newman run integriq.postman_collection.json \
   --env-var baseUrl=http://localhost:8080 \
   --env-var noAuthBase=http://127.0.0.1:8080 \
   --env-var adminUser=admin --env-var adminPass=admin \
@@ -107,7 +107,7 @@ npx newman run openconnector.postman_collection.json \
 ```
 
 `run-newman.sh` prefers a globally-installed `newman`, falls back to `npx newman`,
-and serialises runs under `flock /tmp/uiaudit-openconnector.lock` to avoid tripping
+and serialises runs under `flock /tmp/uiaudit-integriq.lock` to avoid tripping
 the Nextcloud brute-force protection when multiple agents run in parallel.
 
 ## Auth-isolation detail (important for reuse)
@@ -126,7 +126,7 @@ of 401). Two measures keep the authorization tests honest:
    requests get NC's JSON `401`, not the `303`->login-page `200` HTML.
 
 Authenticated POST/PUT/DELETE requests carry `OCS-APIRequest: true`. The
-openconnector action controllers (`sources#test`, `jobs#run`,
+integriq action controllers (`sources#test`, `jobs#run`,
 `synchronizations#run/statistics`, `events#*`, `mappings#test`) are auth-gated and
 return `401` unauthenticated. OpenRegister object reads are **not** auth-gated
 (authorization on object data is OR's responsibility, ADR-022), so OR-CRUD reads

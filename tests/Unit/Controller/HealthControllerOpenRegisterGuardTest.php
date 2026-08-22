@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Health Controller — OpenRegister dependency guard tests.
+ * Integriq Health Controller — OpenRegister dependency guard tests.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Controller
