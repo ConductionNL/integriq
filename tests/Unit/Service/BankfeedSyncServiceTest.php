@@ -4,7 +4,7 @@
  * Unit tests for BankfeedSyncService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,17 +21,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\Psd2ConsentRevokedException;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
-use OCA\OpenConnector\Service\BankfeedSyncService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\Psd2\LogPsd2AggregatorProvider;
-use OCA\OpenConnector\Service\Psd2\RestPsd2AggregatorProvider;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\Psd2ConsentRevokedException;
+use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\BankfeedSyncService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
+use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

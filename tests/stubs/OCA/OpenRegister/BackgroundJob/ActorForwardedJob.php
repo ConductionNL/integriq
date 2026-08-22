@@ -19,11 +19,11 @@
  * returns `?object` rather than the real `?Organisation`, because the
  * Organisation entity is not stubbed in this repository. The drift log is
  * observability only — it can never change what the job does — and it is
- * OpenRegister's behaviour, not OpenConnector's, so it is not under test here.
+ * OpenRegister's behaviour, not Integriq's, so it is not under test here.
  * Its own `catch (\Throwable) { return; }` is mirrored faithfully.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

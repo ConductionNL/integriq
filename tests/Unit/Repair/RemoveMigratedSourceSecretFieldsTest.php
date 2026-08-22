@@ -18,7 +18,7 @@
  * so the gate is exercised through the real raw-read path.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,10 +29,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields;
-use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
+use OCA\Integriq\Repair\RemoveMigratedSourceSecretFields;
+use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -317,7 +317,7 @@ class GateBypassingRemoveStep extends RemoveMigratedSourceSecretFields {
 }//end class
 
 /**
- * @covers \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields
+ * @covers \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields
  */
 class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 

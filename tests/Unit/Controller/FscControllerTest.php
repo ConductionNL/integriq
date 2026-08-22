@@ -4,7 +4,7 @@
  * Unit tests for FscController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\FscController;
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\FscCallService;
+use OCA\Integriq\Controller\FscController;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\FscCallService;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IRequest;

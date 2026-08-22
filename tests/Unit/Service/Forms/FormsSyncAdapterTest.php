@@ -4,7 +4,7 @@
  * Unit tests for FormsSyncAdapter.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Forms
+ * @package  OCA\Integriq\Tests\Unit\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Forms;
+namespace OCA\Integriq\Tests\Unit\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
-use OCA\OpenConnector\Service\Forms\FormsClientInterface;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Service\Forms\FormsClientInterface;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;

@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Unit tests for the UserController
  *
  * @category   Test
- * @package    OCA\OpenConnector\Tests\Unit\Controller
+ * @package    OCA\Integriq\Tests\Unit\Controller
  * @author     Conduction.nl <info@conduction.nl>
  * @copyright  Conduction.nl 2024
  * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -16,10 +16,10 @@ declare(strict_types=1);
  * @link       https://github.com/ConductionNL/openconnector
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\UserController;
-use OCA\OpenConnector\Service\UserService;
+use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\UserService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * Unit tests for the UserController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  */
 class UserControllerTest extends TestCase {
 	/** @var UserController */

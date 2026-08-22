@@ -4,7 +4,7 @@
  * Unit tests for DatasourceController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\DatasourceController;
-use OCA\OpenConnector\Service\Datasource\DashboardDatasourceService;
+use OCA\Integriq\Controller\DatasourceController;
+use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;

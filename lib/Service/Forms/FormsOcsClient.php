@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms v3-REST Client.
+ * Integriq Forms v3-REST Client.
  *
  * Concrete {@see FormsClientInterface} implementation. Targets the
  * `index.php/apps/forms/api/v3/*` surface (unwrapped JSON, no OCS response
@@ -14,14 +14,14 @@
  * {@see BASE_PATH} constant and envelope-unwrapping logic need to change —
  * {@see FormsClientInterface}'s contract is transport-agnostic by design.
  *
- * Transport is exclusively {@see \OCA\OpenConnector\Service\CallService::call()}
+ * Transport is exclusively {@see \OCA\Integriq\Service\CallService::call()}
  * against the `Source` object configured on the synchronization/subscription
  * — no new HTTP client, no new secret storage. CallLog persistence,
  * rate-limit tracking, and brokered-credential dispatch are inherited for
  * free, mirroring `TablesOcsClient`'s own stated rationale.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Forms
+ * @package  OCA\Integriq\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,20 +30,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Forms;
+namespace OCA\Integriq\Service\Forms;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\FormsNotFoundException;
-use OCA\OpenConnector\Exception\FormsPermissionDeniedException;
-use OCA\OpenConnector\Exception\FormsUpstreamException;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Exception\FormsNotFoundException;
+use OCA\Integriq\Exception\FormsPermissionDeniedException;
+use OCA\Integriq\Exception\FormsUpstreamException;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Twig\Error\LoaderError;

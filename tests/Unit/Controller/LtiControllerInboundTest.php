@@ -4,7 +4,7 @@
  * Contract tests for LtiController's Platform-role (inbound) endpoints.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\LtiController;
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\Lti\LtiAgsService;
-use OCA\OpenConnector\Service\Lti\LtiKeyService;
-use OCA\OpenConnector\Service\Lti\LtiLaunchService;
-use OCA\OpenConnector\Service\Lti\LtiNrpsService;
+use OCA\Integriq\Controller\LtiController;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Lti\LtiAgsService;
+use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;

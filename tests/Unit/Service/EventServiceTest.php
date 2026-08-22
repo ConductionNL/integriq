@@ -4,7 +4,7 @@
  * Unit tests for EventService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,15 +13,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -817,7 +817,7 @@ class EventServiceTest extends TestCase {
 		);
 		$this->objectService->method('find')->willReturn($delivered);
 
-		$this->expectException(\OCA\OpenConnector\Exception\InvalidMessageStateException::class);
+		$this->expectException(\OCA\Integriq\Exception\InvalidMessageStateException::class);
 		$this->service->replayMessage('msg-uuid', 'alice');
 	}//end testReplayMessageRejectsDeliveredState()
 
@@ -864,7 +864,7 @@ class EventServiceTest extends TestCase {
 		);
 		$this->objectService->method('find')->willReturn($pending);
 
-		$this->expectException(\OCA\OpenConnector\Exception\InvalidMessageStateException::class);
+		$this->expectException(\OCA\Integriq\Exception\InvalidMessageStateException::class);
 		$this->service->discardMessage('msg-uuid', 'bob');
 	}//end testDiscardMessageRejectsPendingState()
 

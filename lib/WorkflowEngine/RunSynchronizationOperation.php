@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector "Run synchronization" WorkflowEngine Operation.
+ * Integriq "Run synchronization" WorkflowEngine Operation.
  *
  * Thin `OCP\WorkflowEngine\ISpecificOperation` adapter that lets an NC admin
- * wire "file event + checks -> run this OpenConnector synchronization" from
+ * wire "file event + checks -> run this Integriq synchronization" from
  * Settings > Flow. `onEvent()` decodes the matched flow's settings and
  * delegates to the existing `SynchronizationService::getSynchronization()` +
  * `synchronize()` — no synchronization logic is reimplemented here.
  *
  * @category WorkflowEngine
- * @package  OCA\OpenConnector\WorkflowEngine
+ * @package  OCA\Integriq\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,17 +19,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-run-synchronization-operations-onevent-must-dispatch-to-synchronizationservice-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\WorkflowEngine;
+namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\SynchronizationService;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -101,7 +101,7 @@ class RunSynchronizationOperation implements ISpecificOperation {
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Runs a configured OpenConnector synchronization when this rule matches.');
+		return $this->l10n->t('Runs a configured Integriq synchronization when this rule matches.');
 	}//end getDescription()
 
 	/**

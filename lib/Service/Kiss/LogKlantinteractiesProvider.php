@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log KISS Klantinteracties Provider.
+ * Integriq Log KISS Klantinteracties Provider.
  *
  * Sandbox/mock binding for {@see KlantinteractiesProviderInterface}: performs
  * no real network call, answers `listKlantcontacten()` with an empty page
@@ -11,7 +11,7 @@
  * LogPeppolAccessPointProvider sandbox convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Kiss
+ * @package  OCA\Integriq\Service\Kiss
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Kiss;
+namespace OCA\Integriq\Service\Kiss;
 
 /**
  * Sandbox KISS provider: empty pulls, synthetic created/linked ids.

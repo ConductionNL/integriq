@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector KISS Klantinteracties Client.
+ * Integriq KISS Klantinteracties Client.
  *
  * Thin REST binding for {@see KlantinteractiesProviderInterface} against the
  * VNG "Klantinteracties API" (the OpenKlant 2.x reference model that KISS —
@@ -10,8 +10,8 @@
  * HTTP client (Guzzle, already an app dependency) rather than an SDK
  * dependency — the contract is a handful of REST resources
  * (`klantcontacten`, `betrokkenen`, `onderwerpobjecten`) behind one token
- * auth scheme, mirroring {@see \OCA\OpenConnector\Service\Sms\RestNotifyNlProvider}
- * and {@see \OCA\OpenConnector\Service\Peppol\RestPeppolAccessPointProvider}.
+ * auth scheme, mirroring {@see \OCA\Integriq\Service\Sms\RestNotifyNlProvider}
+ * and {@see \OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider}.
  *
  * ASSUMED API SHAPE — no live KISS instance was available to verify against
  * in this environment; every endpoint/field/param below is an explicit,
@@ -52,7 +52,7 @@
  * Nextcloud's `OCP\Security\ICrypto`, decrypted in-process only for the
  * instant needed to build each request's Authorization header (never logged,
  * never persisted decrypted). A static-secret binding like this one is
- * exactly the "v1 scope" {@see \OCA\OpenConnector\Service\BrokeredCallService}
+ * exactly the "v1 scope" {@see \OCA\Integriq\Service\BrokeredCallService}
  * targets (see the Peppol `rest` provider's `credentialRef` precedent); this
  * client uses direct `ICrypto` storage instead, mirroring the
  * notifynl-sms-channel leaf, so the KISS bridge has no hard dependency on the
@@ -60,7 +60,7 @@
  * unit-testable exactly like the other provider bindings in this app.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Kiss
+ * @package  OCA\Integriq\Service\Kiss
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -69,18 +69,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Kiss;
+namespace OCA\Integriq\Service\Kiss;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\KissProviderException;
+use OCA\Integriq\Exception\KissProviderException;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;

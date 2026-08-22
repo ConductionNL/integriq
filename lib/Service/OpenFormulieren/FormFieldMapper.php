@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector Open Formulieren Form Field Mapper.
+ * Integriq Open Formulieren Form Field Mapper.
  *
  * Resolves one Open Formulieren `openformulieren_form_mapping` record's
  * `fieldMapping` configuration against a submission's raw submitted values,
  * producing the normalised `mapped*` properties that
- * {@see \OCA\OpenConnector\Service\OpenFormulierenIntakeService} persists
+ * {@see \OCA\Integriq\Service\OpenFormulierenIntakeService} persists
  * onto an `openformulieren_submission` object. This is the ONLY layer that
  * translates arbitrary Open Formulieren field keys into fleet-neutral
  * fields; OpenRegister's own `x-openregister-handoff` dialect (declared on
@@ -15,14 +15,14 @@
  * layer this class never touches (see design.md §2.1).
  *
  * Deliberately the mirror image of the known `oc-mapping-literal-leak` bug
- * class: OpenConnector's `sourceTargetMapping` returns the literal dot-path
+ * class: Integriq's `sourceTargetMapping` returns the literal dot-path
  * string when a bare-path source key is absent, rather than erroring. A
  * declared `from`/`template` entry whose referenced key is absent from the
  * submitted values ALWAYS throws {@see MappingResolutionException} here —
  * it never returns the unresolved literal as if it were data (design.md §2.2).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\OpenFormulieren
+ * @package  OCA\Integriq\Service\OpenFormulieren
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,16 +31,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\OpenFormulieren;
+namespace OCA\Integriq\Service\OpenFormulieren;
 
-use OCA\OpenConnector\Exception\MappingResolutionException;
+use OCA\Integriq\Exception\MappingResolutionException;
 
 /**
  * Resolves per-form `fieldMapping` config against submitted values.

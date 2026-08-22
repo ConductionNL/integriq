@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenConnector Forms Permission-Denied Exception.
+ * Integriq Forms Permission-Denied Exception.
  *
  * Raised when the Nextcloud Forms API returns 401/403 for a request. Per
  * `tables-bridge` Decision 8's precedent (mirrored here — design.md Decision
- * 1), OpenConnector never pre-checks or re-implements Forms' own
+ * 1), Integriq never pre-checks or re-implements Forms' own
  * authorization — Forms' response is the sole authority.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

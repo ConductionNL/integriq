@@ -4,7 +4,7 @@
  * InitializeActions repair step — AppHost adapter tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\InitializeActions;
+use OCA\Integriq\Repair\InitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;

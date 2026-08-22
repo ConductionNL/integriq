@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Outbound Bericht Translator.
+ * Integriq iWMO/iJW Outbound Bericht Translator.
  *
  * Translates an OpenRegister social-domain case object (a `toewijzing`/
  * assignment or `declaratie`/invoice) into the corresponding Wmo303/Jw303
@@ -15,14 +15,14 @@
  * translator MUST NEVER emit an empty tag, a null literal, or an
  * unresolved template marker for a required field. As defense in depth,
  * the fully rendered envelope is scanned (via the shared
- * {@see \OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard}, extracted
+ * {@see \OCA\Integriq\Service\Stuf\StufLiteralLeakGuard}, extracted
  * here as part of `stuf-zkn-bridge` so this class and the sibling
  * StUF-ZKN translator share one scan implementation) for leftover `{{`/
  * `}}`/`%%UNRESOLVED%%` markers and rejected if any survive (see
  * design.md "Literal-leak guard").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\IwmoIjw
+ * @package  OCA\Integriq\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,20 +31,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\IwmoIjw;
+namespace OCA\Integriq\Service\IwmoIjw;
 
 use DateTime;
 use DOMDocument;
 use DOMElement;
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 
 /**
  * Toewijzing/declaratie case object -> Wmo/Jw XML envelope.

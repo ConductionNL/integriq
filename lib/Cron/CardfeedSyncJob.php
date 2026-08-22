@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Cardfeed Sync Job.
+ * Integriq Cardfeed Sync Job.
  *
  * Background job that runs the scheduled corporate-card transaction sync: for
  * every `active` cardfeed_account it pulls each card's transactions since the
@@ -11,7 +11,7 @@
  * TimedJob registration pattern.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,9 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\CardfeedSyncService;
+use OCA\Integriq\Service\CardfeedSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

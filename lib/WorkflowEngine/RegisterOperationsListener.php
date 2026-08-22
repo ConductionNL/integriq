@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector WorkflowEngine RegisterOperationsListener.
+ * Integriq WorkflowEngine RegisterOperationsListener.
  *
- * Registers OpenConnector's three thin `ISpecificOperation` adapters
+ * Registers Integriq's three thin `ISpecificOperation` adapters
  * ("Run synchronization", "Call endpoint", "Fire CloudEvent") with NC core's
  * `workflowengine` app. This is the only documented registration path
  * (discovery.md finding 2): `Manager::getOperatorList()` dispatches
@@ -12,7 +12,7 @@
  * `Application.php::register()` would not survive across requests.
  *
  * @category WorkflowEngine
- * @package  OCA\OpenConnector\WorkflowEngine
+ * @package  OCA\Integriq\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,21 +21,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\WorkflowEngine;
+namespace OCA\Integriq\WorkflowEngine;
 
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 
 /**
- * Listener that registers the three OpenConnector WorkflowEngine operations
+ * Listener that registers the three Integriq WorkflowEngine operations
  * on every `RegisterOperationsEvent` dispatch.
  *
  * @implements IEventListener<RegisterOperationsEvent>

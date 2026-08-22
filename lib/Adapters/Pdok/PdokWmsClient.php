@@ -8,11 +8,11 @@
  * pre-recorded GetCapabilities document + a deterministic 1x1 PNG; the HTTP
  * flavour issues real outbound requests to `service.pdok.nl/...`.
  *
- * DI in {@see \OCA\OpenConnector\AppInfo\Application::register()} resolves this
+ * DI in {@see \OCA\Integriq\AppInfo\Application::register()} resolves this
  * abstract to the appropriate concrete flavour, gated on `pdok.feature_flag`.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 /**
  * Polymorphic base for the PDOK WMS adapter family.

@@ -4,7 +4,7 @@
  * Unit tests for DSOSignatureVerifierService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,10 +15,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\DSOSignatureVerifierService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

@@ -20,7 +20,7 @@
  * real class when running inside a full Nextcloud installation.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests
+ * @package  OCA\Integriq\Tests
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.

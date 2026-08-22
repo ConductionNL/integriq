@@ -4,7 +4,7 @@
  * Unit tests for EudiWalletController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,15 +15,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\EudiWalletController;
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Exception\EudiIssuanceException;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\EudiCredentialOfferService;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
-use OCA\OpenConnector\Service\EudiStatusListService;
+use OCA\Integriq\Controller\EudiWalletController;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Service\EudiStatusListService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;

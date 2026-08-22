@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EUDI Status List Refresh Job.
+ * Integriq EUDI Status List Refresh Job.
  *
  * Background job that sweeps every `eudi_status_list` row and re-signs any
  * published OAuth Status List Token nearing its own `exp`, so
@@ -9,7 +9,7 @@
  * expired even though the bitstring contents rarely change.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,9 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\EudiStatusListService;
+use OCA\Integriq\Service\EudiStatusListService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -34,7 +34,7 @@ use Throwable;
 /**
  * Background job that periodically re-signs near-expiry EUDI status list tokens.
  *
- * Mirrors {@see \OCA\OpenConnector\Cron\EventRetryJob}'s `TimedJob` shape
+ * Mirrors {@see \OCA\Integriq\Cron\EventRetryJob}'s `TimedJob` shape
  * (design.md D-REVOKE / tasks.md "Status list refresh cron").
  *
  * @psalm-api
@@ -84,7 +84,7 @@ class EudiStatusListRefreshJob extends TimedJob {
 	 *
 	 * A single poisoned row must never wedge the cron pipeline, so any
 	 * exception from the sweep is caught and logged rather than rethrown
-	 * (mirrors {@see \OCA\OpenConnector\Cron\EventRetryJob::run()}).
+	 * (mirrors {@see \OCA\Integriq\Cron\EventRetryJob::run()}).
 	 *
 	 * @param mixed $argument Task arguments (not used).
 	 *

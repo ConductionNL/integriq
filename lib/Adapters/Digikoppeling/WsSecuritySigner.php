@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — WS-Security 1.1 X.509 signer/verifier for the WUS profile.
+ * Integriq — WS-Security 1.1 X.509 signer/verifier for the WUS profile.
  *
  * Signs a SOAP envelope with an enveloped XML-DSig (RSA-SHA256) over the SOAP
  * Body, wrapped in a `wsse:Security` header carrying the X.509 token, and
@@ -16,7 +16,7 @@
  * C14N 1.0; the signature method is `rsa-sha256`, the digest `sha256`.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,16 +24,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
 use DOMDocument;
 use DOMElement;
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Exception\DigikoppelingException;
 
 /**
  * Signs and verifies WS-Security X.509 signatures over a SOAP Body.

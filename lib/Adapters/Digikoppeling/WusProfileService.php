@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector — Digikoppeling WUS synchronous profile.
+ * Integriq — Digikoppeling WUS synchronous profile.
  *
  * The WUS profile carries a StUF/ZGW *bevraging* body over a synchronous
  * request/response, signing the outgoing SOAP envelope with WS-Security X.509
  * and verifying the responder's signature (REQ-DK-002). It COMPOSES with the
  * content services: the StUF body is produced elsewhere (e.g.
- * {@see \OCA\OpenConnector\Service\StUFXMLBuilder}) and passed in unchanged;
+ * {@see \OCA\Integriq\Service\StUFXMLBuilder}) and passed in unchanged;
  * this profile signs and (would) deliver it (D1 — transport, not content).
  *
  * Signing material comes from the credential broker via a `certificateRef`
@@ -21,7 +21,7 @@
  * signing + response-verification core delivered here is real and unit-tested.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,14 +29,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Exception\DigikoppelingException;
 
 /**
  * Signs a WUS bevraging and verifies the signed response.

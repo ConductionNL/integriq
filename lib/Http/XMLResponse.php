@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector XML Response.
+ * Integriq XML Response.
  *
  * Response class that serialises array payloads to XML and writes the
  * appropriate Content-Type / Content-Disposition headers.
  *
  * @category Http
- * @package  OCA\OpenConnector\Http
+ * @package  OCA\Integriq\Http
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Http;
+namespace OCA\Integriq\Http;
 
 use DOMDocument;
 use DOMElement;

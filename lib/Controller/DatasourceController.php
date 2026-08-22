@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector dashboard data-source resolve controller.
+ * Integriq dashboard data-source resolve controller.
  *
  * Exposes the read-only `dashboard-http-datasource` resolve façade at
  * `POST /api/datasource/{sourceId}/resolve` for authenticated dashboard/
  * widget hosts (LaunchPad's `live-data-tile-widget` is the first consumer).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,16 +16,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\Datasource\DashboardDatasourceService;
+use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;

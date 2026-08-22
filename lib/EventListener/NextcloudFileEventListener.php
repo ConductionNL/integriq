@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Nextcloud File EventListener.
+ * Integriq Nextcloud File EventListener.
  *
  * Normalizes NC core file lifecycle events (`OCP\Files\Events\Node\*`) into
  * the CloudEvents `event` envelope and hands them to the same
@@ -9,22 +9,22 @@
  * already use.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\AbstractNodeEvent;
@@ -52,7 +52,7 @@ class NextcloudFileEventListener implements IEventListener {
 
 	/**
 	 * The CloudEvents `source` this producer stamps on every event, and the
-	 * discriminator {@see \OCA\OpenConnector\Controller\EventsController}
+	 * discriminator {@see \OCA\Integriq\Controller\EventsController}
 	 * uses for Nextcloud-event provenance filtering (dead-letter-replay
 	 * REQ-DLR-007).
 	 *

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Mapping Twig Runtime Loader.
+ * Integriq Mapping Twig Runtime Loader.
  *
  * Loads the MappingRuntime for Twig when one of the mapping helper filters
  * or functions is invoked from a template.
  *
  * @category Twig
- * @package  OCA\OpenConnector\Twig
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @deprecated Mapping evaluation consolidated into OpenRegister (2026-08-03).
  * Every pure transformation function moved to
- * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need OpenConnector's
+ * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need Integriq's
  * own services — callSource, getTargetIdByOriginId, getOriginIdByTargetId — are
  * contributed to that engine via `RegisterMappingFunctionsEvent`
  * (see Listener\MappingFunctionRegistrationListener).
  *
- * This copy is retained only while OpenConnector's own MappingService still
+ * This copy is retained only while Integriq's own MappingService still
  * exists. Do NOT add functions here: a function registered on this environment
  * is invisible to every mapping evaluated through OpenRegister, which is now
  * the engine everything else uses.
@@ -33,12 +33,12 @@
  * request authentication in CallService and is genuinely this app's concern.
  */
 
-namespace OCA\OpenConnector\Twig;
+namespace OCA\Integriq\Twig;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SourceMappingService;
-use OCA\OpenConnector\Service\SynchronizationContractService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\FileService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 

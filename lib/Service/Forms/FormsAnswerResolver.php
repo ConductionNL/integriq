@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Answer Resolver.
+ * Integriq Forms Answer Resolver.
  *
  * Resolves a question reference (numeric id, or question text) to that
  * question's answer value(s) from a form's fetched `questions` and a
@@ -11,7 +11,7 @@
  * rationale).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Forms
+ * @package  OCA\Integriq\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,16 +20,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Forms;
+namespace OCA\Integriq\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsConfigException;
+use OCA\Integriq\Exception\FormsConfigException;
 
 /**
  * Answer-by-question resolution, type-aware coercion, and an ambiguity guard.

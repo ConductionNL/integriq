@@ -4,7 +4,7 @@
  * Unit tests for RestCardfeedProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Cardfeed
+ * @package  OCA\Integriq\Tests\Unit\Service\Cardfeed
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,13 +19,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Cardfeed;
+namespace OCA\Integriq\Tests\Unit\Service\Cardfeed;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Exception\CardfeedProviderException;
-use OCA\OpenConnector\Service\BrokeredCallService;
-use OCA\OpenConnector\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

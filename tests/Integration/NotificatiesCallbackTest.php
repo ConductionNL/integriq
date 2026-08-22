@@ -12,7 +12,7 @@
  * already uses; no live network call is made anywhere in this test.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration
+ * @package  OCA\Integriq\Tests\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,19 +26,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration;
+namespace OCA\Integriq\Tests\Integration;
 
-use OCA\OpenConnector\Controller\NotificatiesSubscriberController;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Service\NotificatiesSubscriberService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Controller\NotificatiesSubscriberController;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Http;
 use OCP\Http\Client\IClientService;
 use OCP\ICache;
@@ -157,7 +157,7 @@ class NotificatiesCallbackTest extends TestCase {
 
 		// Real NotificatiesSubscriberService — the capability under test.
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/openconnector/api/notificaties/callback/abon-1');
+		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/integriq/api/notificaties/callback/abon-1');
 
 		$subscriberService = new NotificatiesSubscriberService(
 			$orObjectService,
@@ -204,7 +204,7 @@ class NotificatiesCallbackTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		$controller = new NotificatiesSubscriberController(
-			'openconnector',
+			'integriq',
 			$request,
 			$subscriberService,
 			$authorizationService,
@@ -304,7 +304,7 @@ class NotificatiesCallbackTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		$controller = new NotificatiesSubscriberController(
-			'openconnector',
+			'integriq',
 			$request,
 			$subscriberService,
 			$authorizationService,

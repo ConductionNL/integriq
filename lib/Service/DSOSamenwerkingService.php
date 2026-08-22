@@ -7,7 +7,7 @@
  * Werk Faciliteren) koppelvlak: sending and receiving adviesverzoeken.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;

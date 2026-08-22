@@ -4,7 +4,7 @@
  * OpenConnector PDOK Controller Test
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,11 +20,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Connectors\PdokConnector;
-use OCA\OpenConnector\Controller\PdokController;
-use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\Integriq\Connectors\PdokConnector;
+use OCA\Integriq\Controller\PdokController;
+use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;

@@ -4,7 +4,7 @@
  * Unit tests for EndpointsController's CORS preflight endpoint.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,13 +16,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\EndpointsController;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\EndpointCacheService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\Integriq\Controller\EndpointsController;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\ObjectService;
 use OCP\AppFramework\Http\Response;
 use OCP\IL10N;
 use OCP\IRequest;

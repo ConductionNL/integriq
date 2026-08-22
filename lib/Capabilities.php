@@ -1,26 +1,26 @@
 <?php
 
 /**
- * OpenConnector Capabilities.
+ * Integriq Capabilities.
  *
  * Contributes `{ dashboard_http_datasource: { name, version, enabled } }` to
  * the Nextcloud capabilities document so a leaf dashboard/widget host (e.g.
  * LaunchPad's `live-data-tile-widget`) can probe for the
  * `dashboard-http-datasource` façade at runtime and degrade cleanly when
- * OpenConnector is absent or disabled — see
+ * Integriq is absent or disabled — see
  * openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  * "Requirement: dashboard-http-datasource capability is advertised for leaf
  * probing".
  *
  * `enabled` is always `true` when this capability is contributed at all —
  * the OCS capabilities endpoint only ever calls into an app's registered
- * `ICapability` when that app is enabled, so a disabled/absent OpenConnector
+ * `ICapability` when that app is enabled, so a disabled/absent Integriq
  * naturally omits the whole `dashboard_http_datasource` key rather than
  * reporting `enabled: false` (mirrors the "Capability absent" scenario: the
  * leaf's probe simply finds no key at all).
  *
  * @category Capabilities
- * @package  OCA\OpenConnector
+ * @package  OCA\Integriq
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,14 +28,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-dashboard-http-datasource-capability-is-advertised-for-leaf-probing
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector;
+namespace OCA\Integriq;
 
 use OCP\Capabilities\ICapability;
 
@@ -58,7 +58,7 @@ class Capabilities implements ICapability {
 	private const CAPABILITY_VERSION = '1.0.0';
 
 	/**
-	 * Return OpenConnector's capabilities block.
+	 * Return Integriq's capabilities block.
 	 *
 	 * @return array<string, array<string, mixed>> The capabilities document fragment.
 	 *

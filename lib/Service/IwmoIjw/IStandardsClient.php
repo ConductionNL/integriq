@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector iStandaarden (iWMO/iJW) Client.
+ * Integriq iStandaarden (iWMO/iJW) Client.
  *
  * Thin REST binding for {@see IwmoIjwProviderInterface} against a
  * GGk/VECOZO-fronted iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
  * endpoint. Deliberately a hand-rolled HTTP client (Guzzle, already an app
  * dependency) rather than a SOAP/XSD library dependency — mirrors
- * {@see \OCA\OpenConnector\Service\Kiss\KlantinteractiesClient} and
- * {@see \OCA\OpenConnector\Service\Sms\RestNotifyNlProvider}.
+ * {@see \OCA\Integriq\Service\Kiss\KlantinteractiesClient} and
+ * {@see \OCA\Integriq\Service\Sms\RestNotifyNlProvider}.
  *
  * ASSUMED TRANSPORT SHAPE — no live GGk/VECOZO connection was available to
  * verify against in this environment; every endpoint/header below is an
@@ -42,11 +42,11 @@
  * certificate/key/optional passphrase/optional CA bundle, same at-rest
  * pattern as the token above) to dispatch this GGk/VECOZO-fronted request
  * over a real mutual-TLS connection via {@see
- * \OCA\OpenConnector\Service\Mtls\MtlsTransportService}. Token mode is
+ * \OCA\Integriq\Service\Mtls\MtlsTransportService}. Token mode is
  * unchanged.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\IwmoIjw
+ * @package  OCA\Integriq\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -55,21 +55,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\IwmoIjw;
+namespace OCA\Integriq\Service\IwmoIjw;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;

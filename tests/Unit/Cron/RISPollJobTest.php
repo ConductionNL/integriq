@@ -4,7 +4,7 @@
  * Unit tests for RISPollJob.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Cron
+ * @package  OCA\Integriq\Tests\Unit\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,10 +15,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Cron;
+namespace OCA\Integriq\Tests\Unit\Cron;
 
-use OCA\OpenConnector\Cron\RISPollJob;
-use OCA\OpenConnector\Service\IBabsConnectorService;
+use OCA\Integriq\Cron\RISPollJob;
+use OCA\Integriq\Service\IBabsConnectorService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;

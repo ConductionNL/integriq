@@ -4,7 +4,7 @@
  * Unit tests for FscDirectoryClient.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Fsc
+ * @package  OCA\Integriq\Tests\Unit\Service\Fsc
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,19 +18,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Fsc;
+namespace OCA\Integriq\Tests\Unit\Service\Fsc;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Service\Fsc\FscDirectoryClient;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -375,14 +375,14 @@ class FscDirectoryClientTest extends TestCase {
 				'POST',
 				'https://outway.example.nl/brp',
 				$this->anything(),
-				$this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+				$this->isInstanceOf(\OCA\Integriq\Service\Mtls\MtlsCertificateBundle::class)
 			)
 			->willReturn(new \GuzzleHttp\Psr7\Response(200, [], json_encode(['ref' => 'FSC-mtls-ref'])));
 
 		$mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
 		$mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
 		$mtlsConfigResolver->method('resolve')->willReturn(
-			new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
+			new \OCA\Integriq\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
 		);
 
 		$client = new FscDirectoryClient(

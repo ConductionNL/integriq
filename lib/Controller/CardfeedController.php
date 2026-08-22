@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Cardfeed Controller.
+ * Integriq Cardfeed Controller.
  *
  * REST controller for the corporate-card-feed connector: the enroll +
  * card-discovery endpoint. The scheduled transaction sync is NOT triggered from
@@ -10,7 +10,7 @@
  * grants access to real card data.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,18 +19,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\CardfeedProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\CardfeedSyncService;
+use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\CardfeedSyncService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector DSO (Digitaal Stelsel Omgevingswet) Client.
+ * Integriq DSO (Digitaal Stelsel Omgevingswet) Client.
  *
  * Thin REST binding for {@see DsoConnectorProviderInterface} against a
  * DSO-LV-fronted "voortgangsinformatie"/besluit endpoint. Deliberately a
  * hand-rolled HTTP client (Guzzle, already an app dependency) rather than a
- * DSO SDK dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
- * and {@see \OCA\OpenConnector\Service\Kiss\KlantinteractiesClient}.
+ * DSO SDK dependency — mirrors {@see \OCA\Integriq\Service\IwmoIjw\IStandardsClient}
+ * and {@see \OCA\Integriq\Service\Kiss\KlantinteractiesClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live DSO-LV/preprod connection was available
  * to verify against in this environment; every endpoint/header below is an
@@ -21,7 +21,7 @@
  * - Auth: `Authorization: Bearer <token>` by default — a DELIBERATE
  *   DEVIATION from the real DSO-LV transport, which uses PKIoverheid
  *   client-certificate (mTLS) authentication for production traffic, not a
- *   bearer token (see {@see \OCA\OpenConnector\Service\DSOSignatureVerifierService},
+ *   bearer token (see {@see \OCA\Integriq\Service\DSOSignatureVerifierService},
  *   which already implements the *inbound* PKIoverheid chain-validation
  *   half of this — this class is the *outbound* leg and does not reuse it,
  *   since verifying an inbound signature and presenting an outbound client
@@ -48,12 +48,12 @@
  * certificate/key/optional passphrase/optional CA bundle, same at-rest
  * pattern as the token above) to dispatch this OUTBOUND leg over a real
  * PKIoverheid mutual-TLS connection via {@see
- * \OCA\OpenConnector\Service\Mtls\MtlsTransportService}. This is
+ * \OCA\Integriq\Service\Mtls\MtlsTransportService}. This is
  * independent of `DSOSignatureVerifierService`'s INBOUND signature
  * verification. Token mode is unchanged.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Dso
+ * @package  OCA\Integriq\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -62,21 +62,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Dso;
+namespace OCA\Integriq\Service\Dso;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\DsoProviderException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;

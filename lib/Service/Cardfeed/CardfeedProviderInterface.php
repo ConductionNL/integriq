@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Corporate Card-Feed Provider Interface.
+ * Integriq Corporate Card-Feed Provider Interface.
  *
  * Narrow domain seam through which every corporate/credit-card feed operation
  * occurs: card discovery and transaction pulls. A new card-program vendor
@@ -10,7 +10,7 @@
  * design.md and the sibling Psd2AggregatorProviderInterface.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Cardfeed
+ * @package  OCA\Integriq\Service\Cardfeed
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,16 +19,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Cardfeed;
+namespace OCA\Integriq\Service\Cardfeed;
 
-use OCA\OpenConnector\Exception\CardfeedProviderException;
+use OCA\Integriq\Exception\CardfeedProviderException;
 
 /**
  * A corporate-card-feed provider binding: card discovery + transaction pulls.

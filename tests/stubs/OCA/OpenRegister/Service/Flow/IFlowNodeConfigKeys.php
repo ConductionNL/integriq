@@ -25,7 +25,7 @@
  * -----------------------------
  * Adding a method to `IFlowNode` is a fatal error for every class implementing
  * it that has not been updated — and implementations live in other repositories
- * (openconnector ships `source-call` and `synchronization-run`, hermiq ships
+ * (integriq ships `source-call` and `synchronization-run`, hermiq ships
  * `agent-step` and `workload-step`). Publishing a release that fatals those apps
  * on load is a worse outcome than the defect being closed.
  *

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — ebMS2 reliable-messaging state machine (core).
+ * Integriq — ebMS2 reliable-messaging state machine (core).
  *
  * Digikoppeling's ebMS2 (OSB) profile carries *meldingen* with reliable
  * delivery: each outbound message is persisted with its `MessageId` /
@@ -25,7 +25,7 @@
  * stub (every decision is real and exercised by tests).
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,12 +33,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
 /**
  * The reliable-delivery state machine for the ebMS2 profile.

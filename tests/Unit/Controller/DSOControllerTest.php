@@ -4,7 +4,7 @@
  * Unit tests for DSOController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\DSOController;
-use OCA\OpenConnector\Exception\DsoProviderException;
-use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\DsoIngestService;
-use OCA\OpenConnector\Service\DSOParserService;
-use OCA\OpenConnector\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Controller\DSOController;
+use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\DSOParserService;
+use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;

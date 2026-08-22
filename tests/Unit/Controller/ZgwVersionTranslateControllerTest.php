@@ -4,7 +4,7 @@
  * Unit tests for ZgwVersionTranslateController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,16 +18,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\ZgwVersionTranslateController;
-use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
-use OCA\OpenConnector\Exception\ZgwUnknownVersionException;
-use OCA\OpenConnector\Exception\ZgwVersionNotImplementedException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ZgwVersionNegotiationService;
-use OCA\OpenConnector\Service\ZgwVersionTranslationService;
+use OCA\Integriq\Controller\ZgwVersionTranslateController;
+use OCA\Integriq\Exception\ZgwLiteralLeakException;
+use OCA\Integriq\Exception\ZgwUnknownResourceException;
+use OCA\Integriq\Exception\ZgwUnknownVersionException;
+use OCA\Integriq\Exception\ZgwVersionNotImplementedException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ZgwVersionNegotiationService;
+use OCA\Integriq\Service\ZgwVersionTranslationService;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IRequest;

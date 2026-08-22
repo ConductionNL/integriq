@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector mTLS Transport Service.
+ * Integriq mTLS Transport Service.
  *
  * The ONE call-site in the app that dispatches an outbound HTTP request
  * with a client certificate attached: materialise → merge Guzzle TLS
@@ -13,11 +13,11 @@
  * `configuration.authentication.mode=mtls`.
  *
  * Never fails open: a `GuzzleException` raised during dispatch is wrapped
- * as {@see \OCA\OpenConnector\Exception\MtlsHandshakeException} — there is
+ * as {@see \OCA\Integriq\Exception\MtlsHandshakeException} — there is
  * no retry-without-certificate path.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Mtls
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,19 +26,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-never-fails-open-to-plaintext-or-token-auth-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Mtls;
+namespace OCA\Integriq\Service\Mtls;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\MtlsHandshakeException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
+use OCA\Integriq\Exception\MtlsHandshakeException;
+use OCA\Integriq\Exception\MtlsTransportException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 

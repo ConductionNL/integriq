@@ -18,7 +18,7 @@
  * that feature do NOT fire it.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,16 +27,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
-use OCA\OpenConnector\Service\JobIntervalCron;
-use OCA\OpenConnector\Service\MigrationEntityReader;
-use OCA\OpenConnector\Service\MigrationSubject;
-use OCA\OpenConnector\Service\JobToFlowGenerator;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\JobIntervalCron;
+use OCA\Integriq\Service\MigrationEntityReader;
+use OCA\Integriq\Service\MigrationSubject;
+use OCA\Integriq\Service\JobToFlowGenerator;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -51,11 +51,11 @@ use RuntimeException;
 /**
  * Tests for the Job → flow migration generator.
  *
- * @covers \OCA\OpenConnector\Service\JobToFlowGenerator
- * @covers \OCA\OpenConnector\Service\JobIntervalCron
- * @covers \OCA\OpenConnector\Service\MigrationSubject
- * @covers \OCA\OpenConnector\Service\MigrationEntityReader
- * @covers \OCA\OpenConnector\Exception\EntityNotMigratableException
+ * @covers \OCA\Integriq\Service\JobToFlowGenerator
+ * @covers \OCA\Integriq\Service\JobIntervalCron
+ * @covers \OCA\Integriq\Service\MigrationSubject
+ * @covers \OCA\Integriq\Service\MigrationEntityReader
+ * @covers \OCA\Integriq\Exception\EntityNotMigratableException
  */
 class JobToFlowGeneratorTest extends TestCase {
 
@@ -64,14 +64,14 @@ class JobToFlowGeneratorTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private const SYNC_ACTION = 'OCA\OpenConnector\Action\SynchronizationAction';
+	private const SYNC_ACTION = 'OCA\Integriq\Action\SynchronizationAction';
 
 	/**
 	 * The action class a migratable flow job points at.
 	 *
 	 * @var string
 	 */
-	private const FLOW_ACTION = 'OCA\OpenConnector\Action\FlowAction';
+	private const FLOW_ACTION = 'OCA\Integriq\Action\FlowAction';
 
 	/**
 	 * The entity reader double.
@@ -567,7 +567,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\OpenConnector\Action\PingAction',
+					'jobClass' => 'OCA\Integriq\Action\PingAction',
 					'arguments' => ['sourceId' => 'some-source'],
 				]
 			)
@@ -587,7 +587,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\OpenConnector\Action\EventAction',
+					'jobClass' => 'OCA\Integriq\Action\EventAction',
 					'arguments' => ['type' => 'x', 'source' => 'y'],
 				]
 			)

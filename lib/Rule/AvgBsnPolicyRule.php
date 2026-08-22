@@ -17,18 +17,18 @@
  * not require a BRP lookup.
  *
  * @category Rule
- * @package  OCA\OpenConnector\Rule
+ * @package  OCA\Integriq\Rule
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Rule;
+namespace OCA\Integriq\Rule;
 
 use Adbar\Dot;
 use Exception;

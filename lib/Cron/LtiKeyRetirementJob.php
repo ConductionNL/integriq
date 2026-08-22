@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LTI Key Retirement Job.
+ * Integriq LTI Key Retirement Job.
  *
  * Background job that sweeps every `lti_platform`/`lti_tool` registration and
  * flips `previous` signing keys whose 7-day rotation grace window has
@@ -10,7 +10,7 @@
  * published forever.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,9 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -35,7 +35,7 @@ use Throwable;
 /**
  * Background job that periodically retires grace-window-expired LTI signing keys.
  *
- * Mirrors {@see \OCA\OpenConnector\Cron\EventRetryJob}'s cron-registration
+ * Mirrors {@see \OCA\Integriq\Cron\EventRetryJob}'s cron-registration
  * pattern (design.md, task 2.1).
  *
  * @psalm-api

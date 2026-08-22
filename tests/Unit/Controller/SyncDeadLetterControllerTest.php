@@ -4,7 +4,7 @@
  * Unit tests for SyncDeadLetterController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\SyncDeadLetterController;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
-use OCA\OpenConnector\Service\SyncItemDeadLetterService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Controller\SyncDeadLetterController;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\SyncItemDeadLetterService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;

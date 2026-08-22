@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EudiIssuerKeyService.
+ * Integriq EudiIssuerKeyService.
  *
  * Owns the EUDI wallet credential issuer's own ES256 (P-256) signing-key
  * lifecycle: generation, rotation (archiving the previous public key so
@@ -9,7 +9,7 @@
  * this adapter mints (dc+sd-jwt credentials, OAuth Status List Tokens).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
@@ -30,7 +30,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\IAppConfig;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;

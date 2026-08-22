@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector ExecutionTracesController.
+ * Integriq ExecutionTracesController.
  *
  * REST surface for the `execution_trace` observability capability: list,
  * detail, and replay (dry-run by default, explicit force for a real write).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,17 +15,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ExecutionTraceService;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ExecutionTraceService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;

@@ -4,7 +4,7 @@
  * Unit tests for S3Adapter.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Adapter
+ * @package  OCA\Integriq\Tests\Unit\Service\Adapter
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,9 +15,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Adapter;
+namespace OCA\Integriq\Tests\Unit\Service\Adapter;
 
-use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\AppFramework\Db\DoesNotExistException;

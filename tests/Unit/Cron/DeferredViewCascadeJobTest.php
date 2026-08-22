@@ -4,7 +4,7 @@
  * Unit tests for DeferredViewCascadeJob (ADR-078 / gate-61).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Cron
+ * @package  OCA\Integriq\Tests\Unit\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Cron;
+namespace OCA\Integriq\Tests\Unit\Cron;
 
-use OCA\OpenConnector\Cron\DeferredViewCascadeJob;
-use OCA\OpenConnector\Service\SourceMappingService;
+use OCA\Integriq\Cron\DeferredViewCascadeJob;
+use OCA\Integriq\Service\SourceMappingService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\ObjectService;

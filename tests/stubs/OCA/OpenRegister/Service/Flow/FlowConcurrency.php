@@ -4,8 +4,8 @@
  * Runs a node's per-item work concurrently, within a bound.
  *
  * A node that performs one outbound call per item loops, so N items cost N
- * sequential round-trips. openconnector's synchronisation reader — the code a
- * flow-based openconnector replaces — instead settles promises through
+ * sequential round-trips. integriq's synchronisation reader — the code a
+ * flow-based integriq replaces — instead settles promises through
  * `Each::ofLimit()` behind a concurrency cap. The difference is structural: N
  * serial round-trips against ceil(N/limit) waves.
  *
@@ -60,7 +60,7 @@ class FlowConcurrency {
 	/**
 	 * Concurrent calls in flight when a node names no limit of its own.
 	 *
-	 * Five, matching openconnector's `FETCH_CONCURRENCY_DEFAULT`. A flow node
+	 * Five, matching integriq's `FETCH_CONCURRENCY_DEFAULT`. A flow node
 	 * and a synchronisation are hitting the same upstreams, often the same
 	 * ones, so a second and different default would mean the load an API sees
 	 * depends on which of the two happened to read it.
@@ -72,7 +72,7 @@ class FlowConcurrency {
 	/**
 	 * Hard ceiling, whatever a node asks for.
 	 *
-	 * Twenty, matching openconnector's `FETCH_CONCURRENCY_MAX`. A node's
+	 * Twenty, matching integriq's `FETCH_CONCURRENCY_MAX`. A node's
 	 * configuration is authored by a person, and a misconfiguration must not be
 	 * able to turn one step into an unbounded burst.
 	 *

@@ -6,11 +6,11 @@
  * Defines the polymorphic surface — `getCapabilities()`, `describeFeatureType()`,
  * `getFeature()`, `flavour()` — for the PDOK WFS dataset family.
  *
- * DI in {@see \OCA\OpenConnector\AppInfo\Application::register()} resolves this
+ * DI in {@see \OCA\Integriq\AppInfo\Application::register()} resolves this
  * abstract to a concrete flavour, gated on `pdok.feature_flag`.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 /**
  * Polymorphic base for the PDOK WFS adapter family.

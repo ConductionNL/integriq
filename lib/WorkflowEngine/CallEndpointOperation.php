@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector "Call endpoint" WorkflowEngine Operation.
+ * Integriq "Call endpoint" WorkflowEngine Operation.
  *
  * Thin `OCP\WorkflowEngine\ISpecificOperation` adapter that lets an NC admin
- * wire "file event + checks -> call this OpenConnector endpoint" from
+ * wire "file event + checks -> call this Integriq endpoint" from
  * Settings > Flow. `onEvent()` decodes the matched flow's settings and
  * delegates to the existing `EndpointService::getEndpointById()` +
  * `triggerFromFlow()` — no endpoint routing/proxy logic is reimplemented here.
  *
  * @category WorkflowEngine
- * @package  OCA\OpenConnector\WorkflowEngine
+ * @package  OCA\Integriq\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,17 +19,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\WorkflowEngine;
+namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\EndpointService;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\EndpointService;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -96,7 +96,7 @@ class CallEndpointOperation implements ISpecificOperation {
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Calls a configured OpenConnector endpoint when this rule matches.');
+		return $this->l10n->t('Calls a configured Integriq endpoint when this rule matches.');
 	}//end getDescription()
 
 	/**

@@ -20,7 +20,7 @@
  * name would require reading the record.
  *
  * @category Service
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 /**
  * Deep-links a run-log entry back to the synchronization the step acted on.

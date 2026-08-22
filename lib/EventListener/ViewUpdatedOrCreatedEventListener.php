@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector ViewUpdatedOrCreated EventListener.
+ * Integriq ViewUpdatedOrCreated EventListener.
  *
  * Listens for OpenRegister ObjectUpdatedEvent / ObjectCreatedEvent on
  * view objects in the Software Catalog application and synchronises
  * the related software catalog items.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,12 +16,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @todo Remove this temporary listener once it lives in the software catalog application.
  */
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;

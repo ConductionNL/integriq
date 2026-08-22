@@ -4,7 +4,7 @@
  * Unit tests for PeppolController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,13 +19,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\PeppolController;
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PeppolTransmissionService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Controller\PeppolController;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PeppolTransmissionService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

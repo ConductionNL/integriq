@@ -4,7 +4,7 @@
  * Unit tests for DsoClient.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Dso
+ * @package  OCA\Integriq\Tests\Unit\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,18 +18,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Dso;
+namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\DsoProviderException;
-use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -309,14 +309,14 @@ class DsoClientTest extends TestCase {
 				'POST',
 				'https://dso-lv.example.nl/api/v1/statussen',
 				$this->anything(),
-				$this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+				$this->isInstanceOf(\OCA\Integriq\Service\Mtls\MtlsCertificateBundle::class)
 			)
 			->willReturn(new \GuzzleHttp\Psr7\Response(200, [], json_encode(['ref' => 'DSO-mtls-ref'])));
 
 		$mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
 		$mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
 		$mtlsConfigResolver->method('resolve')->willReturn(
-			new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
+			new \OCA\Integriq\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
 		);
 
 		$client = new DsoClient(

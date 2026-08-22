@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Inbound Retour Translator.
+ * Integriq iWMO/iJW Inbound Retour Translator.
  *
  * Translates a retour XML envelope (berichttype 302, 304, 305, 306, 307,
  * 308, or 322 — Wmo or Jw prefixed) into an OR case status update. See
@@ -17,7 +17,7 @@
  *
  * XXE hardening: the retour XML originates from an external party (a real
  * GGk/VECOZO delivery). Parsing is delegated to the shared
- * {@see \OCA\OpenConnector\Service\Stuf\StufXmlParser} (`LIBXML_NONET`
+ * {@see \OCA\Integriq\Service\Stuf\StufXmlParser} (`LIBXML_NONET`
  * only, never `LIBXML_NOENT`/`LIBXML_DTDLOAD` — external entity expansion
  * stays disabled, libxml's default posture since 2.9) — extracted here as
  * part of `stuf-zkn-bridge` so this class and the sibling StUF-ZKN
@@ -26,7 +26,7 @@
  * make outbound requests via XML entities.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\IwmoIjw
+ * @package  OCA\Integriq\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,17 +35,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\IwmoIjw;
+namespace OCA\Integriq\Service\IwmoIjw;
 
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\Stuf\StufXmlParser;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\Stuf\StufXmlParser;
 use SimpleXMLElement;
 
 /**

@@ -7,7 +7,7 @@
  * endpoint-workspace-connectors category.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Adapter\EndpointWorkspace
+ * @package  OCA\Integriq\Service\Adapter\EndpointWorkspace
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Adapter\EndpointWorkspace;
+namespace OCA\Integriq\Service\Adapter\EndpointWorkspace;
 
-use OCA\OpenConnector\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCP\IL10N;
 
 /**

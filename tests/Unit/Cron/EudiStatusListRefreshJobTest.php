@@ -4,7 +4,7 @@
  * Unit tests for EudiStatusListRefreshJob.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Cron
+ * @package  OCA\Integriq\Tests\Unit\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,10 +15,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Cron;
+namespace OCA\Integriq\Tests\Unit\Cron;
 
-use OCA\OpenConnector\Cron\EudiStatusListRefreshJob;
-use OCA\OpenConnector\Service\EudiStatusListService;
+use OCA\Integriq\Cron\EudiStatusListRefreshJob;
+use OCA\Integriq\Service\EudiStatusListService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

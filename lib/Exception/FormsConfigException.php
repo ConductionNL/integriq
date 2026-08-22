@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Configuration Exception.
+ * Integriq Forms Configuration Exception.
  *
  * Raised for hard configuration errors on a `nextcloud-form` source or an
  * `action.kind: 'mapping'` outbound dispatch that are caller/request-scoped
@@ -15,7 +15,7 @@
  * subscription itself. Mirrors `TablesConfigException` exactly.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,14 +24,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

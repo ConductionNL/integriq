@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Provider Interface.
+ * Integriq iWMO/iJW Provider Interface.
  *
  * Narrow domain seam through which every outbound iWMO/iJW (StUF
  * iStandaarden Wmo 3.0 / Jeugdwet 3.0) berichttype envelope is dispatched.
@@ -13,7 +13,7 @@
  * credential storage, feature gating").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\IwmoIjw
+ * @package  OCA\Integriq\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,16 +22,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\IwmoIjw;
+namespace OCA\Integriq\Service\IwmoIjw;
 
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
 
 /**
  * An iWMO/iJW transport binding: dispatch one already-translated berichttype
@@ -44,7 +44,7 @@ interface IwmoIjwProviderInterface {
 	 * Stable machine identifier for this binding (e.g. `log`, `rest`).
 	 *
 	 * Selected at runtime via the iWMO/iJW source's `configuration.provider`
-	 * field — see {@see \OCA\OpenConnector\Service\IwmoIjwSyncService::resolveProvider()}.
+	 * field — see {@see \OCA\Integriq\Service\IwmoIjwSyncService::resolveProvider()}.
 	 *
 	 * @return string The provider identifier.
 	 *

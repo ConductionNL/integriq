@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LTI Validation Exception.
+ * Integriq LTI Validation Exception.
  *
  * Thrown by the LTI 1.3 / LTI Advantage services (login initiation, launch
  * validation, service-token issuance, AGS/NRPS scope enforcement) on any
@@ -10,7 +10,7 @@
  * with no partial-trust fallback."
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 /**
  * Exception for LTI launch/login/service-token validation failures.

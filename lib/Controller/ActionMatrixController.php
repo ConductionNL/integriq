@@ -8,24 +8,24 @@
  * #[AuthorizedAdminSetting], so no in-body authorization is required.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -69,7 +69,7 @@ class ActionMatrixController extends Controller {
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getMatrix(): JSONResponse {
 		$matrix = $this->actionAuth->getMatrix();
 
@@ -107,7 +107,7 @@ class ActionMatrixController extends Controller {
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setMatrix(): JSONResponse {
 		$matrix = $this->request->getParam('matrix');
 		if (is_array($matrix) === false) {

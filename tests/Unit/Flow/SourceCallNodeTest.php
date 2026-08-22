@@ -10,7 +10,7 @@
  * transport failure, fail-closed attribution, and save-time validation.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,15 +19,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Flow\FlowNodeSupport;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SourceCallNode;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Flow\FlowNodeSupport;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SourceCallNode;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;

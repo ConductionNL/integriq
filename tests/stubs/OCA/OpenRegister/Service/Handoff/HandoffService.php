@@ -7,10 +7,10 @@
  * composer dev-environment. This stub satisfies PHPUnit mock-builder calls for
  * HandoffService so unit tests can run without a full Nextcloud server.
  *
- * Only the methods actually called by openconnector's lib/ are declared here.
+ * Only the methods actually called by integriq's lib/ are declared here.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

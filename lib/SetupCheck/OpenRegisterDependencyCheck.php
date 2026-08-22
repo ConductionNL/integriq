@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector — OpenRegister dependency setup check.
+ * Integriq — OpenRegister dependency setup check.
  *
  * Surfaces an admin-visible notice in the Nextcloud admin overview when the
- * required OpenRegister app is not installed/enabled. OpenConnector persists
+ * required OpenRegister app is not installed/enabled. Integriq persists
  * every entity as an OpenRegister object and injects OpenRegister's
  * `ObjectService` as a required, non-nullable controller dependency, so without
  * OpenRegister the app's routes cannot be built and would otherwise return bare
@@ -15,7 +15,7 @@
  * `OCA\OpenRegister\*` class, so it is safe to run while OpenRegister is absent.
  *
  * @category SetupCheck
- * @package  OCA\OpenConnector\SetupCheck
+ * @package  OCA\Integriq\SetupCheck
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\SetupCheck;
+namespace OCA\Integriq\SetupCheck;
 
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -82,7 +82,7 @@ class OpenRegisterDependencyCheck implements ISetupCheck {
 	 * @spec openspec/specs/app-distribution-metadata/spec.md
 	 */
 	public function getName(): string {
-		return $this->l10n->t('OpenConnector: OpenRegister dependency');
+		return $this->l10n->t('Integriq: OpenRegister dependency');
 	}//end getName()
 
 	/**
@@ -99,8 +99,8 @@ class OpenRegisterDependencyCheck implements ISetupCheck {
 		if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false) {
 			return SetupResult::error(
 				$this->l10n->t(
-					'OpenConnector requires the OpenRegister app — install and enable it. '
-					. 'Every OpenConnector entity is stored as an OpenRegister object; without it '
+					'Integriq requires the OpenRegister app — install and enable it. '
+					. 'Every Integriq entity is stored as an OpenRegister object; without it '
 					. 'the app cannot function and its API endpoints return errors.'
 				)
 			);

@@ -1,28 +1,28 @@
 <?php
 
 /**
- * OpenConnector Nextcloud Tables Row EventListener.
+ * Integriq Nextcloud Tables Row EventListener.
  *
  * Normalizes the Tables app's row create/update/delete events into the
  * CloudEvents `event` envelope, when the `tables` app is installed.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use OCA\Tables\Event\RowAddedEvent;
 use OCA\Tables\Event\RowDeletedEvent;
 use OCA\Tables\Event\RowUpdatedEvent;

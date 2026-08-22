@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — Digikoppeling Grote Berichten out-of-band payload reference.
+ * Integriq — Digikoppeling Grote Berichten out-of-band payload reference.
  *
  * Grote Berichten (large messages) are not carried inline: the SOAP/ebMS2
  * message carries a reference (URL + checksum) and the payload is fetched or
@@ -10,7 +10,7 @@
  * usable by both the WUS and ebMS2 profiles.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Exception\DigikoppelingException;
 
 /**
  * An out-of-band Grote Berichten payload reference (URL + checksum).

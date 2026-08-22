@@ -4,7 +4,7 @@
  * Unit tests for EudiIssuerKeyAdminController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,11 +15,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\EudiIssuerKeyAdminController;
-use OCA\OpenConnector\Service\EudiCredentialOfferService;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
+use OCA\Integriq\Controller\EudiIssuerKeyAdminController;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;

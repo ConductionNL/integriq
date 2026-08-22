@@ -4,7 +4,7 @@
  * Unit tests for ExecutionTracesController's ADR-023 action-authorization guard.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,11 +18,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\ExecutionTracesController;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ExecutionTraceService;
+use OCA\Integriq\Controller\ExecutionTracesController;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;

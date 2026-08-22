@@ -4,7 +4,7 @@
  * Stub for OCA\OpenRegister\Service\SystemOperationContext.
  *
  * OpenRegister is a peer Nextcloud app that is not available in the standalone
- * composer dev-environment, so every OpenRegister class openconnector's lib/
+ * composer dev-environment, so every OpenRegister class integriq's lib/
  * touches needs a stub here or the call site raises `Class not found` at
  * runtime — which is what happened: three SynchronizationContractServiceTest
  * cases errored with `Class "OCA\OpenRegister\Service\SystemOperationContext"
@@ -17,12 +17,12 @@
  * which is worse than the error it replaces.
  *
  * `isActive()` returns false. The real one answers "are we inside a system
- * operation", and outside a `run()` call that answer is false; no openconnector
+ * operation", and outside a `run()` call that answer is false; no integriq
  * unit test asserts the true case, and returning true unconditionally would let
  * a test claim suppression that never happened.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

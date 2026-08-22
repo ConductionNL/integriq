@@ -13,20 +13,20 @@
  *      this check exists ONLY to decide skip-vs-run for the test itself; it
  *      is never referenced by production code, which feature-detects via
  *      `IAppManager` exclusively per design.md Decision 3).
- *   2. `OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL` (+ `_USER` / `_PASSWORD` /
+ *   2. `INTEGRIQ_TABLES_INTEGRATION_BASE_URL` (+ `_USER` / `_PASSWORD` /
  *      `_TABLE_ID`) env vars point at a live Nextcloud instance with Tables
  *      enabled and a real table+column fixture, so the test can dispatch
  *      real HTTP calls via `TablesOcsClient`.
  *
  * Run it for real from a dev container with Tables installed:
- *   OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL=http://nextcloud:8080 \
- *   OPENCONNECTOR_TABLES_INTEGRATION_USER=admin \
- *   OPENCONNECTOR_TABLES_INTEGRATION_PASSWORD=admin \
- *   OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID=1 \
+ *   INTEGRIQ_TABLES_INTEGRATION_BASE_URL=http://nextcloud:8080 \
+ *   INTEGRIQ_TABLES_INTEGRATION_USER=admin \
+ *   INTEGRIQ_TABLES_INTEGRATION_PASSWORD=admin \
+ *   INTEGRIQ_TABLES_INTEGRATION_TABLE_ID=1 \
  *   vendor/bin/phpunit -c phpunit-unit.xml --testsuite "Integration Tests"
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration\Tables
+ * @package  OCA\Integriq\Tests\Integration\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,11 +40,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration\Tables;
+namespace OCA\Integriq\Tests\Integration\Tables;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\Tables\TablesOcsClient;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Tables\TablesOcsClient;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -75,10 +75,10 @@ class TablesBridgeIntegrationTest extends TestCase {
 			);
 		}
 
-		$baseUrl = getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
+		$baseUrl = getenv('INTEGRIQ_TABLES_INTEGRATION_BASE_URL');
 		if ($baseUrl === false || $baseUrl === '') {
 			$this->markTestSkipped(
-				'OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL is not set — no live '
+				'INTEGRIQ_TABLES_INTEGRATION_BASE_URL is not set — no live '
 				. 'Nextcloud+Tables fixture configured for this run.'
 			);
 		}
@@ -92,13 +92,13 @@ class TablesBridgeIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateUpdateDeleteRoundTripAgainstRealTable(): void {
-		$baseUrl = (string)getenv('OPENCONNECTOR_TABLES_INTEGRATION_BASE_URL');
-		$user = (string)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_USER') ?: 'admin');
-		$password = (string)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_PASSWORD') ?: 'admin');
-		$tableId = (int)(getenv('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID') ?: 0);
+		$baseUrl = (string)getenv('INTEGRIQ_TABLES_INTEGRATION_BASE_URL');
+		$user = (string)(getenv('INTEGRIQ_TABLES_INTEGRATION_USER') ?: 'admin');
+		$password = (string)(getenv('INTEGRIQ_TABLES_INTEGRATION_PASSWORD') ?: 'admin');
+		$tableId = (int)(getenv('INTEGRIQ_TABLES_INTEGRATION_TABLE_ID') ?: 0);
 
 		if ($tableId <= 0) {
-			$this->markTestSkipped('OPENCONNECTOR_TABLES_INTEGRATION_TABLE_ID is not set to a valid table id.');
+			$this->markTestSkipped('INTEGRIQ_TABLES_INTEGRATION_TABLE_ID is not set to a valid table id.');
 		}
 
 		// A real CallService instance is constructed by the app container in

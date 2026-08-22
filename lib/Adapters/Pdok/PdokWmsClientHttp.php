@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK WMS Client (HTTPS).
+ * Integriq PDOK WMS Client (HTTPS).
  *
  * Active implementation of {@see PdokWmsClient}. Issues real outbound GetMap
  * / GetCapabilities requests against `service.pdok.nl/{dataset}/wms/v2_0`.
@@ -11,7 +11,7 @@
  * {@see PdokWmsClientMock} instead.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;

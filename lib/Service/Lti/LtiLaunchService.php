@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector LtiLaunchService.
+ * Integriq LtiLaunchService.
  *
  * OIDC third-party-initiated login, signed-JWT launch validation, Platform-
  * role launch initiation, and Deep Linking 2.0 (both directions) for the
  * LTI 1.3 / LTI Advantage adapter.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
@@ -37,8 +37,8 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\AuthorizationService;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\AuthorizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -100,7 +100,7 @@ class LtiLaunchService {
 	public const LAUNCH_REFERENCE_TTL_SECONDS = 300;
 
 	/**
-	 * Distributed cache for nonce single-use tracking (`openconnector.lti.nonce`).
+	 * Distributed cache for nonce single-use tracking (`integriq.lti.nonce`).
 	 *
 	 * @var ICache
 	 */
@@ -131,8 +131,8 @@ class LtiLaunchService {
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->nonceCache = $cacheFactory->createDistributed('openconnector.lti.nonce');
-		$this->launchCache = $cacheFactory->createDistributed('openconnector.lti.launch');
+		$this->nonceCache = $cacheFactory->createDistributed('integriq.lti.nonce');
+		$this->launchCache = $cacheFactory->createDistributed('integriq.lti.launch');
 
 	}//end __construct()
 
@@ -569,12 +569,12 @@ class LtiLaunchService {
 	 * REQ-LTI-003, resolving the issuing registration from the (still
 	 * unverified at this point) `iss` claim first — the same "decode payload
 	 * to find the issuer, THEN cryptographically verify before trusting any
-	 * claim" shape {@see \OCA\OpenConnector\Service\AuthorizationService::authorizeJwt()}
+	 * claim" shape {@see \OCA\Integriq\Service\AuthorizationService::authorizeJwt()}
 	 * already uses. No claim is trusted for any authorization decision until
 	 * signature verification (step 4 below) succeeds.
 	 *
-	 * Public because {@see \OCA\OpenConnector\Service\Lti\LtiAgsService} and
-	 * {@see \OCA\OpenConnector\Service\Lti\LtiNrpsService} reuse this exact
+	 * Public because {@see \OCA\Integriq\Service\Lti\LtiAgsService} and
+	 * {@see \OCA\Integriq\Service\Lti\LtiNrpsService} reuse this exact
 	 * verification (RFC 7523 client-assertion JWTs are the same JWS shape as
 	 * an id_token) rather than re-implementing JWS verification a second time.
 	 *
@@ -690,7 +690,7 @@ class LtiLaunchService {
 	 * `LtiValidationException` — it would otherwise escape uncaught past
 	 * `LtiController`'s `catch (LtiValidationException $e)` blocks).
 	 *
-	 * Public because {@see \OCA\OpenConnector\Service\Lti\LtiAgsService}
+	 * Public because {@see \OCA\Integriq\Service\Lti\LtiAgsService}
 	 * reuses it for the same timing checks on RFC 7523 client assertions.
 	 *
 	 * @param array $payload The verified id_token/client_assertion payload.
@@ -704,7 +704,7 @@ class LtiLaunchService {
 	public function validateTiming(array $payload): void {
 		try {
 			$this->authorizationService->validatePayload(payload: $payload);
-		} catch (\OCA\OpenConnector\Exception\AuthenticationException $exception) {
+		} catch (\OCA\Integriq\Exception\AuthenticationException $exception) {
 			throw new LtiValidationException(message: $exception->getMessage(), details: $exception->getDetails(), httpStatus: 401);
 		}
 

@@ -4,7 +4,7 @@
  * Unit tests for NextcloudTablesEventListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\OpenConnector\EventListener\NextcloudTablesEventListener;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\EventListener\NextcloudTablesEventListener;
+use OCA\Integriq\Service\EventService;
 use OCA\Tables\Event\RowAddedEvent;
 use OCA\Tables\Event\RowDeletedEvent;
 use OCA\Tables\Event\RowUpdatedEvent;

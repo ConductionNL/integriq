@@ -12,10 +12,10 @@
  * schema, objectId, fileId)`, none of which match the real OpenRegister
  * `lib/Service/FileService.php` at HEAD. `grep`-verified no existing test
  * stubbed the stale method names before this fix. Only the methods actually
- * called by openconnector's lib/ are declared here.
+ * called by integriq's lib/ are declared here.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

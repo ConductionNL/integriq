@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector mTLS Configuration Resolver.
+ * Integriq mTLS Configuration Resolver.
  *
  * Decrypts and validates a source's `configuration.authentication.mtls`
  * block into an in-memory {@see MtlsCertificateBundle}, entirely BEFORE any
@@ -16,12 +16,12 @@
  *
  * FAIL-CLOSED: every validation failure (missing material, undecryptable
  * material, malformed PEM, expired certificate, wrong passphrase) raises
- * {@see \OCA\OpenConnector\Exception\MtlsConfigurationException} with a
+ * {@see \OCA\Integriq\Exception\MtlsConfigurationException} with a
  * stable errorCode. There is no plaintext-on-disk fallback and no path that
  * silently downgrades to token/plaintext auth.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Mtls
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,17 +30,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Mtls;
+namespace OCA\Integriq\Service\Mtls;
 
-use OCA\OpenConnector\Exception\MtlsConfigurationException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
+use OCA\Integriq\Exception\MtlsConfigurationException;
+use OCA\Integriq\Exception\MtlsTransportException;
 use OCP\Security\ICrypto;
 use Throwable;
 
@@ -53,7 +53,7 @@ use Throwable;
  * call's return value IS checked and converted into a typed, secret-free
  * {@see MtlsConfigurationException}, so suppressing the raw warning is
  * both safe and required to keep key material out of the logs. Mirrors
- * {@see \OCA\OpenConnector\Adapters\Digikoppeling\WsSecuritySigner}'s
+ * {@see \OCA\Integriq\Adapters\Digikoppeling\WsSecuritySigner}'s
  * identical, already-accepted suppression.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)

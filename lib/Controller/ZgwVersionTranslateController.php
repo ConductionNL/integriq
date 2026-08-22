@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector ZGW Version Translate Controller.
+ * Integriq ZGW Version Translate Controller.
  *
  * REST controller for the zgw-version-translation change: `translate()`
  * lets a sibling app or an external municipality integration translate one
@@ -11,7 +11,7 @@
  * delegating to a service).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,23 +20,23 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
-use OCA\OpenConnector\Exception\ZgwUnknownVersionException;
-use OCA\OpenConnector\Exception\ZgwVersionNotImplementedException;
-use OCA\OpenConnector\Exception\ZgwVersionTranslationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ZgwVersionNegotiationService;
-use OCA\OpenConnector\Service\ZgwVersionTranslationService;
+use OCA\Integriq\Exception\ZgwLiteralLeakException;
+use OCA\Integriq\Exception\ZgwUnknownResourceException;
+use OCA\Integriq\Exception\ZgwUnknownVersionException;
+use OCA\Integriq\Exception\ZgwVersionNotImplementedException;
+use OCA\Integriq\Exception\ZgwVersionTranslationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ZgwVersionNegotiationService;
+use OCA\Integriq\Service\ZgwVersionTranslationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

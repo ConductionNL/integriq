@@ -4,7 +4,7 @@
  * Unit tests for CardfeedSyncService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\CardfeedProviderException;
-use OCA\OpenConnector\Service\Cardfeed\LogCardfeedProvider;
-use OCA\OpenConnector\Service\Cardfeed\RestCardfeedProvider;
-use OCA\OpenConnector\Service\CardfeedSyncService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
+use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Service\CardfeedSyncService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

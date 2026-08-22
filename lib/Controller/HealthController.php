@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Health Controller — AppHost adapter with OpenRegister guard.
+ * Integriq Health Controller — AppHost adapter with OpenRegister guard.
  *
  * Thin app-namespace health endpoint (URL `/api/health`, route name
  * `health#index`, both unchanged). It carries no health logic of its own for
@@ -20,10 +20,10 @@
  * OpenRegister class.
  *
  * The constructor + delegate wiring is registered in
- * {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostObservability()}.
+ * {@see \OCA\Integriq\AppInfo\Application::registerAppHostObservability()}.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,12 +31,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCP\App\IAppManager;
@@ -106,7 +106,7 @@ class HealthController extends Controller {
 						[
 							'name' => 'openregister-dependency',
 							'status' => 'unhealthy',
-							'message' => 'OpenConnector requires the OpenRegister app — install and enable it.',
+							'message' => 'Integriq requires the OpenRegister app — install and enable it.',
 						],
 					],
 				],

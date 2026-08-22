@@ -4,7 +4,7 @@
  * Unit tests for EudiCredentialOfferService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,7 +15,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
@@ -23,12 +23,12 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\OpenConnector\Exception\EudiIssuanceException;
-use OCA\OpenConnector\Service\EudiCredentialOfferService;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
-use OCA\OpenConnector\Service\EudiStatusListService;
-use OCA\OpenConnector\Service\OrganisationBridgeService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Service\OrganisationBridgeService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;

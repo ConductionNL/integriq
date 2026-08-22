@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Approval Timeout Sweep Job.
+ * Integriq Approval Timeout Sweep Job.
  *
  * Background job that sweeps `pending` `approval_request` rows whose
  * `expiresAt` has passed and applies their configured `onTimeout` outcome.
@@ -11,7 +11,7 @@
  * unattended-expiry path.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,16 +20,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

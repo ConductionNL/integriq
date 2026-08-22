@@ -4,7 +4,7 @@
  * Unit tests for EndpointCacheInvalidationListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,10 +15,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\OpenConnector\EventListener\EndpointCacheInvalidationListener;
-use OCA\OpenConnector\Service\EndpointCacheService;
+use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
+use OCA\Integriq\Service\EndpointCacheService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

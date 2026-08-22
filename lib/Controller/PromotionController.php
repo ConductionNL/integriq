@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector promotion controller.
+ * Integriq promotion controller.
  *
- * Thin, routed wrapper over {@see \OCA\OpenConnector\Service\PromotionService}
+ * Thin, routed wrapper over {@see \OCA\Integriq\Service\PromotionService}
  * (environments-and-promotion REQ-002/REQ-003/REQ-005/REQ-006). Both the
  * preview and confirm endpoints are gated by the ADR-023 `environment.promote`
  * action key — distinct from `environment.manage`, which gates
  * {@see EnvironmentController}'s CRUD.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,18 +19,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-exportimport-req-005
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PromotionService;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PromotionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

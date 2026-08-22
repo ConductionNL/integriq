@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector LtiJwksResolverService.
+ * Integriq LtiJwksResolverService.
  *
  * Resolves an external LTI Platform/Tool `jwks_uri` to a `JWKSet` and looks
  * up a presented token's `kid`, with per-registration caching and a
  * rate-limited refetch guard (SSRF-amplification defence — design.md D4).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,11 +21,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -80,7 +80,7 @@ class LtiJwksResolverService {
 		private readonly CallService $callService,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openconnector.lti.jwks');
+		$this->cache = $cacheFactory->createDistributed('integriq.lti.jwks');
 
 	}//end __construct()
 

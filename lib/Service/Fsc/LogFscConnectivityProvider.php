@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log FSC Connectivity Provider.
+ * Integriq Log FSC Connectivity Provider.
  *
  * Sandbox/mock binding for {@see FscConnectivityProviderInterface}:
  * performs no real network call for either resolution or dispatch. Instead
@@ -14,7 +14,7 @@
  * LogIwmoIjwProvider / LogKlantinteractiesProvider sandbox convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Fsc
+ * @package  OCA\Integriq\Service\Fsc
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,16 +23,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Fsc;
+namespace OCA\Integriq\Service\Fsc;
 
-use OCA\OpenConnector\Exception\FscDirectoryException;
+use OCA\Integriq\Exception\FscDirectoryException;
 
 /**
  * Sandbox FSC provider: no network call, resolves against a static

@@ -4,7 +4,7 @@
  * Unit tests for IwmoIjwSyncService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,17 +18,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
-use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
-use OCA\OpenConnector\Service\IwmoIjwSyncService;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
+use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
+use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
+use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

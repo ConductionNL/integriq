@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Action.
+ * Integriq Flow Action.
  *
  * Cron action that runs a `flow` via `FlowRunnerService::run()`. Implements
  * the same duck-typed `run(array $arguments): array` contract as
@@ -10,7 +10,7 @@
  * Action interface introduced (job-management REQ-JOB-003).
  *
  * @category Action
- * @package  OCA\OpenConnector\Action
+ * @package  OCA\Integriq\Action
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,17 +19,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Action;
+namespace OCA\Integriq\Action;
 
 use Exception;
-use OCA\OpenConnector\Service\FlowRunnerService;
+use OCA\Integriq\Service\FlowRunnerService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**

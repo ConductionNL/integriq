@@ -10,7 +10,7 @@
  * caller-controlled header.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,11 +21,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\ConsumerScopeService;
-use OCA\OpenConnector\Service\Scope\IpMatcher;
-use OCA\OpenConnector\Service\Scope\ReverseDnsResolver;
+use OCA\Integriq\Service\ConsumerScopeService;
+use OCA\Integriq\Service\Scope\IpMatcher;
+use OCA\Integriq\Service\Scope\ReverseDnsResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector KISS Pull Job.
+ * Integriq KISS Pull Job.
  *
  * Background job that runs the scheduled KISS (Klantinteractie
  * Servicesysteem) klantcontacten pull: for every active KISS source it
@@ -12,7 +12,7 @@
  * throws out of the sweep loop).
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,9 +28,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\KissSyncService;
+use OCA\Integriq\Service\KissSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

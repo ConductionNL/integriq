@@ -22,7 +22,7 @@
  * so both the planner tests and the repair-step tests share ONE definition.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Helpers
+ * @package  OCA\Integriq\Tests\Helpers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,9 +33,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Helpers;
+namespace OCA\Integriq\Tests\Helpers;
 
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 

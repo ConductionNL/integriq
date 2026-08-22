@@ -4,7 +4,7 @@
  * Unit tests for IStandardsClient.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
+ * @package  OCA\Integriq\Tests\Unit\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,18 +18,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\IwmoIjw;
+namespace OCA\Integriq\Tests\Unit\Service\IwmoIjw;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -303,14 +303,14 @@ class IStandardsClientTest extends TestCase {
 				'POST',
 				'https://istandaarden.example.nl/api/v1/berichten',
 				$this->anything(),
-				$this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+				$this->isInstanceOf(\OCA\Integriq\Service\Mtls\MtlsCertificateBundle::class)
 			)
 			->willReturn(new \GuzzleHttp\Psr7\Response(200, [], 'IWMO-mtls-ref'));
 
 		$mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
 		$mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
 		$mtlsConfigResolver->method('resolve')->willReturn(
-			new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(
+			new \OCA\Integriq\Service\Mtls\MtlsCertificateBundle(
 				certificatePem: 'CERT',
 				privateKeyPem: 'KEY'
 			)

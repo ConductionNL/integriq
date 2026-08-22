@@ -4,7 +4,7 @@
  * Unit tests for IwmoIjwController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\IwmoIjwController;
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\IwmoIjwSyncService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Controller\IwmoIjwController;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IL10N;

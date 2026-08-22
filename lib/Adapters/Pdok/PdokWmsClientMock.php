@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector PDOK WMS Client (mock).
+ * Integriq PDOK WMS Client (mock).
  *
  * Deterministic, no-network implementation of {@see PdokWmsClient}. Ships
- * dormant; DI in {@see \OCA\OpenConnector\AppInfo\Application::register()}
+ * dormant; DI in {@see \OCA\Integriq\AppInfo\Application::register()}
  * returns this class until `pdok.feature_flag` is set to `1`.
  *
  * Returns a hand-rolled but standards-shaped GetCapabilities document and a
@@ -12,7 +12,7 @@
  * can exercise its branches without hitting the real service.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 /**
  * Mock PDOK WMS client — dormant default.

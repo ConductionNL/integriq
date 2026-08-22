@@ -7,7 +7,7 @@
  * byte-for-byte — never a second, independent redaction pass.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration
+ * @package  OCA\Integriq\Tests\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,27 +31,27 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration;
+namespace OCA\Integriq\Tests\Integration;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
-use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferenceNumberRule;
-use OCA\OpenConnector\Service\AuthenticationService;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\BrokeredCallService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Helper\FlowToken;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\RuleService;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Service\StorageService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Rule\AvgBsnPolicyRule;
+use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Service\AuthenticationService;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\RuleService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\StorageService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -278,7 +278,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		// Source scope (REQ-CON-SCOPE-001) is not what these trace tests assert;
 		// default it to "allowed" so the gate does not 403 them.
-		$consumerScopeService = $this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class);
+		$consumerScopeService = $this->createMock(\OCA\Integriq\Service\ConsumerScopeService::class);
 		$consumerScopeService->method('isAllowed')->willReturn(true);
 
 		$endpointService = new EndpointService(
@@ -294,12 +294,12 @@ class ExecutionTraceIntegrationTest extends TestCase {
 			$this->createMock(ContainerInterface::class),
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
-			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
-			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+			new \OCA\Integriq\Service\WebhookSignatureService($logger),
+			$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($orObjectService, $logger),
 			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
-			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
 			$consumerScopeService,

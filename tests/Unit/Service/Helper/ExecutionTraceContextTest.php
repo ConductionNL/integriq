@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Helper;
+namespace OCA\Integriq\Tests\Unit\Service\Helper;
 
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -4,7 +4,7 @@
  * Unit tests for LogDsoConnectorProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Dso
+ * @package  OCA\Integriq\Tests\Unit\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Dso;
+namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
-use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

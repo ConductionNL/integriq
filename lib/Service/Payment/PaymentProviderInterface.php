@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Payment Provider Interface.
+ * Integriq Payment Provider Interface.
  *
  * Narrow domain seam through which every payment creation and status lookup
  * occurs. A new PSP (or a second method/provider such as a future Wero
@@ -10,7 +10,7 @@
  * see design.md "Provider-neutral wire contract" and "Open Questions".
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Payment
+ * @package  OCA\Integriq\Service\Payment
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,16 +19,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Payment;
+namespace OCA\Integriq\Service\Payment;
 
-use OCA\OpenConnector\Exception\PaymentProviderException;
+use OCA\Integriq\Exception\PaymentProviderException;
 
 /**
  * A payment-provider binding: create a payment, and look up its current status.

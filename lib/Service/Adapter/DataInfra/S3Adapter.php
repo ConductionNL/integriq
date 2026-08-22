@@ -7,7 +7,7 @@
  * category.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Adapter\DataInfra
+ * @package  OCA\Integriq\Service\Adapter\DataInfra
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,10 +20,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Adapter\DataInfra;
+namespace OCA\Integriq\Service\Adapter\DataInfra;
 
-use OCA\OpenConnector\Service\Adapter\AbstractCategoryAdapterProvider;
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use RuntimeException;
@@ -50,7 +50,7 @@ use RuntimeException;
  * `CredentialBrokerService` (a broker capability that does not exist today)
  * or (b) a new broker `authScheme: 'aws-sigv4'` that computes the signature
  * from the stored secret before injecting it — both are broker-side changes
- * out of scope for an openconnector-side adapter change. Tracked as a
+ * out of scope for an integriq-side adapter change. Tracked as a
  * follow-up, not implemented here.
  *
  * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
@@ -337,7 +337,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 * `AbstractIntegrationProvider`'s default and threw
 	 * `NotImplementedException`. The capability was advertised to the admin UI
 	 * and the OCS capabilities response while being structurally unreachable
-	 * (openconnector#1191).
+	 * (integriq#1191).
 	 *
 	 * `register`/`schema`/`objectId` are ignored — this adapter is
 	 * instance-scoped, matching {@see list()} and {@see get()}.

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector iBabs Connector Service
+ * Integriq iBabs Connector Service
  *
  * Service for bidirectional integration with the iBabs raadsinformatiesysteem.
  * Pushes collegevoorstellen to iBabs and retrieves besluiten and besluitenlijsten.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector FSC Controller.
+ * Integriq FSC Controller.
  *
  * REST controller for the fsc-connectivity change: `listServices()` lets
  * sibling apps discover what is currently resolvable, and `call()` lets a
@@ -13,7 +13,7 @@
  * webhook receiver here.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,19 +22,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\FscCallService;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\FscCallService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

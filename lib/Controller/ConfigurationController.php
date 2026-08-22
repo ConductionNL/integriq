@@ -1,34 +1,34 @@
 <?php
 
 /**
- * OpenConnector configuration import/export controller.
+ * Integriq configuration import/export controller.
  *
  * Thin, routed wrapper over the existing, already-tested
- * {@see \OCA\OpenConnector\Service\ConfigurationService} (REQ-001–REQ-005,
+ * {@see \OCA\Integriq\Service\ConfigurationService} (REQ-001–REQ-005,
  * reused unchanged) plus the non-mutating
- * {@see \OCA\OpenConnector\Service\ConfigurationImportPreviewService}
+ * {@see \OCA\Integriq\Service\ConfigurationImportPreviewService}
  * (REQ-007/REQ-009). Before connector-catalog-ui the service was fully
  * implemented but unrouted — reachable only from PHPUnit.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ConfigurationImportPreviewService;
-use OCA\OpenConnector\Service\ConfigurationService;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ConfigurationImportPreviewService;
+use OCA\Integriq\Service\ConfigurationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

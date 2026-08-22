@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenConnector Mapping Resolution Exception.
+ * Integriq Mapping Resolution Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\OpenFormulieren\FormFieldMapper}
+ * Raised by {@see \OCA\Integriq\Service\OpenFormulieren\FormFieldMapper}
  * when a declared `from`/`template` mapping expression cannot resolve
  * against the submitted values. This is the deliberate opposite of the known
- * `oc-mapping-literal-leak` bug class (OpenConnector `sourceTargetMapping`
+ * `oc-mapping-literal-leak` bug class (Integriq `sourceTargetMapping`
  * returning the literal dot-path string when a bare-path source key is
  * absent) — an unresolvable declared field MUST error, never silently carry
  * the literal expression through as if it were resolved data.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,14 +21,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

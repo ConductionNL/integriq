@@ -7,12 +7,12 @@
  * composer dev-environment. This stub satisfies PHPUnit mock-builder calls for
  * ObjectService so unit tests can run without a full Nextcloud server.
  *
- * Only the methods actually called by openconnector's lib/ are declared here.
+ * Only the methods actually called by integriq's lib/ are declared here.
  * PHPUnit's getMockBuilder() + disableOriginalConstructor() will then be able
  * to stub them via ->method('find')->willReturn(...) etc.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 
@@ -58,7 +58,7 @@ class ObjectService {
 	 *
 	 * This stub omits `$_extend` and `$files` and therefore orders its
 	 * parameters differently. That is TOLERATED, not endorsed: every
-	 * openconnector caller invokes find() with NAMED arguments, so parameter
+	 * integriq caller invokes find() with NAMED arguments, so parameter
 	 * ORDER is not load-bearing for them, whereas a dozen existing tests use
 	 * POSITIONAL `willReturnCallback(function ($id, $register, $schema) {...})`
 	 * closures written against this shape. Restoring true parity would break
@@ -74,7 +74,7 @@ class ObjectService {
 	 * grounds that ORDER is not load-bearing for named callers. True — but it
 	 * reads the risk one step short. A named argument does not need the right
 	 * POSITION; it needs the parameter to EXIST. So the moment openregister
-	 * added `$_audit` and openconnector started passing `_audit: false`, PHP
+	 * added `$_audit` and integriq started passing `_audit: false`, PHP
 	 * raised `Error: Unknown named parameter $_audit` at the call site and 20
 	 * tests across five suites went red at once — every one of them reporting a
 	 * type or exception mismatch that named nothing about a stub.
@@ -89,7 +89,7 @@ class ObjectService {
 	 * So parameters are APPENDED LAST as they are needed — the same technique
 	 * `$_render` used — which keeps every positional `willReturnCallback`
 	 * closure working while making the name resolvable. What is added is driven
-	 * by what openconnector's lib/ actually passes BY NAME, not by mirroring the
+	 * by what integriq's lib/ actually passes BY NAME, not by mirroring the
 	 * whole signature: `_audit` (3 call sites), `_extend` (2), and on
 	 * saveObject() `silent` (2) and `_validation` (2).
 	 *

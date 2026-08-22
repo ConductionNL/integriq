@@ -4,7 +4,7 @@
  * Unit tests for FormsOcsClient.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Forms
+ * @package  OCA\Integriq\Tests\Unit\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Forms;
+namespace OCA\Integriq\Tests\Unit\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsNotFoundException;
-use OCA\OpenConnector\Exception\FormsPermissionDeniedException;
-use OCA\OpenConnector\Exception\FormsUpstreamException;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\Forms\FormsOcsClient;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\FormsNotFoundException;
+use OCA\Integriq\Exception\FormsPermissionDeniedException;
+use OCA\Integriq\Exception\FormsUpstreamException;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Forms\FormsOcsClient;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

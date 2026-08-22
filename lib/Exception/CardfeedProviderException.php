@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Cardfeed Provider Exception.
+ * Integriq Cardfeed Provider Exception.
  *
  * Raised when a corporate-card-feed provider operation cannot proceed: an
  * unknown or unusable source, an unreachable/erroring card provider, a `rest`
@@ -10,7 +10,7 @@
  * they may name configuration keys and references, never API-key material.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

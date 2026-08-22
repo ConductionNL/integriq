@@ -4,7 +4,7 @@
  * Unit tests for EndpointService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,21 +13,21 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
-use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferenceNumberRule;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\RuleService;
-use OCA\OpenConnector\Service\StorageService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Rule\AvgBsnPolicyRule;
+use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\RuleService;
+use OCA\Integriq\Service\StorageService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -68,7 +68,7 @@ class EndpointServiceTest extends TestCase {
 	private $container;
 
 	/**
-	 * @var \OCA\OpenConnector\Service\ApprovalService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var \OCA\Integriq\Service\ApprovalService|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $approvalService;
 
@@ -78,7 +78,7 @@ class EndpointServiceTest extends TestCase {
 	private $flowRunnerService;
 
 	/**
-	 * @var \OCA\OpenConnector\Service\ConsumerScopeService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var \OCA\Integriq\Service\ConsumerScopeService|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $consumerScopeService;
 
@@ -120,12 +120,12 @@ class EndpointServiceTest extends TestCase {
 		$container = $this->container;
 		$syncService = $this->createMock(SynchronizationService::class);
 		$ruleService = $this->createMock(RuleService::class);
-		$signatureService = new \OCA\OpenConnector\Service\WebhookSignatureService($logger);
-		$rateLimitService = $this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class);
+		$signatureService = new \OCA\Integriq\Service\WebhookSignatureService($logger);
+		$rateLimitService = $this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class);
 		$compositeFanoutRule = new CompositeFanoutRule($this->orObjectService, $logger);
 		$referenceNumberRule = new ReferenceNumberRule();
 		$avgBsnPolicyRule = new AvgBsnPolicyRule();
-		$this->approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
+		$this->approvalService = $this->createMock(\OCA\Integriq\Service\ApprovalService::class);
 		$approvalService = $this->approvalService;
 		$this->flowRunnerService = $this->createMock(FlowRunnerService::class);
 		$flowRunnerService = $this->flowRunnerService;
@@ -134,7 +134,7 @@ class EndpointServiceTest extends TestCase {
 		// ConsumerScopeServiceTest + EndpointServiceConsumerScopeTest. Here it
 		// defaults to "allowed" so these tests keep asserting the behaviour they
 		// were written for; a bare mock would return false and 403 everything.
-		$this->consumerScopeService = $this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class);
+		$this->consumerScopeService = $this->createMock(\OCA\Integriq\Service\ConsumerScopeService::class);
 		$this->consumerScopeService->method('isAllowed')->willReturn(true);
 
 		// EndpointService constructor signature (20 args, no $appConfig):
@@ -358,7 +358,7 @@ class EndpointServiceTest extends TestCase {
 
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'WOO Publish'], 'endpoint-1');
 		$rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => ['approval' => ['approverGroup' => 'woo-approvers']]], 'rule-1');
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
 		$method->setAccessible(true);
@@ -384,7 +384,7 @@ class EndpointServiceTest extends TestCase {
 
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'WOO Publish'], 'endpoint-1');
 		$rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'timing' => 'after', 'configuration' => ['approval' => []]], 'rule-1');
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
 		$method->setAccessible(true);
@@ -512,15 +512,15 @@ class EndpointServiceTest extends TestCase {
 			$this->container,
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
-			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
-			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+			new \OCA\Integriq\Service\WebhookSignatureService($logger),
+			$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($this->orObjectService, $logger),
 			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
-			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
-			$this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class),
+			$this->createMock(\OCA\Integriq\Service\ConsumerScopeService::class),
 			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
 			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 		);
@@ -619,12 +619,12 @@ class EndpointServiceTest extends TestCase {
 					$this->container,
 					$this->createMock(SynchronizationService::class),
 					$this->createMock(RuleService::class),
-					new \OCA\OpenConnector\Service\WebhookSignatureService($this->createMock(LoggerInterface::class)),
-					$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+					new \OCA\Integriq\Service\WebhookSignatureService($this->createMock(LoggerInterface::class)),
+					$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
 					new CompositeFanoutRule($this->orObjectService, $this->createMock(LoggerInterface::class)),
 					new ReferenceNumberRule(),
 					new AvgBsnPolicyRule(),
-					$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 					$requestId,
 					$this->createMock(FlowRunnerService::class),
 					$this->consumerScopeService,
@@ -696,12 +696,12 @@ class EndpointServiceTest extends TestCase {
 			$container,
 			$syncService,
 			$ruleService,
-			new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
-			$this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+			new \OCA\Integriq\Service\WebhookSignatureService($logger),
+			$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
 			new CompositeFanoutRule($this->orObjectService, $logger),
 			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
-			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 			$this->createMock(IRequestId::class),
 			$this->createMock(FlowRunnerService::class),
 			$this->consumerScopeService,
@@ -748,8 +748,8 @@ class EndpointServiceTest extends TestCase {
 			}
 		);
 
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
-		$trace = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-1');
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-1');
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);
@@ -799,7 +799,7 @@ class EndpointServiceTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturn($customRule);
 
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);
@@ -844,8 +844,8 @@ class EndpointServiceTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturn($saveRule);
 
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
-		$trace = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-3');
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-3');
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);
@@ -899,8 +899,8 @@ class EndpointServiceTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturn($mappingRule);
 
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
-		$trace = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-4');
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-4');
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);
@@ -955,7 +955,7 @@ class EndpointServiceTest extends TestCase {
 				$this->anything(),
 				$this->anything(),
 				$this->anything(),
-				$this->isInstanceOf(\OCA\OpenConnector\Service\Helper\ExecutionTraceContext::class)
+				$this->isInstanceOf(\OCA\Integriq\Service\Helper\ExecutionTraceContext::class)
 			)
 			->willReturn(['result' => []]);
 
@@ -980,8 +980,8 @@ class EndpointServiceTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturn($syncRule);
 
-		$flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
-		$trace = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-5');
+		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-5');
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);

@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector EUDI Issuance Exception.
+ * Integriq EUDI Issuance Exception.
  *
  * Thrown by the OpenID4VCI EUDI wallet credential issuance services
  * (offer creation/resolution, token, credential, status-list, revocation)
  * on any hard-reject condition. Carries the HTTP status the controller
- * layer must surface, mirroring {@see \OCA\OpenConnector\Exception\LtiValidationException}'s
+ * layer must surface, mirroring {@see \OCA\Integriq\Exception\LtiValidationException}'s
  * shape for the LTI adapter.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

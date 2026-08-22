@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Approval Notifier.
+ * Integriq Approval Notifier.
  *
  * Prepares the imperatively-dispatched HITL approval notification
  * (`ApprovalService::notifyApprovers()`) for display: resolves the parsed
@@ -12,7 +12,7 @@
  * visible at all, not merely for nicer copy.
  *
  * @category Notification
- * @package  OCA\OpenConnector\Notification
+ * @package  OCA\Integriq\Notification
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,17 +21,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Notification;
+namespace OCA\Integriq\Notification;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -74,7 +74,7 @@ class ApprovalNotifier implements INotifier {
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	public function getName(): string {
-		return $this->l10nFactory->get(Application::APP_ID)->t('OpenConnector');
+		return $this->l10nFactory->get(Application::APP_ID)->t('Integriq');
 	}//end getName()
 
 	/**

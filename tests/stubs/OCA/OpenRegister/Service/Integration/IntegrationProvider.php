@@ -9,7 +9,7 @@
  * against this interface satisfies PHP's type system.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 
@@ -33,7 +33,7 @@ interface IntegrationProvider {
 
 	public function getStorageStrategy(): string;
 
-	public function getOpenConnectorSource(): ?string;
+	public function getIntegriqSource(): ?string;
 
 	public function isEnabled(): bool;
 

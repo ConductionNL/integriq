@@ -3,7 +3,7 @@
 /**
  * A Job's `interval` expressed as a five-field cron, or refused.
  *
- * Split out of {@see \OCA\OpenConnector\Service\JobToFlowGenerator} because it
+ * Split out of {@see \OCA\Integriq\Service\JobToFlowGenerator} because it
  * is the one part of that translation with a right answer independent of flows:
  * "which second-counts is a wall-clock cron the same cadence as?". Keeping it
  * here means the table can be read, and tested, without a flow document in
@@ -16,7 +16,7 @@
  * the arithmetic that gets the boundary wrong.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,14 +27,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 /**
  * Translates a job interval in seconds into a cron expression.

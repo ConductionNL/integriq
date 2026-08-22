@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Synchronization Adapter.
+ * Integriq Forms Synchronization Adapter.
  *
  * Sits between `SynchronizationService`'s `nextcloud-form` source-fetch
  * branch (and `EventService::dispatchMappingAction()`'s outbound path) and
@@ -11,7 +11,7 @@
  * `TablesSyncAdapter`'s method names/shapes exactly.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Forms
+ * @package  OCA\Integriq\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,16 +20,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Forms;
+namespace OCA\Integriq\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use OCP\IUser;

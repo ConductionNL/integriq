@@ -22,7 +22,7 @@
  * A node shipping a Vue component would tie the engine's rendering to that
  * app's build, and the canvas is rendered inside whichever app the author is
  * in — hermiq's editor would be asked to mount a component out of
- * openconnector's bundle. Fields are described; the editor decides how to draw
+ * integriq's bundle. Fields are described; the editor decides how to draw
  * them.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>

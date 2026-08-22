@@ -5,7 +5,7 @@
  *
  * The real class lives in the peer OpenRegister app (not in vendor). Mirrors
  * the public constructor + IIconSection surface so unit tests can construct/
- * assert against the leaf `OpenConnectorAdmin` (Sections) subclass without a
+ * assert against the leaf `IntegriqAdmin` (Sections) subclass without a
  * full Nextcloud + OpenRegister install (adopt-apphost change).
  *
  * @category Test
@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);

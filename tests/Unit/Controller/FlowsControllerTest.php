@@ -4,7 +4,7 @@
  * Unit tests for FlowsController — the manual "Run" trigger (REQ-007d).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\FlowsController;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Controller\FlowsController;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;

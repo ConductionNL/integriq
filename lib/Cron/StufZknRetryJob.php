@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Retry Job.
+ * Integriq StUF-ZKN Retry Job.
  *
  * Background job that re-drives outbound StUF-ZKN kennisgeving sends that
  * previously failed transport: for every `stuf_message` row with
@@ -12,7 +12,7 @@
  * never throws out of the sweep loop).
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,9 +28,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\StufZknSyncService;
+use OCA\Integriq\Service\StufZknSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

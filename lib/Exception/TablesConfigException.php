@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Configuration Exception.
+ * Integriq Tables Configuration Exception.
  *
  * Raised for hard configuration errors on a `nextcloud-table` source/target
  * that are caller/request-scoped (bad `sourceId`/`tableId`, ambiguous
@@ -9,7 +9,7 @@
  * per-row data problem. Discovery-endpoint callers map this to HTTP 400.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

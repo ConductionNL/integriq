@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector DSO Verzoek Translator.
+ * Integriq DSO Verzoek Translator.
  *
  * Translates one already-parsed DSO Verzoek (the array
- * {@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()} produces
+ * {@see \OCA\Integriq\Service\DSOParserService::parseRequest()} produces
  * — `verzoekId`, `type`, `aanvrager`, `locatie`, `activiteiten`, ...) into
  * the normalised handoff-ready fields a `dso_verzoek` OR record carries:
  * `mappedTitle`/`mappedSummary`/`mappedChannel`/`mappedPriority`. This is a
@@ -21,7 +21,7 @@
  * refuse-to-leak-the-literal-key convention).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Dso
+ * @package  OCA\Integriq\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,16 +30,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-inbound-verzoek-translation-with-a-literal-leak-guard-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Dso;
+namespace OCA\Integriq\Service\Dso;
 
-use OCA\OpenConnector\Exception\DsoTranslationException;
+use OCA\Integriq\Exception\DsoTranslationException;
 
 /**
  * Parsed DSO Verzoek array -> normalised `dso_verzoek` handoff fields.
@@ -76,7 +76,7 @@ class DsoRequestTranslator {
 	 * Translate one parsed DSO Verzoek into normalised handoff fields.
 	 *
 	 * @param array<string, mixed> $request The parsed Verzoek
-	 *                                      ({@see \OCA\OpenConnector\Service\DSOParserService::parseRequest()}'s output).
+	 *                                      ({@see \OCA\Integriq\Service\DSOParserService::parseRequest()}'s output).
 	 *
 	 * @return array{verzoekId: string, type: string, mappedTitle: string, mappedSummary: string,
 	 *         mappedChannel: string, mappedPriority: string, requester: array<string, mixed>} The

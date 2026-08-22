@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector UserController.
+ * Integriq UserController.
  *
  * This controller handles user-related API endpoints including user information
  * retrieval, updates, and authentication with comprehensive security measures.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,15 +15,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\SecurityService;
-use OCA\OpenConnector\Service\UserService;
+use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\UserService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;

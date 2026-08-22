@@ -4,7 +4,7 @@
  * OpenConnector Health Controller — OpenRegister dependency guard tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\HealthController;
+use OCA\Integriq\Controller\HealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;

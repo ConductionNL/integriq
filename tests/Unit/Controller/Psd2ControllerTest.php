@@ -4,7 +4,7 @@
  * Unit tests for Psd2Controller.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,12 +19,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\Psd2Controller;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\BankfeedSyncService;
+use OCA\Integriq\Controller\Psd2Controller;
+use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\BankfeedSyncService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;

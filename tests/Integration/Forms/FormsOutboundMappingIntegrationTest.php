@@ -10,7 +10,7 @@
  * convention for the sibling `action.kind` branches.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration\Forms
+ * @package  OCA\Integriq\Tests\Integration\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,19 +24,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration\Forms;
+namespace OCA\Integriq\Tests\Integration\Forms;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
-use OCA\OpenConnector\Service\Forms\FormsClientInterface;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\Forms\FormsAnswerResolver;
+use OCA\Integriq\Service\Forms\FormsClientInterface;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;

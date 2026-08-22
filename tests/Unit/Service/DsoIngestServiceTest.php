@@ -4,7 +4,7 @@
  * Unit tests for DsoIngestService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\DsoProviderException;
-use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
-use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
-use OCA\OpenConnector\Service\DsoIngestService;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
+use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Dso\DsoRequestTranslator;
+use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;

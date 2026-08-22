@@ -3,7 +3,7 @@
 /**
  * Raised when a Job or a Rule cannot be expressed as a flow.
  *
- * The same shape as {@see \OCA\OpenConnector\Exception\SynchronizationNotMigratableException},
+ * The same shape as {@see \OCA\Integriq\Exception\SynchronizationNotMigratableException},
  * deliberately: the task-3.3 generators REFUSE anything the flow vocabulary
  * cannot say, rather than emitting a flow that would do less than the entity it
  * replaces. Every refusal names the feature that is unsupported, so the reasons
@@ -16,7 +16,7 @@
  * the only thing that actually differs — which kind of entity was refused.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,14 +27,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use RuntimeException;
 use Throwable;

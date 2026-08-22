@@ -9,7 +9,7 @@
  * #[AuthorizedAdminSetting], so no in-body authorization is required.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,11 +22,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\DSOSignatureVerifierService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -67,7 +67,7 @@ class DsoPkiSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
 		$hmacSecret = $this->appConfig->getValueString(
 			Application::APP_ID,
@@ -110,7 +110,7 @@ class DsoPkiSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
 		$mode = (string)$this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC);
 		if ($mode !== DSOSignatureVerifierService::MODE_RSA) {

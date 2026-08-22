@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — JSONPath-lite expression evaluator.
+ * Integriq — JSONPath-lite expression evaluator.
  *
  * Evaluates the small `$.a.b.c` / `$.a[0].b` value-expression dialect used by
  * the `dashboard-http-datasource` resolve façade against a decoded JSON
@@ -11,7 +11,7 @@
  * grammar is all the contract requires.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Datasource
+ * @package  OCA\Integriq\Service\Datasource
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Datasource;
+namespace OCA\Integriq\Service\Datasource;
 
 /**
  * Stateless evaluator for the `$.a.b.c` / `$.a[0].b` value-expression dialect.

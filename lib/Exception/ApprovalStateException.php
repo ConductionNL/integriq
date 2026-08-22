@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Approval State Exception.
+ * Integriq Approval State Exception.
  *
  * Raised when an `approval_request` cannot be acted on in its current state:
  * not found, not `pending`, or already past its `expiresAt`. Carries the HTTP
@@ -9,7 +9,7 @@
  * openspec/changes/hitl-approval-rule-action/design.md API Design tables.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 use Throwable;

@@ -4,7 +4,7 @@
  * Unit tests for KissController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\KissController;
-use OCA\OpenConnector\Exception\KissProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\KissSyncService;
+use OCA\Integriq\Controller\KissController;
+use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\KissSyncService;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IRequest;

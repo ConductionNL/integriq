@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Event Action.
+ * Integriq Event Action.
  *
  * Emits a CloudEvent onto the event bus when a scheduled job fires, so a
  * recurring event ("the reconcile window closed", "the nightly export is due")
@@ -14,7 +14,7 @@
  * the dead-letter path treat a job-emitted event exactly like any other.
  *
  * @category Action
- * @package  OCA\OpenConnector\Action
+ * @package  OCA\Integriq\Action
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -22,16 +22,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Action;
+namespace OCA\Integriq\Action;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use Throwable;
 
 /**
- * Runs event-driven actions wired into the OpenConnector cron job list.
+ * Runs event-driven actions wired into the Integriq cron job list.
  */
 class EventAction {
 	/**

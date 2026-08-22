@@ -4,7 +4,7 @@
  * Unit tests for OpenFormulierenController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\OpenFormulierenController;
-use OCA\OpenConnector\Exception\OpenFormulierenException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\OpenFormulierenIntakeService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Controller\OpenFormulierenController;
+use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;

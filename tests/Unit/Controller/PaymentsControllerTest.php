@@ -4,7 +4,7 @@
  * Unit tests for PaymentsController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Controller\PaymentsController;
-use OCA\OpenConnector\Exception\PaymentProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PaymentIntentService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Controller\PaymentsController;
+use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PaymentIntentService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

@@ -9,7 +9,7 @@
  * `tests/Integration/NotificatiesCallbackTest.php` already uses.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration\Forms
+ * @package  OCA\Integriq\Tests\Integration\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,18 +23,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration\Forms;
+namespace OCA\Integriq\Tests\Integration\Forms;
 
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
-use OCA\OpenConnector\Service\Forms\FormsClientInterface;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Forms\FormsAnswerResolver;
+use OCA\Integriq\Service\Forms\FormsClientInterface;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;

@@ -5,12 +5,12 @@
  *
  * Mirrors the interface shipped by the OpenRegister AppHost observability
  * engine (ADR-040). Used only in environments where the openregister runtime
- * is not installed (e.g. bare CI containers) — OpenConnectorMetricsProvider
+ * is not installed (e.g. bare CI containers) — IntegriqMetricsProvider
  * implements the real interface in production; this stub keeps the class
  * loadable when openregister is absent.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

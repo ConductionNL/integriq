@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector ViewDeleted EventListener.
+ * Integriq ViewDeleted EventListener.
  *
  * Listens for OpenRegister ObjectDeletedEvent on view objects in the
  * Software Catalog application and removes the matching extended view
  * objects.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,14 +16,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @todo Remove this temporary listener once it lives in the software catalog application.
  */
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Cron\DeferredViewCascadeJob;
+use OCA\Integriq\Cron\DeferredViewCascadeJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -120,7 +120,7 @@ class ViewDeletedEventListener implements IEventListener {
 			// on any deployment that is not the Software Catalog — it must never
 			// break the delete that triggered us.
 			$this->logger->debug(
-				'OpenConnector: view-delete cascade skipped, register or schema not resolvable',
+				'Integriq: view-delete cascade skipped, register or schema not resolvable',
 				['exception' => $e->getMessage()]
 			);
 			return;

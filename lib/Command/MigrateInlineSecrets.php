@@ -15,12 +15,12 @@
  *     schema properties while `clean` is false.
  *
  * A REAL run (no `--dry-run`) mints → VERIFIES → nulls, per source per field,
- * through {@see \OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor}.
+ * through {@see \OCA\Integriq\Service\Security\InlineSecretMigrationExecutor}.
  * The Phase-C blocker is resolved: openregister#450 (`actingOrganisationId`) +
  * or#440 (sessionless `mint()`) let this migration mint organisation-scoped
  * credentials AND verify them round-trip without a user session. After a real
  * run the command re-reports the true Phase D gate into appconfig so
- * {@see \OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus}'s signal
+ * {@see \OCA\Integriq\Repair\RecordInlineSecretMigrationStatus}'s signal
  * stays honest. If the installed broker is too old to mint or to resolve
  * organisation-scoped credentials sessionlessly, the real run fails closed with
  * an upgrade hint and rewrites NOTHING (never plaintext left silently).
@@ -31,7 +31,7 @@
  *   --limit=<n> Maximum sources to inspect (default 1000).
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,16 +42,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCP\IAppConfig;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;

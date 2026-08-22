@@ -4,7 +4,7 @@
  * Unit tests for PromotionController (environments-and-promotion).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,12 +15,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Controller\PromotionController;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PromotionService;
+use OCA\Integriq\Controller\PromotionController;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PromotionService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;

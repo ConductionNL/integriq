@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Digikoppeling Exception.
+ * Integriq Digikoppeling Exception.
  *
  * Raised when a Digikoppeling transport operation cannot proceed: a WS-Security
  * signature that is missing or fails to verify on a WUS response, a Grote
@@ -14,7 +14,7 @@
  * references, never key material.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,12 +25,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

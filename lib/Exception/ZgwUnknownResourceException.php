@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenConnector ZGW Unknown Resource Exception.
+ * Integriq ZGW Unknown Resource Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\ZgwVersionTranslationService}
+ * Raised by {@see \OCA\Integriq\Service\ZgwVersionTranslationService}
  * when a caller declares a `resource` outside the 7 fleet ZGW resources
  * this change translates (`zaak`, `zaaktype`,
  * `enkelvoudiginformatieobject`, `besluit`, `rol`, `status`, `resultaat`).
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 /**
  * Thrown when a declared ZGW resource has no registered translator.

@@ -4,7 +4,7 @@
  * Unit tests for ConfigurationController (connector-catalog-ui).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,13 +15,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\ConfigurationController;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ConfigurationImportPreviewService;
-use OCA\OpenConnector\Service\ConfigurationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Controller\ConfigurationController;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ConfigurationImportPreviewService;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
