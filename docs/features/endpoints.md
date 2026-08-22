@@ -2,7 +2,7 @@
 
 ## Overview
 
-An **Endpoint** is a URL path exposed by OpenConnector that can act as a reverse proxy to an external source, a gateway to OpenRegister data, or a rule-execution surface for custom logic. Endpoints allow other systems and clients to interact with OpenConnector as if it were a native API.
+An **Endpoint** is a URL path exposed by Integriq that can act as a reverse proxy to an external source, a gateway to OpenRegister data, or a rule-execution surface for custom logic. Endpoints allow other systems and clients to interact with Integriq as if it were a native API.
 
 ## Endpoint Types
 
@@ -18,7 +18,7 @@ Each endpoint is configured with one or more HTTP methods (`GET`, `POST`, `PUT`,
 
 ## Endpoint Path and Routing
 
-Endpoints are registered at `/index.php/apps/openconnector/api/endpoint/{path}`. Path parameters (e.g. `/{id}`) are supported and injected into the request context for use in rules and target resolution.
+Endpoints are registered at `/index.php/apps/integriq/api/endpoint/{path}`. Path parameters (e.g. `/{id}`) are supported and injected into the request context for use in rules and target resolution.
 
 Slug-based identifiers allow consistent references across environments.
 
@@ -57,7 +57,7 @@ Response returned to caller
 
 ## Proxy Behavior
 
-When target type is `source`, OpenConnector forwards the request to the configured Source using `CallService`. Request headers, query parameters, and body are forwarded (with configurable overrides). The source response is returned to the caller with its original status code and content type.
+When target type is `source`, Integriq forwards the request to the configured Source using `CallService`. Request headers, query parameters, and body are forwarded (with configurable overrides). The source response is returned to the caller with its original status code and content type.
 
 ## OpenRegister Gateway
 
@@ -65,7 +65,7 @@ When target type is `register/schema`, the endpoint provides CRUD access to Open
 
 ## CORS
 
-OpenConnector registers CORS `OPTIONS` preflight routes for all public endpoints. The `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` headers are configurable per endpoint.
+Integriq registers CORS `OPTIONS` preflight routes for all public endpoints. The `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` headers are configurable per endpoint.
 
 ## Authentication on Exposed Endpoints
 

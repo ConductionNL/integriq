@@ -111,7 +111,7 @@ Example: `/RIS-besluiten/2026/2026-06-15/besluitenlijst.pdf`
 
 ## Sync Record Schema
 
-Sync operations are persisted in the `ris_sync_record` schema in the OpenConnector register.
+Sync operations are persisted in the `ris_sync_record` schema in the `openconnector` register. (The register **slug** deliberately stays on the old name after the app-id rename — see [Register & schema declaration](../architecture/register-schema.md).)
 
 | Field | Type | Description |
 |-------|------|-------------|

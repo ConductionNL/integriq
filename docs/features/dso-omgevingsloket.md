@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DSO adapter integrates OpenConnector with the Digitaal Stelsel Omgevingswet (DSO) Landelijke Voorziening for receiving and processing vergunningaanvragen, meldingen, and informatieverzoeken from the Omgevingsloket. Required by Dutch VTH-related government tenders.
+The DSO adapter integrates Integriq with the Digitaal Stelsel Omgevingswet (DSO) Landelijke Voorziening for receiving and processing vergunningaanvragen, meldingen, and informatieverzoeken from the Omgevingsloket. Required by Dutch VTH-related government tenders.
 
 ## Endpoints
 

@@ -19,7 +19,7 @@ Registrations are created via OpenRegister's generic object API.
 ## Data model
 
 Four OpenRegister schemas in the `openconnector` register
-(`lib/Settings/openconnector_register.json`):
+(`lib/Settings/integriq_register.json`):
 
 - **`lti_platform`** — an external Platform that may launch INTO this
   instance (this instance acts as Tool): `issuer`, `clientId`,
@@ -175,8 +175,8 @@ write itself; that stays the consuming app's own concern.
 - `iat`/`exp`/`nbf`/`jti`-replay checks reuse `AuthorizationService::validatePayload()`
   unmodified.
 - The `nonce` claim is single-use, consumed atomically (get-then-delete) from
-  a dedicated distributed-cache namespace (`openconnector.lti.nonce`),
-  separate from the existing `openconnector.jti` namespace.
+  a dedicated distributed-cache namespace (`integriq.lti.nonce`),
+  separate from the existing `integriq.jti` namespace.
 - The resolved JWK's own `alg` is pinned and compared against the token
   header's `alg` before verification — defends against algorithm-confusion
   attacks (mirrors `AuthorizationService::authorizeJwt()`'s existing guard).

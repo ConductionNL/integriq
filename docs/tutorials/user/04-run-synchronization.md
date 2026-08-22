@@ -6,7 +6,7 @@ description: Tie a source and a mapping together as a synchronization, run it, a
 
 # Run a synchronization
 
-A **Synchronization** is the complete data flow between a source system and a target. OpenConnector reads objects from a source (using the source's configured authentication), applies a mapping, detects changes via hash comparison, and writes the transformed result to a target — usually an OpenRegister register and schema.
+A **Synchronization** is the complete data flow between a source system and a target. Integriq reads objects from a source (using the source's configured authentication), applies a mapping, detects changes via hash comparison, and writes the transformed result to a target — usually an OpenRegister register and schema.
 
 ## Goal
 
@@ -55,4 +55,4 @@ You are done when: a test run reports a non-zero number of fetched objects, the 
 ## Reference
 
 - [Synchronizations feature](../../features/synchronizations.md) — full reference for the synchronization engine.
-- [Contracts](../../features/synchronizations.md#process-flow) — how OpenConnector tracks per-object state across runs.
+- [Contracts](../../features/synchronizations.md#process-flow) — how Integriq tracks per-object state across runs.

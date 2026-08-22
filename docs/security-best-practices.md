@@ -1,6 +1,6 @@
 # Security Best Practices for User API
 
-The OpenConnector User API implements comprehensive security measures to protect against various attack vectors including Cross-Site Scripting (XSS) attacks and brute force login attempts.
+The Integriq User API implements comprehensive security measures to protect against various attack vectors including Cross-Site Scripting (XSS) attacks and brute force login attempts.
 
 ## Overview
 
@@ -312,6 +312,6 @@ Consider using a WAF for additional protection against common attacks.
 
 ## Conclusion
 
-The OpenConnector User API implements industry-standard security practices to protect against both XSS attacks and brute force attempts. The multi-layered approach ensures comprehensive protection while maintaining usability for legitimate users.
+The Integriq User API implements industry-standard security practices to protect against both XSS attacks and brute force attempts. The multi-layered approach ensures comprehensive protection while maintaining usability for legitimate users.
 
 For any security concerns or questions, please refer to the code documentation or contact the development team. 

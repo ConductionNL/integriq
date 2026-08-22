@@ -2,7 +2,7 @@
 
 ## Source
 
-A **Source** represents an external service or system that OpenConnector can interact with. This is typically an API but can also be databases, file servers, or other services. Sources allow the Connector to retrieve, process, and synchronize data.
+A **Source** represents an external service or system that Integriq can interact with. This is typically an API but can also be databases, file servers, or other services. Sources allow the Connector to retrieve, process, and synchronize data.
 
 ### Basic setup
 

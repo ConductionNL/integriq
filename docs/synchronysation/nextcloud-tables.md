@@ -1,6 +1,6 @@
 # Nextcloud Tables as a synchronization source or target
 
-OpenConnector can read rows from — and write mapped external data into — a
+Integriq can read rows from — and write mapped external data into — a
 **Nextcloud Tables** table, using the same Source → Synchronization →
 SynchronizationContract machinery, `CallService` transport, and
 `MappingService` transformation pipeline as every other source/target kind.
@@ -33,7 +33,7 @@ GET/PUT/DELETE.
 
 ## Tables as a target
 
-For each transformed object, OpenConnector:
+For each transformed object, Integriq:
 
 1. Resolves each `columnMapping` entry's **column title** to the current
    numeric column id (fetched once per run and cached). An ambiguous title
@@ -57,7 +57,7 @@ For each transformed object, OpenConnector:
 A single row's coercion/mapping failure is logged and skipped; the run
 continues. A **permission denial (401/403)** on the first write aborts the
 whole run (no partial writes) — Tables' own ACL is the sole authority;
-OpenConnector never re-implements it.
+Integriq never re-implements it.
 
 Rows whose contracts are no longer present in the source are removed through
 the same guarded `deleteInvalidObjects()` deletion path every other target
@@ -65,7 +65,7 @@ type uses.
 
 ## Tables as a source
 
-OpenConnector reads rows page-by-page (`GET .../tables/{tableId}/rows`) and
+Integriq reads rows page-by-page (`GET .../tables/{tableId}/rows`) and
 feeds each row's `data` into the mapping pipeline exactly as an API-sourced
 object. The Tables row id is used as the origin id, and change detection uses
 the same order-independent hash as every other source.

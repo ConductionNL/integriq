@@ -131,7 +131,7 @@ The mapping engine provides custom Twig functions and filters beyond standard Tw
 
 ## OpenRegister Delegation
 
-The MappingService in OpenConnector delegates execution to OpenRegister's `MappingService` when OpenRegister is installed. This provides a shared, maintained mapping engine across the Conduction app suite. OpenConnector falls back to its own implementation when OpenRegister is not available.
+The MappingService in Integriq delegates execution to OpenRegister's `MappingService` when OpenRegister is installed. This provides a shared, maintained mapping engine across the Conduction app suite. Integriq falls back to its own implementation when OpenRegister is not available.
 
 ## Implementation
 

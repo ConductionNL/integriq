@@ -53,7 +53,7 @@ Example:
 
 ## Call Logs Management
 
-The OpenConnector provides comprehensive call log management for monitoring API interactions with your sources. The **Source Logs** page offers professional-grade tools for analyzing, filtering, and managing your API call history.
+Integriq provides comprehensive call log management for monitoring API interactions with your sources. The **Source Logs** page offers professional-grade tools for analyzing, filtering, and managing your API call history.
 
 ### Accessing Source Logs
 

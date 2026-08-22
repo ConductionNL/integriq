@@ -1,5 +1,5 @@
 /**
- * OpenConnector landing page.
+ * Integriq landing page.
  *
  * Composes the brand <DetailHero> + <WidgetShelf> from
  * @conduction/docusaurus-preset/components, mirroring the connext page
@@ -19,7 +19,7 @@ import {
   AppMock,
 } from '@conduction/docusaurus-preset/components';
 
-const OPENCONNECTOR_ICON = (
+const INTEGRIQ_ICON = (
   <svg viewBox="0 0 24 24">
     <circle cx="6" cy="12" r="3" />
     <circle cx="18" cy="6" r="3" />
@@ -224,7 +224,7 @@ const WIDGETS = [
   },
   {
     title: 'Schema-aware mappings',
-    desc: 'Drop a register schema in, OpenConnector generates the field mapping UI. Validation runs at the connector before the register is touched.',
+    desc: 'Drop a register schema in, Integriq generates the field mapping UI. Validation runs at the connector before the register is touched.',
     panel: <MappingPanel />,
   },
   {
@@ -237,7 +237,7 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenConnector, the integration layer for Nextcloud"
+      title="Integriq, the integration layer for Nextcloud"
       description="The integration layer for Nextcloud. REST, SOAP, GraphQL, file drops, message queues. Pulls data into typed registers without writing glue code."
     >
       <main className="marketing-page">
@@ -247,7 +247,7 @@ export default function Home() {
           status={{ label: 'Beta', color: 'var(--c-orange-knvb)' }}
           version="v1.2"
           locales="EN"
-          title="OpenConnector"
+          title="Integriq"
           tagline={TAGLINE}
           primaryCta={{
             label: 'Install from app store',
@@ -257,17 +257,17 @@ export default function Home() {
           secondaryCta={{ label: 'Read the docs', href: '/docs/intro' }}
           tertiaryCta={{
             label: 'View on GitHub',
-            href: 'https://github.com/ConductionNL/openconnector',
+            href: 'https://github.com/ConductionNL/integriq',
           }}
           iconColor="var(--c-orange-knvb)"
-          icon={OPENCONNECTOR_ICON}
+          icon={INTEGRIQ_ICON}
           illustration={<AppMock app="openconnector" />}
         />
 
         <WidgetShelf
           eyebrow="What it does"
           title="Source to register, observed end to end."
-          lede="Configure a source, map fields to a register schema, set the trigger, and OpenConnector keeps the register filled. Bidirectional, audited, and visible on every dashboard."
+          lede="Configure a source, map fields to a register schema, set the trigger, and Integriq keeps the register filled. Bidirectional, audited, and visible on every dashboard."
           widgets={WIDGETS}
         />
       </main>

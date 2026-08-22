@@ -3,7 +3,7 @@
 
 # Reliability: Retry Policy, Circuit Breaker & Sync Dead Letters
 
-OpenConnector ships operator-facing reliability tooling for outbound dispatch
+Integriq ships operator-facing reliability tooling for outbound dispatch
 and per-item synchronization: a configurable **retry policy**, a per-Source
 **circuit breaker**, and a **sync-item dead-letter** queue with manual replay.
 All three are additive and default to today's behaviour — an existing Source
@@ -119,8 +119,12 @@ Both return `404` for an unknown Source id.
 
 ### Prometheus
 
-`GET /api/metrics` exposes `openconnector_circuit_breaker_state{source="<name>"}`
+`GET /api/metrics` exposes `integriq_circuit_breaker_state{source="<name>"}`
 — `1` when open, `0` when closed or never evaluated.
+
+> Renamed from `openconnector_circuit_breaker_state` with the app id: the metric
+> prefix is derived from the app id by the AppHost observability engine. Update
+> existing Grafana dashboards and alert rules to the new name.
 
 ## Sync-Item Dead Letters
 
@@ -179,5 +183,5 @@ identity never bleeds into the next job in the pass.
 - `lib/Service/SyncItemDeadLetterService.php` — capture / replay / discard.
 - `lib/Controller/SyncDeadLetterController.php` — dead-letter REST surface.
 - `lib/Controller/SourcesController.php` — circuit-breaker trip / reset.
-- `lib/Observability/OpenConnectorMetricsProvider.php` — breaker-state gauge.
+- `lib/Observability/IntegriqMetricsProvider.php` — breaker-state gauge.
 - `src/components/CircuitBreakerBadge.vue`, `src/views/Synchronization/SyncDeadLetterPage.vue`, `src/modals/Synchronization/SyncDeadLetterDetailModal.vue` — UI.

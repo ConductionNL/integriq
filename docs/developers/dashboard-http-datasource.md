@@ -2,15 +2,15 @@
 
 A read-only façade for dashboard/widget hosts that need to show **live data on
 a tile** without performing third-party HTTP themselves. The consuming app
-names a pre-configured OpenConnector `source` plus a value expression and gets
+names a pre-configured Integriq `source` plus a value expression and gets
 back a resolved, cached value. Credentials, host allow-listing, rate-limiting
-and caching all stay inside OpenConnector.
+and caching all stay inside Integriq.
 
 LaunchPad's `live-data-tile-widget` is the first consumer.
 
 ## Why a leaf app should use this instead of its own HTTP client
 
-Integration transports belong in OpenConnector; leaf apps consume the result.
+Integration transports belong in Integriq; leaf apps consume the result.
 Calling out directly from a leaf app would put egress control and secrets in
 the wrong place and duplicate the source engine. This endpoint gives you the
 value and nothing else — the response never contains the source URL, request
@@ -19,7 +19,7 @@ headers or any credential.
 ## Probing for the capability
 
 The capability is advertised so a leaf app can detect it and degrade cleanly
-when OpenConnector is absent:
+when Integriq is absent:
 
 ```json
 {
@@ -30,12 +30,12 @@ when OpenConnector is absent:
 ```
 
 Probe at runtime and fall back to your own behaviour when it is missing.
-**Do not statically import OpenConnector PHP classes** from a leaf app.
+**Do not statically import Integriq PHP classes** from a leaf app.
 
 ## Resolving a value
 
 ```http
-POST /apps/openconnector/api/datasource/{sourceId}/resolve
+POST /apps/integriq/api/datasource/{sourceId}/resolve
 Content-Type: application/json
 
 { "valueExpr": "$.data.open_count", "ttl": 300 }

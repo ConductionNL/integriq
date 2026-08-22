@@ -1,6 +1,6 @@
 # Synchronization Timing and Performance Monitoring
 
-The OpenConnector SynchronizationService now includes comprehensive timing measurements for external-to-internal synchronization operations. This feature provides detailed insights into performance bottlenecks and helps optimize synchronization processes.
+The Integriq SynchronizationService now includes comprehensive timing measurements for external-to-internal synchronization operations. This feature provides detailed insights into performance bottlenecks and helps optimize synchronization processes.
 
 ## Overview
 

@@ -88,7 +88,7 @@ To enable sub-object deduplication, map an `originId` field in the sub-object's 
 
 ## Pagination
 
-OpenConnector handles pagination automatically:
+Integriq handles pagination automatically:
 
 - Detects `next` link in response for cursor-based pagination
 - Supports page-number-based pagination via `paginationQuery`

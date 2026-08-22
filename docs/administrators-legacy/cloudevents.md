@@ -6,7 +6,7 @@ We facilitate subscriptions on a pub/sub model. This is based on [CloudEvents](h
 
 ## Event Subscriptions
 
-The OpenConnector platform implements the [CloudEvents Subscription API specification](https://github.com/cloudevents/spec/blob/main/subscriptions/spec.md) to manage event subscriptions. This allows consumers to subscribe to specific events and receive them through various delivery mechanisms.
+The Integriq platform implements the [CloudEvents Subscription API specification](https://github.com/cloudevents/spec/blob/main/subscriptions/spec.md) to manage event subscriptions. This allows consumers to subscribe to specific events and receive them through various delivery mechanisms.
 
 ### Subscription Styles
 

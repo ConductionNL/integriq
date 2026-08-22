@@ -2,13 +2,13 @@
 
 ## Overview
 
-OpenConnector implements event-driven integration using the **NL GOV CloudEvents** specification. It can emit events when internal state changes, subscribe to external event streams, and process incoming webhook payloads via configured Consumers. This enables real-time, loosely coupled data flows between systems without relying solely on scheduled synchronizations.
+Integriq implements event-driven integration using the **NL GOV CloudEvents** specification. It can emit events when internal state changes, subscribe to external event streams, and process incoming webhook payloads via configured Consumers. This enables real-time, loosely coupled data flows between systems without relying solely on scheduled synchronizations.
 
 ## Core Concepts
 
 ### Events
 
-An **Event** defines a CloudEvent type that OpenConnector can emit or receive. Each event has:
+An **Event** defines a CloudEvent type that Integriq can emit or receive. Each event has:
 
 | Field | Description |
 |-------|-------------|
@@ -33,7 +33,7 @@ An **EventSubscription** subscribes to a specific event type and routes matching
 
 ### Consumers
 
-A **Consumer** is a configured handler for incoming webhook payloads from external systems. Consumers expose an endpoint path at OpenConnector, receive the incoming payload, apply an optional mapping, and forward the result to a configured target source or OpenRegister schema.
+A **Consumer** is a configured handler for incoming webhook payloads from external systems. Consumers expose an endpoint path at Integriq, receive the incoming payload, apply an optional mapping, and forward the result to a configured target source or OpenRegister schema.
 
 | Field | Description |
 |-------|-------------|
@@ -46,7 +46,7 @@ A **Consumer** is a configured handler for incoming webhook payloads from extern
 
 ## NL GOV CloudEvents
 
-All events emitted by OpenConnector conform to the [NL GOV CloudEvents profile](https://logius.nl/diensten/cloudevents):
+All events emitted by Integriq conform to the [NL GOV CloudEvents profile](https://logius.nl/diensten/cloudevents):
 
 ```json
 {
@@ -106,13 +106,13 @@ EventMessages are persisted before delivery is attempted. Failed deliveries are 
 
 ## GEMMA Role
 
-OpenConnector fulfils the **Notificatierouteringcomponent** role in the GEMMA architecture through this events subsystem — routing notifications between components in the Common Ground ecosystem.
+Integriq fulfils the **Notificatierouteringcomponent** role in the GEMMA architecture through this events subsystem — routing notifications between components in the Common Ground ecosystem.
 
 ## Triggering integrations from Nextcloud Flow
 
-Beyond the always-on CloudEvents pipeline above, OpenConnector also registers three actions with
+Beyond the always-on CloudEvents pipeline above, Integriq also registers three actions with
 Nextcloud's built-in **Settings > Flow** automation UI (the `workflowengine` app), so an admin can
-wire a specific file/tag rule directly to one OpenConnector integration without writing a webhook
+wire a specific file/tag rule directly to one Integriq integration without writing a webhook
 receiver or an unrelated cron-polling synchronization:
 
 | Flow operation | What it does |
@@ -122,7 +122,7 @@ receiver or an unrelated cron-polling synchronization:
 | **Fire CloudEvent** | Emits a CloudEvent (optionally carrying static configured data) when the rule matches, fanning out to any matching `event_subscription` exactly like the pipeline above. |
 
 To use these, open **Settings > Flow** as an admin, add a new rule, scope it with any of Nextcloud's
-built-in file checks (mime type, name, size, or system tag), and pick one of the three OpenConnector
+built-in file checks (mime type, name, size, or system tag), and pick one of the three Integriq
 operations as the action. This capability is independent of the always-on CloudEvents pipeline
 described above — it is the admin-configurable, per-rule layer, complementary rather than a
 replacement. It requires the bundled `workflowengine` app to be enabled; when it is disabled, the

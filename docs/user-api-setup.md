@@ -1,6 +1,6 @@
 # User API Setup and Configuration
 
-This guide explains how to set up and configure the secure User API endpoints in your OpenConnector application.
+This guide explains how to set up and configure the secure User API endpoints in your Integriq application.
 
 ## Overview
 
@@ -16,7 +16,7 @@ All endpoints include comprehensive security measures against XSS attacks and br
 - NextCloud 25+ or compatible environment
 - PHP 8.1+
 - Redis or Memcached for distributed caching (recommended for rate limiting)
-- Write access to the OpenConnector app directory
+- Write access to the Integriq app directory
 
 ## Installation Steps
 
@@ -153,12 +153,12 @@ Test that the endpoints are working:
 
 ```bash
 # Test user info endpoint (requires authentication)
-curl -X GET "https://your-nextcloud.com/apps/openconnector/api/user/me" \
+curl -X GET "https://your-nextcloud.com/apps/integriq/api/user/me" \
   -H "Content-Type: application/json" \
   -b "cookies.txt"
 
 # Test login endpoint
-curl -X POST "https://your-nextcloud.com/apps/openconnector/api/user/login" \
+curl -X POST "https://your-nextcloud.com/apps/integriq/api/user/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"testpassword"}' \
   -c "cookies.txt"
@@ -171,7 +171,7 @@ Test rate limiting protection:
 ```bash
 # Make multiple failed login attempts to trigger rate limiting
 for i in {1..6}; do
-  curl -X POST "https://your-nextcloud.com/apps/openconnector/api/user/login" \
+  curl -X POST "https://your-nextcloud.com/apps/integriq/api/user/login" \
     -H "Content-Type: application/json" \
     -d '{"username":"testuser","password":"wrongpassword"}'
   echo "Attempt $i completed"
@@ -188,7 +188,7 @@ Test input sanitization:
 
 ```bash
 # Test XSS attempt in username
-curl -X POST "https://your-nextcloud.com/apps/openconnector/api/user/login" \
+curl -X POST "https://your-nextcloud.com/apps/integriq/api/user/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"<script>alert(\"xss\")</script>","password":"test"}'
 ```
@@ -349,4 +349,4 @@ private function logSecurityEvent(string $event, array $context = []): void
 - Check NextCloud logs for error details
 - Verify cache configuration and connectivity
 
-For additional support, refer to the OpenConnector documentation or contact the development team. 
+For additional support, refer to the Integriq documentation or contact the development team. 

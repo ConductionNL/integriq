@@ -1,6 +1,6 @@
 # User API Quick Reference
 
-Quick reference guide for developers using the OpenConnector User API with security features.
+Quick reference guide for developers using the Integriq User API with security features.
 
 ## Endpoints Overview
 
@@ -58,7 +58,7 @@ $loginData = [
 ];
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://your-nextcloud.com/apps/openconnector/api/user/login');
+curl_setopt($ch, CURLOPT_URL, 'https://your-nextcloud.com/apps/integriq/api/user/login');
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($loginData));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -94,7 +94,7 @@ login_data = {
 }
 
 response = session.post(
-    'https://your-nextcloud.com/apps/openconnector/api/user/login',
+    'https://your-nextcloud.com/apps/integriq/api/user/login',
     json=login_data
 )
 
@@ -109,7 +109,7 @@ elif response.status_code == 200:
 
 # Get current user (uses session from login)
 user_response = session.get(
-    'https://your-nextcloud.com/apps/openconnector/api/user/me'
+    'https://your-nextcloud.com/apps/integriq/api/user/me'
 )
 current_user = user_response.json()
 ```
@@ -241,14 +241,14 @@ tail -f /var/log/nextcloud.log | grep "locked_out"
 ```bash
 # Test rate limiting (bash)
 for i in {1..6}; do
-  curl -X POST "https://your-nextcloud.com/apps/openconnector/api/user/login" \
+  curl -X POST "https://your-nextcloud.com/apps/integriq/api/user/login" \
     -H "Content-Type: application/json" \
     -d '{"username":"testuser","password":"wrong"}' \
     -w "HTTP %{http_code} - Time: %{time_total}s\n"
 done
 
 # Test XSS protection
-curl -X POST "https://your-nextcloud.com/apps/openconnector/api/user/login" \
+curl -X POST "https://your-nextcloud.com/apps/integriq/api/user/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"<script>alert(1)</script>","password":"test"}' \
   -i

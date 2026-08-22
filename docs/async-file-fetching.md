@@ -1,6 +1,6 @@
 # Asynchronous File Fetching
 
-The OpenConnector SynchronizationService now supports asynchronous file fetching using ReactPHP for improved performance during synchronization operations. This feature allows file downloads to happen in the background without blocking the main synchronization process.
+The Integriq SynchronizationService now supports asynchronous file fetching using ReactPHP for improved performance during synchronization operations. This feature allows file downloads to happen in the background without blocking the main synchronization process.
 
 ## Overview
 

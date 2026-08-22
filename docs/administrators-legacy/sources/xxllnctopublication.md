@@ -15,13 +15,13 @@ Before starting, ensure you have the following:
 1.  Base URL of the Xxllnc Search API.
 2. An installation of Open Register.
 3. A configured instance of the Publication Register on Open Register.
-4. An installation of Open Connector.
+4. An installation of Integriq.
 
 ## Setting up the connection
 
 Create a New Source:
 
-1. Navigate to the "Sources" page in Open Connector.
+1. Navigate to the "Sources" page in Integriq.
  - Click Add Source and:
     - Set the Type to API.
     - Set the Location to the base URL of the Xxllnc Search API.

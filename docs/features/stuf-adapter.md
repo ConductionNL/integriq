@@ -20,12 +20,12 @@ The StUF Adapter provides bidirectional translation between REST/ZGW APIs and le
 
 Handles StUF-BG 3.10 person and address operations.
 
-**Inbound (legacy system queries OpenConnector):**
+**Inbound (legacy system queries Integriq):**
 
 - `handleNpsLv01(string $soapXml, array $stuurgegevens): string` — Processes persoon opvragen requests; returns npsLa01 or Fo01 fault
 - `handleAdrLv01(string $soapXml, array $stuurgegevens): string` — Processes adres opvragen requests; returns adrLa01 or Fo01 fault
 
-**Outbound (OpenConnector parses external StUF-BG responses):**
+**Outbound (Integriq parses external StUF-BG responses):**
 
 - `parseNpsLa01Response(string $soapXml): array` — Parses npsLa01 from an external source; returns OpenRegister-mapped person arrays
 
