@@ -28,12 +28,12 @@
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>OpenConnector</namespace>
 	<category>integration</category>
-    <website>https://codeberg.org/Conduction/openconnector</website>
-	<bugs>https://codeberg.org/Conduction/openconnector/issues</bugs>
-    <repository>https://codeberg.org/Conduction/openconnector</repository>
-    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-dashboard.png</screenshot>
-    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-sources.png</screenshot>
-    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
+    <website>https://github.com/ConductionNL/integriq</website>
+	<bugs>https://github.com/ConductionNL/integriq/issues</bugs>
+    <repository>https://github.com/ConductionNL/integriq</repository>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-sources.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
         <!--
         App dependency: openregister. Recorded as prose, not as an element. The
