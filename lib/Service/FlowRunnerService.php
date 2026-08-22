@@ -268,7 +268,7 @@ class FlowRunnerService {
 			$index = $indexByOrder[$startOrder];
 		}
 
-		while ($index !== null && $index < count($steps)) {
+		while ($index < count($steps)) {
 			$step = $steps[$index];
 			$order = (int)$step['order'];
 			$type = (string)($step['type'] ?? '');

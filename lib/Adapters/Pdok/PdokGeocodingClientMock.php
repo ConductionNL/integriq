@@ -76,9 +76,14 @@ final class PdokGeocodingClientMock extends PdokGeocodingClient {
 	 *
 	 * @param string $pdokId PDOK id.
 	 *
-	 * @return array<string,mixed>|null
+	 * Narrower than the abstract parent's `?array` on purpose: the mock always
+	 * has a canned entry to hand back, so it never returns null. Return types
+	 * are covariant in PHP, so narrowing here is legal and tells callers of the
+	 * mock something true.
+	 *
+	 * @return array<string,mixed>
 	 */
-	public function lookup(string $pdokId): ?array {
+	public function lookup(string $pdokId): array {
 		unset($pdokId);
 		return $this->cannedLauriergracht();
 	}//end lookup()

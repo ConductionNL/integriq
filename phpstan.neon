@@ -61,6 +61,14 @@ parameters:
         # runtime-only interfaces plus IFlowNodeLogActions, and builds its
         # output through FlowItems — same limitation, same remedy.
         - lib/Flow/FetchFileNode.php
+        # SynchronizationLogActions is the run-log helper the flow nodes above
+        # share. Every one of its users is excluded, so PHPStan sees a trait
+        # that is "used zero times and is not analysed" — which it refuses to
+        # let a baseline or ignoreErrors absorb. It is excluded for exactly the
+        # same reason its users are, not because the trait itself is
+        # unreachable: at runtime all of them `use` it — FetchFileNode included,
+        # which is why that entry sits directly above this one.
+        - lib/Flow/SynchronizationLogActions.php
         # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
@@ -94,6 +102,58 @@ parameters:
         - '#unknown class OCA\\Forms\\#'
         - '#Class OCA\\Forms\\#'
         - '#on an unknown class OCA\\Forms\\#'
+        # Downstream effect of the SAME OpenRegister-is-runtime-only limitation.
+        # These controllers build their JSON payload out of values that came from
+        # OCA\OpenRegister types — ObjectService::find()/findAll() results, OR
+        # exception accessors. Because OpenRegister is not on the analysis path,
+        # those expressions resolve to an error type, and PHPStan then reports the
+        # whole `new JSONResponse($data)` argument as unresolvable rather than
+        # reporting the OR symbol itself (which the base already ignores).
+        #
+        # Scoped to the files where this actually happens, not the identifier
+        # globally, so a genuinely unresolvable payload elsewhere still fails.
+        # Every path listed here references OCA\OpenRegister; re-check that before
+        # adding another.
+        -
+            message: '#Parameter \#?1? ?\$data of class OCP\\AppFramework\\Http\\JSONResponse constructor contains unresolvable type#'
+            identifier: argument.unresolvableType
+            paths:
+                - lib/Controller/ApprovalsController.php
+                - lib/Controller/DSOController.php
+                - lib/Controller/EventsController.php
+                - lib/Controller/JobsController.php
+                - lib/Controller/LogsController.php
+                - lib/Controller/OpenFormulierenController.php
+                - lib/Controller/SourcesController.php
+                - lib/Controller/SynchronizationsController.php
+                - lib/Service/EndpointService.php
+        # MappingService::executeMapping()'s `is_array($output) === false` guard.
+        # The comment directly above it already records the situation: "The
+        # is_array() guard is dead per static analysis but kept for safety
+        # against future refactors." Honouring that decision rather than
+        # overriding it in a lint pass.
+        -
+            message: '#Call to function is_array\(\) with array will always evaluate to true#'
+            identifier: function.alreadyNarrowedType
+            path: lib/Service/MappingService.php
+
+        # processSynchronizationObject()'s "source item is not an array" branch
+        # (the `invalid: N` diagnostic) is unreachable: the method declares
+        # `array $object`, so PHP rejects a non-array at the call boundary before
+        # the guard can run. The branch's own comment says it exists because "the
+        # source empty values or string might be returned", which the signature
+        # then makes impossible.
+        #
+        # Ignored rather than deleted because the fix is a DECISION, not a
+        # cleanup: either widen the parameter to `mixed` so the diagnostic works
+        # as intended, or drop the branch and accept that malformed source items
+        # fatal at the boundary. Both change behaviour of the sync engine, so
+        # they belong to whoever owns it. Scoped to this one file.
+        -
+            message: '#Call to function is_(array|scalar)\(\) with (array|\*NEVER\*) will always evaluate to true#'
+            identifier: function.alreadyNarrowedType
+            path: lib/Service/SynchronizationService.php
+
         # @throws referencing an OpenRegister exception class. PHPStan cannot resolve the
         # class to verify it is Throwable because OCA\OpenRegister is not on the analysis
         # path (see the base's OpenRegister ignores).
