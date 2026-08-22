@@ -100,7 +100,7 @@
 					@blur="nameTouched = true" />
 				<NcTextArea
 					v-model="draft.description"
-					:label="t('openconnector', 'Description')"
+					:label="t('integriq', 'Description')"
 					:disabled="saving"
 					rows="1"
 					resize="vertical" />
@@ -112,18 +112,18 @@
 					class="cn-sync-editor__column cn-sync-editor__column--source">
 					<header class="cn-sync-editor__column-header">
 						<DatabaseArrowRightOutlineIcon :size="20" />
-						<h3>{{ t('openconnector', 'Source') }}</h3>
+						<h3>{{ t('integriq', 'Source') }}</h3>
 					</header>
 					<div class="cn-sync-editor__column-body">
 						<label class="cn-sync-editor__label">{{
-							t('openconnector', 'Source type')
+							t('integriq', 'Source type')
 						}}</label>
 						<NcSelect
 							:modelValue="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Source type')"
+							:aria-label-combobox="t('integriq', 'Source type')"
 							@update:modelValue="onSourceTypeChange" />
 
 						<SyncConfigWidget
@@ -139,27 +139,27 @@
 							" />
 
 						<label class="cn-sync-editor__label">{{
-							t('openconnector', 'Sync mode')
+							t('integriq', 'Sync mode')
 						}}</label>
 						<NcSelect
 							:modelValue="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Sync mode')"
+							:aria-label-combobox="t('integriq', 'Sync mode')"
 							@update:modelValue="onSyncModeChange" />
 
 						<template v-if="draft.syncMode === 'incremental'">
 							<NcTextField
 								:modelValue="draft.sourceConfig?.cursorField || ''"
-								:label="t('openconnector', 'Cursor field')"
+								:label="t('integriq', 'Cursor field')"
 								:disabled="saving"
 								@update:modelValue="
 									(value) =>
 										updateSourceConfigField('cursorField', value)
 								" />
 							<label class="cn-sync-editor__label">{{
-								t('openconnector', 'Cursor comparator')
+								t('integriq', 'Cursor comparator')
 							}}</label>
 							<NcSelect
 								:modelValue="selectedCursorComparator"
@@ -167,7 +167,7 @@
 								:clearable="false"
 								:disabled="saving"
 								:aria-label-combobox="
-									t('openconnector', 'Cursor comparator')
+									t('integriq', 'Cursor comparator')
 								"
 								@update:modelValue="onCursorComparatorChange" />
 						</template>
@@ -184,18 +184,18 @@
 					class="cn-sync-editor__column cn-sync-editor__column--target">
 					<header class="cn-sync-editor__column-header">
 						<DatabaseArrowLeftOutlineIcon :size="20" />
-						<h3>{{ t('openconnector', 'Target') }}</h3>
+						<h3>{{ t('integriq', 'Target') }}</h3>
 					</header>
 					<div class="cn-sync-editor__column-body">
 						<label class="cn-sync-editor__label">{{
-							t('openconnector', 'Target type')
+							t('integriq', 'Target type')
 						}}</label>
 						<NcSelect
 							:modelValue="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Target type')"
+							:aria-label-combobox="t('integriq', 'Target type')"
 							@update:modelValue="onTargetTypeChange" />
 
 						<SyncConfigWidget
@@ -214,7 +214,7 @@
 						     bare toast; here it is the point of pressing Test. -->
 						<template v-if="testError || testResult !== null">
 							<h4 class="cn-sync-editor__group-title">
-								{{ t('openconnector', 'Dry run result') }}
+								{{ t('integriq', 'Dry run result') }}
 							</h4>
 							<NcNoteCard v-if="testError" type="error">
 								<p>{{ testError }}</p>
@@ -238,16 +238,16 @@
 			<section class="cn-sync-editor__transform">
 				<header class="cn-sync-editor__column-header">
 					<SwapHorizontalIcon :size="20" />
-					<h3>{{ t('openconnector', 'Transform') }}</h3>
+					<h3>{{ t('integriq', 'Transform') }}</h3>
 				</header>
 				<div class="cn-sync-editor__transform-body">
-					<CnTabs :aria-label="t('openconnector', 'Transform')">
-						<CnTab :title="t('openconnector', 'Conditions')">
+					<CnTabs :aria-label="t('integriq', 'Transform')">
+						<CnTab :title="t('integriq', 'Conditions')">
 							<div class="cn-sync-editor__panel">
 								<p class="cn-sync-editor__hint">
 									{{
 										t(
-											'openconnector',
+											'integriq',
 											'Gate which source records are synchronised. Leave empty to sync everything — raw JSON editing lives in the full editor.',
 										)
 									}}
@@ -263,7 +263,7 @@
 						<CnTab>
 							<template #title>
 								<span class="cn-sync-editor__tab-label">
-									{{ t('openconnector', 'Rules') }}
+									{{ t('integriq', 'Rules') }}
 									<span class="cn-sync-editor__tab-count">{{
 										draft.actions.length
 									}}</span>
@@ -273,7 +273,7 @@
 								<p class="cn-sync-editor__hint">
 									{{
 										t(
-											'openconnector',
+											'integriq',
 											'Rules applied during each sync pass.',
 										)
 									}}
@@ -282,15 +282,15 @@
 									schema="rule"
 									labelKey="name"
 									:value="draft.actions"
-									:inputLabel="t('openconnector', 'Rules')"
+									:inputLabel="t('integriq', 'Rules')"
 									:placeholder="
 										t(
-											'openconnector',
+											'integriq',
 											'Pick rules to run during sync',
 										)
 									"
 									:emptyLabel="
-										t('openconnector', 'No rules linked yet.')
+										t('integriq', 'No rules linked yet.')
 									"
 									@input="
 										(value) => updateDraft('actions', value)
@@ -298,7 +298,7 @@
 							</div>
 						</CnTab>
 
-						<CnTab :title="t('openconnector', 'Mappings')">
+						<CnTab :title="t('integriq', 'Mappings')">
 							<div class="cn-sync-editor__panel">
 								<SyncMappingPicker
 									:value="draft.sourceTargetMapping"
@@ -322,7 +322,7 @@
 						<CnTab>
 							<template #title>
 								<span class="cn-sync-editor__tab-label">
-									{{ t('openconnector', 'Follow-ups') }}
+									{{ t('integriq', 'Follow-ups') }}
 									<span class="cn-sync-editor__tab-count">{{
 										draft.followUps.length
 									}}</span>
@@ -332,7 +332,7 @@
 								<p class="cn-sync-editor__hint">
 									{{
 										t(
-											'openconnector',
+											'integriq',
 											'Synchronizations to trigger when this one completes.',
 										)
 									}}
@@ -342,16 +342,16 @@
 									labelKey="name"
 									:value="draft.followUps"
 									:excludeId="itemIdString"
-									:inputLabel="t('openconnector', 'Follow-ups')"
+									:inputLabel="t('integriq', 'Follow-ups')"
 									:placeholder="
 										t(
-											'openconnector',
+											'integriq',
 											'Pick follow-up synchronizations',
 										)
 									"
 									:emptyLabel="
 										t(
-											'openconnector',
+											'integriq',
 											'No follow-ups linked yet.',
 										)
 									"
@@ -376,7 +376,7 @@
 
 		<template #actions>
 			<NcButton :disabled="saving" @click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				{{ t('integriq', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="!isCreate"
@@ -384,7 +384,7 @@
 				:title="
 					dirty
 						? t(
-								'openconnector',
+								'integriq',
 								'Save first — the dry run tests the saved version',
 							)
 						: ''
@@ -394,7 +394,7 @@
 					<NcLoadingIcon v-if="testing" :size="20" />
 					<PlayCircleOutlineIcon v-else :size="20" />
 				</template>
-				{{ t('openconnector', 'Test') }}
+				{{ t('integriq', 'Test') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
@@ -404,8 +404,8 @@
 				</template>
 				{{
 					isCreate
-						? t('openconnector', 'Create')
-						: t('openconnector', 'Save')
+						? t('integriq', 'Create')
+						: t('integriq', 'Save')
 				}}
 			</NcButton>
 		</template>
@@ -552,8 +552,8 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
-				? this.t('openconnector', 'Create synchronization')
-				: this.t('openconnector', 'Edit synchronization')
+				? this.t('integriq', 'Create synchronization')
+				: this.t('integriq', 'Edit synchronization')
 		},
 
 		/**
@@ -567,20 +567,20 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		nameLabel() {
-			return this.t('openconnector', 'Name') + ' *'
+			return this.t('integriq', 'Name') + ' *'
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
 				return this.nameTouched
-					? this.t('openconnector', 'Name is required')
+					? this.t('integriq', 'Name is required')
 					: ''
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
 				: this.t(
-						'openconnector',
+						'integriq',
 						'Name must contain at least one letter or number',
 					)
 		},
@@ -846,7 +846,7 @@ export default {
 			try {
 				const response = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/synchronizations/${this.itemIdString}/test`,
+						`/apps/integriq/api/synchronizations/${this.itemIdString}/test`,
 					),
 				)
 				this.testResult = response.data ?? null
@@ -858,7 +858,7 @@ export default {
 					|| err?.message
 					|| ''
 				this.testError =
-					this.t('openconnector', 'Synchronization test failed')
+					this.t('integriq', 'Synchronization test failed')
 					+ (status ? ` (${status})` : '')
 					+ (message ? `: ${message}` : '')
 			} finally {
@@ -892,14 +892,14 @@ export default {
 				})
 				showSuccess(
 					this.isCreate
-						? this.t('openconnector', 'Synchronization created')
-						: this.t('openconnector', 'Synchronization saved'),
+						? this.t('integriq', 'Synchronization created')
+						: this.t('integriq', 'Synchronization saved'),
 				)
 				this.close?.()
 			} catch (err) {
 				this.saveError =
 					err?.message
-					|| this.t('openconnector', 'Failed to save synchronization')
+					|| this.t('integriq', 'Failed to save synchronization')
 			} finally {
 				this.saving = false
 			}

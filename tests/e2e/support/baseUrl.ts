@@ -18,7 +18,7 @@
  *     `PLAYWRIGHT_BASE_URL` wins when set, but `BASE_URL` is accepted too:
  *     that is the name the shared `ConductionNL/.github` quality workflow
  *     exports. An earlier revision of this module read `PLAYWRIGHT_BASE_URL`
- *     *only*, and openconnector's "E2E Tests (Playwright)" job hard-failed on
+ *     *only*, and integriq's "E2E Tests (Playwright)" job hard-failed on
  *     every CI run since with `Error: PLAYWRIGHT_BASE_URL is not set.` —
  *     locally correct, and dead everywhere it mattered. Strict about never
  *     inventing a target; permissive about which variable names it.

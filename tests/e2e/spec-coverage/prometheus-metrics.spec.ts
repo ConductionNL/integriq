@@ -7,7 +7,7 @@
  * Tests REQ-PROM-001 through REQ-PROM-006 against the live Nextcloud
  * instance named by PLAYWRIGHT_BASE_URL (admin/admin).
  *
- * The metrics endpoint at GET /index.php/apps/openconnector/api/metrics
+ * The metrics endpoint at GET /index.php/apps/integriq/api/metrics
  * returns Prometheus text exposition format (text/plain; version=0.0.4).
  * These tests verify the HTTP surface contract; they do NOT assert specific
  * numeric values (those change with data in the DB).
@@ -17,7 +17,7 @@ import { test, expect } from '@playwright/test'
 import * as http from 'http'
 import { absoluteUrl } from '../support/baseUrl'
 
-const METRICS_URL = '/index.php/apps/openconnector/api/metrics'
+const METRICS_URL = '/index.php/apps/integriq/api/metrics'
 
 test.describe('REQ-PROM-001: Metrics endpoint', () => {
 	test('authenticated admin receives 200 with Prometheus text format', async ({

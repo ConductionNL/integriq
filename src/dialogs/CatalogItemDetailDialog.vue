@@ -30,7 +30,7 @@
 					{{ liveStatusLabel }}
 				</span>
 				<span v-if="statusLoading" class="oc-catalog-detail__checking">
-					{{ t('openconnector', 'Checking live status…') }}
+					{{ t('integriq', 'Checking live status…') }}
 				</span>
 				<span
 					v-else-if="mechanismLabel"
@@ -44,7 +44,7 @@
 			</p>
 
 			<div v-if="standards.length > 0" class="oc-catalog-detail__section">
-				<h4>{{ t('openconnector', 'Standards') }}</h4>
+				<h4>{{ t('integriq', 'Standards') }}</h4>
 				<div class="oc-catalog-detail__chips">
 					<span
 						v-for="standard in standards"
@@ -64,7 +64,7 @@
 
 			<div class="oc-catalog-detail__actions">
 				<NcButton variant="tertiary" @click="close">
-					{{ t('openconnector', 'Close') }}
+					{{ t('integriq', 'Close') }}
 				</NcButton>
 				<NcButton
 					v-if="showPrimaryAction"
@@ -140,7 +140,7 @@ export default {
 			return (
 				this.catalogItem.name
 				|| this.catalogItem.slug
-				|| t('openconnector', 'Catalog item')
+				|| t('integriq', 'Catalog item')
 			)
 		},
 
@@ -175,8 +175,8 @@ export default {
 		 */
 		liveStatusLabel() {
 			return this.liveStatusKey === 'dormant'
-				? t('openconnector', 'dormant')
-				: t('openconnector', 'available')
+				? t('integriq', 'dormant')
+				: t('integriq', 'available')
 		},
 
 		/**
@@ -203,10 +203,10 @@ export default {
 		mechanismLabel() {
 			switch (this.mechanism) {
 				case 'flag-gated':
-					return t('openconnector', 'Gated behind a feature flag')
+					return t('integriq', 'Gated behind a feature flag')
 				case 'mock-seeded':
 					return t(
-						'openconnector',
+						'integriq',
 						'Seeded source (mock mode until credentials are configured)',
 					)
 				default:
@@ -251,8 +251,8 @@ export default {
 		 */
 		primaryActionLabel() {
 			return this.mechanism === 'flag-gated'
-				? t('openconnector', 'Enable')
-				: t('openconnector', 'Instantiate')
+				? t('integriq', 'Enable')
+				: t('integriq', 'Instantiate')
 		},
 	},
 
@@ -319,14 +319,14 @@ export default {
 				this.successMessage =
 					result?.type === 'source'
 						? t(
-								'openconnector',
+								'integriq',
 								'Source instantiated — find it on the Sources page',
 							)
-						: t('openconnector', 'Feature enabled')
+						: t('integriq', 'Feature enabled')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Action failed')
+					t('integriq', 'Action failed')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.actionRunning = false

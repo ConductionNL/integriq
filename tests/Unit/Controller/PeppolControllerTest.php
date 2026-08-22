@@ -104,7 +104,7 @@ class PeppolControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new PeppolController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->transmissionService,
 			$this->signatureService,
@@ -125,7 +125,7 @@ class PeppolControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->controller = new PeppolController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->transmissionService,
 			$this->signatureService,

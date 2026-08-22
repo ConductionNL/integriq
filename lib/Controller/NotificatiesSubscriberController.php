@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Notificaties Subscriber Controller.
+ * Integriq Notificaties Subscriber Controller.
  *
  * REST controller for the notificaties-api-subscriber capability: abonnement
  * CRUD (authenticated NC-session, action-RBAC gated) and the inbound ZGW
@@ -11,7 +11,7 @@
  * endpoint-runtime target; see design.md Decision 1).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,19 +20,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;

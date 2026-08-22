@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log SMS Provider.
+ * Integriq Log SMS Provider.
  *
  * Sandbox/mock binding for {@see SmsProviderInterface}: performs no real
  * network call, needs no credential, and returns a synthetic `MOCK-SMS-<n>`
@@ -10,7 +10,7 @@
  * LogPeppolAccessPointProvider / LogPsd2AggregatorProvider.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Sms
+ * @package  OCA\Integriq\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Sms;
+namespace OCA\Integriq\Service\Sms;
 
 /**
  * Sandbox SMS provider: no network call, synthetic message ids, canned status.

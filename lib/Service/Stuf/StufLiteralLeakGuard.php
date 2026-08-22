@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Shared StUF Literal-Leak Guard.
+ * Integriq Shared StUF Literal-Leak Guard.
  *
  * Defense-in-depth scan for leftover unresolved template markers in a
  * rendered outbound envelope, shared by every StUF-family bridge in this
@@ -14,7 +14,7 @@
  * defence-in-depth string scan is genuinely shared, identical logic.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Stuf
+ * @package  OCA\Integriq\Service\Stuf
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Stuf;
+namespace OCA\Integriq\Service\Stuf;
 
 /**
  * Scans a rendered XML string for leftover unresolved template markers.

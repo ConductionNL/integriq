@@ -61,13 +61,13 @@
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSaveOutline v-else :size="20" />
 				</template>
-				{{ t('openconnector', 'Save changes') }}
+				{{ t('integriq', 'Save changes') }}
 			</NcButton>
 			<NcButton v-if="dirty" :disabled="saving" @click="resetEdits">
 				<template #icon>
 					<UndoIcon :size="20" />
 				</template>
-				{{ t('openconnector', 'Discard') }}
+				{{ t('integriq', 'Discard') }}
 			</NcButton>
 		</template>
 
@@ -86,20 +86,20 @@
 				<section class="sync-detail__card sync-detail__source">
 					<header class="sync-detail__card-header">
 						<DatabaseArrowRightOutline :size="22" />
-						<h3>{{ t('openconnector', 'Source') }}</h3>
+						<h3>{{ t('integriq', 'Source') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
-						{{ t('openconnector', 'Configure where data comes from.') }}
+						{{ t('integriq', 'Configure where data comes from.') }}
 					</p>
 
 					<!-- Source type discriminator -->
 					<div class="sync-detail__field">
 						<label for="sync-source-type" class="sync-detail__label">
-							{{ t('openconnector', 'Source type') }}
+							{{ t('integriq', 'Source type') }}
 						</label>
 						<NcSelect
 							inputId="sync-source-type"
-							:aria-label-combobox="t('openconnector', 'Source type')"
+							:aria-label-combobox="t('integriq', 'Source type')"
 							:modelValue="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
@@ -120,11 +120,11 @@
 					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
 					<div class="sync-detail__field">
 						<label for="sync-mode" class="sync-detail__label">
-							{{ t('openconnector', 'Sync mode') }}
+							{{ t('integriq', 'Sync mode') }}
 						</label>
 						<NcSelect
 							inputId="sync-mode"
-							:aria-label-combobox="t('openconnector', 'Sync mode')"
+							:aria-label-combobox="t('integriq', 'Sync mode')"
 							:modelValue="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
@@ -132,7 +132,7 @@
 						<span class="sync-detail__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.',
 								)
 							}}
@@ -142,9 +142,9 @@
 					<template v-if="isIncremental">
 						<div class="sync-detail__field">
 							<NcTextField
-								:label="t('openconnector', 'Cursor field')"
+								:label="t('integriq', 'Cursor field')"
 								:modelValue="draft.sourceConfig.cursorField || ''"
-								:placeholder="t('openconnector', 'e.g. updatedAt')"
+								:placeholder="t('integriq', 'e.g. updatedAt')"
 								@update:modelValue="
 									(value) =>
 										updateSourceConfigField('cursorField', value)
@@ -155,12 +155,12 @@
 							<label
 								for="sync-cursor-comparator"
 								class="sync-detail__label">
-								{{ t('openconnector', 'Cursor comparator') }}
+								{{ t('integriq', 'Cursor comparator') }}
 							</label>
 							<NcSelect
 								inputId="sync-cursor-comparator"
 								:aria-label-combobox="
-									t('openconnector', 'Cursor comparator')
+									t('integriq', 'Cursor comparator')
 								"
 								:modelValue="selectedCursorComparator"
 								:options="cursorComparatorOptions"
@@ -169,14 +169,14 @@
 
 						<div class="sync-detail__field">
 							<span class="sync-detail__label">{{
-								t('openconnector', 'Cursor watermark')
+								t('integriq', 'Cursor watermark')
 							}}</span>
 							<span class="sync-detail__helper">
 								{{
 									original && original.cursorWatermark
 										? original.cursorWatermark
 										: t(
-												'openconnector',
+												'integriq',
 												'(not set — the next run requests an unfiltered fetch)',
 											)
 								}}
@@ -190,7 +190,7 @@
 								"
 								:title="
 									t(
-										'openconnector',
+										'integriq',
 										'Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.',
 									)
 								"
@@ -201,7 +201,7 @@
 										:size="20" />
 									<RestoreIcon v-else :size="20" />
 								</template>
-								{{ t('openconnector', 'Reset cursor') }}
+								{{ t('integriq', 'Reset cursor') }}
 							</NcButton>
 						</div>
 					</template>
@@ -210,12 +210,12 @@
 				<section class="sync-detail__card sync-detail__general">
 					<header class="sync-detail__card-header">
 						<CogOutline :size="22" />
-						<h3>{{ t('openconnector', 'General') }}</h3>
+						<h3>{{ t('integriq', 'General') }}</h3>
 					</header>
 
 					<div class="sync-detail__field">
 						<NcTextField
-							:label="t('openconnector', 'Name')"
+							:label="t('integriq', 'Name')"
 							:modelValue="draft.name || ''"
 							required
 							@update:modelValue="
@@ -225,7 +225,7 @@
 
 					<div class="sync-detail__field">
 						<label for="sync-description" class="sync-detail__label">
-							{{ t('openconnector', 'Description') }}
+							{{ t('integriq', 'Description') }}
 						</label>
 						<textarea
 							id="sync-description"
@@ -241,17 +241,17 @@
 					<div class="sync-detail__flow">
 						<span class="sync-detail__flow-step">
 							<DatabaseArrowRightOutline :size="18" />
-							{{ t('openconnector', 'Source') }}
+							{{ t('integriq', 'Source') }}
 						</span>
 						<ArrowRight :size="18" />
 						<span class="sync-detail__flow-step">
 							<SwapHorizontal :size="18" />
-							{{ t('openconnector', 'Transform') }}
+							{{ t('integriq', 'Transform') }}
 						</span>
 						<ArrowRight :size="18" />
 						<span class="sync-detail__flow-step">
 							<DatabaseArrowLeftOutline :size="18" />
-							{{ t('openconnector', 'Target') }}
+							{{ t('integriq', 'Target') }}
 						</span>
 					</div>
 				</section>
@@ -259,22 +259,22 @@
 				<section class="sync-detail__card sync-detail__target">
 					<header class="sync-detail__card-header">
 						<DatabaseArrowLeftOutline :size="22" />
-						<h3>{{ t('openconnector', 'Target') }}</h3>
+						<h3>{{ t('integriq', 'Target') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
 						{{
-							t('openconnector', 'Configure where data is written to.')
+							t('integriq', 'Configure where data is written to.')
 						}}
 					</p>
 
 					<!-- Target type discriminator -->
 					<div class="sync-detail__field">
 						<label for="sync-target-type" class="sync-detail__label">
-							{{ t('openconnector', 'Target type') }}
+							{{ t('integriq', 'Target type') }}
 						</label>
 						<NcSelect
 							inputId="sync-target-type"
-							:aria-label-combobox="t('openconnector', 'Target type')"
+							:aria-label-combobox="t('integriq', 'Target type')"
 							:modelValue="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
@@ -299,7 +299,7 @@
 				<section class="sync-detail__card sync-detail__mapping">
 					<header class="sync-detail__card-header">
 						<SwapHorizontal :size="22" />
-						<h3>{{ t('openconnector', 'Mapping') }}</h3>
+						<h3>{{ t('integriq', 'Mapping') }}</h3>
 					</header>
 
 					<!-- #mapping-picker-widget -->
@@ -321,12 +321,12 @@
 				<section class="sync-detail__card sync-detail__actions">
 					<header class="sync-detail__card-header">
 						<PlayCircleOutline :size="22" />
-						<h3>{{ t('openconnector', 'Actions') }}</h3>
+						<h3>{{ t('integriq', 'Actions') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Rules applied during each sync pass.',
 							)
 						}}
@@ -338,21 +338,21 @@
 						labelKey="name"
 						:value="draft.actions"
 						:placeholder="
-							t('openconnector', 'Pick rules to run during sync')
+							t('integriq', 'Pick rules to run during sync')
 						"
-						:emptyLabel="t('openconnector', 'No rules linked yet.')"
+						:emptyLabel="t('integriq', 'No rules linked yet.')"
 						@input="(value) => updateDraft('actions', value)" />
 				</section>
 
 				<section class="sync-detail__card sync-detail__followups">
 					<header class="sync-detail__card-header">
 						<CallSplit :size="22" />
-						<h3>{{ t('openconnector', 'Follow-ups') }}</h3>
+						<h3>{{ t('integriq', 'Follow-ups') }}</h3>
 					</header>
 					<p class="sync-detail__hint">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Synchronizations to trigger when this one completes.',
 							)
 						}}
@@ -365,9 +365,9 @@
 						:value="draft.followUps"
 						:excludeId="objectIdString"
 						:placeholder="
-							t('openconnector', 'Pick follow-up synchronizations')
+							t('integriq', 'Pick follow-up synchronizations')
 						"
-						:emptyLabel="t('openconnector', 'No follow-ups linked yet.')"
+						:emptyLabel="t('integriq', 'No follow-ups linked yet.')"
 						@input="(value) => updateDraft('followUps', value)" />
 				</section>
 			</div>
@@ -377,18 +377,18 @@
 				<section class="sync-detail__card sync-detail__conditions">
 					<header class="sync-detail__card-header">
 						<FilterVariant :size="22" />
-						<h3>{{ t('openconnector', 'Conditions') }}</h3>
+						<h3>{{ t('integriq', 'Conditions') }}</h3>
 						<div class="sync-detail__card-header-spacer" />
 						<NcButton
 							variant="tertiary"
 							:aria-label="
 								rawConditions
 									? t(
-											'openconnector',
+											'integriq',
 											'Switch back to visual builder',
 										)
 									: t(
-											'openconnector',
+											'integriq',
 											'Edit conditions as raw JSON',
 										)
 							"
@@ -398,15 +398,15 @@
 							</template>
 							{{
 								rawConditions
-									? t('openconnector', 'Visual builder')
-									: t('openconnector', 'Raw JSON')
+									? t('integriq', 'Visual builder')
+									: t('integriq', 'Raw JSON')
 							}}
 						</NcButton>
 					</header>
 					<p class="sync-detail__hint">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.',
 							)
 						}}
@@ -418,7 +418,7 @@
 						@update="onConditionsUpdate" />
 					<div v-else class="sync-detail__raw-conditions">
 						<label class="sync-detail__label" for="sync-raw-conditions">
-							{{ t('openconnector', 'Conditions (JSON Logic)') }}
+							{{ t('integriq', 'Conditions (JSON Logic)') }}
 						</label>
 						<textarea
 							id="sync-raw-conditions"
@@ -435,7 +435,7 @@
 							{{
 								rawConditionsError
 								|| t(
-									'openconnector',
+									'integriq',
 									'Edit the JSON Logic directly. Saved into the synchronization conditions field exactly as typed.',
 								)
 							}}
@@ -612,7 +612,7 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		title() {
 			if (this.draft?.name) return this.draft.name
-			return this.original?.name || t('openconnector', 'Synchronization')
+			return this.original?.name || t('integriq', 'Synchronization')
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -628,7 +628,7 @@ export default {
 		errorMessage() {
 			return (
 				this.loadError
-				|| t('openconnector', 'Failed to load synchronization')
+				|| t('integriq', 'Failed to load synchronization')
 			)
 		},
 
@@ -840,7 +840,7 @@ export default {
 				if (!data) {
 					this.loadError =
 						this.objectStore.errors?.[this.schemaSlug]
-						|| t('openconnector', 'Failed to load synchronization')
+						|| t('integriq', 'Failed to load synchronization')
 					this.draft = null
 					this.original = null
 					return
@@ -853,7 +853,7 @@ export default {
 			} catch (err) {
 				this.loadError =
 					err?.message
-					|| t('openconnector', 'Failed to load synchronization')
+					|| t('integriq', 'Failed to load synchronization')
 				this.draft = null
 				this.original = null
 			} finally {
@@ -959,7 +959,7 @@ export default {
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
 				this.rawConditionsError = t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -1086,14 +1086,14 @@ export default {
 			try {
 				const response = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`,
+						`/apps/integriq/api/synchronizations/${this.objectIdString}/reset-cursor`,
 					),
 				)
 				const cleared = response.data?.cursorWatermark ?? ''
 				if (this.original) this.original.cursorWatermark = cleared
 				showSuccess(
 					t(
-						'openconnector',
+						'integriq',
 						'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.',
 					),
 				)
@@ -1101,7 +1101,7 @@ export default {
 				showError(
 					err?.response?.data?.error
 						|| err?.message
-						|| t('openconnector', 'Failed to reset cursor'),
+						|| t('integriq', 'Failed to reset cursor'),
 				)
 			} finally {
 				this.resettingCursor = false
@@ -1129,13 +1129,13 @@ export default {
 				if (!saved) {
 					this.saveError =
 						this.objectStore.errors?.[this.schemaSlug]
-						|| t('openconnector', 'Save failed')
+						|| t('integriq', 'Save failed')
 					return
 				}
 				this.original = saved
 				this.draft = this.normalizeForDiff(saved)
 			} catch (err) {
-				this.saveError = err?.message || t('openconnector', 'Save failed')
+				this.saveError = err?.message || t('integriq', 'Save failed')
 			} finally {
 				this.saving = false
 			}

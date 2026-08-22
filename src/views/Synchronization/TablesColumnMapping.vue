@@ -23,12 +23,12 @@
 	<div class="tables-column-mapping">
 		<header class="tables-column-mapping__header">
 			<h4 class="tables-column-mapping__title">
-				{{ t('openconnector', 'Column mapping') }}
+				{{ t('integriq', 'Column mapping') }}
 			</h4>
 			<span class="tables-column-mapping__hint">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Map each table column to a source field or Twig expression. Leave blank to skip a column.',
 					)
 				}}
@@ -42,7 +42,7 @@
 		</span>
 
 		<span v-else-if="columns.length === 0" class="tables-column-mapping__empty">
-			{{ t('openconnector', 'This table has no columns to map.') }}
+			{{ t('integriq', 'This table has no columns to map.') }}
 		</span>
 
 		<div
@@ -56,7 +56,7 @@
 					<span
 						v-if="column.mandatory"
 						class="tables-column-mapping__required"
-						:title="t('openconnector', 'Required column')"
+						:title="t('integriq', 'Required column')"
 						>*</span
 					>
 				</span>
@@ -66,12 +66,12 @@
 			</div>
 			<NcTextField
 				:label="
-					t('openconnector', 'Value for {column}', {
+					t('integriq', 'Value for {column}', {
 						column: column.title,
 					})
 				"
 				:modelValue="mappedValue(column.title)"
-				:placeholder="t('openconnector', 'Source field or expression')"
+				:placeholder="t('integriq', 'Source field or expression')"
 				@update:modelValue="
 					(value) => onMappingUpdate(column.title, value)
 				" />
@@ -193,7 +193,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openconnector/api/synchronizations/tables-bridge/tables/{tableId}/columns',
+						'/apps/integriq/api/synchronizations/tables-bridge/tables/{tableId}/columns',
 						{ tableId: this.tableId },
 					),
 					{ params: { sourceId: this.sourceId } },
@@ -203,7 +203,7 @@ export default {
 				this.columns = []
 				this.columnsError =
 					err?.response?.data?.error
-					|| t('openconnector', 'Could not load columns for this table.')
+					|| t('integriq', 'Could not load columns for this table.')
 				// eslint-disable-next-line no-console
 				console.warn('[TablesColumnMapping] columns fetch failed', err)
 			} finally {

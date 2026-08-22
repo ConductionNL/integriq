@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Source Call flow node.
+ * Integriq Source Call flow node.
  *
  * `openconnector.source-call` — one governed outbound HTTP request per flow
  * item, made through a CONFIGURED SOURCE and the existing `CallService`.
@@ -40,7 +40,7 @@
  * burying it in a downstream conditional.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -51,18 +51,18 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use GuzzleHttp\Promise\PromiseInterface;
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -87,12 +87,22 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * The step type this node answers to.
 	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
+	 *
 	 * @var string
 	 */
 	public const NODE_ID = 'openconnector.source-call';
 
 	/**
 	 * The OpenRegister register Sources live in.
+	 *
+	 * FROZEN: this is the OpenRegister register SLUG, not this app's id. It
+	 * stays `openconnector` across the app-id rename — OpenRegister matches
+	 * registers by slug, so renaming it would resolve to a fresh, empty
+	 * register and orphan every stored Source.
 	 *
 	 * @var string
 	 */
@@ -182,14 +192,14 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-source-call.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-source-call.svg');
 	}//end getIcon()
 
 	/**
 	 * The links a call this node made earns in the run log.
 	 *
 	 * An operator reading a failed call wants the Source it went to and the
-	 * call log it wrote — both of which openconnector owns and OpenRegister
+	 * call log it wrote — both of which Integriq owns and OpenRegister
 	 * could not know about.
 	 *
 	 * Read from the step's recorded OUTPUT, which is where `outcomeOf()` puts
@@ -221,7 +231,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// no route entry at all, and `linkToRoute()` on a name that does not
 		// exist throws, which would take out the whole log rather than one
 		// link.
-		$root = $this->urlGenerator->linkToRoute('openconnector.ui.dashboard', ['path' => '']);
+		$root = $this->urlGenerator->linkToRoute('integriq.ui.dashboard', ['path' => '']);
 
 		$actions = [];
 		$sourceId = trim((string)($json['sourceId'] ?? ''));

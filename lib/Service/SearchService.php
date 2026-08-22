@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector SearchService.
+ * Integriq SearchService.
  *
  * Federated/aggregated search helper for catalog data, backed by Elasticsearch
  * and directory fan-out across remote catalog endpoints.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise\Utils;

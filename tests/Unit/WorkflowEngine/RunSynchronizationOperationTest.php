@@ -4,7 +4,7 @@
  * Unit tests for RunSynchronizationOperation.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\WorkflowEngine
+ * @package  OCA\Integriq\Tests\Unit\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\WorkflowEngine;
+namespace OCA\Integriq\Tests\Unit\WorkflowEngine;
 
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\WorkflowEngine\RunSynchronizationOperation;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\WorkflowEngine\RunSynchronizationOperation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;

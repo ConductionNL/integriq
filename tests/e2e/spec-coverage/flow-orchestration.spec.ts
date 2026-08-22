@@ -134,8 +134,8 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  * router-less `php -S` server).
  *
  * Measured 2026-08-16: on this Apache-based dev container, a DEEP path
- * under `/index.php/apps/openconnector/<route>` (e.g. `/traces/<id>`)
- * redirects to the bare `/apps/openconnector/` app root, discarding the
+ * under `/index.php/apps/integriq/<route>` (e.g. `/traces/<id>`)
+ * redirects to the bare `/apps/integriq/` app root, discarding the
  * route — a real, pre-existing Nextcloud redirect that path-mode routing
  * now exposes (hash-mode was accidentally immune: a fragment with no
  * `#` of its own in the redirect's Location header is re-appended by the
@@ -148,7 +148,7 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  *
  * 🔴 The probe it originally used (try each candidate, take the first that
  * serves the SPA shell) could not do that job: BOTH prefixes serve the
- * identical shell, so it always returned `/apps/openconnector` — right for
+ * identical shell, so it always returned `/apps/integriq` — right for
  * this dev container by luck, wrong for CI, where the router base is the
  * `/index.php/` form. The two tests in this file that used it failed in CI
  * while the two that use `APP_BASE` passed, in the same run — a controlled

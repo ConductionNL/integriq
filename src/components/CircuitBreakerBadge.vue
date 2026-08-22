@@ -31,13 +31,13 @@
 				data-testid="circuit-breaker-state">
 				{{
 					isOpen
-						? t('openconnector', 'Circuit open')
-						: t('openconnector', 'Circuit closed')
+						? t('integriq', 'Circuit open')
+						: t('integriq', 'Circuit closed')
 				}}
 			</span>
 			<span class="circuitBreaker__failures">
 				{{
-					t('openconnector', 'Failures: {count}', { count: failureCount })
+					t('integriq', 'Failures: {count}', { count: failureCount })
 				}}
 			</span>
 			<span
@@ -45,7 +45,7 @@
 				class="circuitBreaker__cooldown"
 				data-testid="circuit-breaker-cooldown">
 				{{
-					t('openconnector', 'Cooldown: {seconds}s', {
+					t('integriq', 'Cooldown: {seconds}s', {
 						seconds: cooldownRemaining,
 					})
 				}}
@@ -56,7 +56,7 @@
 				:disabled="busy || !objectId"
 				data-testid="circuit-breaker-reset"
 				@click="reset">
-				{{ t('openconnector', 'Reset breaker') }}
+				{{ t('integriq', 'Reset breaker') }}
 			</NcButton>
 		</div>
 	</div>
@@ -207,15 +207,15 @@ export default {
 			try {
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/sources/${this.objectId}/circuit-breaker/reset`,
+						`/apps/integriq/api/sources/${this.objectId}/circuit-breaker/reset`,
 					),
 				)
 				this.localState = res.data?.circuitBreakerState || 'closed'
-				showSuccess(t('openconnector', 'Circuit breaker reset'))
+				showSuccess(t('integriq', 'Circuit breaker reset'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Failed to reset circuit breaker')
+					t('integriq', 'Failed to reset circuit breaker')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

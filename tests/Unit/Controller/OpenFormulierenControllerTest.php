@@ -88,7 +88,7 @@ class OpenFormulierenControllerTest extends TestCase {
 
 	private function buildController(): OpenFormulierenController {
 		return new OpenFormulierenController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->intakeService,
 			$this->signatureService,

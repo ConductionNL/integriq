@@ -61,7 +61,7 @@ class EudiIssuerKeyAdminControllerTest extends TestCase {
 		$this->offerService->method('resolveOrganisationId')->willReturn('org-1');
 
 		$this->controller = new EudiIssuerKeyAdminController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->keyService,
 			$this->offerService,

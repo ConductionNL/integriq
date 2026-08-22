@@ -26,12 +26,12 @@
 	<div class="forms-field-mapping">
 		<header class="forms-field-mapping__header">
 			<h4 class="forms-field-mapping__title">
-				{{ t('openconnector', 'Form questions') }}
+				{{ t('integriq', 'Form questions') }}
 			</h4>
 			<span class="forms-field-mapping__hint">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Reference a question by id or exact text in your Mapping or outbound action configuration.',
 					)
 				}}
@@ -45,7 +45,7 @@
 		</span>
 
 		<span v-else-if="questions.length === 0" class="forms-field-mapping__empty">
-			{{ t('openconnector', 'This form has no questions to reference.') }}
+			{{ t('integriq', 'This form has no questions to reference.') }}
 		</span>
 
 		<ul v-else class="forms-field-mapping__list">
@@ -65,12 +65,12 @@
 				<span
 					v-if="isArrayValued(question)"
 					class="forms-field-mapping__badge forms-field-mapping__badge--array">
-					{{ t('openconnector', 'array') }}
+					{{ t('integriq', 'array') }}
 				</span>
 				<span
 					v-if="isAmbiguous(question)"
 					class="forms-field-mapping__badge forms-field-mapping__badge--ambiguous">
-					{{ t('openconnector', 'ambiguous text — reference by id') }}
+					{{ t('integriq', 'ambiguous text — reference by id') }}
 				</span>
 			</li>
 		</ul>
@@ -176,7 +176,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openconnector/api/synchronizations/forms-bridge/forms/{formId}/questions',
+						'/apps/integriq/api/synchronizations/forms-bridge/forms/{formId}/questions',
 						{ formId: this.formId },
 					),
 					{ params: { sourceId: this.sourceId } },
@@ -188,7 +188,7 @@ export default {
 				this.questions = []
 				this.questionsError =
 					err?.response?.data?.error
-					|| t('openconnector', 'Could not load questions for this form.')
+					|| t('integriq', 'Could not load questions for this form.')
 				// eslint-disable-next-line no-console
 				console.warn('[FormsFieldMapping] questions fetch failed', err)
 			} finally {

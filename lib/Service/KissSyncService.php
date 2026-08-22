@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector KISS Sync Service.
+ * Integriq KISS Sync Service.
  *
  * Core of the kiss-kcc-bridge: resolves the configured KISS
  * (Klantinteractie Servicesysteem) source + provider binding, runs the
@@ -13,7 +13,7 @@
  * and {@see PeppolTransmissionService} (provider seam + REST surface).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,21 +22,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\KissProviderException;
-use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
-use OCA\OpenConnector\Service\Kiss\KlantinteractiesProviderInterface;
-use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
+use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
+use OCA\Integriq\Service\Kiss\KlantinteractiesProviderInterface;
+use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -58,6 +58,8 @@ class KissSyncService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**

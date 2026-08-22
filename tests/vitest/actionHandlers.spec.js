@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Unit tests for the manifest row-action handlers (src/handlers/actionHandlers.js):
@@ -13,7 +13,7 @@
  * RunActionModal, which owns the request. `runFlowHandler`, the last
  * handler that still POSTed+toasted directly, was removed 2026-08-16 — its
  * manifest action no longer exists (Flows moved to the shared canvas,
- * flow-engine-unification task 6.2; see openconnector#1255).
+ * flow-engine-unification task 6.2; see integriq#1255).
  *
  * @nextcloud/axios + @nextcloud/dialogs are still mocked (kept for the
  * "fires no request and no toast" assertions below) even though nothing

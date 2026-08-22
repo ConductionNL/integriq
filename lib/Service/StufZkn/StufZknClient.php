@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Client.
+ * Integriq StUF-ZKN Client.
  *
  * Thin binding for {@see StufZknProviderInterface} against a subscribed
  * legacy StUF consumer's inbound endpoint. Deliberately a hand-rolled HTTP
  * client (Guzzle, already an app dependency) rather than a SOAP/XSD library
- * dependency — mirrors {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient}
- * and {@see \OCA\OpenConnector\Service\Dso\DsoClient}.
+ * dependency — mirrors {@see \OCA\Integriq\Service\IwmoIjw\IStandardsClient}
+ * and {@see \OCA\Integriq\Service\Dso\DsoClient}.
  *
  * ASSUMED TRANSPORT SHAPE — no live municipal StUF-ZKN endpoint was
  * available to verify against in this environment; every endpoint/header
@@ -26,7 +26,7 @@
  * mTLS: real StUF-ZKN deployments overwhelmingly run over PKIoverheid
  * mutual-TLS (municipal Suwinet/Digikoppeling-style network trust), so this
  * client dispatches through the SAME shared
- * {@see \OCA\OpenConnector\Service\Mtls\MtlsTransportService} +
+ * {@see \OCA\Integriq\Service\Mtls\MtlsTransportService} +
  * `authentication.mode` (`token`|`mtls`) pattern already proven by
  * `IStandardsClient`/`FscDirectoryClient`/`DsoClient` — never a new,
  * bespoke TLS implementation. Token mode remains available as the
@@ -41,7 +41,7 @@
  * logged, never persisted decrypted).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -50,22 +50,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Exception\StufZknProviderException;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
-use OCA\OpenConnector\Service\Stuf\StufXmlParser;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Service\Stuf\StufXmlParser;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;

@@ -23,7 +23,7 @@
 <template>
 	<div class="apiProductDetail">
 		<NcButton variant="tertiary" class="apiProductDetail__back" @click="goBack">
-			{{ t('openconnector', 'Back to API Products') }}
+			{{ t('integriq', 'Back to API Products') }}
 		</NcButton>
 
 		<NcLoadingIcon v-if="loading" :size="32" class="apiProductDetail__loading" />
@@ -41,7 +41,7 @@
 				v-if="product.status === 'deprecated'"
 				class="apiProductDetail__sunsetNotice">
 				{{
-					t('openconnector', 'Deprecated — sunset {date}', {
+					t('integriq', 'Deprecated — sunset {date}', {
 						date: product.sunsetDate || '—',
 					})
 				}}
@@ -49,65 +49,65 @@
 
 			<!-- Endpoint picker -->
 			<section class="apiProductDetail__section">
-				<h3>{{ t('openconnector', 'Endpoints') }}</h3>
+				<h3>{{ t('integriq', 'Endpoints') }}</h3>
 				<ul class="apiProductDetail__list">
 					<li v-for="id in productEndpoints" :key="id">
 						{{ endpointLabel(id) }}
 						<NcButton
 							variant="tertiary"
-							:aria-label="t('openconnector', 'Remove endpoint')"
+							:aria-label="t('integriq', 'Remove endpoint')"
 							@click="removeEndpoint(id)">
-							{{ t('openconnector', 'Remove') }}
+							{{ t('integriq', 'Remove') }}
 						</NcButton>
 					</li>
 					<li
 						v-if="productEndpoints.length === 0"
 						class="apiProductDetail__empty">
-						{{ t('openconnector', 'No endpoints attached yet.') }}
+						{{ t('integriq', 'No endpoints attached yet.') }}
 					</li>
 				</ul>
 				<label :for="'apiProductDetail-endpoint-select-' + uid">
-					{{ t('openconnector', 'Add endpoints') }}
+					{{ t('integriq', 'Add endpoints') }}
 				</label>
 				<NcSelect
 					:id="'apiProductDetail-endpoint-select-' + uid"
 					v-model="selectedEndpoints"
 					:inputId="'apiProductDetail-endpoint-select-input-' + uid"
-					:inputLabel="t('openconnector', 'Add endpoints')"
-					:aria-label-combobox="t('openconnector', 'Add endpoints')"
+					:inputLabel="t('integriq', 'Add endpoints')"
+					:aria-label-combobox="t('integriq', 'Add endpoints')"
 					:options="availableEndpointOptions"
 					:loading="loadingEndpoints"
 					:multiple="true"
 					:clearable="true"
 					:placeholder="
-						t('openconnector', 'Pick one or more endpoints')
+						t('integriq', 'Pick one or more endpoints')
 					" />
 				<NcButton
 					variant="primary"
 					:disabled="selectedEndpoints.length === 0 || saving"
 					@click="addSelectedEndpoints">
-					{{ t('openconnector', 'Add') }}
+					{{ t('integriq', 'Add') }}
 				</NcButton>
 			</section>
 
 			<!-- Tier editor -->
 			<section class="apiProductDetail__section">
-				<h3>{{ t('openconnector', 'Tiers') }}</h3>
+				<h3>{{ t('integriq', 'Tiers') }}</h3>
 				<table class="apiProductDetail__table">
 					<thead>
 						<tr>
-							<th scope="col">{{ t('openconnector', 'Name') }}</th>
+							<th scope="col">{{ t('integriq', 'Name') }}</th>
 							<th scope="col">
-								{{ t('openconnector', 'Requests / window') }}
+								{{ t('integriq', 'Requests / window') }}
 							</th>
 							<th scope="col">
-								{{ t('openconnector', 'Window (s)') }}
+								{{ t('integriq', 'Window (s)') }}
 							</th>
 							<th scope="col">
-								{{ t('openconnector', 'Requires approval') }}
+								{{ t('integriq', 'Requires approval') }}
 							</th>
 							<th scope="col">
-								{{ t('openconnector', 'Approver group') }}
+								{{ t('integriq', 'Approver group') }}
 							</th>
 							<th />
 						</tr>
@@ -131,17 +131,17 @@
 							<td>
 								{{
 									tier.requiresApproval
-										? t('openconnector', 'Yes')
-										: t('openconnector', 'No')
+										? t('integriq', 'Yes')
+										: t('integriq', 'No')
 								}}
 							</td>
 							<td>{{ tier.approverGroup || '—' }}</td>
 							<td>
 								<NcButton
 									variant="tertiary"
-									:aria-label="t('openconnector', 'Remove tier')"
+									:aria-label="t('integriq', 'Remove tier')"
 									@click="removeTier(name)">
-									{{ t('openconnector', 'Remove') }}
+									{{ t('integriq', 'Remove') }}
 								</NcButton>
 							</td>
 						</tr>
@@ -150,7 +150,7 @@
 
 				<form class="apiProductDetail__tierForm" @submit.prevent="addTier">
 					<label :for="'apiProductDetail-tier-name-' + uid">{{
-						t('openconnector', 'Tier name')
+						t('integriq', 'Tier name')
 					}}</label>
 					<input
 						:id="'apiProductDetail-tier-name-' + uid"
@@ -158,7 +158,7 @@
 						type="text" />
 
 					<label :for="'apiProductDetail-tier-rpw-' + uid">{{
-						t('openconnector', 'Requests / window')
+						t('integriq', 'Requests / window')
 					}}</label>
 					<input
 						:id="'apiProductDetail-tier-rpw-' + uid"
@@ -167,7 +167,7 @@
 						min="1" />
 
 					<label :for="'apiProductDetail-tier-window-' + uid">{{
-						t('openconnector', 'Window (seconds)')
+						t('integriq', 'Window (seconds)')
 					}}</label>
 					<input
 						:id="'apiProductDetail-tier-window-' + uid"
@@ -180,11 +180,11 @@
 							:id="'apiProductDetail-tier-approval-' + uid"
 							v-model="newTier.requiresApproval"
 							type="checkbox" />
-						{{ t('openconnector', 'Requires approval') }}
+						{{ t('integriq', 'Requires approval') }}
 					</label>
 
 					<label :for="'apiProductDetail-tier-group-' + uid">{{
-						t('openconnector', 'Approver group')
+						t('integriq', 'Approver group')
 					}}</label>
 					<input
 						:id="'apiProductDetail-tier-group-' + uid"
@@ -195,32 +195,32 @@
 						variant="primary"
 						type="submit"
 						:disabled="!newTier.name || saving">
-						{{ t('openconnector', 'Add tier') }}
+						{{ t('integriq', 'Add tier') }}
 					</NcButton>
 				</form>
 			</section>
 
 			<!-- Analytics panel -->
 			<section class="apiProductDetail__section">
-				<h3>{{ t('openconnector', 'Analytics') }}</h3>
+				<h3>{{ t('integriq', 'Analytics') }}</h3>
 				<NcLoadingIcon v-if="loadingAnalytics" :size="24" />
 				<dl
 					v-else-if="analytics"
 					class="apiProductDetail__fields"
 					data-testid="analytics-summary">
-					<dt>{{ t('openconnector', 'Requests') }}</dt>
+					<dt>{{ t('integriq', 'Requests') }}</dt>
 					<dd>{{ analytics.requestCount }}</dd>
-					<dt>{{ t('openconnector', 'Error rate') }}</dt>
+					<dt>{{ t('integriq', 'Error rate') }}</dt>
 					<dd>{{ formatPercent(analytics.errorRate) }}</dd>
-					<dt>{{ t('openconnector', 'p50 latency') }}</dt>
+					<dt>{{ t('integriq', 'p50 latency') }}</dt>
 					<dd>
 						{{ formatMs(analytics.latency && analytics.latency.p50) }}
 					</dd>
-					<dt>{{ t('openconnector', 'p95 latency') }}</dt>
+					<dt>{{ t('integriq', 'p95 latency') }}</dt>
 					<dd>
 						{{ formatMs(analytics.latency && analytics.latency.p95) }}
 					</dd>
-					<dt>{{ t('openconnector', 'p99 latency') }}</dt>
+					<dt>{{ t('integriq', 'p99 latency') }}</dt>
 					<dd>
 						{{ formatMs(analytics.latency && analytics.latency.p99) }}
 					</dd>
@@ -229,7 +229,7 @@
 
 			<!-- Subscriptions -->
 			<section class="apiProductDetail__section">
-				<h3>{{ t('openconnector', 'Subscriptions') }}</h3>
+				<h3>{{ t('integriq', 'Subscriptions') }}</h3>
 				<ul class="apiProductDetail__list">
 					<li v-for="sub in subscriptions" :key="sub.id || sub.uuid">
 						{{ sub.consumer }} — {{ sub.tier }} — {{ sub.status }}
@@ -238,20 +238,20 @@
 								variant="primary"
 								:disabled="busy"
 								@click="approveSubscription(sub)">
-								{{ t('openconnector', 'Approve') }}
+								{{ t('integriq', 'Approve') }}
 							</NcButton>
 							<NcButton
 								variant="error"
 								:disabled="busy"
 								@click="rejectSubscription(sub)">
-								{{ t('openconnector', 'Reject') }}
+								{{ t('integriq', 'Reject') }}
 							</NcButton>
 						</template>
 					</li>
 					<li
 						v-if="subscriptions.length === 0"
 						class="apiProductDetail__empty">
-						{{ t('openconnector', 'No subscriptions yet.') }}
+						{{ t('integriq', 'No subscriptions yet.') }}
 					</li>
 				</ul>
 			</section>
@@ -259,8 +259,8 @@
 
 		<NcEmptyContent
 			v-else
-			:name="t('openconnector', 'API product not found')"
-			:description="t('openconnector', 'It may have been removed.')">
+			:name="t('integriq', 'API product not found')"
+			:description="t('integriq', 'It may have been removed.')">
 			<template #icon>
 				<AlertCircleOutline :size="48" />
 			</template>
@@ -456,7 +456,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						`/apps/openconnector/api/products/${this.productId}/analytics`,
+						`/apps/integriq/api/products/${this.productId}/analytics`,
 					),
 				)
 				this.analytics = res.data
@@ -515,7 +515,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.message || err?.message || ''
 				showError(
-					t('openconnector', 'Failed to update API product')
+					t('integriq', 'Failed to update API product')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {
@@ -533,7 +533,7 @@ export default {
 			)
 			await this.saveProductField('endpoints', merged)
 			this.selectedEndpoints = []
-			showSuccess(t('openconnector', 'Endpoint(s) added'))
+			showSuccess(t('integriq', 'Endpoint(s) added'))
 		},
 
 		/**
@@ -572,7 +572,7 @@ export default {
 				requiresApproval: false,
 				approverGroup: '',
 			}
-			showSuccess(t('openconnector', 'Tier added'))
+			showSuccess(t('integriq', 'Tier added'))
 		},
 
 		/**
@@ -603,15 +603,15 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/approve`,
+						`/apps/integriq/api/products/subscriptions/${sub.id || sub.uuid}/approve`,
 					),
 				)
-				showSuccess(t('openconnector', 'Subscription approved'))
+				showSuccess(t('integriq', 'Subscription approved'))
 				await this.loadSubscriptions()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Approve failed')
+					t('integriq', 'Approve failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {
@@ -633,16 +633,16 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/products/subscriptions/${sub.id || sub.uuid}/reject`,
+						`/apps/integriq/api/products/subscriptions/${sub.id || sub.uuid}/reject`,
 					),
-					{ comment: t('openconnector', 'Rejected from API Products UI') },
+					{ comment: t('integriq', 'Rejected from API Products UI') },
 				)
-				showSuccess(t('openconnector', 'Subscription rejected'))
+				showSuccess(t('integriq', 'Subscription rejected'))
 				await this.loadSubscriptions()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Reject failed')
+					t('integriq', 'Reject failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

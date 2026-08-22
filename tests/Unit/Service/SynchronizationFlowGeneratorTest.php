@@ -16,7 +16,7 @@
  * that feature do NOT fire it.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,22 +25,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\SynchronizationNotMigratableException;
-use OCA\OpenConnector\Flow\ApplyMappingNode;
-use OCA\OpenConnector\Flow\ContractCommitNode;
-use OCA\OpenConnector\Flow\ContractMatchNode;
-use OCA\OpenConnector\Flow\ContractSweepNode;
-use OCA\OpenConnector\Flow\FetchFileNode;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SourcePaginateNode;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SynchronizationContractService;
-use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
-use OCA\OpenConnector\Service\SynchronizationActionRules;
-use OCA\OpenConnector\Service\SynchronizationSemanticRefusals;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\SynchronizationNotMigratableException;
+use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\ContractCommitNode;
+use OCA\Integriq\Flow\ContractMatchNode;
+use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\FetchFileNode;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SourcePaginateNode;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Service\SynchronizationActionRules;
+use OCA\Integriq\Service\SynchronizationSemanticRefusals;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;

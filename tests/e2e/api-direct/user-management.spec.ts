@@ -17,8 +17,8 @@ import * as http from 'http'
 import { BASE_URL, baseUrlParts } from '../support/baseUrl'
 
 const BASE = BASE_URL
-const ME_URL = '/index.php/apps/openconnector/api/user/me'
-const LOGIN_URL = '/index.php/apps/openconnector/api/user/login'
+const ME_URL = '/index.php/apps/integriq/api/user/me'
+const LOGIN_URL = '/index.php/apps/integriq/api/user/login'
 
 /** Make a raw HTTP POST with no Playwright cookies (avoids storageState bleed). */
 function rawPost(

@@ -15,7 +15,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);

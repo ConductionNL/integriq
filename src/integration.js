@@ -5,18 +5,18 @@
 //
 // Loaded on EVERY Nextcloud page via `\OCP\Util::addInitScript` (see
 // lib/AppInfo/Application.php) — NOT the per-app SPA. That's what lets
-// OpenConnector's "Synced from" leaf render inside OTHER apps' detail pages
-// (e.g. an OpenCatalogi publication) where OpenConnector's main SPA bundle is
+// Integriq's "Synced from" leaf render inside OTHER apps' detail pages
+// (e.g. an OpenCatalogi publication) where Integriq's main SPA bundle is
 // never loaded.
 //
-// RENDER MODE — `mount` (openregister#2127, ADR-066): OpenConnector is now Vue 3
+// RENDER MODE — `mount` (openregister#2127, ADR-066): Integriq is now Vue 3
 // while the OpenRegister/OpenBuild host that renders the integration registry
 // may still be Vue 2.7. A Vue-3 SFC handed to the host as `tab`/`widget` is
 // interpreted under the host's own (incompatible) Vue runtime and renders blank
 // — and because this leaf loads on EVERY NC page and renders in EVERY app's OR
 // sidebar fleet-wide, a bare Vue-3 SFC descriptor would crash the sidebar
 // fleet-wide. Instead the leaf ships a `mount(el, props)` / `unmount(el)` pair:
-// the host hands us a bare, host-owned DOM element and we root OpenConnector's
+// the host hands us a bare, host-owned DOM element and we root Integriq's
 // OWN Vue 3 app at it, so each side runs its own framework across the neutral
 // DOM boundary. No `tab`/`widget` SFC is registered — a mount-mode descriptor
 // renders through the pair, not the host's dynamic-component machinery.
@@ -43,7 +43,7 @@ const mountedApps = new Map()
 
 /**
  * Mount hand-off (renderMode 'mount'). The host hands us a bare, host-owned
- * element already in the DOM; we root OpenConnector's OWN Vue 3 app at it with
+ * element already in the DOM; we root Integriq's OWN Vue 3 app at it with
  * the forwarded object context as root props, so the leaf renders under its own
  * framework even if the host runs Vue 2.7. Idempotent per element.
  *
@@ -83,7 +83,7 @@ registerIntegration({
 	icon: 'SyncOutline',
 	group: 'workflow',
 	order: 50,
-	requiredApp: 'openconnector',
+	requiredApp: 'integriq',
 	// Vue 3 leaf under a possibly-Vue-2.7 host: render via the DOM mount
 	// hand-off, not an SFC the host would interpret under its own runtime
 	// (openregister#2127). `mount`/`unmount` travel as a pair; no `tab`/`widget`

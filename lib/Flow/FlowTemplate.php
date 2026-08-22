@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Template.
+ * Integriq Flow Template.
  *
  * A thin, node-local renderer for `{{dotted.path}}` placeholders resolved
  * against the CURRENT FLOW ITEM's `json` record. It exists because that
@@ -28,7 +28,7 @@
  * is string interpolation, and arrays interpolate as compact JSON.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,14 +39,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 /**
  * Renders `{{dotted.path}}` placeholders against a flow item's `json`.

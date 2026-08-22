@@ -22,12 +22,12 @@
 		data-testid="subscription-signing-modal"
 		@close="$emit('close')">
 		<div class="signing">
-			<h2>{{ t('openconnector', 'Webhook signing') }}</h2>
+			<h2>{{ t('integriq', 'Webhook signing') }}</h2>
 
 			<p class="signing__intro">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'When a signing secret is set, every delivery to this subscription carries an X-OpenConnector-Signature header receivers can verify.',
 					)
 				}}
@@ -40,33 +40,33 @@
 				<p class="signing__warn">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Copy this secret now — it is shown only once.',
 						)
 					}}
 				</p>
 				<code class="signing__secret">{{ revealed }}</code>
 				<NcButton @click="copy">
-					{{ t('openconnector', 'Copy') }}
+					{{ t('integriq', 'Copy') }}
 				</NcButton>
 			</div>
 			<p v-else class="signing__status">
 				{{
 					hasSecret
 						? t(
-								'openconnector',
+								'integriq',
 								'A signing secret is configured (hidden).',
 							)
-						: t('openconnector', 'No signing secret configured.')
+						: t('integriq', 'No signing secret configured.')
 				}}
 			</p>
 
 			<div class="signing__actions">
 				<NcButton variant="primary" :disabled="busy" @click="generate">
-					{{ t('openconnector', 'Generate signing secret') }}
+					{{ t('integriq', 'Generate signing secret') }}
 				</NcButton>
 				<NcButton v-if="hasSecret" :disabled="busy" @click="rotate">
-					{{ t('openconnector', 'Rotate secret') }}
+					{{ t('integriq', 'Rotate secret') }}
 				</NcButton>
 			</div>
 		</div>
@@ -142,7 +142,7 @@ export default {
 		async generate() {
 			await this.call(
 				'signing-secret',
-				t('openconnector', 'Signing secret generated'),
+				t('integriq', 'Signing secret generated'),
 			)
 		},
 
@@ -154,7 +154,7 @@ export default {
 		async rotate() {
 			await this.call(
 				'signing-secret/rotate',
-				t('openconnector', 'Signing secret rotated'),
+				t('integriq', 'Signing secret rotated'),
 			)
 		},
 
@@ -174,7 +174,7 @@ export default {
 			try {
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/events/subscriptions/${id}/${path}`,
+						`/apps/integriq/api/events/subscriptions/${id}/${path}`,
 					),
 				)
 				this.revealed = res.data?.signingSecret || ''
@@ -184,7 +184,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Signing operation failed')
+					t('integriq', 'Signing operation failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {
@@ -200,7 +200,7 @@ export default {
 		copy() {
 			if (navigator?.clipboard && this.revealed) {
 				navigator.clipboard.writeText(this.revealed)
-				showSuccess(t('openconnector', 'Copied to clipboard'))
+				showSuccess(t('integriq', 'Copied to clipboard'))
 			}
 		},
 	},

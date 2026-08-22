@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector REST PSD2 AIS Aggregator Provider.
+ * Integriq REST PSD2 AIS Aggregator Provider.
  *
  * Generic REST binding for {@see Psd2AggregatorProviderInterface}, shaped
  * after the GoCardless Bank-Account-Data API (requisitions → accounts →
@@ -14,7 +14,7 @@
  * closed with an actionable {@see Psd2ProviderException}.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Psd2
+ * @package  OCA\Integriq\Service\Psd2
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,21 +23,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-rest-provider-brokers-its-token
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Psd2;
+namespace OCA\Integriq\Service\Psd2;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Exception\Psd2ConsentRevokedException;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
-use OCA\OpenConnector\Service\BrokeredCallService;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\Psd2ConsentRevokedException;
+use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector — inbound rate-limit decision value object.
+ * Integriq — inbound rate-limit decision value object.
  *
  * The immutable outcome of an inbound rate-limit / quota evaluation for a
  * single request. Carries everything the endpoint response needs to emit the
  * IETF RateLimit headers and, on rejection, the 429 + Retry-After.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\RateLimit
+ * @package  OCA\Integriq\Service\RateLimit
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,12 +16,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\RateLimit;
+namespace OCA\Integriq\Service\RateLimit;
 
 /**
  * Immutable result of an inbound rate-limit + quota check.

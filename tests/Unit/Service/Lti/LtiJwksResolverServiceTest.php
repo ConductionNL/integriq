@@ -4,7 +4,7 @@
  * Unit tests for LtiJwksResolverService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Lti
+ * @package  OCA\Integriq\Tests\Unit\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,11 +15,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Lti;
+namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use Jose\Component\KeyManagement\JWKFactory;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\Lti\LtiJwksResolverService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
@@ -76,7 +76,7 @@ class LtiJwksResolverServiceTest extends TestCase {
 		);
 
 		$cacheFactory = $this->createMock(ICacheFactory::class);
-		$cacheFactory->method('createDistributed')->willReturn(new \OCA\OpenConnector\Tests\Helpers\ArrayCache());
+		$cacheFactory->method('createDistributed')->willReturn(new \OCA\Integriq\Tests\Helpers\ArrayCache());
 
 		return new LtiJwksResolverService($cacheFactory, $callService, new NullLogger());
 	}//end makeResolver()

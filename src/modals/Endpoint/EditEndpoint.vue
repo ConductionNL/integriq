@@ -411,14 +411,14 @@ defineOptions({
 			<h2>
 				{{
 					endpointItem.id
-						? t('openconnector', 'Edit endpoint')
-						: t('openconnector', 'Add endpoint')
+						? t('integriq', 'Edit endpoint')
+						: t('integriq', 'Add endpoint')
 				}}
 			</h2>
 
 			<div v-if="success !== null">
 				<NcNoteCard v-if="success" type="success">
-					<p>{{ t('openconnector', 'Endpoint successfully saved') }}</p>
+					<p>{{ t('integriq', 'Endpoint successfully saved') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error }}</p>
@@ -429,63 +429,63 @@ defineOptions({
 				<div class="form-group">
 					<NcTextField
 						v-model="endpointItem.name"
-						:label="t('openconnector', 'Name') + '*'" />
+						:label="t('integriq', 'Name') + '*'" />
 
 					<NcTextArea
 						v-model="endpointItem.description"
 						resize="vertical"
-						:label="t('openconnector', 'Description')" />
+						:label="t('integriq', 'Description')" />
 
 					<NcTextField
 						v-model="endpointItem.endpoint"
-						:label="t('openconnector', 'Endpoint')" />
+						:label="t('integriq', 'Endpoint')" />
 
 					<NcTextArea
 						v-model="endpointItem.endpointArray"
 						resize="vertical"
-						:label="t('openconnector', 'Endpoint array (split on ,)')" />
+						:label="t('integriq', 'Endpoint array (split on ,)')" />
 
 					<NcTextField
 						v-model="endpointItem.endpointRegex"
-						:label="t('openconnector', 'Endpoint regex')" />
+						:label="t('integriq', 'Endpoint regex')" />
 
 					<NcTextField
 						v-model="endpointItem.slug"
-						:label="t('openconnector', 'Slug')" />
+						:label="t('integriq', 'Slug')" />
 
 					<div>
 						<NcSelect
 							v-bind="methodOptions"
 							v-model="methodOptions.value"
-							:inputLabel="t('openconnector', 'Method')" />
+							:inputLabel="t('integriq', 'Method')" />
 					</div>
 
 					<div>
 						<NcSelect
 							v-bind="targetTypeOptions"
 							v-model="targetTypeOptions.value"
-							:inputLabel="t('openconnector', 'Target Type')" />
+							:inputLabel="t('integriq', 'Target Type')" />
 					</div>
 
 					<div>
 						<NcSelect
 							v-bind="registerOptions"
 							v-model="registerOptions.value"
-							:inputLabel="t('openconnector', 'Register')"
+							:inputLabel="t('integriq', 'Register')"
 							:disabled="registersLoading" />
 
 						<NcSelect
 							v-bind="schemaOptions"
 							v-model="schemaOptions.value"
 							:disabled="!registerOptions.value || schemasLoading"
-							:inputLabel="t('openconnector', 'Schema')" />
+							:inputLabel="t('integriq', 'Schema')" />
 					</div>
 
 					<div>
 						<NcSelect
 							v-bind="configurationOptions"
 							v-model="configurationOptions.value"
-							:inputLabel="t('openconnector', 'Configurations')"
+							:inputLabel="t('integriq', 'Configurations')"
 							:multiple="true"
 							:disabled="configurationsLoading" />
 					</div>
@@ -497,7 +497,7 @@ defineOptions({
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="success === null"
@@ -513,7 +513,7 @@ defineOptions({
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					{{ t('openconnector', 'Save') }}
+					{{ t('integriq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

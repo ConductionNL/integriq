@@ -26,7 +26,7 @@
 
 import { test, expect, type Page } from '@playwright/test'
 
-const APP_BASE = '/index.php/apps/openconnector'
+const APP_BASE = '/index.php/apps/integriq'
 
 async function openPage(page: Page, route: string): Promise<void> {
 	await page.goto(`${APP_BASE}${route}`, {

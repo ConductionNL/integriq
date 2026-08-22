@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector jobs controller.
+ * Integriq jobs controller.
  *
  * Controller for job listing, log retrieval, and ad-hoc job run/test endpoints.
  * Delegates execution to JobService and applies search-style log filtering.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -85,7 +85,7 @@ class JobsController extends Controller {
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchService $searchService): JSONResponse {
 		try {
 			// Get filters from request.

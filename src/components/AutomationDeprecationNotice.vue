@@ -35,7 +35,7 @@
 		<p class="automationDeprecation__lead">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Jobs, Rules, Mappings and Synchronizations are moving into the Flow editor.',
 				)
 			}}
@@ -43,7 +43,7 @@
 		<p>
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Nothing has been switched off. The engine underneath is unchanged, this page still works, and every configuration you already have keeps running exactly as it does today.',
 				)
 			}}
@@ -51,7 +51,7 @@
 		<p>
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'There is no automatic conversion yet, so nothing here is turned into a flow for you. Open the Flows overview to see the flows that already exist.',
 				)
 			}}
@@ -63,7 +63,7 @@
 			<template #icon>
 				<SitemapOutlineIcon :size="20" />
 			</template>
-			{{ t('openconnector', 'Go to Flows') }}
+			{{ t('integriq', 'Go to Flows') }}
 		</NcButton>
 	</NcNoteCard>
 </template>
@@ -85,9 +85,9 @@ import SitemapOutlineIcon from 'vue-material-design-icons/SitemapOutline.vue'
  *
  * Route names ARE manifest page ids (`routesFromManifest` in src/main.js
  * maps `name: page.id`), so this is the `Flows` entry of src/manifest.json.
- * Navigating by name rather than by a literal `/apps/openconnector/flows`
+ * Navigating by name rather than by a literal `/apps/integriq/flows`
  * URL is mandatory here: the router history base is
- * `generateUrl('/apps/openconnector')`, which on this stack resolves to an
+ * `generateUrl('/apps/integriq')`, which on this stack resolves to an
  * `/index.php/...` prefix, so a hardcoded path leaves the SPA.
  */
 export const FLOWS_ROUTE_NAME = 'Flows'

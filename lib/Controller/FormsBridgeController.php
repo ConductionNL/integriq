@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Bridge discovery controller.
+ * Integriq Forms Bridge discovery controller.
  *
  * Read-only endpoints backing the synchronization editor's `nextcloud-form`
  * kind: a feature-detection status flag plus form/question discovery, so
@@ -10,7 +10,7 @@
  * (design.md Nextcloud Integration).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,22 +19,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-form-and-question-discovery-for-the-synchronizationrule-editor-req-005
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\FormsConfigException;
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
-use OCA\OpenConnector\Exception\FormsNotFoundException;
-use OCA\OpenConnector\Exception\FormsPermissionDeniedException;
-use OCA\OpenConnector\Exception\FormsUpstreamException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Exception\FormsConfigException;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\FormsNotFoundException;
+use OCA\Integriq\Exception\FormsPermissionDeniedException;
+use OCA\Integriq\Exception\FormsUpstreamException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;

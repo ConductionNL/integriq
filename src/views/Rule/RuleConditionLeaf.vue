@@ -22,25 +22,25 @@
 		<NcTextField
 			v-if="schema.kind !== 'var-only'"
 			class="rule-condition-leaf__var"
-			:label="t('openconnector', 'Field')"
+			:label="t('integriq', 'Field')"
 			:modelValue="varPath"
-			:placeholder="t('openconnector', 'e.g. body.status')"
+			:placeholder="t('integriq', 'e.g. body.status')"
 			@update:modelValue="onVarInput" />
 		<NcTextField
 			v-else
 			class="rule-condition-leaf__var"
-			:label="t('openconnector', 'Variable path')"
+			:label="t('integriq', 'Variable path')"
 			:modelValue="varOnlyPath"
-			:placeholder="t('openconnector', 'e.g. user.email')"
+			:placeholder="t('integriq', 'e.g. user.email')"
 			@update:modelValue="onVarOnlyInput" />
 		<NcSelect
 			class="rule-condition-leaf__op"
 			:inputId="'rule-condition-op-' + uid"
-			:inputLabel="t('openconnector', 'Operator')"
+			:inputLabel="t('integriq', 'Operator')"
 			:modelValue="selectedOperator"
 			:options="operatorOptions"
 			:clearable="false"
-			:placeholder="t('openconnector', 'Operator')"
+			:placeholder="t('integriq', 'Operator')"
 			label="label"
 			:reduce="(option) => option"
 			@update:modelValue="onOperatorPick">
@@ -60,24 +60,24 @@
 		<template v-if="schema.kind === 'binary' || schema.kind === 'ternary'">
 			<NcTextField
 				class="rule-condition-leaf__value"
-				:label="schema.labels?.[0] || t('openconnector', 'Value')"
+				:label="schema.labels?.[0] || t('integriq', 'Value')"
 				:modelValue="slotString(1)"
 				:placeholder="
 					schema.placeholders?.[0]
-					|| t('openconnector', 'Comparison value')
+					|| t('integriq', 'Comparison value')
 				"
 				@update:modelValue="(value) => onSlotInput(1, value)" />
 			<NcTextField
 				v-if="schema.kind === 'ternary'"
 				class="rule-condition-leaf__value"
-				:label="schema.labels?.[1] || t('openconnector', 'Length')"
+				:label="schema.labels?.[1] || t('integriq', 'Length')"
 				:modelValue="slotString(2)"
 				:placeholder="schema.placeholders?.[1] || ''"
 				@update:modelValue="(value) => onSlotInput(2, value)" />
 		</template>
 		<template v-else-if="schema.kind === 'if'">
 			<label class="rule-condition-leaf__json-label">
-				{{ t('openconnector', 'Then (JsonLogic)') }}
+				{{ t('integriq', 'Then (JsonLogic)') }}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(1)"
@@ -87,7 +87,7 @@
 					@input="(event) => onJsonSlotInput(1, event.target.value)" />
 			</label>
 			<label class="rule-condition-leaf__json-label">
-				{{ t('openconnector', 'Else (JsonLogic)') }}
+				{{ t('integriq', 'Else (JsonLogic)') }}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="slotJson(2)"
@@ -101,7 +101,7 @@
 			<label class="rule-condition-leaf__json-label">
 				{{
 					schema.labels?.[0]
-					|| t('openconnector', 'Collection (JsonLogic)')
+					|| t('integriq', 'Collection (JsonLogic)')
 				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
@@ -116,7 +116,7 @@
 			</label>
 			<label class="rule-condition-leaf__json-label">
 				{{
-					schema.labels?.[1] || t('openconnector', 'Predicate (JsonLogic)')
+					schema.labels?.[1] || t('integriq', 'Predicate (JsonLogic)')
 				}}
 				<textarea
 					class="rule-condition-leaf__textarea"
@@ -132,7 +132,7 @@
 		</template>
 		<template v-else-if="schema.kind === 'merge'">
 			<label class="rule-condition-leaf__json-label">
-				{{ t('openconnector', 'Arrays to merge (JSON array of JsonLogic)') }}
+				{{ t('integriq', 'Arrays to merge (JSON array of JsonLogic)') }}
 				<textarea
 					class="rule-condition-leaf__textarea"
 					:value="mergeJson"
@@ -145,7 +145,7 @@
 		<template v-else-if="schema.kind === 'unary' || schema.kind === 'var-only'">
 			<span
 				class="rule-condition-leaf__value rule-condition-leaf__value--placeholder">
-				{{ t('openconnector', '(no value needed)') }}
+				{{ t('integriq', '(no value needed)') }}
 			</span>
 		</template>
 		<span v-if="parseError" class="rule-condition-leaf__error">
@@ -153,7 +153,7 @@
 		</span>
 		<NcButton
 			class="rule-condition-leaf__remove"
-			:aria-label="t('openconnector', 'Remove condition')"
+			:aria-label="t('integriq', 'Remove condition')"
 			variant="tertiary-no-background"
 			@click="$emit('remove')">
 			<template #icon>
@@ -318,8 +318,8 @@ export default {
 		operatorOptions() {
 			return OPERATORS.map((op) => ({
 				id: op.id,
-				label: this.t('openconnector', op.label),
-				group: op.group ? this.t('openconnector', op.group) : '',
+				label: this.t('integriq', op.label),
+				group: op.group ? this.t('integriq', op.group) : '',
 			}))
 		},
 
@@ -480,7 +480,7 @@ export default {
 				this.emitUpdate({ slot, slotValue: parsed })
 			} catch (parseErr) {
 				this.parseError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -509,7 +509,7 @@ export default {
 				const parsed = JSON.parse(trimmed)
 				if (!Array.isArray(parsed)) {
 					this.parseError = this.t(
-						'openconnector',
+						'integriq',
 						'merge expects a JSON array',
 					)
 					return
@@ -518,7 +518,7 @@ export default {
 				this.$emit('update', { merge: parsed })
 			} catch (parseErr) {
 				this.parseError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)

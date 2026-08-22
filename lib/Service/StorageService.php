@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector storage service.
+ * Integriq storage service.
  *
  * Handles multi-part file uploads to Nextcloud's file storage backend. Splits
  * incoming content into cache-tracked parts and reconciles them into the final
  * target file once all parts have arrived.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,10 +16,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OC\Files\Node\Node;
 use OCP\Files\File;
@@ -58,7 +58,7 @@ class StorageService {
 	 *
 	 * @var string
 	 */
-	public const CACHE_KEY = 'openconnector-upload';
+	public const CACHE_KEY = 'integriq-upload';
 
 	/**
 	 * Cache field for the target file path of an upload.
@@ -82,7 +82,7 @@ class StorageService {
 	public const NUMBER_OF_PARTS = 'number-of-parts';
 
 	/**
-	 * System user under which OpenConnector reads/writes files.
+	 * System user under which Integriq reads/writes files.
 	 *
 	 * @var string
 	 */
@@ -92,9 +92,9 @@ class StorageService {
 	 * Class constructor.
 	 *
 	 * @param IRootFolder $rootFolder The Nextcloud rootfolder.
-	 * @param IAppConfig $config The configuration of the openconnector application.
+	 * @param IAppConfig $config The configuration of the integriq application.
 	 * @param ICacheFactory $cacheFactory The cache factory.
-	 * @param IUserManager $userManager Used to resolve the OpenConnector system user.
+	 * @param IUserManager $userManager Used to resolve the Integriq system user.
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
@@ -130,7 +130,7 @@ class StorageService {
 		// $userFolder = $this->rootFolder->getUserFolder(userId: $user ? $user->getUID() : 'Guest');.
 		$uploadFolder = $this->rootFolder->get($path);
 
-		$partSize = $this->config->getValueInt('openconnector', 'part-size', 1000000);
+		$partSize = $this->config->getValueInt('integriq', 'part-size', 1000000);
 
 		$numParts = ceil($size / $partSize);
 

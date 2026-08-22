@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Provider Interface.
+ * Integriq StUF-ZKN Provider Interface.
  *
  * Narrow domain seam through which every outbound StUF-ZKN `zakLk01`
  * kennisgeving is dispatched to a subscribed legacy StUF consumer. A new
@@ -12,7 +12,7 @@
  * storage, feature gating").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,16 +21,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\OpenConnector\Exception\StufZknProviderException;
+use OCA\Integriq\Exception\StufZknProviderException;
 
 /**
  * A StUF-ZKN outbound transport binding: dispatch one already-translated

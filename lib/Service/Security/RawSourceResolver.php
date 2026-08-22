@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector Raw Source Resolver.
+ * Integriq Raw Source Resolver.
  *
  * Re-resolves a `source` ObjectEntity RAW (`_render: false`) so the direct-Guzzle
- * clients that bypass {@see \OCA\OpenConnector\Service\CallService} keep seeing the
+ * clients that bypass {@see \OCA\Integriq\Service\CallService} keep seeing the
  * credential material an operator authored under `configuration.authentication.*`.
  *
  * WHY THIS CLASS EXISTS (ocon#242, the follow-up to ocon#241 / openregister#459):
@@ -22,20 +22,20 @@
  * are ALWAYS stripped. Only `ObjectService::find()` takes `_render`. So the
  * six `*SyncService::resolveActiveSource()` methods must keep using `findAll()` to
  * LOCATE the active source, then re-read that one uuid RAW through `find()`.
- * That is exactly the shape {@see \OCA\OpenConnector\Service\CallService::resolveSourceForDispatch()}
+ * That is exactly the shape {@see \OCA\Integriq\Service\CallService::resolveSourceForDispatch()}
  * (ocon#236) already has, and this class is the shared form of it for the clients
  * that never reach CallService.
  *
  * THIS CLASS DOES NOT WIDEN ACCESS. The re-read deliberately keeps `_rbac: true` /
  * `_multitenancy: true` — the caller's `findAll()` already located the source under
  * those same semantics, so re-reading it by uuid under them is access-neutral.
- * Contrast {@see \OCA\OpenConnector\Service\CallService::resolveSourceForDispatch()}
- * and {@see \OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner::readRawSource()},
+ * Contrast {@see \OCA\Integriq\Service\CallService::resolveSourceForDispatch()}
+ * and {@see \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner::readRawSource()},
  * which pass `_rbac: false` because they run in engine / migration contexts that
  * legitimately have no user. ONLY the render mode changes here.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -46,12 +46,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -70,6 +70,8 @@ class RawSourceResolver {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -127,7 +129,7 @@ class RawSourceResolver {
 			// Secret-free log: the uuid is not a secret; the message is not
 			// interpolated in case an upstream ever quotes object data.
 			$this->logger->warning(
-				'[openconnector] raw source re-resolve failed; using the rendered entity',
+				'[integriq] raw source re-resolve failed; using the rendered entity',
 				[
 					'sourceUuid' => $uuid,
 					'errorClass' => get_class($exception),

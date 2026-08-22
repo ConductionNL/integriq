@@ -94,7 +94,7 @@ class LogsControllerActionAuthTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
 		return new LogsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$l,

@@ -81,7 +81,7 @@ describe('fetchOpenRegisterCollection', () => {
 		get.mockResolvedValueOnce({ data: [{ id: 5, name: 'X' }] })
 		const opts = await fetchOpenRegisterCollection(
 			'mapping',
-			'openconnector',
+			'integriq',
 			10,
 		)
 		expect(get).toHaveBeenCalledWith(

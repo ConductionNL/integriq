@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector Synchronization Run Log
+ * Integriq Synchronization Run Log
  *
  * In-memory value object for a single synchronization run-log entry.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,10 +14,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 

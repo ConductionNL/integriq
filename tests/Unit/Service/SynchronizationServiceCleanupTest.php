@@ -9,7 +9,7 @@
  * which the cleanup path uses to look up contract and target objects.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -104,7 +104,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 					$this->logger,
 					$synchronizationLogService,
 					$appConfig,
-					$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 					$tablesSyncAdapter,
 				]
 			)

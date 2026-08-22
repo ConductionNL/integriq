@@ -23,7 +23,7 @@
  * rule engine.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,9 +39,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Flow\FetchFileNode;
+use OCA\Integriq\Flow\FetchFileNode;
 use OCP\IL10N;
 
 /**

@@ -15,7 +15,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
@@ -242,7 +242,7 @@ class PdokControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new PdokController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$connector,
 			$userSession,

@@ -73,7 +73,7 @@ class DatasourceControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new DatasourceController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->request,
 			l: $this->l,
 			logger: $this->logger,

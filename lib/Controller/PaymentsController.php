@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Payments Controller.
+ * Integriq Payments Controller.
  *
  * REST controller for the live-payment-providers connector: payment
  * creation and the signature-gated inbound webhook. The webhook never trusts
@@ -9,7 +9,7 @@
  * the configured provider before doing anything else (REQ-LPP-003).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,20 +18,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Exception\PaymentProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PaymentIntentService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PaymentIntentService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,7 +57,7 @@ class PaymentsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param PaymentIntentService $paymentIntentService Create + webhook business logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.

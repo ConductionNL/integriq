@@ -15,7 +15,7 @@
  * failing.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,16 +26,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
+use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Throwable;
@@ -52,6 +52,8 @@ final class MigrationEntityReader {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'openconnector';
 
 	/**

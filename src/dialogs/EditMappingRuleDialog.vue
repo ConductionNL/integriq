@@ -39,7 +39,7 @@
 
 				<label v-if="kind === 'mapping'" class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">
-						{{ t('openconnector', 'Twig template') }}
+						{{ t('integriq', 'Twig template') }}
 					</span>
 					<textarea
 						v-model="valueDraft"
@@ -54,20 +54,20 @@
 
 				<label v-else-if="kind === 'cast'" class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">
-						{{ t('openconnector', 'Cast type') }}
+						{{ t('integriq', 'Cast type') }}
 					</span>
 					<NcSelect
 						:modelValue="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
-						:aria-label-combobox="t('openconnector', 'Cast type')"
+						:aria-label-combobox="t('integriq', 'Cast type')"
 						inputId="cn-rule-dialog-cast-type"
 						@update:modelValue="onCastTypeInput" />
 				</label>
 
 				<div class="cn-rule-dialog__actions">
 					<NcButton variant="tertiary" @click="$emit('cancel')">
-						{{ t('openconnector', 'Cancel') }}
+						{{ t('integriq', 'Cancel') }}
 					</NcButton>
 					<NcButton
 						variant="primary"
@@ -187,7 +187,7 @@ export default {
 			const openBrace = '{{'
 			const closeBrace = '}}'
 			return this.t(
-				'openconnector',
+				'integriq',
 				'A Twig template evaluated against the input object. Use {open} field {close} to reference source values.',
 				{ open: openBrace, close: closeBrace },
 			)
@@ -209,39 +209,39 @@ export default {
 		dialogTitle() {
 			if (this.kind === 'mapping') {
 				return this.isNew
-					? this.t('openconnector', 'Add mapping rule')
-					: this.t('openconnector', 'Edit mapping rule')
+					? this.t('integriq', 'Add mapping rule')
+					: this.t('integriq', 'Edit mapping rule')
 			}
 			if (this.kind === 'cast') {
 				return this.isNew
-					? this.t('openconnector', 'Add cast rule')
-					: this.t('openconnector', 'Edit cast rule')
+					? this.t('integriq', 'Add cast rule')
+					: this.t('integriq', 'Edit cast rule')
 			}
 			return this.isNew
-				? this.t('openconnector', 'Add unset rule')
-				: this.t('openconnector', 'Edit unset rule')
+				? this.t('integriq', 'Add unset rule')
+				: this.t('integriq', 'Edit unset rule')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		submitLabel() {
 			return this.isNew
-				? this.t('openconnector', 'Add rule')
-				: this.t('openconnector', 'Save rule')
+				? this.t('integriq', 'Add rule')
+				: this.t('integriq', 'Save rule')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
 			if (this.kind === 'mapping')
-				return this.t('openconnector', 'Target property')
-			return this.t('openconnector', 'Property')
+				return this.t('integriq', 'Target property')
+			return this.t('integriq', 'Property')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyPlaceholder() {
 			if (this.kind === 'mapping') {
-				return this.t('openconnector', 'e.g. firstName')
+				return this.t('integriq', 'e.g. firstName')
 			}
-			return this.t('openconnector', 'JSON path or property name')
+			return this.t('integriq', 'JSON path or property name')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -250,7 +250,7 @@ export default {
 			if (!trimmed) return ''
 			if (this.existingKeys.includes(trimmed)) {
 				return this.t(
-					'openconnector',
+					'integriq',
 					'Another rule already targets this property.',
 				)
 			}

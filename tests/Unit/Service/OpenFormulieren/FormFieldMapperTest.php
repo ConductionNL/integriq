@@ -4,7 +4,7 @@
  * Unit tests for FormFieldMapper.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\OpenFormulieren
+ * @package  OCA\Integriq\Tests\Unit\Service\OpenFormulieren
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\OpenFormulieren;
+namespace OCA\Integriq\Tests\Unit\Service\OpenFormulieren;
 
-use OCA\OpenConnector\Exception\MappingResolutionException;
-use OCA\OpenConnector\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Exception\MappingResolutionException;
+use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use PHPUnit\Framework\TestCase;
 
 /**

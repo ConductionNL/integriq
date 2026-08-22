@@ -3,15 +3,15 @@
 /**
  * Declares the legacy → OpenRegister cutover complete, on a path that runs.
  *
- * `openconnector.storage_migrated` gates
- * {@see \OCA\OpenConnector\Service\Integration\SynchronizationContractProvider::isEnabled()}
+ * `integriq.storage_migrated` gates
+ * {@see \OCA\Integriq\Service\Integration\SynchronizationContractProvider::isEnabled()}
  * — while it is false, "Synced from" provenance is absent from every object in
  * the instance. Two places already try to set it, and NEITHER can on a fresh
  * install:
  *
- *   * {@see \OCA\OpenConnector\Migration\Version2Date20260520000001} sets it
+ *   * {@see \OCA\Integriq\Migration\Version2Date20260520000001} sets it
  *     from `postSchemaChange()`.
- *   * {@see \OCA\OpenConnector\Migration\Version2Date20260520000099} sets it
+ *   * {@see \OCA\Integriq\Migration\Version2Date20260520000099} sets it
  *     from `postSchemaChange()` too — added specifically to fix the fresh-install
  *     case, and placed in the one hook that fresh installs skip.
  *
@@ -32,21 +32,21 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -64,7 +64,7 @@ class MigrateLegacyStorage implements IRepairStep {
 	 *
 	 * Mirrors `Version2Date20260520000099::LEGACY_TABLES`. The two are pinned
 	 * identical by
-	 * {@see \OCA\OpenConnector\Tests\Unit\Repair\MigrateLegacyStorageTest}, so
+	 * {@see \OCA\Integriq\Tests\Unit\Repair\MigrateLegacyStorageTest}, so
 	 * a table added to one and not the other fails a test rather than silently
 	 * dropping out of the cutover check.
 	 *
@@ -82,7 +82,9 @@ class MigrateLegacyStorage implements IRepairStep {
 		'openconnector_synchronizations',
 		'openconnector_event_subscriptions',
 		'openconnector_events',
-		// Leaf tables (no inter-openconnector FKs).
+		// Leaf tables (no inter-app FKs). The table names below are FROZEN on
+		// the old id: they are the legacy schema this step reads FROM, created
+		// by migrations that have already run. No rename migration exists.
 		'openconnector_endpoints',
 		'openconnector_sources',
 		'openconnector_jobs',
@@ -116,7 +118,7 @@ class MigrateLegacyStorage implements IRepairStep {
 	 * @return string The step name.
 	 */
 	public function getName(): string {
-		return 'Complete the OpenConnector legacy → OpenRegister storage cutover';
+		return 'Complete the Integriq legacy → OpenRegister storage cutover';
 	}//end getName()
 
 	/**
@@ -130,7 +132,7 @@ class MigrateLegacyStorage implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		if ($this->appConfig->getValueString(Application::APP_ID, 'storage_migrated', 'false') === 'true') {
-			$output->info('OpenConnector: storage_migrated is already true — nothing to do.');
+			$output->info('Integriq: storage_migrated is already true — nothing to do.');
 			return;
 		}
 
@@ -142,7 +144,7 @@ class MigrateLegacyStorage implements IRepairStep {
 		// nothing left pointing at them.
 		if ($remaining === -1) {
 			$output->warning(
-				'OpenConnector: could not count every legacy table, so the cutover cannot be declared'
+				'Integriq: could not count every legacy table, so the cutover cannot be declared'
 				. ' complete. Leaving storage_migrated untouched; re-run `occ maintenance:repair` once'
 				. ' the database is reachable.'
 			);
@@ -152,14 +154,14 @@ class MigrateLegacyStorage implements IRepairStep {
 		if ($remaining === 0) {
 			$this->appConfig->setValueString(Application::APP_ID, 'storage_migrated', 'true');
 			$output->info(
-				'OpenConnector: no legacy table holds rows — storage_migrated set to true.'
+				'Integriq: no legacy table holds rows — storage_migrated set to true.'
 				. ' Sync-contract provenance ("Synced from") is enabled.'
 			);
 			return;
 		}
 
 		$output->info(
-			sprintf('OpenConnector: %d legacy table(s) still hold rows — running the row migration.', $remaining)
+			sprintf('Integriq: %d legacy table(s) still hold rows — running the row migration.', $remaining)
 		);
 
 		$this->migrateRemainingRows(output: $output);
@@ -200,15 +202,15 @@ class MigrateLegacyStorage implements IRepairStep {
 				// as an empty table and let the cutover be declared complete
 				// over contents nobody measured.
 				if ($count === false) {
-					$output->warning(sprintf('OpenConnector: legacy table `%s` returned no count.', $table));
+					$output->warning(sprintf('Integriq: legacy table `%s` returned no count.', $table));
 					return -1;
 				}
 			} catch (\Throwable $e) {
 				$output->warning(
-					sprintf('OpenConnector: could not count legacy table `%s`: %s', $table, $e->getMessage())
+					sprintf('Integriq: could not count legacy table `%s`: %s', $table, $e->getMessage())
 				);
 				$this->logger->warning(
-					sprintf('OpenConnector: legacy row count failed for %s', $table),
+					sprintf('Integriq: legacy row count failed for %s', $table),
 					['exception' => $e->getMessage()]
 				);
 				return -1;
@@ -238,11 +240,11 @@ class MigrateLegacyStorage implements IRepairStep {
 			$migrator = $this->container->get(LegacyToRegisterMigrator::class);
 		} catch (\Throwable $e) {
 			$output->warning(
-				'OpenConnector: could not resolve the legacy migrator (' . $e->getMessage() . ').'
-				. ' Run `occ openconnector:migrate-storage` once OpenRegister is enabled.'
+				'Integriq: could not resolve the legacy migrator (' . $e->getMessage() . ').'
+				. ' Run `occ integriq:migrate-storage` once OpenRegister is enabled.'
 			);
 			$this->logger->error(
-				'OpenConnector: LegacyToRegisterMigrator resolution failed',
+				'Integriq: LegacyToRegisterMigrator resolution failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -251,9 +253,9 @@ class MigrateLegacyStorage implements IRepairStep {
 		try {
 			$results = $migrator->migrateAll(dryRun: false, entitySlug: null, batchSize: 10000);
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: the legacy row migration failed: ' . $e->getMessage());
+			$output->warning('Integriq: the legacy row migration failed: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: migrateAll() failed',
+				'Integriq: migrateAll() failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -272,13 +274,13 @@ class MigrateLegacyStorage implements IRepairStep {
 		}
 
 		if ($this->appConfig->getValueString(Application::APP_ID, 'storage_migrated', 'false') === 'true') {
-			$output->info('OpenConnector: storage_migrated set to true — the cutover is complete.');
+			$output->info('Integriq: storage_migrated set to true — the cutover is complete.');
 			return;
 		}
 
 		$output->warning(
-			'OpenConnector: storage_migrated NOT set — at least one entity reported skips or errors.'
-			. ' Use `occ openconnector:migrate-storage` to retry per-entity.'
+			'Integriq: storage_migrated NOT set — at least one entity reported skips or errors.'
+			. ' Use `occ integriq:migrate-storage` to retry per-entity.'
 		);
 
 	}//end migrateRemainingRows()

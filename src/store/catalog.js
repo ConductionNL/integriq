@@ -107,7 +107,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 */
 		async fetchStatus(id) {
 			const url = generateUrl(
-				`/apps/openconnector/api/catalog/items/${id}/status`,
+				`/apps/integriq/api/catalog/items/${id}/status`,
 			)
 			const { data } = await axios.get(url)
 			this.statusById = { ...this.statusById, [id]: data }
@@ -126,7 +126,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 */
 		async instantiate(id) {
 			const url = generateUrl(
-				`/apps/openconnector/api/catalog/items/${id}/instantiate`,
+				`/apps/integriq/api/catalog/items/${id}/instantiate`,
 			)
 			const { data } = await axios.post(url, {})
 			// The action changed the item's live state — refresh its status.

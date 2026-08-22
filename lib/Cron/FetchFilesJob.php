@@ -1,22 +1,22 @@
 <?php
 /**
- * OpenConnector — deferred file fetching for one synchronised object.
+ * Integriq — deferred file fetching for one synchronised object.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://github.com/ConductionNL/integriq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;

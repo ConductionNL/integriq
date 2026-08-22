@@ -97,7 +97,7 @@ class EventsControllerTest extends TestCase {
 		$signatureService = $this->createMock(WebhookSignatureService::class);
 
 		$this->controller = new EventsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->orObjectService,
 			$this->eventService,

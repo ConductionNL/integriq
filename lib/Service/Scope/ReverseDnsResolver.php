@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — forward-confirmed reverse DNS (FCrDNS) for consumer source scope.
+ * Integriq — forward-confirmed reverse DNS (FCrDNS) for consumer source scope.
  *
  * Binds a client IP to a hostname in the only way an inbound request allows to be
  * trusted: PTR-resolve the address, then require the resulting hostname to
@@ -13,7 +13,7 @@
  * control that stops nobody.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Scope
+ * @package  OCA\Integriq\Service\Scope
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,12 +21,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Scope;
+namespace OCA\Integriq\Service\Scope;
 
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -62,7 +62,7 @@ class ReverseDnsResolver {
 		ICacheFactory $cacheFactory,
 		private readonly IpMatcher $ipMatcher,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openconnector.consumerscope');
+		$this->cache = $cacheFactory->createDistributed('integriq.consumerscope');
 
 	}//end __construct()
 

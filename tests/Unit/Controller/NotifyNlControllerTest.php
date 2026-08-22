@@ -112,7 +112,7 @@ class NotifyNlControllerTest extends TestCase {
 	 */
 	private function buildController(): NotifyNlController {
 		return new NotifyNlController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->dispatchService,
 			$this->signatureService,

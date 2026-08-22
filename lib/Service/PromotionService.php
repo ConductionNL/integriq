@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector promotion service.
+ * Integriq promotion service.
  *
  * Promotes a configuration group from this ("local") instance to a
  * registered target environment. Built entirely on already-existing,
@@ -17,7 +17,7 @@
  * strings only (design.md Decision 3).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -26,14 +26,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/environments-and-promotion/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use InvalidArgumentException;
@@ -55,6 +55,8 @@ use Throwable;
  * @spec openspec/specs/environments-and-promotion/spec.md
  */
 class PromotionService {
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'openconnector';
 
 	private const AUDIT_SCHEMA = 'promotion_audit';
@@ -65,7 +67,7 @@ class PromotionService {
 	 *
 	 * @var string
 	 */
-	private const IMPORT_PREVIEW_PATH = '/index.php/apps/openconnector/api/configurations/import/preview';
+	private const IMPORT_PREVIEW_PATH = '/index.php/apps/integriq/api/configurations/import/preview';
 
 	/**
 	 * App-relative path (after the target Source's `location`) to the
@@ -73,7 +75,7 @@ class PromotionService {
 	 *
 	 * @var string
 	 */
-	private const IMPORT_PATH = '/index.php/apps/openconnector/api/configurations/import';
+	private const IMPORT_PATH = '/index.php/apps/integriq/api/configurations/import';
 
 	/**
 	 * Constructor.

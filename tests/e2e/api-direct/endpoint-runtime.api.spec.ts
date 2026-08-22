@@ -23,7 +23,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const API_BASE = '/index.php/apps/openconnector/api'
+const API_BASE = '/index.php/apps/integriq/api'
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 
 test.describe('Endpoint dispatch HTTP surface — no-match', () => {

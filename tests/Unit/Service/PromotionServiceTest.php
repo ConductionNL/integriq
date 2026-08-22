@@ -4,7 +4,7 @@
  * Unit tests for PromotionService (environments-and-promotion).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\ConfigurationService;
-use OCA\OpenConnector\Service\EnvironmentService;
-use OCA\OpenConnector\Service\PromotionService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\EnvironmentService;
+use OCA\Integriq\Service\PromotionService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

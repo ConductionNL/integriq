@@ -16,9 +16,9 @@ declare(strict_types=1);
  * @link      https://github.com/ConductionNL/opencatalogi
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\OrganisationBridgeService;
+use OCA\Integriq\Service\OrganisationBridgeService;
 use OCP\App\IAppManager;
 use OCP\IContainer;
 use PHPUnit\Framework\TestCase;

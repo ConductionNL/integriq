@@ -81,7 +81,7 @@ import { expectRouteMatched, resolveAppRoot } from '../support/appRoot'
 const OR = '/index.php/apps/openregister/api'
 
 /** OpenConnector's own API root — used only for the Source connectivity probe. */
-const OC = '/index.php/apps/openconnector/api'
+const OC = '/index.php/apps/integriq/api'
 
 /** The register/schema pair openconnector's own entities live in. */
 const OC_REGISTER = 'openconnector'
@@ -113,7 +113,7 @@ const SEED = [
  * Two environments, two answers, and neither is a default:
  *
  *  - CI checks this repository out INSIDE the Nextcloud server tree
- *    (`server/apps/openconnector`) and serves it with `php -S`, so `occ` is a
+ *    (`server/apps/integriq`) and serves it with `php -S`, so `occ` is a
  *    real file a few directories up and is invoked directly.
  *  - The docker dev container mounts the checkout from OUTSIDE the server
  *    tree, so no `occ` exists above this file and the command has to cross the

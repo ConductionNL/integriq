@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Acknowledgement Builder.
+ * Integriq StUF-ZKN Acknowledgement Builder.
  *
  * Builds the two StUF 3.01 core reply berichten every inbound `zakLk01`/
  * `edcLk01` kennisgeving gets: `Bv03Bericht` (bevestiging — success) or
@@ -19,7 +19,7 @@
  * shape instead of a bare HTTP 401.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,14 +28,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use DOMDocument;

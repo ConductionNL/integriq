@@ -9,7 +9,7 @@
  * "resultsPosition REQUIRED" clause).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -314,7 +314,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 			// Job: generic dispatch, daily cadence, correct slug-addressed
 			// synchronizationId (Task 3 finding — slug resolution confirmed
 			// in tasks.md).
-			$this->assertSame('OCA\\OpenConnector\\Action\\SynchronizationAction', $job['jobClass'] ?? null);
+			$this->assertSame('OCA\\Integriq\\Action\\SynchronizationAction', $job['jobClass'] ?? null);
 			$this->assertSame($syncSlug, $job['arguments']['synchronizationId'] ?? null);
 			$this->assertSame(86400, $job['interval'] ?? null);
 			$this->assertTrue($job['isEnabled'] ?? null);

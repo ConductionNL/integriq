@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:migrate-inline-secrets.
+ * OCC command: integriq:migrate-inline-secrets.
  *
  * Phase C of ocon#151 / ADR-064. Reports which `source` objects still hold an
  * INLINE credential (`apikey`, `secret`, `password`, `jwt`,
@@ -90,7 +90,7 @@ class MigrateInlineSecrets extends Command {
 	 * @spec exclude Symfony console wiring — framework metadata, no domain behavior.
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:migrate-inline-secrets')
+		$this->setName(name: 'integriq:migrate-inline-secrets')
 			->setDescription('Report (dry-run) the migration of inline source secrets into the OpenRegister credential broker')
 			->addOption(
 				'dry-run',
@@ -233,7 +233,7 @@ class MigrateInlineSecrets extends Command {
 		}
 
 		// Reuse the planner's public app id (the repair step's APP_ID is private);
-		// both resolve to 'openconnector', keeping the appconfig target identical.
+		// both resolve to 'integriq', keeping the appconfig target identical.
 		$app = InlineSecretMigrationPlanner::APP_ID;
 		$this->appConfig->setValueString(app: $app, key: RecordInlineSecretMigrationStatus::KEY_CLEAN, value: $cleanFlag);
 		$this->appConfig->setValueString(app: $app, key: RecordInlineSecretMigrationStatus::KEY_PENDING, value: (string)$pending);

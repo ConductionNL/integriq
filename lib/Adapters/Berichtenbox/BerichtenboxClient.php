@@ -24,7 +24,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  * @link https://www.logius.nl/diensten/berichtenbox
  *
  * SPDX-License-Identifier: EUPL-1.2

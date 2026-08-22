@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Peppol Controller.
+ * Integriq Peppol Controller.
  *
  * REST controller for the peppol-access-point-connector: the participant/SMP
  * lookup endpoint and the signed inbound Access Point (AP) receive webhook.
@@ -9,7 +9,7 @@
  * PeppolOutboundConsumer) per design.md.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,19 +18,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\PeppolTransmissionService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\PeppolTransmissionService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -54,7 +54,7 @@ class PeppolController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param PeppolTransmissionService $transmissionService Lookup + transmission/callback logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.

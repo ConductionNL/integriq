@@ -72,7 +72,7 @@ class SourcesControllerTest extends TestCase {
 		$actionAuth = $this->createMock(ActionAuthService::class);
 
 		$this->controller = new SourcesController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$l,

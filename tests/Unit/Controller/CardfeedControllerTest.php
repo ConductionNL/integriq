@@ -95,7 +95,7 @@ class CardfeedControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new CardfeedController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$this->userSession,
@@ -175,7 +175,7 @@ class CardfeedControllerTest extends TestCase {
 		$session->method('getUser')->willReturn(null);
 
 		$controller = new CardfeedController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$session,

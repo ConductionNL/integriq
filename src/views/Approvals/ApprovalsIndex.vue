@@ -19,11 +19,11 @@
 <template>
 	<div class="approvals">
 		<div class="approvals__header">
-			<h2>{{ t('openconnector', 'Approvals') }}</h2>
+			<h2>{{ t('integriq', 'Approvals') }}</h2>
 			<div class="approvals__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:inputLabel="t('openconnector', 'Status')"
+					:inputLabel="t('integriq', 'Status')"
 					:options="statusOptions"
 					@update:modelValue="reload" />
 			</div>
@@ -34,10 +34,10 @@
 		<NcEmptyContent
 			v-else-if="!rows.length"
 			data-testid="empty-state"
-			:name="t('openconnector', 'No approval requests')"
+			:name="t('integriq', 'No approval requests')"
 			:description="
 				t(
-					'openconnector',
+					'integriq',
 					'There are no approval requests matching this filter.',
 				)
 			">
@@ -49,11 +49,11 @@
 		<table v-else class="approvals__table" data-testid="approvals-table">
 			<thead>
 				<tr>
-					<th scope="col">{{ t('openconnector', 'Status') }}</th>
-					<th scope="col">{{ t('openconnector', 'Approver group') }}</th>
-					<th scope="col">{{ t('openconnector', 'Requester') }}</th>
-					<th scope="col">{{ t('openconnector', 'Created') }}</th>
-					<th scope="col">{{ t('openconnector', 'Expires') }}</th>
+					<th scope="col">{{ t('integriq', 'Status') }}</th>
+					<th scope="col">{{ t('integriq', 'Approver group') }}</th>
+					<th scope="col">{{ t('integriq', 'Requester') }}</th>
+					<th scope="col">{{ t('integriq', 'Created') }}</th>
+					<th scope="col">{{ t('integriq', 'Expires') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -72,7 +72,7 @@
 					<td>{{ row.expiresAt || '—' }}</td>
 					<td>
 						<NcButton variant="tertiary" @click="openDetail(row)">
-							{{ t('openconnector', 'Open') }}
+							{{ t('integriq', 'Open') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -144,12 +144,12 @@ export default {
 					params.status = this.statusFilter
 				}
 				const res = await axios.get(
-					generateUrl('/apps/openconnector/api/approvals'),
+					generateUrl('/apps/integriq/api/approvals'),
 					{ params },
 				)
 				this.rows = res.data?.results || []
 			} catch (err) {
-				showError(t('openconnector', 'Failed to load approval requests'))
+				showError(t('integriq', 'Failed to load approval requests'))
 				this.rows = []
 			} finally {
 				this.loading = false

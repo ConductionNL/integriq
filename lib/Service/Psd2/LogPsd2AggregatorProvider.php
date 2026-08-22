@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log PSD2 AIS Aggregator Provider.
+ * Integriq Log PSD2 AIS Aggregator Provider.
  *
  * Sandbox/mock binding for {@see Psd2AggregatorProviderInterface}: performs no
  * real network call, returns a canned SCA redirect URL, canned accounts, and
@@ -10,7 +10,7 @@
  * LogPeppolAccessPointProvider).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Psd2
+ * @package  OCA\Integriq\Service\Psd2
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Psd2;
+namespace OCA\Integriq\Service\Psd2;
 
 use DateInterval;
 use DateTime;

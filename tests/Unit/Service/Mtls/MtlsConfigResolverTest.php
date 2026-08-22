@@ -4,7 +4,7 @@
  * Unit tests for MtlsConfigResolver.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Mtls
+ * @package  OCA\Integriq\Tests\Unit\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Mtls;
+namespace OCA\Integriq\Tests\Unit\Service\Mtls;
 
-use OCA\OpenConnector\Exception\MtlsConfigurationException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Exception\MtlsConfigurationException;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsCertificateBundle;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
 

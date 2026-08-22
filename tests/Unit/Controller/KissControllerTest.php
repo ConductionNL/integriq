@@ -104,7 +104,7 @@ class KissControllerTest extends TestCase {
 	 */
 	private function buildController(): KissController {
 		return new KissController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$this->userSession,

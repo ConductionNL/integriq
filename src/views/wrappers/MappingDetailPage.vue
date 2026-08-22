@@ -56,7 +56,7 @@
 				<template #icon>
 					<PlayOutlineIcon :size="20" />
 				</template>
-				{{ t('openconnector', 'Test mapping') }}
+				{{ t('integriq', 'Test mapping') }}
 			</NcButton>
 		</template>
 
@@ -73,14 +73,14 @@
 			<!-- General info card -->
 			<section class="cn-mapping-detail__card">
 				<h3 class="cn-mapping-detail__section-title">
-					{{ t('openconnector', 'General') }}
+					{{ t('integriq', 'General') }}
 				</h3>
 				<dl class="cn-mapping-detail__meta">
-					<dt>{{ t('openconnector', 'Name') }}</dt>
+					<dt>{{ t('integriq', 'Name') }}</dt>
 					<dd>{{ mapping.name || '-' }}</dd>
-					<dt>{{ t('openconnector', 'Description') }}</dt>
+					<dt>{{ t('integriq', 'Description') }}</dt>
 					<dd>{{ mapping.description || '-' }}</dd>
-					<dt>{{ t('openconnector', 'Pass through') }}</dt>
+					<dt>{{ t('integriq', 'Pass through') }}</dt>
 					<dd>
 						<NcCheckboxRadioSwitch
 							:modelValue="!!mapping.passThrough"
@@ -104,7 +104,7 @@
 			<div class="cn-mapping-detail__split">
 				<section class="cn-mapping-detail__card cn-mapping-detail__rules">
 					<h3 class="cn-mapping-detail__section-title">
-						{{ t('openconnector', 'Transformation rules') }}
+						{{ t('integriq', 'Transformation rules') }}
 					</h3>
 					<MappingRulesEditor
 						:mappingRules="mappingRules"
@@ -120,13 +120,13 @@
 				<section class="cn-mapping-detail__card cn-mapping-detail__preview">
 					<div class="cn-mapping-detail__preview-header">
 						<h3 class="cn-mapping-detail__section-title">
-							{{ t('openconnector', 'Live preview') }}
+							{{ t('integriq', 'Live preview') }}
 						</h3>
 						<NcButton variant="tertiary" @click="resetPreview">
 							<template #icon>
 								<RestoreIcon :size="18" />
 							</template>
-							{{ t('openconnector', 'Reset preview') }}
+							{{ t('integriq', 'Reset preview') }}
 						</NcButton>
 					</div>
 					<p class="cn-mapping-detail__hint">
@@ -141,7 +141,7 @@
 					<label
 						for="cn-mapping-detail__sample-input"
 						class="cn-mapping-detail__field-label">
-						{{ t('openconnector', 'Sample input (JSON)') }}
+						{{ t('integriq', 'Sample input (JSON)') }}
 					</label>
 					<textarea
 						id="cn-mapping-detail__sample-input"
@@ -275,12 +275,12 @@ export default {
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
-			return err.message || this.t('openconnector', 'Failed to load mapping')
+			return err.message || this.t('integriq', 'Failed to load mapping')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		title() {
-			return this.mapping?.name || this.t('openconnector', 'Mapping')
+			return this.mapping?.name || this.t('integriq', 'Mapping')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -291,8 +291,8 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		passThroughLabel() {
 			return this.mapping?.passThrough
-				? this.t('openconnector', 'Pass through enabled')
-				: this.t('openconnector', 'Pass through disabled')
+				? this.t('integriq', 'Pass through enabled')
+				: this.t('integriq', 'Pass through disabled')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -402,11 +402,11 @@ export default {
 				if (!result) {
 					const message =
 						this.store.errors?.[this.objectType]?.message
-						|| this.t('openconnector', 'Failed to save mapping')
+						|| this.t('integriq', 'Failed to save mapping')
 					showError(message)
 					return
 				}
-				showSuccess(this.t('openconnector', 'Mapping saved'))
+				showSuccess(this.t('integriq', 'Mapping saved'))
 			} finally {
 				this.saving = false
 			}

@@ -4,7 +4,7 @@
  * OpenConnector — OpenRegister dependency setup-check tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\SetupCheck
+ * @package  OCA\Integriq\Tests\Unit\SetupCheck
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\SetupCheck;
+namespace OCA\Integriq\Tests\Unit\SetupCheck;
 
-use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
+use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use OCP\SetupCheck\SetupResult;

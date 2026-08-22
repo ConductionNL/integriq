@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector RenameDutchColumns Repair Step
+ * Integriq RenameDutchColumns Repair Step
  *
  * Moves stored data from the Dutch columns to the English ones the shillinq
  * register now declares. Covers every vocabulary cluster migrated so far, not
@@ -38,7 +38,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -51,7 +51,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
 use OCP\DB\Exception;
 use OCP\IDBConnection;
@@ -69,6 +69,11 @@ use Psr\Log\LoggerInterface;
 class RenameDutchColumns implements IRepairStep {
 	/**
 	 * Slug prefix of the registers in scope.
+	 *
+	 * Deliberately still `openconnector` after the app-id rename: this is the
+	 * OpenRegister REGISTER SLUG, not the app id. The slug is frozen on the old
+	 * value because OpenRegister matches registers by it — renaming it would
+	 * make this step find no shard tables and report success over an empty set.
 	 *
 	 * @var string
 	 */

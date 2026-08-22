@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector App Bootstrap.
+ * Integriq App Bootstrap.
  *
  * Registers services, event listeners and integration providers when the
- * Nextcloud framework bootstraps the openconnector app.
+ * Nextcloud framework bootstraps the integriq app.
  *
  * @category AppInfo
- * @package  OCA\OpenConnector\AppInfo
+ * @package  OCA\Integriq\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\AppInfo;
+namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
 use GuzzleHttp\Client as GuzzleHttpClient;
@@ -28,53 +28,53 @@ use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
-use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
-use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientHttp;
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientMock;
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientHttp;
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
-use OCA\OpenConnector\Capabilities;
-use OCA\OpenConnector\Controller\HealthController;
-use OCA\OpenConnector\Controller\MetricsController;
-use OCA\OpenConnector\EventListener\CloudEventListener;
-use OCA\OpenConnector\EventListener\EndpointCacheInvalidationListener;
-use OCA\OpenConnector\EventListener\NextcloudCalendarEventListener;
-use OCA\OpenConnector\EventListener\NextcloudFileEventListener;
-use OCA\OpenConnector\EventListener\NextcloudFileTagEventListener;
-use OCA\OpenConnector\EventListener\NextcloudFormsEventListener;
-use OCA\OpenConnector\EventListener\NextcloudTablesEventListener;
-use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
-use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
-use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
-use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
-use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
-use OCA\OpenConnector\Observability\OpenConnectorMetricsProvider;
-use OCA\OpenConnector\Repair\InitializeActions;
-use OCA\OpenConnector\Sections\OpenConnectorAdmin as OpenConnectorAdminSection;
-use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
-use OCA\OpenConnector\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
-use OCA\OpenConnector\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
-use OCA\OpenConnector\Service\Adapter\Saas\Microsoft365Adapter;
-use OCA\OpenConnector\Service\Forms\FormsClientInterface;
-use OCA\OpenConnector\Service\Forms\FormsOcsClient;
-use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
-use OCA\OpenConnector\Service\PeppolOutboundConsumer;
-use OCA\OpenConnector\Service\SettingsService;
-use OCA\OpenConnector\Service\Tables\TablesClientInterface;
-use OCA\OpenConnector\Service\Tables\TablesOcsClient;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin as OpenConnectorAdminSettings;
-use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
-use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
-use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
-use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
-use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
-use OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClientHttp;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
+use OCA\Integriq\Capabilities;
+use OCA\Integriq\Controller\HealthController;
+use OCA\Integriq\Controller\MetricsController;
+use OCA\Integriq\EventListener\CloudEventListener;
+use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
+use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
+use OCA\Integriq\EventListener\NextcloudFileEventListener;
+use OCA\Integriq\EventListener\NextcloudFileTagEventListener;
+use OCA\Integriq\EventListener\NextcloudFormsEventListener;
+use OCA\Integriq\EventListener\NextcloudTablesEventListener;
+use OCA\Integriq\EventListener\ObjectCreatedEventListener;
+use OCA\Integriq\EventListener\ObjectDeletedEventListener;
+use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
+use OCA\Integriq\EventListener\ViewDeletedEventListener;
+use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Observability\IntegriqMetricsProvider;
+use OCA\Integriq\Repair\InitializeActions;
+use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
+use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
+use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
+use OCA\Integriq\Service\Forms\FormsClientInterface;
+use OCA\Integriq\Service\Forms\FormsOcsClient;
+use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\PeppolOutboundConsumer;
+use OCA\Integriq\Service\SettingsService;
+use OCA\Integriq\Service\Tables\TablesClientInterface;
+use OCA\Integriq\Service\Tables\TablesOcsClient;
+use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
+use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
+use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
+use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
+use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
+use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
@@ -105,7 +105,7 @@ use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use Psr\Container\ContainerInterface;
 
 /**
- * Bootstrap entry point for the OpenConnector app.
+ * Bootstrap entry point for the Integriq app.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -119,7 +119,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = 'openconnector';
+	public const APP_ID = 'integriq';
 
 	/**
 	 * Constructor.
@@ -186,7 +186,8 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
-		// CloudEvents (register openconnector, schema event) created by any app.
+		// CloudEvents (register `openconnector` — the OpenRegister register slug,
+		// frozen across the app-id rename; schema event) created by any app.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
 		// Outbound webhooks / CloudEvent subscriptions: turns any OR object
 		// create/update/delete (any app) into a CloudEvent fanned out to
@@ -215,11 +216,12 @@ class Application extends App implements IBootstrap {
 
 		// Flow nodes contributed to OpenRegister's flow engine (ADR-065): the
 		// `source-call` and `synchronization-run` nodes that let a flow reach an
-		// external API through a governed OpenConnector Source. Guarded on the
+		// external API through a governed Integriq Source. Guarded on the
 		// OR flow engine being present so this app still boots without it.
 		$this->registerFlowNodes(dispatcher: $dispatcher);
 
-		// Endpoint routing cache: clear it whenever an openconnector/endpoint
+		// Endpoint routing cache: clear it whenever an `openconnector`/endpoint
+		// (register slug frozen across the app-id rename)
 		// object is created, updated, or deleted so the runtime path matcher
 		// (EndpointCacheService) never serves stale routing (self-gated on
 		// register+schema slug, so unrelated object writes are a cheap no-op).
@@ -228,8 +230,8 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: EndpointCacheInvalidationListener::class);
 		// @todo Remove this temporary listener to the software catalog application.
 		// $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
-		// Path-2 integration leaf: load the tiny `openconnector-integration`
-		// bundle on EVERY full-page render (not just OpenConnector's own SPA)
+		// Path-2 integration leaf: load the tiny `integriq-integration`
+		// bundle on EVERY full-page render (not just Integriq's own SPA)
 		// so the "Synced from" component is registered on the OpenRegister
 		// integration registry wherever a host app renders an object detail
 		// page (e.g. an OpenCatalogi publication). BeforeTemplateRenderedEvent
@@ -238,7 +240,7 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addListener(
 			BeforeTemplateRenderedEvent::class,
 			static function (): void {
-				Util::addInitScript('openconnector', 'openconnector-integration');
+				Util::addInitScript('integriq', 'integriq-integration');
 			}
 		);
 
@@ -257,11 +259,11 @@ class Application extends App implements IBootstrap {
 		// The Source-pattern facades (`PdokWmsSourceAdapter`,
 		// `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
 		// namespace) layer logging + Source-row identity on top so they can
-		// be discovered through the openconnector Source registry under
+		// be discovered through the integriq Source registry under
 		// category `geo`.
 		$isPdokActive = static function ($c): bool {
 			$config = $c->get('OCP\IAppConfig');
-			$raw = $config->getValueString('openconnector', 'pdok.feature_flag', '0');
+			$raw = $config->getValueString('integriq', 'pdok.feature_flag', '0');
 			return ($raw === '1' || strtolower($raw) === 'true');
 		};
 
@@ -423,7 +425,7 @@ class Application extends App implements IBootstrap {
 		// openspec/changes/hitl-approval-rule-action/design.md Decision 4) —
 		// without a notifier registered under this app id, the notification
 		// manager silently drops it when preparing it for display.
-		$context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
+		$context->registerNotifierService(\OCA\Integriq\Notification\ApprovalNotifier::class);
 
 		// Dashboard-http-datasource: advertise the capability so a leaf
 		// dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
@@ -501,7 +503,7 @@ class Application extends App implements IBootstrap {
 			// pipelines above are unaffected.
 			try {
 				$this->getContainer()->get(\Psr\Log\LoggerInterface::class)->warning(
-					'openconnector: could not feature-detect tables/forms for nextcloud-event-triggers — ' . $e->getMessage()
+					'integriq: could not feature-detect tables/forms for nextcloud-event-triggers — ' . $e->getMessage()
 				);
 			} catch (\Throwable) {
 				// Logger unavailable, ignore.
@@ -545,10 +547,10 @@ class Application extends App implements IBootstrap {
 	}//end appEnabledForAnyone()
 
 	/**
-	 * Register OpenConnector's three thin `ISpecificOperation` adapters
+	 * Register Integriq's three thin `ISpecificOperation` adapters
 	 * ("Run synchronization", "Call endpoint", "Fire CloudEvent") with NC
 	 * core's bundled `workflowengine` app (Settings > Flow), so an admin can
-	 * wire a file/tag Flow rule directly to an existing OpenConnector
+	 * wire a file/tag Flow rule directly to an existing Integriq
 	 * synchronization/endpoint/CloudEvent — see
 	 * flow-workflowengine-integration design.md.
 	 *
@@ -590,7 +592,7 @@ class Application extends App implements IBootstrap {
 			// crashing app registration; every other capability is unaffected.
 			try {
 				$this->getContainer()->get(\Psr\Log\LoggerInterface::class)->warning(
-					'openconnector: could not feature-detect workflowengine for flow-workflowengine-integration — ' . $e->getMessage()
+					'integriq: could not feature-detect workflowengine for flow-workflowengine-integration — ' . $e->getMessage()
 				);
 			} catch (\Throwable) {
 				// Logger unavailable, ignore.
@@ -602,12 +604,12 @@ class Application extends App implements IBootstrap {
 	/**
 	 * Wire the OpenRegister AppHost declarative observability engine.
 	 *
-	 * ADR-040 / ADR-006. OpenConnector adopts OpenRegister's AppHost
+	 * ADR-040 / ADR-006. Integriq adopts OpenRegister's AppHost
 	 * observability engine instead of hand-writing its `/api/health` +
 	 * `/api/metrics` controllers. The `metrics#index` and `health#index`
 	 * route names (URLs `/api/metrics`, `/api/health`) are aliased here at
 	 * the engine-owned generic controllers — built with `appName` =
-	 * `openconnector` so the engine reads THIS app's manifest
+	 * `integriq` so the engine reads THIS app's manifest
 	 * `observability` block, while the engine's own collaborators
 	 * (ManifestLoader / HealthCheckExecutor / MetricsEngine) are resolved
 	 * from OpenRegister's registered app container where they are pre-wired.
@@ -623,7 +625,7 @@ class Application extends App implements IBootstrap {
 	 * Preferences controller. The remaining bespoke plumbing (SPA/UiController
 	 * with its permissive `connect-src *` CSP, the domain SettingsController
 	 * `rebase` action + register.d-merging SettingsService, and the
-	 * OpenConnectorAdmin AdminSettings/Section) is intentionally KEPT bespoke
+	 * IntegriqAdmin AdminSettings/Section) is intentionally KEPT bespoke
 	 * because each diverges behaviourally from the manifest-driven generics
 	 * (see that method's docblock for the per-class rationale).
 	 *
@@ -635,10 +637,10 @@ class Application extends App implements IBootstrap {
 	 */
 
 	/**
-	 * Register OpenConnector's contributed flow nodes with OpenRegister's flow engine.
+	 * Register Integriq's contributed flow nodes with OpenRegister's flow engine.
 	 *
 	 * Feature-detected on the OR flow engine being present: without it this is a
-	 * no-op, so OpenConnector still boots on an instance whose OpenRegister
+	 * no-op, so Integriq still boots on an instance whose OpenRegister
 	 * predates the flow engine.
 	 *
 	 * @param IEventDispatcher $dispatcher The NC event dispatcher.
@@ -652,7 +654,7 @@ class Application extends App implements IBootstrap {
 		//
 		// The guard that used to stand here ran during register(), and at that
 		// point OpenRegister's classes are not autoloadable yet — apps are
-		// registered in an order that puts `openconnector` before
+		// registered in an order that puts `integriq` before
 		// `openregister`. So `class_exists()` answered FALSE on a perfectly
 		// healthy instance and this returned early: the nodes never registered,
 		// `source-call` and `synchronization-run` were absent from the palette,
@@ -669,17 +671,17 @@ class Application extends App implements IBootstrap {
 		// exactly the resilience the guard was reaching for.
 		$dispatcher->addServiceListener(
 			eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
-			className: \OCA\OpenConnector\Flow\FlowNodeListener::class
+			className: \OCA\Integriq\Flow\FlowNodeListener::class
 		);
 
 		// Same shape, same reasoning, for mapping: the transformation engine is
 		// OpenRegister's, but three Twig functions need services only this app
 		// has — callSource (CallService) and the two synchronisation-contract
 		// id lookups. Contributing them keeps the dependency pointing the right
-		// way; OpenRegister must load on an instance without OpenConnector.
+		// way; OpenRegister must load on an instance without Integriq.
 		$dispatcher->addServiceListener(
 			eventName: \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent::class,
-			className: \OCA\OpenConnector\Listener\MappingFunctionRegistrationListener::class
+			className: \OCA\Integriq\Listener\MappingFunctionRegistrationListener::class
 		);
 
 	}//end registerFlowNodes()
@@ -713,7 +715,7 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/apphost-adoption/spec.md
 	 */
 	private function registerAppHostObservability(IRegistrationContext $context): void {
-		// Build the thin openconnector HealthController subclass (URL
+		// Build the thin integriq HealthController subclass (URL
 		// /api/health, route name health#index — both unchanged) with the
 		// engine collaborators resolved from OpenRegister's app container,
 		// scoped to this app's manifest via appName.
@@ -752,11 +754,11 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		// Build the thin openconnector MetricsController (URL /api/metrics,
+		// Build the thin integriq MetricsController (URL /api/metrics,
 		// route name metrics#index — both unchanged) with the engine delegate
 		// resolved from OpenRegister's app container, scoped to this app's
 		// manifest via appName. Admin-only posture is engine-owned and
-		// re-declared on the openconnector method.
+		// re-declared on the integriq method.
 		$context->registerService(
 			MetricsController::class,
 			static function (ContainerInterface $c) {
@@ -801,8 +803,8 @@ class Application extends App implements IBootstrap {
 		// descriptor in src/manifest.json merges this provider's samples into
 		// the /api/metrics response; the engine resolves it via this alias.
 		$context->registerServiceAlias(
-			IMetricsProvider::class . '::openconnector',
-			OpenConnectorMetricsProvider::class
+			IMetricsProvider::class . '::integriq',
+			IntegriqMetricsProvider::class
 		);
 	}//end registerAppHostObservability()
 
@@ -814,39 +816,39 @@ class Application extends App implements IBootstrap {
 	 * a one-line subclass of an OpenRegister AppHost generic, with the
 	 * per-app collaborators (appId, section metadata, translated section name,
 	 * app-scoped action-auth service) injected by the factories below.
-	 * `OCA\OpenConnector\Controller\PreferencesController` was a byte-for-byte
+	 * `OCA\Integriq\Controller\PreferencesController` was a byte-for-byte
 	 * copy of OpenRegister's engine-owned {@see GenericPreferencesController}
 	 * (same `pref_` user-value namespace, same `[a-z0-9-]{0,64}` key
 	 * sanitisation, same `{value: string|null}` envelope, same per-session
 	 * user scoping), so it is deleted and the `/api/preferences/{key}`
 	 * GET/PUT routes now resolve to the leaf-namespaced class
-	 * `OCA\OpenConnector\AppHost\Controller\GenericPreferencesController`,
+	 * `OCA\Integriq\AppHost\Controller\GenericPreferencesController`,
 	 * registered here as a service that constructs the OpenRegister generic with
-	 * `appName = openconnector` injected — so every user value stays scoped to
+	 * `appName = integriq` injected — so every user value stays scoped to
 	 * THIS app's namespace, never OpenRegister's. URLs + JSON contract unchanged;
 	 * the engine owns the (identical, user-scoped, no-IDOR) auth posture so the
 	 * leaf can never drift it. Mirrors opencatalogi's just-merged adoption.
 	 *
-	 * `Settings\OpenConnectorAdmin` / `Sections\OpenConnectorAdmin` /
+	 * `Settings\IntegriqAdmin` / `Sections\IntegriqAdmin` /
 	 * `Repair\InitializeRegister` / `Repair\InitializeActions` were DEFERRED in
 	 * the original adopt-apphost proposal because `GenericAdminSettings`,
 	 * `GenericSettingsSection`, `GenericInitializeSettings` and
 	 * `GenericInitializeActions` did not yet exist in OpenRegister. They now
-	 * do. `OpenConnectorAdmin` (Settings + Section) and `InitializeActions`
+	 * do. `IntegriqAdmin` (Settings + Section) and `InitializeActions`
 	 * are adopted here, each behaviour-preserving:
 	 *   - `getAuthorizedAppConfig()` on the new `GenericAdminSettings`-backed
-	 *     `OpenConnectorAdmin` returns `[]`, byte-identical to the bespoke
+	 *     `IntegriqAdmin` returns `[]`, byte-identical to the bespoke
 	 *     implementation it replaces — every one of the ~30
-	 *     `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`-gated
+	 *     `#[AuthorizedAdminSetting(IntegriqAdmin::class)]`-gated
 	 *     controller methods across the app keeps its exact fail-closed
 	 *     (full-admin-only) posture. `getSection()`/`getPriority()` are pinned
-	 *     to the pre-adoption values (`openconnector`, `10`) below. The
+	 *     to the pre-adoption values (`integriq`, `10`) below. The
 	 *     dead `mySetting` template parameter (never read by
 	 *     `templates/settings/admin.php`) is dropped; a real `isUpToDate`
 	 *     signal is gained.
 	 *   - The Section's display name stays translated: the factory below
-	 *     resolves openconnector's own scoped `IL10N` and calls
-	 *     `->t('Open Connector')` before constructing the generic section
+	 *     resolves integriq's own scoped `IL10N` and calls
+	 *     `->t('Integriq')` before constructing the generic section
 	 *     (which itself has no l10n hook — it stores a plain string), so
 	 *     `getName()` keeps returning the localised string. Icon file and
 	 *     priority (`app-dark.svg`, `97`) are pinned to the pre-adoption values.
@@ -882,7 +884,7 @@ class Application extends App implements IBootstrap {
 	 *     override one — adopting it would silently tighten the CSP and break
 	 *     outbound source calls. The bespoke UiController + every `ui#*`/
 	 *     catch-all route therefore stay.
-	 *   - SettingsController: only the openconnector-specific `rebase` action
+	 *   - SettingsController: only the integriq-specific `rebase` action
 	 *     (recompute log-retention deletion timestamps) survives chain-C; the
 	 *     generic SettingsController does index/create/load with force-reimport
 	 *     semantics and has no `rebase` equivalent.
@@ -899,17 +901,17 @@ class Application extends App implements IBootstrap {
 	private function registerAppHostBoilerplate(IRegistrationContext $context): void {
 		// Bind the AppHost preferences controller (which does not physically
 		// exist in this app — same pattern as the Health/Metrics observability
-		// aliases) to the OpenRegister generic, with appName=openconnector so
+		// aliases) to the OpenRegister generic, with appName=integriq so
 		// the `pref_` user-value namespace is scoped to this app.
 		//
-		// The service key MUST be the STANDARD `OCA\OpenConnector\Controller\…`
+		// The service key MUST be the STANDARD `OCA\Integriq\Controller\…`
 		// namespace, because that is the class name NC's App::main synthesises
 		// from the plain `genericPreferences#…` route name (see the matching
 		// note in appinfo/routes.php). A non-standard namespace key (e.g.
 		// `…\AppHost\Controller\…`) is never looked up by the router, so every
 		// request 503s with "App controller is not enabled".
 		$context->registerService(
-			'OCA\\OpenConnector\\Controller\\GenericPreferencesController',
+			'OCA\\Integriq\\Controller\\GenericPreferencesController',
 			static function (ContainerInterface $c) {
 				return new GenericPreferencesController(
 					appName: self::APP_ID,
@@ -922,7 +924,7 @@ class Application extends App implements IBootstrap {
 
 		// App-scoped generic action-auth service, used only to seed the
 		// matrix in InitializeActions below (reads/writes the identical
-		// `actions` IAppConfig key, under the `openconnector` app id, that
+		// `actions` IAppConfig key, under the `integriq` app id, that
 		// the still-bespoke `ActionAuthService` enforces against — see that
 		// repair step's docblock). Not aliased under the bespoke
 		// `ActionAuthService` class name — controllers keep injecting the
@@ -962,7 +964,7 @@ class Application extends App implements IBootstrap {
 			 *
 			 * @return InitializeActions
 			 *
-			 * @psalm-suppress TooManyArguments see OpenConnectorAdminSettings above.
+			 * @psalm-suppress TooManyArguments see IntegriqAdminSettings above.
 			 */
 			static function (ContainerInterface $c) {
 				return new InitializeActions(
@@ -977,7 +979,7 @@ class Application extends App implements IBootstrap {
 	}//end registerAppHostBoilerplate()
 
 	/**
-	 * Bind the leaf `OpenConnectorAdmin` settings form + section class names to
+	 * Bind the leaf `IntegriqAdmin` settings form + section class names to
 	 * the AppHost `GenericAdminSettings`/`GenericSettingsSection` generics.
 	 *
 	 * Split out of {@see registerAppHostBoilerplate()} to keep both methods
@@ -992,13 +994,13 @@ class Application extends App implements IBootstrap {
 	 */
 	private function registerAppHostAdminSettings(IRegistrationContext $context): void {
 		// Admin settings form + section: pinned to the pre-adoption metadata
-		// (section id `openconnector`, priority 10 / 97, icon `app-dark.svg`).
+		// (section id `integriq`, priority 10 / 97, icon `app-dark.svg`).
 		$context->registerService(
-			OpenConnectorAdminSettings::class,
+			IntegriqAdminSettings::class,
 			/**
-			 * Build the leaf OpenConnectorAdmin settings form.
+			 * Build the leaf IntegriqAdmin settings form.
 			 *
-			 * OpenConnectorAdminSettings extends OpenRegister's
+			 * IntegriqAdminSettings extends OpenRegister's
 			 * GenericAdminSettings (peer app, not in vendor — see psalm.xml's
 			 * UndefinedClass allowlist for the same class); Psalm cannot
 			 * resolve the inherited constructor and treats the subclass as
@@ -1006,14 +1008,14 @@ class Application extends App implements IBootstrap {
 			 *
 			 * @param ContainerInterface $c App-scoped DI container.
 			 *
-			 * @return OpenConnectorAdminSettings
+			 * @return IntegriqAdminSettings
 			 *
 			 * @psalm-suppress TooManyArguments
 			 */
 			static function (ContainerInterface $c) {
-				return new OpenConnectorAdminSettings(
+				return new IntegriqAdminSettings(
 					appId: self::APP_ID,
-					sectionId: 'openconnector',
+					sectionId: 'integriq',
 					priority: 10,
 					appManager: $c->get(\OCP\App\IAppManager::class),
 					initialState: $c->get(\OCP\AppFramework\Services\IInitialState::class),
@@ -1023,25 +1025,25 @@ class Application extends App implements IBootstrap {
 		);
 
 		$context->registerService(
-			OpenConnectorAdminSection::class,
+			IntegriqAdminSection::class,
 			/**
-			 * Build the leaf OpenConnectorAdmin settings section.
+			 * Build the leaf IntegriqAdmin settings section.
 			 *
-			 * Resolves openconnector's own scoped IL10N and translates the
+			 * Resolves integriq's own scoped IL10N and translates the
 			 * section name BEFORE constructing the generic section, which has
 			 * no l10n hook of its own (see class docblock).
 			 *
 			 * @param ContainerInterface $c App-scoped DI container.
 			 *
-			 * @return OpenConnectorAdminSection
+			 * @return IntegriqAdminSection
 			 *
-			 * @psalm-suppress TooManyArguments see OpenConnectorAdminSettings above.
+			 * @psalm-suppress TooManyArguments see IntegriqAdminSettings above.
 			 */
 			static function (ContainerInterface $c) {
-				$name = $c->get(\OCP\IL10N::class)->t('Open Connector');
+				$name = $c->get(\OCP\IL10N::class)->t('Integriq');
 
-				return new OpenConnectorAdminSection(
-					sectionId: 'openconnector',
+				return new IntegriqAdminSection(
+					sectionId: 'integriq',
 					name: $name,
 					appId: self::APP_ID,
 					iconFile: 'app-dark.svg',
@@ -1060,7 +1062,7 @@ class Application extends App implements IBootstrap {
 	 * now lives in OpenRegister objects (ADR-001). The connector-specific services
 	 * that inject OpenRegister's `ObjectService` only have data to operate on once
 	 * the one-shot migrator has copied every legacy row across and flipped the
-	 * `openconnector.storage_migrated` IAppConfig flag to `'true'`.
+	 * `integriq.storage_migrated` IAppConfig flag to `'true'`.
 	 *
 	 * NOTE (consolidate-merge): PR #29 originally threw a `\LogicException` here as a
 	 * hard pre-flight. Development deliberately deferred that hard gate — a boot-time
@@ -1073,7 +1075,7 @@ class Application extends App implements IBootstrap {
 	 * legacy-table-cleanup release ships.
 	 *
 	 * Bypassable in CI/test (where no real upgrade has run) via
-	 * `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1`, and soft-skipped if `IAppConfig`
+	 * `INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT=1`, and soft-skipped if `IAppConfig`
 	 * cannot be resolved during very early bootstrap.
 	 *
 	 * @return void
@@ -1082,7 +1084,7 @@ class Application extends App implements IBootstrap {
 	 */
 	private function assertStorageMigrated(): void {
 		// CI / test bypass — no real upgrade has run in those environments.
-		if (getenv('OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
+		if (getenv('INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
 			return;
 		}
 
@@ -1102,8 +1104,8 @@ class Application extends App implements IBootstrap {
 		try {
 			$logger = $this->getContainer()->get(\Psr\Log\LoggerInterface::class);
 			$logger->warning(
-				'openconnector: legacy storage has not been migrated to OpenRegister. '
-				. 'Run "occ openconnector:migrate-storage" to materialise the register and '
+				'integriq: legacy storage has not been migrated to OpenRegister. '
+				. 'Run "occ integriq:migrate-storage" to materialise the register and '
 				. 'copy legacy rows. Connector services will operate on an empty register '
 				. 'until then.'
 			);
@@ -1129,7 +1131,7 @@ class Application extends App implements IBootstrap {
 	}//end boot()
 
 	/**
-	 * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.
+	 * Register integriq-side IntegrationProviders with OR's IntegrationRegistry.
 	 *
 	 * Per OR's pluggable-integration-registry spec (AD-1), apps register their
 	 * providers at boot — OR's registry is a shared per-request service so all
@@ -1145,7 +1147,7 @@ class Application extends App implements IBootstrap {
 	 *     (openspec/changes/connector-category-adapter-scaffolding).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
-	 * openconnector is loaded but openregister isn't enabled yet) so boot
+	 * integriq is loaded but openregister isn't enabled yet) so boot
 	 * doesn't crash on a stale install.
 	 *
 	 * @param IBootContext $context Boot context.
@@ -1175,7 +1177,7 @@ class Application extends App implements IBootstrap {
 				$context->getServerContainer()
 					->get('Psr\Log\LoggerInterface')
 					->warning(
-						'openconnector: failed to register IntegrationProviders with OR — ' . $e->getMessage(),
+						'integriq: failed to register IntegrationProviders with OR — ' . $e->getMessage(),
 						['exception' => $e]
 					);
 			} catch (\Throwable) {

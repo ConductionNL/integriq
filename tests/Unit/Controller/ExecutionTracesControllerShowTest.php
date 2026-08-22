@@ -104,7 +104,7 @@ class ExecutionTracesControllerShowTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
 		return new ExecutionTracesController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->traceService,
 			$this->l,

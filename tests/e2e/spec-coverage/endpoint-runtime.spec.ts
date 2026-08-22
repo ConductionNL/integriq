@@ -11,7 +11,7 @@
  * internals that are covered by PHPUnit + Newman. Those scenarios carry
  * @e2e exclude in the spec. HTTP surface helpers are retained without @e2e tags.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  */
 

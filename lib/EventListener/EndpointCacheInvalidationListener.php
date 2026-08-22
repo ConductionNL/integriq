@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EndpointCacheInvalidation EventListener.
+ * Integriq EndpointCacheInvalidation EventListener.
  *
  * Listens for OpenRegister object create/update/delete events and clears the
  * endpoint routing cache whenever an `openconnector`/`endpoint` object changes,
@@ -9,7 +9,7 @@
  * endpoint is created, updated, or deleted.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,7 +17,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,9 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCacheService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 class EndpointCacheInvalidationListener implements IEventListener {
 
 	/**
-	 * Register slug that holds OpenConnector endpoint objects.
+	 * Register slug that holds Integriq endpoint objects.
 	 */
 	private const ENDPOINT_REGISTER_SLUG = 'openconnector';
 
@@ -117,7 +117,7 @@ class EndpointCacheInvalidationListener implements IEventListener {
 	}//end resolveObject()
 
 	/**
-	 * Determine whether the object is an OpenConnector endpoint object.
+	 * Determine whether the object is an Integriq endpoint object.
 	 *
 	 * @param ObjectEntity $object The object to classify.
 	 *

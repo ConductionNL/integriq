@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:job-to-flow.
+ * OCC command: integriq:job-to-flow.
  *
  * Task 3.3 of `flow-native-synchronization`: prints the generated
  * `trigger-schedule` flow document for one Job, or the reasons that job cannot
@@ -13,11 +13,11 @@
  * migration that ships "disabled until reviewed".
  *
  * Usage:
- *   occ openconnector:job-to-flow <job>
- *   occ openconnector:job-to-flow <job> --json
+ *   occ integriq:job-to-flow <job>
+ *   occ integriq:job-to-flow <job> --json
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,17 +28,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Service\JobToFlowGenerator;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Service\JobToFlowGenerator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -73,7 +73,7 @@ class JobToFlow extends Command {
 	 * @spec exclude Symfony console wiring — framework metadata, no domain behavior.
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:job-to-flow')
+		$this->setName(name: 'integriq:job-to-flow')
 			->setDescription(
 				'Render a job as a generated (disabled) trigger-schedule flow document, or explain why it cannot be'
 			)

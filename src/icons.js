@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 //
-// Icon registry for openconnector (ADR-077 semantic icon vocabulary).
+// Icon registry for integriq (ADR-077 semantic icon vocabulary).
 //
 // CnAppNav, CnIcon, CnIndexPage / CnDetailPage headers and empty states resolve
 // an `icon` by PascalCase name through the registry that `registerIcons()`

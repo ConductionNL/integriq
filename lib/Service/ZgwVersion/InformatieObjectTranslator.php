@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EnkelvoudigInformatieObject Translator.
+ * Integriq EnkelvoudigInformatieObject Translator.
  *
  * `1.0` ↔ `1.6` translator for the ZGW `enkelvoudiginformatieobject`
  * resource. Structurally identical field set between `1.0` and `1.6`
@@ -13,7 +13,7 @@
  * (see design.md "Out of Scope").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\ZgwVersion
+ * @package  OCA\Integriq\Service\ZgwVersion
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\ZgwVersion;
+namespace OCA\Integriq\Service\ZgwVersion;
 
 /**
  * Translates the `enkelvoudiginformatieobject` resource between `1.0` and `1.6`.

@@ -14,7 +14,7 @@ class UiControllerTest extends TestCase {
 	 * Build a controller with a mocked request.
 	 */
 	private function controller(): UiController {
-		return new UiController('openconnector', $this->createMock(IRequest::class));
+		return new UiController('integriq', $this->createMock(IRequest::class));
 	}
 
 	/**

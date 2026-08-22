@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector SOAP service.
+ * Integriq SOAP service.
  *
  * Basic SOAP client for communicating with SOAP sources using a WSDL. Manages
  * execution of SOAP requests using the Guzzle HTTP client for the actual
  * HTTP transport.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,17 +16,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DOMDocument;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Soap\Engine\Engine;
 use Soap\Engine\SimpleEngine;

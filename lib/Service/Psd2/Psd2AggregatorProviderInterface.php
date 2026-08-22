@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PSD2 AIS Aggregator Provider Interface.
+ * Integriq PSD2 AIS Aggregator Provider Interface.
  *
  * Narrow domain seam through which every PSD2 Account Information Service
  * (AIS) operation occurs: requisition/consent creation, consent finalisation,
@@ -11,7 +11,7 @@
  * sibling Peppol provider seam.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Psd2
+ * @package  OCA\Integriq\Service\Psd2
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,17 +20,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Psd2;
+namespace OCA\Integriq\Service\Psd2;
 
-use OCA\OpenConnector\Exception\Psd2ConsentRevokedException;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
+use OCA\Integriq\Exception\Psd2ConsentRevokedException;
+use OCA\Integriq\Exception\Psd2ProviderException;
 
 /**
  * A PSD2 AIS aggregator binding: SCA requisition + consent + accounts + transactions.

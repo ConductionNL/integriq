@@ -13,7 +13,7 @@
  * 1854 skipped without a mapping, 0 skipped with one; 6.8 s against 17.7 s.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,10 +22,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateTime;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationService;
 use PHPUnit\Framework\TestCase;
 
 /**

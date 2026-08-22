@@ -28,7 +28,7 @@
  *   - openspec/changes/openconnector-services-direct-or-usage/proposal.md § cleanup.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,12 +36,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -73,10 +73,12 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 	private int $legacyTablesWithRows = -1;
 
 	/**
-	 * The 15 legacy openconnector tables. Each was the storage backing for
-	 * one openconnector entity pre chain-B/C cutover. Post-cutover, data
+	 * The 15 legacy `openconnector_*` tables. Each was the storage backing for
+	 * one Integriq entity pre chain-B/C cutover. Post-cutover, data
 	 * lives in oc_openregister_objects keyed by register=openconnector +
-	 * schema=<slug>.
+	 * schema=<slug>. Both the table names and the register slug are frozen
+	 * across the openconnector -> integriq app-id rename: these are executed
+	 * history and OpenRegister matches registers by slug.
 	 *
 	 * Order: drop dependent tables first (logs, contract_logs) then
 	 * referenced tables (sync, source) — matters only if FK constraints
@@ -97,7 +99,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 		'openconnector_synchronizations',
 		'openconnector_event_subscriptions',
 		'openconnector_events',
-		// Leaf tables (no inter-openconnector FKs).
+		// Leaf tables (no inter-table FKs).
 		'openconnector_endpoints',
 		'openconnector_sources',
 		'openconnector_jobs',
@@ -218,7 +220,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 	}//end changeSchema()
 
 	/**
-	 * Post-schema change callback — assert `openconnector.storage_migrated`.
+	 * Post-schema change callback — assert `integriq.storage_migrated`.
 	 *
 	 * This method used to be a no-op, on the premise that the flag "stays set
 	 * to 'true'" from {@see Version2Date20260520000001}. That premise holds
@@ -228,14 +230,14 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 	 *
 	 *   * Migration ...0001 bails out early (`return`, flag untouched) when
 	 *     OpenRegister is not yet loadable — routine during `occ app:enable`
-	 *     on a clean instance, where openconnector's migrations run before
+	 *     on a clean instance, where integriq's migrations run before
 	 *     openregister has been set up.
 	 *   * Even when it does complete, a fresh instance has no legacy rows, so
 	 *     the "all 15 entities copied" branch it needs to reach describes an
 	 *     event that never happens.
 	 *
 	 * So `storage_migrated` stays at its 'false' default forever, and
-	 * {@see \OCA\OpenConnector\Service\Integration\SynchronizationContractProvider::isEnabled()}
+	 * {@see \OCA\Integriq\Service\Integration\SynchronizationContractProvider::isEnabled()}
 	 * returns false forever: "Synced from" provenance never appears on ANY
 	 * fresh install. It fails closed and silently — the leaf simply is not
 	 * there, which is indistinguishable from having no contracts to show.
@@ -243,7 +245,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 	 * `migration-round-trip.spec.ts` both `test.skip()` when the flag is
 	 * false, so six specs reported as skipped-and-green on every CI run.
 	 *
-	 * The flag's real meaning is "openconnector's data lives in OpenRegister,
+	 * The flag's real meaning is "this app's data lives in OpenRegister,
 	 * not in the legacy tables". THIS migration is the point at which that
 	 * becomes true by construction: it is the chain-B/C cleanup, and it only
 	 * reaches here after its safety gate has confirmed no legacy table still
@@ -279,12 +281,12 @@ class Version2Date20260520000099 extends SimpleMigrationStep {
 		}
 
 		$appConfig = \OC::$server->get(IAppConfig::class);
-		if ($appConfig->getValueString('openconnector', 'storage_migrated', 'false') === 'true') {
+		if ($appConfig->getValueString('integriq', 'storage_migrated', 'false') === 'true') {
 			$output->info('chain-B/C cleanup: `storage_migrated` already true — nothing to do.');
 			return;
 		}
 
-		$appConfig->setValueString('openconnector', 'storage_migrated', 'true');
+		$appConfig->setValueString('integriq', 'storage_migrated', 'true');
 		$output->info(
 			'chain-B/C cleanup: no legacy table holds rows — set `storage_migrated=true`.'
 			. ' Sync-contract provenance ("Synced from") is now enabled.'

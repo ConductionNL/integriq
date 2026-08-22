@@ -23,16 +23,16 @@
 <template>
 	<div class="syncDeadLetters">
 		<div class="syncDeadLetters__header">
-			<h2>{{ t('openconnector', 'Sync dead letters') }}</h2>
+			<h2>{{ t('integriq', 'Sync dead letters') }}</h2>
 			<div class="syncDeadLetters__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:inputLabel="t('openconnector', 'Status')"
+					:inputLabel="t('integriq', 'Status')"
 					:options="statusOptions"
 					@update:modelValue="reload" />
 				<NcTextField
 					v-model="synchronizationFilter"
-					:label="t('openconnector', 'Synchronization')"
+					:label="t('integriq', 'Synchronization')"
 					@update:modelValue="reloadDebounced" />
 			</div>
 		</div>
@@ -42,23 +42,23 @@
 			class="syncDeadLetters__bulk"
 			data-testid="bulk-bar">
 			<span>{{
-				t('openconnector', '{count} selected', { count: selected.length })
+				t('integriq', '{count} selected', { count: selected.length })
 			}}</span>
 			<template v-if="bulkConfirm">
 				<span>{{
 					bulkConfirm === 'replay'
-						? t('openconnector', 'Replay {count} items now?', {
+						? t('integriq', 'Replay {count} items now?', {
 								count: selected.length,
 							})
-						: t('openconnector', 'Discard {count} items?', {
+						: t('integriq', 'Discard {count} items?', {
 								count: selected.length,
 							})
 				}}</span>
 				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
-					{{ t('openconnector', 'Confirm') }}
+					{{ t('integriq', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 			</template>
 			<template v-else>
@@ -66,10 +66,10 @@
 					variant="primary"
 					:disabled="busy"
 					@click="bulkConfirm = 'replay'">
-					{{ t('openconnector', 'Replay selected') }}
+					{{ t('integriq', 'Replay selected') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
-					{{ t('openconnector', 'Discard selected') }}
+					{{ t('integriq', 'Discard selected') }}
 				</NcButton>
 			</template>
 		</div>
@@ -80,7 +80,7 @@
 			v-else-if="!rows.length"
 			class="syncDeadLetters__empty"
 			data-testid="empty-state">
-			{{ t('openconnector', 'No dead-lettered sync items') }}
+			{{ t('integriq', 'No dead-lettered sync items') }}
 		</p>
 
 		<table
@@ -90,12 +90,12 @@
 			<thead>
 				<tr>
 					<th />
-					<th scope="col">{{ t('openconnector', 'Synchronization') }}</th>
-					<th scope="col">{{ t('openconnector', 'Origin ID') }}</th>
-					<th scope="col">{{ t('openconnector', 'Status') }}</th>
-					<th scope="col">{{ t('openconnector', 'Retries') }}</th>
-					<th scope="col">{{ t('openconnector', 'Created') }}</th>
-					<th scope="col">{{ t('openconnector', 'Error') }}</th>
+					<th scope="col">{{ t('integriq', 'Synchronization') }}</th>
+					<th scope="col">{{ t('integriq', 'Origin ID') }}</th>
+					<th scope="col">{{ t('integriq', 'Status') }}</th>
+					<th scope="col">{{ t('integriq', 'Retries') }}</th>
+					<th scope="col">{{ t('integriq', 'Created') }}</th>
+					<th scope="col">{{ t('integriq', 'Error') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -105,7 +105,7 @@
 						<NcCheckboxRadioSwitch
 							:modelValue="isSelected(row)"
 							:aria-label="
-								t('openconnector', 'Select dead letter {id}', {
+								t('integriq', 'Select dead letter {id}', {
 									id: row.uuid || row.id,
 								})
 							"
@@ -127,7 +127,7 @@
 					</td>
 					<td>
 						<NcButton variant="tertiary" @click="openDetail(row)">
-							{{ t('openconnector', 'Inspect') }}
+							{{ t('integriq', 'Inspect') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -251,12 +251,12 @@ export default {
 					params.synchronizationId = this.synchronizationFilter
 				}
 				const res = await axios.get(
-					generateUrl('/apps/openconnector/api/sync-dead-letter'),
+					generateUrl('/apps/integriq/api/sync-dead-letter'),
 					{ params },
 				)
 				this.rows = res.data?.results || []
 			} catch (err) {
-				showError(t('openconnector', 'Failed to load sync dead letters'))
+				showError(t('integriq', 'Failed to load sync dead letters'))
 				this.rows = []
 			} finally {
 				this.loading = false
@@ -276,7 +276,7 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/openconnector/api/sync-dead-letter/${verb}`),
+					generateUrl(`/apps/integriq/api/sync-dead-letter/${verb}`),
 					{ ids: this.selected },
 				)
 				const results = res.data?.results || {}
@@ -284,19 +284,19 @@ export default {
 				const failed = Object.keys(results).length - ok
 				if (failed > 0) {
 					showError(
-						t('openconnector', '{ok} processed, {failed} failed', {
+						t('integriq', '{ok} processed, {failed} failed', {
 							ok,
 							failed,
 						}),
 					)
 				} else {
-					showSuccess(t('openconnector', '{ok} items processed', { ok }))
+					showSuccess(t('integriq', '{ok} items processed', { ok }))
 				}
 				await this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Bulk action failed')
+					t('integriq', 'Bulk action failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

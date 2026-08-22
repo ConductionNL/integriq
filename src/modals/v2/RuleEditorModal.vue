@@ -111,7 +111,7 @@
 					@blur="nameTouched = true" />
 				<NcTextArea
 					:modelValue="draft.description"
-					:label="t('openconnector', 'Description')"
+					:label="t('integriq', 'Description')"
 					:disabled="saving"
 					rows="1"
 					resize="vertical"
@@ -124,14 +124,14 @@
 			<section class="cn-rule-editor__section">
 				<header class="cn-rule-editor__section-header">
 					<FilterOutlineIcon :size="20" />
-					<h3>{{ t('openconnector', 'When (conditions)') }}</h3>
+					<h3>{{ t('integriq', 'When (conditions)') }}</h3>
 					<NcButton
 						variant="tertiary"
 						:disabled="saving"
 						:aria-label="
 							rawConditions
-								? t('openconnector', 'Switch back to visual builder')
-								: t('openconnector', 'Edit conditions as raw JSON')
+								? t('integriq', 'Switch back to visual builder')
+								: t('integriq', 'Edit conditions as raw JSON')
 						"
 						@click="rawConditions = !rawConditions">
 						<template #icon>
@@ -139,8 +139,8 @@
 						</template>
 						{{
 							rawConditions
-								? t('openconnector', 'Visual builder')
-								: t('openconnector', 'Raw JSON')
+								? t('integriq', 'Visual builder')
+								: t('integriq', 'Raw JSON')
 						}}
 					</NcButton>
 				</header>
@@ -159,7 +159,7 @@
 						:placeholder="conditionsPlaceholder"
 						spellcheck="false"
 						rows="8"
-						:aria-label="t('openconnector', 'Conditions as JSON Logic')"
+						:aria-label="t('integriq', 'Conditions as JSON Logic')"
 						@input="onRawConditionsInput($event.target.value)" />
 					<div class="cn-rule-editor__raw-footer">
 						<span
@@ -171,7 +171,7 @@
 							{{
 								rawConditionsError
 								|| t(
-									'openconnector',
+									'integriq',
 									'JSON Logic, evaluated against the incoming request data. Leave empty to always match.',
 								)
 							}}
@@ -185,7 +185,7 @@
 								|| !rawConditionsDraft.trim()
 							"
 							@click="formatRawConditions">
-							{{ t('openconnector', 'Format JSON') }}
+							{{ t('integriq', 'Format JSON') }}
 						</NcButton>
 					</div>
 				</div>
@@ -195,7 +195,7 @@
 			<section class="cn-rule-editor__section">
 				<header class="cn-rule-editor__section-header">
 					<PlayOutlineIcon :size="20" />
-					<h3>{{ t('openconnector', 'Then (action)') }}</h3>
+					<h3>{{ t('integriq', 'Then (action)') }}</h3>
 				</header>
 
 				<div class="cn-rule-editor__grid">
@@ -203,7 +203,7 @@
 						<label
 							for="cn-rule-editor-timing"
 							class="cn-rule-editor__label">
-							{{ t('openconnector', 'Timing') }}
+							{{ t('integriq', 'Timing') }}
 						</label>
 						<NcSelect
 							inputId="cn-rule-editor-timing"
@@ -211,7 +211,7 @@
 							:options="timingOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Timing')"
+							:aria-label-combobox="t('integriq', 'Timing')"
 							@update:modelValue="
 								(option) =>
 									updateDraft('timing', option?.id || 'before')
@@ -219,7 +219,7 @@
 						<span class="cn-rule-editor__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'Whether the rule runs before or after the endpoint handles the request.',
 								)
 							}}
@@ -230,14 +230,14 @@
 						<NcInputField
 							:modelValue="orderText"
 							type="number"
-							:label="t('openconnector', 'Order')"
+							:label="t('integriq', 'Order')"
 							:disabled="saving"
 							placeholder="100"
 							@update:modelValue="onOrderInput" />
 						<span class="cn-rule-editor__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'Execution order within the timing slot — lower runs first.',
 								)
 							}}
@@ -248,7 +248,7 @@
 						<label
 							for="cn-rule-editor-action"
 							class="cn-rule-editor__label">
-							{{ t('openconnector', 'Action') }} *
+							{{ t('integriq', 'Action') }} *
 						</label>
 						<NcSelect
 							inputId="cn-rule-editor-action"
@@ -256,14 +256,14 @@
 							:options="actionOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Action')"
+							:aria-label-combobox="t('integriq', 'Action')"
 							@update:modelValue="
 								(option) => updateDraft('action', option?.id || '')
 							" />
 						<span class="cn-rule-editor__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'The request method this rule applies to.',
 								)
 							}}
@@ -274,7 +274,7 @@
 						<label
 							for="cn-rule-editor-type"
 							class="cn-rule-editor__label">
-							{{ t('openconnector', 'Type') }} *
+							{{ t('integriq', 'Type') }} *
 						</label>
 						<NcSelect
 							inputId="cn-rule-editor-type"
@@ -282,17 +282,17 @@
 							:options="typeOptions"
 							:clearable="false"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Type')"
+							:aria-label-combobox="t('integriq', 'Type')"
 							@update:modelValue="onTypePick" />
 						<span class="cn-rule-editor__helper">
 							{{
 								isErrorType
 									? t(
-											'openconnector',
+											'integriq',
 											'The error response is configured below.',
 										)
 									: t(
-											'openconnector',
+											'integriq',
 											'Configure this type with the Open full editor row action.',
 										)
 							}}
@@ -305,7 +305,7 @@
 			<section v-if="isErrorType" class="cn-rule-editor__section">
 				<header class="cn-rule-editor__section-header">
 					<AlertCircleOutlineIcon :size="20" />
-					<h3>{{ t('openconnector', 'Error response') }}</h3>
+					<h3>{{ t('integriq', 'Error response') }}</h3>
 				</header>
 
 				<div class="cn-rule-editor__grid">
@@ -315,7 +315,7 @@
 							type="number"
 							:min="100"
 							:max="999"
-							:label="t('openconnector', 'Error Code')"
+							:label="t('integriq', 'Error Code')"
 							:disabled="saving"
 							placeholder="500"
 							@update:modelValue="onErrorCodeInput" />
@@ -324,10 +324,10 @@
 					<div class="cn-rule-editor__field">
 						<NcTextField
 							:modelValue="errorConfig.name"
-							:label="t('openconnector', 'Error Title')"
+							:label="t('integriq', 'Error Title')"
 							maxlength="255"
 							:disabled="saving"
-							:placeholder="t('openconnector', 'Something went wrong')"
+							:placeholder="t('integriq', 'Something went wrong')"
 							@update:modelValue="
 								(value) => updateErrorField('name', value)
 							" />
@@ -336,13 +336,13 @@
 
 				<NcTextArea
 					:modelValue="errorConfig.message"
-					:label="t('openconnector', 'Error Message')"
+					:label="t('integriq', 'Error Message')"
 					maxlength="2550"
 					resize="vertical"
 					rows="3"
 					:disabled="saving"
 					:placeholder="
-						t('openconnector', 'We encountered an unexpected problem')
+						t('integriq', 'We encountered an unexpected problem')
 					"
 					@update:modelValue="
 						(value) => updateErrorField('message', value)
@@ -357,7 +357,7 @@
 					">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Include JSON Logic results in errors array',
 						)
 					}}
@@ -367,7 +367,7 @@
 
 		<template #actions>
 			<NcButton :disabled="saving" @click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				{{ t('integriq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
@@ -377,8 +377,8 @@
 				</template>
 				{{
 					isCreate
-						? t('openconnector', 'Create')
-						: t('openconnector', 'Save')
+						? t('integriq', 'Create')
+						: t('integriq', 'Save')
 				}}
 			</NcButton>
 		</template>
@@ -522,8 +522,8 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
-				? this.t('openconnector', 'Create rule')
-				: this.t('openconnector', 'Edit rule')
+				? this.t('integriq', 'Create rule')
+				: this.t('integriq', 'Edit rule')
 		},
 
 		/**
@@ -537,20 +537,20 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		nameLabel() {
-			return this.t('openconnector', 'Name') + ' *'
+			return this.t('integriq', 'Name') + ' *'
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
 				return this.nameTouched
-					? this.t('openconnector', 'Name is required')
+					? this.t('integriq', 'Name is required')
 					: ''
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
 				: this.t(
-						'openconnector',
+						'integriq',
 						'Name must contain at least one letter or number',
 					)
 		},
@@ -593,7 +593,7 @@ export default {
 		timingOptions() {
 			return TIMING_OPTIONS.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -601,7 +601,7 @@ export default {
 		actionOptions() {
 			return ACTION_OPTIONS.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -609,7 +609,7 @@ export default {
 		typeOptions() {
 			return ACTION_TYPES.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -897,7 +897,7 @@ export default {
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
 				this.rawConditionsError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -921,7 +921,7 @@ export default {
 				this.rawConditionsError = ''
 			} catch (parseErr) {
 				this.rawConditionsError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -956,13 +956,13 @@ export default {
 				})
 				showSuccess(
 					this.isCreate
-						? this.t('openconnector', 'Rule created')
-						: this.t('openconnector', 'Rule saved'),
+						? this.t('integriq', 'Rule created')
+						: this.t('integriq', 'Rule saved'),
 				)
 				this.close?.()
 			} catch (err) {
 				this.saveError =
-					err?.message || this.t('openconnector', 'Failed to save rule')
+					err?.message || this.t('integriq', 'Failed to save rule')
 			} finally {
 				this.saving = false
 			}

@@ -76,7 +76,7 @@ class SynchronizationsControllerResetCursorTest extends TestCase {
 		$actionAuth = $this->createMock(ActionAuthService::class);
 
 		$this->controller = new SynchronizationsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$this->synchronizationService,

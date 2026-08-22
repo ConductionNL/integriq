@@ -20,7 +20,7 @@
 
 import { test, expect, type Page } from '@playwright/test'
 
-const APP_BASE = '/index.php/apps/openconnector'
+const APP_BASE = '/index.php/apps/integriq'
 
 /**
  * Open the Catalog page (which hosts the configuration import/export

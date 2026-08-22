@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK Controller
+ * Integriq PDOK Controller
  *
  * REST controller for the four PDOK Locatieserver proxy endpoints (suggest,
  * lookup, free-text, reverse). All endpoints require an authenticated NC
@@ -9,7 +9,7 @@
  * write-through.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,15 +20,15 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Connectors\PdokConnector;
-use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\Integriq\Connectors\PdokConnector;
+use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -45,7 +45,7 @@ class PdokController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param PdokConnector $pdokConnector Connector providing PDOK access.
 	 * @param IUserSession $userSession The user session.

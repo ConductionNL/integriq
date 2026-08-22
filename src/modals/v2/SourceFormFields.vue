@@ -42,22 +42,22 @@
 				<label
 					:for="'cn-source-form-' + field.key"
 					class="cn-source-form-fields__label">
-					{{ field.label || t('openconnector', 'Type')
+					{{ field.label || t('integriq', 'Type')
 					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<NcSelect
 					:inputId="'cn-source-form-' + field.key"
-					:aria-label-combobox="field.label || t('openconnector', 'Type')"
+					:aria-label-combobox="field.label || t('integriq', 'Type')"
 					:modelValue="selectedTypeOption"
 					:options="typeOptions"
 					:clearable="!field.required"
-					:placeholder="t('openconnector', 'Pick a source type')"
+					:placeholder="t('integriq', 'Pick a source type')"
 					@update:modelValue="onTypePick" />
 				<CnFieldHelper
 					:text="
 						field.description
 						|| t(
-							'openconnector',
+							'integriq',
 							'The transport used to reach this source.',
 						)
 					"
@@ -193,12 +193,12 @@
 				:modelValue="brokeredEnabled"
 				type="switch"
 				@update:modelValue="onToggleBrokered">
-				{{ t('openconnector', 'Brokered credential (OpenRegister)') }}
+				{{ t('integriq', 'Brokered credential (OpenRegister)') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-source-form-fields__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.',
 					)
 				}}
@@ -210,7 +210,7 @@
 					class="cn-source-form-fields__note cn-source-form-fields__note--warn">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.',
 						)
 					}}
@@ -219,26 +219,26 @@
 					<label
 						for="cn-source-form-credentialref"
 						class="cn-source-form-fields__label">
-						{{ t('openconnector', 'Credential') }}
+						{{ t('integriq', 'Credential') }}
 					</label>
 					<NcSelect
 						inputId="cn-source-form-credentialref"
-						:inputLabel="t('openconnector', 'Brokered credential')"
+						:inputLabel="t('integriq', 'Brokered credential')"
 						:aria-label-combobox="
-							t('openconnector', 'Brokered credential')
+							t('integriq', 'Brokered credential')
 						"
 						:modelValue="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
 						:placeholder="
-							t('openconnector', 'Select a brokered credential')
+							t('integriq', 'Select a brokered credential')
 						"
 						@update:modelValue="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.',
 							)
 						}}
@@ -248,7 +248,7 @@
 						class="cn-source-form-fields__note">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'You have no brokered credentials yet. Create one in OpenRegister first.',
 							)
 						}}
@@ -563,7 +563,7 @@ export default {
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
 				this.jsonErrors[field.key] = t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)

@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector StUF Field Mapper
+ * Integriq StUF Field Mapper
  *
  * Maps StUF-BG/StUF-ZKN fields to/from OpenRegister object properties.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,12 +14,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 /**
  * Service for mapping StUF fields to/from OpenRegister object properties.

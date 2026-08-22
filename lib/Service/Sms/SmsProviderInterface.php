@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector SMS Provider Interface.
+ * Integriq SMS Provider Interface.
  *
  * Narrow domain seam through which every outbound SMS send and delivery-status
  * lookup occurs. A new gateway vendor (MessageBird, Twilio, ...) is added by
@@ -11,7 +11,7 @@
  * IntegrationProvider").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Sms
+ * @package  OCA\Integriq\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,16 +20,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Sms;
+namespace OCA\Integriq\Service\Sms;
 
-use OCA\OpenConnector\Exception\SmsProviderException;
+use OCA\Integriq\Exception\SmsProviderException;
 
 /**
  * An SMS channel binding: send-by-template/body + delivery-status lookup.
@@ -41,7 +41,7 @@ interface SmsProviderInterface {
 	 * Stable machine identifier for this binding (e.g. `log`, `notifynl`).
 	 *
 	 * Selected at runtime via the SMS source's `configuration.provider` field
-	 * — see {@see \OCA\OpenConnector\Service\SmsDispatchService::resolveProvider()}.
+	 * — see {@see \OCA\Integriq\Service\SmsDispatchService::resolveProvider()}.
 	 *
 	 * @return string The provider identifier.
 	 *

@@ -4,7 +4,7 @@
  * OpenConnector — inbound rate-limit service tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\RateLimit
+ * @package  OCA\Integriq\Tests\Unit\Service\RateLimit
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,15 +15,15 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\RateLimit;
+namespace OCA\Integriq\Tests\Unit\Service\RateLimit;
 
-use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
-use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\RateLimit\RateLimitDecision;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use PHPUnit\Framework\TestCase;

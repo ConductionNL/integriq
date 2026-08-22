@@ -85,7 +85,7 @@ class SynchronizationsControllerDeleteLogTest extends TestCase {
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 
 		$this->controller = new SynchronizationsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$this->createMock(SynchronizationService::class),
@@ -161,7 +161,7 @@ class SynchronizationsControllerDeleteLogTest extends TestCase {
 		$this->orObjectService->expects($this->never())->method('deleteObject');
 
 		$controller = new SynchronizationsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$this->createMock(SynchronizationService::class),

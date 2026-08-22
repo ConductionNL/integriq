@@ -1,20 +1,20 @@
 <?php
 /**
- * OpenConnector — live progress for a synchronization run.
+ * Integriq — live progress for a synchronization run.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://github.com/ConductionNL/integriq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -63,6 +63,8 @@ class SynchronizationRunProgressService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**

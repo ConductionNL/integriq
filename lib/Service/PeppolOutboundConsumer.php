@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Peppol Outbound Event Consumer.
+ * Integriq Peppol Outbound Event Consumer.
  *
  * Listens for `OCA\OpenRegister\Event\ObjectCreatedEvent` — the same
  * cross-app hook `ObjectCreatedEventListener`/`CloudEventListener` use — and
@@ -14,7 +14,7 @@
  * {@see PeppolTransmissionService} so this class stays a thin dispatch shell.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCP\EventDispatcher\Event;

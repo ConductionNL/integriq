@@ -113,7 +113,7 @@ class IwmoIjwControllerTest extends TestCase {
 	 */
 	private function buildController(): IwmoIjwController {
 		return new IwmoIjwController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$this->signatureService,

@@ -9,7 +9,7 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label" :for="'rule-action-js-' + uid">
-			{{ t('openconnector', 'JavaScript code') }}
+			{{ t('integriq', 'JavaScript code') }}
 		</label>
 		<textarea
 			:id="'rule-action-js-' + uid"
@@ -17,12 +17,12 @@
 			:value="code"
 			spellcheck="false"
 			rows="10"
-			:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
+			:placeholder="t('integriq', 'Enter your JavaScript code here...')"
 			@input="(event) => $emit('update:code', event.target.value)" />
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Sandboxed script that runs against the request data. Stored as configuration.javascript.',
 				)
 			}}

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector InitializeRegister Repair Step
+ * Integriq InitializeRegister Repair Step
  *
  * Imports the openconnector register + 15 schemas into OpenRegister on
  * install / upgrade. Repair-step counterpart to the fleet pattern
@@ -13,20 +13,20 @@
  * run).
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -75,11 +75,11 @@ class InitializeRegister implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Initialize OpenConnector register and 15 schemas via ConfigurationService';
+		return 'Initialize Integriq register and 15 schemas via ConfigurationService';
 	}//end getName()
 
 	/**
-	 * Import openconnector_register.json into OpenRegister.
+	 * Import integriq_register.json into OpenRegister.
 	 *
 	 * @param IOutput $output progress/info channel piped to occ stdout
 	 *
@@ -88,12 +88,12 @@ class InitializeRegister implements IRepairStep {
 	 * @spec openspec/specs/repair-and-app-boot/spec.md
 	 */
 	public function run(IOutput $output): void {
-		$output->info('OpenConnector: initializing register + schemas via OR ConfigurationService…');
+		$output->info('Integriq: initializing register + schemas via OR ConfigurationService…');
 
 		if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
-			$output->warning('OpenConnector: OpenRegister is not installed or enabled. Skipping register initialization.');
+			$output->warning('Integriq: OpenRegister is not installed or enabled. Skipping register initialization.');
 			$this->logger->warning(
-				'OpenConnector: OpenRegister not available, skipping register initialization'
+				'Integriq: OpenRegister not available, skipping register initialization'
 			);
 			return;
 		}
@@ -101,32 +101,32 @@ class InitializeRegister implements IRepairStep {
 		try {
 			$configurationService = $this->container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: could not resolve OR ConfigurationService: ' . $e->getMessage());
+			$output->warning('Integriq: could not resolve OR ConfigurationService: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: ConfigurationService resolution failed',
+				'Integriq: ConfigurationService resolution failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
 		}
 
-		$descriptorPath = __DIR__ . '/../Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../Settings/integriq_register.json';
 		if (file_exists($descriptorPath) === false) {
-			$output->warning('OpenConnector: register descriptor missing at ' . $descriptorPath . ' — nothing to import');
+			$output->warning('Integriq: register descriptor missing at ' . $descriptorPath . ' — nothing to import');
 			return;
 		}
 
 		try {
 			$descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: register descriptor JSON parse failed: ' . $e->getMessage());
+			$output->warning('Integriq: register descriptor JSON parse failed: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: descriptor JSON parse failed',
+				'Integriq: descriptor JSON parse failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
 		}
 
-		$appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
+		$appVersion = $this->appConfig->getValueString('integriq', 'installed_version', '1.0.0');
 
 		// ADR-037: merge modular register fragments from Settings/register.d/*.json.
 		// Each OpenSpec change drops its own fragment file instead of editing this
@@ -147,11 +147,11 @@ class InitializeRegister implements IRepairStep {
 				$fragmentData = json_decode($fragmentContent, true);
 				if (json_last_error() !== JSON_ERROR_NONE) {
 					$output->warning(
-						'OpenConnector: skipping malformed register fragment ' . basename($fragmentFile)
+						'Integriq: skipping malformed register fragment ' . basename($fragmentFile)
 						. ': ' . json_last_error_msg()
 					);
 					$this->logger->warning(
-						'OpenConnector: skipping malformed register fragment ' . basename($fragmentFile)
+						'Integriq: skipping malformed register fragment ' . basename($fragmentFile)
 						. ': ' . json_last_error_msg()
 					);
 					continue;
@@ -174,11 +174,11 @@ class InitializeRegister implements IRepairStep {
 				data: $descriptor,
 				version: $appVersion
 			);
-			$output->info('OpenConnector: register descriptor imported (existing schemas reused).');
+			$output->info('Integriq: register descriptor imported (existing schemas reused).');
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: register import failed: ' . $e->getMessage());
+			$output->warning('Integriq: register import failed: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: importFromApp failed',
+				'Integriq: importFromApp failed',
 				['exception' => $e->getMessage()]
 			);
 		}

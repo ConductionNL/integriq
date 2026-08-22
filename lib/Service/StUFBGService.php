@@ -7,7 +7,7 @@
  * and outbound StUF-BG queries via the existing SOAPService infrastructure.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use SimpleXMLElement;

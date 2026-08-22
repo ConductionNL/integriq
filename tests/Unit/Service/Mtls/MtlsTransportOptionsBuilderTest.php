@@ -4,7 +4,7 @@
  * Unit tests for MtlsTransportOptionsBuilder.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Mtls
+ * @package  OCA\Integriq\Tests\Unit\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Mtls;
+namespace OCA\Integriq\Tests\Unit\Service\Mtls;
 
-use OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\Integriq\Service\Mtls\MtlsCertificateBundle;
+use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -71,7 +71,7 @@
   value. `authConfig` stays `undefined` until the operator types, and an
   untouched credential is omitted from the payload so OpenRegister's preserve
   rule carries the stored one forward. Clearing is deliberate and explicit, via
-  the Clear button. This is the openconnector#245 shape — the same defect on
+  the Clear button. This is the integriq#245 shape — the same defect on
   Sources is what put the preserve rule in OpenRegister.
 
   ## How it is mounted
@@ -112,7 +112,7 @@
 					@blur="nameTouched = true" />
 				<NcTextArea
 					:modelValue="draft.description"
-					:label="t('openconnector', 'Description')"
+					:label="t('integriq', 'Description')"
 					:disabled="saving"
 					rows="2"
 					resize="vertical"
@@ -125,7 +125,7 @@
 			<section class="cn-consumer-editor__section">
 				<header class="cn-consumer-editor__section-header">
 					<ShieldCheckOutlineIcon :size="20" />
-					<h3>{{ t('openconnector', 'Allowed sources') }}</h3>
+					<h3>{{ t('integriq', 'Allowed sources') }}</h3>
 				</header>
 
 				<div class="cn-consumer-editor__grid">
@@ -133,7 +133,7 @@
 						<label
 							for="cn-consumer-editor-domains"
 							class="cn-consumer-editor__label">
-							{{ t('openconnector', 'Allowed domains') }}
+							{{ t('integriq', 'Allowed domains') }}
 						</label>
 						<NcSelect
 							inputId="cn-consumer-editor-domains"
@@ -145,7 +145,7 @@
 							:clearable="true"
 							:disabled="saving"
 							:aria-label-combobox="
-								t('openconnector', 'Allowed domains')
+								t('integriq', 'Allowed domains')
 							"
 							:placeholder="domainPlaceholder"
 							@update:modelValue="
@@ -154,7 +154,7 @@
 						<span class="cn-consumer-editor__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									"Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller's verified reverse DNS, never against a header.",
 								)
 							}}
@@ -165,7 +165,7 @@
 						<label
 							for="cn-consumer-editor-ips"
 							class="cn-consumer-editor__label">
-							{{ t('openconnector', 'Allowed IPs') }}
+							{{ t('integriq', 'Allowed IPs') }}
 						</label>
 						<NcSelect
 							inputId="cn-consumer-editor-ips"
@@ -176,7 +176,7 @@
 							:keepOpen="true"
 							:clearable="true"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Allowed IPs')"
+							:aria-label-combobox="t('integriq', 'Allowed IPs')"
 							:placeholder="ipPlaceholder"
 							@update:modelValue="
 								(value) => updateDraft('ips', value)
@@ -184,7 +184,7 @@
 						<span class="cn-consumer-editor__helper">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.',
 								)
 							}}
@@ -196,7 +196,7 @@
 					<p v-if="hasAllowlist">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'The two lists combine as a union — a caller is admitted when it matches an entry in either one, and rejected with HTTP 403 otherwise.',
 							)
 						}}
@@ -204,7 +204,7 @@
 					<p v-else>
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Both lists are empty, so this consumer may call from any source. Add an entry to restrict it.',
 							)
 						}}
@@ -216,7 +216,7 @@
 			<section class="cn-consumer-editor__section">
 				<header class="cn-consumer-editor__section-header">
 					<KeyOutlineIcon :size="20" />
-					<h3>{{ t('openconnector', 'Authentication') }}</h3>
+					<h3>{{ t('integriq', 'Authentication') }}</h3>
 				</header>
 
 				<div
@@ -224,7 +224,7 @@
 					<label
 						for="cn-consumer-editor-auth-type"
 						class="cn-consumer-editor__label">
-						{{ t('openconnector', 'Authorization type') }}
+						{{ t('integriq', 'Authorization type') }}
 					</label>
 					<NcSelect
 						inputId="cn-consumer-editor-auth-type"
@@ -233,7 +233,7 @@
 						:clearable="false"
 						:disabled="saving"
 						:aria-label-combobox="
-							t('openconnector', 'Authorization type')
+							t('integriq', 'Authorization type')
 						"
 						@update:modelValue="onAuthorizationTypePick" />
 					<span class="cn-consumer-editor__helper">
@@ -246,7 +246,7 @@
 					     focusable element is generated internally and has no stable id
 					     to point at, so a `for` here would resolve to nothing. -->
 					<span class="cn-consumer-editor__label">
-						{{ t('openconnector', 'Authorization configuration') }}
+						{{ t('integriq', 'Authorization configuration') }}
 					</span>
 					<CnJsonViewer
 						:value="authConfigText"
@@ -264,7 +264,7 @@
 							size="small"
 							:disabled="saving || !authConfigPlaceholder"
 							@click="insertAuthConfigTemplate">
-							{{ t('openconnector', 'Insert example') }}
+							{{ t('integriq', 'Insert example') }}
 						</NcButton>
 						<NcButton
 							v-if="!isCreate"
@@ -272,14 +272,14 @@
 							size="small"
 							:disabled="saving || authConfigCleared"
 							@click="clearAuthConfig">
-							{{ t('openconnector', 'Clear stored credential') }}
+							{{ t('integriq', 'Clear stored credential') }}
 						</NcButton>
 					</div>
 					<NcNoteCard v-if="authConfigCleared" type="warning">
 						<p>
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'The stored credential will be removed when you save.',
 								)
 							}}
@@ -292,7 +292,7 @@
 			<section class="cn-consumer-editor__section">
 				<header class="cn-consumer-editor__section-header">
 					<SpeedometerIcon :size="20" />
-					<h3>{{ t('openconnector', 'Limits') }}</h3>
+					<h3>{{ t('integriq', 'Limits') }}</h3>
 				</header>
 
 				<div class="cn-consumer-editor__grid">
@@ -303,7 +303,7 @@
 							"
 							type="number"
 							min="1"
-							:label="t('openconnector', 'Requests per window')"
+							:label="t('integriq', 'Requests per window')"
 							:disabled="saving"
 							placeholder="60"
 							@update:modelValue="
@@ -316,7 +316,7 @@
 							:modelValue="numberText(draft.rateLimitWindowSeconds)"
 							type="number"
 							min="1"
-							:label="t('openconnector', 'Window (seconds)')"
+							:label="t('integriq', 'Window (seconds)')"
 							:disabled="saving"
 							placeholder="60"
 							@update:modelValue="
@@ -329,7 +329,7 @@
 							:modelValue="numberText(draft.quotaLimit)"
 							type="number"
 							min="1"
-							:label="t('openconnector', 'Quota limit')"
+							:label="t('integriq', 'Quota limit')"
 							:disabled="saving"
 							placeholder="10000"
 							@update:modelValue="
@@ -340,7 +340,7 @@
 						<label
 							for="cn-consumer-editor-quota-period"
 							class="cn-consumer-editor__label">
-							{{ t('openconnector', 'Quota period') }}
+							{{ t('integriq', 'Quota period') }}
 						</label>
 						<NcSelect
 							inputId="cn-consumer-editor-quota-period"
@@ -348,7 +348,7 @@
 							:options="quotaPeriodOptions"
 							:clearable="true"
 							:disabled="saving"
-							:aria-label-combobox="t('openconnector', 'Quota period')"
+							:aria-label-combobox="t('integriq', 'Quota period')"
 							@update:modelValue="
 								(option) =>
 									updateDraft('quotaPeriod', option?.id ?? null)
@@ -359,7 +359,7 @@
 				<span class="cn-consumer-editor__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.',
 						)
 					}}
@@ -369,7 +369,7 @@
 
 		<template #actions>
 			<NcButton :disabled="saving" @click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				{{ t('integriq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
@@ -379,8 +379,8 @@
 				</template>
 				{{
 					isCreate
-						? t('openconnector', 'Create')
-						: t('openconnector', 'Save')
+						? t('integriq', 'Create')
+						: t('integriq', 'Save')
 				}}
 			</NcButton>
 		</template>
@@ -560,8 +560,8 @@ export default {
 		 */
 		dialogTitle() {
 			return this.isCreate
-				? t('openconnector', 'Create consumer')
-				: t('openconnector', 'Edit consumer')
+				? t('integriq', 'Create consumer')
+				: t('integriq', 'Edit consumer')
 		},
 
 		/**
@@ -570,7 +570,7 @@ export default {
 		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		nameLabel() {
-			return t('openconnector', 'Name') + ' *'
+			return t('integriq', 'Name') + ' *'
 		},
 
 		/**
@@ -582,7 +582,7 @@ export default {
 			if (!this.nameTouched) return ''
 			return NAME_PATTERN.test(this.draft.name || '')
 				? ''
-				: t('openconnector', 'A name is required.')
+				: t('integriq', 'A name is required.')
 		},
 
 		/**
@@ -619,12 +619,12 @@ export default {
 		 */
 		authorizationTypeOptions() {
 			const labels = {
-				none: t('openconnector', 'None — no authentication'),
-				basic: t('openconnector', 'Basic authentication'),
-				bearer: t('openconnector', 'Bearer token'),
-				apiKey: t('openconnector', 'API key'),
-				oauth2: t('openconnector', 'OAuth 2.0'),
-				jwt: t('openconnector', 'JWT'),
+				none: t('integriq', 'None — no authentication'),
+				basic: t('integriq', 'Basic authentication'),
+				bearer: t('integriq', 'Bearer token'),
+				apiKey: t('integriq', 'API key'),
+				oauth2: t('integriq', 'OAuth 2.0'),
+				jwt: t('integriq', 'JWT'),
 			}
 			return AUTHORIZATION_TYPES.map((id) => ({ id, label: labels[id] || id }))
 		},
@@ -657,24 +657,24 @@ export default {
 		authorizationTypeHelper() {
 			if (this.draft.authorizationType === 'apiKey') {
 				return t(
-					'openconnector',
+					'integriq',
 					'Inbound callers present a key, matched against the key below under a constant-time comparison.',
 				)
 			}
 			if (this.draft.authorizationType === 'jwt') {
 				return t(
-					'openconnector',
+					'integriq',
 					"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.",
 				)
 			}
 			if (this.draft.authorizationType === 'none') {
 				return t(
-					'openconnector',
+					'integriq',
 					'No credential is checked. Restrict access with the allowed sources above instead.',
 				)
 			}
 			return t(
-				'openconnector',
+				'integriq',
 				'The credential this consumer presents is verified against the configuration below.',
 			)
 		},
@@ -696,12 +696,12 @@ export default {
 		authConfigHelper() {
 			if (this.isCreate) {
 				return t(
-					'openconnector',
+					'integriq',
 					'Stored write-only: it is accepted on save but never returned by any API read.',
 				)
 			}
 			return t(
-				'openconnector',
+				'integriq',
 				'Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.',
 			)
 		},
@@ -713,9 +713,9 @@ export default {
 		 */
 		quotaPeriodOptions() {
 			const labels = {
-				hour: t('openconnector', 'Per hour'),
-				day: t('openconnector', 'Per day'),
-				month: t('openconnector', 'Per month'),
+				hour: t('integriq', 'Per hour'),
+				day: t('integriq', 'Per day'),
+				month: t('integriq', 'Per month'),
 			}
 			return QUOTA_PERIODS.map((id) => ({ id, label: labels[id] || id }))
 		},
@@ -889,13 +889,13 @@ export default {
 					|| typeof parsed !== 'object'
 					|| Array.isArray(parsed)
 						? t(
-								'openconnector',
+								'integriq',
 								'The authorization configuration must be a JSON object.',
 							)
 						: ''
 			} catch (err) {
 				this.authConfigError =
-					err?.message || t('openconnector', 'Invalid JSON.')
+					err?.message || t('integriq', 'Invalid JSON.')
 			}
 		},
 
@@ -946,13 +946,13 @@ export default {
 				)
 				showSuccess(
 					this.isCreate
-						? t('openconnector', 'Consumer created')
-						: t('openconnector', 'Consumer saved'),
+						? t('integriq', 'Consumer created')
+						: t('integriq', 'Consumer saved'),
 				)
 				this.close?.()
 			} catch (err) {
 				this.saveError =
-					err?.message || t('openconnector', 'Failed to save consumer')
+					err?.message || t('integriq', 'Failed to save consumer')
 			} finally {
 				this.saving = false
 			}

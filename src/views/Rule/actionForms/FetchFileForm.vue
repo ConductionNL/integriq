@@ -6,62 +6,62 @@
   `contentPath`, `filenamePath`, `fileExtension`, `subObjectFilepath`,
   `tags`, `autoShare`, `sourceConfiguration` (JSON blob).
 
-  Source picker resolves OpenConnector sources via OpenRegister.
+  Source picker resolves Integriq sources via OpenRegister.
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Source') }}</label>
+		<label class="action-form__label">{{ t('integriq', 'Source') }}</label>
 		<NcSelect
 			data-testid="action-form-fetch-source"
-			:aria-label-combobox="t('openconnector', 'Source')"
+			:aria-label-combobox="t('integriq', 'Source')"
 			:modelValue="selectedSource"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
-			:placeholder="t('openconnector', 'Select a source')"
+			:placeholder="t('integriq', 'Select a source')"
 			@update:modelValue="onSourcePick" />
 
 		<NcTextField
-			:label="t('openconnector', 'File path (dot path)')"
+			:label="t('integriq', 'File path (dot path)')"
 			:modelValue="value.filePath || ''"
 			placeholder="body.attachment.url"
 			@update:modelValue="(next) => patch('filePath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Endpoint (optional)')"
+			:label="t('integriq', 'Endpoint (optional)')"
 			:modelValue="value.endpoint || ''"
 			placeholder="https://upstream/file/123"
 			@update:modelValue="(next) => patch('endpoint', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Object ID path (optional)')"
+			:label="t('integriq', 'Object ID path (optional)')"
 			:modelValue="value.objectIdPath || ''"
 			placeholder="body.id"
 			@update:modelValue="(next) => patch('objectIdPath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Origin ID path (optional)')"
+			:label="t('integriq', 'Origin ID path (optional)')"
 			:modelValue="value.originIdPath || ''"
 			placeholder="body.origin.id"
 			@update:modelValue="(next) => patch('originIdPath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Content path (optional)')"
+			:label="t('integriq', 'Content path (optional)')"
 			:modelValue="value.contentPath || ''"
 			placeholder="body.attachment.content"
 			@update:modelValue="(next) => patch('contentPath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Filename path (optional)')"
+			:label="t('integriq', 'Filename path (optional)')"
 			:modelValue="value.filenamePath || ''"
 			placeholder="body.attachment.name"
 			@update:modelValue="(next) => patch('filenamePath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'File extension (optional)')"
+			:label="t('integriq', 'File extension (optional)')"
 			:modelValue="value.fileExtension || ''"
 			placeholder="pdf"
 			@update:modelValue="(next) => patch('fileExtension', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Sub-object filepath (optional)')"
+			:label="t('integriq', 'Sub-object filepath (optional)')"
 			:modelValue="value.subObjectFilepath || ''"
 			placeholder="body.objects.0.url"
 			@update:modelValue="(next) => patch('subObjectFilepath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Tags (comma-separated)')"
+			:label="t('integriq', 'Tags (comma-separated)')"
 			:modelValue="csv(value.tags)"
 			placeholder="invoice,inbox"
 			@update:modelValue="(next) => patch('tags', toArray(next))" />
@@ -69,11 +69,11 @@
 			type="switch"
 			:modelValue="!!value.autoShare"
 			@update:modelValue="(next) => patch('autoShare', !!next)">
-			{{ t('openconnector', 'Auto-share fetched files') }}
+			{{ t('integriq', 'Auto-share fetched files') }}
 		</NcCheckboxRadioSwitch>
 
 		<label class="action-form__label" :for="'rule-fetch-source-config-' + uid">
-			{{ t('openconnector', 'Source configuration (JSON, optional)') }}
+			{{ t('integriq', 'Source configuration (JSON, optional)') }}
 		</label>
 		<textarea
 			:id="'rule-fetch-source-config-' + uid"
@@ -146,7 +146,7 @@ export default {
 	methods: {
 		patch: patchMethod(),
 		/**
-		 * Store the picked OpenConnector source on the action config. Clearing
+		 * Store the picked Integriq source on the action config. Clearing
 		 * the picker writes an empty string rather than dropping the key.
 		 *
 		 * @param {?{id: string, label: string, raw: object}} option The option
@@ -232,7 +232,7 @@ export default {
 				this.patch('sourceConfiguration', parsed)
 			} catch (parseErr) {
 				this.sourceConfigError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)

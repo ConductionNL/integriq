@@ -8,31 +8,31 @@
 <template>
 	<div class="action-form">
 		<NcTextField
-			:label="t('openconnector', 'HTTP status code')"
+			:label="t('integriq', 'HTTP status code')"
 			type="number"
 			:modelValue="value.code != null ? String(value.code) : ''"
 			placeholder="500"
 			@update:modelValue="onCodeInput" />
 		<NcTextField
-			:label="t('openconnector', 'Error title')"
+			:label="t('integriq', 'Error title')"
 			:modelValue="value.name || ''"
-			:placeholder="t('openconnector', 'Something went wrong')"
+			:placeholder="t('integriq', 'Something went wrong')"
 			@update:modelValue="(next) => patch('name', next)" />
 		<label class="action-form__label" :for="'rule-action-error-msg-' + uid">
-			{{ t('openconnector', 'Error message') }}
+			{{ t('integriq', 'Error message') }}
 		</label>
 		<textarea
 			:id="'rule-action-error-msg-' + uid"
 			class="action-form__textarea"
 			:value="value.message || ''"
 			rows="3"
-			:placeholder="t('openconnector', 'We encountered an unexpected problem')"
+			:placeholder="t('integriq', 'We encountered an unexpected problem')"
 			@input="(event) => patch('message', event.target.value)" />
 		<NcCheckboxRadioSwitch
 			type="switch"
 			:modelValue="!!value.includeJsonLogicResult"
 			@update:modelValue="(next) => patch('includeJsonLogicResult', !!next)">
-			{{ t('openconnector', 'Include JSON Logic results in errors array') }}
+			{{ t('integriq', 'Include JSON Logic results in errors array') }}
 		</NcCheckboxRadioSwitch>
 	</div>
 </template>

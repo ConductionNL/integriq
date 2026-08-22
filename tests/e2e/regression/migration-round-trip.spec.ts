@@ -77,7 +77,7 @@ async function apiContext(): Promise<APIRequestContext> {
 /**
  * Read `openconnector.storage_migrated`.
  *
- * ⚠️ This used to probe `GET /index.php/apps/openconnector/api/settings` and
+ * ⚠️ This used to probe `GET /index.php/apps/integriq/api/settings` and
  * fall back to `false` "when the endpoint is unavailable so the test skips
  * cleanly". That route DOES NOT EXIST in this repo — appinfo/routes.php
  * records it as deliberately deleted ("GET /api/settings + PUT /api/settings —
@@ -102,7 +102,7 @@ async function apiContext(): Promise<APIRequestContext> {
  */
 async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
 	const url =
-		'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openconnector/storage_migrated'
+		'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/integriq/storage_migrated'
 	const res = await ctx
 		.get(url, {
 			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },

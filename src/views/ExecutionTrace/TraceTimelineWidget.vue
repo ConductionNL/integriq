@@ -36,17 +36,17 @@
 				class="traceTimeline__detail"
 				data-testid="step-detail">
 				<div class="traceTimeline__detailCol">
-					<h4>{{ t('openconnector', 'Input') }}</h4>
+					<h4>{{ t('integriq', 'Input') }}</h4>
 					<pre>{{ formatJson(step.input) }}</pre>
 				</div>
 				<div class="traceTimeline__detailCol">
-					<h4>{{ t('openconnector', 'Output') }}</h4>
+					<h4>{{ t('integriq', 'Output') }}</h4>
 					<pre>{{ formatJson(step.output) }}</pre>
 				</div>
 			</div>
 		</li>
 		<li v-if="!steps.length" class="traceTimeline__empty">
-			{{ t('openconnector', 'No steps recorded for this trace.') }}
+			{{ t('integriq', 'No steps recorded for this trace.') }}
 		</li>
 	</ol>
 </template>

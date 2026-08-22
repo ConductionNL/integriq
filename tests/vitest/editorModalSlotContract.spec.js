@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * The bespoke editor modals are mounted ONLY as a `form-dialog` slot
@@ -13,7 +13,7 @@
  * a name that is not in that scope arrives as `undefined` — silently, with no
  * Vue warning, exactly like a `<template #wrong-name>` that matches nothing.
  *
- * openconnector#1150 shipped three editors whose `canSave` required
+ * integriq#1150 shipped three editors whose `canSave` required
  * `typeof this.confirm === 'function'` while `CnIndexPage`'s slot bound only
  * `show` / `item` / `schema` / `close`. `confirm` was never provided, so
  * `canSave` could never become true: all three rendered, accepted input, and
@@ -228,7 +228,7 @@ describe('form-dialog slot contract for the bespoke editor modals', () => {
 				).toEqual([])
 			})
 
-			it('cannot save when the host omits confirm — the openconnector#1150 defect', () => {
+			it('cannot save when the host omits confirm — the integriq#1150 defect', () => {
 				// Everything else valid, so `confirm` is the ONLY thing missing.
 				expect(
 					options.computed.canSave.call(vmWith({ confirm: undefined })),

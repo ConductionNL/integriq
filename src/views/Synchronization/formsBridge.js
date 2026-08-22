@@ -9,9 +9,9 @@
  * mirroring src/views/Synchronization/tablesBridge.js.
  *
  * Backend contract: openspec/specs/nextcloud-forms-connector/spec.md#requirement-form-and-question-discovery-for-the-synchronizationrule-editor-req-005
- *   GET /apps/openconnector/api/synchronizations/forms-bridge/status
- *   GET /apps/openconnector/api/synchronizations/forms-bridge/forms?sourceId=…
- *   GET /apps/openconnector/api/synchronizations/forms-bridge/forms/{formId}/questions?sourceId=…
+ *   GET /apps/integriq/api/synchronizations/forms-bridge/status
+ *   GET /apps/integriq/api/synchronizations/forms-bridge/forms?sourceId=…
+ *   GET /apps/integriq/api/synchronizations/forms-bridge/forms/{formId}/questions?sourceId=…
  *
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009
@@ -24,7 +24,7 @@ export const NEXTCLOUD_FORM_KIND = 'nextcloud-form'
 export const MULTI_VALUE_QUESTION_TYPES = ['multiple', 'multiple_unique']
 
 /**
- * Unwrap the OR/OpenConnector list envelope (`{results:[...]}`) or a bare
+ * Unwrap the OR/Integriq list envelope (`{results:[...]}`) or a bare
  * array — same soft-fail-safe unwrap the other sync pickers use.
  *
  * @param {*} data The axios response body.

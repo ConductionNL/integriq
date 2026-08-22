@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector EndpointsController.
+ * Integriq EndpointsController.
  *
  * Controller for handling endpoint related operations: page render, generic
  * path matching (handlePath), CORS preflight, logs and the simple-endpoint
  * optimisation path.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,21 +16,21 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/endpoint-runtime/spec.md
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\OpenConnector\Http\XMLResponse;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\EndpointCacheService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Http\XMLResponse;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -236,7 +236,7 @@ class EndpointsController extends Controller {
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchService $searchService): JSONResponse {
 		// Endpoint logging is not yet wired to the OR call_log schema.
 		// Returning an empty paginated result (instead of 500) lets clients
@@ -501,7 +501,7 @@ class EndpointsController extends Controller {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	private function buildPaginationUrl(array $parameters, string $path): string {
-		$baseUrl = ($this->request->getServerProtocol() . '://' . $this->request->getServerHost() . '/apps/openconnector/api/endpoint/' . $path);
+		$baseUrl = ($this->request->getServerProtocol() . '://' . $this->request->getServerHost() . '/apps/integriq/api/endpoint/' . $path);
 
 		return ($baseUrl . '?' . http_build_query($parameters));
 	}//end buildPaginationUrl()

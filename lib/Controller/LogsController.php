@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector LogsController.
+ * Integriq LogsController.
  *
  * Controller for managing synchronization logs. Handles CRUD operations,
  * filtering, pagination, statistics and CSV export.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;

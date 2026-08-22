@@ -74,7 +74,7 @@ class EndpointsControllerTest extends TestCase {
 		$request->server = $server;
 
 		return new EndpointsController(
-			'openconnector',
+			'integriq',
 			$request,
 			$this->createMock(EndpointService::class),
 			$this->createMock(AuthorizationService::class),

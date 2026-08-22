@@ -12,20 +12,20 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label" :for="'rule-action-approval-group-' + uid">
-			{{ t('openconnector', 'Approver group') }}
+			{{ t('integriq', 'Approver group') }}
 		</label>
 		<NcSelect
 			:inputId="'rule-action-approval-group-' + uid"
-			:inputLabel="t('openconnector', 'Approver group')"
+			:inputLabel="t('integriq', 'Approver group')"
 			:modelValue="selectedGroup"
 			:options="groupOptions"
 			:loading="loadingGroups"
 			:clearable="false"
-			:placeholder="t('openconnector', 'Pick the NC group that may approve')"
+			:placeholder="t('integriq', 'Pick the NC group that may approve')"
 			@update:modelValue="onGroupPick" />
 
 		<NcTextField
-			:label="t('openconnector', 'Time to live (seconds, default 86400)')"
+			:label="t('integriq', 'Time to live (seconds, default 86400)')"
 			type="number"
 			:modelValue="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
 			placeholder="86400"
@@ -34,11 +34,11 @@
 		<label
 			class="action-form__label"
 			:for="'rule-action-approval-reject-' + uid">
-			{{ t('openconnector', 'On reject') }}
+			{{ t('integriq', 'On reject') }}
 		</label>
 		<NcSelect
 			:inputId="'rule-action-approval-reject-' + uid"
-			:inputLabel="t('openconnector', 'On reject')"
+			:inputLabel="t('integriq', 'On reject')"
 			:modelValue="selectedOutcome('onReject')"
 			:options="outcomeOptions"
 			:clearable="false"
@@ -47,11 +47,11 @@
 		<label
 			class="action-form__label"
 			:for="'rule-action-approval-timeout-' + uid">
-			{{ t('openconnector', 'On timeout') }}
+			{{ t('integriq', 'On timeout') }}
 		</label>
 		<NcSelect
 			:inputId="'rule-action-approval-timeout-' + uid"
-			:inputLabel="t('openconnector', 'On timeout')"
+			:inputLabel="t('integriq', 'On timeout')"
 			:modelValue="selectedOutcome('onTimeout')"
 			:options="outcomeOptions"
 			:clearable="false"
@@ -60,7 +60,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Approval rules only run in the "before" phase — they suspend the request until a member of the approver group approves or rejects it. Configure the rule timing to "before".',
 				)
 			}}
@@ -116,7 +116,7 @@ export default {
 		outcomeOptions() {
 			return OUTCOMES.map((row) => ({
 				id: row.id,
-				label: this.t('openconnector', row.label),
+				label: this.t('integriq', row.label),
 			}))
 		},
 	},

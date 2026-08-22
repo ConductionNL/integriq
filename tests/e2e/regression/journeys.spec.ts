@@ -47,18 +47,18 @@ const OR = '/index.php/apps/openregister/api/objects/openconnector'
  * Compute the openconnector URL base for the current Nextcloud install.
  *
  * Apache + mod_rewrite (local dev container): NC's `generateUrl` returns
- * `/apps/openconnector` — htaccess maps that to `/index.php/apps/openconnector`
+ * `/apps/integriq` — htaccess maps that to `/index.php/apps/integriq`
  * server-side, but the SPA sees the unprefixed form, so Vue Router's
- * `base` is `/apps/openconnector`. Any URL starting with `/index.php/...`
+ * `base` is `/apps/integriq`. Any URL starting with `/index.php/...`
  * is then outside the router base and no route matches.
  *
  * PHP built-in server (CI): no `.htaccess` processing, so `generateUrl`
- * returns `/index.php/apps/openconnector` and routes must include the
+ * returns `/index.php/apps/integriq` and routes must include the
  * `/index.php/` prefix.
  *
  * 🔴 The probe that used to live here requested each candidate and took the
  * first that served the SPA shell. Nextcloud serves the IDENTICAL shell under
- * both, so it always returned `/apps/openconnector` — the wrong one on CI —
+ * both, so it always returned `/apps/integriq` — the wrong one on CI —
  * and every `gotoRoute()` below landed on the Dashboard. That is why journeys
  * J1–J6 all failed with "Add <X> button must be visible on the index page":
  * the button is genuinely absent, from the dashboard. Resolution now comes

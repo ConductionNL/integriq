@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/action-authorization/spec.md
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md

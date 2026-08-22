@@ -2,7 +2,7 @@
  * Runtime webpack publicPath.
  *
  * Nextcloud injects the app's main bundle from the app's ACTUAL web root —
- * `/custom_apps/openconnector/js/` on a dev/clean install, `/apps/openconnector/js/`
+ * `/custom_apps/integriq/js/` on a dev/clean install, `/apps/integriq/js/`
  * when installed from the App Store. The base @nextcloud/webpack-vue-config bakes
  * a build-time publicPath that assumes `/apps/`, so lazily-imported chunks 404 into
  * the front controller (served as text/html → "MIME type not executable" → dead SPA)
@@ -13,7 +13,7 @@
  * dynamic import.
  */
 
-if (typeof OC !== 'undefined' && OC.appswebroots && OC.appswebroots.openconnector) {
+if (typeof OC !== 'undefined' && OC.appswebroots && OC.appswebroots.integriq) {
 	// eslint-disable-next-line no-undef
-	__webpack_public_path__ = OC.appswebroots.openconnector + '/js/'
+	__webpack_public_path__ = OC.appswebroots.integriq + '/js/'
 }

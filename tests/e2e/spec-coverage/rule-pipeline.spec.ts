@@ -10,7 +10,7 @@
  * REQ-RULE-001 through REQ-RULE-005 describe backend rule pipeline execution
  * that carry @e2e exclude and are covered by PHPUnit.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  */
 

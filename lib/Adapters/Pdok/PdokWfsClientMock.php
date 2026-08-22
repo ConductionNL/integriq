@@ -20,7 +20,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);

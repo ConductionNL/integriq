@@ -23,23 +23,23 @@
 <template>
 	<div class="eventDeliveries">
 		<div class="eventDeliveries__header">
-			<h2>{{ t('openconnector', 'Event deliveries') }}</h2>
+			<h2>{{ t('integriq', 'Event deliveries') }}</h2>
 			<div class="eventDeliveries__filters">
 				<NcSelect
 					v-model="statusFilter"
-					:inputLabel="t('openconnector', 'Status')"
+					:inputLabel="t('integriq', 'Status')"
 					:options="statusOptions"
 					@update:modelValue="reload" />
 				<NcTextField
 					v-model="subscriptionFilter"
-					:label="t('openconnector', 'Subscription')"
+					:label="t('integriq', 'Subscription')"
 					@update:modelValue="reloadDebounced" />
 				<NcCheckboxRadioSwitch
 					:modelValue="nextcloudOnly"
 					type="switch"
 					data-testid="nextcloud-event-filter"
 					@update:modelValue="(value) => (nextcloudOnly = value)">
-					{{ t('openconnector', 'Nextcloud event') }}
+					{{ t('integriq', 'Nextcloud event') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
@@ -49,23 +49,23 @@
 			class="eventDeliveries__bulk"
 			data-testid="bulk-bar">
 			<span>{{
-				t('openconnector', '{count} selected', { count: selected.length })
+				t('integriq', '{count} selected', { count: selected.length })
 			}}</span>
 			<template v-if="bulkConfirm">
 				<span>{{
 					bulkConfirm === 'replay'
-						? t('openconnector', 'Replay {count} messages now?', {
+						? t('integriq', 'Replay {count} messages now?', {
 								count: selected.length,
 							})
-						: t('openconnector', 'Discard {count} messages?', {
+						: t('integriq', 'Discard {count} messages?', {
 								count: selected.length,
 							})
 				}}</span>
 				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
-					{{ t('openconnector', 'Confirm') }}
+					{{ t('integriq', 'Confirm') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = null">
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 			</template>
 			<template v-else>
@@ -73,10 +73,10 @@
 					variant="primary"
 					:disabled="busy"
 					@click="bulkConfirm = 'replay'">
-					{{ t('openconnector', 'Replay selected') }}
+					{{ t('integriq', 'Replay selected') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
-					{{ t('openconnector', 'Discard selected') }}
+					{{ t('integriq', 'Discard selected') }}
 				</NcButton>
 			</template>
 		</div>
@@ -87,19 +87,19 @@
 			v-else-if="!filteredRows.length"
 			class="eventDeliveries__empty"
 			data-testid="empty-state">
-			{{ t('openconnector', 'No dead-lettered event deliveries') }}
+			{{ t('integriq', 'No dead-lettered event deliveries') }}
 		</p>
 
 		<table v-else class="eventDeliveries__table" data-testid="deliveries-table">
 			<thead>
 				<tr>
 					<th />
-					<th scope="col">{{ t('openconnector', 'Event') }}</th>
-					<th scope="col">{{ t('openconnector', 'Subscription') }}</th>
-					<th scope="col">{{ t('openconnector', 'Action') }}</th>
-					<th scope="col">{{ t('openconnector', 'Status') }}</th>
-					<th scope="col">{{ t('openconnector', 'Retries') }}</th>
-					<th scope="col">{{ t('openconnector', 'Last attempt') }}</th>
+					<th scope="col">{{ t('integriq', 'Event') }}</th>
+					<th scope="col">{{ t('integriq', 'Subscription') }}</th>
+					<th scope="col">{{ t('integriq', 'Action') }}</th>
+					<th scope="col">{{ t('integriq', 'Status') }}</th>
+					<th scope="col">{{ t('integriq', 'Retries') }}</th>
+					<th scope="col">{{ t('integriq', 'Last attempt') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -109,7 +109,7 @@
 						<NcCheckboxRadioSwitch
 							:modelValue="isSelected(row)"
 							:aria-label="
-								t('openconnector', 'Select delivery {id}', {
+								t('integriq', 'Select delivery {id}', {
 									id: row.uuid || row.id,
 								})
 							"
@@ -135,7 +135,7 @@
 					<td>{{ row.lastAttempt }}</td>
 					<td>
 						<NcButton variant="tertiary" @click="openDetail(row)">
-							{{ t('openconnector', 'Inspect') }}
+							{{ t('integriq', 'Inspect') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -291,12 +291,12 @@ export default {
 					params.subscriptionId = this.subscriptionFilter
 				}
 				const res = await axios.get(
-					generateUrl('/apps/openconnector/api/events/dead-letter'),
+					generateUrl('/apps/integriq/api/events/dead-letter'),
 					{ params },
 				)
 				this.rows = res.data?.results || []
 			} catch (err) {
-				showError(t('openconnector', 'Failed to load event deliveries'))
+				showError(t('integriq', 'Failed to load event deliveries'))
 				this.rows = []
 			} finally {
 				this.loading = false
@@ -317,7 +317,7 @@ export default {
 			try {
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/events/dead-letter/${verb}`,
+						`/apps/integriq/api/events/dead-letter/${verb}`,
 					),
 					{ ids: this.selected },
 				)
@@ -326,21 +326,21 @@ export default {
 				const failed = Object.keys(results).length - ok
 				if (failed > 0) {
 					showError(
-						t('openconnector', '{ok} processed, {failed} failed', {
+						t('integriq', '{ok} processed, {failed} failed', {
 							ok,
 							failed,
 						}),
 					)
 				} else {
 					showSuccess(
-						t('openconnector', '{ok} messages processed', { ok }),
+						t('integriq', '{ok} messages processed', { ok }),
 					)
 				}
 				await this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Bulk action failed')
+					t('integriq', 'Bulk action failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

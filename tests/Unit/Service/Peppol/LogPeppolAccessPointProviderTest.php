@@ -4,7 +4,7 @@
  * Unit tests for LogPeppolAccessPointProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Peppol
+ * @package  OCA\Integriq\Tests\Unit\Service\Peppol
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Peppol;
+namespace OCA\Integriq\Tests\Unit\Service\Peppol;
 
-use OCA\OpenConnector\Service\Peppol\LogPeppolAccessPointProvider;
+use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

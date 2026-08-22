@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Open Formulieren Controller.
+ * Integriq Open Formulieren Controller.
  *
  * REST controller for the open-formulieren-intake bridge: the signed
  * inbound submission webhook (gated by HMAC, not an NC session — mirrors
@@ -12,7 +12,7 @@
  * step rather than automatic at webhook-receipt time).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,19 +21,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\OpenFormulierenException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\OpenFormulierenIntakeService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
@@ -64,7 +64,7 @@ class OpenFormulierenController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param OpenFormulierenIntakeService $intakeService Ingest / mapping / handoff orchestration.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.

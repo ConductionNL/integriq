@@ -17,7 +17,7 @@
  * a default.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,9 +28,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\SettingsService;
+use OCA\Integriq\Service\SettingsService;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;

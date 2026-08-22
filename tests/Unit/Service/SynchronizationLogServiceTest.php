@@ -11,21 +11,21 @@
  * no-op. No live database is used: the OpenRegister ObjectService is mocked.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationRunLog;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationRunLog;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;

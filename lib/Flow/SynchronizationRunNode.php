@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Run flow node.
+ * Integriq Synchronization Run flow node.
  *
  * `openconnector.synchronization-run` — runs an ALREADY-CONFIGURED
  * Synchronization as one flow step, and emits ONE ITEM PER SYNCHRONISED OBJECT.
@@ -9,7 +9,7 @@
  * WHY A SECOND NODE
  * -----------------
  * `openconnector.source-call` covers "make one request and put the answer on
- * the item". It does not cover OpenConnector's other governed outbound
+ * the item". It does not cover Integriq's other governed outbound
  * capability: running a Synchronization — pagination across pages, mapping,
  * contract and state tracking, the SynchronizationLog. Expressing that as a
  * chain of call steps would make a flow author re-implement pagination and
@@ -44,7 +44,7 @@
  * it is never mistaken for a synchronised object.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -55,17 +55,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -98,6 +98,11 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -193,7 +198,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-synchronization-run.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
 	}//end getIcon()
 
 	/**

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Source Paginate flow node.
+ * Integriq Source Paginate flow node.
  *
  * `openconnector.source-paginate` — the "[Fetch a page]" step of the decomposed
  * synchronization flow. It emits ONE FLOW ITEM PER PAGE, each carrying the
@@ -68,7 +68,7 @@
  * 0 and the same `fetchInfo` block every other page carries.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -79,17 +79,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -116,6 +116,11 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -206,7 +211,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-synchronization-run.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
 	}//end getIcon()
 
 	/**

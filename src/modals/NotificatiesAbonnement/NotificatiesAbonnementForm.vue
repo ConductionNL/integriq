@@ -26,37 +26,37 @@
 			<h2>
 				{{
 					isEdit
-						? t('openconnector', 'Edit abonnement')
-						: t('openconnector', 'Add abonnement')
+						? t('integriq', 'Edit abonnement')
+						: t('integriq', 'Add abonnement')
 				}}
 			</h2>
 
 			<NcTextField
 				v-model="model.name"
-				:label="t('openconnector', 'Name') + ' *'"
+				:label="t('integriq', 'Name') + ' *'"
 				:helperText="errors.name"
 				:error="!!errors.name" />
 
 			<div class="abonnementForm__field">
 				<label for="notificaties-abonnement-source">
-					{{ t('openconnector', 'Source') }} *
+					{{ t('integriq', 'Source') }} *
 				</label>
 				<NcSelect
 					inputId="notificaties-abonnement-source"
-					:inputLabel="t('openconnector', 'Source')"
-					:aria-label-combobox="t('openconnector', 'Source')"
+					:inputLabel="t('integriq', 'Source')"
+					:aria-label-combobox="t('integriq', 'Source')"
 					:modelValue="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:clearable="false"
 					:placeholder="
-						t('openconnector', 'Select the Notificaties API source')
+						t('integriq', 'Select the Notificaties API source')
 					"
 					@update:modelValue="onSourcePick" />
 				<span class="abonnementForm__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'The openconnector Source describing the remote Notificaties API (location, auth).',
 						)
 					}}
@@ -65,12 +65,12 @@
 
 			<div class="abonnementForm__field">
 				<label for="notificaties-abonnement-kanalen">
-					{{ t('openconnector', 'Kanalen') }} *
+					{{ t('integriq', 'Kanalen') }} *
 				</label>
 				<NcSelect
 					inputId="notificaties-abonnement-kanalen"
-					:inputLabel="t('openconnector', 'Kanalen')"
-					:aria-label-combobox="t('openconnector', 'Kanalen')"
+					:inputLabel="t('integriq', 'Kanalen')"
+					:aria-label-combobox="t('integriq', 'Kanalen')"
 					:modelValue="kanaalNames"
 					:options="kanaalNames"
 					:taggable="true"
@@ -78,13 +78,13 @@
 					:clearable="true"
 					:placeholder="
 						t(
-							'openconnector',
+							'integriq',
 							'Type a kanaal name and press enter (e.g. zaken)',
 						)
 					"
 					@update:modelValue="onKanalenChange">
 					<template #no-options>
-						{{ t('openconnector', 'Type to add a kanaal name') }}
+						{{ t('integriq', 'Type to add a kanaal name') }}
 					</template>
 				</NcSelect>
 				<span
@@ -96,30 +96,30 @@
 
 			<NcTextField
 				v-model="model.authHeaderName"
-				:label="t('openconnector', 'Auth header name')"
+				:label="t('integriq', 'Auth header name')"
 				:helperText="
 					t(
-						'openconnector',
+						'integriq',
 						'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.',
 					)
 				" />
 
 			<NcTextField
 				v-model="model.authScheme"
-				:label="t('openconnector', 'Auth scheme prefix')"
+				:label="t('integriq', 'Auth scheme prefix')"
 				:helperText="
 					t(
-						'openconnector',
+						'integriq',
 						'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.',
 					)
 				" />
 
 			<div class="abonnementForm__actions">
 				<NcButton variant="primary" :disabled="busy" @click="save">
-					{{ t('openconnector', 'Save') }}
+					{{ t('integriq', 'Save') }}
 				</NcButton>
 				<NcButton :disabled="busy" @click="$emit('close')">
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 			</div>
 		</div>
@@ -357,13 +357,13 @@ export default {
 			if (!this.model.name) {
 				this.errors = {
 					...this.errors,
-					name: t('openconnector', 'Name is required'),
+					name: t('integriq', 'Name is required'),
 				}
 			}
 			if (this.kanaalNames.length === 0) {
 				this.errors = {
 					...this.errors,
-					kanalen: t('openconnector', 'At least one kanaal is required'),
+					kanalen: t('integriq', 'At least one kanaal is required'),
 				}
 			}
 			if (Object.keys(this.errors).length > 0) {
@@ -384,25 +384,25 @@ export default {
 					const id = this.abonnement.id || this.abonnement.uuid
 					await axios.put(
 						generateUrl(
-							`/apps/openconnector/api/notificaties/abonnementen/${id}`,
+							`/apps/integriq/api/notificaties/abonnementen/${id}`,
 						),
 						payload,
 					)
-					showSuccess(t('openconnector', 'Abonnement updated'))
+					showSuccess(t('integriq', 'Abonnement updated'))
 				} else {
 					await axios.post(
 						generateUrl(
-							'/apps/openconnector/api/notificaties/abonnementen',
+							'/apps/integriq/api/notificaties/abonnementen',
 						),
 						payload,
 					)
-					showSuccess(t('openconnector', 'Abonnement created'))
+					showSuccess(t('integriq', 'Abonnement created'))
 				}
 				this.$emit('saved')
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Failed to save abonnement')
+					t('integriq', 'Failed to save abonnement')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

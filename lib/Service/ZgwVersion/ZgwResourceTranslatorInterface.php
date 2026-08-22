@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector ZGW Resource Translator Interface.
+ * Integriq ZGW Resource Translator Interface.
  *
  * Narrow domain seam through which every ZGW resource's `1.0` (the fleet's
  * current procest/OpenRegister shape) ↔ `1.6` (VNG's incremental
  * stability line) payload translation is dispatched. A new resource, or a
  * future next-generation (`2.0`) translator once VNG publishes a stable
  * OAS (see design.md "Open Questions" #1), is added by implementing this
- * interface, never by editing {@see \OCA\OpenConnector\Service\ZgwVersionTranslationService}
+ * interface, never by editing {@see \OCA\Integriq\Service\ZgwVersionTranslationService}
  * or the controller — mirrors `FscConnectivityProviderInterface` /
  * `IwmoIjwProviderInterface` (see design.md "Architecture Overview").
  *
@@ -16,7 +16,7 @@
  * (struct in, struct out) — no HTTP, no Twig, no OpenRegister read.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\ZgwVersion
+ * @package  OCA\Integriq\Service\ZgwVersion
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,16 +25,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\ZgwVersion;
+namespace OCA\Integriq\Service\ZgwVersion;
 
-use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
+use OCA\Integriq\Exception\ZgwLiteralLeakException;
 
 /**
  * A pure `1.0` ↔ `1.6` payload translator for one ZGW resource.
@@ -45,7 +45,7 @@ interface ZgwResourceTranslatorInterface {
 	/**
 	 * Stable ZGW resource slug this translator handles (e.g. `zaak`).
 	 *
-	 * Selected at runtime by {@see \OCA\OpenConnector\Service\ZgwVersionTranslationService}
+	 * Selected at runtime by {@see \OCA\Integriq\Service\ZgwVersionTranslationService}
 	 * via the caller's declared `resource` field.
 	 *
 	 * @return string The resource slug.

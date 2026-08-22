@@ -82,7 +82,7 @@ class FlowsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new FlowsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->flowRunnerService,
 			$this->actionAuth,

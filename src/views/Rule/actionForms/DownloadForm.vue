@@ -10,12 +10,12 @@
 <template>
 	<div class="action-form">
 		<NcTextField
-			:label="t('openconnector', 'Filename position (dotted path on object)')"
+			:label="t('integriq', 'Filename position (dotted path on object)')"
 			:modelValue="value.filenamePosition || ''"
 			placeholder="attachments.0.filename"
 			@update:modelValue="(next) => patch('filenamePosition', next)" />
 		<NcTextField
-			:label="t('openconnector', 'File ID position in URL path (legacy)')"
+			:label="t('integriq', 'File ID position in URL path (legacy)')"
 			type="number"
 			:modelValue="
 				value.fileIdPosition != null ? String(value.fileIdPosition) : ''
@@ -25,7 +25,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.',
 				)
 			}}

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Node Support.
+ * Integriq Flow Node Support.
  *
  * The two small run-time questions both contributed nodes have to answer, and
  * the honest answer to each given what OpenRegister's engine hands a node.
@@ -28,7 +28,7 @@
  * the step, or the dispatcher should put `stepId` / `onError` into `$context`.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,14 +39,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCP\IL10N;
 use UnexpectedValueException;
@@ -64,7 +64,7 @@ final class FlowNodeSupport {
 	 * Mirrors `FlowEngine`'s `ON_ERROR_STOP` / `ON_ERROR_CONTINUE` /
 	 * `ON_ERROR_DEAD_LETTER`. Declared here rather than on a node class so
 	 * reading it never pulls `IFlowNode` into scope — the whole point of the
-	 * guarded registration is that OpenConnector's flow classes are only ever
+	 * guarded registration is that Integriq's flow classes are only ever
 	 * loaded on an instance whose OpenRegister actually has a flow engine.
 	 *
 	 * @var array<int, string>

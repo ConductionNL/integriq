@@ -4,7 +4,7 @@
  * Unit tests for LogPsd2AggregatorProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Psd2
+ * @package  OCA\Integriq\Tests\Unit\Service\Psd2
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Psd2;
+namespace OCA\Integriq\Tests\Unit\Service\Psd2;
 
-use OCA\OpenConnector\Service\Psd2\LogPsd2AggregatorProvider;
+use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

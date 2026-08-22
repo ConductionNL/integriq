@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Peppol Transmission Service.
+ * Integriq Peppol Transmission Service.
  *
  * Core of the peppol-access-point-connector: resolves the configured Peppol
  * source + provider binding, serves the participant/SMP lookup, and drives
@@ -11,7 +11,7 @@
  * HTTP/signature-verification shell.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,20 +20,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\Peppol\LogPeppolAccessPointProvider;
-use OCA\OpenConnector\Service\Peppol\PeppolAccessPointProviderInterface;
-use OCA\OpenConnector\Service\Peppol\RestPeppolAccessPointProvider;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
+use OCA\Integriq\Service\Peppol\PeppolAccessPointProviderInterface;
+use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -55,6 +55,8 @@ class PeppolTransmissionService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**

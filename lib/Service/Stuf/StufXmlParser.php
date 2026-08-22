@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Shared StUF XML Parser.
+ * Integriq Shared StUF XML Parser.
  *
  * XXE-hardened XML parsing shared by every StUF-family bridge that consumes
  * externally-delivered XML in this app (`iwmo-ijw-adapter`'s
@@ -19,7 +19,7 @@
  * local files or make outbound requests via XML entities.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Stuf
+ * @package  OCA\Integriq\Service\Stuf
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,16 +28,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Stuf;
+namespace OCA\Integriq\Service\Stuf;
 
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Util\SafeXmlParser;
 use SimpleXMLElement;
 use Throwable;
 

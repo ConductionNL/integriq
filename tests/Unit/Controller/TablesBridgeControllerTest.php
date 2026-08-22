@@ -77,7 +77,7 @@ class TablesBridgeControllerTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		$this->controller = new TablesBridgeController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->tablesSyncAdapter,
 			$this->createMock(OrObjectService::class),

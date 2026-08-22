@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector ZGW Version Negotiation Service.
+ * Integriq ZGW Version Negotiation Service.
  *
  * Resolves a caller's declared `fromVersion`/`toVersion` for the
  * zgw-version-translation change. Real ZGW does not standardise an HTTP
@@ -13,7 +13,7 @@
  * design.md "Version negotiation" for the full precedence rationale.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,17 +22,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\ZgwUnknownVersionException;
-use OCA\OpenConnector\Exception\ZgwVersionNotImplementedException;
+use OCA\Integriq\Exception\ZgwUnknownVersionException;
+use OCA\Integriq\Exception\ZgwVersionNotImplementedException;
 use OCP\IRequest;
 
 /**

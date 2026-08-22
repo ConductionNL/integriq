@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
-  SyncedFromTab — OpenConnector's bespoke "Synced from" leaf component.
+  SyncedFromTab — Integriq's bespoke "Synced from" leaf component.
 
   Registered on the OpenRegister integration registry (Path 2) under id
   `sync-contract`, used as BOTH the sidebar `tab` and the detail-page
   `widget`. It renders the provenance chain for any OR object: which
   synchronization(s) wrote it, when they last ran, and a deep-link into
-  the OpenConnector synchronization editor.
+  the Integriq synchronization editor.
 
   The registry mounts this with the shared object context props
   ({ objectId, register, schema, apiBase }); the detail/dashboard
@@ -24,13 +24,13 @@
 		<NcLoadingIcon v-if="loading" :size="24" />
 
 		<div v-else-if="unavailable" class="oc-synced-from__notice">
-			{{ t('openconnector', 'Sync information is currently unavailable.') }}
+			{{ t('integriq', 'Sync information is currently unavailable.') }}
 		</div>
 
 		<div v-else-if="rows.length === 0" class="oc-synced-from__empty">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'This object was not created by a synchronization.',
 				)
 			}}
@@ -43,16 +43,16 @@
 				</div>
 				<div class="oc-synced-from__row-body">
 					<a v-if="row.url" :href="row.url" class="oc-synced-from__title">
-						{{ row.title || t('openconnector', 'Synchronization') }}
+						{{ row.title || t('integriq', 'Synchronization') }}
 					</a>
 					<span v-else class="oc-synced-from__title">
-						{{ row.title || t('openconnector', 'Synchronization') }}
+						{{ row.title || t('integriq', 'Synchronization') }}
 					</span>
 					<span v-if="row.subtitle" class="oc-synced-from__subtitle">{{
 						row.subtitle
 					}}</span>
 					<span v-if="row.originId" class="oc-synced-from__origin">
-						{{ t('openconnector', 'Origin id:') }}
+						{{ t('integriq', 'Origin id:') }}
 						<code>{{ row.originId }}</code>
 					</span>
 				</div>

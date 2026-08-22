@@ -15,7 +15,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase {
 		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(false);
 
 		$controller = new HealthController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->createMock(IRequest::class),
 			appManager: $appManager,
 			delegate: null
@@ -79,7 +79,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase {
 			->willReturn(new JSONResponse(['status' => 'healthy'], Http::STATUS_OK));
 
 		$controller = new HealthController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->createMock(IRequest::class),
 			appManager: $appManager,
 			delegate: $delegate

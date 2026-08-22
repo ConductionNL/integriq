@@ -114,7 +114,7 @@ class StufZknControllerTest extends TestCase {
 	 */
 	private function buildController(): StufZknController {
 		return new StufZknController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$this->signatureService,

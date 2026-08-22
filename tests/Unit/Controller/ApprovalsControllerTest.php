@@ -115,7 +115,7 @@ class ApprovalsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new ApprovalsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->approvalService,
 			$this->endpointService,

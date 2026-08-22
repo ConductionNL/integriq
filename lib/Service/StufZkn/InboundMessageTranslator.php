@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Inbound Bericht Translator.
+ * Integriq StUF-ZKN Inbound Bericht Translator.
  *
  * Translates an inbound StUF-ZKN 3.10 SOAP kennisgeving (`zakLk01` — zaak
  * create/update, or `edcLk01` — document create/update) into this bridge's
@@ -38,11 +38,11 @@
  * "missing" and still trips the literal-leak guard.
  *
  * XXE hardening: parsing is delegated to the shared, XXE-hardened
- * {@see \OCA\OpenConnector\Service\Stuf\StufXmlParser} (`LIBXML_NONET`
+ * {@see \OCA\Integriq\Service\Stuf\StufXmlParser} (`LIBXML_NONET`
  * only, never `LIBXML_NOENT`/`LIBXML_DTDLOAD`).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -51,17 +51,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-zaklk01-edclk01-translation-with-a-literal-leak-guard-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\Stuf\StufXmlParser;
+use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Stuf\StufXmlParser;
 use SimpleXMLElement;
 
 /**

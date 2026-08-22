@@ -106,7 +106,7 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
 // In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
 // default for the apache-served dev container) `generateUrl` returns
-// `/apps/openconnector` and the Vue Router's `base` is set to that —
+// `/apps/integriq` and the Vue Router's `base` is set to that —
 // any URL prefixed with `/index.php/` then sits outside the router
 // base, so no route matches and the page renders empty. In CI's php -S
 // install (no htaccess processing) the inverse is true and only the
@@ -321,8 +321,8 @@ test.describe('manifest pages — schema-driven render', () => {
 			const root = await rootUrl(page)
 			// The in-app router runs in PATH mode (`createWebHistory()`,
 			// src/main.js), so the route is a plain path
-			// (`/apps/openconnector/sources`) — a hash fragment
-			// (`/apps/openconnector/#/sources`) would now be ignored by the
+			// (`/apps/integriq/sources`) — a hash fragment
+			// (`/apps/integriq/#/sources`) would now be ignored by the
 			// router and silently land on the dashboard, so each page would be
 			// smoke-tested against the dashboard rather than its own component.
 			// Use `domcontentloaded` rather than `networkidle` — NC's

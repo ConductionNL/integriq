@@ -83,7 +83,7 @@
 					@blur="nameTouched = true" />
 				<NcTextArea
 					v-model="draft.description"
-					:label="t('openconnector', 'Description')"
+					:label="t('integriq', 'Description')"
 					:disabled="saving"
 					rows="1"
 					resize="vertical" />
@@ -98,16 +98,16 @@
 					class="cn-mapping-editor__column cn-mapping-editor__column--input">
 					<header class="cn-mapping-editor__column-header">
 						<DatabaseArrowRightOutlineIcon :size="20" />
-						<h3>{{ t('openconnector', 'Input') }}</h3>
+						<h3>{{ t('integriq', 'Input') }}</h3>
 						<span class="cn-mapping-editor__column-note">
-							{{ t('openconnector', 'not stored') }}
+							{{ t('integriq', 'not stored') }}
 						</span>
 					</header>
 					<div class="cn-mapping-editor__column-body">
 						<label
 							class="cn-mapping-editor__label"
 							for="cn-mapping-editor-input">
-							{{ t('openconnector', 'Test input (JSON)') }}
+							{{ t('integriq', 'Test input (JSON)') }}
 						</label>
 						<textarea
 							id="cn-mapping-editor-input"
@@ -132,7 +132,7 @@
 					class="cn-mapping-editor__column cn-mapping-editor__column--transform">
 					<header class="cn-mapping-editor__column-header">
 						<SwapHorizontalIcon :size="20" />
-						<h3>{{ t('openconnector', 'Transform') }}</h3>
+						<h3>{{ t('integriq', 'Transform') }}</h3>
 					</header>
 					<div class="cn-mapping-editor__column-body">
 						<MappingRulesEditor
@@ -159,9 +159,9 @@
 					class="cn-mapping-editor__column cn-mapping-editor__column--output">
 					<header class="cn-mapping-editor__column-header">
 						<DatabaseArrowLeftOutlineIcon :size="20" />
-						<h3>{{ t('openconnector', 'Output') }}</h3>
+						<h3>{{ t('integriq', 'Output') }}</h3>
 						<span class="cn-mapping-editor__column-note">
-							{{ t('openconnector', 'live') }}
+							{{ t('integriq', 'live') }}
 						</span>
 					</header>
 					<div class="cn-mapping-editor__column-body">
@@ -177,13 +177,13 @@
 
 		<template #actions>
 			<NcButton :disabled="saving" @click="onCancel">
-				{{ t('openconnector', 'Cancel') }}
+				{{ t('integriq', 'Cancel') }}
 			</NcButton>
 			<NcButton :disabled="saving || !!inputError" @click="onTest">
 				<template #icon>
 					<TestTubeIcon :size="20" />
 				</template>
-				{{ t('openconnector', 'Test') }}
+				{{ t('integriq', 'Test') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				<template #icon>
@@ -193,8 +193,8 @@
 				</template>
 				{{
 					isCreate
-						? t('openconnector', 'Create')
-						: t('openconnector', 'Save')
+						? t('integriq', 'Create')
+						: t('integriq', 'Save')
 				}}
 			</NcButton>
 		</template>
@@ -309,8 +309,8 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
-				? this.t('openconnector', 'Create mapping')
-				: this.t('openconnector', 'Edit mapping')
+				? this.t('integriq', 'Create mapping')
+				: this.t('integriq', 'Edit mapping')
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -329,20 +329,20 @@ export default {
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		nameLabel() {
-			return this.t('openconnector', 'Name') + ' *'
+			return this.t('integriq', 'Name') + ' *'
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		nameError() {
 			if (!this.draft.name) {
 				return this.nameTouched
-					? this.t('openconnector', 'Name is required')
+					? this.t('integriq', 'Name is required')
 					: ''
 			}
 			return NAME_PATTERN.test(this.draft.name)
 				? ''
 				: this.t(
-						'openconnector',
+						'integriq',
 						'Name must contain at least one letter or number',
 					)
 		},
@@ -475,13 +475,13 @@ export default {
 				await this.confirm({ ...(this.item || {}), ...this.draft })
 				showSuccess(
 					this.isCreate
-						? this.t('openconnector', 'Mapping created')
-						: this.t('openconnector', 'Mapping saved'),
+						? this.t('integriq', 'Mapping created')
+						: this.t('integriq', 'Mapping saved'),
 				)
 				this.close?.()
 			} catch (err) {
 				this.saveError =
-					err?.message || this.t('openconnector', 'Failed to save mapping')
+					err?.message || this.t('integriq', 'Failed to save mapping')
 			} finally {
 				this.saving = false
 			}

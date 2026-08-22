@@ -4,29 +4,29 @@
 -->
 
 <template>
-	<div class="openconnector-admin__section" data-testid="admin-dso-pki-section">
-		<h3>{{ t('openconnector', 'DSO STAM webhook signature verification') }}</h3>
-		<p class="openconnector-admin__hint">
+	<div class="integriq-admin__section" data-testid="admin-dso-pki-section">
+		<h3>{{ t('integriq', 'DSO STAM webhook signature verification') }}</h3>
+		<p class="integriq-admin__hint">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).',
 				)
 			}}
 		</p>
 
-		<div v-if="error" class="openconnector-admin__action-error" role="alert">
+		<div v-if="error" class="integriq-admin__action-error" role="alert">
 			{{ error }}
 		</div>
 
-		<p v-if="loading" class="openconnector-admin__hint">
-			{{ t('openconnector', 'Loading DSO signature configuration…') }}
+		<p v-if="loading" class="integriq-admin__hint">
+			{{ t('integriq', 'Loading DSO signature configuration…') }}
 		</p>
 
-		<div v-else class="openconnector-admin__dso-pki-form">
+		<div v-else class="integriq-admin__dso-pki-form">
 			<NcSelect
 				v-model="mode"
-				:inputLabel="t('openconnector', 'Signing mode')"
+				:inputLabel="t('integriq', 'Signing mode')"
 				:options="modeOptions"
 				:reduce="(option) => option.value"
 				:clearable="false"
@@ -34,7 +34,7 @@
 
 			<template v-if="mode === 'hmac'">
 				<label for="dso-pki-hmac-secret">{{
-					t('openconnector', 'HMAC shared secret')
+					t('integriq', 'HMAC shared secret')
 				}}</label>
 				<NcPasswordField
 					id="dso-pki-hmac-secret"
@@ -42,51 +42,51 @@
 					:placeholder="
 						hmacSecretConfigured
 							? t(
-									'openconnector',
+									'integriq',
 									'Configured (leave blank to keep unchanged)',
 								)
-							: t('openconnector', 'Not configured')
+							: t('integriq', 'Not configured')
 					"
 					data-testid="admin-dso-pki-hmac-secret" />
 			</template>
 
 			<template v-else>
 				<label for="dso-pki-signing-cert">{{
-					t('openconnector', 'Signing certificate (PEM)')
+					t('integriq', 'Signing certificate (PEM)')
 				}}</label>
 				<textarea
 					id="dso-pki-signing-cert"
 					v-model="signingCertificate"
-					class="openconnector-admin__dso-pki-textarea"
+					class="integriq-admin__dso-pki-textarea"
 					data-testid="admin-dso-pki-signing-cert" />
 
 				<label for="dso-pki-intermediate-chain">{{
 					t(
-						'openconnector',
+						'integriq',
 						'Intermediate certificate chain (PEM, optional)',
 					)
 				}}</label>
 				<textarea
 					id="dso-pki-intermediate-chain"
 					v-model="intermediateChain"
-					class="openconnector-admin__dso-pki-textarea"
+					class="integriq-admin__dso-pki-textarea"
 					data-testid="admin-dso-pki-intermediate-chain" />
 
 				<label for="dso-pki-root-ca">{{
 					t(
-						'openconnector',
+						'integriq',
 						'Trusted root CA (PKIoverheid Private Root CA, PEM)',
 					)
 				}}</label>
 				<textarea
 					id="dso-pki-root-ca"
 					v-model="rootCa"
-					class="openconnector-admin__dso-pki-textarea"
+					class="integriq-admin__dso-pki-textarea"
 					data-testid="admin-dso-pki-root-ca" />
 			</template>
 		</div>
 
-		<div class="openconnector-admin__matrix-actions">
+		<div class="integriq-admin__matrix-actions">
 			<NcButton
 				variant="primary"
 				data-testid="admin-dso-pki-save"
@@ -94,8 +94,8 @@
 				@click="save">
 				{{
 					saving
-						? t('openconnector', 'Saving…')
-						: t('openconnector', 'Save DSO signature configuration')
+						? t('integriq', 'Saving…')
+						: t('integriq', 'Save DSO signature configuration')
 				}}
 			</NcButton>
 		</div>
@@ -137,7 +137,7 @@ export default {
 			modeOptions: [
 				{
 					label: this.t(
-						'openconnector',
+						'integriq',
 						'HMAC shared secret (pre-production)',
 					),
 
@@ -145,7 +145,7 @@ export default {
 				},
 				{
 					label: this.t(
-						'openconnector',
+						'integriq',
 						'PKIoverheid certificate chain (production)',
 					),
 
@@ -167,7 +167,7 @@ export default {
 			this.error = ''
 			try {
 				const { data } = await axios.get(
-					generateUrl('/apps/openconnector/api/admin/dso-pki-config'),
+					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
 				)
 				this.mode = data.mode === 'rsa' ? 'rsa' : 'hmac'
 				this.hmacSecretConfigured = data.hmacSecretConfigured === true
@@ -177,7 +177,7 @@ export default {
 			} catch (e) {
 				console.error('Failed to load DSO PKI configuration', e)
 				this.error = this.t(
-					'openconnector',
+					'integriq',
 					'Failed to load the DSO signature configuration.',
 				)
 			} finally {
@@ -191,7 +191,7 @@ export default {
 			this.error = ''
 			try {
 				await axios.put(
-					generateUrl('/apps/openconnector/api/admin/dso-pki-config'),
+					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
 					{
 						mode: this.mode,
 						hmacSecret: this.hmacSecret,
@@ -203,7 +203,7 @@ export default {
 				this.hmacSecret = ''
 				await this.load()
 				showSuccess(
-					this.t('openconnector', 'DSO signature configuration saved.'),
+					this.t('integriq', 'DSO signature configuration saved.'),
 				)
 			} catch (e) {
 				console.error('Failed to save DSO PKI configuration', e)
@@ -216,7 +216,7 @@ export default {
 				this.error =
 					errors
 					|| this.t(
-						'openconnector',
+						'integriq',
 						'Failed to save the DSO signature configuration.',
 					)
 				showError(this.error)
@@ -229,7 +229,7 @@ export default {
 </script>
 
 <style scoped>
-.openconnector-admin__dso-pki-form {
+.integriq-admin__dso-pki-form {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -237,7 +237,7 @@ export default {
 	margin-bottom: 16px;
 }
 
-.openconnector-admin__dso-pki-textarea {
+.integriq-admin__dso-pki-textarea {
 	width: 100%;
 	min-height: 120px;
 	font-family: monospace;

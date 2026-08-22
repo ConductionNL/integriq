@@ -119,7 +119,7 @@ class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 	 */
 	private function controller(): NotificatiesSubscriberController {
 		return new NotificatiesSubscriberController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->subscriberService,
 			$this->authorizationService,

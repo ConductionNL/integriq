@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Brokered Call Service.
+ * Integriq Brokered Call Service.
  *
  * Isolates ALL coupling between the outbound HTTP call engine and the
  * OpenRegister credential broker (`OCA\OpenRegister\Service\Credential\
@@ -23,7 +23,7 @@
  * authentication under any circumstance.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,15 +34,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
@@ -80,6 +80,12 @@ class BrokeredCallService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
+	// OpenRegister's credential broker matches against a stored credential's
+	// `allowedApps` (strict in_array). Every credential minted so far carries
+	// "openconnector"; renaming it fails every brokered call CLOSED.
+	// Moves only with a credential re-provisioning pass — as do the hint strings
+	// below that tell the admin which value to add to `allowedApps`.
 	public const APP_ID = 'openconnector';
 
 	/**
@@ -550,7 +556,7 @@ class BrokeredCallService {
 	 * permitted") — the real refusal reason (allowedApps miss, allow-rule
 	 * miss, host-lock, owner mismatch, OR an un-migrated vault secret that a
 	 * sessionless read cannot decrypt) is logged INSIDE OpenRegister and never
-	 * surfaced across the trust boundary. OpenConnector therefore cannot tell
+	 * surfaced across the trust boundary. Integriq therefore cannot tell
 	 * the causes apart from the exception; the guidance instead covers the
 	 * likely fixes for the context it is in.
 	 *
@@ -572,7 +578,7 @@ class BrokeredCallService {
 	 */
 	private function buildRefusalMessage(string $brokerReason, string $method, bool $sessionless): string {
 		$message = 'Credential broker refused the request (' . $brokerReason . '). '
-			. 'If OpenConnector should be allowed to use this credential, add "openconnector" to the '
+			. 'If Integriq should be allowed to use this credential, add "openconnector" to the '
 			. "credential's allowedApps and verify the provider allow-rules cover " . $method . ' requests.';
 
 		if ($sessionless === true) {

@@ -4,7 +4,7 @@
  * Unit tests for RestPeppolAccessPointProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Peppol
+ * @package  OCA\Integriq\Tests\Unit\Service\Peppol
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Peppol;
+namespace OCA\Integriq\Tests\Unit\Service\Peppol;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\BrokeredCallService;
-use OCA\OpenConnector\Service\Peppol\RestPeppolAccessPointProvider;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

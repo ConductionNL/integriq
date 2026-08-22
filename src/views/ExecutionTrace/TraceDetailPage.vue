@@ -18,14 +18,14 @@
 <template>
 	<div class="traceDetail">
 		<NcButton variant="tertiary" class="traceDetail__back" @click="goBack">
-			{{ t('openconnector', 'Back to traces') }}
+			{{ t('integriq', 'Back to traces') }}
 		</NcButton>
 
 		<NcLoadingIcon v-if="loading" :size="32" class="traceDetail__loading" />
 
 		<div v-else-if="trace" class="traceDetail__body">
 			<div class="traceDetail__meta">
-				<h2>{{ t('openconnector', 'Execution trace') }}</h2>
+				<h2>{{ t('integriq', 'Execution trace') }}</h2>
 				<span
 					class="traceDetail__badge"
 					:class="`traceDetail__badge--${trace.status}`">
@@ -34,16 +34,16 @@
 			</div>
 
 			<dl class="traceDetail__fields">
-				<dt>{{ t('openconnector', 'Entry point') }}</dt>
+				<dt>{{ t('integriq', 'Entry point') }}</dt>
 				<dd>{{ trace.entryPoint }} ({{ trace.entryPointId || '—' }})</dd>
-				<dt>{{ t('openconnector', 'Started') }}</dt>
+				<dt>{{ t('integriq', 'Started') }}</dt>
 				<dd>{{ trace.startedAt || '—' }}</dd>
-				<dt>{{ t('openconnector', 'Finished') }}</dt>
+				<dt>{{ t('integriq', 'Finished') }}</dt>
 				<dd>{{ trace.finishedAt || '—' }}</dd>
-				<dt>{{ t('openconnector', 'Duration') }}</dt>
+				<dt>{{ t('integriq', 'Duration') }}</dt>
 				<dd>{{ trace.durationMs || 0 }} ms</dd>
 				<dt v-if="trace.replayOf">
-					{{ t('openconnector', 'Replay of') }}
+					{{ t('integriq', 'Replay of') }}
 				</dt>
 				<dd v-if="trace.replayOf">
 					{{ trace.replayOf }}
@@ -54,29 +54,29 @@
 				v-if="trace.error"
 				class="traceDetail__error"
 				data-testid="trace-error">
-				<strong>{{ t('openconnector', 'Error') }}:</strong>
+				<strong>{{ t('integriq', 'Error') }}:</strong>
 				{{ trace.error.message }}
 			</div>
 
-			<h3>{{ t('openconnector', 'Steps') }}</h3>
+			<h3>{{ t('integriq', 'Steps') }}</h3>
 			<TraceTimelineWidget :steps="trace.steps || []" />
 
 			<div class="traceDetail__replay">
-				<h3>{{ t('openconnector', 'Replay') }}</h3>
+				<h3>{{ t('integriq', 'Replay') }}</h3>
 
 				<NcButton
 					v-if="!preview"
 					variant="secondary"
 					:disabled="busy"
 					@click="runDryRun">
-					{{ t('openconnector', 'Replay (dry-run preview)') }}
+					{{ t('integriq', 'Replay (dry-run preview)') }}
 				</NcButton>
 
 				<template v-else>
 					<p data-testid="replay-preview-notice">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Dry-run preview complete — no writes were performed.',
 							)
 						}}
@@ -89,13 +89,13 @@
 								variant="secondary"
 								:disabled="busy"
 								@click="runDryRun">
-								{{ t('openconnector', 'Re-run preview') }}
+								{{ t('integriq', 'Re-run preview') }}
 							</NcButton>
 							<NcButton
 								variant="error"
 								:disabled="busy"
 								@click="confirmingForce = true">
-								{{ t('openconnector', 'Force replay (real write)') }}
+								{{ t('integriq', 'Force replay (real write)') }}
 							</NcButton>
 						</div>
 					</template>
@@ -105,7 +105,7 @@
 							data-testid="force-confirm-notice">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									"This will perform a REAL write, reusing the original entry point's dispatch path. Are you sure?",
 								)
 							}}
@@ -116,12 +116,12 @@
 								:disabled="busy"
 								data-testid="confirm-force-replay"
 								@click="runForced">
-								{{ t('openconnector', 'Confirm forced replay') }}
+								{{ t('integriq', 'Confirm forced replay') }}
 							</NcButton>
 							<NcButton
 								:disabled="busy"
 								@click="confirmingForce = false">
-								{{ t('openconnector', 'Cancel') }}
+								{{ t('integriq', 'Cancel') }}
 							</NcButton>
 						</div>
 					</template>
@@ -131,10 +131,10 @@
 
 		<NcEmptyContent
 			v-else
-			:name="t('openconnector', 'Trace not found')"
+			:name="t('integriq', 'Trace not found')"
 			:description="
 				t(
-					'openconnector',
+					'integriq',
 					'It may have expired or you are not authorized to view it.',
 				)
 			">
@@ -207,7 +207,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						`/apps/openconnector/api/execution-traces/${this.traceId}`,
+						`/apps/integriq/api/execution-traces/${this.traceId}`,
 					),
 				)
 				this.trace = res.data
@@ -229,16 +229,16 @@ export default {
 			try {
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/execution-traces/${this.traceId}/replay`,
+						`/apps/integriq/api/execution-traces/${this.traceId}/replay`,
 					),
 					{ force: false },
 				)
 				this.preview = res.data
-				showSuccess(t('openconnector', 'Dry-run preview complete'))
+				showSuccess(t('integriq', 'Dry-run preview complete'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Dry-run preview failed')
+					t('integriq', 'Dry-run preview failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {
@@ -257,17 +257,17 @@ export default {
 			try {
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/execution-traces/${this.traceId}/replay`,
+						`/apps/integriq/api/execution-traces/${this.traceId}/replay`,
 					),
 					{ force: true },
 				)
 				this.preview = res.data
 				this.confirmingForce = false
-				showSuccess(t('openconnector', 'Forced replay complete'))
+				showSuccess(t('integriq', 'Forced replay complete'))
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Forced replay failed')
+					t('integriq', 'Forced replay failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

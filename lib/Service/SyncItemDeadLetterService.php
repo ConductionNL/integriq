@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Sync Item Dead Letter Service.
+ * Integriq Sync Item Dead Letter Service.
  *
  * Capture, replay and discard machinery for per-object synchronization
  * failures ("sync_item_dead_letter"). Mirrors EventService's
@@ -10,7 +10,7 @@
  * sync-item failures (synchronization-engine spec REQ-008).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,17 +21,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
+use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;

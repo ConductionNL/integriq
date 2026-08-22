@@ -32,7 +32,7 @@ const APP_ROOT = path.resolve(__dirname, '..', '..')
 const BUNDLE_PATH = path.join(APP_ROOT, 'js', 'openconnector-main.js')
 
 /**
- * Ensure the webpack bundle exists before specs hit `/apps/openconnector/`.
+ * Ensure the webpack bundle exists before specs hit `/apps/integriq/`.
  *
  * The shared `ConductionNL/.github/quality.yml` Playwright job runs
  * `npm ci` + `npx playwright install` before the spec run, but never
@@ -153,14 +153,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// harness correct if one is ever added.
 	// ⚠️ The `/index.php/` prefix is load-bearing, and this is the worst place
 	// to get it wrong. CI serves Nextcloud with `php -S` and no router script,
-	// where `/apps/openconnector/` is a real directory with no index.php inside
+	// where `/apps/integriq/` is a real directory with no index.php inside
 	// and therefore 404s (measured; the pretty form only works behind Apache +
 	// `.htaccess`). A 404 page still shares the origin, so the localStorage
 	// seed below would appear to succeed — but the page carries no
 	// `OC.requestToken`, so the first-run-wizard dismissal a few lines down
 	// silently fails, and the wizard then intercepts pointer events in every
 	// spec without hiding anything a visibility assertion looks at.
-	await page.goto('/index.php/apps/openconnector/')
+	await page.goto('/index.php/apps/integriq/')
 	await seedFirstVisitOverlaysSeen(page, 'openconnector')
 
 	// Retire Nextcloud's own first-run wizard for this user.

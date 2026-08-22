@@ -102,7 +102,7 @@ class UserControllerTest extends TestCase {
 		$this->l10n->method('t')->willReturnArgument(0);
 
 		$this->controller = new UserController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->userManager,
 			$this->userSession,
@@ -442,7 +442,7 @@ class UserControllerTest extends TestCase {
 		);
 
 		return new UserController(
-			'openconnector',
+			'integriq',
 			$request,
 			$this->userManager,
 			$this->userSession,

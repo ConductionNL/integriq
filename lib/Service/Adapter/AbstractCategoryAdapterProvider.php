@@ -4,7 +4,7 @@
  * Shared base for connector-category vendor adapters.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Adapter
+ * @package  OCA\Integriq\Service\Adapter
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,7 +17,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Adapter;
+namespace OCA\Integriq\Service\Adapter;
 
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  *     `project_credential-broker`.
  *
  * Storage strategy: every category adapter is `'query-time'` — these are
- * live external systems, not something openconnector persists a local copy
+ * live external systems, not something integriq persists a local copy
  * of. `list()`/`get()` therefore proxy directly to the vendor via the
  * broker on every call; `create()`/`update()`/`delete()` are NOT overridden
  * here so the `AbstractIntegrationProvider` default (`NotImplementedException`)
@@ -111,7 +111,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 */
 	protected function getCredentialId(): ?string {
 		$value = $this->appConfig->getValueString(
-			'openconnector',
+			'integriq',
 			$this->credentialConfigKey(),
 			''
 		);
@@ -152,6 +152,11 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 		try {
 			return $this->credentialBroker->request(
 				credentialId: $credentialId,
+				// Frozen on the old id: this is the identity OpenRegister's credential
+				// broker matches against a stored credential's `allowedApps` array
+				// (strict in_array). Every already-minted credential carries
+				// "openconnector"; renaming it fails every brokered call CLOSED.
+				// Moves only with a credential re-provisioning pass.
 				appId: 'openconnector',
 				method: $method,
 				path: $path,

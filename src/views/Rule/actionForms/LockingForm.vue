@@ -9,16 +9,16 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Lock action')
+			t('integriq', 'Lock action')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Lock action')"
+			:aria-label-combobox="t('integriq', 'Lock action')"
 			:modelValue="selectedAction"
 			:options="actionOptions"
 			:clearable="false"
 			@update:modelValue="onActionPick" />
 		<NcTextField
-			:label="t('openconnector', 'Duration (seconds, default 3600)')"
+			:label="t('integriq', 'Duration (seconds, default 3600)')"
 			type="number"
 			:modelValue="value.duration != null ? String(value.duration) : ''"
 			placeholder="3600"
@@ -26,7 +26,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Lock or unlock the object identified by the request. Duration only applies to lock; unlock ignores it.',
 				)
 			}}
@@ -52,7 +52,7 @@ export default {
 		actionOptions() {
 			return LOCK_ACTIONS.map((row) => ({
 				id: row.id,
-				label: this.t('openconnector', row.label),
+				label: this.t('integriq', row.label),
 			}))
 		},
 

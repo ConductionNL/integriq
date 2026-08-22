@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Contract Match flow node.
+ * Integriq Contract Match flow node.
  *
  * `openconnector.contract` — the "[Contract the page]" step of the decomposed
  * synchronization flow: ONE bulk contract lookup for the whole page, a hash
@@ -34,7 +34,7 @@
  * decide `update`.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -45,17 +45,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\SynchronizationContractService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -76,6 +76,11 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -158,7 +163,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-synchronization-run.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
 	}//end getIcon()
 
 	/**

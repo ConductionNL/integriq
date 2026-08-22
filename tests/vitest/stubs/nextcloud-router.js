@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Minimal stub for @nextcloud/router — deterministic, prefix-stable URL

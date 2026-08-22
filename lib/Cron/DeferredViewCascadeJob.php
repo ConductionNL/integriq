@@ -1,22 +1,22 @@
 <?php
 /**
- * OpenConnector — deferred cascade delete of extended views (ADR-078).
+ * Integriq — deferred cascade delete of extended views (ADR-078).
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://github.com/ConductionNL/integriq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\SourceMappingService;
+use OCA\Integriq\Service\SourceMappingService;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deletes the `extendview` objects that belonged to a deleted `view`.
  *
- * ADR-078: {@see \OCA\OpenConnector\EventListener\ViewDeletedEventListener}
+ * ADR-078: {@see \OCA\Integriq\EventListener\ViewDeletedEventListener}
  * used to run this cascade inside the user's delete request — one unbounded
  * `findAll()` plus one `delete()` per matching row, all before the delete
  * response was written. Nothing about the cascade can change the outcome of the
@@ -101,7 +101,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 			// cascade onto, and inventing a fallback would be worse than saying
 			// so — the entries are dropped and the reason is recorded.
 			$this->logger->warning(
-				'OpenConnector: extended-view cascade skipped, OpenRegister object service unavailable',
+				'Integriq: extended-view cascade skipped, OpenRegister object service unavailable',
 				['entries' => count($context->getEntries())]
 			);
 			return;
@@ -145,7 +145,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenConnector: extended-view cascade lookup failed',
+				'Integriq: extended-view cascade lookup failed',
 				['identifier' => $identifier, 'exception' => $e->getMessage()]
 			);
 			return;
@@ -153,7 +153,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 
 		if (count($extendedViews) >= self::CASCADE_LIMIT) {
 			$this->logger->warning(
-				'OpenConnector: extended-view cascade hit its row cap — some rows may remain',
+				'Integriq: extended-view cascade hit its row cap — some rows may remain',
 				['identifier' => $identifier, 'limit' => self::CASCADE_LIMIT]
 			);
 		}
@@ -222,7 +222,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 				$openRegister->deleteObject(uuid: $uuid, register: $register, schema: $schema);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
-					'OpenConnector: failed to delete an extended view during cascade',
+					'Integriq: failed to delete an extended view during cascade',
 					['identifier' => $identifier, 'exception' => $e->getMessage()]
 				);
 			}

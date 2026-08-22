@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EndpointCacheService.
+ * Integriq EndpointCacheService.
  *
  * Service for caching endpoint data to improve matching performance.
  *
@@ -9,7 +9,7 @@
  * on every request when matching paths to endpoints.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,12 +17,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/endpoint-runtime/spec.md
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
@@ -44,10 +44,10 @@ class EndpointCacheService {
 	/**
 	 * Cache key for endpoint data.
 	 */
-	private const CACHE_KEY = 'openconnector_endpoints_cache';
+	private const CACHE_KEY = 'integriq_endpoints_cache';
 
 	/**
-	 * Cache TTL in seconds — read from admin-config `openconnector.endpoint_cache.ttl_seconds`.
+	 * Cache TTL in seconds — read from admin-config `integriq.endpoint_cache.ttl_seconds`.
 	 *
 	 * @var integer
 	 */

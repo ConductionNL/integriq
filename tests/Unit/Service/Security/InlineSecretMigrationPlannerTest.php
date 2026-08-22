@@ -19,7 +19,7 @@
  * strips the secret precisely as production would.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Security
+ * @package  OCA\Integriq\Tests\Unit\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -28,15 +28,15 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Security;
+namespace OCA\Integriq\Tests\Unit\Service\Security;
 
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
-use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 
@@ -69,7 +69,7 @@ class SpyLogger extends \Psr\Log\AbstractLogger {
 }//end class
 
 /**
- * @covers \OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner
+ * @covers \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner
  */
 class InlineSecretMigrationPlannerTest extends TestCase {
 

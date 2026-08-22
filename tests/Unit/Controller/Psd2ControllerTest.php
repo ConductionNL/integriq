@@ -97,7 +97,7 @@ class Psd2ControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new Psd2Controller(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$this->userSession,
@@ -118,7 +118,7 @@ class Psd2ControllerTest extends TestCase {
 		$session->method('getUser')->willReturn(null);
 
 		return new Psd2Controller(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->syncService,
 			$session,

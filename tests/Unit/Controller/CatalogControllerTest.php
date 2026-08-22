@@ -97,7 +97,7 @@ class CatalogControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new CatalogController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$registryService,
 			$this->orObjectService,
@@ -183,7 +183,7 @@ class CatalogControllerTest extends TestCase {
 		$this->appConfig->method('getValueString')->willReturn('0');
 		$this->appConfig->expects($this->once())
 			->method('setValueString')
-			->with('openconnector', 'pdok.feature_flag', '1');
+			->with('integriq', 'pdok.feature_flag', '1');
 
 		$response = $this->makeController()->instantiate('item-uuid');
 

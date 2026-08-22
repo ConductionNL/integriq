@@ -8,43 +8,43 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Register (required)')
+			t('integriq', 'Register (required)')
 		}}</label>
 		<NcSelect
 			data-testid="action-form-save-register"
-			:aria-label-combobox="t('openconnector', 'Register (required)')"
+			:aria-label-combobox="t('integriq', 'Register (required)')"
 			:modelValue="selectedRegister"
 			:options="registerOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a register')"
+			:placeholder="t('integriq', 'Select a register')"
 			@update:modelValue="
 				(option) => patch('register', option?.id ? String(option.id) : '')
 			" />
 
 		<label class="action-form__label">{{
-			t('openconnector', 'Schema (required)')
+			t('integriq', 'Schema (required)')
 		}}</label>
 		<NcSelect
 			data-testid="action-form-save-schema"
-			:aria-label-combobox="t('openconnector', 'Schema (required)')"
+			:aria-label-combobox="t('integriq', 'Schema (required)')"
 			:modelValue="selectedSchema"
 			:options="schemaOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a schema')"
+			:placeholder="t('integriq', 'Select a schema')"
 			@update:modelValue="
 				(option) => patch('schema', option?.id ? String(option.id) : '')
 			" />
 
 		<label class="action-form__label">{{
-			t('openconnector', 'Mapping (optional)')
+			t('integriq', 'Mapping (optional)')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
+			:aria-label-combobox="t('integriq', 'Mapping (optional)')"
 			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="
-				t('openconnector', 'Pick a mapping to transform before save')
+				t('integriq', 'Pick a mapping to transform before save')
 			"
 			@update:modelValue="
 				(option) => patch('mapping', option?.id ? String(option.id) : '')

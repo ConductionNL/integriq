@@ -27,8 +27,8 @@ let _appBase: string | null = null
 async function appBase(page: Page): Promise<string> {
 	if (_appBase) return _appBase
 	for (const candidate of [
-		'/apps/openconnector',
-		'/index.php/apps/openconnector',
+		'/apps/integriq',
+		'/index.php/apps/integriq',
 	]) {
 		const res = await page.request.get(`${candidate}/import`, {
 			failOnStatusCode: false,

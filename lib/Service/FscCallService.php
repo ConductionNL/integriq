@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector FSC Call Service.
+ * Integriq FSC Call Service.
  *
  * Core of the fsc-connectivity change: resolves the configured FSC
  * (Federatieve Service Connectiviteit) source + provider binding, drives
@@ -13,7 +13,7 @@
  * persistence) and {@see KissSyncService} (single active source resolution).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,22 +22,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Service\Fsc\FscConnectivityProviderInterface;
-use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
-use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Service\Fsc\FscConnectivityProviderInterface;
+use OCA\Integriq\Service\Fsc\FscDirectoryClient;
+use OCA\Integriq\Service\Fsc\LogFscConnectivityProvider;
+use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -55,6 +55,8 @@ class FscCallService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**

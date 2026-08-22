@@ -5,57 +5,57 @@
 
 <template>
 	<div
-		class="openconnector-admin__section"
+		class="integriq-admin__section"
 		data-testid="admin-action-auth-section">
-		<h3>{{ t('openconnector', 'Action authorization') }}</h3>
-		<p class="openconnector-admin__hint">
+		<h3>{{ t('integriq', 'Action authorization') }}</h3>
+		<p class="integriq-admin__hint">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.',
 				)
 			}}
 		</p>
 
-		<div v-if="error" class="openconnector-admin__action-error" role="alert">
+		<div v-if="error" class="integriq-admin__action-error" role="alert">
 			{{ error }}
 		</div>
 
-		<p v-if="loading" class="openconnector-admin__hint">
-			{{ t('openconnector', 'Loading action matrix…') }}
+		<p v-if="loading" class="integriq-admin__hint">
+			{{ t('integriq', 'Loading action matrix…') }}
 		</p>
 
-		<div v-else class="openconnector-admin__matrix-wrapper">
-			<table class="openconnector-admin__matrix">
+		<div v-else class="integriq-admin__matrix-wrapper">
+			<table class="integriq-admin__matrix">
 				<thead>
 					<tr>
 						<th scope="col">
-							{{ t('openconnector', 'Action') }}
+							{{ t('integriq', 'Action') }}
 						</th>
 						<th
 							v-for="group in displayGroups"
 							:key="group"
 							scope="col"
-							class="openconnector-admin__matrix-group">
+							class="integriq-admin__matrix-group">
 							{{ group }}
 						</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr v-for="action in actions" :key="action">
-						<th scope="row" class="openconnector-admin__matrix-action">
+						<th scope="row" class="integriq-admin__matrix-action">
 							{{ action }}
 						</th>
 						<td
 							v-for="group in displayGroups"
 							:key="`${action}-${group}`"
-							class="openconnector-admin__matrix-cell">
+							class="integriq-admin__matrix-cell">
 							<NcCheckboxRadioSwitch
 								:modelValue="isChecked(action, group)"
 								:disabled="group === 'admin'"
 								:aria-label="
 									t(
-										'openconnector',
+										'integriq',
 										'Allow group {group} to perform {action}',
 										{ group, action },
 									)
@@ -67,7 +67,7 @@
 			</table>
 		</div>
 
-		<div class="openconnector-admin__matrix-actions">
+		<div class="integriq-admin__matrix-actions">
 			<NcButton
 				variant="primary"
 				data-testid="admin-action-matrix-save"
@@ -75,8 +75,8 @@
 				@click="save">
 				{{
 					saving
-						? t('openconnector', 'Saving…')
-						: t('openconnector', 'Save action matrix')
+						? t('integriq', 'Saving…')
+						: t('integriq', 'Save action matrix')
 				}}
 			</NcButton>
 		</div>
@@ -140,7 +140,7 @@ export default {
 			this.error = ''
 			try {
 				const { data } = await axios.get(
-					generateUrl('/apps/openconnector/api/admin/action-matrix'),
+					generateUrl('/apps/integriq/api/admin/action-matrix'),
 				)
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
@@ -158,7 +158,7 @@ export default {
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
 				this.error = this.t(
-					'openconnector',
+					'integriq',
 					'Failed to load the action matrix.',
 				)
 			} finally {
@@ -227,7 +227,7 @@ export default {
 					payload[action] = ['admin', ...extra]
 				}
 				const { data } = await axios.put(
-					generateUrl('/apps/openconnector/api/admin/action-matrix'),
+					generateUrl('/apps/integriq/api/admin/action-matrix'),
 					{ matrix: payload },
 				)
 				const saved =
@@ -240,11 +240,11 @@ export default {
 					next[action] = [...allowed]
 				}
 				this.matrix = next
-				showSuccess(this.t('openconnector', 'Action matrix saved.'))
+				showSuccess(this.t('integriq', 'Action matrix saved.'))
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
 				showError(
-					this.t('openconnector', 'Failed to save the action matrix.'),
+					this.t('integriq', 'Failed to save the action matrix.'),
 				)
 			} finally {
 				this.saving = false
@@ -255,12 +255,12 @@ export default {
 </script>
 
 <style scoped>
-.openconnector-admin__hint {
+.integriq-admin__hint {
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 16px;
 }
 
-.openconnector-admin__action-error {
+.integriq-admin__action-error {
 	background: var(--color-error);
 	color: var(--color-primary-element-text);
 	padding: 8px 12px;
@@ -268,39 +268,39 @@ export default {
 	margin-bottom: 16px;
 }
 
-.openconnector-admin__matrix-wrapper {
+.integriq-admin__matrix-wrapper {
 	overflow-x: auto;
 	margin-bottom: 16px;
 }
 
-.openconnector-admin__matrix {
+.integriq-admin__matrix {
 	border-collapse: collapse;
 	width: 100%;
 }
 
-.openconnector-admin__matrix th,
-.openconnector-admin__matrix td {
+.integriq-admin__matrix th,
+.integriq-admin__matrix td {
 	border: 1px solid var(--color-border);
 	padding: 6px 10px;
 	text-align: left;
 }
 
-.openconnector-admin__matrix-group {
+.integriq-admin__matrix-group {
 	text-align: center;
 	white-space: nowrap;
 }
 
-.openconnector-admin__matrix-action {
+.integriq-admin__matrix-action {
 	font-family: var(--font-face-monospace, monospace);
 	font-size: 0.85em;
 	white-space: nowrap;
 }
 
-.openconnector-admin__matrix-cell {
+.integriq-admin__matrix-cell {
 	text-align: center;
 }
 
-.openconnector-admin__matrix-actions {
+.integriq-admin__matrix-actions {
 	display: flex;
 	justify-content: flex-end;
 }

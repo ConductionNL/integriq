@@ -128,7 +128,7 @@ class DSOControllerTest extends TestCase {
 	 */
 	private function buildController(): DSOController {
 		return new DSOController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->request,
 			parser: $this->parser,
 			logger: $this->logger,

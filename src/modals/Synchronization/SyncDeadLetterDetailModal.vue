@@ -24,7 +24,7 @@
 		data-testid="sync-dead-letter-detail-modal"
 		@close="$emit('close')">
 		<div class="deadLetterDetail">
-			<h2>{{ t('openconnector', 'Sync dead letter') }}</h2>
+			<h2>{{ t('integriq', 'Sync dead letter') }}</h2>
 
 			<div v-if="entry" class="deadLetterDetail__body">
 				<div class="deadLetterDetail__meta">
@@ -33,7 +33,7 @@
 					}}</span>
 					<span class="deadLetterDetail__retry">
 						{{
-							t('openconnector', 'Attempts: {count}', {
+							t('integriq', 'Attempts: {count}', {
 								count: attempts.length,
 							})
 						}}
@@ -45,7 +45,7 @@
 					class="deadLetterDetail__audit">
 					<p v-if="entry.replayedBy">
 						{{
-							t('openconnector', 'Replayed by {who} at {when}', {
+							t('integriq', 'Replayed by {who} at {when}', {
 								who: entry.replayedBy,
 								when: entry.replayedAt,
 							})
@@ -53,7 +53,7 @@
 					</p>
 					<p v-if="entry.discardedBy">
 						{{
-							t('openconnector', 'Discarded by {who} at {when}', {
+							t('integriq', 'Discarded by {who} at {when}', {
 								who: entry.discardedBy,
 								when: entry.discardedAt,
 							})
@@ -61,10 +61,10 @@
 					</p>
 				</div>
 
-				<h3>{{ t('openconnector', 'Error') }}</h3>
+				<h3>{{ t('integriq', 'Error') }}</h3>
 				<p class="deadLetterDetail__error">{{ entry.error }}</p>
 
-				<h3>{{ t('openconnector', 'Attempt timeline') }}</h3>
+				<h3>{{ t('integriq', 'Attempt timeline') }}</h3>
 				<ol
 					v-if="attempts.length"
 					class="deadLetterDetail__timeline"
@@ -77,15 +77,15 @@
 							>{{ attempt.error }}</span
 						>
 						<span v-else class="deadLetterDetail__attemptOk">{{
-							t('openconnector', 'OK')
+							t('integriq', 'OK')
 						}}</span>
 					</li>
 				</ol>
 				<p v-else class="deadLetterDetail__empty">
-					{{ t('openconnector', 'No attempts recorded yet') }}
+					{{ t('integriq', 'No attempts recorded yet') }}
 				</p>
 
-				<h3>{{ t('openconnector', 'Payload') }}</h3>
+				<h3>{{ t('integriq', 'Payload') }}</h3>
 				<pre
 					class="deadLetterDetail__payload"
 					data-testid="payload-viewer"
@@ -97,18 +97,18 @@
 					<span class="deadLetterDetail__confirm">
 						{{
 							confirming === 'replay'
-								? t('openconnector', 'Replay this item now?')
+								? t('integriq', 'Replay this item now?')
 								: t(
-										'openconnector',
+										'integriq',
 										'Discard this item? It will not be deleted.',
 									)
 						}}
 					</span>
 					<NcButton variant="primary" :disabled="busy" @click="commit">
-						{{ t('openconnector', 'Confirm') }}
+						{{ t('integriq', 'Confirm') }}
 					</NcButton>
 					<NcButton :disabled="busy" @click="confirming = null">
-						{{ t('openconnector', 'Cancel') }}
+						{{ t('integriq', 'Cancel') }}
 					</NcButton>
 				</template>
 				<template v-else>
@@ -116,12 +116,12 @@
 						variant="primary"
 						:disabled="!canAct || busy"
 						@click="confirming = 'replay'">
-						{{ t('openconnector', 'Replay') }}
+						{{ t('integriq', 'Replay') }}
 					</NcButton>
 					<NcButton
 						:disabled="!canAct || busy"
 						@click="confirming = 'discard'">
-						{{ t('openconnector', 'Discard') }}
+						{{ t('integriq', 'Discard') }}
 					</NcButton>
 				</template>
 			</div>
@@ -225,13 +225,13 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/sync-dead-letter/${id}/${verb}`,
+						`/apps/integriq/api/sync-dead-letter/${id}/${verb}`,
 					),
 				)
 				showSuccess(
 					verb === 'replay'
-						? t('openconnector', 'Item replayed')
-						: t('openconnector', 'Item discarded'),
+						? t('integriq', 'Item replayed')
+						: t('integriq', 'Item discarded'),
 				)
 				this.$emit('changed')
 				this.$emit('close')
@@ -239,8 +239,8 @@ export default {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
 					(verb === 'replay'
-						? t('openconnector', 'Replay failed')
-						: t('openconnector', 'Discard failed'))
+						? t('integriq', 'Replay failed')
+						: t('integriq', 'Discard failed'))
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

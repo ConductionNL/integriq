@@ -105,7 +105,7 @@ class PaymentsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new PaymentsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->paymentIntentService,
 			$this->signatureService,
@@ -126,7 +126,7 @@ class PaymentsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->controller = new PaymentsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->paymentIntentService,
 			$this->signatureService,

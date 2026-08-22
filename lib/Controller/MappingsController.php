@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector MappingsController.
+ * Integriq MappingsController.
  *
  * Controller for mapping pages, mapping execution tests, and persistence helpers
- * exposed to the OpenConnector frontend.
+ * exposed to the Integriq frontend.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SourceMappingService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -282,7 +282,7 @@ class MappingsController extends Controller {
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function saveObject(): ?JSONResponse {
 		// Check if the OpenRegister service is available.
 		$openRegisters = $this->objectService->getOpenRegisters();
@@ -319,7 +319,7 @@ class MappingsController extends Controller {
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getObjects(): JSONResponse {
 		// Check if the OpenRegister service is available.
 		$openRegisters = $this->objectService->getOpenRegisters();

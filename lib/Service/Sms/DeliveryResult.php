@@ -1,17 +1,17 @@
 <?php
 
 /**
- * OpenConnector SMS Delivery Result.
+ * Integriq SMS Delivery Result.
  *
  * Immutable value object returned by every {@see SmsProviderInterface}
  * method: the provider-assigned message id plus the normalised lifecycle
  * status every binding (log/notifynl, and future messagebird/twilio
  * adapters) maps its own vendor-specific status vocabulary onto, so
- * {@see \OCA\OpenConnector\Service\SmsDispatchService} never needs to know a
+ * {@see \OCA\Integriq\Service\SmsDispatchService} never needs to know a
  * provider's native status strings.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Sms
+ * @package  OCA\Integriq\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Sms;
+namespace OCA\Integriq\Service\Sms;
 
 /**
  * The normalised outcome of a send/status-lookup call against an SMS provider.

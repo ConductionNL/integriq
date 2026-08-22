@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector REST Peppol Access Point Provider.
+ * Integriq REST Peppol Access Point Provider.
  *
  * Generic REST binding for {@see PeppolAccessPointProviderInterface}, driven
  * by `configuration.baseUrl` and `authentication.credentialRef`. Every
@@ -12,7 +12,7 @@
  * `credentialRef` fails closed with an actionable {@see PeppolProviderException}.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Peppol
+ * @package  OCA\Integriq\Service\Peppol
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,18 +21,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Peppol;
+namespace OCA\Integriq\Service\Peppol;
 
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\BrokeredCallService;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;

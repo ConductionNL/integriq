@@ -110,7 +110,7 @@ class ZgwVersionTranslateControllerTest extends TestCase {
 	 */
 	private function buildController(): ZgwVersionTranslateController {
 		return new ZgwVersionTranslateController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->translationService,
 			new ZgwVersionNegotiationService(),

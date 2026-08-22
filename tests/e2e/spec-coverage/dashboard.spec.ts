@@ -26,7 +26,7 @@ test.describe('Dashboard — index surface', () => {
 		page,
 	}) => {
 		const sink = trackErrors(page)
-		await navTo(page, 'Dashboard', '/apps/openconnector')
+		await navTo(page, 'Dashboard', '/apps/integriq')
 		await expectHeading(page, /^Dashboard$/)
 
 		// KPI stats-block widgets render inside main as clickable stat links

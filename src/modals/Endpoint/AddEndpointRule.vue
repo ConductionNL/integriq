@@ -121,13 +121,13 @@ defineOptions({
 <template>
 	<NcModal ref="modalRef" labelId="addEndpointRule" @close="closeModal">
 		<div class="modalContent">
-			<h2>{{ t('openconnector', 'Add Rule to Endpoint') }}</h2>
+			<h2>{{ t('integriq', 'Add Rule to Endpoint') }}</h2>
 
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
 					<p>
 						{{
-							t('openconnector', 'Rule successfully added to endpoint')
+							t('integriq', 'Rule successfully added to endpoint')
 						}}
 					</p>
 				</NcNoteCard>
@@ -141,7 +141,7 @@ defineOptions({
 					v-bind="ruleOptions"
 					v-model="ruleOptions.value"
 					:loading="loading"
-					:inputLabel="t('openconnector', 'Select Rule')"
+					:inputLabel="t('integriq', 'Select Rule')"
 					:multiple="false"
 					:clearable="false" />
 			</form>
@@ -151,7 +151,7 @@ defineOptions({
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -162,7 +162,7 @@ defineOptions({
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					{{ t('openconnector', 'Save') }}
+					{{ t('integriq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

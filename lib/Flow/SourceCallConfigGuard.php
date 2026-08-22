@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Source Call config guard.
+ * Integriq Source Call config guard.
  *
  * The save-time rules that are specific to `openconnector.source-call`: which
  * HTTP method it may name, which statuses it may accept, what shape its
@@ -30,7 +30,7 @@
  * wrote something unusable must be told, not left believing it is in use.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,14 +41,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCP\IL10N;
 use UnexpectedValueException;

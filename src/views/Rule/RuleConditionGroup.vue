@@ -22,7 +22,7 @@
 			<NcSelect
 				class="rule-condition-group__op"
 				:inputId="'rule-condition-group-op-' + uid"
-				:inputLabel="t('openconnector', 'Group operator')"
+				:inputLabel="t('integriq', 'Group operator')"
 				:modelValue="selectedOperator"
 				:options="operatorOptions"
 				:clearable="false"
@@ -33,7 +33,7 @@
 			<div class="rule-condition-group__spacer" />
 			<NcButton
 				v-if="removable"
-				:aria-label="t('openconnector', 'Remove group')"
+				:aria-label="t('integriq', 'Remove group')"
 				variant="tertiary-no-background"
 				@click="$emit('remove')">
 				<template #icon>
@@ -59,10 +59,10 @@
 			</template>
 			<NcEmptyContent
 				v-if="children.length === 0"
-				:name="t('openconnector', 'No conditions yet')"
+				:name="t('integriq', 'No conditions yet')"
 				:description="
 					t(
-						'openconnector',
+						'integriq',
 						'Add a condition or sub-group to start matching incoming data.',
 					)
 				">
@@ -76,13 +76,13 @@
 				<template #icon>
 					<Plus :size="18" />
 				</template>
-				{{ t('openconnector', 'Add condition') }}
+				{{ t('integriq', 'Add condition') }}
 			</NcButton>
 			<NcButton variant="tertiary" @click="addGroup">
 				<template #icon>
 					<FormatListGroup :size="18" />
 				</template>
-				{{ t('openconnector', 'Add group') }}
+				{{ t('integriq', 'Add group') }}
 			</NcButton>
 		</div>
 	</div>
@@ -154,8 +154,8 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorOptions() {
 			return [
-				{ id: 'and', label: this.t('openconnector', 'ALL of (AND)') },
-				{ id: 'or', label: this.t('openconnector', 'ANY of (OR)') },
+				{ id: 'and', label: this.t('integriq', 'ALL of (AND)') },
+				{ id: 'or', label: this.t('integriq', 'ANY of (OR)') },
 			]
 		},
 
@@ -171,8 +171,8 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorHint() {
 			return this.currentOperator === 'and'
-				? this.t('openconnector', 'Every child below must match.')
-				: this.t('openconnector', 'At least one child below must match.')
+				? this.t('integriq', 'Every child below must match.')
+				: this.t('integriq', 'At least one child below must match.')
 		},
 	},
 

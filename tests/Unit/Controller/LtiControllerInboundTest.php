@@ -88,7 +88,7 @@ class LtiControllerInboundTest extends TestCase {
 		$this->keyService = $this->createMock(LtiKeyService::class);
 
 		$this->controller = new LtiController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->launchService,
 			$this->agsService,

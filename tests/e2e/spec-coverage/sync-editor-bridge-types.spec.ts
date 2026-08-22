@@ -181,7 +181,7 @@ test.describe('Sync editor type selectors — companion-app gating', () => {
 	 */
 	async function bridgeEnabled(bridge: 'tables' | 'forms'): Promise<boolean> {
 		const res = await api.request.get(
-			`/index.php/apps/openconnector/api/synchronizations/${bridge}-bridge/status`,
+			`/index.php/apps/integriq/api/synchronizations/${bridge}-bridge/status`,
 			{ failOnStatusCode: false },
 		)
 		expect(

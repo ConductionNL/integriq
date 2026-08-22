@@ -14,24 +14,24 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Properties to extend')
+			t('integriq', 'Properties to extend')
 		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
-				:label="t('openconnector', 'Property (dot path)')"
+				:label="t('integriq', 'Property (dot path)')"
 				:modelValue="row.property"
 				placeholder="a.b"
 				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="
-					t('openconnector', 'Extends (comma-separated paths, optional)')
+					t('integriq', 'Extends (comma-separated paths, optional)')
 				"
 				:modelValue="(row.extends || []).join(',')"
 				placeholder="x.y,z"
 				@update:modelValue="(next) => onExtendsInput(index, next)" />
 			<NcButton
 				variant="tertiary-no-background"
-				:aria-label="t('openconnector', 'Remove row')"
+				:aria-label="t('integriq', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
 					<Close :size="18" />
@@ -42,7 +42,7 @@
 			<template #icon>
 				<Plus :size="18" />
 			</template>
-			{{ t('openconnector', 'Add property') }}
+			{{ t('integriq', 'Add property') }}
 		</NcButton>
 	</div>
 </template>

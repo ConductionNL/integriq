@@ -156,7 +156,7 @@ export async function fetchBridgeStatus(bridge) {
 	try {
 		const response = await axios.get(
 			generateUrl(
-				`/apps/openconnector/api/synchronizations/${bridge}-bridge/status`,
+				`/apps/integriq/api/synchronizations/${bridge}-bridge/status`,
 			),
 		)
 		return Boolean(response.data?.enabled)

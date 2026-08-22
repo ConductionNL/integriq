@@ -71,7 +71,7 @@ function formatMs(ms) {
 		return '—'
 	}
 
-	return `${Math.round(Number(ms))} ${t('openconnector', 'ms')}`
+	return `${Math.round(Number(ms))} ${t('integriq', 'ms')}`
 }
 
 /**
@@ -82,10 +82,10 @@ function formatMs(ms) {
  */
 function yesNo(value) {
 	if (value === true) {
-		return t('openconnector', 'Yes')
+		return t('integriq', 'Yes')
 	}
 
-	return t('openconnector', 'No')
+	return t('integriq', 'No')
 }
 
 /**
@@ -102,12 +102,12 @@ function objectCounters(objects) {
 	const counts = objects || {}
 
 	return [
-		{ label: t('openconnector', 'Found'), value: counts.found ?? 0 },
-		{ label: t('openconnector', 'Skipped'), value: counts.skipped ?? 0 },
-		{ label: t('openconnector', 'Created'), value: counts.created ?? 0 },
-		{ label: t('openconnector', 'Updated'), value: counts.updated ?? 0 },
-		{ label: t('openconnector', 'Deleted'), value: counts.deleted ?? 0 },
-		{ label: t('openconnector', 'Invalid'), value: counts.invalid ?? 0 },
+		{ label: t('integriq', 'Found'), value: counts.found ?? 0 },
+		{ label: t('integriq', 'Skipped'), value: counts.skipped ?? 0 },
+		{ label: t('integriq', 'Created'), value: counts.created ?? 0 },
+		{ label: t('integriq', 'Updated'), value: counts.updated ?? 0 },
+		{ label: t('integriq', 'Deleted'), value: counts.deleted ?? 0 },
+		{ label: t('integriq', 'Invalid'), value: counts.invalid ?? 0 },
 	]
 }
 
@@ -119,9 +119,9 @@ function objectCounters(objects) {
 function forceOption() {
 	return {
 		key: 'force',
-		label: t('openconnector', 'Force'),
+		label: t('integriq', 'Force'),
 		note: t(
-			'openconnector',
+			'integriq',
 			'Update the contract even when the engine detects no change. Useful after editing a mapping, when the source data itself is unchanged.',
 		),
 		noteType: 'info',
@@ -143,7 +143,7 @@ function synchronizationStatus(payload) {
 	if (payload === null || payload === undefined) {
 		return {
 			type: 'warning',
-			text: t('openconnector', 'The run returned no result.'),
+			text: t('integriq', 'The run returned no result.'),
 		}
 	}
 
@@ -153,7 +153,7 @@ function synchronizationStatus(payload) {
 		return {
 			type: 'warning',
 			text: t(
-				'openconnector',
+				'integriq',
 				'The run is waiting for approval and made no changes. Approve the request to let it continue.',
 			),
 		}
@@ -162,13 +162,13 @@ function synchronizationStatus(payload) {
 	if (message === 'Success') {
 		return {
 			type: 'success',
-			text: t('openconnector', 'The synchronization completed successfully.'),
+			text: t('integriq', 'The synchronization completed successfully.'),
 		}
 	}
 
 	return {
 		type: 'error',
-		text: message || t('openconnector', 'The synchronization did not complete.'),
+		text: message || t('integriq', 'The synchronization did not complete.'),
 	}
 }
 
@@ -190,7 +190,7 @@ function deletionGuardNote(guard) {
 	if (guard.reason === 'incremental_mode') {
 		return {
 			text: t(
-				'openconnector',
+				'integriq',
 				'No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.',
 			),
 			rows: [],
@@ -200,7 +200,7 @@ function deletionGuardNote(guard) {
 	if (guard.reason === 'fetch_incomplete') {
 		return {
 			text: t(
-				'openconnector',
+				'integriq',
 				'No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.',
 			),
 			rows: [],
@@ -211,26 +211,26 @@ function deletionGuardNote(guard) {
 		const rows = []
 		if (guard.candidateCount !== null && guard.candidateCount !== undefined) {
 			rows.push({
-				label: t('openconnector', 'Would have deleted'),
+				label: t('integriq', 'Would have deleted'),
 				value: `${guard.candidateCount} / ${guard.totalContracts ?? '?'}`,
 			})
 		}
 		if (guard.ratio !== null && guard.ratio !== undefined) {
 			rows.push({
-				label: t('openconnector', 'Share of existing objects'),
+				label: t('integriq', 'Share of existing objects'),
 				value: `${Math.round(Number(guard.ratio) * 1000) / 10}%`,
 			})
 		}
 		if (guard.threshold !== null && guard.threshold !== undefined) {
 			rows.push({
-				label: t('openconnector', 'Guard threshold'),
+				label: t('integriq', 'Guard threshold'),
 				value: `${Math.round(Number(guard.threshold) * 1000) / 10}%`,
 			})
 		}
 
 		return {
 			text: t(
-				'openconnector',
+				'integriq',
 				'No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.',
 			),
 			rows,
@@ -239,7 +239,7 @@ function deletionGuardNote(guard) {
 
 	return {
 		text: t(
-			'openconnector',
+			'integriq',
 			'No objects were deleted: a guard stopped the cleanup pass.',
 		),
 		rows: [],
@@ -266,7 +266,7 @@ function synchronizationSections(payload) {
 	if (guard !== null) {
 		sections.push({
 			id: 'deletionGuard',
-			title: t('openconnector', 'Deletion guarded'),
+			title: t('integriq', 'Deletion guarded'),
 			kind: 'note',
 			noteType: 'warning',
 			value: guard.text,
@@ -277,37 +277,37 @@ function synchronizationSections(payload) {
 	return sections.concat([
 		{
 			id: 'objects',
-			title: t('openconnector', 'Objects'),
+			title: t('integriq', 'Objects'),
 			kind: 'counters',
 			value: objectCounters(result.objects),
 		},
 		{
 			id: 'run',
-			title: t('openconnector', 'Run'),
+			title: t('integriq', 'Run'),
 			kind: 'meta',
 			value: [
 				{
-					label: t('openconnector', 'Execution time'),
+					label: t('integriq', 'Execution time'),
 					value: formatMs(payload.executionTime),
 				},
 				{
-					label: t('openconnector', 'Direction'),
+					label: t('integriq', 'Direction'),
 					value: result.type || '—',
 				},
 				{
-					label: t('openconnector', 'Test mode'),
+					label: t('integriq', 'Test mode'),
 					value: yesNo(payload.test === true),
 				},
 				{
-					label: t('openconnector', 'Forced'),
+					label: t('integriq', 'Forced'),
 					value: yesNo(payload.force === true),
 				},
 				{
-					label: t('openconnector', 'Contracts'),
+					label: t('integriq', 'Contracts'),
 					value: String(countUuids(result.contracts)),
 				},
 				{
-					label: t('openconnector', 'Contract logs'),
+					label: t('integriq', 'Contract logs'),
 					value: String(countUuids(result.logs)),
 				},
 			],
@@ -347,7 +347,7 @@ function jobStatus(payload) {
 		return {
 			type: 'warning',
 			text: t(
-				'openconnector',
+				'integriq',
 				'Nothing was executed: the job is not due to run yet and force run was off.',
 			),
 		}
@@ -358,7 +358,7 @@ function jobStatus(payload) {
 	if (level === 'ERROR') {
 		return {
 			type: 'error',
-			text: payload.message || t('openconnector', 'The job failed.'),
+			text: payload.message || t('integriq', 'The job failed.'),
 		}
 	}
 
@@ -367,13 +367,13 @@ function jobStatus(payload) {
 			type: 'warning',
 			text:
 				payload.message
-				|| t('openconnector', 'The job finished with a warning.'),
+				|| t('integriq', 'The job finished with a warning.'),
 		}
 	}
 
 	return {
 		type: 'success',
-		text: payload.message || t('openconnector', 'The job ran successfully.'),
+		text: payload.message || t('integriq', 'The job ran successfully.'),
 	}
 }
 
@@ -396,24 +396,24 @@ function jobSections(payload) {
 	const sections = [
 		{
 			id: 'run',
-			title: t('openconnector', 'Run'),
+			title: t('integriq', 'Run'),
 			kind: 'meta',
 			value: [
-				{ label: t('openconnector', 'Level'), value: payload.level || '—' },
+				{ label: t('integriq', 'Level'), value: payload.level || '—' },
 				{
-					label: t('openconnector', 'Execution time'),
+					label: t('integriq', 'Execution time'),
 					value: formatMs(payload.executionTime),
 				},
 				{
-					label: t('openconnector', 'Job class'),
+					label: t('integriq', 'Job class'),
 					value: payload.jobClass || '—',
 				},
 				{
-					label: t('openconnector', 'Last run'),
+					label: t('integriq', 'Last run'),
 					value: payload.lastRun || '—',
 				},
 				{
-					label: t('openconnector', 'Next run'),
+					label: t('integriq', 'Next run'),
 					value: payload.nextRun || '—',
 				},
 			],
@@ -424,7 +424,7 @@ function jobSections(payload) {
 	if (frames.length > 0) {
 		sections.push({
 			id: 'stackTrace',
-			title: t('openconnector', 'Stack trace'),
+			title: t('integriq', 'Stack trace'),
 			kind: 'list',
 			value: frames.map((frame) => String(frame)),
 		})
@@ -456,14 +456,14 @@ function jobLogsLink(item) {
 function buildDescriptors() {
 	return {
 		'synchronization/run': {
-			title: t('openconnector', 'Run synchronization'),
-			runLabel: t('openconnector', 'Run'),
+			title: t('integriq', 'Run synchronization'),
+			runLabel: t('integriq', 'Run'),
 			options: [
 				{
 					key: 'test',
-					label: t('openconnector', 'Test mode'),
+					label: t('integriq', 'Test mode'),
 					note: t(
-						'openconnector',
+						'integriq',
 						'Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.',
 					),
 					noteType: 'info',
@@ -471,9 +471,9 @@ function buildDescriptors() {
 				forceOption(),
 				{
 					key: 'forceDeletion',
-					label: t('openconnector', 'Force deletion'),
+					label: t('integriq', 'Force deletion'),
 					note: t(
-						'openconnector',
+						'integriq',
 						'Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.',
 					),
 					noteType: 'warning',
@@ -483,7 +483,7 @@ function buildDescriptors() {
 					// engine's own default), so only an explicit 'incremental' disables.
 					disabledWhen: (item) => item?.syncMode === 'incremental',
 					disabledNote: t(
-						'openconnector',
+						'integriq',
 						'Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.',
 					),
 					// Run-only: the controller documents forceDeletion as not applicable
@@ -497,13 +497,13 @@ function buildDescriptors() {
 				// Re-route rather than pass `test: true` — see the module docblock.
 				if (values.test === true) {
 					return {
-						url: `/apps/openconnector/api/synchronizations/${id}/test`,
+						url: `/apps/integriq/api/synchronizations/${id}/test`,
 						body: { force: values.force === true },
 					}
 				}
 
 				return {
-					url: `/apps/openconnector/api/synchronizations/${id}/run`,
+					url: `/apps/integriq/api/synchronizations/${id}/run`,
 					body: {
 						test: false,
 						force: values.force === true,
@@ -528,22 +528,22 @@ function buildDescriptors() {
 				}
 
 				return {
-					label: t('openconnector', 'Run again with force deletion'),
+					label: t('integriq', 'Run again with force deletion'),
 					values: { forceDeletion: true },
 				}
 			},
 		},
 
 		'synchronization/test': {
-			title: t('openconnector', 'Test synchronization (dry run)'),
-			runLabel: t('openconnector', 'Run test'),
+			title: t('integriq', 'Test synchronization (dry run)'),
+			runLabel: t('integriq', 'Run test'),
 			intro: t(
-				'openconnector',
+				'integriq',
 				'A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.',
 			),
 			options: [forceOption()],
 			request: (item, values) => ({
-				url: `/apps/openconnector/api/synchronizations/${rowId(item)}/test`,
+				url: `/apps/integriq/api/synchronizations/${rowId(item)}/test`,
 				body: { force: values.force === true },
 			}),
 			status: synchronizationStatus,
@@ -552,21 +552,21 @@ function buildDescriptors() {
 		},
 
 		'job/run': {
-			title: t('openconnector', 'Run job'),
-			runLabel: t('openconnector', 'Run'),
+			title: t('integriq', 'Run job'),
+			runLabel: t('integriq', 'Run'),
 			options: [
 				{
 					key: 'forceRun',
-					label: t('openconnector', 'Force run'),
+					label: t('integriq', 'Force run'),
 					note: t(
-						'openconnector',
+						'integriq',
 						'Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.',
 					),
 					noteType: 'info',
 				},
 			],
 			request: (item, values) => ({
-				url: `/apps/openconnector/api/jobs/run/${rowId(item)}`,
+				url: `/apps/integriq/api/jobs/run/${rowId(item)}`,
 				body: { forceRun: values.forceRun === true },
 			}),
 			status: jobStatus,
@@ -580,18 +580,18 @@ function buildDescriptors() {
 		// executes for real. There is no dry-run mode for jobs anywhere in the
 		// engine, so neither this modal nor the row-action label may claim one.
 		'job/test': {
-			title: t('openconnector', 'Force run job'),
-			runLabel: t('openconnector', 'Force run'),
+			title: t('integriq', 'Force run job'),
+			runLabel: t('integriq', 'Force run'),
 			intro: t(
-				'openconnector',
+				'integriq',
 				'This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.',
 			),
 			options: [
 				{
 					key: 'forceRun',
-					label: t('openconnector', 'Force run'),
+					label: t('integriq', 'Force run'),
 					note: t(
-						'openconnector',
+						'integriq',
 						'Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.',
 					),
 					noteType: 'info',
@@ -599,7 +599,7 @@ function buildDescriptors() {
 				},
 			],
 			request: (item) => ({
-				url: `/apps/openconnector/api/jobs/test/${rowId(item)}`,
+				url: `/apps/integriq/api/jobs/test/${rowId(item)}`,
 				body: {},
 			}),
 			status: jobStatus,

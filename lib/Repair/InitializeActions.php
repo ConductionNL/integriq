@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector InitializeActions Repair Step — AppHost adapter.
+ * Integriq InitializeActions Repair Step — AppHost adapter.
  *
  * Thin app-namespace subclass of the OpenRegister AppHost
  * {@see \OCA\OpenRegister\AppHost\Repair\GenericInitializeActions}. It
  * carries no seeding logic of its own: the engine's
  * {@see \OCA\OpenRegister\AppHost\Service\GenericActionAuthService} reads/
- * writes the exact same `IAppConfig` key (`actions`, under the `openconnector`
- * app id) as the still-bespoke {@see \OCA\OpenConnector\Service\ActionAuthService}
+ * writes the exact same `IAppConfig` key (`actions`, under the `integriq`
+ * app id) as the still-bespoke {@see \OCA\Integriq\Service\ActionAuthService}
  * that every controller's `#[…]` action-RBAC check actually enforces against —
  * so seeding through the generic step and enforcing through the bespoke
  * service read/write the identical storage location (ADR-023). On fresh
@@ -18,16 +18,16 @@
  * Wired via `appinfo/info.xml` `<repair-steps><post-migration>`.
  *
  * The constructor + service wiring is registered in
- * {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostBoilerplate()}.
+ * {@see \OCA\Integriq\AppInfo\Application::registerAppHostBoilerplate()}.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://conduction.nl
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
  * @spec openspec/specs/apphost-adoption/spec.md
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 

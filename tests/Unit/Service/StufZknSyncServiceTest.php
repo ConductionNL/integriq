@@ -4,7 +4,7 @@
  * Unit tests for StufZknSyncService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,17 +18,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\StufZknProviderException;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
-use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
-use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
-use OCA\OpenConnector\Service\StufZkn\StufZknClient;
-use OCA\OpenConnector\Service\StufZknSyncService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
+use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
+use OCA\Integriq\Service\StufZkn\OutboundNotificationTranslator;
+use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
+use OCA\Integriq\Service\StufZkn\StufZknClient;
+use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;

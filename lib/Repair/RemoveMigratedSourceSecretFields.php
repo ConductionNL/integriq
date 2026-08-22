@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector — remove the auto-migratable inline-secret fields from the LIVE
+ * Integriq — remove the auto-migratable inline-secret fields from the LIVE
  * source schema, ONCE the fleet has verifiably migrated them (Phase D / ocon#151).
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT THIS DOES — and why it is IRREVERSIBLE
  * ─────────────────────────────────────────────────────────────────────────────
- * Phase C ({@see \OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus},
- * which now RUNS {@see \OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor})
+ * Phase C ({@see \OCA\Integriq\Repair\RecordInlineSecretMigrationStatus},
+ * which now RUNS {@see \OCA\Integriq\Service\Security\InlineSecretMigrationExecutor})
  * folds every inline `apikey`/`secret`/`password`/`jwt` on a `source` into the
  * OpenRegister credential broker, leaving only a `{credentialRef}` placeholder.
  * This step is the LAST move: when EVERY source is verifiably clean of inline
@@ -16,7 +16,7 @@
  * `source` schema so the plaintext columns can never be written again.
  *
  * That schema mutation is IRREVERSIBLE and UNGATED by any later import — see the
- * CATASTROPHIC-TRAP note on {@see \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields::run()}.
+ * CATASTROPHIC-TRAP note on {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields::run()}.
  * The whole safety of this app therefore rests on ONE invariant:
  *
  *     NEVER remove a field while ANY source still holds an inline value for it.
@@ -47,7 +47,7 @@
  * a clean no-op when OpenRegister is absent, and secret-free in every log line.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -55,7 +55,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -63,9 +63,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -81,7 +81,7 @@ use Throwable;
 class RemoveMigratedSourceSecretFields implements IRepairStep {
 
 	/**
-	 * FQCN of OpenRegister's SchemaMapper, resolved lazily so OpenConnector still
+	 * FQCN of OpenRegister's SchemaMapper, resolved lazily so Integriq still
 	 * boots (and this step is a clean no-op) without OpenRegister.
 	 *
 	 * @var string
@@ -107,7 +107,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openconnector';
+	private const APP_ID = 'integriq';
 
 	/**
 	 * Appconfig key: '1' when the live source schema no longer declares ANY of the
@@ -152,7 +152,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 * @spec exclude Framework IRepairStep metadata accessor; no domain behavior.
 	 */
 	public function getName(): string {
-		return 'Remove migrated inline-secret fields (apikey/secret/password/jwt) from the OpenConnector source schema once clean';
+		return 'Remove migrated inline-secret fields (apikey/secret/password/jwt) from the Integriq source schema once clean';
 	}//end getName()
 
 	/**
@@ -179,7 +179,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\' . self::SCHEMA_MAPPER) === false || class_exists('\\' . self::OR_OBJECT_SERVICE) === false) {
-			$output->info('OpenConnector: OpenRegister not available; skipping source-secret field removal.');
+			$output->info('Integriq: OpenRegister not available; skipping source-secret field removal.');
 			return;
 		}
 
@@ -189,8 +189,8 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 			if ($this->isAutoMigratableClean() === false) {
 				$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
 				$output->info(
-					'OpenConnector: at least one source still holds an inline apikey/secret/password/jwt — '
-					. 'NOT removing the schema fields. Run `occ openconnector:migrate-inline-secrets --dry-run` for the breakdown.'
+					'Integriq: at least one source still holds an inline apikey/secret/password/jwt — '
+					. 'NOT removing the schema fields. Run `occ integriq:migrate-inline-secrets --dry-run` for the breakdown.'
 				);
 				return;
 			}
@@ -200,7 +200,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 			// Never fatal: leaving the fields on the schema is the safe pre-existing
 			// state. But record the gate closed so observability reflects the failure.
 			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
-			$output->warning('OpenConnector: could not remove migrated source-secret fields: ' . $e->getMessage());
+			$output->warning('Integriq: could not remove migrated source-secret fields: ' . $e->getMessage());
 			$this->logger->error(
 				'[openconnector] RemoveMigratedSourceSecretFields failed; source schema left untouched',
 				['errorClass' => get_class($e)]
@@ -270,7 +270,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 		if ($removed === []) {
 			// Already removed on a previous run (or never present) — idempotent no-op.
 			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
-			$output->info('OpenConnector: source-secret fields already removed from the schema; nothing to do.');
+			$output->info('Integriq: source-secret fields already removed from the schema; nothing to do.');
 			return;
 		}
 
@@ -280,7 +280,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 
 		$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
 		$output->info(
-			'OpenConnector: removed migrated source-secret fields (' . implode('/', $removed) . ') from the live source schema. '
+			'Integriq: removed migrated source-secret fields (' . implode('/', $removed) . ') from the live source schema. '
 			. 'authenticationConfig is retained (manual review).'
 		);
 	}//end removeFieldsWhenClean()

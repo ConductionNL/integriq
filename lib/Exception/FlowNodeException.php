@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector Flow Node Exception.
+ * Integriq Flow Node Exception.
  *
- * Raised at flow-run time by the node types OpenConnector contributes to
+ * Raised at flow-run time by the node types Integriq contributes to
  * OpenRegister's flow engine (`openconnector.source-call`,
  * `openconnector.synchronization-run`) when a step cannot be completed: an
  * unresolvable Source or Synchronization, an unattributed run, an endpoint
@@ -22,7 +22,7 @@
  * rendered authentication header.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,20 +33,20 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use RuntimeException;
 use Throwable;
 
 /**
- * Signals a hard failure inside an OpenConnector flow node.
+ * Signals a hard failure inside an Integriq flow node.
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */

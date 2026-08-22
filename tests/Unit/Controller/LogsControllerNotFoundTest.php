@@ -112,7 +112,7 @@ class LogsControllerNotFoundTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
 		return new LogsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->orObjectService,
 			$this->l,

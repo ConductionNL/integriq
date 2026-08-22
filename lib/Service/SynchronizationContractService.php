@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Contract Service.
+ * Integriq Synchronization Contract Service.
  *
  * Encapsulates the read/write lifecycle of synchronization contracts so the
  * SynchronizationService engine does not have to interleave OpenRegister
@@ -14,7 +14,7 @@
  * owns object identity (it keys on the `uuid` parameter).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -22,10 +22,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -49,6 +49,8 @@ class SynchronizationContractService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'openconnector';
 
 	/**

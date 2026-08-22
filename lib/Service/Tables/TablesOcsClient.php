@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables v1-REST Client.
+ * Integriq Tables v1-REST Client.
  *
  * Concrete {@see TablesClientInterface} implementation. The class name is
  * kept from the original brief for continuity even though it targets the
@@ -9,13 +9,13 @@
  * design.md Decision 2 for why v1 (not the newer `ocs/v2.php/apps/tables/api/2/*`
  * surface) is the only one with authenticated single-row GET/PUT/DELETE.
  *
- * Transport is exclusively {@see \OCA\OpenConnector\Service\CallService::call()}
+ * Transport is exclusively {@see \OCA\Integriq\Service\CallService::call()}
  * against the `Source` object configured on the synchronization — no new
  * HTTP client, no new secret storage. CallLog persistence, rate-limit
  * tracking, and brokered-credential dispatch are inherited for free.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Tables
+ * @package  OCA\Integriq\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,20 +24,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Tables;
+namespace OCA\Integriq\Service\Tables;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\TablesNotFoundException;
-use OCA\OpenConnector\Exception\TablesPermissionDeniedException;
-use OCA\OpenConnector\Exception\TablesUpstreamException;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Exception\TablesNotFoundException;
+use OCA\Integriq\Exception\TablesPermissionDeniedException;
+use OCA\Integriq\Exception\TablesUpstreamException;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Twig\Error\LoaderError;

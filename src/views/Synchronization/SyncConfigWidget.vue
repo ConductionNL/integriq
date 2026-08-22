@@ -39,20 +39,20 @@
 		<template v-if="type === 'api'">
 			<div class="sync-config__field">
 				<label :for="apiSourceId" class="sync-config__label">
-					{{ kindLabel }} {{ t('openconnector', 'source (API)') }}
+					{{ kindLabel }} {{ t('integriq', 'source (API)') }}
 				</label>
 				<NcSelect
 					:inputId="apiSourceId"
-					:aria-label-combobox="t('openconnector', 'Source (API)')"
+					:aria-label-combobox="t('integriq', 'Source (API)')"
 					:modelValue="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
-					:placeholder="t('openconnector', 'Pick a configured source')"
+					:placeholder="t('integriq', 'Pick a configured source')"
 					@update:modelValue="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'The Source record that defines the API base URL + auth.',
 						)
 					}}
@@ -61,10 +61,10 @@
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'Endpoint')"
+					:label="t('integriq', 'Endpoint')"
 					:modelValue="configValue('endpoint')"
 					:placeholder="
-						t('openconnector', 'Path appended to the source URL')
+						t('integriq', 'Path appended to the source URL')
 					"
 					@update:modelValue="
 						(value) => onConfigUpdate('endpoint', value)
@@ -73,11 +73,11 @@
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'ID position')"
+					:label="t('integriq', 'ID position')"
 					:modelValue="configValue('idPosition')"
 					:placeholder="
 						t(
-							'openconnector',
+							'integriq',
 							'Dot-path to the id field in the API response',
 						)
 					"
@@ -88,10 +88,10 @@
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'Results position')"
+					:label="t('integriq', 'Results position')"
 					:modelValue="configValue('resultsPosition')"
 					:placeholder="
-						t('openconnector', 'Dot-path to the list of items')
+						t('integriq', 'Dot-path to the list of items')
 					"
 					@update:modelValue="
 						(value) => onConfigUpdate('resultsPosition', value)
@@ -103,39 +103,39 @@
 		<template v-else-if="type === 'register/schema'">
 			<div class="sync-config__field">
 				<label :for="registerSelectId" class="sync-config__label">
-					{{ t('openconnector', 'Register') }}
+					{{ t('integriq', 'Register') }}
 				</label>
 				<NcSelect
 					:inputId="registerSelectId"
-					:aria-label-combobox="t('openconnector', 'Register')"
+					:aria-label-combobox="t('integriq', 'Register')"
 					:modelValue="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
-					:placeholder="t('openconnector', 'Pick a register')"
+					:placeholder="t('integriq', 'Pick a register')"
 					@update:modelValue="onRegisterPick" />
 			</div>
 
 			<div class="sync-config__field">
 				<label :for="schemaSelectId" class="sync-config__label">
-					{{ t('openconnector', 'Schema') }}
+					{{ t('integriq', 'Schema') }}
 				</label>
 				<NcSelect
 					:inputId="schemaSelectId"
-					:aria-label-combobox="t('openconnector', 'Schema')"
+					:aria-label-combobox="t('integriq', 'Schema')"
 					:modelValue="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
 					:placeholder="
-						t('openconnector', 'Pick a schema in the register')
+						t('integriq', 'Pick a schema in the register')
 					"
 					@update:modelValue="onSchemaPick" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'Object filter (optional)')"
+					:label="t('integriq', 'Object filter (optional)')"
 					:modelValue="configValue('filter')"
-					:placeholder="t('openconnector', 'JSON-encoded OR query filter')"
+					:placeholder="t('integriq', 'JSON-encoded OR query filter')"
 					@update:modelValue="
 						(value) => onConfigUpdate('filter', value)
 					" />
@@ -146,7 +146,7 @@
 		<template v-else-if="type === 'file'">
 			<div class="sync-config__field">
 				<label :for="filePathId" class="sync-config__label">
-					{{ t('openconnector', 'File path or glob') }}
+					{{ t('integriq', 'File path or glob') }}
 				</label>
 				<div class="sync-config__file-row">
 					<!-- `:id`, NOT `:inputId`. `inputId` is a real prop on
@@ -173,20 +173,20 @@
 						" />
 					<NcButton
 						variant="secondary"
-						:aria-label="t('openconnector', 'Browse Files app')"
+						:aria-label="t('integriq', 'Browse Files app')"
 						:disabled="pickingFile"
 						@click="openFilePicker">
 						<template #icon>
 							<NcLoadingIcon v-if="pickingFile" :size="18" />
 							<FolderOpenOutline v-else :size="18" />
 						</template>
-						{{ t('openconnector', 'Browse…') }}
+						{{ t('integriq', 'Browse…') }}
 					</NcButton>
 				</div>
 				<span class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.',
 						)
 					}}
@@ -198,7 +198,7 @@
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'File format')"
+					:label="t('integriq', 'File format')"
 					:modelValue="configValue('format')"
 					placeholder="json | xml | csv"
 					@update:modelValue="
@@ -208,10 +208,10 @@
 
 			<div class="sync-config__field">
 				<NcTextField
-					:label="t('openconnector', 'ID position')"
+					:label="t('integriq', 'ID position')"
 					:modelValue="configValue('idPosition')"
 					:placeholder="
-						t('openconnector', 'Dot-path to the id field in each record')
+						t('integriq', 'Dot-path to the id field in each record')
 					"
 					@update:modelValue="
 						(value) => onConfigUpdate('idPosition', value)
@@ -224,23 +224,23 @@
 			<div class="sync-config__field">
 				<label :for="tableSourceId" class="sync-config__label">
 					{{ kindLabel }}
-					{{ t('openconnector', 'source (Nextcloud instance)') }}
+					{{ t('integriq', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
 					:inputId="tableSourceId"
 					:aria-label-combobox="
-						t('openconnector', 'Source (Nextcloud instance)')
+						t('integriq', 'Source (Nextcloud instance)')
 					"
 					:modelValue="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
-					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
-					:placeholder="t('openconnector', 'Pick a configured source')"
+					:inputLabel="t('integriq', 'Source (Nextcloud instance)')"
+					:placeholder="t('integriq', 'Pick a configured source')"
 					@update:modelValue="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'The Source record whose base URL + credential reach the Tables API.',
 						)
 					}}
@@ -249,18 +249,18 @@
 
 			<div class="sync-config__field">
 				<label :for="tablePickerId" class="sync-config__label">
-					{{ t('openconnector', 'Table') }}
+					{{ t('integriq', 'Table') }}
 				</label>
 				<NcSelect
 					:inputId="tablePickerId"
-					:aria-label-combobox="t('openconnector', 'Table')"
+					:aria-label-combobox="t('integriq', 'Table')"
 					:modelValue="selectedTable"
 					:options="tableOptions"
 					:loading="tablesLoading"
 					:disabled="!sourceIdValue"
-					:inputLabel="t('openconnector', 'Table')"
+					:inputLabel="t('integriq', 'Table')"
 					:placeholder="
-						t('openconnector', 'Pick a table the source can access')
+						t('integriq', 'Pick a table the source can access')
 					"
 					@update:modelValue="onTablePick" />
 				<span v-if="tablesError" class="sync-config__error">
@@ -269,7 +269,7 @@
 				<span v-else class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Rows are read from (source) or written to (target) this table.',
 						)
 					}}
@@ -290,23 +290,23 @@
 			<div class="sync-config__field">
 				<label :for="formSourceId" class="sync-config__label">
 					{{ kindLabel }}
-					{{ t('openconnector', 'source (Nextcloud instance)') }}
+					{{ t('integriq', 'source (Nextcloud instance)') }}
 				</label>
 				<NcSelect
 					:inputId="formSourceId"
 					:aria-label-combobox="
-						t('openconnector', 'Source (Nextcloud instance)')
+						t('integriq', 'Source (Nextcloud instance)')
 					"
 					:modelValue="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
-					:inputLabel="t('openconnector', 'Source (Nextcloud instance)')"
-					:placeholder="t('openconnector', 'Pick a configured source')"
+					:inputLabel="t('integriq', 'Source (Nextcloud instance)')"
+					:placeholder="t('integriq', 'Pick a configured source')"
 					@update:modelValue="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'The Source record whose base URL + credential reach the Forms API.',
 						)
 					}}
@@ -315,18 +315,18 @@
 
 			<div class="sync-config__field">
 				<label :for="formPickerId" class="sync-config__label">
-					{{ t('openconnector', 'Form') }}
+					{{ t('integriq', 'Form') }}
 				</label>
 				<NcSelect
 					:inputId="formPickerId"
-					:aria-label-combobox="t('openconnector', 'Form')"
+					:aria-label-combobox="t('integriq', 'Form')"
 					:modelValue="selectedForm"
 					:options="formOptions"
 					:loading="formsLoading"
 					:disabled="!sourceIdValue"
-					:inputLabel="t('openconnector', 'Form')"
+					:inputLabel="t('integriq', 'Form')"
 					:placeholder="
-						t('openconnector', 'Pick a form the source can access')
+						t('integriq', 'Pick a form the source can access')
 					"
 					@update:modelValue="onFormPick" />
 				<span v-if="formsError" class="sync-config__error">
@@ -335,7 +335,7 @@
 				<span v-else class="sync-config__helper">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Submissions are read from this form (nextcloud-form is a source-only type).',
 						)
 					}}
@@ -352,7 +352,7 @@
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
 			{{
-				t('openconnector', 'Pick a {kind} type above to configure it.', {
+				t('integriq', 'Pick a {kind} type above to configure it.', {
 					kind: kind,
 				})
 			}}
@@ -471,8 +471,8 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		kindLabel() {
 			return this.kind === 'source'
-				? t('openconnector', 'Source')
-				: t('openconnector', 'Target')
+				? t('integriq', 'Source')
+				: t('integriq', 'Target')
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -784,7 +784,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openconnector/api/synchronizations/tables-bridge/tables',
+						'/apps/integriq/api/synchronizations/tables-bridge/tables',
 					),
 					{ params: { sourceId: this.sourceIdValue } },
 				)
@@ -793,7 +793,7 @@ export default {
 				this.tableOptions = []
 				this.tablesError =
 					err?.response?.data?.error
-					|| t('openconnector', 'Could not load tables for this source.')
+					|| t('integriq', 'Could not load tables for this source.')
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] tables fetch failed', err)
 			} finally {
@@ -846,7 +846,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openconnector/api/synchronizations/forms-bridge/forms',
+						'/apps/integriq/api/synchronizations/forms-bridge/forms',
 					),
 					{ params: { sourceId: this.sourceIdValue } },
 				)
@@ -855,7 +855,7 @@ export default {
 				this.formOptions = []
 				this.formsError =
 					err?.response?.data?.error
-					|| t('openconnector', 'Could not load forms for this source.')
+					|| t('integriq', 'Could not load forms for this source.')
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] forms fetch failed', err)
 			} finally {
@@ -960,7 +960,7 @@ export default {
 			this.pickingFile = true
 			try {
 				const picker = getFilePickerBuilder(
-					t('openconnector', 'Pick a sync source file'),
+					t('integriq', 'Pick a sync source file'),
 				)
 					.setMultiSelect(false)
 					.setMimeTypeFilter([])

@@ -4,7 +4,7 @@
  * Unit tests for ZgwVersionTranslationService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,20 +18,20 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
-use OCA\OpenConnector\Exception\ZgwUnknownVersionException;
-use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\InformatieObjectTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ResultTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\RolTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\StatusTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\CaseTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\CaseTypeTranslator;
-use OCA\OpenConnector\Service\ZgwVersionNegotiationService;
-use OCA\OpenConnector\Service\ZgwVersionTranslationService;
+use OCA\Integriq\Exception\ZgwLiteralLeakException;
+use OCA\Integriq\Exception\ZgwUnknownResourceException;
+use OCA\Integriq\Exception\ZgwUnknownVersionException;
+use OCA\Integriq\Service\ZgwVersion\DecisionTranslator;
+use OCA\Integriq\Service\ZgwVersion\InformatieObjectTranslator;
+use OCA\Integriq\Service\ZgwVersion\ResultTranslator;
+use OCA\Integriq\Service\ZgwVersion\RolTranslator;
+use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
+use OCA\Integriq\Service\ZgwVersion\CaseTranslator;
+use OCA\Integriq\Service\ZgwVersion\CaseTypeTranslator;
+use OCA\Integriq\Service\ZgwVersionNegotiationService;
+use OCA\Integriq\Service\ZgwVersionTranslationService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 

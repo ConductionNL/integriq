@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Bridge discovery controller.
+ * Integriq Tables Bridge discovery controller.
  *
  * Read-only endpoints backing the synchronization editor's `nextcloud-table`
  * kind: a feature-detection status flag plus table/column discovery, so
@@ -9,7 +9,7 @@
  * the Tables API directly (contract.md).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,22 +18,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\TablesConfigException;
-use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
-use OCA\OpenConnector\Exception\TablesNotFoundException;
-use OCA\OpenConnector\Exception\TablesPermissionDeniedException;
-use OCA\OpenConnector\Exception\TablesUpstreamException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Exception\TablesConfigException;
+use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Exception\TablesNotFoundException;
+use OCA\Integriq\Exception\TablesPermissionDeniedException;
+use OCA\Integriq\Exception\TablesUpstreamException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;

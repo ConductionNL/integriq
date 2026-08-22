@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Fetch File flow node.
+ * Integriq Fetch File flow node.
  *
  * `openconnector.fetch-file` — runs one configured `fetch_file` Rule against
  * every item in a page, through the SAME `SynchronizationService` code path the
@@ -49,7 +49,7 @@
  * which is the one thing a migration must not do.
  *
  * @category Service
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -60,17 +60,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://OpenConnector.app
+ * @link https://Integriq.app
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -94,6 +94,11 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 
 	/**
 	 * The step type.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */

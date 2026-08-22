@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Synchronization Adapter.
+ * Integriq Tables Synchronization Adapter.
  *
  * Sits between `SynchronizationService`'s `nextcloud-table` dispatch
  * branches and {@see TablesClientInterface}: resolves title-keyed column
@@ -11,7 +11,7 @@
  * Decision 3 — never a direct `OCA\Tables\*` reference).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Tables
+ * @package  OCA\Integriq\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,19 +20,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Tables;
+namespace OCA\Integriq\Service\Tables;
 
 use Adbar\Dot;
-use OCA\OpenConnector\Exception\TablesConfigException;
-use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
-use OCA\OpenConnector\Exception\TablesNotFoundException;
+use OCA\Integriq\Exception\TablesConfigException;
+use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use OCP\IUser;
@@ -200,7 +200,7 @@ class TablesSyncAdapter {
 	 * logged and signalled by a `null` return — the caller MUST treat this as
 	 * "skip this row, keep the run going" (REQ-001/REQ-003). A 401/403 from
 	 * the Tables API is NOT caught here — it propagates as
-	 * {@see \OCA\OpenConnector\Exception\TablesPermissionDeniedException} so
+	 * {@see \OCA\Integriq\Exception\TablesPermissionDeniedException} so
 	 * the run aborts (REQ-006).
 	 *
 	 * @param ObjectEntity $target The `Source` whose credentials are used.

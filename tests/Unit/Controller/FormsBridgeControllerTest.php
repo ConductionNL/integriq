@@ -77,7 +77,7 @@ class FormsBridgeControllerTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		$this->controller = new FormsBridgeController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->formsSyncAdapter,
 			$this->createMock(OrObjectService::class),

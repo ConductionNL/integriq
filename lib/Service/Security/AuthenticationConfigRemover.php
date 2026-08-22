@@ -16,10 +16,10 @@
  * So removal is gated FOUR independent ways:
  *
  *  1. NOT A REPAIR STEP. This class is reachable only from
- *     {@see \OCA\OpenConnector\Command\AuthenticationConfig}, an occ command. It is
+ *     {@see \OCA\Integriq\Command\AuthenticationConfig}, an occ command. It is
  *     NOT registered in `appinfo/info.xml`'s `<repair-steps>`, so
  *     `occ maintenance:repair` and an app upgrade CANNOT reach it. Contrast
- *     {@see \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields}, which IS a
+ *     {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields}, which IS a
  *     repair step — and which this change deliberately does NOT extend (see the
  *     command's class docblock for the justification).
  *  2. AN EXPLICIT FLAG. The command writes nothing unless a human passes
@@ -33,7 +33,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * WHY A REFERENCED SOURCE IS REFUSED
  * ─────────────────────────────────────────────────────────────────────────────
- * No PHP reads the field, but {@see \OCA\OpenConnector\Service\CallService::renderValue()}
+ * No PHP reads the field, but {@see \OCA\Integriq\Service\CallService::renderValue()}
  * renders `configuration` values as Twig with the RAW source as context
  * (`_render: false` since ocon#215). So
  * `{{ source.authenticationConfig.client_secret }}` in an operator's header DOES
@@ -42,7 +42,7 @@
  * they are, for a human to re-point at `configuration.authentication` first.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -53,12 +53,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -149,7 +149,7 @@ class AuthenticationConfigRemover {
 			throw new LogicException(
 				'AuthenticationConfigRemover::removeAll() refuses to run without an explicit opt-in. '
 				. 'This method DELETES credential data and is reachable only from '
-				. '`occ openconnector:authentication-config --remove-authentication-config`.'
+				. '`occ integriq:authentication-config --remove-authentication-config`.'
 			);
 		}
 
@@ -243,7 +243,7 @@ class AuthenticationConfigRemover {
 			// Secret-free: uuid + exception CLASS only, never the message (an upstream
 			// driver may interpolate the offending row into it).
 			$this->logger->warning(
-				'[openconnector] authenticationConfig removal: source left untouched',
+				'[integriq] authenticationConfig removal: source left untouched',
 				['uuid' => $uuid, 'errorClass' => get_class($e)]
 			);
 			return $this->outcome(uuid: $uuid, name: $name, outcome: self::OUTCOME_FAILED, reason: 'save failed');
@@ -251,7 +251,7 @@ class AuthenticationConfigRemover {
 
 		// Secret-free by construction: key names were already reported by the audit.
 		$this->logger->info(
-			'[openconnector] authenticationConfig removed from source (vestigial field, ocon#232)',
+			'[integriq] authenticationConfig removed from source (vestigial field, ocon#232)',
 			['uuid' => $uuid, 'keysCleared' => count((array)($record['keys'] ?? []))]
 		);
 

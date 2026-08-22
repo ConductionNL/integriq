@@ -48,7 +48,7 @@ import {
 import * as path from 'path'
 
 export const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-export const OC_API = '/index.php/apps/openconnector/api'
+export const OC_API = '/index.php/apps/integriq/api'
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 
 /** Unique per-run prefix so cleanup only touches this run's rows. */

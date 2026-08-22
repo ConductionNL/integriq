@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Unit tests for the run-action descriptors (src/modals/v2/runTargets.js) — the
@@ -51,7 +51,7 @@ describe('synchronization/run — request routing', () => {
 			{ id: 9 },
 			{ test: false, force: true, forceDeletion: true },
 		)
-		expect(url).toBe('/apps/openconnector/api/synchronizations/9/run')
+		expect(url).toBe('/apps/integriq/api/synchronizations/9/run')
 		expect(body).toEqual({ test: false, force: true, forceDeletion: true })
 	})
 
@@ -60,14 +60,14 @@ describe('synchronization/run — request routing', () => {
 			{ id: 9 },
 			{ test: true, force: true },
 		)
-		expect(url).toBe('/apps/openconnector/api/synchronizations/9/test')
+		expect(url).toBe('/apps/integriq/api/synchronizations/9/test')
 		// forceDeletion is not carried over — it is run-only.
 		expect(body).toEqual({ force: true })
 	})
 
 	it('falls back to uuid when the row has no id', () => {
 		const { url } = descriptor.request({ uuid: 'abc' }, { test: false })
-		expect(url).toBe('/apps/openconnector/api/synchronizations/abc/run')
+		expect(url).toBe('/apps/integriq/api/synchronizations/abc/run')
 	})
 
 	it('sends explicit booleans rather than undefined for unset switches', () => {
@@ -110,13 +110,13 @@ describe('job descriptors — request routing and locked force', () => {
 			{ id: 3 },
 			{ forceRun: true },
 		)
-		expect(url).toBe('/apps/openconnector/api/jobs/run/3')
+		expect(url).toBe('/apps/integriq/api/jobs/run/3')
 		expect(body).toEqual({ forceRun: true })
 	})
 
 	it('job/test hits the test endpoint, which forces the run server-side', () => {
 		const { url } = getRunDescriptor('job', 'test').request({ id: 3 }, {})
-		expect(url).toBe('/apps/openconnector/api/jobs/test/3')
+		expect(url).toBe('/apps/integriq/api/jobs/test/3')
 	})
 
 	it('job/test seeds its locked force switch on', () => {

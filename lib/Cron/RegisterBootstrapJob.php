@@ -63,7 +63,7 @@ class RegisterBootstrapJob extends TimedJob {
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openconnector';
+	private const APP_ID = 'integriq';
 
 	/**
 	 * Hourly. See the class docblock for why an hour is the right number.
@@ -130,7 +130,7 @@ class RegisterBootstrapJob extends TimedJob {
 			);
 
 			$this->logger->info(
-				'[RegisterBootstrapJob] Bootstrapped the openconnector register for version ' . $installedVersion
+				'[RegisterBootstrapJob] Bootstrapped the integriq register for version ' . $installedVersion
 			);
 		} catch (Throwable $e) {
 			// Leave the marker unset so the next pass retries. Warn rather than

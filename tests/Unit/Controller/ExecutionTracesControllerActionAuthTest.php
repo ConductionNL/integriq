@@ -95,7 +95,7 @@ class ExecutionTracesControllerActionAuthTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
 		return new ExecutionTracesController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->traceService,
 			$l,

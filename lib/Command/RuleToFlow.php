@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:rule-to-flow.
+ * OCC command: integriq:rule-to-flow.
  *
  * Task 3.3 of `flow-native-synchronization`: prints the generated
  * `trigger-object` + `switch` flow document for one Rule as it runs on one
@@ -17,11 +17,11 @@
  * the rule attached to its endpoint.
  *
  * Usage:
- *   occ openconnector:rule-to-flow <rule> <endpoint>
- *   occ openconnector:rule-to-flow <rule> <endpoint> --json
+ *   occ integriq:rule-to-flow <rule> <endpoint>
+ *   occ integriq:rule-to-flow <rule> <endpoint> --json
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,17 +32,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Service\RuleToFlowGenerator;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Service\RuleToFlowGenerator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -77,7 +77,7 @@ class RuleToFlow extends Command {
 	 * @spec exclude Symfony console wiring — framework metadata, no domain behavior.
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:rule-to-flow')
+		$this->setName(name: 'integriq:rule-to-flow')
 			->setDescription(
 				'Render a rule as a generated (disabled) trigger-object flow document, or explain why it cannot be'
 			)

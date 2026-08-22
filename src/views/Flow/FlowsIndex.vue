@@ -19,10 +19,10 @@
 -->
 <template>
 	<CnIndexPage
-		:title="t('openconnector', 'Flows')"
+		:title="t('integriq', 'Flows')"
 		:description="
 			t(
-				'openconnector',
+				'integriq',
 				'A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself.',
 			)
 		"
@@ -41,7 +41,7 @@
 				<template #icon>
 					<Plus :size="20" />
 				</template>
-				{{ t('openconnector', 'New flow') }}
+				{{ t('integriq', 'New flow') }}
 			</NcButton>
 		</template>
 	</CnIndexPage>
@@ -82,7 +82,7 @@ export default {
 		rowActions() {
 			return [
 				{
-					label: this.t('openconnector', 'Edit'),
+					label: this.t('integriq', 'Edit'),
 					icon: Pencil,
 					handler: (row) => this.openFlow(row),
 				},
@@ -95,14 +95,14 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'name', label: this.t('openconnector', 'Name') },
+				{ key: 'name', label: this.t('integriq', 'Name') },
 				{
 					key: 'description',
-					label: this.t('openconnector', 'Description'),
+					label: this.t('integriq', 'Description'),
 				},
-				{ key: 'trigger', label: this.t('openconnector', 'Trigger') },
-				{ key: 'cron', label: this.t('openconnector', 'Schedule') },
-				{ key: 'statusLabel', label: this.t('openconnector', 'Status') },
+				{ key: 'trigger', label: this.t('integriq', 'Trigger') },
+				{ key: 'cron', label: this.t('integriq', 'Schedule') },
+				{ key: 'statusLabel', label: this.t('integriq', 'Status') },
 			]
 		},
 
@@ -136,16 +136,16 @@ export default {
 		 */
 		statusLabel(flow) {
 			if (!flow.enabled) {
-				return this.t('openconnector', 'Disabled')
+				return this.t('integriq', 'Disabled')
 			}
 			if (!flow.owner) {
 				return this.t(
-					'openconnector',
+					'integriq',
 					'Enabled, but has no owner — it will not start',
 				)
 			}
 
-			return this.t('openconnector', 'Enabled')
+			return this.t('integriq', 'Enabled')
 		},
 
 		/**

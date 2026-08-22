@@ -4,7 +4,7 @@
  * Unit tests for KissSyncService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\KissProviderException;
-use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
-use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
-use OCA\OpenConnector\Service\KissSyncService;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
+use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

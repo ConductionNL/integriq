@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Metrics Controller — AppHost adapter with OpenRegister guard.
+ * Integriq Metrics Controller — AppHost adapter with OpenRegister guard.
  *
  * Thin app-namespace metrics endpoint (URL `/api/metrics`, route name
  * `metrics#index`, both unchanged). It carries no metric logic of its own:
  * when OpenRegister is present it delegates to the OpenRegister AppHost
  * {@see \OCA\OpenRegister\AppHost\Controller\GenericMetricsController}, which
- * reads openconnector's `src/manifest.json` `observability.metrics` block
+ * reads integriq's `src/manifest.json` `observability.metrics` block
  * (resolved by `appName`) and renders Prometheus text exposition 0.0.4.
  *
  * This class deliberately extends {@see \OCP\AppFramework\Controller} rather
@@ -15,16 +15,16 @@
  * child can be declared, and Nextcloud's router `ReflectionClass`es EVERY
  * controller while matching a route — so extending a class from an app that
  * may be absent turns a missing optional dependency into an HTTP 500 on every
- * route in openconnector, not just on `/api/metrics`. Injecting the engine
+ * route in integriq, not just on `/api/metrics`. Injecting the engine
  * controller as a nullable delegate avoids that: a nullable *parameter type*
  * is never autoloaded (only `extends`/`implements` are resolved at class
  * declaration time), and this service is built by an explicit factory in
- * {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostObservability()},
+ * {@see \OCA\Integriq\AppInfo\Application::registerAppHostObservability()},
  * so the container never autowires — and therefore never resolves — that
  * parameter.
  *
  * This mirrors the guard already used by the sibling
- * {@see \OCA\OpenConnector\Controller\HealthController}.
+ * {@see \OCA\Integriq\Controller\HealthController}.
  *
  * The metrics endpoint stays admin-only: the method declares no
  * `#[NoAdminRequired]`, so the Nextcloud SecurityMiddleware requires an admin
@@ -32,7 +32,7 @@
  * here.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,12 +40,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCP\App\IAppManager;
@@ -79,7 +79,7 @@ class MetricsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Calling app id (openconnector).
+	 * @param string $appName Calling app id (integriq).
 	 * @param IRequest $request HTTP request.
 	 * @param IAppManager $appManager App-enablement query service (never touches OpenRegister classes).
 	 * @param GenericMetricsController|null $delegate Engine metrics controller, or null when OpenRegister is absent.
@@ -111,7 +111,7 @@ class MetricsController extends Controller {
 	public function index(): TextPlainResponse {
 		if ($this->appManager->isEnabledForAnyone(self::REQUIRED_APP) === false || $this->delegate === null) {
 			$response = new TextPlainResponse(
-				'# metrics unavailable: OpenConnector requires the OpenRegister app — install and enable it.' . "\n",
+				'# metrics unavailable: Integriq requires the OpenRegister app — install and enable it.' . "\n",
 				Http::STATUS_SERVICE_UNAVAILABLE
 			);
 			$response->addHeader('Content-Type', self::CONTENT_TYPE);

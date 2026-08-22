@@ -59,7 +59,7 @@ class ZgwVersionTranslateController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param ZgwVersionTranslationService $translationService Translator dispatch + persistence.
 	 * @param ZgwVersionNegotiationService $negotiationService Version resolution from headers.

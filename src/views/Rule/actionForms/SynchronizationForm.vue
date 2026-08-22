@@ -12,20 +12,20 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Synchronization')
+			t('integriq', 'Synchronization')
 		}}</label>
 		<NcSelect
 			data-testid="action-form-sync"
-			:aria-label-combobox="t('openconnector', 'Synchronization')"
+			:aria-label-combobox="t('integriq', 'Synchronization')"
 			:modelValue="selectedSync"
 			:options="syncOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a synchronization')"
+			:placeholder="t('integriq', 'Select a synchronization')"
 			@update:modelValue="onSyncPick" />
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'The synchronization that runs when this rule matches. Pick by name; the underlying UUID is what gets stored.',
 				)
 			}}
@@ -35,32 +35,32 @@
 			type="switch"
 			:modelValue="!!value.retainResponse"
 			@update:modelValue="(next) => patch('retainResponse', !!next)">
-			{{ t('openconnector', 'Retain original response') }}
+			{{ t('integriq', 'Retain original response') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.',
 				)
 			}}
 		</span>
 
 		<NcTextField
-			:label="t('openconnector', 'Object ID path (optional)')"
+			:label="t('integriq', 'Object ID path (optional)')"
 			:modelValue="value.objectIdPath || ''"
 			placeholder="body.id"
 			@update:modelValue="(next) => patch('objectIdPath', next)" />
 
 		<div class="action-form__row">
 			<NcTextField
-				:label="t('openconnector', 'Pre-delay (seconds)')"
+				:label="t('integriq', 'Pre-delay (seconds)')"
 				type="number"
 				:modelValue="value.preDelay != null ? String(value.preDelay) : ''"
 				placeholder="0"
 				@update:modelValue="(next) => patchNumber('preDelay', next)" />
 			<NcTextField
-				:label="t('openconnector', 'Post-delay (seconds)')"
+				:label="t('integriq', 'Post-delay (seconds)')"
 				type="number"
 				:modelValue="value.postDelay != null ? String(value.postDelay) : ''"
 				placeholder="0"

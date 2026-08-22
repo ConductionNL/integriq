@@ -72,7 +72,7 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	/Slow network is detected/i,
 	/favicon/i,
 	/the resource at .* was preloaded using link preload but not used/i,
-	/Error fetching OpenConnector settings/i,
+	/Error fetching Integriq settings/i,
 	/Failed to load resource:.*Not Found/i,
 	/Failed to load user status/i,
 	/user_status/i,

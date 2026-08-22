@@ -4,7 +4,7 @@
  * Unit tests for TablesColumnCoercer.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Tables
+ * @package  OCA\Integriq\Tests\Unit\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Tables;
+namespace OCA\Integriq\Tests\Unit\Service\Tables;
 
-use OCA\OpenConnector\Exception\TablesConfigException;
-use OCA\OpenConnector\Service\Tables\TablesColumnCoercer;
+use OCA\Integriq\Exception\TablesConfigException;
+use OCA\Integriq\Service\Tables\TablesColumnCoercer;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -10,12 +10,12 @@
  * this endpoint produce, on which register and schema, and does it even run this
  * rule" is answered.
  *
- * Split out of {@see \OCA\OpenConnector\Service\RuleToFlowGenerator} because it
+ * Split out of {@see \OCA\Integriq\Service\RuleToFlowGenerator} because it
  * is a question about ENDPOINTS, answerable and testable without a flow document
  * in sight.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,14 +26,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 /**
  * Derives an object trigger's event, register and schema from an endpoint.

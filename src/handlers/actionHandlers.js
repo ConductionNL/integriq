@@ -209,7 +209,7 @@ export function viewLogsHandler({ actionId, item }) {
 	if (!VIEW_LOGS_TARGETS[actionId]) {
 		// eslint-disable-next-line no-console
 		console.warn(
-			`[openconnector] viewLogsHandler: unknown actionId "${actionId}"`,
+			`[integriq] viewLogsHandler: unknown actionId "${actionId}"`,
 		)
 		return
 	}
@@ -217,7 +217,7 @@ export function viewLogsHandler({ actionId, item }) {
 	if (!router) {
 		// eslint-disable-next-line no-console
 		console.warn(
-			'[openconnector] viewLogsHandler: router not set; cannot navigate',
+			'[integriq] viewLogsHandler: router not set; cannot navigate',
 		)
 		return
 	}
@@ -227,7 +227,7 @@ export function viewLogsHandler({ actionId, item }) {
 		// — an unfiltered one builds a location without reading the id.
 		// eslint-disable-next-line no-console
 		console.warn(
-			`[openconnector] viewLogsHandler: no id on row for "${actionId}"`,
+			`[integriq] viewLogsHandler: no id on row for "${actionId}"`,
 		)
 		return
 	}
@@ -236,7 +236,7 @@ export function viewLogsHandler({ actionId, item }) {
 		// route twice; swallow that specific case, surface anything else.
 		if (err && err.name !== 'NavigationDuplicated') {
 			// eslint-disable-next-line no-console
-			console.warn('[openconnector] viewLogsHandler navigation failed', err)
+			console.warn('[integriq] viewLogsHandler navigation failed', err)
 		}
 	})
 }

@@ -89,7 +89,7 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new ProductSubscriptionsController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->approvalService,
 			$this->orObjectService,

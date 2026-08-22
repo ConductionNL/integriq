@@ -37,11 +37,11 @@
 		:close="closeEditor">
 		<template #hostExtras>
 			<section class="oc-sync-node-step">
-				<h3>{{ t('openconnector', 'Step options') }}</h3>
+				<h3>{{ t('integriq', 'Step options') }}</h3>
 				<p class="oc-sync-node-step__hint">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'How this flow step runs the synchronization. Saved with the flow, not with the synchronization.',
 						)
 					}}
@@ -51,14 +51,14 @@
 						:modelValue="stepDraft.force === true"
 						type="switch"
 						@update:modelValue="(value) => setStep('force', value)">
-						{{ t('openconnector', 'Force a full pass') }}
+						{{ t('integriq', 'Force a full pass') }}
 					</NcCheckboxRadioSwitch>
 					<NcTextField
 						:modelValue="stepDraft.output || ''"
-						:label="t('openconnector', 'Field to store the summary in')"
+						:label="t('integriq', 'Field to store the summary in')"
 						:helperText="
 							t(
-								'openconnector',
+								'integriq',
 								'Empty means the summary replaces the item.',
 							)
 						"
@@ -70,10 +70,10 @@
 								: String(stepDraft.maxItems)
 						"
 						type="number"
-						:label="t('openconnector', 'Item ceiling')"
+						:label="t('integriq', 'Item ceiling')"
 						:helperText="
 							t(
-								'openconnector',
+								'integriq',
 								'The most synchronised objects this step emits as items.',
 							)
 						"
@@ -87,7 +87,7 @@
 					<div class="oc-sync-node-step__on-error">
 						<NcSelect
 							:inputId="onErrorSelectId"
-							:inputLabel="t('openconnector', 'When the run fails')"
+							:inputLabel="t('integriq', 'When the run fails')"
 							:modelValue="selectedOnError"
 							:options="onErrorOptions"
 							:clearable="false"
@@ -182,14 +182,14 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onErrorOptions() {
 			return [
-				{ id: 'stop', label: t('openconnector', 'Stop the flow') },
+				{ id: 'stop', label: t('integriq', 'Stop the flow') },
 				{
 					id: 'continue',
-					label: t('openconnector', 'Record the error and continue'),
+					label: t('integriq', 'Record the error and continue'),
 				},
 				{
 					id: 'dead_letter',
-					label: t('openconnector', 'Route to dead letter'),
+					label: t('integriq', 'Route to dead letter'),
 				},
 			]
 		},
@@ -268,7 +268,7 @@ export default {
 			if (!saved) {
 				throw new Error(
 					this.objectStore.errors?.[SCHEMA_SLUG]
-						|| t('openconnector', 'Save failed'),
+						|| t('integriq', 'Save failed'),
 				)
 			}
 			this.synchronization = saved

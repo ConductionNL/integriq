@@ -192,7 +192,7 @@ const router = createRouter({
 	// still 404 correctly) and verified live before this line changed: a
 	// never-before-hit deep path returned 200/text-html. This was the only
 	// missing piece.
-	history: createWebHistory(generateUrl('/apps/openconnector')),
+	history: createWebHistory(generateUrl('/apps/integriq')),
 	routes: routesFromManifest(mergedManifest),
 })
 

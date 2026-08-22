@@ -4,7 +4,7 @@
  * Unit tests for CallEndpointOperation.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\WorkflowEngine
+ * @package  OCA\Integriq\Tests\Unit\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\WorkflowEngine;
+namespace OCA\Integriq\Tests\Unit\WorkflowEngine;
 
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\WorkflowEngine\CallEndpointOperation;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\WorkflowEngine\CallEndpointOperation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Payment Intent Service.
+ * Integriq Payment Intent Service.
  *
  * Core of the live-payment-providers connector: resolves the configured
  * payment source + provider binding, drives payment creation, and processes
@@ -13,7 +13,7 @@
  * `PaymentsController` stays a thin HTTP/signature-verification shell.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,21 +22,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenConnector\Exception\PaymentProviderException;
-use OCA\OpenConnector\Service\Payment\LogPaymentProvider;
-use OCA\OpenConnector\Service\Payment\MolliePaymentProvider;
-use OCA\OpenConnector\Service\Payment\PaymentProviderInterface;
+use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Service\Payment\LogPaymentProvider;
+use OCA\Integriq\Service\Payment\MolliePaymentProvider;
+use OCA\Integriq\Service\Payment\PaymentProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -56,6 +56,8 @@ class PaymentIntentService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -405,7 +407,7 @@ class PaymentIntentService {
 	 * future shillinq event listener can pass the `data` straight through.
 	 *
 	 * @param string $providerPaymentId The provider payment id (becomes the event's `paymentIntentId`
-	 *                                  — shillinq resolves records by this value, not openconnector's
+	 *                                  — shillinq resolves records by this value, not integriq's
 	 *                                  own object uuid).
 	 * @param string $outcome The mapped outcome (`authorized|captured|failed|voided`).
 	 *

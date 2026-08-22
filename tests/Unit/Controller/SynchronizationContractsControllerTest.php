@@ -76,7 +76,7 @@ class SynchronizationContractsControllerTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		return new SynchronizationContractsController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$this->orObjectService,
 			$l,

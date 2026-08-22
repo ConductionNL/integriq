@@ -80,7 +80,7 @@ class SyncDeadLetterControllerTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		$this->controller = new SyncDeadLetterController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->orObjectService,
 			$this->syncItemDeadLetterService,

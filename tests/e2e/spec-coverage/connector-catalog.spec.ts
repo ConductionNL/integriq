@@ -24,7 +24,7 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const APP_BASE = '/index.php/apps/openconnector'
+const APP_BASE = '/index.php/apps/integriq'
 
 test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-manifest delta)', () => {
 	const manifest = JSON.parse(
@@ -110,7 +110,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
@@ -146,7 +146,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
@@ -169,7 +169,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
@@ -192,7 +192,7 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
@@ -232,7 +232,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
@@ -268,7 +268,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	}) => {
 		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/openconnector/catalog` is ignored by the router and resolves
+		// like `/apps/integriq/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so

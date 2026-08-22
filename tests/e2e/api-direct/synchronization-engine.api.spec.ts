@@ -21,7 +21,7 @@
 import { test, expect } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-const API_BASE = '/index.php/apps/openconnector/api'
+const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe('Synchronizations OR API — list', () => {
 	test('GET synchronizations list from OR returns synchronization objects', async ({

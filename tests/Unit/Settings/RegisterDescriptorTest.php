@@ -9,7 +9,7 @@
  * Asserts structural integrity of lib/Settings/openconnector_register.json.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
  * - FK relations carry $ref and x-openregister-onDelete
  * - sourceId/targetId on synchronization are plain string (no $ref)
  *
- * NOTE: The original REQ-A-002 test used Reflection on OCA\OpenConnector\Db\*
+ * NOTE: The original REQ-A-002 test used Reflection on OCA\Integriq\Db\*
  * entity classes to verify schema completeness. Those entity classes were
  * deleted in chain C (all state now lives in OpenRegister). The Reflection
  * assertions have been removed; the structural JSON checks below remain.

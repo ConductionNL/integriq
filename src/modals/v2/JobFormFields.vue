@@ -249,21 +249,21 @@
 				<label
 					for="cn-job-form-synchronization"
 					class="cn-job-form-fields__label">
-					{{ t('openconnector', 'Synchronization') }} *
+					{{ t('integriq', 'Synchronization') }} *
 				</label>
 				<NcSelect
 					inputId="cn-job-form-synchronization"
-					:aria-label-combobox="t('openconnector', 'Synchronization')"
+					:aria-label-combobox="t('integriq', 'Synchronization')"
 					:modelValue="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Select a synchronization')"
+					:placeholder="t('integriq', 'Select a synchronization')"
 					@update:modelValue="onSynchronizationPick" />
 				<CnFieldHelper
 					:text="
 						t(
-							'openconnector',
+							'integriq',
 							'The synchronization this job will run. Written back as arguments.synchronizationId.',
 						)
 					" />
@@ -315,16 +315,16 @@ import {
 function jobClassLabel(fqn) {
 	const labels = {
 		'OCA\\OpenConnector\\Action\\SynchronizationAction': t(
-			'openconnector',
+			'integriq',
 			'Run a synchronization',
 		),
-		'OCA\\OpenConnector\\Action\\FlowAction': t('openconnector', 'Run a flow'),
+		'OCA\\OpenConnector\\Action\\FlowAction': t('integriq', 'Run a flow'),
 		'OCA\\OpenConnector\\Action\\EventAction': t(
-			'openconnector',
+			'integriq',
 			'Dispatch an event',
 		),
 		'OCA\\OpenConnector\\Action\\PingAction': t(
-			'openconnector',
+			'integriq',
 			'Ping a source',
 		),
 	}
@@ -686,7 +686,7 @@ export default {
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
 				this.jsonErrors[field.key] = t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)

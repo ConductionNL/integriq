@@ -73,7 +73,7 @@ class LtiControllerAgsPublishScoreTest extends TestCase {
 		$this->agsService = $this->createMock(LtiAgsService::class);
 
 		$this->controller = new LtiController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->createMock(LtiLaunchService::class),
 			$this->agsService,

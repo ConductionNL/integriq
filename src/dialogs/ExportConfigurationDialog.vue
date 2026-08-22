@@ -10,14 +10,14 @@
   Configuration groups are OpenRegister-native rows (lib/Db/Configuration
   in OR, served by /apps/openregister/api/configurations — NOT an object
   register/schema), so the picker lists them from that endpoint and the
-  download hits openconnector's POST /api/configurations/{id}/export,
+  download hits integriq's POST /api/configurations/{id}/export,
   which wraps the existing ConfigurationService::exportConfiguration()
   (slug translation + REQ-005 credential redaction, unchanged).
 -->
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openconnector', 'Export configuration')"
+		:name="t('integriq', 'Export configuration')"
 		size="normal"
 		data-testid="export-configuration-dialog"
 		@update:open="onOpenChanged">
@@ -25,7 +25,7 @@
 			<p>
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Download a configuration group as a slug-referenced JSON document. Credentials are always stripped from the export.',
 					)
 				}}
@@ -35,8 +35,8 @@
 				:modelValue="selected"
 				:options="options"
 				:loading="loading"
-				:inputLabel="t('openconnector', 'Configuration group')"
-				:placeholder="t('openconnector', 'Select a configuration group')"
+				:inputLabel="t('integriq', 'Configuration group')"
+				:placeholder="t('integriq', 'Select a configuration group')"
 				label="label"
 				data-testid="export-configuration-select"
 				@update:modelValue="onSelect" />
@@ -44,7 +44,7 @@
 			<NcNoteCard v-if="options.length === 0 && !loading" type="info">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'No configuration groups found. Assign entities to a configuration first.',
 					)
 				}}
@@ -56,14 +56,14 @@
 
 			<div class="oc-export-dialog__actions">
 				<NcButton variant="tertiary" @click="close">
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="primary"
 					:disabled="!selected || exporting"
 					data-testid="export-configuration-confirm"
 					@click="runExport">
-					{{ t('openconnector', 'Export') }}
+					{{ t('integriq', 'Export') }}
 				</NcButton>
 			</div>
 		</div>
@@ -141,7 +141,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Could not load configuration groups')
+					t('integriq', 'Could not load configuration groups')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loading = false
@@ -175,7 +175,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					`/apps/openconnector/api/configurations/${this.selected.id}/export`,
+					`/apps/integriq/api/configurations/${this.selected.id}/export`,
 				)
 				const { data } = await axios.post(url)
 				const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -188,12 +188,12 @@ export default {
 				link.click()
 				document.body.removeChild(link)
 				URL.revokeObjectURL(link.href)
-				showSuccess(t('openconnector', 'Configuration exported'))
+				showSuccess(t('integriq', 'Configuration exported'))
 				this.close()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Export failed')
+					t('integriq', 'Export failed')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.exporting = false

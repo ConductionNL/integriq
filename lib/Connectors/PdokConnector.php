@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK Connector
+ * Integriq PDOK Connector
  *
  * Server-side connector for the Dutch PDOK Locatieserver v3.1 — proxies suggest,
  * lookup, free-text, and reverse-geocode calls; normalises the response into the
@@ -13,7 +13,7 @@
  * `shared-pdok-via-openconnector`.
  *
  * @category Connector
- * @package  OCA\OpenConnector\Connectors
+ * @package  OCA\Integriq\Connectors
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -24,12 +24,12 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Connectors;
+namespace OCA\Integriq\Connectors;
 
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;

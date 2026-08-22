@@ -24,7 +24,7 @@
 		data-testid="event-delivery-detail-modal"
 		@close="$emit('close')">
 		<div class="deliveryDetail">
-			<h2>{{ t('openconnector', 'Event delivery') }}</h2>
+			<h2>{{ t('integriq', 'Event delivery') }}</h2>
 
 			<div v-if="message" class="deliveryDetail__body">
 				<div class="deliveryDetail__meta">
@@ -35,7 +35,7 @@
 						class="deliveryDetail__actionBadge"
 						data-testid="detail-action-kind-badge">
 						{{
-							t('openconnector', 'Action: {kind}', {
+							t('integriq', 'Action: {kind}', {
 								kind: actionKind,
 							})
 						}}
@@ -44,11 +44,11 @@
 						v-if="message.nextcloudEvent"
 						class="deliveryDetail__provenanceBadge"
 						data-testid="detail-provenance-badge">
-						{{ t('openconnector', 'Nextcloud event') }}
+						{{ t('integriq', 'Nextcloud event') }}
 					</span>
 					<span class="deliveryDetail__retry">
 						{{
-							t('openconnector', 'Attempts: {count}', {
+							t('integriq', 'Attempts: {count}', {
 								count: attempts.length,
 							})
 						}}
@@ -60,7 +60,7 @@
 					class="deliveryDetail__audit">
 					<p v-if="message.replayedBy">
 						{{
-							t('openconnector', 'Replayed by {who} at {when}', {
+							t('integriq', 'Replayed by {who} at {when}', {
 								who: message.replayedBy,
 								when: message.replayedAt,
 							})
@@ -68,7 +68,7 @@
 					</p>
 					<p v-if="message.discardedBy">
 						{{
-							t('openconnector', 'Discarded by {who} at {when}', {
+							t('integriq', 'Discarded by {who} at {when}', {
 								who: message.discardedBy,
 								when: message.discardedAt,
 							})
@@ -76,7 +76,7 @@
 					</p>
 				</div>
 
-				<h3>{{ t('openconnector', 'Attempt timeline') }}</h3>
+				<h3>{{ t('integriq', 'Attempt timeline') }}</h3>
 				<ol
 					v-if="attempts.length"
 					class="deliveryDetail__timeline"
@@ -96,10 +96,10 @@
 					</li>
 				</ol>
 				<p v-else class="deliveryDetail__empty">
-					{{ t('openconnector', 'No attempts recorded yet') }}
+					{{ t('integriq', 'No attempts recorded yet') }}
 				</p>
 
-				<h3>{{ t('openconnector', 'Payload') }}</h3>
+				<h3>{{ t('integriq', 'Payload') }}</h3>
 				<pre class="deliveryDetail__payload" data-testid="payload-viewer">{{
 					prettyPayload
 				}}</pre>
@@ -110,18 +110,18 @@
 					<span class="deliveryDetail__confirm">
 						{{
 							confirming === 'replay'
-								? t('openconnector', 'Replay this message now?')
+								? t('integriq', 'Replay this message now?')
 								: t(
-										'openconnector',
+										'integriq',
 										'Discard this message? It will not be deleted.',
 									)
 						}}
 					</span>
 					<NcButton variant="primary" :disabled="busy" @click="commit">
-						{{ t('openconnector', 'Confirm') }}
+						{{ t('integriq', 'Confirm') }}
 					</NcButton>
 					<NcButton :disabled="busy" @click="confirming = null">
-						{{ t('openconnector', 'Cancel') }}
+						{{ t('integriq', 'Cancel') }}
 					</NcButton>
 				</template>
 				<template v-else>
@@ -129,12 +129,12 @@
 						variant="primary"
 						:disabled="!canAct || busy"
 						@click="confirming = 'replay'">
-						{{ t('openconnector', 'Replay') }}
+						{{ t('integriq', 'Replay') }}
 					</NcButton>
 					<NcButton
 						:disabled="!canAct || busy"
 						@click="confirming = 'discard'">
-						{{ t('openconnector', 'Discard') }}
+						{{ t('integriq', 'Discard') }}
 					</NcButton>
 				</template>
 			</div>
@@ -251,13 +251,13 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/events/dead-letter/${id}/${verb}`,
+						`/apps/integriq/api/events/dead-letter/${id}/${verb}`,
 					),
 				)
 				showSuccess(
 					verb === 'replay'
-						? t('openconnector', 'Message replayed')
-						: t('openconnector', 'Message discarded'),
+						? t('integriq', 'Message replayed')
+						: t('integriq', 'Message discarded'),
 				)
 				this.$emit('changed')
 				this.$emit('close')
@@ -265,8 +265,8 @@ export default {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
 					(verb === 'replay'
-						? t('openconnector', 'Replay failed')
-						: t('openconnector', 'Discard failed'))
+						? t('integriq', 'Replay failed')
+						: t('integriq', 'Discard failed'))
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

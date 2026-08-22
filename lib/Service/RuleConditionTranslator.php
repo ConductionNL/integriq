@@ -3,7 +3,7 @@
 /**
  * Rewrites a Rule's JsonLogic from the request envelope onto a flow item.
  *
- * Split out of {@see \OCA\OpenConnector\Service\RuleToFlowGenerator} because it
+ * Split out of {@see \OCA\Integriq\Service\RuleToFlowGenerator} because it
  * is the part of that translation with a right answer independent of flows: a
  * dialect question, testable on its own.
  *
@@ -25,7 +25,7 @@
  * wrong in exactly the places it looked right. They are reported too.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,14 +36,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 /**
  * Translates rule conditions onto flow items, and names what it cannot.

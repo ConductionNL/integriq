@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Rate Limit.
+ * Integriq Flow Rate Limit.
  *
  * The ONE place a rate-limited fetch is turned into a suspension, shared by
  * every node that can be refused by a source.
@@ -31,7 +31,7 @@
  * nothing sends.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,14 +42,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;

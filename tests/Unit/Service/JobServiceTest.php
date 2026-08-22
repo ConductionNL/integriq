@@ -241,7 +241,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\ThrowingAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\ThrowingAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -252,7 +252,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -292,7 +292,7 @@ class JobServiceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			static function (string $class) use ($throwingAction, $healthyAction) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingAction') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingAction') {
 					return $throwingAction;
 				}
 				return $healthyAction;
@@ -361,7 +361,7 @@ class JobServiceTest extends TestCase {
 		// Arrange — a job configured with userId=alice.
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			'userId' => 'alice',
 			'arguments' => [],
@@ -416,7 +416,7 @@ class JobServiceTest extends TestCase {
 	public function testSingleRunJobIsDisabledAfterRunning(): void {
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			// The spelling the SCHEMA declares.
 			'singleRun' => true,
@@ -466,7 +466,7 @@ class JobServiceTest extends TestCase {
 		// Arrange — job references a deleted user.
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			'userId' => 'deleted-user',
 			'arguments' => [],
@@ -528,7 +528,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\ThrowingUserAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\ThrowingUserAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'userId' => 'alice',
@@ -540,7 +540,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\NoUserAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\NoUserAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -571,7 +571,7 @@ class JobServiceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $class) use (&$sessionUserDuringJobB) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingUserAction') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingUserAction') {
 					return new class {
 						public function run(array $args): array {
 							throw new \RuntimeException('boom from user-scoped job A');
@@ -635,9 +635,9 @@ class JobServiceTest extends TestCase {
 			);
 		};
 
-		$jobA = $makeJob('job-a', 'OCA\\OpenConnector\\Action\\ThrowingActionABC');
-		$jobB = $makeJob('job-b', 'OCA\\OpenConnector\\Action\\HealthyActionB');
-		$jobC = $makeJob('job-c', 'OCA\\OpenConnector\\Action\\HealthyActionC');
+		$jobA = $makeJob('job-a', 'OCA\\Integriq\\Action\\ThrowingActionABC');
+		$jobB = $makeJob('job-b', 'OCA\\Integriq\\Action\\HealthyActionB');
+		$jobC = $makeJob('job-c', 'OCA\\Integriq\\Action\\HealthyActionC');
 
 		$this->objectService->method('findAll')->willReturnCallback(
 			static fn () => ['results' => [$jobA, $jobB, $jobC], 'total' => 3]
@@ -647,7 +647,7 @@ class JobServiceTest extends TestCase {
 		$cCalled = false;
 		$this->container->method('get')->willReturnCallback(
 			function (string $class) use (&$bCalled, &$cCalled) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingActionABC') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingActionABC') {
 					return new class {
 						public function run(array $args): array {
 							throw new \RuntimeException('boom from A');
@@ -655,7 +655,7 @@ class JobServiceTest extends TestCase {
 					};
 				}
 
-				if ($class === 'OCA\\OpenConnector\\Action\\HealthyActionB') {
+				if ($class === 'OCA\\Integriq\\Action\\HealthyActionB') {
 					return new class($bCalled) {
 						private bool $called;
 						public function __construct(bool &$called) {

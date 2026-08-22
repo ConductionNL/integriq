@@ -7,7 +7,7 @@
  * table to handle longer job execution messages and prevent truncation errors.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -36,13 +36,13 @@ use OCP\Migration\SimpleMigrationStep;
  * is changed from VARCHAR(255) to TEXT to accommodate longer messages.
  *
  * @psalm-api
- * @package   OCA\OpenConnector\Migration
+ * @package   OCA\Integriq\Migration
  * @category  Migration
- * @author    OpenConnector Team
- * @copyright 2025 OpenConnector
+ * @author    Integriq Team
+ * @copyright 2025 Integriq
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
- * @link      https://github.com/OpenConnector/openconnector
+ * @link      https://github.com/ConductionNL/integriq
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)

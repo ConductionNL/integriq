@@ -98,7 +98,7 @@ class ConfigurationControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new ConfigurationController(
-			'openconnector',
+			'integriq',
 			$request,
 			$this->configService,
 			new ConfigurationImportPreviewService($this->orObjectService),

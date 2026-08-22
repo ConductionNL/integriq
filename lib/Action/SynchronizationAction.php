@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Action.
+ * Integriq Synchronization Action.
  *
  * Cron action that runs a synchronization. Post OpenRegister-cutover the
  * synchronization is resolved through SynchronizationService::getSynchronization()
@@ -9,26 +9,26 @@
  * the legacy SynchronizationMapper having been removed.
  *
  * @category Action
- * @package  OCA\OpenConnector\Action
+ * @package  OCA\Integriq\Action
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Action;
+namespace OCA\Integriq\Action;
 
 use Exception;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
  * This action handles the synchronization of data from the source to the target.
  *
- * @package OCA\OpenConnector\Action
+ * @package OCA\Integriq\Action
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */

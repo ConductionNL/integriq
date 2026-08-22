@@ -42,12 +42,12 @@
 -->
 <template>
 	<div class="cn-rules-editor">
-		<CnTabs :aria-label="t('openconnector', 'Transformation rules')">
+		<CnTabs :aria-label="t('integriq', 'Transformation rules')">
 			<!-- Mapping rules tab -->
 			<CnTab>
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
-						{{ t('openconnector', 'Mapping') }}
+						{{ t('integriq', 'Mapping') }}
 						<span class="cn-rules-editor__tab-count">{{
 							mappingRowList.length
 						}}</span>
@@ -57,7 +57,7 @@
 					<p class="cn-rules-editor__help">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.',
 							)
 						}}
@@ -71,13 +71,13 @@
 									class="cn-rules-editor__col-handle"
 									aria-hidden="true" />
 								<th scope="col">
-									{{ t('openconnector', 'Target property') }}
+									{{ t('integriq', 'Target property') }}
 								</th>
 								<th scope="col">
-									{{ t('openconnector', 'Template') }}
+									{{ t('integriq', 'Template') }}
 								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
-									{{ t('openconnector', 'Actions') }}
+									{{ t('integriq', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
@@ -102,7 +102,7 @@
 										type="button"
 										class="cn-rules-editor__drag-handle"
 										:aria-label="
-											t('openconnector', 'Drag to reorder')
+											t('integriq', 'Drag to reorder')
 										"
 										:disabled="saving"
 										tabindex="-1">
@@ -118,7 +118,7 @@
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
 										variant="tertiary"
-										:aria-label="t('openconnector', 'Edit rule')"
+										:aria-label="t('integriq', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('mapping', row.key)">
 										<template #icon>
@@ -128,7 +128,7 @@
 									<NcButton
 										variant="tertiary"
 										:aria-label="
-											t('openconnector', 'Delete rule')
+											t('integriq', 'Delete rule')
 										"
 										:disabled="saving"
 										@click="deleteRule('mapping', row.key)">
@@ -143,7 +143,7 @@
 					<p v-else class="cn-rules-editor__empty">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'No mapping rules yet. Add one to start shaping the output.',
 							)
 						}}
@@ -156,7 +156,7 @@
 							<template #icon>
 								<PlusIcon :size="20" />
 							</template>
-							{{ t('openconnector', 'Add mapping rule') }}
+							{{ t('integriq', 'Add mapping rule') }}
 						</NcButton>
 					</div>
 				</div>
@@ -166,7 +166,7 @@
 			<CnTab>
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
-						{{ t('openconnector', 'Cast') }}
+						{{ t('integriq', 'Cast') }}
 						<span class="cn-rules-editor__tab-count">{{
 							castRowList.length
 						}}</span>
@@ -176,7 +176,7 @@
 					<p class="cn-rules-editor__help">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.',
 							)
 						}}
@@ -188,13 +188,13 @@
 									class="cn-rules-editor__col-handle"
 									aria-hidden="true" />
 								<th scope="col">
-									{{ t('openconnector', 'Property') }}
+									{{ t('integriq', 'Property') }}
 								</th>
 								<th scope="col">
-									{{ t('openconnector', 'Cast type') }}
+									{{ t('integriq', 'Cast type') }}
 								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
-									{{ t('openconnector', 'Actions') }}
+									{{ t('integriq', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
@@ -219,7 +219,7 @@
 										type="button"
 										class="cn-rules-editor__drag-handle"
 										:aria-label="
-											t('openconnector', 'Drag to reorder')
+											t('integriq', 'Drag to reorder')
 										"
 										:disabled="saving"
 										tabindex="-1">
@@ -235,7 +235,7 @@
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
 										variant="tertiary"
-										:aria-label="t('openconnector', 'Edit rule')"
+										:aria-label="t('integriq', 'Edit rule')"
 										:disabled="saving"
 										@click="openEdit('cast', row.key)">
 										<template #icon>
@@ -245,7 +245,7 @@
 									<NcButton
 										variant="tertiary"
 										:aria-label="
-											t('openconnector', 'Delete rule')
+											t('integriq', 'Delete rule')
 										"
 										:disabled="saving"
 										@click="deleteRule('cast', row.key)">
@@ -258,7 +258,7 @@
 						</VueDraggable>
 					</table>
 					<p v-else class="cn-rules-editor__empty">
-						{{ t('openconnector', 'No cast rules yet.') }}
+						{{ t('integriq', 'No cast rules yet.') }}
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
@@ -268,7 +268,7 @@
 							<template #icon>
 								<PlusIcon :size="20" />
 							</template>
-							{{ t('openconnector', 'Add cast rule') }}
+							{{ t('integriq', 'Add cast rule') }}
 						</NcButton>
 					</div>
 				</div>
@@ -278,7 +278,7 @@
 			<CnTab>
 				<template #title>
 					<span class="cn-rules-editor__tab-label">
-						{{ t('openconnector', 'Unset') }}
+						{{ t('integriq', 'Unset') }}
 						<span class="cn-rules-editor__tab-count">{{
 							unsetRules.length
 						}}</span>
@@ -288,7 +288,7 @@
 					<p class="cn-rules-editor__help">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Unset rules remove a property from the output object. They only apply when pass-through is enabled.',
 							)
 						}}
@@ -300,10 +300,10 @@
 									class="cn-rules-editor__col-handle"
 									aria-hidden="true" />
 								<th scope="col">
-									{{ t('openconnector', 'Property') }}
+									{{ t('integriq', 'Property') }}
 								</th>
 								<th scope="col" class="cn-rules-editor__col-actions">
-									{{ t('openconnector', 'Actions') }}
+									{{ t('integriq', 'Actions') }}
 								</th>
 							</tr>
 						</thead>
@@ -328,7 +328,7 @@
 										type="button"
 										class="cn-rules-editor__drag-handle"
 										:aria-label="
-											t('openconnector', 'Drag to reorder')
+											t('integriq', 'Drag to reorder')
 										"
 										:disabled="saving"
 										tabindex="-1">
@@ -341,7 +341,7 @@
 								<td class="cn-rules-editor__col-actions">
 									<NcButton
 										variant="tertiary"
-										:aria-label="t('openconnector', 'Edit rule')"
+										:aria-label="t('integriq', 'Edit rule')"
 										:disabled="saving"
 										@click="openEditUnset(property)">
 										<template #icon>
@@ -351,7 +351,7 @@
 									<NcButton
 										variant="tertiary"
 										:aria-label="
-											t('openconnector', 'Delete rule')
+											t('integriq', 'Delete rule')
 										"
 										:disabled="saving"
 										@click="deleteUnset(property)">
@@ -364,7 +364,7 @@
 						</VueDraggable>
 					</table>
 					<p v-else class="cn-rules-editor__empty">
-						{{ t('openconnector', 'No unset rules yet.') }}
+						{{ t('integriq', 'No unset rules yet.') }}
 					</p>
 					<div class="cn-rules-editor__footer">
 						<NcButton
@@ -374,7 +374,7 @@
 							<template #icon>
 								<PlusIcon :size="20" />
 							</template>
-							{{ t('openconnector', 'Add unset rule') }}
+							{{ t('integriq', 'Add unset rule') }}
 						</NcButton>
 						<p v-if="!passThrough" class="cn-rules-editor__warning">
 							{{ passThroughHint }}
@@ -384,12 +384,12 @@
 			</CnTab>
 
 			<!-- Options tab (opt-in via `showOptionsTab`) -->
-			<CnTab v-if="showOptionsTab" :title="t('openconnector', 'Options')">
+			<CnTab v-if="showOptionsTab" :title="t('integriq', 'Options')">
 				<div class="cn-rules-editor__panel">
 					<p class="cn-rules-editor__help">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Options change how the mapping treats properties it has no rule for.',
 							)
 						}}
@@ -399,12 +399,12 @@
 						:disabled="saving"
 						type="switch"
 						@update:modelValue="$emit('update-pass-through', $event)">
-						{{ t('openconnector', 'Pass through') }}
+						{{ t('integriq', 'Pass through') }}
 					</NcCheckboxRadioSwitch>
 					<p class="cn-rules-editor__help">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'When enabled, properties from the input object are copied into the output unless an unset rule removes them. When disabled, the output contains only what the mapping rules produce.',
 							)
 						}}
@@ -564,11 +564,11 @@ export default {
 		passThroughHint() {
 			return this.showOptionsTab
 				? this.t(
-						'openconnector',
+						'integriq',
 						'Enable pass-through in the Options tab to add unset rules.',
 					)
 				: this.t(
-						'openconnector',
+						'integriq',
 						'Enable pass-through above to add unset rules.',
 					)
 		},

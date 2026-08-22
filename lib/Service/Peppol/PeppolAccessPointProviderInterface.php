@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Peppol Access Point Provider Interface.
+ * Integriq Peppol Access Point Provider Interface.
  *
  * Narrow domain seam through which every Peppol participant lookup and
  * document transmission occurs. A new Access Point (AP) vendor is added by
@@ -10,7 +10,7 @@
  * IntegrationProvider".
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Peppol
+ * @package  OCA\Integriq\Service\Peppol
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,16 +19,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Peppol;
+namespace OCA\Integriq\Service\Peppol;
 
-use OCA\OpenConnector\Exception\PeppolProviderException;
+use OCA\Integriq\Exception\PeppolProviderException;
 
 /**
  * A Peppol Access Point binding: SMP/directory lookup + document submission.

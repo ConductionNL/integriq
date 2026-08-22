@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:synchronization-to-flow.
+ * OCC command: integriq:synchronization-to-flow.
  *
  * Task 3.1 of `flow-native-synchronization`: prints the generated flow document
  * for one Synchronization, or the reasons that synchronization cannot be
@@ -13,11 +13,11 @@
  * that ships "disabled until reviewed".
  *
  * Usage:
- *   occ openconnector:synchronization-to-flow <synchronization>
- *   occ openconnector:synchronization-to-flow <synchronization> --json
+ *   occ integriq:synchronization-to-flow <synchronization>
+ *   occ integriq:synchronization-to-flow <synchronization> --json
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,17 +28,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Exception\SynchronizationNotMigratableException;
-use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Exception\SynchronizationNotMigratableException;
+use OCA\Integriq\Service\SynchronizationFlowGenerator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -73,7 +73,7 @@ class SynchronizationToFlow extends Command {
 	 * @spec exclude Symfony console wiring — framework metadata, no domain behavior.
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:synchronization-to-flow')
+		$this->setName(name: 'integriq:synchronization-to-flow')
 			->setDescription(
 				'Render a synchronization as a generated (disabled) flow document, or explain why it cannot be'
 			)

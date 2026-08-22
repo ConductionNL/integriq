@@ -90,7 +90,7 @@ class EnvironmentControllerTest extends TestCase {
 		);
 
 		return new EnvironmentController(
-			'openconnector',
+			'integriq',
 			$request,
 			$this->environmentService,
 			$l10n,

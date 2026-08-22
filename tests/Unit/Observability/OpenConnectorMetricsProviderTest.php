@@ -4,7 +4,7 @@
  * Unit tests for OpenConnectorMetricsProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Observability
+ * @package  OCA\Integriq\Tests\Unit\Observability
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Observability;
+namespace OCA\Integriq\Tests\Unit\Observability;
 
-use OCA\OpenConnector\Observability\OpenConnectorMetricsProvider;
+use OCA\Integriq\Observability\OpenConnectorMetricsProvider;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;

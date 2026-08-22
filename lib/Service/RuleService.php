@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector rule service.
+ * Integriq rule service.
  *
- * Service for handling Rule processing in the OpenConnector app. Provides
+ * Service for handling Rule processing in the Integriq app. Provides
  * functionality to process various types of Rules, applying transformations
  * and business logic to data based on rule configurations.
  *
  * Note: The custom rules functionality is experimental and subject to change.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,12 +18,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/rule-pipeline/spec.md
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use Exception;
@@ -37,7 +37,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Service for handling Rule processing in the OpenConnector app.
+ * Service for handling Rule processing in the Integriq app.
  *
  * This service provides functionality to process various types of Rules,
  * applying transformations and business logic to data based on rule configurations.
@@ -154,7 +154,7 @@ class RuleService {
 	/**
 	 * Constructor for RuleService.
 	 *
-	 * @param ObjectService $objectService OpenConnector object-service facade.
+	 * @param ObjectService $objectService Integriq object-service facade.
 	 * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
 	 * @param RegisterMapper $registerMapper Mapper used to resolve register IDs.
 	 * @param SchemaMapper $schemaMapper Mapper used to resolve schema IDs.

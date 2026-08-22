@@ -91,7 +91,7 @@ trait SynchronizationLogActions {
 		// (manifest id `SynchronizationDetail`), and it is registered AFTER the
 		// literal `/synchronizations/contracts` and `/synchronizations/logs`,
 		// so a reference can never shadow one of those.
-		$root = rtrim($this->urlGenerator->linkToRoute('openconnector.ui.dashboard', ['path' => '']), '/');
+		$root = rtrim($this->urlGenerator->linkToRoute('integriq.ui.dashboard', ['path' => '']), '/');
 
 		return [
 			[

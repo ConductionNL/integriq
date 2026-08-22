@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector synchronization sourceId/targetId resolver helper.
+ * Integriq synchronization sourceId/targetId resolver helper.
  *
  * Classifies a Synchronization sourceId/targetId value into one of four variants
  * (integer primary key / register-schema slug pair / RFC 4122 uuid / unrecognised)
@@ -9,18 +9,18 @@
  * object's uuid via `\OCA\OpenRegister\Service\ObjectService`.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Helper
+ * @package  OCA\Integriq\Service\Helper
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Helper;
+namespace OCA\Integriq\Service\Helper;
 
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;

@@ -31,7 +31,7 @@
 		data-testid="promote-preview-modal"
 		@close="onClose">
 		<div class="oc-promote-modal">
-			<h2>{{ t('openconnector', 'Promote configuration') }}</h2>
+			<h2>{{ t('integriq', 'Promote configuration') }}</h2>
 
 			<!-- Step 1: pick configuration group + target environment -->
 			<div v-if="step === 'select'" class="oc-promote-modal__step">
@@ -39,8 +39,8 @@
 					:modelValue="selectedConfig"
 					:options="configOptions"
 					:loading="loadingConfigs"
-					:inputLabel="t('openconnector', 'Configuration group')"
-					:placeholder="t('openconnector', 'Select a configuration group')"
+					:inputLabel="t('integriq', 'Configuration group')"
+					:placeholder="t('integriq', 'Select a configuration group')"
 					label="label"
 					data-testid="promote-configuration-select"
 					@update:modelValue="onSelectConfig" />
@@ -49,8 +49,8 @@
 					:modelValue="selectedEnvironment"
 					:options="environmentOptions"
 					:loading="loadingEnvironments"
-					:inputLabel="t('openconnector', 'Target environment')"
-					:placeholder="t('openconnector', 'Select a target environment')"
+					:inputLabel="t('integriq', 'Target environment')"
+					:placeholder="t('integriq', 'Select a target environment')"
 					label="label"
 					data-testid="promote-target-environment-select"
 					@update:modelValue="onSelectEnvironment" />
@@ -61,7 +61,7 @@
 
 				<div class="oc-promote-modal__actions">
 					<NcButton variant="tertiary" @click="close">
-						{{ t('openconnector', 'Cancel') }}
+						{{ t('integriq', 'Cancel') }}
 					</NcButton>
 					<NcButton
 						variant="primary"
@@ -71,7 +71,7 @@
 						<template #icon>
 							<NcLoadingIcon v-if="previewing" :size="20" />
 						</template>
-						{{ t('openconnector', 'Preview') }}
+						{{ t('integriq', 'Preview') }}
 					</NcButton>
 				</div>
 			</div>
@@ -80,7 +80,7 @@
 			<div v-else class="oc-promote-modal__step">
 				<p>
 					{{
-						t('openconnector', 'Promoting {config} to {environment}.', {
+						t('integriq', 'Promoting {config} to {environment}.', {
 							config: selectedConfig.label,
 							environment: selectedEnvironment.label,
 						})
@@ -92,7 +92,7 @@
 						class="oc-promote-modal__bucket"
 						data-testid="promote-preview-creates">
 						<h5>
-							{{ t('openconnector', 'Will be created') }} ({{
+							{{ t('integriq', 'Will be created') }} ({{
 								preview.creates.length
 							}})
 						</h5>
@@ -108,7 +108,7 @@
 						class="oc-promote-modal__bucket"
 						data-testid="promote-preview-updates">
 						<h5>
-							{{ t('openconnector', 'Will be updated') }} ({{
+							{{ t('integriq', 'Will be updated') }} ({{
 								preview.updates.length
 							}})
 						</h5>
@@ -124,7 +124,7 @@
 						class="oc-promote-modal__bucket"
 						data-testid="promote-preview-collisions">
 						<h5>
-							{{ t('openconnector', 'Collisions') }} ({{
+							{{ t('integriq', 'Collisions') }} ({{
 								preview.collisions.length
 							}})
 						</h5>
@@ -145,7 +145,7 @@
 					<h5>
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Credentials needing a target-environment rebind',
 							)
 						}}
@@ -154,7 +154,7 @@
 					<p>
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'These Sources authenticate via a credential reference from THIS environment. Supply the equivalent credential name valid on the target — the reference is rewritten, never a secret.',
 							)
 						}}
@@ -172,7 +172,7 @@
 							type="text"
 							:placeholder="
 								t(
-									'openconnector',
+									'integriq',
 									'Target credential name (optional — leave blank to send as-is)',
 								)
 							"
@@ -186,7 +186,7 @@
 
 				<div class="oc-promote-modal__actions">
 					<NcButton variant="tertiary" @click="backToSelect">
-						{{ t('openconnector', 'Back') }}
+						{{ t('integriq', 'Back') }}
 					</NcButton>
 					<NcButton
 						variant="primary"
@@ -196,7 +196,7 @@
 						<template #icon>
 							<NcLoadingIcon v-if="confirming" :size="20" />
 						</template>
-						{{ t('openconnector', 'Confirm promotion') }}
+						{{ t('integriq', 'Confirm promotion') }}
 					</NcButton>
 				</div>
 			</div>
@@ -314,7 +314,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Could not load configuration groups')
+					t('integriq', 'Could not load configuration groups')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loadingConfigs = false
@@ -331,7 +331,7 @@ export default {
 			this.loadingEnvironments = true
 			try {
 				const { data } = await axios.get(
-					generateUrl('/apps/openconnector/api/environments'),
+					generateUrl('/apps/integriq/api/environments'),
 				)
 				const rows = data?.results || []
 				this.environmentOptions = rows.map((row) => ({
@@ -341,7 +341,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Could not load environments')
+					t('integriq', 'Could not load environments')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.loadingEnvironments = false
@@ -434,7 +434,7 @@ export default {
 			this.previewing = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openconnector/api/promotions/preview')
+				const url = generateUrl('/apps/integriq/api/promotions/preview')
 				const { data } = await axios.post(url, {
 					configurationId: this.selectedConfig.id,
 					targetEnvironmentSlug: this.selectedEnvironment.id,
@@ -451,7 +451,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Preview failed')
+					t('integriq', 'Preview failed')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.previewing = false
@@ -472,7 +472,7 @@ export default {
 			this.confirming = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openconnector/api/promotions')
+				const url = generateUrl('/apps/integriq/api/promotions')
 				await axios.post(url, {
 					configurationId: this.selectedConfig.id,
 					targetEnvironmentSlug: this.selectedEnvironment.id,
@@ -480,7 +480,7 @@ export default {
 					confirmed: true,
 				})
 				showSuccess(
-					t('openconnector', 'Configuration promoted to {environment}.', {
+					t('integriq', 'Configuration promoted to {environment}.', {
 						environment: this.selectedEnvironment.label,
 					}),
 				)
@@ -488,7 +488,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Promotion failed')
+					t('integriq', 'Promotion failed')
 					+ (detail ? `: ${detail}` : '')
 			} finally {
 				this.confirming = false

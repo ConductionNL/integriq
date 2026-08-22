@@ -7,12 +7,12 @@
  * WHY THIS EXISTS — and why the obvious probe is wrong
  * ----------------------------------------------------
  * `src/main.js` builds the router as
- * `createWebHistory(generateUrl('/apps/openconnector'))`. Since the switch to
+ * `createWebHistory(generateUrl('/apps/integriq'))`. Since the switch to
  * PATH-based history, a deep link is only honoured when its prefix is BYTE-FOR
  * -BYTE the value `generateUrl()` returned in that browser:
  *
- *   - apache dev container (mod_rewrite on)  → `/apps/openconnector`
- *   - CI's `php -S` install (no rewrite)     → `/index.php/apps/openconnector`
+ *   - apache dev container (mod_rewrite on)  → `/apps/integriq`
+ *   - CI's `php -S` install (no rewrite)     → `/index.php/apps/integriq`
  *
  * A URL under the other prefix sits OUTSIDE the router base, matches no route,
  * hits the `'/:pathMatch(.*)*'` catch-all and is redirected to `/` — the
@@ -20,17 +20,17 @@
  *
  * Six spec files each kept a private copy of this probe:
  *
- *     for (const candidate of ['/apps/openconnector', '/index.php/apps/openconnector'])
+ *     for (const candidate of ['/apps/integriq', '/index.php/apps/integriq'])
  *         if (res.ok() && (await res.text()).includes('openconnector-main.js'))
  *             return candidate
  *
  * 🔴 That probe CANNOT WORK, and it fails towards green. Nextcloud serves the
  * identical SPA shell under BOTH prefixes — same 200, same
  * `openconnector-main.js` — so the loop always stops at the first candidate,
- * `/apps/openconnector`, which is the one CI's router will not honour. Every
+ * `/apps/integriq`, which is the one CI's router will not honour. Every
  * caller then loaded the Dashboard while believing it was on the page it named.
  * Measured in run 31929156734: the browser sat at
- * `http://localhost:8080/apps/openconnector/sources` while the app's own XHRs
+ * `http://localhost:8080/apps/integriq/sources` while the app's own XHRs
  * went to `/index.php/apps/...`, i.e. `generateUrl()` had returned the OTHER
  * prefix. Specs asserting "something rendered" passed against the Dashboard;
  * specs asserting a real selector failed with a misleading message.
@@ -79,7 +79,7 @@ let cached: string | null = null
  * @param page A Playwright page, used only for its browser context.
  *
  * @return The router base, without a trailing slash — e.g.
- *   `/index.php/apps/openconnector` on CI, `/apps/openconnector` on a
+ *   `/index.php/apps/integriq` on CI, `/apps/integriq` on a
  *   rewrite-enabled dev container.
  */
 export async function resolveAppRoot(page: Page): Promise<string> {

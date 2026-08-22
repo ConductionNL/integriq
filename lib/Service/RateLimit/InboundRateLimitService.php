@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector — inbound per-consumer rate-limit + quota enforcement.
+ * Integriq — inbound per-consumer rate-limit + quota enforcement.
  *
  * The inbound counterpart to the outbound source rate-limiting in
- * {@see \OCA\OpenConnector\Service\CallService}. After a consumer is resolved
+ * {@see \OCA\Integriq\Service\CallService}. After a consumer is resolved
  * and authenticated on an endpoint request, this service counts the request
  * against the consumer's short-window `rateLimit` and longer-horizon `quota`
  * and returns a {@see RateLimitDecision} the endpoint uses to emit IETF
@@ -17,7 +17,7 @@
  * the calendar period so the quota resets on rollover.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\RateLimit
+ * @package  OCA\Integriq\Service\RateLimit
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,12 +25,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\RateLimit;
+namespace OCA\Integriq\Service\RateLimit;
 
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -68,7 +68,7 @@ class InboundRateLimitService {
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openconnector.ratelimit');
+		$this->cache = $cacheFactory->createDistributed('integriq.ratelimit');
 		$this->atomic = ($this->cache instanceof IMemcache);
 
 	}//end __construct()
@@ -187,7 +187,7 @@ class InboundRateLimitService {
 
 		// Non-atomic fallback for a local (single-node) cache backend.
 		$this->logger->debug(
-			'openconnector inbound rate-limit using non-atomic counter fallback (no distributed IMemcache backend configured)'
+			'integriq inbound rate-limit using non-atomic counter fallback (no distributed IMemcache backend configured)'
 		);
 		$value = ((int)($this->cache->get($key) ?? 0) + 1);
 		$this->cache->set($key, $value, $ttl);

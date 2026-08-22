@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector AuthorizationService.
+ * Integriq AuthorizationService.
  *
  * Service class for handling authorization on incoming calls — JWT, basic auth,
  * OAuth bearer tokens and API keys.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Checker\AlgorithmChecker;
@@ -43,7 +43,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OAuth2\Db\Client;
-use OCA\OpenConnector\Exception\AuthenticationException;
+use OCA\Integriq\Exception\AuthenticationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
@@ -114,7 +114,7 @@ class AuthorizationService {
 		ICacheFactory $cacheFactory,
 		private readonly IRequest $request,
 	) {
-		$this->jtiCache = $cacheFactory->createDistributed('openconnector.jti');
+		$this->jtiCache = $cacheFactory->createDistributed('integriq.jti');
 
 	}//end __construct()
 
@@ -596,7 +596,7 @@ class AuthorizationService {
 	 *
 	 * WHY THIS TYPE EXISTS
 	 * --------------------
-	 * The endpoint dispatch route (`/apps/openconnector/api/endpoint/{_path}`)
+	 * The endpoint dispatch route (`/apps/integriq/api/endpoint/{_path}`)
 	 * is `#[PublicPage] #[NoCSRFRequired]`, so NC's own middleware never
 	 * consults the session. Every other authentication type this app supports
 	 * reads an `Authorization` header, and {@see authorizeOAuth()} explicitly
@@ -626,7 +626,7 @@ class AuthorizationService {
 	 *  2. Then, a request carrying an `OCS-APIRequest` header is accepted
 	 *     WITHOUT a request token at all — NC treats the header as proof of a
 	 *     same-origin XHR, since setting it cross-origin forces a preflight.
-	 *     This app's own preflight ({@see \OCA\OpenConnector\Controller\EndpointsController::preflightedCors()})
+	 *     This app's own preflight ({@see \OCA\Integriq\Controller\EndpointsController::preflightedCors()})
 	 *     answers `Access-Control-Allow-Credentials: false`, so a cross-origin
 	 *     caller cannot attach the victim's session cookie and lands on the
 	 *     no-session refusal above.

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector REST NotifyNL SMS Provider.
+ * Integriq REST NotifyNL SMS Provider.
  *
  * Thin REST binding for {@see SmsProviderInterface} against NotifyNL — the NL
  * government notification service, a GOV.UK Notify fork exposing the same
@@ -13,7 +13,7 @@
  * (Guzzle, already an app dependency) rather than a `notifynl`/`gov-uk-notify`
  * SDK dependency — the contract is two endpoints and one auth scheme.
  *
- * CREDENTIAL STORAGE — why this does NOT use {@see \OCA\OpenConnector\Service\BrokeredCallService}
+ * CREDENTIAL STORAGE — why this does NOT use {@see \OCA\Integriq\Service\BrokeredCallService}
  * (the Peppol/PSD2 `credentialRef` precedent): verified against OpenRegister's
  * `CredentialBrokerService::injectAuth()` at HEAD, the broker's auth injection
  * is a STATIC single-placeholder substitution (`str_replace('{secret}', ...)`)
@@ -34,7 +34,7 @@
  * (see `LtiKeyService`); NotifyNL's key does not repeat that debt.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Sms
+ * @package  OCA\Integriq\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,14 +43,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Sms;
+namespace OCA\Integriq\Service\Sms;
 
 use DateTimeImmutable;
 use GuzzleHttp\Client;
@@ -60,7 +60,7 @@ use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\OpenConnector\Exception\SmsProviderException;
+use OCA\Integriq\Exception\SmsProviderException;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;

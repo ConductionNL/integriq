@@ -19,14 +19,14 @@
 <template>
 	<div class="approvalDetail">
 		<NcButton variant="tertiary" class="approvalDetail__back" @click="goBack">
-			{{ t('openconnector', 'Back to approvals') }}
+			{{ t('integriq', 'Back to approvals') }}
 		</NcButton>
 
 		<NcLoadingIcon v-if="loading" :size="32" class="approvalDetail__loading" />
 
 		<div v-else-if="request" class="approvalDetail__body">
 			<div class="approvalDetail__meta">
-				<h2>{{ t('openconnector', 'Approval request') }}</h2>
+				<h2>{{ t('integriq', 'Approval request') }}</h2>
 				<span
 					class="approvalDetail__badge"
 					:class="`approvalDetail__badge--${request.status}`">
@@ -35,20 +35,20 @@
 			</div>
 
 			<dl class="approvalDetail__fields">
-				<dt>{{ t('openconnector', 'Approver group') }}</dt>
+				<dt>{{ t('integriq', 'Approver group') }}</dt>
 				<dd>{{ request.approverGroup || '—' }}</dd>
-				<dt>{{ t('openconnector', 'Requester') }}</dt>
+				<dt>{{ t('integriq', 'Requester') }}</dt>
 				<dd>{{ request.requester || '—' }}</dd>
-				<dt>{{ t('openconnector', 'Created') }}</dt>
+				<dt>{{ t('integriq', 'Created') }}</dt>
 				<dd>{{ request.createdAt || '—' }}</dd>
-				<dt>{{ t('openconnector', 'Expires') }}</dt>
+				<dt>{{ t('integriq', 'Expires') }}</dt>
 				<dd>{{ request.expiresAt || '—' }}</dd>
-				<dt>{{ t('openconnector', 'On reject') }}</dt>
+				<dt>{{ t('integriq', 'On reject') }}</dt>
 				<dd>{{ request.onReject || '—' }}</dd>
-				<dt>{{ t('openconnector', 'On timeout') }}</dt>
+				<dt>{{ t('integriq', 'On timeout') }}</dt>
 				<dd>{{ request.onTimeout || '—' }}</dd>
 				<template v-if="request.snapshotPreview">
-					<dt>{{ t('openconnector', 'Request') }}</dt>
+					<dt>{{ t('integriq', 'Request') }}</dt>
 					<dd>
 						{{ request.snapshotPreview.method || '—' }}
 						{{ request.snapshotPreview.path || '' }}
@@ -61,10 +61,10 @@
 				v-if="request.approverUserId || request.comment"
 				class="approvalDetail__audit"
 				data-testid="audit-trail">
-				<h3>{{ t('openconnector', 'Audit') }}</h3>
+				<h3>{{ t('integriq', 'Audit') }}</h3>
 				<p v-if="request.approverUserId">
 					{{
-						t('openconnector', 'Resolved by {who}', {
+						t('integriq', 'Resolved by {who}', {
 							who: request.approverUserId,
 						})
 					}}
@@ -74,11 +74,11 @@
 					>
 				</p>
 				<p v-if="request.comment">
-					<strong>{{ t('openconnector', 'Comment') }}:</strong>
+					<strong>{{ t('integriq', 'Comment') }}:</strong>
 					{{ request.comment }}
 				</p>
 				<p v-if="request.resumeResult">
-					<strong>{{ t('openconnector', 'Resume result') }}:</strong>
+					<strong>{{ t('integriq', 'Resume result') }}:</strong>
 					{{ request.resumeResult }}
 				</p>
 			</div>
@@ -90,7 +90,7 @@
 					:for="'approval-comment-' + uid">
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Comment (required to reject, optional to approve)',
 						)
 					}}
@@ -100,17 +100,17 @@
 					v-model="comment"
 					class="approvalDetail__comment"
 					rows="3"
-					:placeholder="t('openconnector', 'Add a note…')" />
+					:placeholder="t('integriq', 'Add a note…')" />
 				<div class="approvalDetail__buttons">
 					<NcButton variant="primary" :disabled="busy" @click="approve">
-						{{ t('openconnector', 'Approve') }}
+						{{ t('integriq', 'Approve') }}
 					</NcButton>
 					<NcButton
 						variant="error"
 						:disabled="busy || !comment.trim()"
 						data-testid="reject-button"
 						@click="reject">
-						{{ t('openconnector', 'Reject') }}
+						{{ t('integriq', 'Reject') }}
 					</NcButton>
 				</div>
 			</div>
@@ -118,10 +118,10 @@
 
 		<NcEmptyContent
 			v-else
-			:name="t('openconnector', 'Approval request not found')"
+			:name="t('integriq', 'Approval request not found')"
 			:description="
 				t(
-					'openconnector',
+					'integriq',
 					'It may have been removed or you are not authorized to view it.',
 				)
 			">
@@ -194,7 +194,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						`/apps/openconnector/api/approvals/${this.requestId}`,
+						`/apps/integriq/api/approvals/${this.requestId}`,
 					),
 				)
 				this.request = res.data
@@ -215,16 +215,16 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/approvals/${this.requestId}/approve`,
+						`/apps/integriq/api/approvals/${this.requestId}/approve`,
 					),
 					{ comment: this.comment },
 				)
-				showSuccess(t('openconnector', 'Approved'))
+				showSuccess(t('integriq', 'Approved'))
 				await this.load()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Approve failed')
+					t('integriq', 'Approve failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {
@@ -245,16 +245,16 @@ export default {
 			try {
 				await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/approvals/${this.requestId}/reject`,
+						`/apps/integriq/api/approvals/${this.requestId}/reject`,
 					),
 					{ comment: this.comment },
 				)
-				showSuccess(t('openconnector', 'Rejected'))
+				showSuccess(t('integriq', 'Rejected'))
 				await this.load()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Reject failed')
+					t('integriq', 'Reject failed')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			} finally {

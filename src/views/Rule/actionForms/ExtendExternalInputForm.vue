@@ -11,26 +11,26 @@
 			type="switch"
 			:modelValue="!!value.validate"
 			@update:modelValue="onValidateToggle">
-			{{ t('openconnector', 'Validate fetched object against schema') }}
+			{{ t('integriq', 'Validate fetched object against schema') }}
 		</NcCheckboxRadioSwitch>
 
 		<label class="action-form__label">{{
-			t('openconnector', 'Properties to fetch')
+			t('integriq', 'Properties to fetch')
 		}}</label>
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
-				:label="t('openconnector', 'Property (dot path)')"
+				:label="t('integriq', 'Property (dot path)')"
 				:modelValue="row.property"
 				placeholder="body.relations.contact"
 				@update:modelValue="(next) => onPropertyInput(index, next)" />
 			<NcTextField
-				:label="t('openconnector', 'Schema ID')"
+				:label="t('integriq', 'Schema ID')"
 				:modelValue="row.schema"
 				placeholder="contact"
 				@update:modelValue="(next) => onSchemaInput(index, next)" />
 			<NcButton
 				variant="tertiary-no-background"
-				:aria-label="t('openconnector', 'Remove row')"
+				:aria-label="t('integriq', 'Remove row')"
 				@click="removeRow(index)">
 				<template #icon>
 					<Close :size="18" />
@@ -41,7 +41,7 @@
 			<template #icon>
 				<Plus :size="18" />
 			</template>
-			{{ t('openconnector', 'Add property') }}
+			{{ t('integriq', 'Add property') }}
 		</NcButton>
 	</div>
 </template>

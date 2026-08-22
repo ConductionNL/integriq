@@ -4,7 +4,7 @@
  * OpenConnector Admin Section — AppHost adapter tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Sections
+ * @package  OCA\Integriq\Tests\Unit\Sections
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,16 +13,16 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Sections;
+namespace OCA\Integriq\Tests\Unit\Sections;
 
-use OCA\OpenConnector\Sections\OpenConnectorAdmin;
+use OCA\Integriq\Sections\OpenConnectorAdmin;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 

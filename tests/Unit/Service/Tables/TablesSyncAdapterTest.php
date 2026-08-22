@@ -4,7 +4,7 @@
  * Unit tests for TablesSyncAdapter.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Tables
+ * @package  OCA\Integriq\Tests\Unit\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Tables;
+namespace OCA\Integriq\Tests\Unit\Service\Tables;
 
-use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
-use OCA\OpenConnector\Exception\TablesNotFoundException;
-use OCA\OpenConnector\Service\Tables\TablesClientInterface;
-use OCA\OpenConnector\Service\Tables\TablesColumnCoercer;
-use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Exception\TablesNotFoundException;
+use OCA\Integriq\Service\Tables\TablesClientInterface;
+use OCA\Integriq\Service\Tables\TablesColumnCoercer;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;

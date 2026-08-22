@@ -4,7 +4,7 @@
  * Unit tests for RestNotifyNlProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Sms
+ * @package  OCA\Integriq\Tests\Unit\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Sms;
+namespace OCA\Integriq\Tests\Unit\Service\Sms;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\SmsProviderException;
-use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
+use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;

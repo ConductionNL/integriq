@@ -19,7 +19,7 @@
  * rule without it is not refused.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,17 +28,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
-use OCA\OpenConnector\Service\MigrationEntityReader;
-use OCA\OpenConnector\Service\MigrationSubject;
-use OCA\OpenConnector\Service\RuleConditionTranslator;
-use OCA\OpenConnector\Service\RuleEndpointScope;
-use OCA\OpenConnector\Service\RuleToFlowGenerator;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\MigrationEntityReader;
+use OCA\Integriq\Service\MigrationSubject;
+use OCA\Integriq\Service\RuleConditionTranslator;
+use OCA\Integriq\Service\RuleEndpointScope;
+use OCA\Integriq\Service\RuleToFlowGenerator;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -53,10 +53,10 @@ use RuntimeException;
 /**
  * Tests for the Rule → flow migration generator.
  *
- * @covers \OCA\OpenConnector\Service\RuleToFlowGenerator
- * @covers \OCA\OpenConnector\Service\RuleConditionTranslator
- * @covers \OCA\OpenConnector\Service\RuleEndpointScope
- * @covers \OCA\OpenConnector\Service\MigrationSubject
+ * @covers \OCA\Integriq\Service\RuleToFlowGenerator
+ * @covers \OCA\Integriq\Service\RuleConditionTranslator
+ * @covers \OCA\Integriq\Service\RuleEndpointScope
+ * @covers \OCA\Integriq\Service\MigrationSubject
  */
 class RuleToFlowGeneratorTest extends TestCase {
 

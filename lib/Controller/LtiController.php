@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiController.
+ * Integriq LtiController.
  *
  * Dedicated protocol controller for LTI 1.3 / LTI Advantage — OIDC
  * third-party-initiated login, launch validation, RFC 7523 service-token
@@ -11,7 +11,7 @@
  * Endpoint pipeline) — see proposal.md's cited precedent.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,15 +24,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use DateTime;
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\Lti\LtiAgsService;
-use OCA\OpenConnector\Service\Lti\LtiKeyService;
-use OCA\OpenConnector\Service\Lti\LtiLaunchService;
-use OCA\OpenConnector\Service\Lti\LtiNrpsService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Lti\LtiAgsService;
+use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiNrpsService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -162,7 +162,7 @@ class LtiController extends Controller {
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function login(string $deployment): Response {
 		$launchUrl = $this->request->getServerProtocol() . '://' . $this->request->getServerHost()
-			. '/index.php/apps/openconnector/api/lti/' . $deployment . '/launch';
+			. '/index.php/apps/integriq/api/lti/' . $deployment . '/launch';
 
 		try {
 			$result = $this->launchService->initiateLogin(
@@ -425,7 +425,7 @@ class LtiController extends Controller {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function generateKey(string $registrationType, string $registrationUuid): JSONResponse {
 		try {
 			$entry = $this->keyService->generateKey(registrationType: $registrationType, registrationUuid: $registrationUuid);
@@ -448,7 +448,7 @@ class LtiController extends Controller {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function rotateKey(string $registrationType, string $registrationUuid): JSONResponse {
 		try {
 			$entry = $this->keyService->rotateKey(registrationType: $registrationType, registrationUuid: $registrationUuid);
@@ -474,9 +474,9 @@ class LtiController extends Controller {
 	 * calls us), so the Tool-role outbound half of REQ-LTI-008 was
 	 * structurally unreachable: fully implemented, unit-tested by calling the
 	 * service directly, and spec'd "done", with zero production callers
-	 * (openconnector#1192). This is the seam that makes it reachable, and it
+	 * (integriq#1192). This is the seam that makes it reachable, and it
 	 * is the same shape REQ-LTI-010 describes — a consuming app drives the
-	 * deployment through openconnector's API.
+	 * deployment through integriq's API.
 	 *
 	 * Admin-gated + CSRF-protected, matching `generateKey`/`rotateKey`: this
 	 * is an operator-driven outbound call that spends this instance's signing
@@ -490,7 +490,7 @@ class LtiController extends Controller {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function agsPublishScore(string $deployment): JSONResponse {
 		$params = $this->request->getParams();
 		$lineItemUrl = (string)($params['lineItemUrl'] ?? '');
@@ -536,7 +536,7 @@ class LtiController extends Controller {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function approve(string $registrationType, string $registrationUuid): JSONResponse {
 		try {
 			$result = $this->keyService->approve(registrationType: $registrationType, registrationUuid: $registrationUuid);
@@ -559,7 +559,7 @@ class LtiController extends Controller {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function suspend(string $registrationType, string $registrationUuid): JSONResponse {
 		try {
 			$result = $this->keyService->suspend(registrationType: $registrationType, registrationUuid: $registrationUuid);

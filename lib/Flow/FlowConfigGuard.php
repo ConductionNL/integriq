@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Config Guard.
+ * Integriq Flow Config Guard.
  *
  * The save-time validation both contributed node types share: what a node's
  * configuration may NOT contain, and what an endpoint path may NOT be.
@@ -33,7 +33,7 @@
  * between them would be a security defect, not a style inconsistency.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -44,20 +44,20 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCP\IL10N;
 use UnexpectedValueException;
 
 /**
- * Shared save-time configuration rules for OpenConnector's flow nodes.
+ * Shared save-time configuration rules for Integriq's flow nodes.
  *
  * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
@@ -402,7 +402,7 @@ final class FlowConfigGuard {
 	 * THE RULES LIVE HERE AND ONLY HERE. This is the single containment
 	 * predicate for the whole app: {@see endpointEscapeReason()} translates its
 	 * verdict for the flow-node validation messages, and
-	 * {@see \OCA\OpenConnector\Service\CallService::renderEndpointPath()} calls
+	 * {@see \OCA\Integriq\Service\CallService::renderEndpointPath()} calls
 	 * it directly (it has no IL10N and needs a verdict, not a sentence) for the
 	 * templated `targetType: api` upstream path (ocon#1069). The class docblock
 	 * already states that a divergence between two copies of these rules would

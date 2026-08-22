@@ -10,19 +10,19 @@
 -->
 <template>
 	<div class="action-form">
-		<label class="action-form__label">{{ t('openconnector', 'Mapping') }}</label>
+		<label class="action-form__label">{{ t('integriq', 'Mapping') }}</label>
 		<NcSelect
 			data-testid="action-form-mapping"
-			:aria-label-combobox="t('openconnector', 'Mapping')"
+			:aria-label-combobox="t('integriq', 'Mapping')"
 			:modelValue="selected"
 			:options="options"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a mapping')"
+			:placeholder="t('integriq', 'Select a mapping')"
 			@update:modelValue="onPick" />
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Pick the mapping that will transform the request/response body.',
 				)
 			}}

@@ -19,7 +19,7 @@ import { appDialog } from '../support/dialogs'
 //
 // 1. THE `/index.php/` PREFIX IS NOT OPTIONAL.
 //
-//    This used to read `/apps/openconnector/#`. That form works in the docker
+//    This used to read `/apps/integriq/#`. That form works in the docker
 //    dev images, where Apache + Nextcloud's `.htaccess` rewrite pretty URLs
 //    onto `index.php`. CI has no Apache: the shared workflow serves Nextcloud
 //    with `cd server && php -S 0.0.0.0:8080` and NO router script, and PHP's
@@ -27,10 +27,10 @@ import { appDialog } from '../support/dialogs'
 //
 //    Measured on a clean install (php -S, docroot = server/):
 //
-//        /index.php/apps/openconnector/   -> 200   (PATH_INFO reaches NC)
-//        /apps/openconnector/             -> 404   (a real directory on disk
+//        /index.php/apps/integriq/   -> 200   (PATH_INFO reaches NC)
+//        /apps/integriq/             -> 404   (a real directory on disk
 //                                                   with no index.php inside)
-//        /apps/openconnector/js/…-main.js -> 200   (a real FILE, served flat)
+//        /apps/integriq/js/…-main.js -> 200   (a real FILE, served flat)
 //
 //    Note the shape of that: the assets resolve fine, so nothing about the
 //    build looks wrong — only the HTML entry point 404s. Every spec that deep-
@@ -42,11 +42,11 @@ import { appDialog } from '../support/dialogs'
 //
 //    The discriminator is in the CI log itself: in the same run, on the same
 //    instance, `configuration-export-import.spec.ts` — which probes
-//    `/index.php/apps/openconnector` — PASSED its two page-mount assertions
+//    `/index.php/apps/integriq` — PASSED its two page-mount assertions
 //    while the specs on either side of it failed on `main`.
 //
 //    The `/index.php/` form is correct in BOTH environments (verified against
-//    Apache: `/index.php/apps/openconnector/#/sources` renders `main` with the
+//    Apache: `/index.php/apps/integriq/#/sources` renders `main` with the
 //    "Add Source" button), so this is one form everywhere rather than a probe.
 //
 // 2. THE `#` IS NOW WRONG — REMOVED 2026-08-16.
@@ -70,7 +70,7 @@ import { appDialog } from '../support/dialogs'
 //
 // Every spec-coverage file imports this rather than redeclaring it — nine of
 // them used to keep private copies of the wrong string.
-export const APP_BASE = '/index.php/apps/openconnector'
+export const APP_BASE = '/index.php/apps/integriq'
 
 /**
  * The openconnector app root, without the router hash.
@@ -78,7 +78,7 @@ export const APP_BASE = '/index.php/apps/openconnector'
  * Same `/index.php/` reasoning as APP_BASE above: use this anywhere a spec
  * needs the app entry point itself rather than a route inside it.
  */
-export const APP_ROOT_URL = '/index.php/apps/openconnector/'
+export const APP_ROOT_URL = '/index.php/apps/integriq/'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
@@ -131,7 +131,7 @@ export function trackErrors(page: Page): ErrorSink {
 
 /**
  * Assert the sink saw no openconnector-origin console errors or 5xx.
- * Specifically calls out any /apps/openconnector/ 5xx as a hard failure
+ * Specifically calls out any /apps/integriq/ 5xx as a hard failure
  * (catches sync/endpoint dispatch regressions).
  */
 export function assertNoAppErrors(sink: ErrorSink): void {
@@ -188,7 +188,7 @@ export async function navTo(
 	expectedRoute: string,
 ): Promise<void> {
 	// Land on the app root first so the SPA + nav are mounted.
-	if (!page.url().includes('/apps/openconnector')) {
+	if (!page.url().includes('/apps/integriq')) {
 		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
 	}
 	// Reveal entries nested inside collapsed nav groups before locating them.

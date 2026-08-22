@@ -3,18 +3,19 @@
 /**
  * Chain B migration: import register + copy rows to OpenRegister.
  *
- * Calls ConfigurationService::importFromApp() to materialise the openconnector
- * register + 15 schemas (declared by chain A's lib/Settings/openconnector_register.json),
+ * Calls ConfigurationService::importFromApp() to materialise the `openconnector`
+ * register (slug frozen across the app-id rename — OpenRegister matches registers
+ * by slug) + 15 schemas (declared by chain A's lib/Settings/integriq_register.json),
  * then runs LegacyToRegisterMigrator::migrateAll() to copy every row out of the
  * 15 legacy oc_openconnector_* tables into OR-backed oc_openregister_objects.
  *
- * Idempotent: re-running has no effect after `openconnector.storage_migrated` is set.
+ * Idempotent: re-running has no effect after `integriq.storage_migrated` is set.
  *
  * Cross-ref: openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
  * REQ-001/005, local ADR-012 (strangler-fig pattern).
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,15 +23,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
-use OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCP\DB\ISchemaWrapper;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -38,7 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
 use Psr\Log\LoggerInterface;
 
 /**
- * Imports the openconnector register and copies legacy rows into OpenRegister.
+ * Imports the `openconnector` register (slug frozen) and copies legacy rows into OpenRegister.
  */
 class Version2Date20260520000001 extends SimpleMigrationStep {
 	/**
@@ -94,12 +95,12 @@ class Version2Date20260520000001 extends SimpleMigrationStep {
 		$appConfig = $container->get(IAppConfig::class);
 		$logger = $container->get(LoggerInterface::class);
 
-		if ($appConfig->getValueString('openconnector', 'storage_migrated', '') === 'true') {
+		if ($appConfig->getValueString('integriq', 'storage_migrated', '') === 'true') {
 			$output->info('chain-B: storage_migrated=true already set — skipping (idempotent).');
 			return;
 		}
 
-		// `occ app:enable openconnector` runs migrations with openconnector's
+		// `occ app:enable integriq` runs migrations with integriq's
 		// PSR-4 paths loaded but NOT openregister's, so the class_exists
 		// probe below would return false even when OR is enabled and
 		// upgraded. We tried doing the load via `Application::register()` —
@@ -153,14 +154,14 @@ class Version2Date20260520000001 extends SimpleMigrationStep {
 			return;
 		}
 
-		$descriptorPath = __DIR__ . '/../Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../Settings/integriq_register.json';
 		$output->info(sprintf('chain-B: importing register descriptor from %s', $descriptorPath));
 
 		$descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
-		$appVersion = $appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
+		$appVersion = $appConfig->getValueString('integriq', 'installed_version', '1.0.0');
 
 		$configurationService->importFromApp(
-			appId: 'openconnector',
+			appId: 'integriq',
 			data: $descriptor,
 			version: $appVersion
 		);
@@ -193,12 +194,12 @@ class Version2Date20260520000001 extends SimpleMigrationStep {
 		}
 
 		if ($allOk === true) {
-			$appConfig->setValueString('openconnector', 'storage_migrated', 'true');
+			$appConfig->setValueString('integriq', 'storage_migrated', 'true');
 			$output->info('chain-B: storage_migrated=true — all 15 entities copied successfully.');
 		} else {
 			$output->warning(
 				'chain-B: storage_migrated flag NOT set — at least one entity reported skips or errors.'
-				. ' Use occ openconnector:migrate-storage to retry per-entity.'
+				. ' Use occ integriq:migrate-storage to retry per-entity.'
 			);
 		}
 

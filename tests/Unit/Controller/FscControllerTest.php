@@ -105,7 +105,7 @@ class FscControllerTest extends TestCase {
 	 */
 	private function buildController(): FscController {
 		return new FscController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->callService,
 			$this->userSession,

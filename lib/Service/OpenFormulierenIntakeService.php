@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenConnector Open Formulieren Intake Service.
+ * Integriq Open Formulieren Intake Service.
  *
  * Core of the open-formulieren-intake bridge: resolves the configured
  * `open-formulieren` source (webhook signature config), the per-form
- * {@see \OCA\OpenConnector\Service\OpenFormulieren\FormFieldMapper} mapping,
+ * {@see \OCA\Integriq\Service\OpenFormulieren\FormFieldMapper} mapping,
  * persists the `openformulieren_submission` lifecycle record
  * (received -> mapped|failed, later handed_off via the authenticated handoff
  * trigger), best-effort fetches + stores attachments, and executes the
@@ -17,7 +17,7 @@
  * `SmsDispatchService`/`NotifyNlController`.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,21 +26,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\MappingResolutionException;
-use OCA\OpenConnector\Exception\OpenFormulierenException;
-use OCA\OpenConnector\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Exception\MappingResolutionException;
+use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\FileService;
@@ -64,6 +64,8 @@ class OpenFormulierenIntakeService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -96,7 +98,7 @@ class OpenFormulierenIntakeService {
 
 	/**
 	 * The declared `x-openregister-handoff` entry id on
-	 * `openformulieren_submission` (see lib/Settings/openconnector_register.json).
+	 * `openformulieren_submission` (see lib/Settings/integriq_register.json).
 	 *
 	 * @var string
 	 */

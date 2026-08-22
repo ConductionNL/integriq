@@ -56,7 +56,7 @@ class FscController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param FscCallService $callService Directory-resolve + call orchestration logic.
 	 * @param IUserSession $userSession The user session.

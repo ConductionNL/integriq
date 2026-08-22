@@ -7,7 +7,7 @@
  * internal numeric ids and stable slugs for cross-environment portability.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\ConfigurationHandlers
+ * @package  OCA\Integriq\Service\ConfigurationHandlers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service\ConfigurationHandlers;
+namespace OCA\Integriq\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;

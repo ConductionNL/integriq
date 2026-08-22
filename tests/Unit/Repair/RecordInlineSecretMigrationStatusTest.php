@@ -463,10 +463,10 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 			$steps[] = (string)$node;
 		}
 
-		$flag = array_search('OCA\\OpenConnector\\Repair\\FlagSourceSecretsWriteOnly', $steps, true);
-		$record = array_search('OCA\\OpenConnector\\Repair\\RecordInlineSecretMigrationStatus', $steps, true);
-		$remove = array_search('OCA\\OpenConnector\\Repair\\RemoveMigratedSourceSecretFields', $steps, true);
-		$mat = array_search('OCA\\OpenConnector\\Repair\\MaterializeCatalogItems', $steps, true);
+		$flag = array_search('OCA\\Integriq\\Repair\\FlagSourceSecretsWriteOnly', $steps, true);
+		$record = array_search('OCA\\Integriq\\Repair\\RecordInlineSecretMigrationStatus', $steps, true);
+		$remove = array_search('OCA\\Integriq\\Repair\\RemoveMigratedSourceSecretFields', $steps, true);
+		$mat = array_search('OCA\\Integriq\\Repair\\MaterializeCatalogItems', $steps, true);
 
 		$this->assertIsInt($flag);
 		$this->assertIsInt($record);

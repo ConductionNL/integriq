@@ -1334,10 +1334,10 @@ defineOptions({
 			<h2>
 				{{
 					ruleItem.id
-						? t('openconnector', 'Edit')
-						: t('openconnector', 'Add')
+						? t('integriq', 'Edit')
+						: t('integriq', 'Add')
 				}}
-				{{ t('openconnector', 'Rule') }}
+				{{ t('integriq', 'Rule') }}
 			</h2>
 
 			<div
@@ -1347,18 +1347,18 @@ defineOptions({
 					:type="openRegister.isAvailable ? 'info' : 'error'"
 					:heading="
 						openRegister.isAvailable
-							? t('openconnector', 'Open register is not installed')
-							: t('openconnector', 'Failed to install open register')
+							? t('integriq', 'Open register is not installed')
+							: t('integriq', 'Failed to install open register')
 					">
 					<p>
 						{{
 							openRegister.isAvailable
 								? t(
-										'openconnector',
+										'integriq',
 										'Some features require open register to be installed',
 									)
 								: t(
-										'openconnector',
+										'integriq',
 										'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password',
 									)
 						}}
@@ -1367,18 +1367,18 @@ defineOptions({
 					<div class="install-buttons">
 						<NcButton
 							v-if="openRegister.isAvailable"
-							:aria-label="t('openconnector', 'Install OpenRegister')"
+							:aria-label="t('integriq', 'Install OpenRegister')"
 							size="small"
 							variant="primary"
 							@click="installOpenRegister">
 							<template #icon>
 								<CloudDownload :size="20" />
 							</template>
-							{{ t('openconnector', 'Install OpenRegister') }}
+							{{ t('integriq', 'Install OpenRegister') }}
 						</NcButton>
 						<NcButton
 							:aria-label="
-								t('openconnector', 'Install OpenRegister manually')
+								t('integriq', 'Install OpenRegister manually')
 							"
 							size="small"
 							variant="secondary"
@@ -1391,7 +1391,7 @@ defineOptions({
 							<template #icon>
 								<OpenInNew :size="20" />
 							</template>
-							{{ t('openconnector', 'Install OpenRegister manually') }}
+							{{ t('integriq', 'Install OpenRegister manually') }}
 						</NcButton>
 					</div>
 					<div class="close-button">
@@ -1402,7 +1402,7 @@ defineOptions({
 								<template #icon>
 									<Close :size="20" />
 								</template>
-								{{ t('openconnector', 'Close') }}
+								{{ t('integriq', 'Close') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -1414,7 +1414,7 @@ defineOptions({
 			<!-- ====================== -->
 			<div v-if="success || error || warning">
 				<NcNoteCard v-if="success" type="success">
-					<p>{{ t('openconnector', 'Rule saved successfully') }}</p>
+					<p>{{ t('integriq', 'Rule saved successfully') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error || 'An error occurred' }}</p>
@@ -1430,17 +1430,17 @@ defineOptions({
 			<form v-if="!success" @submit.prevent="handleSubmit">
 				<NcTextField
 					v-model="ruleItem.name"
-					:label="t('openconnector', 'Name')"
+					:label="t('integriq', 'Name')"
 					required />
 
 				<NcTextArea
 					v-model="ruleItem.description"
 					resize="vertical"
-					:label="t('openconnector', 'Description')" />
+					:label="t('integriq', 'Description')" />
 
 				<div class="json-editor">
 					<label>{{
-						t('openconnector', 'Conditions (JSON logic)')
+						t('integriq', 'Conditions (JSON logic)')
 					}}</label>
 					<div :class="`codeMirrorContainer ${getTheme()}`">
 						<CodeMirror
@@ -1457,13 +1457,13 @@ defineOptions({
 							variant="secondary"
 							size="small"
 							@click="formatJSONCondictions">
-							{{ t('openconnector', 'Format JSON') }}
+							{{ t('integriq', 'Format JSON') }}
 						</NcButton>
 					</div>
 					<span
 						v-if="!isValidJson(ruleItem.conditions)"
 						class="error-message">
-						{{ t('openconnector', 'Invalid JSON format') }}
+						{{ t('integriq', 'Invalid JSON format') }}
 					</span>
 				</div>
 
@@ -1472,24 +1472,24 @@ defineOptions({
 						v-bind="timingOptions"
 						v-model="timingOptions.value"
 						:clearable="false"
-						:inputLabel="t('openconnector', 'Timing')" />
+						:inputLabel="t('integriq', 'Timing')" />
 				</div>
 
 				<NcTextField
 					v-model="ruleItem.order"
-					:label="t('openconnector', 'Order')"
+					:label="t('integriq', 'Order')"
 					type="number" />
 
 				<NcSelect
 					v-bind="actionOptions"
 					v-model="actionOptions.value"
 					:clearable="false"
-					:inputLabel="t('openconnector', 'Action')" />
+					:inputLabel="t('integriq', 'Action')" />
 
 				<NcSelect
 					v-bind="typeOptions"
 					v-model="typeOptions.value"
-					:inputLabel="t('openconnector', 'Type')"
+					:inputLabel="t('integriq', 'Type')"
 					:selectable="
 						(option) =>
 							option.label === 'Fileparts Create'
@@ -1507,7 +1507,7 @@ defineOptions({
 					v-bind="mappingOptions"
 					v-model="mappingOptions.value"
 					:loading="mappingOptions.loading"
-					:inputLabel="t('openconnector', 'Select Mapping')"
+					:inputLabel="t('integriq', 'Select Mapping')"
 					:multiple="false"
 					:clearable="false" />
 
@@ -1517,7 +1517,7 @@ defineOptions({
 						v-bind="syncOptions"
 						v-model="syncOptions.value"
 						:loading="syncOptions.loading"
-						:inputLabel="t('openconnector', 'Select Synchronization')"
+						:inputLabel="t('integriq', 'Select Synchronization')"
 						:multiple="false"
 						:clearable="false" />
 
@@ -1526,8 +1526,8 @@ defineOptions({
 							ruleItem.configuration.synchronization.retainResponse
 						"
 						type="checkbox"
-						:label="t('openconnector', 'Retain response')">
-						{{ t('openconnector', 'Retain original response') }}
+						:label="t('integriq', 'Retain response')">
+						{{ t('integriq', 'Retain original response') }}
 					</NcCheckboxRadioSwitch>
 				</template>
 
@@ -1536,25 +1536,25 @@ defineOptions({
 					<NcInputField
 						v-model="ruleItem.configuration.error.code"
 						type="number"
-						:label="t('openconnector', 'Error Code')"
+						:label="t('integriq', 'Error Code')"
 						:min="100"
 						:max="999"
 						placeholder="500" />
 
 					<NcTextField
 						v-model="ruleItem.configuration.error.name"
-						:label="t('openconnector', 'Error Title')"
+						:label="t('integriq', 'Error Title')"
 						maxlength="255"
-						:placeholder="t('openconnector', 'Something went wrong')" />
+						:placeholder="t('integriq', 'Something went wrong')" />
 
 					<NcTextArea
 						v-model="ruleItem.configuration.error.message"
-						:label="t('openconnector', 'Error Message')"
+						:label="t('integriq', 'Error Message')"
 						resize="vertical"
 						maxlength="2550"
 						:placeholder="
 							t(
-								'openconnector',
+								'integriq',
 								'We encountered an unexpected problem',
 							)
 						" />
@@ -1564,13 +1564,13 @@ defineOptions({
 						type="checkbox"
 						:label="
 							t(
-								'openconnector',
+								'integriq',
 								'Include JSON Logic results in errors array',
 							)
 						">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Include JSON Logic results in errors array',
 							)
 						}}
@@ -1582,10 +1582,10 @@ defineOptions({
 					<NcTextArea
 						v-model="ruleItem.configuration.javascript"
 						resize="vertical"
-						:label="t('openconnector', 'JavaScript Code')"
+						:label="t('integriq', 'JavaScript Code')"
 						class="code-editor"
 						:placeholder="
-							t('openconnector', 'Enter your JavaScript code here...')
+							t('integriq', 'Enter your JavaScript code here...')
 						"
 						rows="10" />
 				</template>
@@ -1595,13 +1595,13 @@ defineOptions({
 					<NcSelect
 						v-model="authenticationTypeOptions.value"
 						:options="authenticationTypeOptions.options"
-						:inputLabel="t('openconnector', 'Authentication Type')" />
+						:inputLabel="t('integriq', 'Authentication Type')" />
 					<template
 						v-if="authenticationTypeOptions.value.value === 'api-key'">
 						<NcNoteCard type="warning">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.',
 								)
 							}}
@@ -1619,19 +1619,19 @@ defineOptions({
 									<NcTextArea
 										v-model="item.apiKey"
 										:disabled="loading"
-										:label="t('openconnector', 'Api-key')"
+										:label="t('integriq', 'Api-key')"
 										resize="none"
 										class="apiKeyTextArea" />
 									<NcSelect
 										v-model="item.user"
 										v-bind="usersList"
 										:aria-label-combobox="
-											t('openconnector', 'Select allowed user')
+											t('integriq', 'Select allowed user')
 										"
 										:userSelect="true"
 										:clearable="true"
 										:placeholder="
-											t('openconnector', 'Select allowed user')
+											t('integriq', 'Select allowed user')
 										"
 										class="apiKeyUserSelect" />
 								</div>
@@ -1643,23 +1643,23 @@ defineOptions({
 						<NcSelect
 							v-model="ruleItem.configuration.authentication.users"
 							v-bind="usersList"
-							:inputLabel="t('openconnector', 'Allowed Users')"
+							:inputLabel="t('integriq', 'Allowed Users')"
 							:userSelect="true"
 							:multiple="true"
 							:clearable="true"
 							:placeholder="
-								t('openconnector', 'Select users who can access')
+								t('integriq', 'Select users who can access')
 							" />
 
 						<!-- Groups Multi-Select -->
 						<NcSelect
 							v-model="ruleItem.configuration.authentication.groups"
 							v-bind="groupsList"
-							:inputLabel="t('openconnector', 'Allowed Groups')"
+							:inputLabel="t('integriq', 'Allowed Groups')"
 							:multiple="true"
 							:clearable="true"
 							:placeholder="
-								t('openconnector', 'Select groups who can access')
+								t('integriq', 'Select groups who can access')
 							" />
 					</template>
 				</template>
@@ -1676,18 +1676,18 @@ defineOptions({
 								<NcTextField
 									v-model="item.property"
 									:label="
-										t('openconnector', 'Property (dot path)')
+										t('integriq', 'Property (dot path)')
 									"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
 								<label>{{
-									t('openconnector', 'Extends (dot array)')
+									t('integriq', 'Extends (dot array)')
 								}}</label>
 								<NcSelect
 									v-model="item.extends"
 									:aria-label-combobox="
-										t('openconnector', 'Extends (dot array)')
+										t('integriq', 'Extends (dot array)')
 									"
 									:taggable="true"
 									:multiple="true"
@@ -1696,7 +1696,7 @@ defineOptions({
 									<template #no-options>
 										{{
 											t(
-												'openconnector',
+												'integriq',
 												'type to add path to extend',
 											)
 										}}
@@ -1708,7 +1708,7 @@ defineOptions({
 								size="small"
 								variant="tertiary"
 								:disabled="idx === 0"
-								:aria-label="t('openconnector', 'Remove property')"
+								:aria-label="t('integriq', 'Remove property')"
 								@click="removeExtendInputItem(idx)">
 								<template #icon>
 									<TrashCanOutline :size="18" />
@@ -1726,10 +1726,10 @@ defineOptions({
 						"
 						type="checkbox"
 						:label="
-							t('openconnector', 'Validate fetched object with schema')
+							t('integriq', 'Validate fetched object with schema')
 						">
 						{{
-							t('openconnector', 'Validate fetched object with schema')
+							t('integriq', 'Validate fetched object with schema')
 						}}
 					</NcCheckboxRadioSwitch>
 
@@ -1742,13 +1742,13 @@ defineOptions({
 							<div class="extendItemProperty">
 								<NcTextField
 									v-model="item.property"
-									:label="t('openconnector', 'Property')"
+									:label="t('integriq', 'Property')"
 									placeholder="path.to.url" />
 							</div>
 							<div class="extendItemProperty">
 								<NcTextField
 									v-model="item.schema"
-									:label="t('openconnector', 'Schema ID')"
+									:label="t('integriq', 'Schema ID')"
 									placeholder="schemaId" />
 							</div>
 							<NcButton
@@ -1756,7 +1756,7 @@ defineOptions({
 								size="small"
 								variant="tertiary"
 								:disabled="idx === 0"
-								:aria-label="t('openconnector', 'Remove property')"
+								:aria-label="t('integriq', 'Remove property')"
 								@click="removeExtendExternalItem(idx)">
 								<template #icon>
 									<TrashCanOutline :size="18" />
@@ -2068,7 +2068,7 @@ defineOptions({
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -2116,7 +2116,7 @@ defineOptions({
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					{{ t('openconnector', 'Save') }}
+					{{ t('integriq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

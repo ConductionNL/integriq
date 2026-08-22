@@ -7,17 +7,17 @@
 <template>
 	<div class="action-form">
 		<NcTextField
-			:label="t('openconnector', 'File path (dot path on data, required)')"
+			:label="t('integriq', 'File path (dot path on data, required)')"
 			:modelValue="value.filePath || ''"
 			placeholder="body.attachment"
 			@update:modelValue="(next) => patch('filePath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Filename path (dot path on data, required)')"
+			:label="t('integriq', 'Filename path (dot path on data, required)')"
 			:modelValue="value.fileNamePath || ''"
 			placeholder="body.filename"
 			@update:modelValue="(next) => patch('fileNamePath', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Tags (comma-separated)')"
+			:label="t('integriq', 'Tags (comma-separated)')"
 			:modelValue="csv(value.tags)"
 			placeholder="invoice,outbox"
 			@update:modelValue="(next) => patch('tags', toArray(next))" />
@@ -25,12 +25,12 @@
 			type="switch"
 			:modelValue="!!value.autoShare"
 			@update:modelValue="(next) => patch('autoShare', !!next)">
-			{{ t('openconnector', 'Auto-share written files') }}
+			{{ t('integriq', 'Auto-share written files') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'The dot path under the rule data tells the engine where to find the file bytes; the filename path supplies the name.',
 				)
 			}}

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Outbound Kennisgeving Translator.
+ * Integriq StUF-ZKN Outbound Kennisgeving Translator.
  *
  * Translates an OR/ZGW zaak object (a create, update, or status change) into
  * a `zakLk01` StUF-ZKN 3.10 SOAP kennisgeving XML envelope, so a subscribed
@@ -16,12 +16,12 @@
  * translator MUST NEVER emit an empty tag, a null literal, or an unresolved
  * template marker for a required field. As defense in depth, the fully
  * rendered envelope is scanned via the shared
- * {@see \OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard} for leftover
+ * {@see \OCA\Integriq\Service\Stuf\StufLiteralLeakGuard} for leftover
  * `{{`/`}}`/`%%UNRESOLVED%%` markers and rejected if any survive (mirrors
  * `IwmoIjw\OutboundMessageTranslator`).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,20 +30,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use DOMDocument;
 use DOMElement;
-use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
+use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 
 /**
  * OR/ZGW zaak object -> `zakLk01` kennisgeving XML envelope.

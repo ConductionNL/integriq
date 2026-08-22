@@ -19,12 +19,12 @@
 <template>
 	<NcModal v-if="open" labelId="testSourceModal" size="large" @close="onClose">
 		<div class="cn-test-source-modal">
-			<h2>{{ t('openconnector', 'Test connection') }}</h2>
+			<h2>{{ t('integriq', 'Test connection') }}</h2>
 
 			<NcNoteCard v-if="sourceName" type="info">
 				<p>
 					{{
-						t('openconnector', 'Testing source: {name}', {
+						t('integriq', 'Testing source: {name}', {
 							name: sourceName,
 						})
 					}}
@@ -34,21 +34,21 @@
 			<div class="cn-test-source-modal__panes">
 				<!-- Left: request -->
 				<section class="cn-test-source-modal__pane">
-					<h3>{{ t('openconnector', 'Request') }}</h3>
+					<h3>{{ t('integriq', 'Request') }}</h3>
 
 					<div class="cn-test-source-modal__row">
 						<NcSelect
 							id="cn-test-source-method"
 							v-model="method"
 							:options="methodOptions"
-							:aria-label-combobox="t('openconnector', 'Method')"
+							:aria-label-combobox="t('integriq', 'Method')"
 							:clearable="false"
 							inputId="cn-test-source-method" />
 						<NcSelect
 							id="cn-test-source-type"
 							v-model="type"
 							:options="typeOptions"
-							:aria-label-combobox="t('openconnector', 'Body type')"
+							:aria-label-combobox="t('integriq', 'Body type')"
 							:clearable="false"
 							inputId="cn-test-source-type" />
 					</div>
@@ -56,7 +56,7 @@
 					<label for="cn-test-source-endpoint">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Endpoint (path appended to the source location)',
 							)
 						}}
@@ -64,11 +64,11 @@
 					<NcTextField
 						id="cn-test-source-endpoint"
 						v-model="endpoint"
-						:label="t('openconnector', 'Endpoint')"
+						:label="t('integriq', 'Endpoint')"
 						placeholder="/health" />
 
 					<label for="cn-test-source-body">
-						{{ t('openconnector', 'Body (optional)') }}
+						{{ t('integriq', 'Body (optional)') }}
 					</label>
 					<textarea
 						id="cn-test-source-body"
@@ -77,12 +77,12 @@
 						rows="8"
 						spellcheck="false"
 						:placeholder="
-							t('openconnector', 'Request body for POST/PUT')
+							t('integriq', 'Request body for POST/PUT')
 						" />
 
 					<div class="cn-test-source-modal__actions">
 						<NcButton @click="onClose">
-							{{ t('openconnector', 'Close') }}
+							{{ t('integriq', 'Close') }}
 						</NcButton>
 						<NcButton
 							variant="primary"
@@ -92,21 +92,21 @@
 								<NcLoadingIcon v-if="running" :size="20" />
 								<PlayOutlineIcon v-else :size="20" />
 							</template>
-							{{ t('openconnector', 'Run test') }}
+							{{ t('integriq', 'Run test') }}
 						</NcButton>
 					</div>
 				</section>
 
 				<!-- Right: response -->
 				<section class="cn-test-source-modal__pane">
-					<h3>{{ t('openconnector', 'Response') }}</h3>
+					<h3>{{ t('integriq', 'Response') }}</h3>
 
 					<div
 						v-if="!hasResult && !runError"
 						class="cn-test-source-modal__empty">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Run the test to see the response here.',
 							)
 						}}
@@ -121,7 +121,7 @@
 							<p>
 								{{
 									t(
-										'openconnector',
+										'integriq',
 										'The connection to the source was successful.',
 									)
 								}}
@@ -131,7 +131,7 @@
 							<p>
 								{{
 									t(
-										'openconnector',
+										'integriq',
 										'The source responded with a non-2xx status.',
 									)
 								}}
@@ -139,32 +139,32 @@
 						</NcNoteCard>
 
 						<dl class="cn-test-source-modal__meta">
-							<dt>{{ t('openconnector', 'Status') }}</dt>
+							<dt>{{ t('integriq', 'Status') }}</dt>
 							<dd>
 								{{ response.statusMessage }} ({{
 									response.statusCode
 								}})
 							</dd>
-							<dt>{{ t('openconnector', 'Response time') }}</dt>
+							<dt>{{ t('integriq', 'Response time') }}</dt>
 							<dd>{{ formatMs(response.responseTime) }}</dd>
-							<dt>{{ t('openconnector', 'Size') }}</dt>
+							<dt>{{ t('integriq', 'Size') }}</dt>
 							<dd>
-								{{ response.size }} {{ t('openconnector', 'bytes') }}
+								{{ response.size }} {{ t('integriq', 'bytes') }}
 							</dd>
 							<dt v-if="response.remoteIp">
-								{{ t('openconnector', 'Remote IP') }}
+								{{ t('integriq', 'Remote IP') }}
 							</dt>
 							<dd v-if="response.remoteIp">
 								{{ response.remoteIp }}
 							</dd>
 						</dl>
 
-						<label>{{ t('openconnector', 'Headers') }}</label>
+						<label>{{ t('integriq', 'Headers') }}</label>
 						<pre class="cn-test-source-modal__pre">{{
 							prettify(response.headers)
 						}}</pre>
 
-						<label>{{ t('openconnector', 'Body') }}</label>
+						<label>{{ t('integriq', 'Body') }}</label>
 						<pre class="cn-test-source-modal__pre">{{
 							prettify(response.body)
 						}}</pre>
@@ -301,7 +301,7 @@ export default {
 				}
 				const res = await axios.post(
 					generateUrl(
-						`/apps/openconnector/api/sources/test/${this.sourceId}`,
+						`/apps/integriq/api/sources/test/${this.sourceId}`,
 					),
 					payload,
 				)
@@ -310,13 +310,13 @@ export default {
 				const data = res.data || {}
 				if (data.response && typeof data.response === 'object') {
 					this.response = data.response
-					showSuccess(t('openconnector', 'Test completed.'))
+					showSuccess(t('integriq', 'Test completed.'))
 				} else if (data.error) {
 					this.runError = data.error
 					showError(this.runError)
 				} else {
 					this.runError = t(
-						'openconnector',
+						'integriq',
 						'The source test returned no response data.',
 					)
 					showError(this.runError)
@@ -328,7 +328,7 @@ export default {
 					|| err?.message
 					|| ''
 				this.runError =
-					t('openconnector', 'Source test failed')
+					t('integriq', 'Source test failed')
 					+ (message ? `: ${message}` : '')
 				showError(this.runError)
 			} finally {
@@ -342,7 +342,7 @@ export default {
 		 */
 		formatMs(ms) {
 			if (ms === null || ms === undefined) return '—'
-			return `${Math.round(Number(ms))} ${t('openconnector', 'ms')}`
+			return `${Math.round(Number(ms))} ${t('integriq', 'ms')}`
 		},
 
 		/**

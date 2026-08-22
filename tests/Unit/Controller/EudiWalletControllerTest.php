@@ -89,7 +89,7 @@ class EudiWalletControllerTest extends TestCase {
 		$this->request->method('getServerHost')->willReturn('example.test');
 
 		$this->controller = new EudiWalletController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->offerService,
 			$this->keyService,

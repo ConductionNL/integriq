@@ -90,7 +90,7 @@ class PromotionControllerTest extends TestCase {
 		);
 
 		return new PromotionController(
-			'openconnector',
+			'integriq',
 			$request,
 			$this->promotionService,
 			$l10n,
