@@ -219,11 +219,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return $this->migrateAll(orObjectService: $orObjectService, output: $output);
 		};
 
-		if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
-			$counts = \OCA\OpenRegister\Service\SystemOperationContext::run($migrate);
-		} else {
-			$counts = $migrate();
-		}
+		$counts = $this->runAsSystem(migrate: $migrate);
 
 		$migrated = (int)($counts['migrated'] ?? 0);
 		$failed = (int)($counts['failed'] ?? 0);
@@ -244,6 +240,32 @@ class MigrateStoredJobClasses implements IRepairStep {
 			);
 		}
 	}//end run()
+
+	/**
+	 * Run the migration as the CLI system principal where OpenRegister offers it.
+	 *
+	 * `occ maintenance:repair` / `occ upgrade` / a fresh `occ app:enable` run
+	 * with no user session, i.e. as the Anonymous principal, which OpenRegister
+	 * denies object writes to. `SystemOperationContext` is the escape hatch
+	 * OpenRegister's own `ConfigurationService::importFromApp()` uses for its
+	 * seed writes. Guarded by `class_exists` so the app degrades to an
+	 * unscoped run rather than fataling if a future OpenRegister drops it.
+	 *
+	 * @param callable $migrate The migration pass to run
+	 *
+	 * @return array{migrated:int,failed:int} Counts from the pass
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext exposes only
+	 * a static entrypoint; there is no instance to inject. Isolated in this
+	 * one-line helper so the static call is the whole of its surface.
+	 */
+	private function runAsSystem(callable $migrate): array {
+		if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
+			return \OCA\OpenRegister\Service\SystemOperationContext::run($migrate);
+		}
+
+		return $migrate();
+	}//end runAsSystem()
 
 	/**
 	 * Walk every stored job, page by page, rewriting stale class names.
