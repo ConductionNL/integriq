@@ -14,7 +14,7 @@
 
   Persisted shape: Mapping is referenced by `slug` per the
   `synchronization.sourceTargetMapping` field description in
-  `lib/Settings/openconnector_register.json` ("Mapping slug for
+  `lib/Settings/integriq_register.json` ("Mapping slug for
   source-to-target field transformation"). We render the human label
   but emit the slug back up.
 

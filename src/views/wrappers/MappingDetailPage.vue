@@ -37,7 +37,7 @@
   `ModalHost` picks it up and mounts `TestMappingModal` with the current
   mapping pre-selected.
 
-  Closes ConductionNL/openconnector#832 and #876.
+  Closes ConductionNL/integriq#832 and #876.
 -->
 <template>
 	<CnDetailPage

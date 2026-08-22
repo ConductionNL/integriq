@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
-  Flows — OpenConnector's scoped view over the one shared flow store.
+  Flows — Integriq's scoped view over the one shared flow store.
 
   Passes `app: 'openconnector'`: this app sees only its own flows.
   OpenRegister's own Flows page passes no app filter and shows every app's

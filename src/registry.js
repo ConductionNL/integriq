@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 //
-// Custom-component + custom-handler registry for openconnector's
+// Custom-component + custom-handler registry for integriq's
 // manifest-driven app shell.
 //
 // Post chain-C cutover + post chain-E custom-Import drop: the page-
@@ -119,7 +119,7 @@ export default {
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
 	// CnFormDialog inner content renders a Synchronization picker when
-	// `jobClass === OCA\OpenConnector\Action\SynchronizationAction`
+	// `jobClass === OCA\Integriq\Action\SynchronizationAction`
 	// (per #847). Open follow-up upstream: CnFormDialog has no native
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,
@@ -127,7 +127,7 @@ export default {
 	// The Sources page wires `form-fields` to SourceFormFields so the
 	// CnFormDialog authentication section can offer a brokered-credential
 	// (credentialRef) picker backed by OpenRegister's credential broker, and
-	// hide the embedded-secret fields while brokered (openconnector#102).
+	// hide the embedded-secret fields while brokered (integriq#102).
 	SourceFormFields,
 
 	// The Endpoints page wires `form-fields` to EndpointFormFields to restore

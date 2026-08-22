@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Διαμορφώστε από πού προέρχονται τα δεδομένα.",
         "Configure where data is written to.": "Διαμορφώστε πού εγγράφονται τα δεδομένα.",
         "Content path (optional)": "Διαδρομή περιεχομένου (προαιρετικό)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Αποφασίστε ποιες ομάδες Nextcloud μπορούν να καλέσουν κάθε ενέργεια OpenConnector (ADR-023). Οι διαχειριστές περνούν πάντα. Κάθε ενέργεια προεπιλέγεται ως αποκλειστική για διαχειριστές — επιλέξτε μια ομάδα για να την διευρύνετε.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Αποφασίστε ποιες ομάδες Nextcloud μπορούν να καλέσουν κάθε ενέργεια Integriq (ADR-023). Οι διαχειριστές περνούν πάντα. Κάθε ενέργεια προεπιλέγεται ως αποκλειστική για διαχειριστές — επιλέξτε μια ομάδα για να την διευρύνετε.",
         "Discard": "Απόρριψη",
         "Dot-path to the id field in each record": "Διαδρομή με τελείες προς το πεδίο id σε κάθε εγγραφή",
         "Dot-path to the id field in the API response": "Διαδρομή με τελείες προς το πεδίο id στην απόκριση API",

@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Verilerin nereden geleceğini yapılandırın.",
         "Configure where data is written to.": "Verilerin nereye yazılacağını yapılandırın.",
         "Content path (optional)": "İçerik yolu (isteğe bağlı)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Hangi Nextcloud gruplarının her OpenConnector eylemini çağırabileceğine karar verin (ADR-023). Yöneticiler her zaman geçer. Her eylem öntanımlı olarak yalnızca yönetici içindir — kapsamı genişletmek için bir grup işaretleyin.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Hangi Nextcloud gruplarının her Integriq eylemini çağırabileceğine karar verin (ADR-023). Yöneticiler her zaman geçer. Her eylem öntanımlı olarak yalnızca yönetici içindir — kapsamı genişletmek için bir grup işaretleyin.",
         "Discard": "Vazgeç",
         "Dot-path to the id field in each record": "Her kayıttaki id alanına giden nokta yolu",
         "Dot-path to the id field in the API response": "API yanıtındaki id alanına giden nokta yolu",

@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Черги недоставлених повідомлень",
     "Dead letters" : "Недоставлені повідомлення",
     "Pick a source type" : "Вибери тип джерела",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Посилайся на облікові дані, які зберігає брокер облікових даних OpenRegister, замість зберігання секрета в цьому джерелі. Секрет ніколи не потрапляє до OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Посилайся на облікові дані, які зберігає брокер облікових даних OpenRegister, замість зберігання секрета в цьому джерелі. Секрет ніколи не потрапляє до Integriq.",
     "Select a brokered credential" : "Вибери посередницькі облікові дані",
     "Synchronization items" : "Елементи синхронізації",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Облікові дані повинні дозволяти застосунок, який їх викликає \"openconnector\", у своєму allowedApps. Примітка: застосунок, що оголосив облікові дані, може бути іншим.",

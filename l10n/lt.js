@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Nepristatytų pranešimų eilės",
     "Dead letters" : "Nepristatyti pranešimai",
     "Pick a source type" : "Pasirink šaltinio tipą",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Nurodyk prisijungimo duomenis, kuriuos saugo OpenRegister prisijungimo duomenų tarpininkas, užuot saugojęs paslaptį šiame šaltinyje. Paslaptis niekada nepatenka į OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Nurodyk prisijungimo duomenis, kuriuos saugo OpenRegister prisijungimo duomenų tarpininkas, užuot saugojęs paslaptį šiame šaltinyje. Paslaptis niekada nepatenka į Integriq.",
     "Select a brokered credential" : "Pasirink tarpininkaujamus prisijungimo duomenis",
     "Synchronization items" : "Sinchronizavimo elementai",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Prisijungimo duomenys turi leisti kviečiančiąją programą \"openconnector\" savo allowedApps sąraše. Pastaba: programa, kuri paskelbė prisijungimo duomenis, gali būti kita.",

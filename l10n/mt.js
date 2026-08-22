@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Kjuwijiet ta' messaġġi mhux imwassla",
     "Dead letters" : "Messaġġi mhux imwassla",
     "Pick a source type" : "Agħżel tip ta' sors",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Irreferi għal kredenzjal miżmum mill-medjatur tal-kredenzjali ta' OpenRegister minflok ma taħżen sigriet f'dan is-sors. Is-sigriet ma jidħol qatt f'OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Irreferi għal kredenzjal miżmum mill-medjatur tal-kredenzjali ta' OpenRegister minflok ma taħżen sigriet f'dan is-sors. Is-sigriet ma jidħol qatt f'Integriq.",
     "Select a brokered credential" : "Agħżel kredenzjal medjat",
     "Synchronization items" : "Elementi ta' sinkronizzazzjoni",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Il-kredenzjal għandu jippermetti l-applikazzjoni li ssejjaħ \"openconnector\" fl-allowedApps tiegħu. Nota: l-applikazzjoni li ddikjarat il-kredenzjal tista' tkun oħra.",

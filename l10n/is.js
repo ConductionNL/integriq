@@ -10,7 +10,7 @@ OC.L10N.register(
     "Credential" : "Auðkenni",
     "Dead letter queues" : "Dead letter-biðraðir",
     "Pick a source type" : "Veldu tegund gagnagjafa",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Vísaðu í auðkenni sem auðkennamiðlari OpenRegister varðveitir, í stað þess að vista leyndarmál á þessum gagnagjafa. Leyndarmálið fer aldrei inn í OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Vísaðu í auðkenni sem auðkennamiðlari OpenRegister varðveitir, í stað þess að vista leyndarmál á þessum gagnagjafa. Leyndarmálið fer aldrei inn í Integriq.",
     "Select a brokered credential" : "Veldu miðluð auðkenni",
     "Synchronization items" : "Samstillingaratriði",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Auðkennin verða að heimila forritið \"openconnector\" sem kallar á þau, í allowedApps. Athugaðu: forritið sem skilgreindi auðkennin getur verið annað.",

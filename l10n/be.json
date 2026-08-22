@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Наладзьце, адкуль паступаюць даныя.",
         "Configure where data is written to.": "Наладзьце, куды запісваюцца даныя.",
         "Content path (optional)": "Шлях да змесціва (неабавязкова)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Вызначце, якія групы Nextcloud могуць выклікаць кожнае дзеянне OpenConnector (ADR-023). Адміністратары заўсёды праходзяць. Кожнае дзеянне па змаўчанні даступнае толькі адміністратарам — адзначце групу, каб пашырыць гэта.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Вызначце, якія групы Nextcloud могуць выклікаць кожнае дзеянне Integriq (ADR-023). Адміністратары заўсёды праходзяць. Кожнае дзеянне па змаўчанні даступнае толькі адміністратарам — адзначце групу, каб пашырыць гэта.",
         "Discard": "Адхіліць",
         "Dot-path to the id field in each record": "Кропкавы шлях да поля id у кожным запісе",
         "Dot-path to the id field in the API response": "Кропкавы шлях да поля id у адказе API",

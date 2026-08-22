@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Kolejki niedostarczonych wiadomości",
     "Dead letters" : "Niedostarczone wiadomości",
     "Pick a source type" : "Wybierz typ źródła",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Odwołaj się do poświadczenia przechowywanego przez brokera poświadczeń OpenRegister, zamiast zapisywać sekret w tym źródle. Sekret nigdy nie trafia do OpenConnectora.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Odwołaj się do poświadczenia przechowywanego przez brokera poświadczeń OpenRegister, zamiast zapisywać sekret w tym źródle. Sekret nigdy nie trafia do Integriqa.",
     "Select a brokered credential" : "Wybierz poświadczenie pośredniczone",
     "Synchronization items" : "Elementy synchronizacji",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Poświadczenie musi zezwalać wywołującej aplikacji \"openconnector\" w swoim allowedApps. Uwaga: aplikacja, która zadeklarowała poświadczenie, może być inna.",

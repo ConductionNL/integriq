@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Code dei messaggi non consegnati",
     "Dead letters" : "Messaggi non consegnati",
     "Pick a source type" : "Scegli un tipo di origine",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Fai riferimento a una credenziale gestita dall'intermediario di credenziali di OpenRegister invece di salvare un segreto su questa origine. Il segreto non entra mai in OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Fai riferimento a una credenziale gestita dall'intermediario di credenziali di OpenRegister invece di salvare un segreto su questa origine. Il segreto non entra mai in Integriq.",
     "Select a brokered credential" : "Seleziona una credenziale intermediata",
     "Synchronization items" : "Elementi di sincronizzazione",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "La credenziale deve consentire l'app chiamante \"openconnector\" nei suoi allowedApps. Nota: l'app che ha dichiarato la credenziale può essere un'altra.",

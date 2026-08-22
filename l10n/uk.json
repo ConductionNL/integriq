@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Налаштуйте, звідки надходять дані.",
         "Configure where data is written to.": "Налаштуйте, куди записуються дані.",
         "Content path (optional)": "Шлях вмісту (необов'язково)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Визначте, які групи Nextcloud можуть викликати кожну дію OpenConnector (ADR-023). Адміністратори завжди проходять. Кожна дія за замовчуванням доступна лише адміністраторам — позначте групу, щоб розширити доступ.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Визначте, які групи Nextcloud можуть викликати кожну дію Integriq (ADR-023). Адміністратори завжди проходять. Кожна дія за замовчуванням доступна лише адміністраторам — позначте групу, щоб розширити доступ.",
         "Discard": "Відхилити",
         "Dot-path to the id field in each record": "Точковий шлях до поля id у кожному записі",
         "Dot-path to the id field in the API response": "Точковий шлях до поля id у відповіді API",

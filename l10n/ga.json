@@ -549,7 +549,7 @@
         "Configure where data comes from.": "Cumraigh cá as a dtagann na sonraí.",
         "Configure where data is written to.": "Cumraigh cá scríobhtar na sonraí.",
         "Content path (optional)": "Cosán ábhair (roghnach)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Cinn cé na grúpaí Nextcloud a fhéadfaidh gach gníomh OpenConnector a agairt (ADR-023). Faigheann riarthóirí cead i gcónaí. Tá gach gníomh socraithe mar riarthóir-amháin de réir réamhshocraithe — tic grúpa chun é a leathnú.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Cinn cé na grúpaí Nextcloud a fhéadfaidh gach gníomh Integriq a agairt (ADR-023). Faigheann riarthóirí cead i gcónaí. Tá gach gníomh socraithe mar riarthóir-amháin de réir réamhshocraithe — tic grúpa chun é a leathnú.",
         "Discard": "Caith i leataobh",
         "Dot-path to the id field in each record": "Cosán poncaithe chuig réimse an id i ngach taifead",
         "Dot-path to the id field in the API response": "Cosán poncaithe chuig réimse an id sa fhreagra API",

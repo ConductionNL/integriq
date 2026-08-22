@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Dead letter-järjekorrad",
     "Dead letters" : "Dead letter-kirjad",
     "Pick a source type" : "Vali allika tüüp",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Viita mandaadile, mida haldab OpenRegisteri mandaadivahendaja, selle asemel et salvestada saladus sellesse allikasse. Saladus ei satu kunagi OpenConnectorisse.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Viita mandaadile, mida haldab OpenRegisteri mandaadivahendaja, selle asemel et salvestada saladus sellesse allikasse. Saladus ei satu kunagi Integriqisse.",
     "Select a brokered credential" : "Vali vahendatud mandaat",
     "Synchronization items" : "Sünkroonimise kirjed",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Mandaat peab lubama kutsuva rakenduse \"openconnector\" oma allowedApps loendis. Pane tähele: mandaadi loonud rakendus võib olla mõni teine.",

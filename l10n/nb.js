@@ -10,7 +10,7 @@ OC.L10N.register(
     "Credential" : "Legitimasjon",
     "Dead letter queues" : "Dead letter-køer",
     "Pick a source type" : "Velg en kildetype",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Henvis til legitimasjon som forvaltes av OpenRegisters legitimasjonsformidler, i stedet for å lagre en hemmelighet på denne kilden. Hemmeligheten kommer aldri inn i OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Henvis til legitimasjon som forvaltes av OpenRegisters legitimasjonsformidler, i stedet for å lagre en hemmelighet på denne kilden. Hemmeligheten kommer aldri inn i Integriq.",
     "Select a brokered credential" : "Velg formidlet legitimasjon",
     "Synchronization items" : "Synkroniseringselementer",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Legitimasjonen må tillate den kallende appen \"openconnector\" i sine allowedApps. Merk: appen som opprettet legitimasjonen kan være en annen.",

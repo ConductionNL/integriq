@@ -283,7 +283,7 @@ export default {
 	 * resolve against the right OpenRegister collection.
 	 *
 	 * @param {object} props Resolved component props; only `register` and `schema`
-	 *   are read here, both falling back to the OpenConnector rule defaults.
+	 *   are read here, both falling back to the Integriq rule defaults.
 	 *
 	 * @spec openspec/specs/rule-editor-ui/spec.md
 	 */

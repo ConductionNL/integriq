@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Cozi de mesaje nelivrate",
     "Dead letters" : "Mesaje nelivrate",
     "Pick a source type" : "Alege un tip de sursă",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Referă un credențial deținut de brokerul de credențiale OpenRegister în loc să stochezi un secret pe această sursă. Secretul nu intră niciodată în OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Referă un credențial deținut de brokerul de credențiale OpenRegister în loc să stochezi un secret pe această sursă. Secretul nu intră niciodată în Integriq.",
     "Select a brokered credential" : "Selectează un credențial intermediat",
     "Synchronization items" : "Elemente de sincronizare",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Credențialul trebuie să permită aplicația apelantă \"openconnector\" în allowedApps al său. Notă: aplicația care a declarat credențialul poate fi alta.",

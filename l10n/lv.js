@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Nepiegādāto ziņojumu rindas",
     "Dead letters" : "Nepiegādātie ziņojumi",
     "Pick a source type" : "Izvēlies avota veidu",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Atsaucies uz pieteikšanās datiem, kurus glabā OpenRegister pieteikšanās datu starpnieks, nevis glabā noslēpumu šajā avotā. Noslēpums nekad nenokļūst OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Atsaucies uz pieteikšanās datiem, kurus glabā OpenRegister pieteikšanās datu starpnieks, nevis glabā noslēpumu šajā avotā. Noslēpums nekad nenokļūst Integriq.",
     "Select a brokered credential" : "Izvēlies starpniecības pieteikšanās datus",
     "Synchronization items" : "Sinhronizācijas vienumi",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Pieteikšanās datiem savā allowedApps ir jāatļauj izsaucošā lietotne \"openconnector\". Ņem vērā: lietotne, kas pieteikšanās datus izveidoja, var būt cita.",

@@ -57,7 +57,7 @@
 					{{
 						t(
 							'integriq',
-							'The openconnector Source describing the remote Notificaties API (location, auth).',
+							'The Integriq Source describing the remote Notificaties API (location, auth).',
 						)
 					}}
 				</span>

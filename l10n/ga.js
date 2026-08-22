@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Scuainí litreacha marbha",
     "Dead letters" : "Litreacha marbha",
     "Pick a source type" : "Roghnaigh cineál foinse",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Déan tagairt do dhintiúr atá i seilbh bhróicéir dintiúr OpenRegister in ionad rún a stóráil ar an bhfoinse seo. Ní théann an rún isteach in OpenConnector riamh.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Déan tagairt do dhintiúr atá i seilbh bhróicéir dintiúr OpenRegister in ionad rún a stóráil ar an bhfoinse seo. Ní théann an rún isteach in Integriq riamh.",
     "Select a brokered credential" : "Roghnaigh dintiúr bróicéirithe",
     "Synchronization items" : "Míreanna sioncronaithe",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Ní mór don dintiúr an aip ghlaoch \"openconnector\" a cheadú in allowedApps. Nóta: féadfaidh an aip a dhearbhaigh an dintiúr a bheith difriúil.",

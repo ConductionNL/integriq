@@ -314,16 +314,16 @@ import {
  */
 function jobClassLabel(fqn) {
 	const labels = {
-		'OCA\\OpenConnector\\Action\\SynchronizationAction': t(
+		'OCA\\Integriq\\Action\\SynchronizationAction': t(
 			'integriq',
 			'Run a synchronization',
 		),
-		'OCA\\OpenConnector\\Action\\FlowAction': t('integriq', 'Run a flow'),
-		'OCA\\OpenConnector\\Action\\EventAction': t(
+		'OCA\\Integriq\\Action\\FlowAction': t('integriq', 'Run a flow'),
+		'OCA\\Integriq\\Action\\EventAction': t(
 			'integriq',
 			'Dispatch an event',
 		),
-		'OCA\\OpenConnector\\Action\\PingAction': t(
+		'OCA\\Integriq\\Action\\PingAction': t(
 			'integriq',
 			'Ping a source',
 		),

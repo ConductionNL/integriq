@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Configurați de unde provin datele.",
         "Configure where data is written to.": "Configurați unde sunt scrise datele.",
         "Content path (optional)": "Cale conținut (opțional)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decideți care grupuri Nextcloud pot invoca fiecare acțiune OpenConnector (ADR-023). Administratorii trec întotdeauna. Fiecare acțiune este implicit doar pentru administratori — bifați un grup pentru a o extinde.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decideți care grupuri Nextcloud pot invoca fiecare acțiune Integriq (ADR-023). Administratorii trec întotdeauna. Fiecare acțiune este implicit doar pentru administratori — bifați un grup pentru a o extinde.",
         "Discard": "Renunță",
         "Dot-path to the id field in each record": "Cale cu punct către câmpul id din fiecare înregistrare",
         "Dot-path to the id field in the API response": "Cale cu punct către câmpul id din răspunsul API",

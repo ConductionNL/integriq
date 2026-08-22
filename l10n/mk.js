@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Редици на недоставени пораки",
     "Dead letters" : "Недоставени пораки",
     "Pick a source type" : "Избери тип на извор",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Повикај се на креденцијал што го чува посредникот за креденцијали на OpenRegister, наместо да чуваш тајна на овој извор. Тајната никогаш не влегува во OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Повикај се на креденцијал што го чува посредникот за креденцијали на OpenRegister, наместо да чуваш тајна на овој извор. Тајната никогаш не влегува во Integriq.",
     "Select a brokered credential" : "Избери посредуван креденцијал",
     "Synchronization items" : "Елементи на синхронизација",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Креденцијалот мора да ја дозволи апликацијата што го повикува \"openconnector\" во своите allowedApps. Забелешка: апликацијата што го пријавила креденцијалот може да е друга.",

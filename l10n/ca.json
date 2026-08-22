@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Configureu d'on provenen les dades.",
         "Configure where data is written to.": "Configureu on s'escriuen les dades.",
         "Content path (optional)": "Camí del contingut (opcional)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decidiu quins grups de Nextcloud poden invocar cada acció d'OpenConnector (ADR-023). Els administradors sempre passen. Cada acció és per defecte només per a administradors: marqueu un grup per ampliar-la.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decidiu quins grups de Nextcloud poden invocar cada acció d'Integriq (ADR-023). Els administradors sempre passen. Cada acció és per defecte només per a administradors: marqueu un grup per ampliar-la.",
         "Discard": "Descarta",
         "Dot-path to the id field in each record": "Camí amb punts al camp id de cada registre",
         "Dot-path to the id field in the API response": "Camí amb punts al camp id de la resposta de l'API",

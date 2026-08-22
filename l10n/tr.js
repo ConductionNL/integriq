@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Teslim edilemeyen ileti kuyrukları",
     "Dead letters" : "Teslim edilemeyen iletiler",
     "Pick a source type" : "Bir kaynak türü seç",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Bu kaynakta bir sır saklamak yerine OpenRegister kimlik bilgisi aracısında tutulan bir kimlik bilgisine başvur. Sır asla OpenConnector'a girmez.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Bu kaynakta bir sır saklamak yerine OpenRegister kimlik bilgisi aracısında tutulan bir kimlik bilgisine başvur. Sır asla Integriq'e girmez.",
     "Select a brokered credential" : "Aracılı bir kimlik bilgisi seç",
     "Synchronization items" : "Eşitleme öğeleri",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Kimlik bilgisi, allowedApps listesinde çağıran \"openconnector\" uygulamasına izin vermelidir. Not: kimlik bilgisini tanımlayan uygulama farklı olabilir.",

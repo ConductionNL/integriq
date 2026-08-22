@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Radhët e mesazheve të padërguara",
     "Dead letters" : "Mesazhe të padërguara",
     "Pick a source type" : "Zgjidh një tip burimi",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Referoju një kredenciali që mbahet nga ndërmjetësi i kredencialeve i OpenRegister, në vend që të ruash një sekret në këtë burim. Sekreti nuk hyn kurrë në OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Referoju një kredenciali që mbahet nga ndërmjetësi i kredencialeve i OpenRegister, në vend që të ruash një sekret në këtë burim. Sekreti nuk hyn kurrë në Integriq.",
     "Select a brokered credential" : "Zgjidh një kredencial të ndërmjetësuar",
     "Synchronization items" : "Elemente të sinkronizimit",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Kredenciali duhet të lejojë aplikacionin që e thërret \"openconnector\" në allowedApps të tij. Shënim: aplikacioni që deklaroi kredencialin mund të jetë tjetër.",

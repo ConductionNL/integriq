@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Colonnas da messadis betg consegnads",
     "Dead letters" : "Messadis betg consegnads",
     "Pick a source type" : "Tscherna in tip da funtauna",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Referescha ad in credenzial che vegn tegnì dal mediatur da credenzials da OpenRegister enstagl da memorisar in secret sin questa funtauna. Il secret na vegn mai en OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Referescha ad in credenzial che vegn tegnì dal mediatur da credenzials da OpenRegister enstagl da memorisar in secret sin questa funtauna. Il secret na vegn mai en Integriq.",
     "Select a brokered credential" : "Tscherna in credenzial medià",
     "Synchronization items" : "Elements da sincronisaziun",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Il credenzial sto permetter l'applicaziun che clama \"openconnector\" en ses allowedApps. Nota: l'applicaziun che ha declerà il credenzial po esser in'autra.",

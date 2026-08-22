@@ -77,7 +77,7 @@ try {
 	// Non-fatal — lib translations fall back to English source.
 	// eslint-disable-next-line no-console
 	console.warn(
-		'[openconnector] registerTranslations failed; falling back to English',
+		'[integriq] registerTranslations failed; falling back to English',
 		e,
 	)
 }
@@ -91,7 +91,7 @@ try {
  */
 function tryLoadTranslations() {
 	try {
-		const result = loadTranslations('openconnector', () => {})
+		const result = loadTranslations('integriq', () => {})
 		if (result && typeof result.then === 'function') {
 			result.then(
 				() => {},
@@ -174,7 +174,7 @@ function routesFromManifest(manifest) {
 	routes.push({
 		path: '/settings',
 		beforeEnter: () => {
-			window.location.href = generateUrl('/settings/admin/openconnector')
+			window.location.href = generateUrl('/settings/admin/integriq')
 			return false
 		},
 		component: RoutePageRenderer,

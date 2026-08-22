@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Dead-Letter-Queues",
     "Dead letters" : "Dead Letters",
     "Pick a source type" : "Wiel en Quelltyp",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Referenzéier op Zougangsdaten, déi vum Zougangsdate-Vermëttler vun OpenRegister verwaltet ginn, amplaz e Geheimnis op dëser Quell ze speicheren. D'Geheimnis kënnt ni an OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Referenzéier op Zougangsdaten, déi vum Zougangsdate-Vermëttler vun OpenRegister verwaltet ginn, amplaz e Geheimnis op dëser Quell ze speicheren. D'Geheimnis kënnt ni an Integriq.",
     "Select a brokered credential" : "Wiel vermëttelt Zougangsdaten",
     "Synchronization items" : "Synchronisatiounselementer",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "D'Zougangsdate musse déi ruffend App \"openconnector\" an hiren allowedApps erlaben. Notiz: d'App, déi d'Zougangsdaten ugeluecht huet, kann eng anerer sinn.",

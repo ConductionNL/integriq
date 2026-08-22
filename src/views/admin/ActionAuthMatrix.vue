@@ -12,7 +12,7 @@
 			{{
 				t(
 					'integriq',
-					'Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.',
+					'Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.',
 				)
 			}}
 		</p>

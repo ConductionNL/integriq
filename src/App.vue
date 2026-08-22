@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<div class="openconnector-app-root">
+	<div class="integriq-app-root">
 		<CnAppRoot
 			:aiCompanion="true"
 			:manifest="manifest"
 			:customComponents="customComponents"
 			:registry="registry"
 			:pageTypes="pageTypes"
-			appId="openconnector"
+			appId="integriq"
 			:translate="translateForApp"
 			:permissions="permissions" />
 		<!--
@@ -87,7 +87,7 @@ export default {
 		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md
 		 */
 		translateForApp(key) {
-			return ncT('openconnector', key)
+			return ncT('integriq', key)
 		},
 	},
 }

@@ -72,7 +72,7 @@ OC.L10N.register(
     "Brokered credential (OpenRegister)" : "Bemiddelde referentie (OpenRegister)",
     "Credential" : "Referentie",
     "Pick a source type" : "Kies een brontype",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Verwijs naar een referentie die door de OpenRegister-referentiebemiddelaar wordt beheerd, in plaats van een geheim op deze bron op te slaan. Het geheim komt nooit in OpenConnector terecht.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Verwijs naar een referentie die door de OpenRegister-referentiebemiddelaar wordt beheerd, in plaats van een geheim op deze bron op te slaan. Het geheim komt nooit in Integriq terecht.",
     "Select a brokered credential" : "Selecteer een bemiddelde referentie",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "De referentie moet de aanroepende app \"openconnector\" toestaan in allowedApps. Let op: de app die de referentie heeft aangemaakt kan een andere zijn.",
     "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here." : "De OpenRegister-referentiebemiddelaar is niet beschikbaar (de openregister-app is uitgeschakeld of te oud). Bemiddelde referenties kunnen hier niet worden getoond.",

@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Fronty nedoručených zpráv",
     "Dead letters" : "Nedoručené zprávy",
     "Pick a source type" : "Vyber typ zdroje",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Odkaž na přihlašovací údaje spravované zprostředkovatelem přihlašovacích údajů OpenRegister místo ukládání tajemství k tomuto zdroji. Tajemství se nikdy nedostane do OpenConnectoru.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Odkaž na přihlašovací údaje spravované zprostředkovatelem přihlašovacích údajů OpenRegister místo ukládání tajemství k tomuto zdroji. Tajemství se nikdy nedostane do Integriqu.",
     "Select a brokered credential" : "Vyber zprostředkované přihlašovací údaje",
     "Synchronization items" : "Položky synchronizace",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Přihlašovací údaje musí povolit volající aplikaci \"openconnector\" ve svém allowedApps. Poznámka: aplikace, která přihlašovací údaje vytvořila, může být jiná.",

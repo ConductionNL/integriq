@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Dead letter -jonot",
     "Dead letters" : "Dead letter -viestit",
     "Pick a source type" : "Valitse lähdetyyppi",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Viittaa tunnistetietoihin, joita OpenRegisterin tunnistetietojen välittäjä hallinnoi, sen sijaan että tallentaisit salaisuuden tähän lähteeseen. Salaisuus ei koskaan päädy OpenConnectoriin.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Viittaa tunnistetietoihin, joita OpenRegisterin tunnistetietojen välittäjä hallinnoi, sen sijaan että tallentaisit salaisuuden tähän lähteeseen. Salaisuus ei koskaan päädy Integriqiin.",
     "Select a brokered credential" : "Valitse välitetyt tunnistetiedot",
     "Synchronization items" : "Synkronoinnin kohteet",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Tunnistetietojen on sallittava kutsuva sovellus \"openconnector\" allowedApps-luettelossaan. Huomaa: tunnistetiedot määrittänyt sovellus voi olla eri sovellus.",

@@ -5,7 +5,7 @@
 
   Replaces the bespoke ordered step-list editor (visual-flow-orchestration
   REQ-009's explicit v1 constraint: "no drag-and-drop, no canvas"). That
-  constraint is superseded by flow-engine-unification task 6.2: OpenConnector
+  constraint is superseded by flow-engine-unification task 6.2: Integriq
   adopts the SAME shared `CnFlowDetail` canvas OpenRegister and hermiq already
   use, over the same native flow store — not a second, app-owned flow surface.
 

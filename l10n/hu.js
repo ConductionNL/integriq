@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Kézbesíthetetlen üzenetek várólistái",
     "Dead letters" : "Kézbesíthetetlen üzenetek",
     "Pick a source type" : "Válassz forrástípust",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Hivatkozz az OpenRegister hitelesítőadat-közvetítője által tárolt hitelesítő adatra, ahelyett hogy titkot tárolnál ezen a forráson. A titok soha nem kerül be az OpenConnectorba.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Hivatkozz az OpenRegister hitelesítőadat-közvetítője által tárolt hitelesítő adatra, ahelyett hogy titkot tárolnál ezen a forráson. A titok soha nem kerül be az Integriqbe.",
     "Select a brokered credential" : "Válassz közvetített hitelesítő adatot",
     "Synchronization items" : "Szinkronizációs elemek",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "A hitelesítő adatnak engedélyeznie kell a hívó \"openconnector\" alkalmazást az allowedApps listájában. Megjegyzés: a hitelesítő adatot deklaráló alkalmazás lehet másik.",

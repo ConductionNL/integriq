@@ -26,7 +26,7 @@
   Wired by CnPageRenderer when the manifest declares
   `pages[].slots = { 'form-fields': 'SourceFormFields' }` (registry.js maps the
   name to this component). Follows the JobFormFields.vue precedent for the
-  same slot on the Jobs page. Closes openconnector#102.
+  same slot on the Jobs page. Closes integriq#102.
 -->
 <template>
 	<div class="cn-source-form-fields">
@@ -199,7 +199,7 @@
 				{{
 					t(
 						'integriq',
-						'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.',
+						'Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq.',
 					)
 				}}
 			</span>

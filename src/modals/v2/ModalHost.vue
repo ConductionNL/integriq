@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
-  ModalHost — single mount point for openconnector's row-action modals.
+  ModalHost — single mount point for integriq's row-action modals.
 
   Mounted once near the App.vue root, ModalHost subscribes to the shared
   src/handlers/modalBus.js events and renders the corresponding modal

@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Konfigurējiet, no kurienes nāk dati.",
         "Configure where data is written to.": "Konfigurējiet, kur dati tiek ierakstīti.",
         "Content path (optional)": "Satura ceļš (neobligāts)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Izlemiet, kuras Nextcloud grupas drīkst izsaukt katru OpenConnector darbību (ADR-023). Administratori vienmēr iziet cauri. Katra darbība pēc noklusējuma ir tikai administratoriem — atzīmējiet grupu, lai to paplašinātu.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Izlemiet, kuras Nextcloud grupas drīkst izsaukt katru Integriq darbību (ADR-023). Administratori vienmēr iziet cauri. Katra darbība pēc noklusējuma ir tikai administratoriem — atzīmējiet grupu, lai to paplašinātu.",
         "Discard": "Atmest",
         "Dot-path to the id field in each record": "Punktveida ceļš uz id lauku katrā ierakstā",
         "Dot-path to the id field in the API response": "Punktveida ceļš uz id lauku API atbildē",

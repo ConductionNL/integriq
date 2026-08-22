@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Ουρές μη παραδοθέντων μηνυμάτων",
     "Dead letters" : "Μη παραδοθέντα μηνύματα",
     "Pick a source type" : "Διάλεξε έναν τύπο πηγής",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Αναφέρσου σε ένα διαπιστευτήριο που διατηρεί ο διαμεσολαβητής διαπιστευτηρίων του OpenRegister, αντί να αποθηκεύσεις ένα μυστικό σε αυτήν την πηγή. Το μυστικό δεν εισέρχεται ποτέ στο OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Αναφέρσου σε ένα διαπιστευτήριο που διατηρεί ο διαμεσολαβητής διαπιστευτηρίων του OpenRegister, αντί να αποθηκεύσεις ένα μυστικό σε αυτήν την πηγή. Το μυστικό δεν εισέρχεται ποτέ στο Integriq.",
     "Select a brokered credential" : "Επίλεξε ένα διαμεσολαβημένο διαπιστευτήριο",
     "Synchronization items" : "Στοιχεία συγχρονισμού",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Το διαπιστευτήριο πρέπει να επιτρέπει την καλούσα εφαρμογή \"openconnector\" στο allowedApps του. Σημείωση: η εφαρμογή που δήλωσε το διαπιστευτήριο μπορεί να είναι άλλη.",

@@ -11,7 +11,7 @@ OC.L10N.register(
     "Dead letter queues" : "Redovi neisporučenih poruka",
     "Dead letters" : "Neisporučene poruke",
     "Pick a source type" : "Odaberi vrstu izvora",
-    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Pozovi se na vjerodajnicu koju drži posrednik vjerodajnica OpenRegister umjesto da tajnu pohraniš na ovaj izvor. Tajna nikada ne ulazi u OpenConnector.",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq." : "Pozovi se na vjerodajnicu koju drži posrednik vjerodajnica OpenRegister umjesto da tajnu pohraniš na ovaj izvor. Tajna nikada ne ulazi u Integriq.",
     "Select a brokered credential" : "Odaberi posredovanu vjerodajnicu",
     "Synchronization items" : "Elementi sinkronizacije",
     "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "Vjerodajnica mora dopustiti aplikaciju koja je poziva \"openconnector\" u svojem allowedApps. Napomena: aplikacija koja je vjerodajnicu prijavila može biti druga.",
