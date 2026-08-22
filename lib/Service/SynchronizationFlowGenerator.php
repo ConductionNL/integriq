@@ -248,13 +248,13 @@ class SynchronizationFlowGenerator {
 	 * @param SynchronizationService $synchronizationService Resolves a synchronization by uuid, slug or reference.
 	 * @param MappingService $mappingService Resolves the source→target mapping whose keys become the written fields.
 	 * @param IL10N $l10n Translations.
-	 * @param SynchronizationSemanticRefusals $semanticRefusals The semantic half of the refusal surface.
+	 * @param SynchronizationActionRules $actionRules The whole refusal surface, and the steps a rule becomes.
 	 */
 	public function __construct(
 		private readonly SynchronizationService $synchronizationService,
 		private readonly MappingService $mappingService,
 		private readonly IL10N $l10n,
-		private readonly SynchronizationSemanticRefusals $semanticRefusals,
+		private readonly SynchronizationActionRules $actionRules,
 	) {
 
 	}//end __construct()
@@ -356,11 +356,13 @@ class SynchronizationFlowGenerator {
 	public function refusalsFor(array $synchronization): array {
 		return array_merge(
 			$this->transportRefusals(synchronization: $synchronization),
-			$this->semanticRefusals->refusalsFor(synchronization: $synchronization),
+			$this->actionRules->refusalsFor(synchronization: $synchronization),
 			$this->fieldRefusals(synchronization: $synchronization)
 		);
 
 	}//end refusalsFor()
+
+
 
 	/**
 	 * Refusals about where the objects come from and where they go.
@@ -633,7 +635,8 @@ class SynchronizationFlowGenerator {
 				register: $register,
 				schema: $schema,
 				mapping: $mapping,
-				written: $written
+				written: $written,
+				synchronization: $synchronization
 			)
 		);
 
@@ -653,6 +656,7 @@ class SynchronizationFlowGenerator {
 	 * @param string      $schema     The target schema.
 	 * @param object|null $mapping    The resolved mapping, null when unmapped.
 	 * @param string      $written    The item path holding what gets written.
+	 * @param array       $synchronization The whole record, for its `actions`.
 	 *
 	 * @return array<int, array<string, mixed>> The tail of the pipeline.
 	 *
@@ -664,7 +668,8 @@ class SynchronizationFlowGenerator {
 		string $register,
 		string $schema,
 		?object $mapping,
-		string $written
+		string $written,
+		array $synchronization
 	): array {
 		return [
 			[
@@ -704,6 +709,11 @@ class SynchronizationFlowGenerator {
 				],
 			],
 			['id' => 'synced-id', 'type' => self::NODE_SET_FIELDS, 'config' => ['compute' => [self::KEY_SYNCED_ID => self::RULE_SYNCED_ID]]],
+			// AFTER `synced-id`, because a fetch-file rule attaches files to
+			// the object that was just written and needs its id — which is
+			// exactly what that step puts on the record. Before `commit`, so
+			// the contract is stamped once the whole per-item pass is done.
+			...$this->actionRules->stepsFor(synchronization: $synchronization, reference: $reference),
 			[
 				'id' => 'commit',
 				'type' => ContractCommitNode::NODE_ID,
@@ -731,6 +741,7 @@ class SynchronizationFlowGenerator {
 		];
 
 	}//end writeNodesFor()
+
 
 	/**
 	 * The step that names the target id this pass REACHED, written or skipped.

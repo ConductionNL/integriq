@@ -63,6 +63,7 @@ class FlowNodeListener implements IEventListener {
 	 * @param ContractMatchNode $contractMatchNode The page-level contract-decision node.
 	 * @param ContractCommitNode $contractCommitNode The page-level contract-upsert node.
 	 * @param ContractSweepNode $contractSweepNode The guarded stale-object sweep node.
+	 * @param FetchFileNode $fetchFileNode The fetch-file rule node.
 	 */
 	public function __construct(
 		private readonly SourceCallNode $sourceCallNode,
@@ -72,6 +73,7 @@ class FlowNodeListener implements IEventListener {
 		private readonly ContractMatchNode $contractMatchNode,
 		private readonly ContractCommitNode $contractCommitNode,
 		private readonly ContractSweepNode $contractSweepNode,
+		private readonly FetchFileNode $fetchFileNode,
 	) {
 
 	}//end __construct()
@@ -101,6 +103,7 @@ class FlowNodeListener implements IEventListener {
 		$event->registerNode(node: $this->contractMatchNode);
 		$event->registerNode(node: $this->contractCommitNode);
 		$event->registerNode(node: $this->contractSweepNode);
+		$event->registerNode(node: $this->fetchFileNode);
 
 	}//end handle()
 }//end class

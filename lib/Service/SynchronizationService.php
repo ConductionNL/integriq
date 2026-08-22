@@ -8334,6 +8334,78 @@ class SynchronizationService {
 	}//end processRules()
 
 	/**
+	 * Resolve one rule by id, for callers outside this service.
+	 *
+	 * `SynchronizationFlowGenerator` has to know what a synchronization's
+	 * `actions` ARE before it can decide whether they are expressible as flow
+	 * steps — refusing every synchronization that declares any is what kept 74
+	 * of them unmigratable. It needs the rule's `type` and `timing`, nothing
+	 * more, and re-implementing the lookup against register `openconnector` /
+	 * schema `rule` in a second place is how the two drift.
+	 *
+	 * @param string $id The rule's OpenRegister uuid or slug.
+	 *
+	 * @return array|null The rule payload, or null when there is no such rule.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public function findRule(string $id): ?array {
+		return $this->getRuleById(id: $id);
+
+	}//end findRule()
+
+	/**
+	 * Run ONE `fetch_file` rule, by id, outside the legacy rule pipeline.
+	 *
+	 * WHY THIS SEAM EXISTS. `openconnector.fetch-file` is a flow step over the
+	 * same behaviour, and the decomposed pipeline has no `processRules()` pass
+	 * to hang it off. The alternative was to lift the 75 lines of
+	 * `processFetchFileRule()` into something both callers share, and that is a
+	 * refactor of the legacy write path for the benefit of a new one — the kind
+	 * of change that looks behaviour-preserving and is not. A public entry
+	 * point that RESOLVES a rule and delegates keeps exactly one
+	 * implementation, and the flow step and the legacy engine cannot drift
+	 * apart because there is nothing to drift.
+	 *
+	 * It also means the generated flow references the SAME Rule entity the
+	 * synchronization referenced. An operator who edits that rule keeps
+	 * affecting both engines, which is what makes a half-migrated instance
+	 * survivable.
+	 *
+	 * ⚠️ TYPE IS CHECKED, NOT ASSUMED. Another rule type reaching here would be
+	 * silently handled as a file fetch — reading `configuration.fetch_file` off
+	 * a rule that has none, finding nothing, and returning the data untouched
+	 * while reporting success. A step that does nothing and says it worked is
+	 * the failure this whole change keeps running into, so it refuses instead.
+	 *
+	 * @param string      $ruleId   The rule's OpenRegister uuid or slug.
+	 * @param array       $data     The item data the rule acts on.
+	 * @param string|null $objectId The written object, when there is one.
+	 *
+	 * @return array The data, with placeholders applied when configured.
+	 *
+	 * @throws Exception When the rule is missing or is not a `fetch_file` rule.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public function runFetchFileRule(string $ruleId, array $data, ?string $objectId = null): array {
+		$rule = $this->getRuleById(id: $ruleId);
+		if ($rule === null) {
+			throw new Exception('fetch_file rule "' . $ruleId . '" was not found.');
+		}
+
+		$type = trim((string)($rule['type'] ?? ''));
+		if ($type !== 'fetch_file') {
+			throw new Exception(
+				'Rule "' . $ruleId . '" is of type "' . $type . '", not fetch_file.'
+			);
+		}
+
+		return $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId);
+
+	}//end runFetchFileRule()
+
+	/**
 	 * Get a rule by its ID directly from OpenRegister.
 	 *
 	 * Post W6 the typed Rule value object is dropped: the rule is fetched
