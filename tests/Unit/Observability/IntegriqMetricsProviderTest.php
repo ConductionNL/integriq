@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for OpenConnectorMetricsProvider.
+ * Unit tests for IntegriqMetricsProvider.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Observability
@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Observability;
 
-use OCA\Integriq\Observability\OpenConnectorMetricsProvider;
+use OCA\Integriq\Observability\IntegriqMetricsProvider;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  */
-class OpenConnectorMetricsProviderTest extends TestCase {
+class IntegriqMetricsProviderTest extends TestCase {
 
 	/**
 	 * Build a provider whose container resolves the given ObjectService,
@@ -42,9 +42,9 @@ class OpenConnectorMetricsProviderTest extends TestCase {
 	 * @param array $schemas Rows `findAll()` on SchemaMapper should return.
 	 * @param array $registers Rows `findAll()` on RegisterMapper should return.
 	 *
-	 * @return OpenConnectorMetricsProvider
+	 * @return IntegriqMetricsProvider
 	 */
-	private function buildProvider(?object $objectService, array $schemas, array $registers): OpenConnectorMetricsProvider {
+	private function buildProvider(?object $objectService, array $schemas, array $registers): IntegriqMetricsProvider{
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findAll')->willReturn($schemas);
 
@@ -63,7 +63,7 @@ class OpenConnectorMetricsProviderTest extends TestCase {
 			}
 		);
 
-		return new OpenConnectorMetricsProvider($container, $this->createMock(LoggerInterface::class));
+		return new IntegriqMetricsProvider($container, $this->createMock(LoggerInterface::class));
 	}//end buildProvider()
 
 	/**
