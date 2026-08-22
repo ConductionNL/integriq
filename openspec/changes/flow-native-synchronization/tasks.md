@@ -224,3 +224,27 @@
       refused BY NAME.
       STILL TO DO HERE: re-measure all 240 once #1526 is deployed, and record
       the number that comes back — not one derived from it.
+      THE SWEEP WAS ATTEMPTED 2026-08-22 AND COULD NOT RUN. #1526 was deployed
+      (checkout moved to development, `occ upgrade` clean, `needsDbUpgrade`
+      false, the command present), and then EVERY synchronization failed to be
+      READ — before any refusal could be judged:
+        occ:  SchemaNotInRegisterException — slug "application" is not carried
+              by register "openconnector", raised while the caller had asked
+              for "synchronization"
+        HTTP: Register not found: 'openconnector'
+      That was not this change. It is an OpenRegister defect: `setSchema()`
+      leaves a pending raw ref on a SHARED service, `find()` calls
+      `setRegister()` before setting its own schema, and the leftover ref is
+      re-resolved inside a register that has nothing to do with it. Diagnosed,
+      reproduced in a unit test that fails on development, fixed and merged as
+      openregister#2790.
+      ⚠️ THE FIX IS NOT YET DEPLOYED HERE, so the number is still unmeasured.
+      The instance's openregister checkout carries 10+ unmerged commits from
+      another session, and taking their working tree out from under them is not
+      worth a measurement. Whoever deploys openregister development next
+      unblocks this: the sweep is one loop over
+      `occ openconnector:synchronization-to-flow <uuid> --json` across the 240.
+      RECORD WHAT COMES BACK. Do not derive it, do not scale a sample — the two
+      wrong numbers this file has already carried (8.3%, ~99%) both came from
+      treating a partial or non-running measurement as a proportional one. A
+      sweep that cannot READ its subjects measures nothing at all.
