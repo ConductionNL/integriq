@@ -99,7 +99,6 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 	use SynchronizationLogActions;
 
-
 	/**
 	 * The step type this node answers to.
 	 *
@@ -455,7 +454,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 * @param string $reference The authored synchronization reference.
 	 * @param string $targetIdPosition Dot-path to the written object's uuid.
 	 * @param string $targetHashPosition Dot-path to the mapped object, or empty
-	 *        to store no target hash.
+	 *                                   to store no target hash.
 	 * @param string $outcome The decision outcome (`create` or `update`).
 	 * @param string $now The commit timestamp, ISO 8601.
 	 *
@@ -598,8 +597,8 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @param array $indexed The input items, re-indexed from zero.
 	 * @param array<int, string|FlowNodeException|null> $plans Per item: the
-	 *        committed contract uuid, the failure to record, or null for a
-	 *        pass-through.
+	 *                                                         committed contract uuid, the failure to record, or null for a
+	 *                                                         pass-through.
 	 * @param string $contractPosition Dot-path to the decision block.
 	 * @param string $stepId The step id, for item-borne error state.
 	 * @param string $reference The authored synchronization reference.

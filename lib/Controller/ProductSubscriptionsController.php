@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Product Subscriptions Controller.
+ * Integriq Product Subscriptions Controller.
  *
  * REST controller for the API Products gateway's subscription flow:
  * subscribe a Consumer to a product's tier (immediate activation or
@@ -13,7 +13,7 @@
  * CRUD, mirroring `ApprovalsController`'s shape.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,19 +22,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/archive/2026-07-15-api-product-gateway/design.md#api-design
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use DateTime;
-use OCA\OpenConnector\Exception\ApprovalStateException;
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Exception\ApprovalStateException;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -119,7 +119,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-consumer-subscribes-to-an-api-product-at-a-tier-req-apg-003
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function subscribe(string $productId): JSONResponse {
 		try {
 			$product = $this->orObjectService->find(
@@ -306,7 +306,7 @@ class ProductSubscriptionsController extends Controller {
 	 * enforced declaration `SourcesController` and `MappingsController` already
 	 * use, and it is what makes the posture readable to a reviewer and to CI.
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function analytics(string $productId): JSONResponse {
 		try {
 			$this->orObjectService->find(
@@ -391,7 +391,7 @@ class ProductSubscriptionsController extends Controller {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('openconnector: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
+			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
 			return [];
 		}
 

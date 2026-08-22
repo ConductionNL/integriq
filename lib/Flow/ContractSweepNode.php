@@ -79,7 +79,6 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 
 	use SynchronizationLogActions;
 
-
 	/**
 	 * The step type this node answers to.
 	 *

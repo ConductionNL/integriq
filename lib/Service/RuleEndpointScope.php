@@ -86,7 +86,6 @@ final class RuleEndpointScope {
 	 */
 	public function methodOf(array $endpoint): string {
 		return strtoupper(trim((string)($endpoint['method'] ?? '')));
-
 	}//end methodOf()
 
 	/**
@@ -100,7 +99,6 @@ final class RuleEndpointScope {
 	 */
 	public function targetTypeOf(array $endpoint): string {
 		return trim((string)($endpoint['targetType'] ?? ''));
-
 	}//end targetTypeOf()
 
 	/**
@@ -114,7 +112,6 @@ final class RuleEndpointScope {
 	 */
 	public function eventOf(array $endpoint): ?string {
 		return (self::EVENT_FOR_METHOD[$this->methodOf(endpoint: $endpoint)] ?? null);
-
 	}//end eventOf()
 
 	/**
@@ -126,7 +123,6 @@ final class RuleEndpointScope {
 	 */
 	public function writeMethods(): array {
 		return array_keys(self::EVENT_FOR_METHOD);
-
 	}//end writeMethods()
 
 	/**
@@ -149,7 +145,6 @@ final class RuleEndpointScope {
 		}
 
 		return [$halves[1], $halves[2]];
-
 	}//end targetPairOf()
 
 	/**
@@ -175,6 +170,5 @@ final class RuleEndpointScope {
 		}
 
 		return (array_intersect($this->subject->identifiersOf(entity: $rule), $listed) !== []);
-
 	}//end runsRule()
 }//end class

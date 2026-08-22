@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector Settings Controller
+ * Integriq Settings Controller
  *
- * Post-chain-C shrunk version. The only kept method is the openconnector-specific
+ * Post-chain-C shrunk version. The only kept method is the integriq-specific
  * `rebase` action (recompute log-retention deletion timestamps after retention
  * settings change). The deleted `stats`, `getSettings`, `updateSettings` methods
  * are superseded by OR's `/api/settings/*` endpoints + declarative manifest
@@ -13,7 +13,7 @@
  * Postgres portability of `rebase`: tracked at GH #822.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -21,15 +21,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\SettingsService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\SettingsService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -38,7 +38,7 @@ use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
- * Controller exposing OpenConnector-specific settings actions.
+ * Controller exposing Integriq-specific settings actions.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
@@ -67,7 +67,7 @@ class SettingsController extends Controller {
 	 * Rebase all logs with current retention settings.
 	 *
 	 * Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows
-	 * based on the current retention windows. This is the openconnector-specific
+	 * based on the current retention windows. This is the integriq-specific
 	 * action that has no OR equivalent (OR's archival workflow uses ISO durations
 	 * + per-object retention; the connector mixes service-level constants with
 	 * per-source overrides — see local ADR-004).
@@ -78,7 +78,7 @@ class SettingsController extends Controller {
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function rebase(): JSONResponse {
 		try {
 			$this->logger->info('Rebase endpoint called', ['endpoint' => '/api/settings/rebase']);

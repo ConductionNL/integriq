@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Call Service.
+ * Integriq Call Service.
  *
  * Provides functionality to handle API calls to a specified source within the
  * NextCloud environment. Manages the execution of HTTP requests using the
@@ -9,7 +9,7 @@
  * logs.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,7 +17,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @todo We should test the effect of @Authors & @Package(s) in Class doc-blocks. And add them if possible.
  *
@@ -35,7 +35,7 @@
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use DateTime;
@@ -51,12 +51,12 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Flow\FlowConfigGuard;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Twig\AuthenticationExtension;
-use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Flow\FlowConfigGuard;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Twig\AuthenticationExtension;
+use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -105,7 +105,7 @@ class CallService {
 	/**
 	 * Default consecutive-failure threshold before the per-Source circuit
 	 * breaker opens, when the Source has not configured its own
-	 * `circuitBreakerThreshold`. Mirrors {@see \OCA\OpenConnector\Connectors\PdokConnector::BREAKER_THRESHOLD}.
+	 * `circuitBreakerThreshold`. Mirrors {@see \OCA\Integriq\Connectors\PdokConnector::BREAKER_THRESHOLD}.
 	 *
 	 * @var integer
 	 */
@@ -115,7 +115,7 @@ class CallService {
 	 * Default cooldown (seconds) an open breaker stays open before the next
 	 * dispatch is treated as a half-open probe, when the Source has not
 	 * configured its own `circuitBreakerCooldownSeconds`. Mirrors
-	 * {@see \OCA\OpenConnector\Connectors\PdokConnector::BREAKER_OPEN_SECONDS}.
+	 * {@see \OCA\Integriq\Connectors\PdokConnector::BREAKER_OPEN_SECONDS}.
 	 *
 	 * @var integer
 	 */
@@ -261,9 +261,9 @@ class CallService {
 
 		$this->errorRetention = 2592000000;
 		$this->successRetention = 3600000;
-		if ($this->appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+		if ($this->appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
 			$retentionPayload = json_decode(
-				$this->appConfig->getValueString(app: 'openconnector', key: 'retention'),
+				$this->appConfig->getValueString(app: 'integriq', key: 'retention'),
 				true
 			);
 			$this->errorRetention = ($retentionPayload['callLogRetention'] ?? 2592000000);
@@ -961,7 +961,7 @@ class CallService {
 	 * Validates and clamps incoming X-RateLimit-* header values to bounded,
 	 * non-hostile ranges before they are persisted on the source. A
 	 * misconfigured or malicious upstream that returned an `X-RateLimit-Reset`
-	 * decades in the future could otherwise wedge OpenConnector into a
+	 * decades in the future could otherwise wedge Integriq into a
 	 * permanent 429 against that source (#1012c).
 	 *
 	 * @param mixed $rawValue The raw value pulled from the response header.
@@ -1032,12 +1032,12 @@ class CallService {
 		// `verify: false` unless either:
 		// - the source location is loopback (localhost / 127.x / [::1]), or
 		// - the admin has explicitly opted-in via the NC app config flag
-		// `openconnector.allow_insecure_tls = true`.
+		// `integriq.allow_insecure_tls = true`.
 		if (array_key_exists('verify', $config) === true && $config['verify'] === false) {
 			$location = (string)($sourceData['location'] ?? '');
 			$isLocalhost = $this->isLoopbackLocation(location: $location);
 			$allowInsecureTlsRaw = $this->appConfig->getValueString(
-				'openconnector',
+				'integriq',
 				'allow_insecure_tls',
 				'false'
 			);
@@ -1048,7 +1048,7 @@ class CallService {
 				$config['verify'] = true;
 				$this->logger->warning(
 					'CallService: refusing verify:false on non-localhost source — re-enabled TLS '
-						. 'certificate verification. Set IAppConfig openconnector.allow_insecure_tls=true to '
+						. 'certificate verification. Set IAppConfig integriq.allow_insecure_tls=true to '
 						. 'opt out (NOT recommended in production). #1011',
 					['location' => $location]
 				);
@@ -1857,9 +1857,9 @@ class CallService {
 	 * The entity is deliberately NOT persisted here: it is handed to the
 	 * buffered flush path, which writes the whole batch in one call.
 	 *
-	 * @param ObjectEntity               $source The source the call was made against.
-	 * @param array                      $data   The call payload (`request` / `response` sub-arrays).
-	 * @param ExecutionTraceContext|null $trace  The active execution trace, when one is running.
+	 * @param ObjectEntity $source The source the call was made against.
+	 * @param array $data The call payload (`request` / `response` sub-arrays).
+	 * @param ExecutionTraceContext|null $trace The active execution trace, when one is running.
 	 *
 	 * @return ObjectEntity The unsaved call-log entity.
 	 */
@@ -2050,7 +2050,7 @@ class CallService {
 	 * `fixed`: delayMs = baseDelayMs. `exponential`: delayMs = min(baseDelayMs
 	 * * 2^(attempt-1), maxDelayMs). `jitter: true` adjusts the result by
 	 * +/-10% using a uniform random offset (mirrors
-	 * {@see \OCA\OpenConnector\Connectors\PdokConnector::sleepBackoff()}).
+	 * {@see \OCA\Integriq\Connectors\PdokConnector::sleepBackoff()}).
 	 *
 	 * @param array $policy The resolved effective RetryPolicy.
 	 * @param integer $attempt The 1-based attempt number that just failed.

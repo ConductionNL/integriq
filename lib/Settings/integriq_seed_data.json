@@ -247,21 +247,21 @@
       "@self": { "register": "openconnector", "schema": "job", "slug": "example-cron-sync" },
       "name": "Example Cron Sync",
       "description": "Placeholder scheduled job. Replace jobClass before enabling.",
-      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleSyncJob",
+      "jobClass": "OCA\\Integriq\\Cron\\ExampleSyncJob",
       "isEnabled": false
     },
     {
       "@self": { "register": "openconnector", "schema": "job", "slug": "example-cleanup" },
       "name": "Example Cleanup",
       "description": "Placeholder maintenance job that prunes stale records.",
-      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleCleanupJob",
+      "jobClass": "OCA\\Integriq\\Cron\\ExampleCleanupJob",
       "isEnabled": false
     },
     {
       "@self": { "register": "openconnector", "schema": "job", "slug": "example-health-check" },
       "name": "Example Health Check",
       "description": "Placeholder job that pings configured sources and records health metrics.",
-      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleHealthCheckJob",
+      "jobClass": "OCA\\Integriq\\Cron\\ExampleHealthCheckJob",
       "isEnabled": false
     }
   ],

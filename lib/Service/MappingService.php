@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector MappingService.
+ * Integriq MappingService.
  *
  * Mapping service that delegates core execution to OpenRegister's MappingService
  * when available, falling back to its own implementation.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,7 +15,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 /**
@@ -27,10 +27,10 @@
  * Post chain-C cutover (services-direct-or-usage) this service consumes the
  * OpenRegister-owned mapping value object directly via
  * {@see \OCA\OpenRegister\Service\ObjectService}: no more references to the
- * legacy `OCA\OpenConnector\Db\Mapping*` types.
+ * legacy `OCA\Integriq\Db\Mapping*` types.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -42,13 +42,13 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenConnector\Twig\MappingExtension;
-use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OCA\Integriq\Twig\MappingExtension;
+use OCA\Integriq\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -103,7 +103,7 @@ class MappingService {
 	 * @param ArrayLoader $loader The ArrayLoader for Twig.
 	 * @param CallService $callService Outbound HTTP caller used by the Twig runtime.
 	 * @param FileService $fileService The OR-side file lookup helper.
-	 * @param ObjectService $objectService The OpenConnector object service.
+	 * @param ObjectService $objectService The Integriq object service.
 	 * @param OrObjectService $orObjectService The OpenRegister object service (chain-C entry point).
 	 * @param SynchronizationContractService $synchronizationContractService The synchronization contract service.
 	 */
@@ -631,7 +631,7 @@ class MappingService {
 	 *
 	 * Post chain-C cutover this routes directly through OpenRegister's ObjectService.
 	 * The returned OR Mapping value object exposes the same methods the previous
-	 * `OCA\OpenConnector\Db\Mapping` shape did (`getMapping`, `getPassThrough`, ...).
+	 * `OCA\Integriq\Db\Mapping` shape did (`getMapping`, `getPassThrough`, ...).
 	 *
 	 * @param string $mappingId The unique identifier of the mapping to retrieve.
 	 *
@@ -772,7 +772,7 @@ class MappingService {
 	 * When the identity type is `bsn`, the supplied objectId (expected to be a
 	 * raw BSN from the caller's perspective) is SHA-256-hashed before being
 	 * placed in the filter, matching the AVG BSN policy's storage shape (only
-	 * the hash is ever persisted — see {@see \OCA\OpenConnector\Rule\AvgBsnPolicyRule}).
+	 * the hash is ever persisted — see {@see \OCA\Integriq\Rule\AvgBsnPolicyRule}).
 	 * Non-BSN identity types pass through unchanged.
 	 *
 	 * @param string $codeKind The VNG identity type code (e.g. `bsn`, `rsin`, `vestigingsnummer`).

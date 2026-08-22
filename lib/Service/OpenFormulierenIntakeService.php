@@ -37,7 +37,6 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
@@ -417,8 +416,8 @@ class OpenFormulierenIntakeService {
 					'status' => 'fetched',
 					'fileId' => $file->getId(),
 				];
-			// Throwable alone: both named types are Throwables, so listing them
-			// separately caught nothing extra.
+				// Throwable alone: both named types are Throwables, so listing them
+				// separately caught nothing extra.
 			} catch (Throwable $exception) {
 				$this->logger->warning(
 					'[OpenFormulierenIntakeService] attachment fetch/store failed',

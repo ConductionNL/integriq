@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EudiCredentialOfferService.
+ * Integriq EudiCredentialOfferService.
  *
  * Owns the OpenID4VCI pre-authorized-code credential offer lifecycle for
  * the EUDI wallet credential issuance adapter: offer creation (app-facing,
@@ -10,7 +10,7 @@
  * for jwt_vc_json, mint-and-seal for dc+sd-jwt), and revocation.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
@@ -35,7 +35,7 @@ use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
-use OCA\OpenConnector\Exception\EudiIssuanceException;
+use OCA\Integriq\Exception\EudiIssuanceException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;

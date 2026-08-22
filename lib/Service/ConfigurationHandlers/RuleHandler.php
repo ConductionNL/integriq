@@ -54,8 +54,8 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @param Entity $entity The rule entity to export.
 	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
 	 * @param array<int, mixed> $mappingIds Collected mapping ids (out param). The
-	 *        values come straight out of the caller-supplied $config, so they are
-	 *        only int|string by convention — nothing here narrows them.
+	 *                                      values come straight out of the caller-supplied $config, so they are
+	 *                                      only int|string by convention — nothing here narrows them.
 	 *
 	 * @return array The serialised rule configuration.
 	 *
@@ -100,8 +100,8 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @param array $config The configuration array to process.
 	 * @param array $mappings The mappings array containing idToSlug mappings.
 	 * @param array<int, mixed> $mappingIds Collected mapping ids (out param). The
-	 *        values come straight out of the caller-supplied $config, so they are
-	 *        only int|string by convention — nothing here narrows them.
+	 *                                      values come straight out of the caller-supplied $config, so they are
+	 *                                      only int|string by convention — nothing here narrows them.
 	 *
 	 * @return array The processed configuration with IDs converted to slugs.
 	 *

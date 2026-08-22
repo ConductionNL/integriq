@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector configuration service.
+ * Integriq configuration service.
  *
  * Service class for managing configurations and their associated entities.
  * Coordinates import/export of openconnector-scoped configuration objects
@@ -9,7 +9,7 @@
  * matching ConfigurationHandlers and bidirectional id/slug maps.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,17 +17,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Service\ConfigurationHandlers\EndpointHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\JobHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\MappingHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\RuleHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\SourceHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\SynchronizationHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\MappingHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\RuleHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

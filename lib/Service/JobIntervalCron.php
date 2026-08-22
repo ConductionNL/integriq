@@ -85,7 +85,6 @@ final class JobIntervalCron {
 		}
 
 		return (int)$interval;
-
 	}//end secondsOf()
 
 	/**
@@ -99,7 +98,6 @@ final class JobIntervalCron {
 	 */
 	public function cronFor(int $seconds): ?string {
 		return (self::CRON_FOR_INTERVAL[$seconds] ?? null);
-
 	}//end cronFor()
 
 	/**
@@ -111,6 +109,5 @@ final class JobIntervalCron {
 	 */
 	public function expressibleIntervals(): array {
 		return array_keys(self::CRON_FOR_INTERVAL);
-
 	}//end expressibleIntervals()
 }//end class

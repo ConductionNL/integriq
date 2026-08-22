@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector AppHost Metrics Provider.
+ * Integriq AppHost Metrics Provider.
  *
  * Escape-hatch metrics provider for the OpenRegister AppHost observability
  * engine (ADR-040 / ADR-006). The per-Source circuit breaker state
@@ -14,14 +14,14 @@
  * aggregation, ADR-022) and emits one sample per Source.
  *
  * The engine resolves this class via the container alias
- * `OCA\OpenRegister\AppHost\IMetricsProvider::openconnector` (ADR-035
+ * `OCA\OpenRegister\AppHost\IMetricsProvider::integriq` (ADR-035
  * pattern) and merges its MetricSample output into the response; the
- * AppHost PrometheusRenderer prepends the `openconnector_` prefix and
+ * AppHost PrometheusRenderer prepends the `integriq_` prefix and
  * renders the exposition format, so this provider never emits raw
  * Prometheus text.
  *
  * @category Observability
- * @package  OCA\OpenConnector\Observability
+ * @package  OCA\Integriq\Observability
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,14 +32,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Observability;
+namespace OCA\Integriq\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Domain metrics provider for OpenConnector (AppHost escape hatch).
+ * Domain metrics provider for Integriq (AppHost escape hatch).
  *
  * @psalm-suppress UnusedClass Resolved via the AppHost container alias.
  *
@@ -61,7 +61,7 @@ use Throwable;
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
  */
-class OpenConnectorMetricsProvider implements IMetricsProvider {
+class IntegriqMetricsProvider implements IMetricsProvider {
 	/**
 	 * Constructor.
 	 *
@@ -410,7 +410,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider {
 			$products = $this->fetchApiProducts();
 			$callLogRows = $this->fetchInboundCallLogRows();
 		} catch (Throwable $e) {
-			$this->logger->warning('openconnector: api_product_latency_seconds query failed: ' . $e->getMessage());
+			$this->logger->warning('integriq: api_product_latency_seconds query failed: ' . $e->getMessage());
 			return new MetricSample(
 				name: 'api_product_latency_seconds',
 				type: 'gauge',
@@ -508,7 +508,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider {
 			$products = $this->fetchApiProducts();
 			$callLogRows = $this->fetchInboundCallLogRows();
 		} catch (Throwable $e) {
-			$this->logger->warning('openconnector: api_product_errors_total query failed: ' . $e->getMessage());
+			$this->logger->warning('integriq: api_product_errors_total query failed: ' . $e->getMessage());
 			return new MetricSample(
 				name: 'api_product_errors_total',
 				type: 'gauge',
@@ -545,7 +545,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider {
 
 	/**
 	 * Fetch every `source` object as plain field arrays, via OpenRegister
-	 * object aggregation (ADR-022 — no raw SQL against openconnector's
+	 * object aggregation (ADR-022 — no raw SQL against integriq's
 	 * storage table).
 	 *
 	 * @return array<int, array<string, mixed>> The sources' own fields.
@@ -745,7 +745,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider {
 			$rows = $this->fetchObjectsBySchemaTitle(title: $schemaTitle);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				message: sprintf('[openconnector\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
+				message: sprintf('[integriq\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			$rows = [];
@@ -779,7 +779,7 @@ class OpenConnectorMetricsProvider implements IMetricsProvider {
 	}//end groupedCountSample()
 
 	/**
-	 * Produce OpenConnector's domain metric samples.
+	 * Produce Integriq's domain metric samples.
 	 *
 	 * @return MetricSample[] The provider's samples.
 	 *

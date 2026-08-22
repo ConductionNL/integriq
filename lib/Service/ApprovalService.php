@@ -481,8 +481,8 @@ class ApprovalService {
 	public function find(string $id): ObjectEntity {
 		try {
 			return $this->objectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
-		// Throwable alone: DoesNotExistException is a Throwable, so naming it
-		// separately caught nothing extra.
+			// Throwable alone: DoesNotExistException is a Throwable, so naming it
+			// separately caught nothing extra.
 		} catch (Throwable $e) {
 			throw new ApprovalStateException(message: 'No such approval request', httpStatus: 404, previous: $e);
 		}

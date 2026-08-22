@@ -110,7 +110,7 @@
         },
         "name": "TenderNed Weekly Sync",
         "description": "Runs the tenderned-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence (concurrentie-analyse weekly GitHub Actions sync, Sunday 02:00 UTC).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "tenderned-to-spectr-tender"
         },

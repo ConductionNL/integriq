@@ -154,7 +154,6 @@ final class RuleConditionTranslator {
 		}
 
 		return null;
-
 	}//end pathFor()
 
 	/**
@@ -192,6 +191,5 @@ final class RuleConditionTranslator {
 		}//end foreach
 
 		return $translated;
-
 	}//end translate()
 }//end class

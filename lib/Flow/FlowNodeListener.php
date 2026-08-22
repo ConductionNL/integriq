@@ -34,7 +34,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<RegisterFlowNodesEvent>
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 class FlowNodeListener implements IEventListener {
 	/**
@@ -89,7 +89,7 @@ class FlowNodeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof RegisterFlowNodesEvent) === false) {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Integriq — live progress for a synchronization run.
  *
@@ -142,7 +143,7 @@ class SynchronizationRunProgressService {
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param LoggerInterface $logger        The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
@@ -158,8 +159,8 @@ class SynchronizationRunProgressService {
 	 * guarded — an unavailable register must not stop a synchronization.
 	 *
 	 * @param string $synchronizationId The synchronization being run.
-	 * @param bool   $enabled           False leaves the run unrecorded, and every
-	 *                                  later tick/finish a no-op.
+	 * @param bool $enabled False leaves the run unrecorded, and every
+	 *                      later tick/finish a no-op.
 	 *
 	 * @return void
 	 *
@@ -239,8 +240,8 @@ class SynchronizationRunProgressService {
 	 * always be written, or a finished run stays `running` forever and every
 	 * watcher reads it as hung.
 	 *
-	 * @param string      $status  One of `success` or `failed`.
-	 * @param array       $counters Final counters to merge.
+	 * @param string $status One of `success` or `failed`.
+	 * @param array $counters Final counters to merge.
 	 * @param string|null $message Terminal message, if any.
 	 *
 	 * @return void
@@ -285,8 +286,8 @@ class SynchronizationRunProgressService {
 	/**
 	 * Persist the record on the cheap save path.
 	 *
-	 * @param array       $object The record.
-	 * @param string|null $uuid   The record's uuid on update; null creates it.
+	 * @param array $object The record.
+	 * @param string|null $uuid The record's uuid on update; null creates it.
 	 *
 	 * @return string|null The record's uuid, or null when the write failed.
 	 */

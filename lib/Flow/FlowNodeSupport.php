@@ -41,7 +41,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use UnexpectedValueException;
 /**
  * Reads the step id and the `onError` policy a node needs but is not handed.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 final class FlowNodeSupport {
 
@@ -96,7 +96,7 @@ final class FlowNodeSupport {
 	 *
 	 * @return string The step id, or the node id when the step is unnamed.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function stepId(array $config, array $context, string $nodeId): string {
 		$candidates = [
@@ -126,7 +126,7 @@ final class FlowNodeSupport {
 	 *
 	 * @return string One of `stop`, `continue`, `dead_letter`.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function onErrorPolicy(array $config, array $context): string {
 		$candidates = [

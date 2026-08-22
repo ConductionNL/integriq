@@ -129,14 +129,13 @@ trait SynchronizationLogActions {
 		}
 
 		return '';
-
 	}//end synchronizationIn()
 
 	/**
 	 * Depth-bounded search for a reference key holding a non-empty scalar.
 	 *
 	 * @param mixed $value The value to search.
-	 * @param int   $depth How deep this call already is.
+	 * @param int $depth How deep this call already is.
 	 *
 	 * @return string The reference, or an empty string.
 	 *
@@ -162,6 +161,5 @@ trait SynchronizationLogActions {
 		}
 
 		return '';
-
 	}//end referenceIn()
 }//end trait

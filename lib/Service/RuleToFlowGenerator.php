@@ -196,7 +196,6 @@ class RuleToFlowGenerator {
 		);
 
 		return $this->generateFrom(rule: $rule, endpoint: $endpoint);
-
 	}//end generateFor()
 
 	/**
@@ -326,7 +325,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end scopeRefusals()
 
 	/**
@@ -401,7 +399,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end conditionRefusals()
 
 	/**
@@ -509,7 +506,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end synchronizationRuleRefusals()
 
 	/**
@@ -546,7 +542,6 @@ class RuleToFlowGenerator {
 		$nodes[] = ['id' => 'end', 'type' => 'openregister.end', 'config' => []];
 
 		return $nodes;
-
 	}//end nodesFor()
 
 	/**
@@ -720,6 +715,5 @@ class RuleToFlowGenerator {
 		}
 
 		return trim((string)($block ?? ''));
-
 	}//end synchronizationOf()
 }//end class

@@ -76,9 +76,9 @@ class SynchronizationActionRules {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService          $synchronizations Resolves a rule by id.
-	 * @param IL10N                           $l10n             Translations, so a refusal reads as a sentence.
-	 * @param SynchronizationSemanticRefusals $semantic         The meaning-level refusals, fronted here.
+	 * @param SynchronizationService $synchronizations Resolves a rule by id.
+	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
+	 * @param SynchronizationSemanticRefusals $semantic The meaning-level refusals, fronted here.
 	 */
 	public function __construct(
 		private readonly SynchronizationService $synchronizations,
@@ -131,13 +131,12 @@ class SynchronizationActionRules {
 		}
 
 		return $reasons;
-
 	}//end refusalsFor()
 
 	/**
 	 * The refusal one resolved rule earns, or an empty string when it is fine.
 	 *
-	 * @param array  $rule   The resolved rule payload.
+	 * @param array $rule The resolved rule payload.
 	 * @param string $ruleId The reference it was resolved from.
 	 *
 	 * @return string The refusal sentence, or ''.
@@ -180,7 +179,6 @@ class SynchronizationActionRules {
 		}
 
 		return '';
-
 	}//end refusalFor()
 
 	/**
@@ -195,8 +193,8 @@ class SynchronizationActionRules {
 	 * does not re-check that: a second, weaker copy of a refusal is how the two
 	 * come to disagree.
 	 *
-	 * @param array  $synchronization The synchronization's serialised record.
-	 * @param string $reference       The synchronization reference, for the log link.
+	 * @param array $synchronization The synchronization's serialised record.
+	 * @param string $reference The synchronization reference, for the log link.
 	 *
 	 * @return array<int, array<string, mixed>> The steps, possibly none.
 	 *
@@ -229,7 +227,6 @@ class SynchronizationActionRules {
 		}
 
 		return $nodes;
-
 	}//end stepsFor()
 
 	/**
@@ -255,6 +252,5 @@ class SynchronizationActionRules {
 		}
 
 		return $ids;
-
 	}//end ruleIdsOf()
 }//end class

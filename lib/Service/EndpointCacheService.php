@@ -84,7 +84,7 @@ class EndpointCacheService {
 		IAppConfig $appConfig,
 	) {
 		$this->cacheTtl = (int)$appConfig->getValueString(
-			app: 'openconnector',
+			app: 'integriq',
 			key: 'endpoint_cache.ttl_seconds',
 			default: '3600'
 		);

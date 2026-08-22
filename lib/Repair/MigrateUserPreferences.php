@@ -123,9 +123,9 @@ class MigrateUserPreferences implements IRepairStep {
 	/**
 	 * Constructor for MigrateUserPreferences.
 	 *
-	 * @param IConfig         $config      The user-value store to read and write
-	 * @param IUserManager    $userManager The user enumeration backend
-	 * @param LoggerInterface $logger      Logger for preferences that fail to copy
+	 * @param IConfig $config The user-value store to read and write
+	 * @param IUserManager $userManager The user enumeration backend
+	 * @param LoggerInterface $logger Logger for preferences that fail to copy
 	 *
 	 * @return void
 	 */

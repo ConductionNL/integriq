@@ -6,12 +6,12 @@
  * Defines the polymorphic surface — `suggest()`, `lookup()`, `reverse()`,
  * `flavour()` — that the {@see PdokGeocodingClientMock} (deterministic, no
  * network) and {@see PdokGeocodingClientHttp} (real outbound calls) flavours
- * implement. DI in {@see \OCA\OpenConnector\AppInfo\Application::register()}
+ * implement. DI in {@see \OCA\Integriq\AppInfo\Application::register()}
  * resolves the abstract to one of those concrete implementations, gated on the
  * `pdok.feature_flag` app-config flag.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,12 +20,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 /**
  * Polymorphic base for the PDOK geocoding adapter family.

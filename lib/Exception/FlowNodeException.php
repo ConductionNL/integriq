@@ -35,7 +35,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
 /**
  * Signals a hard failure inside an Integriq flow node.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
 class FlowNodeException extends RuntimeException {
 
@@ -84,7 +84,7 @@ class FlowNodeException extends RuntimeException {
 	 *
 	 * @return array<string, mixed> The detail.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getDetails(): array {
 		return $this->details;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization → Flow migration generator.
+ * Integriq Synchronization → Flow migration generator.
  *
  * Task 3.1 of `flow-native-synchronization`: renders an existing
  * Synchronization entity into a GENERATED FLOW DOCUMENT — the decomposed
@@ -97,7 +97,7 @@
  *    and a generator is not the place that decision gets made.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -108,21 +108,21 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\SynchronizationNotMigratableException;
-use OCA\OpenConnector\Flow\ApplyMappingNode;
-use OCA\OpenConnector\Flow\ContractCommitNode;
-use OCA\OpenConnector\Flow\ContractMatchNode;
-use OCA\OpenConnector\Flow\ContractSweepNode;
-use OCA\OpenConnector\Flow\SourcePaginateNode;
+use OCA\Integriq\Exception\SynchronizationNotMigratableException;
+use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\ContractCommitNode;
+use OCA\Integriq\Flow\ContractMatchNode;
+use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\SourcePaginateNode;
 use OCP\IL10N;
 use Throwable;
 
@@ -292,7 +292,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return $this->generateFrom(synchronization: (array)$synchronization);
-
 	}//end generateFor()
 
 	/**
@@ -362,8 +361,6 @@ class SynchronizationFlowGenerator {
 
 	}//end refusalsFor()
 
-
-
 	/**
 	 * Refusals about where the objects come from and where they go.
 	 *
@@ -409,7 +406,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end transportRefusals()
 
 	/**
@@ -463,7 +459,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return [];
-
 	}//end fieldRefusals()
 
 	/**
@@ -475,7 +470,7 @@ class SynchronizationFlowGenerator {
 	 * set" used to refuse.
 	 *
 	 * @param object|null $mapping The resolved mapping, or null when none is set.
-	 * @param string      $written The path holding what gets written.
+	 * @param string $written The path holding what gets written.
 	 *
 	 * @return array<string, mixed> The `fields` or `payloadFrom` half of the write config.
 	 *
@@ -491,7 +486,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return ['fields' => $this->fieldsFor(mapping: $mapping)];
-
 	}//end payloadConfigFor()
 
 	/**
@@ -568,7 +562,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return $fields;
-
 	}//end fieldsFor()
 
 	/**
@@ -650,13 +643,13 @@ class SynchronizationFlowGenerator {
 	 * the semantic refusals moved to their own class, which is why this shape is
 	 * only possible now.
 	 *
-	 * @param string      $reference  The synchronization reference.
-	 * @param string      $idPosition The source object's id path.
-	 * @param string      $register   The target register.
-	 * @param string      $schema     The target schema.
-	 * @param object|null $mapping    The resolved mapping, null when unmapped.
-	 * @param string      $written    The item path holding what gets written.
-	 * @param array       $synchronization The whole record, for its `actions`.
+	 * @param string $reference The synchronization reference.
+	 * @param string $idPosition The source object's id path.
+	 * @param string $register The target register.
+	 * @param string $schema The target schema.
+	 * @param object|null $mapping The resolved mapping, null when unmapped.
+	 * @param string $written The item path holding what gets written.
+	 * @param array $synchronization The whole record, for its `actions`.
 	 *
 	 * @return array<int, array<string, mixed>> The tail of the pipeline.
 	 *
@@ -669,7 +662,7 @@ class SynchronizationFlowGenerator {
 		string $schema,
 		?object $mapping,
 		string $written,
-		array $synchronization
+		array $synchronization,
 	): array {
 		return [
 			[
@@ -742,7 +735,6 @@ class SynchronizationFlowGenerator {
 
 	}//end writeNodesFor()
 
-
 	/**
 	 * The step that names the target id this pass REACHED, written or skipped.
 	 *
@@ -785,7 +777,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return $edges;
-
 	}//end edgesFor()
 
 	/**
@@ -833,7 +824,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return '';
-
 	}//end referenceOf()
 
 	/**
@@ -852,7 +842,6 @@ class SynchronizationFlowGenerator {
 		}
 
 		return $this->referenceOf(synchronization: $synchronization);
-
 	}//end labelOf()
 
 	/**
@@ -876,6 +865,5 @@ class SynchronizationFlowGenerator {
 		}
 
 		return [$halves[1], $halves[2]];
-
 	}//end targetPair()
 }//end class

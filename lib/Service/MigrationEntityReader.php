@@ -130,6 +130,5 @@ final class MigrationEntityReader {
 		}
 
 		return $record;
-
 	}//end read()
 }//end class

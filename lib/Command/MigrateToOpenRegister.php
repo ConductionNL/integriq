@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OCC command: openconnector:migrate-storage.
+ * OCC command: integriq:migrate-storage.
  *
  * Operator entrypoint for the chain-B legacy → OpenRegister storage migration.
  * Wraps {@see LegacyToRegisterMigrator::migrateAll()} so admins can run, dry-run,
  * retry per-entity, or verify the migration from the CLI — outside the
  * `occ upgrade` window. The chain-B migration class
- * ({@see \OCA\OpenConnector\Migration\Version2Date20260520000001}) points
+ * ({@see \OCA\Integriq\Migration\Version2Date20260520000001}) points
  * operators here for per-entity retry when a full run reports skips/errors.
  *
  * Flags:
@@ -20,7 +20,7 @@
  * REQ-008 (OCC command must allow manual re-runnability), Task 15 + Task 17.
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,15 +28,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -44,7 +44,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Migrates openconnector legacy tables into OpenRegister storage from the CLI.
+ * Migrates Integriq legacy tables into OpenRegister storage from the CLI.
  *
  * @spec openspec/specs/openconnector-storage-migration/spec.md
  */
@@ -91,8 +91,8 @@ class MigrateToOpenRegister extends Command {
 	 * @return void
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:migrate-storage')
-			->setDescription('Migrate openconnector legacy tables into OpenRegister storage')
+		$this->setName(name: 'integriq:migrate-storage')
+			->setDescription('Migrate Integriq legacy tables into OpenRegister storage')
 			->addOption(
 				'dry-run',
 				null,

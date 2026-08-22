@@ -63,8 +63,8 @@ use Psr\Log\LoggerInterface;
  * Rename shillinq's Dutch amount columns to their English equivalents.
  *
  * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
-	 *  migration. Pointing this at an existing spec would report conformance to a
-	 *  requirement that says nothing about it.
+ *  migration. Pointing this at an existing spec would report conformance to a
+ *  requirement that says nothing about it.
  */
 class RenameDutchColumns implements IRepairStep {
 	/**

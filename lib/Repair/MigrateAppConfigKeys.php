@@ -118,8 +118,8 @@ class MigrateAppConfigKeys implements IRepairStep {
 	/**
 	 * Constructor for MigrateAppConfigKeys.
 	 *
-	 * @param IAppConfig      $appConfig The app config interface
-	 * @param LoggerInterface $logger    The logger interface
+	 * @param IAppConfig $appConfig The app config interface
+	 * @param LoggerInterface $logger The logger interface
 	 *
 	 * @return void
 	 */

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector PDOK Geocoding Source Client (dormant).
+ * Integriq PDOK Geocoding Source Client (dormant).
  *
  * Source-pattern facade over the lower-level abstract
- * `\OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient` family. Ships
+ * `\OCA\Integriq\Adapters\Pdok\PdokGeocodingClient` family. Ships
  * dormant: every call logs the intent and returns a deterministic canned
  * response (one Conduction HQ entry — Lauriergracht, Amsterdam) so
  * consuming apps (procest `gis-integration`, zaakportaal address
@@ -12,16 +12,16 @@
  * test against a stable surface without hitting the live PDOK
  * Locatieserver.
  *
- * Lives under `lib/Sources/Pdok/` so it can be discovered by the openconnector
+ * Lives under `lib/Sources/Pdok/` so it can be discovered by the integriq
  * Source registry (Source row `pdok-geocoding`, category=`geo`). The active
  * HTTP implementation is
- * `\OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientHttp`, which delegates
- * to the existing `\OCA\OpenConnector\Connectors\PdokConnector`. See
- * {@see \OCA\OpenConnector\Adapters\Pdok\PdokSourceAdapter} for the
+ * `\OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp`, which delegates
+ * to the existing `\OCA\Integriq\Connectors\PdokConnector`. See
+ * {@see \OCA\Integriq\Adapters\Pdok\PdokSourceAdapter} for the
  * `pdok.feature_flag` activation steps.
  *
  * @category Source
- * @package  OCA\OpenConnector\Sources\Pdok
+ * @package  OCA\Integriq\Sources\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,21 +30,21 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Sources\Pdok;
+namespace OCA\Integriq\Sources\Pdok;
 
-use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient as AdapterGeocodingClient;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterGeocodingClient;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Dormant source adapter for the PDOK Locatieserver (adres → coords resolution).
  *
- * Registered as openconnector Source row id `pdok-geocoding`, category `geo`.
+ * Registered as integriq Source row id `pdok-geocoding`, category `geo`.
  * Until `pdok.feature_flag` is flipped to `1`, every method returns the canned
  * response below and logs a single debug entry so operators can verify the
  * wiring without hitting the upstream.
@@ -60,7 +60,7 @@ final class PdokGeocodingClient {
 	/**
 	 * App id used for IAppConfig look-ups.
 	 */
-	public const APP_ID = 'openconnector';
+	public const APP_ID = 'integriq';
 
 	/**
 	 * App-config key for the dormant-flag toggle (shared with WMS + WFS).
@@ -175,7 +175,7 @@ final class PdokGeocodingClient {
 	}//end reverse()
 
 	/**
-	 * Source-registry descriptor for the openconnector Source row.
+	 * Source-registry descriptor for the integriq Source row.
 	 *
 	 * @return array<string,mixed>
 	 */

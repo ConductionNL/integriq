@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector EventService.
+ * Integriq EventService.
  *
  * Service class for managing events and their delivery.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,20 +14,20 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
-use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Forms\FormsAnswerResolver;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -170,7 +170,7 @@ class EventService {
 	 * Cheap existence check: is there at least one active `event_subscription`
 	 * anywhere on this instance?
 	 *
-	 * Used as a firehose gate by {@see \OCA\OpenConnector\EventListener\CloudEventListener}
+	 * Used as a firehose gate by {@see \OCA\Integriq\EventListener\CloudEventListener}
 	 * so that an install with zero configured subscriptions (the common case —
 	 * outbound webhooks are opt-in) pays no persistence cost at all for OR
 	 * object mutations fleet-wide: no `event` record is written, no matching
@@ -203,7 +203,7 @@ class EventService {
 	 * Resolve the numeric schema ids of this app's own CloudEvent storage
 	 * (`event`, `event_message`) within the `openconnector` register.
 	 *
-	 * {@see \OCA\OpenConnector\EventListener\CloudEventListener} needs these
+	 * {@see \OCA\Integriq\EventListener\CloudEventListener} needs these
 	 * to recognise its own writes and not re-forward them. It cannot compare
 	 * slugs, because `ObjectEntity::getSchema()` returns a numeric id.
 	 *
@@ -1698,7 +1698,7 @@ class EventService {
 	 * @return array<string, mixed> `{"<id>": value, "<text>": value, ...}`, the `$input`
 	 *                              passed to `MappingService::executeMapping()`.
 	 *
-	 * @throws \OCA\OpenConnector\Exception\FormsConfigException When a question text is ambiguous.
+	 * @throws \OCA\Integriq\Exception\FormsConfigException When a question text is ambiguous.
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004

@@ -44,7 +44,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ final class FlowRateLimit {
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
 	 */
 	public static function suspensionFor(TooManyRequestsHttpException $exception, string $subject): FlowSuspension {
 		$resumeAt = self::resetTimeFrom(exception: $exception);
@@ -108,7 +108,7 @@ final class FlowRateLimit {
 	 *
 	 * @return DateTime When to try again.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
 	 */
 	public static function resetTimeFrom(TooManyRequestsHttpException $exception): DateTime {
 		$reset = (int)(($exception->getHeaders()['X-RateLimit-Reset'] ?? 0));

@@ -77,10 +77,10 @@ class ViewDeletedEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper            $schemaMapper   Schema mapper used to resolve view + extendview schemas.
-	 * @param RegisterMapper          $registerMapper Register mapper used to resolve the vng-gemma register.
-	 * @param ListenerDeferralService $deferral       Actor-forwarding deferral service.
-	 * @param LoggerInterface         $logger         The logger.
+	 * @param SchemaMapper $schemaMapper Schema mapper used to resolve view + extendview schemas.
+	 * @param RegisterMapper $registerMapper Register mapper used to resolve the vng-gemma register.
+	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -135,8 +135,8 @@ class ViewDeletedEventListener implements IEventListener {
 			jobClass: DeferredViewCascadeJob::class,
 			entry: [
 				'identifier' => $identifier,
-				'register'   => $register->getId(),
-				'schema'     => $extendViewSchema->getId(),
+				'register' => $register->getId(),
+				'schema' => $extendViewSchema->getId(),
 			],
 			dedupeKey: $register->getId() . '|' . $extendViewSchema->getId() . '|' . $identifier
 		);

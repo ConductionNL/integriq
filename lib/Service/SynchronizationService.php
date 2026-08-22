@@ -1052,8 +1052,8 @@ class SynchronizationService {
 	 * concerns, so each item still resolves its own contract, from memory.
 	 *
 	 * @param string $synchronizationId The synchronization the contracts belong to.
-	 * @param array  $originIds         The page's origin ids.
-	 * @param bool   $justByOriginId    Match on origin id alone.
+	 * @param array $originIds The page's origin ids.
+	 * @param bool $justByOriginId Match on origin id alone.
 	 *
 	 * @return array<string, array<int, array>> Origin id => all matching contract payloads.
 	 *
@@ -1063,7 +1063,7 @@ class SynchronizationService {
 	private function indexContractsByOrigin(
 		string $synchronizationId,
 		array $originIds,
-		bool $justByOriginId = false
+		bool $justByOriginId = false,
 	): array {
 		$originIds = array_values(array_unique(array_filter($originIds, static fn ($id): bool => $id !== '')));
 		if ($originIds === []) {
@@ -1095,11 +1095,11 @@ class SynchronizationService {
 	/**
 	 * Find a contract by synchronizationId + originId (and optionally just origin).
 	 *
-	 * @param string     $synchronizationId The synchronization id.
-	 * @param string     $originId          The origin id.
-	 * @param bool|null  $justByOriginId    When true, match on origin id only.
-	 * @param array|null $allMatches       By-reference output: ALL matching contract
-	 *                                     payloads.
+	 * @param string $synchronizationId The synchronization id.
+	 * @param string $originId The origin id.
+	 * @param bool|null $justByOriginId When true, match on origin id only.
+	 * @param array|null $allMatches By-reference output: ALL matching contract
+	 *                               payloads.
 	 * @param-out array $allMatches        Callers may pass null IN, but this method
 	 *                                     always assigns an array back out — empty
 	 *                                     when there is no match.
@@ -1253,7 +1253,7 @@ class SynchronizationService {
 	 * previous check there is nothing to be newer than, so the run must fall
 	 * through and write.
 	 *
-	 * @param mixed $mapping     The resolved mapping, or null when none is set.
+	 * @param mixed $mapping The resolved mapping, or null when none is set.
 	 * @param mixed $lastChecked The contract's `sourceLastChecked`.
 	 *
 	 * @return bool True when the mapping is no reason to rewrite.
@@ -1290,7 +1290,7 @@ class SynchronizationService {
 	 * value returns false — "cannot prove it is older" must fall through to the
 	 * update path, never silently skip a write.
 	 *
-	 * @param mixed $moment    The earlier candidate (DateTimeInterface or string).
+	 * @param mixed $moment The earlier candidate (DateTimeInterface or string).
 	 * @param mixed $reference The later candidate (DateTimeInterface or string).
 	 *
 	 * @return bool True when both parse and `$moment` is strictly earlier.
@@ -2659,9 +2659,9 @@ class SynchronizationService {
 			// stays null rather than raising.
 			$contractIds = array_values(
 				array_filter(
-                    ($result['contracts'] ?? []),
-                    static fn ($id): bool => $id !== null
-                )
+					($result['contracts'] ?? []),
+					static fn ($id): bool => $id !== null
+				)
 			);
 
 			// EMBEDDING IS BOUNDED, and the bound is the point. `_embed` exists so
@@ -2700,14 +2700,14 @@ class SynchronizationService {
 				try {
 					foreach ($this->findAllContractObjects(filters: ['uuid' => $contractIds]) as $match) {
 						$payload = $match->jsonSerialize();
-						$key     = (string) (($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
+						$key = (string)(($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
 						if ($key !== '') {
 							$resolved[$key] = $payload;
 						}
 					}
 				} catch (\Throwable $embedException) {
 					$this->logger->warning(
-						'Could not resolve contracts for _embed: '.$embedException->getMessage()
+						'Could not resolve contracts for _embed: ' . $embedException->getMessage()
 					);
 				}
 			}
@@ -4903,7 +4903,7 @@ class SynchronizationService {
 
 		return (string)Uuid::v5(
 			Uuid::fromString(self::TARGET_UUID_NAMESPACE),
-			$synchronizationId.'|'.$originId
+			$synchronizationId . '|' . $originId
 		);
 	}//end deriveTargetUuid()
 
@@ -4934,7 +4934,7 @@ class SynchronizationService {
 		array $row,
 		array $sourceConfig,
 	): void {
-		$groupKey = $register.'/'.$schema;
+		$groupKey = $register . '/' . $schema;
 
 		if (isset($this->targetWriteBuffer[$groupKey]) === false) {
 			$this->targetWriteBuffer[$groupKey] = [
@@ -5071,7 +5071,7 @@ class SynchronizationService {
 		$this->logger->warning(
 			'Bulk target write rejected rows during a synchronization flush',
 			[
-				'target' => $group['register'].'/'.$group['schema'],
+				'target' => $group['register'] . '/' . $group['schema'],
 				'requested' => count($rows),
 				'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
 				'updated' => (int)(($bulkResult['statistics']['updated'] ?? 0)),
@@ -5111,7 +5111,7 @@ class SynchronizationService {
 					// re-created on the next run, so this is never just noise.
 					$this->logger->error(
 						'Bulk contract write rejected rows during a synchronization flush; '
-						.'the objects they map may be re-created on the next run.',
+						. 'the objects they map may be re-created on the next run.',
 						[
 							'requested' => count($contracts),
 							'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
@@ -5146,7 +5146,7 @@ class SynchronizationService {
 				// because of one would re-create all of those objects next run.
 				$this->logger->error(
 					'Could not persist a buffered synchronization contract; '
-					.'the object it maps may be re-created on the next run.',
+					. 'the object it maps may be re-created on the next run.',
 					[
 						'originId' => ($contract['originId'] ?? null),
 						'targetId' => ($contract['targetId'] ?? null),
@@ -6492,7 +6492,7 @@ class SynchronizationService {
 		string $endpoint,
 		array $config,
 		array $synchronization,
-		int $fromPage
+		int $fromPage,
 	): void {
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
@@ -6653,7 +6653,7 @@ class SynchronizationService {
 			// A prediction is an optimisation; failing to make one must never
 			// fail the run that would have gone ahead without it.
 			$this->logger->debug(
-				'Could not predict the page count from existing contracts: '.$e->getMessage()
+				'Could not predict the page count from existing contracts: ' . $e->getMessage()
 			);
 			return null;
 		}
@@ -6740,10 +6740,10 @@ class SynchronizationService {
 	/**
 	 * Fetch one page of source data.
 	 *
-	 * @param array  $source          The source to call.
-	 * @param string $endpoint        The endpoint to call.
-	 * @param array  $config          The call configuration.
-	 * @param array  $synchronization The synchronization being run.
+	 * @param array $source The source to call.
+	 * @param string $endpoint The endpoint to call.
+	 * @param array $config The call configuration.
+	 * @param array $synchronization The synchronization being run.
 	 *
 	 * @return array The page's objects and raw result.
 	 */
@@ -8393,7 +8393,6 @@ class SynchronizationService {
 	 */
 	public function findRule(string $id): ?array {
 		return $this->getRuleById(id: $id);
-
 	}//end findRule()
 
 	/**
@@ -8420,8 +8419,8 @@ class SynchronizationService {
 	 * while reporting success. A step that does nothing and says it worked is
 	 * the failure this whole change keeps running into, so it refuses instead.
 	 *
-	 * @param string      $ruleId   The rule's OpenRegister uuid or slug.
-	 * @param array       $data     The item data the rule acts on.
+	 * @param string $ruleId The rule's OpenRegister uuid or slug.
+	 * @param array $data The item data the rule acts on.
 	 * @param string|null $objectId The written object, when there is one.
 	 *
 	 * @return array The data, with placeholders applied when configured.
@@ -8444,7 +8443,6 @@ class SynchronizationService {
 		}
 
 		return $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId);
-
 	}//end runFetchFileRule()
 
 	/**
@@ -9314,10 +9312,10 @@ class SynchronizationService {
 	 * so a rotated credential is picked up at run time rather than frozen at
 	 * queue time.
 	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
+	 * @param array $config The fetch_file rule configuration.
+	 * @param mixed $endpoint The endpoint(s) to fetch.
 	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
+	 * @param int $ruleId The rule id, for error attribution.
 	 *
 	 * @return void
 	 */
@@ -9351,10 +9349,10 @@ class SynchronizationService {
 	 * so `sync` and `async` cannot drift into fetching differently — the only
 	 * intended difference is when the work happens, never what it does.
 	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
+	 * @param array $config The fetch_file rule configuration.
+	 * @param mixed $endpoint The endpoint(s) to fetch.
 	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
+	 * @param int $ruleId The rule id, for error attribution.
 	 *
 	 * @return void
 	 *
@@ -10571,7 +10569,7 @@ class SynchronizationService {
 	 * @param array $source The source value object.
 	 *
 	 * @return array{concurrency: int, byteBudget: int, maxFileSize: int} The clamped cap, the in-flight
-	 *               byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
+	 *                                                                    byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */

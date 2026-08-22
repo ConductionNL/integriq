@@ -90,7 +90,6 @@ class EntityNotMigratableException extends RuntimeException {
 	 */
 	public function getSubject(): string {
 		return $this->subject;
-
 	}//end getSubject()
 
 	/**
@@ -102,6 +101,5 @@ class EntityNotMigratableException extends RuntimeException {
 	 */
 	public function getReasons(): array {
 		return $this->reasons;
-
 	}//end getReasons()
 }//end class

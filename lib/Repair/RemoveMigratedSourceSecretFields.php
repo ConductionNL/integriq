@@ -161,7 +161,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 * ─────────────────────────────────────────────────────────────────────────
 	 * THE CATASTROPHIC TRAP THIS STEP NAVIGATES
 	 * ─────────────────────────────────────────────────────────────────────────
-	 * The four fields MUST STAY in `lib/Settings/openconnector_register.json`.
+	 * The four fields MUST STAY in `lib/Settings/integriq_register.json`.
 	 * OpenRegister's `Schema::hydrate()` sets properties via `setProperties()` — a
 	 * WHOLESALE REPLACE — so a register import that BUMPS the source schema version
 	 * (ImportHandler::handleSchema → updateFromArray, verified at OR
@@ -202,7 +202,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
 			$output->warning('Integriq: could not remove migrated source-secret fields: ' . $e->getMessage());
 			$this->logger->error(
-				'[openconnector] RemoveMigratedSourceSecretFields failed; source schema left untouched',
+				'[integriq] RemoveMigratedSourceSecretFields failed; source schema left untouched',
 				['errorClass' => get_class($e)]
 			);
 		}//end try

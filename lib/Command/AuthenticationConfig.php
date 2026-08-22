@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:authentication-config (ocon#232, follow-up to ocon#151).
+ * OCC command: integriq:authentication-config (ocon#232, follow-up to ocon#151).
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT THIS COMMAND IS FOR
@@ -11,23 +11,23 @@
  * migrated into the credential broker. ocon#232 establishes that a migration would
  * be POINTLESS — nothing would ever resolve the minted ref — because the field lost
  * its last reader in commit b6470597 (2024-11-19), which moved
- * {@see \OCA\OpenConnector\Twig\AuthenticationRuntime} from
+ * {@see \OCA\Integriq\Twig\AuthenticationRuntime} from
  * `$source->getAuthenticationConfig()` to `$source->getConfiguration()` +
  * `authentication.*` without migrating the data or updating the docs. The full
- * evidence is on {@see \OCA\OpenConnector\Service\Security\AuthenticationConfigAuditor}.
+ * evidence is on {@see \OCA\Integriq\Service\Security\AuthenticationConfigAuditor}.
  *
  * So the correct treatment is REMOVAL, not migration. This command is the operator's
  * two-step path to it:
  *
- *   occ openconnector:authentication-config                  # AUDIT — read-only, the default
- *   occ openconnector:authentication-config --json           # ...machine-readable
- *   occ openconnector:authentication-config --remove-authentication-config
- *   occ openconnector:authentication-config --drop-schema-property
+ *   occ integriq:authentication-config                  # AUDIT — read-only, the default
+ *   occ integriq:authentication-config --json           # ...machine-readable
+ *   occ integriq:authentication-config --remove-authentication-config
+ *   occ integriq:authentication-config --drop-schema-property
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHY THE REMOVAL LIVES HERE AND NOT IN THE PHASE-D REPAIR STEP
  * ─────────────────────────────────────────────────────────────────────────────
- * {@see \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields} performs the
+ * {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields} performs the
  * equivalent Phase-D cleanup for the FOUR auto-migratable fields, and it is a
  * REPAIR step — it runs unattended on every app upgrade. That is safe there,
  * because those four were MIGRATED first: their values live on in the broker, so
@@ -52,14 +52,14 @@
  * `<repair-steps>`, and it implements no `IRepairStep`.
  *
  * NOTE: `authenticationConfig` deliberately REMAINS declared in
- * `lib/Settings/openconnector_register.json`. OpenRegister's `Schema::hydrate()`
+ * `lib/Settings/integriq_register.json`. OpenRegister's `Schema::hydrate()`
  * applies `properties` via `setProperties()` — a wholesale REPLACE — so a
  * version-bumping register import would PRUNE any property absent from that JSON,
  * fleet-wide and UNGATED. The property is dropped only per-instance, here, behind
  * an explicit flag.
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -70,15 +70,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Service\Security\AuthenticationConfigAuditor;
-use OCA\OpenConnector\Service\Security\AuthenticationConfigRemover;
+use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
+use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -146,7 +146,7 @@ class AuthenticationConfig extends Command {
 	 * @spec exclude Symfony console wiring — framework metadata, no domain behavior.
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:authentication-config')
+		$this->setName(name: 'integriq:authentication-config')
 			->setDescription(
 				'Audit the vestigial source authenticationConfig field; optionally remove it (explicit opt-in)'
 			)
@@ -439,7 +439,7 @@ class AuthenticationConfig extends Command {
 
 		$io->success(
 			'Dropped authenticationConfig from the live source schema. '
-			. 'It remains declared in openconnector_register.json on purpose — removing it there would prune '
+			. 'It remains declared in integriq_register.json on purpose — removing it there would prune '
 			. 'the property fleet-wide on the next version-bumping import (ocon#232).'
 		);
 		return Command::SUCCESS;

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector JobService.
+ * Integriq JobService.
  *
- * Service class for handling job execution logic in the OpenConnector application.
+ * Service class for handling job execution logic in the Integriq application.
  * This service manages job retrieval, validation, execution, and logging.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
@@ -112,9 +112,9 @@ class JobService {
 	) {
 		$this->errorRetention = 2592000000;
 		$this->successRetention = 3600000;
-		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
 			$retentionPayload = json_decode(
-				$appConfig->getValueString(app: 'openconnector', key: 'retention'),
+				$appConfig->getValueString(app: 'integriq', key: 'retention'),
 				true
 			);
 			$this->errorRetention = ($retentionPayload['jobLogRetention'] ?? 2592000000);
@@ -236,15 +236,15 @@ class JobService {
 		$scheduleAfter = ($jobData['scheduleAfter'] ?? null);
 		if ($scheduleAfter !== null) {
 			$runAfter = (new DateTime($scheduleAfter))->getTimestamp();
-			$this->jobList->scheduleAfter(\OCA\OpenConnector\Cron\JobTask::class, $runAfter, $arguments);
+			$this->jobList->scheduleAfter(\OCA\Integriq\Cron\JobTask::class, $runAfter, $arguments);
 		}
 
 		if ($scheduleAfter === null) {
-			$this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
+			$this->jobList->add(\OCA\Integriq\Cron\JobTask::class, $arguments);
 		}
 
 		// Set the job list id.
-		$jobData['jobListId'] = $this->getJobListId(job: \OCA\OpenConnector\Cron\JobTask::class);
+		$jobData['jobListId'] = $this->getJobListId(job: \OCA\Integriq\Cron\JobTask::class);
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,

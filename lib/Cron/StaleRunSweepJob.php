@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Integriq — close out synchronization runs whose process died.
  *
@@ -73,9 +74,9 @@ class StaleRunSweepJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory    $time          The time factory.
+	 * @param ITimeFactory $time The time factory.
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param LoggerInterface $logger        The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,

@@ -118,10 +118,10 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * Constructor.
 	 *
 	 * @param SynchronizationService $synchronizations The engine that owns the fetch.
-	 * @param FlowOwner              $flowOwner        Resolves whose permissions the step runs with.
-	 * @param IL10N                  $l10n             Translations.
-	 * @param IURLGenerator          $urlGenerator     For the palette icon and log links.
-	 * @param LoggerInterface        $logger           Diagnostics.
+	 * @param FlowOwner $flowOwner Resolves whose permissions the step runs with.
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urlGenerator For the palette icon and log links.
+	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
 		private readonly SynchronizationService $synchronizations,
@@ -142,7 +142,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function getId(): string {
 		return self::NODE_ID;
-
 	}//end getId()
 
 	/**
@@ -154,7 +153,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Fetch files');
-
 	}//end getDisplayName()
 
 	/**
@@ -181,7 +179,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function getIcon(): string {
 		return 'paperclip';
-
 	}//end getIcon()
 
 	/**
@@ -199,7 +196,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-
 	}//end isAvailableForScope()
 
 	/**
@@ -211,7 +207,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function configKeys(): array {
 		return ['rule', 'objectIdPath', 'synchronization', 'onError'];
-
 	}//end configKeys()
 
 	/**
@@ -277,8 +272,8 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Run the rule over every item in the page.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step's authored configuration.
+	 * @param array $items The input items.
+	 * @param array $config The step's authored configuration.
 	 * @param array $context Run-level metadata.
 	 *
 	 * @return array The output items.
@@ -312,8 +307,8 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * service dispatches and returns — so a concurrency pool here would
 	 * parallelise the DISPATCH and buy nothing, while reordering failures.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step's authored configuration.
+	 * @param array $items The input items.
+	 * @param array $config The step's authored configuration.
 	 * @param array $context Run-level metadata.
 	 *
 	 * @return array The output items.
@@ -371,7 +366,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 		}//end foreach
 
 		return $outputList;
-
 	}//end fetchForEachItem()
 
 	/**
@@ -383,8 +377,8 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * legitimately — a skipped item never reaches `object-write` — so it is not
 	 * an error, but it must not look like work either.
 	 *
-	 * @param array  $json   The record.
-	 * @param string $rule   The rule reference.
+	 * @param array $json The record.
+	 * @param string $rule The rule reference.
 	 * @param string $idPath Dot-path to the written object's id.
 	 *
 	 * @return array The record, with placeholders applied when configured.
@@ -414,7 +408,7 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * Wrap a failure so the run log names the rule that produced it.
 	 *
 	 * @param Throwable $exception The original failure.
-	 * @param string    $rule      The rule reference.
+	 * @param string $rule The rule reference.
 	 *
 	 * @return FlowNodeException The wrapped failure.
 	 *

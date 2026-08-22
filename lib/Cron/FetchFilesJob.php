@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Integriq — deferred file fetching for one synchronised object.
  *
@@ -55,9 +56,9 @@ class FetchFilesJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time                   The time factory.
+	 * @param ITimeFactory $time The time factory.
 	 * @param SynchronizationService $syncService The engine that owns the fetch path.
-	 * @param LoggerInterface        $logger                 The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,

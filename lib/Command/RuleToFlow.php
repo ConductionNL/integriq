@@ -137,6 +137,5 @@ class RuleToFlow extends Command {
 		$output->writeln($encoded);
 
 		return Command::SUCCESS;
-
 	}//end execute()
 }//end class

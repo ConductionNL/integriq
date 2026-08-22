@@ -43,7 +43,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use UnexpectedValueException;
 /**
  * Save-time configuration rules owned by the Source Call node.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
 final class SourceCallConfigGuard {
 
@@ -85,7 +85,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the method is unsupported.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertMethod(array $config, IL10N $l10n): void {
 		$method = strtoupper(trim((string)($config['method'] ?? '')));
@@ -119,7 +119,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the value is not a list of statuses.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertAcceptStatuses(array $config, IL10N $l10n): void {
 		if (array_key_exists('acceptStatuses', $config) === false) {
@@ -153,7 +153,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When a request part has the wrong shape.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertRequestParts(array $config, IL10N $l10n): void {
 		foreach (['query', 'headers'] as $field) {
@@ -195,7 +195,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the policy is unknown.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertOnError(array $config, IL10N $l10n): void {
 		if (array_key_exists('onError', $config) === false) {

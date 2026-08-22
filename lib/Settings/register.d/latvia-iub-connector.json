@@ -85,7 +85,7 @@
         },
         "name": "Latvia IUB Daily Sync",
         "description": "Runs the latvia-iub-to-spectr-tender synchronization daily (86400s) - matches the source's own daily-bulk-file cadence, not the wave-1 default weekly interval used by the other sources in this directory. Genuinely unattended (unlike dutch_laws_bwb.json's disabled lawArticle Job): the endpoint needs no per-call `data`, it computes 'yesterday' itself on every tick.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "latvia-iub-to-spectr-tender"
         },

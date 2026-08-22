@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Logius Berichtenbox client (mock).
+ * Integriq Logius Berichtenbox client (mock).
  *
  * Deterministic, no-network implementation of
  * {@see BerichtenboxClient}. Ships dormant — DI returns this class
@@ -12,7 +12,7 @@
  * data.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Berichtenbox
+ * @package  OCA\Integriq\Adapters\Berichtenbox
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,12 +21,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Berichtenbox;
+namespace OCA\Integriq\Adapters\Berichtenbox;
 
 /**
  * Mock Berichtenbox client — dormant default.

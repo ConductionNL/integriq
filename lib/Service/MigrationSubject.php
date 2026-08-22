@@ -72,7 +72,6 @@ final class MigrationSubject {
 		}
 
 		return $identifiers;
-
 	}//end identifiersOf()
 
 	/**
@@ -86,7 +85,6 @@ final class MigrationSubject {
 	 */
 	public function referenceOf(array $entity): string {
 		return ($this->identifiersOf(entity: $entity)[0] ?? '');
-
 	}//end referenceOf()
 
 	/**
@@ -105,6 +103,5 @@ final class MigrationSubject {
 		}
 
 		return $this->referenceOf(entity: $entity);
-
 	}//end labelOf()
 }//end class

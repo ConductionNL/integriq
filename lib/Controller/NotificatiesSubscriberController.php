@@ -61,7 +61,7 @@ class NotificatiesSubscriberController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param NotificatiesSubscriberService $subscriberService Abonnement lifecycle + notification normalization.
 	 * @param AuthorizationService $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Integriq — deferred cascade delete of extended views (ADR-078).
  *
@@ -61,11 +62,11 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory        $time          The time factory.
-	 * @param IUserSession        $userSession   Session used to re-establish the acting user.
-	 * @param IUserManager        $userManager   Resolver for the captured user id.
-	 * @param OrganisationService $organisation  Active-organisation resolver (drift logging).
-	 * @param LoggerInterface     $logger        The logger.
+	 * @param ITimeFactory $time The time factory.
+	 * @param IUserSession $userSession Session used to re-establish the acting user.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver (drift logging).
+	 * @param LoggerInterface $logger The logger.
 	 * @param SourceMappingService $objectService Service providing access to the OR object layer.
 	 */
 	public function __construct(
@@ -116,14 +117,14 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * Delete every extended view matching one entry.
 	 *
 	 * @param \OCA\OpenRegister\Service\ObjectService $openRegister The OR object service.
-	 * @param array<string, mixed>                    $entry        Entry carrying register, schema and identifier.
+	 * @param array<string, mixed> $entry Entry carrying register, schema and identifier.
 	 *
 	 * @return void
 	 */
 	private function cascadeOne(\OCA\OpenRegister\Service\ObjectService $openRegister, array $entry): void {
 		$identifier = ($entry['identifier'] ?? '');
-		$register   = ($entry['register'] ?? null);
-		$schema     = ($entry['schema'] ?? null);
+		$register = ($entry['register'] ?? null);
+		$schema = ($entry['schema'] ?? null);
 		if (is_string($identifier) === false || $identifier === '' || $register === null || $schema === null) {
 			return;
 		}
@@ -132,15 +133,15 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 			$extendedViews = $openRegister->findAll(
 				[
 					'filters' => [
-						'register'   => $register,
-						'schema'     => $schema,
+						'register' => $register,
+						'schema' => $schema,
 						'identifier' => $identifier,
 					],
 					// Bounded on purpose (ADR-078 fix action 2). An `extendview`
 					// set for one view identifier is a handful of rows; a result
 					// at the cap means the data is not what this cascade assumes,
 					// which is worth a warning rather than a silent full scan.
-					'limit'   => self::CASCADE_LIMIT,
+					'limit' => self::CASCADE_LIMIT,
 				]
 			);
 		} catch (\Throwable $e) {
@@ -189,10 +190,10 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * the catch and is logged per row, which is the documented behaviour.
 	 *
 	 * @param \OCA\OpenRegister\Service\ObjectService $openRegister The OR object service.
-	 * @param array<int, mixed>                       $rows         Rows returned by findAll().
-	 * @param string                                  $identifier   The view identifier, for logging.
-	 * @param mixed                                   $register     Register the rows belong to.
-	 * @param mixed                                   $schema       Schema the rows belong to.
+	 * @param array<int, mixed> $rows Rows returned by findAll().
+	 * @param string $identifier The view identifier, for logging.
+	 * @param mixed $register Register the rows belong to.
+	 * @param mixed $schema Schema the rows belong to.
 	 *
 	 * @return void
 	 */
@@ -201,7 +202,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 		array $rows,
 		string $identifier,
 		mixed $register,
-		mixed $schema
+		mixed $schema,
 	): void {
 		foreach ($rows as $row) {
 			$uuid = $this->deletableUuid(row: $row);

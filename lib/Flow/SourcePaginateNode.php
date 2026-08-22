@@ -113,7 +113,6 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 	use SynchronizationLogActions;
 
-
 	/**
 	 * The step type this node answers to.
 	 *
@@ -527,7 +526,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
 	 */
 	private function suspendUntilTheLimitLifts(
 		TooManyRequestsHttpException $exception,
@@ -546,7 +545,6 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		);
 
 		return $suspension;
-
 	}//end suspendUntilTheLimitLifts()
 
 	/**

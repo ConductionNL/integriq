@@ -301,26 +301,26 @@ class SynchronizationContractService {
 		// nothing subscribes to.
 		$saved = \OCA\OpenRegister\Service\SystemOperationContext::run(
 			fn (): mixed => $this->orObjectService->saveObject(
-			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuidParam,
-			// A contract is the engine's own bookkeeping: its shape is generated
-			// here, not authored, and nothing subscribes to its lifecycle. So it
-			// pays for neither.
-			//
-			// `silent` drops the audit row and the lifecycle event. Auditing
-			// contract WRITES is the same argument already applied to contract
-			// READS, which were 91% of this instance's audit table — a mapping
-			// row the engine wrote for itself is not the thing an audit trail
-			// exists to record.
-			//
-			// `_validation: false` skips re-validating that shape against the
-			// contract schema on every record. Unlike a target object, whose
-			// content comes from an external source and is exactly what
-			// validation is for, this payload never leaves the engine's hands.
-			silent: true,
-			_validation: false
+				object: $object,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				uuid: $uuidParam,
+				// A contract is the engine's own bookkeeping: its shape is generated
+				// here, not authored, and nothing subscribes to its lifecycle. So it
+				// pays for neither.
+				//
+				// `silent` drops the audit row and the lifecycle event. Auditing
+				// contract WRITES is the same argument already applied to contract
+				// READS, which were 91% of this instance's audit table — a mapping
+				// row the engine wrote for itself is not the thing an audit trail
+				// exists to record.
+				//
+				// `_validation: false` skips re-validating that shape against the
+				// contract schema on every record. Unlike a target object, whose
+				// content comes from an external source and is exactly what
+				// validation is for, this payload never leaves the engine's hands.
+				silent: true,
+				_validation: false
 			)
 		);
 

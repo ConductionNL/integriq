@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenConnector SMS Dispatch Service.
+ * Integriq SMS Dispatch Service.
  *
  * Core of the notifynl-sms-channel: resolves the configured SMS source +
  * provider binding, validates the recipient to E.164, drives an outbound send
- * through the resolved {@see \OCA\OpenConnector\Service\Sms\SmsProviderInterface}
+ * through the resolved {@see \OCA\Integriq\Service\Sms\SmsProviderInterface}
  * binding, and persists the `sms_message` lifecycle record
  * (queued -> sent -> delivered|failed) — updated either by polling
  * ({@see pollStatus()}) or by a verified inbound provider callback
@@ -13,7 +13,7 @@
  * BankfeedSyncService: NotifyNlController stays a thin HTTP/auth shell.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,23 +22,23 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\SmsProviderException;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\Sms\DeliveryResult;
-use OCA\OpenConnector\Service\Sms\LogSmsProvider;
-use OCA\OpenConnector\Service\Sms\PhoneNumberValidator;
-use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
-use OCA\OpenConnector\Service\Sms\SmsProviderInterface;
+use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Service\Sms\DeliveryResult;
+use OCA\Integriq\Service\Sms\LogSmsProvider;
+use OCA\Integriq\Service\Sms\PhoneNumberValidator;
+use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
+use OCA\Integriq\Service\Sms\SmsProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

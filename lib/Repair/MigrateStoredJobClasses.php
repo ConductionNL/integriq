@@ -161,7 +161,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 * Constructor for MigrateStoredJobClasses.
 	 *
 	 * @param ContainerInterface $container The container used to resolve the OR object service
-	 * @param LoggerInterface    $logger    Logger for objects that fail to migrate
+	 * @param LoggerInterface $logger Logger for objects that fail to migrate
 	 *
 	 * @return void
 	 */
@@ -249,7 +249,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 * Walk every stored job, page by page, rewriting stale class names.
 	 *
 	 * @param OrObjectService $orObjectService The OR object service
-	 * @param IOutput         $output          The repair output channel
+	 * @param IOutput $output The repair output channel
 	 *
 	 * @return array{migrated:int,failed:int} Counts for the caller's summary
 	 */
@@ -309,7 +309,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 	/**
 	 * Rewrite one job object's stored class name when it names the old namespace.
 	 *
-	 * @param mixed           $item            The object returned by findAll
+	 * @param mixed $item The object returned by findAll
 	 * @param OrObjectService $orObjectService The OR object service
 	 *
 	 * @return bool|null True when rewritten, false when the rewrite failed,
