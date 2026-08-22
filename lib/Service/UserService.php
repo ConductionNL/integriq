@@ -124,23 +124,16 @@ class UserService {
 			$avatarScope = 'contacts';
 		}
 
-		if (method_exists($user, 'getLastLogin') === true) {
-			$lastLogin = $user->getLastLogin();
-		} else {
-			$lastLogin = 0;
-		}
-
-		if (method_exists($user, 'getBackendClassName') === true) {
-			$backend = $user->getBackendClassName();
-		} else {
-			$backend = 'unknown';
-		}
-
-		if (method_exists($user, 'canChangeDisplayName') === true) {
-			$canChangeDisplayName = $user->canChangeDisplayName();
-		} else {
-			$canChangeDisplayName = false;
-		}
+		// OCP\IUser declares getLastLogin(), getBackendClassName(),
+		// canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
+		// the method_exists() probes that used to wrap these could never be
+		// false and their else-branch defaults were unreachable. The two probes
+		// that remain (getAvatarScope above, canChangeMailAddress below) are NOT
+		// decoration: those methods are absent from the interface and only
+		// present on some implementations.
+		$lastLogin = $user->getLastLogin();
+		$backend = $user->getBackendClassName();
+		$canChangeDisplayName = $user->canChangeDisplayName();
 
 		if (method_exists($user, 'canChangeMailAddress') === true) {
 			$canChangeMailAddress = $user->canChangeMailAddress();
@@ -148,17 +141,8 @@ class UserService {
 			$canChangeMailAddress = false;
 		}
 
-		if (method_exists($user, 'canChangePassword') === true) {
-			$canChangePassword = $user->canChangePassword();
-		} else {
-			$canChangePassword = false;
-		}
-
-		if (method_exists($user, 'canChangeAvatar') === true) {
-			$canChangeAvatar = $user->canChangeAvatar();
-		} else {
-			$canChangeAvatar = false;
-		}
+		$canChangePassword = $user->canChangePassword();
+		$canChangeAvatar = $user->canChangeAvatar();
 
 		// Build comprehensive user data array with all available information.
 		// Subadmin info would require an additional service, so it is left empty.
@@ -350,11 +334,8 @@ class UserService {
 	 */
 	private function buildQuotaInformation(IUser $user): array {
 		try {
-			if (method_exists($user, 'getQuota') === true) {
-				$userQuota = $user->getQuota();
-			} else {
-				$userQuota = 'none';
-			}
+			// OCP\IUser declares getQuota(), so the 'none' default was dead.
+			$userQuota = $user->getQuota();
 
 			$usedSpace = 0;
 
@@ -630,12 +611,11 @@ class UserService {
 		// Load only the properties we need.
 		foreach ($neededProperties as $propertyName => $apiField) {
 			try {
-				$property = $account->getProperty($propertyName);
-				if ($property !== null) {
-					$value = $property->getValue();
-					if (empty($value) === false) {
-						$additionalInfo[$apiField] = $value;
-					}
+				// No `!== null` check: getProperty() throws rather than returning
+				// null, and the surrounding catch already handles that.
+				$value = $account->getProperty($propertyName)->getValue();
+				if (empty($value) === false) {
+					$additionalInfo[$apiField] = $value;
 				}
 			} catch (\Exception $e) {
 				// If a specific property fails, log it but continue with others.
@@ -675,7 +655,6 @@ class UserService {
 	private function updateStandardUserProperties(IUser $user, array $data): void {
 		// Update display name if provided and user can change it.
 		if (isset($data['displayName']) === true
-			&& method_exists($user, 'canChangeDisplayName') === true
 			&& $user->canChangeDisplayName() === true
 		) {
 			$user->setDisplayName($data['displayName']);
@@ -691,7 +670,6 @@ class UserService {
 
 		// Update password if provided and user can change it.
 		if (isset($data['password']) === true
-			&& method_exists($user, 'canChangePassword') === true
 			&& $user->canChangePassword() === true
 		) {
 			$user->setPassword($data['password']);

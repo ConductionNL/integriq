@@ -415,7 +415,9 @@ class OpenFormulierenIntakeService {
 					'status' => 'fetched',
 					'fileId' => $file->getId(),
 				];
-			} catch (GuzzleException|OpenFormulierenException|Throwable $exception) {
+			// Throwable alone: both named types are Throwables, so listing them
+			// separately caught nothing extra.
+			} catch (Throwable $exception) {
 				$this->logger->warning(
 					'[OpenFormulierenIntakeService] attachment fetch/store failed',
 					['key' => $key, 'exception' => $exception->getMessage()]

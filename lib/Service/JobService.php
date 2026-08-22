@@ -209,7 +209,7 @@ class JobService {
 		// jobs had their jobListId cleared on every call). Surfaced by the
 		// JobServiceTest::testScheduleJobSkipsAlreadyScheduledJob suite once
 		// #1015 unblocked it from running.
-		if (isset($jobData['jobListId']) === true && $jobData['jobListId'] !== null
+		if (isset($jobData['jobListId']) === true
 			&& ($jobData['isEnabled'] ?? true) !== false
 		) {
 			return $job;
