@@ -5174,6 +5174,8 @@ class SynchronizationService {
 	 *
 	 * @return array The processed data with 'originId' replaced with actual ObjectEntities their uuids
 	 *               where applicable.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	public function replaceRelatedOriginIds(array $object, array $config, bool $replaceIdWithTargetId = false): array {
 		foreach ($config as $key => $subConfig) {
