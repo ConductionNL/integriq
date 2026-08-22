@@ -12,7 +12,7 @@
  *   - flag absent / 'false' -> non-fatal warning logged, no exception (consolidate-merge:
  *     PR #29's hard \LogicException was downgraded to a soft warning so an unmigrated
  *     instance still boots, per development's deferral decision)
- *   - OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1 -> no exception regardless of flag
+ *   - INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT=1 -> no exception regardless of flag
  *   - flag === 'true' -> assertion passes silently
  *
  * The private assertStorageMigrated() method is exercised in isolation via
@@ -40,7 +40,7 @@ class ApplicationStorageMigratedTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private const SKIP_ENV = 'OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT';
+	private const SKIP_ENV = 'INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT';
 
 	/**
 	 * Remembered prior env-var value, restored in tearDown().
@@ -145,7 +145,7 @@ class ApplicationStorageMigratedTest extends TestCase {
 	private function appConfigReturning(string $value): IAppConfig {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')
-			->with('openconnector', 'storage_migrated', 'false')
+			->with('integriq', 'storage_migrated', 'false')
 			->willReturn($value);
 		return $appConfig;
 	}//end appConfigReturning()
@@ -162,7 +162,7 @@ class ApplicationStorageMigratedTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())
 			->method('warning')
-			->with($this->matchesRegularExpression('/occ openconnector:migrate-storage/'));
+			->with($this->matchesRegularExpression('/occ integriq:migrate-storage/'));
 
 		$app = $this->makeApp($this->appConfigReturning('false'), $logger);
 
@@ -202,6 +202,43 @@ class ApplicationStorageMigratedTest extends TestCase {
 
 		$this->addToAssertionCount(1);
 	}//end testBypassedByEnvVar()
+
+	/**
+	 * GIVEN only the PRE-RENAME spelling of the skip env var is set WHEN the
+	 * assertion runs THEN it is still honoured.
+	 *
+	 * This bypass was documented under the `OPENCONNECTOR_` name before the
+	 * app-id rename, so a compose file, Helm chart, CI job or developer shell
+	 * profile may still set it. Honouring only the new name would quietly stop
+	 * respecting theirs and start emitting the warning they had deliberately
+	 * silenced — the same silent-default trap as a renamed config key. This
+	 * test exists so that compatibility cannot regress unnoticed; delete it
+	 * together with the legacy spelling once the fleet rename is complete.
+	 *
+	 * @return void
+	 */
+	public function testBypassedByLegacyOpenconnectorEnvVar(): void {
+		$legacyEnv = 'OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT';
+		$priorLegacy = getenv($legacyEnv);
+		putenv($legacyEnv . '=1');
+
+		try {
+			// The canonical name is left unset by setUp(), so only the legacy
+			// spelling can be responsible for the short-circuit here. The
+			// container would throw if consulted.
+			$app = $this->makeApp(null);
+
+			$this->invokeAssert($app);
+
+			$this->addToAssertionCount(1);
+		} finally {
+			if ($priorLegacy === false) {
+				putenv($legacyEnv);
+			} else {
+				putenv($legacyEnv . '=' . $priorLegacy);
+			}
+		}
+	}//end testBypassedByLegacyOpenconnectorEnvVar()
 
 	/**
 	 * GIVEN IAppConfig cannot be resolved (early bootstrap) and the env var is

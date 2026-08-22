@@ -5,7 +5,7 @@ TBD - created by archiving change endoflife-date-source. Update Purpose after ar
 ## Requirements
 ### Requirement: endoflife.date source preset ships enabled, credential-free
 
-OpenConnector SHALL seed a pre-built `source` object with `@self.slug =
+Integriq SHALL seed a pre-built `source` object with `@self.slug =
 "endoflife-date"` (register `openconnector`, schema `source`) on app
 install/upgrade, with `location: "https://endoflife.date/api"`, `auth:
 "none"`, and `isEnabled: true`. Unlike a credentialed integration preset
@@ -22,7 +22,7 @@ OpenRegister's `ImportHandler`.
 #### Scenario: endoflife-date source materialises on install, already enabled
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs
+- WHEN `occ app:enable integriq` (or an upgrade) runs
   `InitializeRegister`
 - THEN a `source` object with `@self.slug = "endoflife-date"` exists in
   register `openconnector`, schema `source`, with `location =
@@ -39,7 +39,7 @@ OpenRegister's `ImportHandler`.
 
 ### Requirement: `eolProduct` and `eolCycle` schemas are declared in the existing `openconnector` register
 
-OpenConnector SHALL declare two new schemas — `eolProduct` (a tracked
+Integriq SHALL declare two new schemas — `eolProduct` (a tracked
 product/technology) and `eolCycle` (one release cycle's lifecycle data for
 a product) — within the existing `openconnector` register (per
 `openconnector-register-schema` REQ-A-001's single-register-per-app
@@ -65,7 +65,7 @@ shape as `eol`/`support`).
 #### Scenario: eolProduct and eolCycle schemas are present after install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs
+- WHEN `occ app:enable integriq` (or an upgrade) runs
   `InitializeRegister`
 - THEN `components.schemas.eolProduct` and `components.schemas.eolCycle`
   exist in the merged register descriptor, both listed under register
@@ -84,7 +84,7 @@ shape as `eol`/`support`).
 
 ### Requirement: a curated starter set of tracked products is seeded declaratively
 
-OpenConnector SHALL seed one `eolProduct` object per curated starter
+Integriq SHALL seed one `eolProduct` object per curated starter
 product — `php`, `nodejs`, `python`, `postgresql`, `mysql`, `nextcloud`,
 `wordpress`, `laravel` — as static catalog metadata (register
 `openconnector`, schema `eolProduct`, keyed by `@self.slug`). These
@@ -98,7 +98,7 @@ see this change's design.md discovery notes for the underlying finding).
 #### Scenario: all eight curated eolProduct objects exist after install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs
+- WHEN `occ app:enable integriq` (or an upgrade) runs
   `InitializeRegister`
 - THEN `eolProduct` objects with `@self.slug` of `php`, `nodejs`, `python`,
   `postgresql`, `mysql`, `nextcloud`, `wordpress`, and `laravel` all exist
@@ -118,7 +118,7 @@ see this change's design.md discovery notes for the underlying finding).
 
 ### Requirement: each curated product syncs its cycles via a dedicated, engine-native Synchronization
 
-For each curated product, OpenConnector SHALL seed one `mapping` object,
+For each curated product, Integriq SHALL seed one `mapping` object,
 one `synchronization` object, and one `job` object (register
 `openconnector`), reusing the existing Synchronization/Mapping/Job engine
 unchanged:
@@ -143,7 +143,7 @@ unchanged:
   consistently-typed column (an ISO date string, or an empty string when
   no date is scheduled).
 - The `job` object SHALL set `jobClass:
-  "OCA\\OpenConnector\\Action\\SynchronizationAction"`,
+  "OCA\\Integriq\\Action\\SynchronizationAction"`,
   `arguments.synchronizationId` to that product's `synchronization` slug,
   `interval: 86400` (daily), and `isEnabled: true` — the existing, generic
   job-dispatch mechanism (`job-scheduling` REQ-003/REQ-004); no new job
@@ -226,7 +226,7 @@ default 10% guard and block correct cleanup.
 ### Requirement: the preset is automatically visible on the Catalog page
 
 The `endoflife-date` source SHALL become visible as a `source-template`
-card on OpenConnector's Catalog page purely as a side effect of this
+card on Integriq's Catalog page purely as a side effect of this
 change's register fragment seeding a `source` object — the existing
 `CatalogRegistryService.collectFromSeedFragments()` mechanism
 (`connector-catalog` REQ-003) already content-inspects every
@@ -245,7 +245,7 @@ wiring, controller, or frontend code.
 
 ### Requirement: a live smoke test proves the preset against the real public API
 
-OpenConnector SHALL ship an integration test
+Integriq SHALL ship an integration test
 (`tests/Integration/EndoflifeDateLiveSyncTest.php`) that dispatches a real,
 unmocked HTTP request against `https://endoflife.date/api` and asserts:
 (1) a full synchronization run for at least one curated product produces
@@ -256,7 +256,7 @@ established `tests/Integration` convention (already excluded from the
 default `phpunit.xml` `Unit Tests` suite; run via `phpunit-unit.xml
 --testsuite "Integration Tests"`), the test SHALL self-skip — not fail —
 when the real endpoint is unreachable (a short-timeout connectivity probe)
-or when `OPENCONNECTOR_SKIP_NETWORK_TESTS=1` is set, so it never blocks a
+or when `INTEGRIQ_SKIP_NETWORK_TESTS=1` is set, so it never blocks a
 network-isolated CI run.
 
 #### Scenario: the live smoke test passes against the real API when network is available
@@ -273,7 +273,7 @@ network-isolated CI run.
 #### Scenario: the live smoke test self-skips without network access
 
 - GIVEN a network-isolated test environment (or
-  `OPENCONNECTOR_SKIP_NETWORK_TESTS=1`)
+  `INTEGRIQ_SKIP_NETWORK_TESTS=1`)
 - WHEN the same test runs
 - THEN the test reports as skipped, not failed, and the overall test suite
   exit code is unaffected by the missing network access

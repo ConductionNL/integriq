@@ -647,7 +647,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function registerFlowNodes(IEventDispatcher $dispatcher): void {
 		// Deliberately NOT guarded on the OR event class existing.
@@ -1083,8 +1083,23 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-application-php-di-bindings-must-be-updated
 	 */
 	private function assertStorageMigrated(): void {
-		// CI / test bypass — no real upgrade has run in those environments.
+		/* CI / test bypass — no real upgrade has run in those environments.
+		   `INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT` is the CANONICAL name. The
+		   `OPENCONNECTOR_` spelling is still honoured because a renamed env var
+		   is the same silent-default trap as a renamed config key: this bypass
+		   was documented under the old name (CHANGELOG 0.2.x and the
+		   direct-or-usage spec), so a compose file, Helm chart, CI job or
+		   developer shell profile out there plausibly still sets it. Reading
+		   only the new name would quietly stop honouring theirs and start
+		   logging the very warning they had deliberately silenced.
+		   The old spelling can be dropped once the fleet rename is complete and
+		   no environment sets it any more — tracked with the rest of the
+		   openconnector -> integriq cleanup. */
 		if (getenv('INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
+			return;
+		}
+
+		if (getenv('OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
 			return;
 		}
 

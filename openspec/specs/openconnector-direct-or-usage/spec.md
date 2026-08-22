@@ -5,7 +5,7 @@ TBD - created by archiving change openconnector-services-direct-or-usage. Update
 ## Requirements
 ### Requirement: All 15 mapper files MUST be deleted
 
-All fifteen `lib/Db/*Mapper.php` files MUST be deleted from the openconnector
+All fifteen `lib/Db/*Mapper.php` files MUST be deleted from the integriq
 repository. After this change ships, no file under `lib/` or `tests/` SHALL
 reference any of these mapper class names in a `use` statement or a `new`
 expression.
@@ -30,7 +30,7 @@ THEN the command produces zero output (all legacy mapper files are gone)
 #### Scenario: Quality gate rejects mapper re-introduction
 
 GIVEN the quality gate (PHPCS sniff or grep-based composer script) is active
-WHEN a developer accidentally adds `use OCA\OpenConnector\Db\SourceMapper;` to any file under `lib/` or `tests/`
+WHEN a developer accidentally adds `use OCA\Integriq\Db\SourceMapper;` to any file under `lib/` or `tests/`
 THEN `composer check:strict` fails with a human-readable error identifying the forbidden import
 
 ---
@@ -60,24 +60,24 @@ THEN the command produces zero output (only the `Dto/` subdirectory remains unde
 #### Scenario: No entity type hints survive in services
 
 GIVEN the chain C rewrite is complete
-WHEN `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\Source\b" lib/ tests/` is run
+WHEN `grep -rn "OCA\\\\Integriq\\\\Db\\\\Source\b" lib/ tests/` is run
 THEN the command produces zero matches (no surviving references to deleted entity types)
 
 ---
 
-### Requirement: openconnector data migration MUST run at upgrade time
+### Requirement: integriq data migration MUST run at upgrade time
 
-The Nextcloud migration class `lib/Migration/Version2Date20260520000001.php` MUST run on `occ upgrade` and MUST: (a) call `\OCA\OpenRegister\Service\ConfigurationService::importFromApp()` to materialise the openconnector register from `lib/Settings/openconnector_register.json`, then (b) call `\OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator::migrateAll()` to copy every row from each of the 15 `oc_openconnector_*` legacy tables into `oc_openregister_objects`.
+The Nextcloud migration class `lib/Migration/Version2Date20260520000001.php` MUST run on `occ upgrade` and MUST: (a) call `\OCA\OpenRegister\Service\ConfigurationService::importFromApp()` to materialise the openconnector register from `lib/Settings/integriq_register.json`, then (b) call `\OCA\Integriq\Service\Migration\LegacyToRegisterMigrator::migrateAll()` to copy every row from each of the 15 `oc_openconnector_*` legacy tables into `oc_openregister_objects`.
 
 The migrator MUST be idempotent (the migration class skips when the `openconnector.storage_migrated` IAppConfig flag is `'true'`), MUST preserve uuids byte-for-byte, MUST translate the 6 integer FK columns to OR uuids via a post-INSERT UPDATE pass, MUST branch `Synchronization.sourceId/targetId` across the 3 documented value formats (integer-PK, register/schema slug, uuid), MUST set the `owner` column to null on every migrated row (system-owned), and MUST emit a single summary entry in `oc_openregister_audit_trail` (NOT per-row).
 
-The migrator MUST assert the codebase is in the plaintext-credentials state documented by ADR-007 at startup (no `OCA\OpenConnector\Service\EncryptionService` class present) and MUST abort with a `\LogicException` if that assertion fails.
+The migrator MUST assert the codebase is in the plaintext-credentials state documented by ADR-007 at startup (no `OCA\Integriq\Service\EncryptionService` class present) and MUST abort with a `\LogicException` if that assertion fails.
 
 On a clean full run, the migrator MUST set `openconnector.storage_migrated` to `'true'`. Until that flag flips, the connector-specific services that use `ObjectService` MUST refuse to start (startup assertion in `Application.php`).
 
 #### Scenario: Migration runs on upgrade
 
-GIVEN openconnector is upgraded from a pre-chain-C version (legacy tables present, `storage_migrated` unset)
+GIVEN integriq is upgraded from a pre-chain-C version (legacy tables present, `storage_migrated` unset)
 WHEN `occ upgrade` runs
 THEN `Version2Date20260520000001::postSchemaChange()` MUST call `ConfigurationService::importFromApp()` followed by `LegacyToRegisterMigrator::migrateAll()`
 AND on success MUST set `openconnector.storage_migrated = 'true'`
@@ -91,7 +91,7 @@ THEN the migration class MUST detect the flag and skip without re-running the mi
 #### Scenario: OCC retry command exists
 
 GIVEN the migration partially failed and `storage_migrated` is NOT `'true'`
-WHEN an admin runs `occ openconnector:migrate-storage --entity source` (single-entity retry)
+WHEN an admin runs `occ integriq:migrate-storage --entity source` (single-entity retry)
 THEN the migrator MUST process only the `source` entity AND MUST NOT flip the `storage_migrated` flag (single-entity runs require a subsequent full-run to mark clean)
 
 ---
@@ -179,19 +179,20 @@ manual alias required if openregister already registers it).
 #### Scenario: Application boots without mapper service registrations
 
 GIVEN the chain C merge is applied and `openconnector.storage_migrated` is `'true'`
-WHEN Nextcloud boots the openconnector app
+WHEN Nextcloud boots the integriq app
 THEN `Application::register()` completes without errors and no mapper alias is registered in the DI container
 
 #### Scenario: Application fails fast when storage_migrated is not set
 
 GIVEN a fresh environment where chain B has not been run (`storage_migrated !== 'true'`)
-WHEN Nextcloud boots the openconnector app
-THEN `Application::register()` throws `\LogicException` with a message containing the operator runbook command `occ openconnector:migrate-storage`
+WHEN Nextcloud boots the integriq app
+THEN `Application::register()` throws `\LogicException` with a message containing the operator runbook command `occ integriq:migrate-storage`
 
 #### Scenario: Pre-flight check is bypassable in CI via env var
 
-GIVEN the env var `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` is set
-WHEN Nextcloud boots the openconnector app in a CI/test environment
+GIVEN the env var `INTEGRIQ_SKIP_STORAGE_MIGRATED_ASSERT=1` is set (or the
+still-honoured legacy spelling `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1`)
+WHEN Nextcloud boots the integriq app in a CI/test environment
 THEN `Application::register()` does NOT throw `\LogicException` even if `storage_migrated` is absent or `'false'`
 
 ---
@@ -208,14 +209,14 @@ to suppress errors on the now-deleted types MUST be removed.
 #### Scenario: Quality gates pass after file deletions
 
 GIVEN all 31 files have been deleted and callers have been rewritten
-WHEN `composer check:strict` is run in the openconnector repository root
+WHEN `composer check:strict` is run in the integriq repository root
 THEN the command exits with code 0 (PHPCS, PHPMD, Psalm, PHPStan all pass)
 
 #### Scenario: Autoload does not reference deleted classes
 
 GIVEN the chain C merge is applied
 WHEN `composer dump-autoload --dry-run` is run
-THEN no class-map entry references `OCA\OpenConnector\Db\Source` or any other deleted entity/mapper type
+THEN no class-map entry references `OCA\Integriq\Db\Source` or any other deleted entity/mapper type
 
 ---
 
@@ -227,28 +228,28 @@ fails the build with exit code 1 if any of the 31 deleted PHP types
 appears in a `use` statement or direct class reference anywhere under `lib/` or
 `tests/`. The 31 types are:
 
-- 15 entity classes under `lib/Db/`: `OCA\OpenConnector\Db\<Resource>` for each of the 15 resources (`Source`, `Endpoint`, `Consumer`, `Event`, `EventMessage`, `EventSubscription`, `Job`, `JobLog`, `Mapping`, `Rule`, `Synchronization`, `SynchronizationContract`, `SynchronizationContractLog`, `SynchronizationLog`, `CallLog`)
-- 15 mapper classes under `lib/Db/`: `OCA\OpenConnector\Db\<Resource>Mapper` for each of the 15 resources
-- 1 facade class under `lib/Service/Storage/`: `OCA\OpenConnector\Service\Storage\ObjectMapperFacade`
+- 15 entity classes under `lib/Db/`: `OCA\Integriq\Db\<Resource>` for each of the 15 resources (`Source`, `Endpoint`, `Consumer`, `Event`, `EventMessage`, `EventSubscription`, `Job`, `JobLog`, `Mapping`, `Rule`, `Synchronization`, `SynchronizationContract`, `SynchronizationContractLog`, `SynchronizationLog`, `CallLog`)
+- 15 mapper classes under `lib/Db/`: `OCA\Integriq\Db\<Resource>Mapper` for each of the 15 resources
+- 1 facade class under `lib/Service/Storage/`: `OCA\Integriq\Service\Storage\ObjectMapperFacade`
 
 This gate SHALL be active in CI and SHALL run on every push to the chain C branch.
 
 #### Scenario: Quality gate blocks forbidden entity import
 
 GIVEN the quality gate is installed and running
-WHEN a file under `lib/` contains `use OCA\OpenConnector\Db\Job;`
+WHEN a file under `lib/` contains `use OCA\Integriq\Db\Job;`
 THEN the quality gate exits non-zero and reports the forbidden import with file and line number
 
 #### Scenario: Quality gate blocks ObjectMapperFacade re-introduction
 
 GIVEN the quality gate is installed and running
-WHEN any file under `lib/` or `tests/` contains `use OCA\OpenConnector\Service\Storage\ObjectMapperFacade;`
+WHEN any file under `lib/` or `tests/` contains `use OCA\Integriq\Service\Storage\ObjectMapperFacade;`
 THEN the quality gate exits non-zero with a message: "ObjectMapperFacade was deliberately deleted in chain C — services MUST inject ObjectService directly"
 
 #### Scenario: Quality gate does not flag DTO or unrelated classes
 
 GIVEN the quality gate is installed
-WHEN a file under `lib/Db/Dto/` contains `use OCA\OpenConnector\Db\Dto\SourceDto;`
+WHEN a file under `lib/Db/Dto/` contains `use OCA\Integriq\Db\Dto\SourceDto;`
 THEN the quality gate exits zero (DTO imports are permitted)
 
 ---
@@ -281,7 +282,7 @@ THEN the test suite passes with no errors and coverage is ≥ 80% line / ≥ 70%
 ### Requirement: Newman/Postman integration tests MUST still pass
 
 The Newman integration test collection MUST continue to pass without modification — the HTTP surface SHALL be byte-identical before and after chain C.
-The Newman (Postman) integration test collection that covers the openconnector
+The Newman (Postman) integration test collection that covers the integriq
 REST API MUST continue to pass without modification after this change ships.
 The HTTP surface (endpoint paths, request shapes, response shapes, status codes)
 SHALL be identical before and after chain C. Any test that asserts the JSON
@@ -428,9 +429,9 @@ THEN the command produces zero NEW occurrences outside of the known pre-existing
 
 ### Requirement: Per-schema CRUD controllers MUST be deleted; only connector-specific action endpoints remain
 
-Controllers under `lib/Controller/` that exposed only standard CRUD operations over a single openconnector domain entity MUST be deleted. OR's `/api/objects/{register}/{schema}/*` route family already exposes generic CRUD; per-schema duplication in openconnector is redundant. Connector-specific action endpoints (`/api/jobs/{id}/run`, `/api/sources/{id}/test`, `/api/synchronizations/{id}/trigger`, `/api/import`, `/api/export`, `/api/endpoint/{...}` inbound dispatch, etc.) MUST be preserved.
+Controllers under `lib/Controller/` that exposed only standard CRUD operations over a single integriq domain entity MUST be deleted. OR's `/api/objects/{register}/{schema}/*` route family already exposes generic CRUD; per-schema duplication in openconnector is redundant. Connector-specific action endpoints (`/api/jobs/{id}/run`, `/api/sources/{id}/test`, `/api/synchronizations/{id}/trigger`, `/api/import`, `/api/export`, `/api/endpoint/{...}` inbound dispatch, etc.) MUST be preserved.
 
-Schema-driven input validation (rejecting missing required fields, type-coercing inputs, etc.) is handled by OR's built-in schema validator when `ObjectService::saveObject()` is called against a register+schema with declared `required` and typed `properties`. The chain A descriptor at `lib/Settings/openconnector_register.json` defines those constraints. **No openconnector-side DTO layer is needed at CRUD boundaries.** Dedicated DTO classes MAY be introduced ONLY at the input boundary of connector-specific actions (e.g. a `SyncTriggerDto` for the body of `POST /api/synchronizations/{id}/trigger`) when the action's input shape doesn't match any single schema.
+Schema-driven input validation (rejecting missing required fields, type-coercing inputs, etc.) is handled by OR's built-in schema validator when `ObjectService::saveObject()` is called against a register+schema with declared `required` and typed `properties`. The chain A descriptor at `lib/Settings/integriq_register.json` defines those constraints. **No openconnector-side DTO layer is needed at CRUD boundaries.** Dedicated DTO classes MAY be introduced ONLY at the input boundary of connector-specific actions (e.g. a `SyncTriggerDto` for the body of `POST /api/synchronizations/{id}/trigger`) when the action's input shape doesn't match any single schema.
 
 #### Scenario: per-schema CRUD controller is deleted
 
@@ -446,12 +447,12 @@ WHEN inspecting `lib/Controller/CallController.php`, `lib/Controller/ExportContr
 THEN each MUST still exist
 AND their action routes MUST still be present in `appinfo/routes.php`
 
-#### Scenario: OR CRUD route handles a Source create without an openconnector controller
+#### Scenario: OR CRUD route handles a Source create without an integriq controller
 
-GIVEN openconnector is post-chain-C
+GIVEN integriq is post-chain-C
 WHEN a client issues `POST /index.php/apps/openregister/api/objects/openconnector/source` with `{"name":"test","type":"api"}`
 THEN OR's generic CRUD route MUST persist the object via `ObjectService::saveObject(object: ..., register: 'openconnector', schema: 'source')` and return the created `ObjectEntity` JSON
-AND no openconnector-side controller MUST be involved in serving this request
+AND no integriq-side controller MUST be involved in serving this request
 
 ---
 
@@ -468,19 +469,19 @@ GIVEN the chain C cutover is applied
 WHEN `find lib/Controller/ -name 'ImportController.php' -o -name 'ExportController.php' -o -name 'DashboardController.php'` is run
 THEN the command produces zero output
 
-#### Scenario: OR export endpoint serves a Source export without an openconnector controller
+#### Scenario: OR export endpoint serves a Source export without an integriq controller
 
-GIVEN openconnector is post-chain-C with at least one Source object stored in OR
+GIVEN integriq is post-chain-C with at least one Source object stored in OR
 WHEN a client issues `GET /index.php/apps/openregister/api/objects/openconnector/source/{uuid}` with `Accept: application/json`
-THEN OR's generic objects endpoint MUST return the Source object JSON (no openconnector controller involved in the request path)
+THEN OR's generic objects endpoint MUST return the Source object JSON (no integriq controller involved in the request path)
 AND if the request includes `X-Slug-Translation: true`, the response JSON MUST have integer FK fields replaced with their portable slug form by the `SlugTranslatorService` decorator (per local ADR-015)
 
 #### Scenario: Dashboard page uses declarative manifest widgets, not the deleted controller
 
-GIVEN openconnector is post-chain-C
+GIVEN integriq is post-chain-C
 WHEN the user navigates to the Dashboard page
 THEN the page MUST render via `CnDashboardPage` driven by `src/manifest.json` Dashboard entry with `type: "dashboard"`
-AND the page's widgets MUST resolve their counts via `dataSource` blocks pointing at OR's generic aggregate endpoint — NOT via an openconnector-side DashboardController
+AND the page's widgets MUST resolve their counts via `dataSource` blocks pointing at OR's generic aggregate endpoint — NOT via an integriq-side DashboardController
 
 ---
 
@@ -496,7 +497,7 @@ THEN only `page()` (Nextcloud SPA shell) and `applyRetention()` MUST appear in t
 
 ---
 
-### Requirement: openconnector ConfigurationService MUST be reduced to a slug-translation decorator and renamed
+### Requirement: integriq ConfigurationService MUST be reduced to a slug-translation decorator and renamed
 
 `lib/Service/ConfigurationService.php` (835 LOC) MUST be renamed to `lib/Service/SlugTranslatorService.php` (~150 LOC). The renamed service MUST expose exactly two public methods: `translateOnExport(array $object): array` and `translateOnImport(array $object): array`. The deleted methods (`getEntitiesByConfiguration`, `exportConfiguration`, `exportRegister`, `importConfiguration`) MUST be removed — their use cases are covered by OR's `\OCA\OpenRegister\Service\ConfigurationService` (a different class in a different namespace) consumed via the routes referenced above.
 

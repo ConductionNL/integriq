@@ -19,7 +19,7 @@
  * Synchronization/Mapping would in production.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration
+ * @package  OCA\Integriq\Tests\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,16 +33,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration;
+namespace OCA\Integriq\Tests\Integration;
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -96,8 +96,14 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 		$this->contractStore = [];
 		$this->targetStore = [];
 
-		if (getenv('OPENCONNECTOR_SKIP_NETWORK_TESTS') === '1') {
-			$this->markTestSkipped('OPENCONNECTOR_SKIP_NETWORK_TESTS=1 — network-isolated run.');
+		/* INTEGRIQ_SKIP_NETWORK_TESTS is the canonical name; the OPENCONNECTOR_
+		   spelling is still honoured because this opt-out was documented under
+		   the old name and an air-gapped runner or developer box may still set
+		   it. Reading only the new name would turn their deliberate skip into a
+		   confusing connection failure. Drop the old spelling once the fleet
+		   rename is complete. */
+		if (getenv('INTEGRIQ_SKIP_NETWORK_TESTS') === '1' || getenv('OPENCONNECTOR_SKIP_NETWORK_TESTS') === '1') {
+			$this->markTestSkipped('SKIP_NETWORK_TESTS=1 — network-isolated run.');
 		}
 
 		$connectable = @fsockopen('endoflife.date', 443, $errno, $errstr, 3);
@@ -338,7 +344,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 			$fileService,
 			$ocObjectService,
 			$orObjectService,
-			$this->createMock(\OCA\OpenConnector\Service\SynchronizationContractService::class),
+			$this->createMock(\OCA\Integriq\Service\SynchronizationContractService::class),
 		);
 
 		$container = $this->createMock(ContainerInterface::class);
@@ -362,7 +368,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 			$logger,
 			$logService,
 			$appConfig,
-			$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 		);
 
 		return [$service, $syncPayload];
