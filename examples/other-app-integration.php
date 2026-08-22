@@ -4,7 +4,7 @@
  * Example: How other NextCloud apps can access custom name fields
  * 
  * This example shows how other apps can read and write the custom name fields
- * (firstName, lastName, middleName) that are stored by the OpenConnector UserService.
+ * (firstName, lastName, middleName) that are stored by the Integriq UserService.
  */
 
 // In any other NextCloud app, you can access the custom name fields like this:
@@ -58,43 +58,43 @@ class ExampleOtherAppService
     }
 
     /**
-     * Example: Use the OpenConnector UserService directly (if available)
+     * Example: Use the Integriq UserService directly (if available)
      * 
      * @param IUser $user The user object
      * @return array Complete user data including name fields
      */
-    public function getUserDataViaOpenConnector(IUser $user): array 
+    public function getUserDataViaIntegriq(IUser $user): array 
     {
-        // Get the OpenConnector UserService if available
-        $userService = \OC::$server->get(\OCA\OpenConnector\Service\UserService::class);
+        // Get the Integriq UserService if available
+        $userService = \OC::$server->get(\OCA\Integriq\Service\UserService::class);
         
         // This returns complete user data including firstName, lastName, middleName
         return $userService->buildUserDataArray($user);
     }
 
     /**
-     * Example: Get just the custom name fields via OpenConnector UserService
+     * Example: Get just the custom name fields via Integriq UserService
      * 
      * @param IUser $user The user object
      * @return array Name fields only
      */
-    public function getNameFieldsViaOpenConnector(IUser $user): array 
+    public function getNameFieldsViaIntegriq(IUser $user): array 
     {
-        $userService = \OC::$server->get(\OCA\OpenConnector\Service\UserService::class);
+        $userService = \OC::$server->get(\OCA\Integriq\Service\UserService::class);
         
         // This returns just the name fields
         return $userService->getCustomNameFields($user);
     }
 
     /**
-     * Example: Set name fields via OpenConnector UserService
+     * Example: Set name fields via Integriq UserService
      * 
      * @param IUser $user The user object
      * @param array $nameFields Array with name field values
      */
-    public function setNameFieldsViaOpenConnector(IUser $user, array $nameFields): void 
+    public function setNameFieldsViaIntegriq(IUser $user, array $nameFields): void 
     {
-        $userService = \OC::$server->get(\OCA\OpenConnector\Service\UserService::class);
+        $userService = \OC::$server->get(\OCA\Integriq\Service\UserService::class);
         
         // This sets the name fields using the UserService
         $userService->setCustomNameFields($user, $nameFields);
@@ -112,11 +112,11 @@ class ExampleOtherAppService
  *        'middleName' => 'William'
  *    ]);
  * 
- * 2. Via OpenConnector UserService (if app is installed):
- *    $userData = $exampleService->getUserDataViaOpenConnector($user);
- *    $nameFields = $exampleService->getNameFieldsViaOpenConnector($user);
- *    $exampleService->setNameFieldsViaOpenConnector($user, $nameFields);
+ * 2. Via Integriq UserService (if app is installed):
+ *    $userData = $exampleService->getUserDataViaIntegriq($user);
+ *    $nameFields = $exampleService->getNameFieldsViaIntegriq($user);
+ *    $exampleService->setNameFieldsViaIntegriq($user, $nameFields);
  * 
  * The fields are stored in the 'core' namespace making them accessible 
- * to all NextCloud apps, not just OpenConnector.
+ * to all NextCloud apps, not just Integriq.
  */ 

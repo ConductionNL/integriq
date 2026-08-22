@@ -84,6 +84,25 @@ are the frozen VALUES listed below.
 
 8. **`CHANGELOG.md` historical entries** — do not rewrite past releases.
 
+10. **Webhook header names `X-OpenConnector-Signature` / `X-OpenConnector-Event-Id`.**
+   Reason: HTTP header names on every outbound webhook delivery — subscribers
+   verify the signature BY HEADER NAME — and the `??` default used to verify
+   INBOUND webhooks from payment providers, NotifyNL and municipal StUF
+   brokers. Renaming breaks verification on both sides, failing closed with
+   nothing on our side to indicate a rename caused it.
+
+11. **`BrokeredCallService::APP_ID`, `InlineSecretMigrationPlanner::APP_ID`,
+   `InlineSecretMigrationExecutor::APP_ID`** (all `'openconnector'`), and the
+   user-facing hints that name it (`Add "openconnector" to the credential's
+   allowedApps`).
+   Reason: NOT this app's own Nextcloud app id. It is the identity
+   **OpenRegister's credential broker** matches against a stored credential's
+   `allowedApps`, with a strict `in_array($appId, $allowedApps, true)`. Every
+   credential already minted carries `allowedApps: ["openconnector"]`, so
+   renaming it makes every brokered credential FAIL CLOSED at call time — as
+   an authorisation refusal, not as a rename bug. A cross-app runtime lookup:
+   it moves only when OpenRegister's stored credentials are re-provisioned.
+
 9. **Other apps' ids/namespaces** — `procest`, `decidesk`, `docudesk`,
    `shillinq`, `scholiq`, `pipelinq`, `softwareCatalog`, `Doriath`,
    `OpenCatalogi`, `OpenZaak`, `OpenKlant`, `openregister`/`OCA\OpenRegister`,

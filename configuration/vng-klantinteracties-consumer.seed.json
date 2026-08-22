@@ -1,5 +1,5 @@
 {
-  "_deviation": "ConfigurationService::importConfiguration() (ADR-015) does not have a ConfigurationHandler for the `consumer` schema — only endpoint, mapping, rule, source, job and synchronization round-trip through the OAS components document (see lib/Service/ConfigurationService.php, lib/Service/ConfigurationHandlers/). This Consumer object is therefore NOT part of vng-klantinteracties.oas.json; it must be created separately (via the Consumers UI, or `POST /apps/openconnector/api/consumers`) after the OAS document is imported. Placeholders below MUST be replaced before the consumer can authenticate.",
+  "_deviation": "ConfigurationService::importConfiguration() (ADR-015) does not have a ConfigurationHandler for the `consumer` schema — only endpoint, mapping, rule, source, job and synchronization round-trip through the OAS components document (see lib/Service/ConfigurationService.php, lib/Service/ConfigurationHandlers/). This Consumer object is therefore NOT part of vng-klantinteracties.oas.json; it must be created separately (via the Consumers UI, or `POST /apps/integriq/api/consumers`) after the OAS document is imported. Placeholders below MUST be replaced before the consumer can authenticate.",
   "consumer": {
     "name": "VNG KISS Consumer",
     "description": "Municipal KISS front-end consumer for the VNG Klantinteracties surface.",
