@@ -213,3 +213,14 @@
       remainder, so some synchronizations carry two). The last projection made
       here from a plausible-looking ratio was wrong by 30 points. Build the
       step, then RE-MEASURE all 240.
+      THE STEP IS BUILT (#1526): `openconnector.fetch-file`, a thin adapter over
+      `SynchronizationService::runFetchFileRule()` — the same code path the
+      legacy engine runs, reached through a public seam that resolves the rule
+      and checks its type rather than lifting 75 lines out of the legacy write
+      path. It carries a rule REFERENCE, so a half-migrated instance keeps both
+      engines acting on the same entity. The generator emits it after the
+      `syncedId` step and no longer refuses `actions` wholesale; every other
+      rule type, an unresolvable rule, and a `before`-timed fetch_file are still
+      refused BY NAME.
+      STILL TO DO HERE: re-measure all 240 once #1526 is deployed, and record
+      the number that comes back — not one derived from it.
