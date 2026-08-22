@@ -110,13 +110,13 @@ jobs:
     if: github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
-      app-name: openconnector
+      app-name: integriq
       # composer.json `config.platform.php` is pinned to 8.3, so phpcs/phpmd/etc
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
       # Set explicitly, because the shared workflow defaults to
-      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. openconnector
+      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. integriq
       # declares <app>openregister</app> as a hard dependency, and openregister
       # declares min-version="32". On NC31 the E2E job logs
       #   App "Open Register" cannot be installed because it is not compatible
@@ -160,7 +160,7 @@ jobs:
       # That is not hypothetical in this fleet: a missing helper made gate-7
       # report PASS over 11 real unguarded IDOR endpoints, and openregister
       # reported `success` while its own log read "EXCEPT GATES 4 33, WHICH DID
-      # NOT RUN". A waiver here means openconnector's green does not include
+      # NOT RUN". A waiver here means integriq's green does not include
       # the coverage assertion at all.
       #
       # THE ORIGINAL DEFERRAL NO LONGER HOLDS, and not for the reason this PR
@@ -227,7 +227,7 @@ jobs:
       # A committed, untagged public method planted in lib/Service and a
       # matching Vue method moved every one of those numbers by exactly +2 and
       # named both plants, so the zeros above are real zeros and not a dead
-      # gate. openconnector's genuine gate-16 debt is 30 methods, all backend.
+      # gate. integriq's genuine gate-16 debt is 30 methods, all backend.
       #
       # Gate 4 was never starved by a producer this repo declines to switch
       # on; it declares itself not applicable. And gate-24
@@ -285,10 +285,10 @@ jobs:
       # /index.php/apps/openregister/api/objects/openconnector/*).
       enable-newman: true
       newman-collection-path: "tests/postman"
-      newman-environment-path: "tests/postman/openconnector.postman_environment.json"
+      newman-environment-path: "tests/postman/integriq.postman_environment.json"
       # WHY THIS SEED EXISTS. The collection's "01 — Fixture setup (via OR)"
       # folder POSTs to /apps/openregister/api/objects/openconnector/<schema>;
-      # since the chain-C cutover every openconnector entity is an OpenRegister
+      # since the chain-C cutover every integriq entity is an OpenRegister
       # object. Without a seed step the `openconnector` register does not
       # exist, all 8 fixture POSTs return 404, `{{fxSourceUuid}}` is never set,
       # and every downstream request then 404s on the literal placeholder —
@@ -304,7 +304,7 @@ jobs:
       # a deadlock that hung the job until timeout-minutes (run 30821823343).
       # #132 sets PHP_CLI_SERVER_WORKERS=8 on this job's server, which is what
       # makes the self-referential fixtures serveable. Merged 2026-08-03.
-      newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
+      newman-seed-command: 'SEED_SCOPE=register bash apps/integriq/tests/e2e/ci-seed.sh'
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
 
       # ── E2E browser tests ────────────────────────────────────────────────
@@ -324,7 +324,7 @@ jobs:
       # project over spec-coverage/ + regression/ + workflows/.
       enable-playwright: true
       playwright-test-path: tests/e2e
-      # openconnector's sources/mappings/synchronizations/jobs are OpenRegister
+      # integriq's sources/mappings/synchronizations/jobs are OpenRegister
       # OBJECTS — there is no `oc_openconnector_*` table for them — so with no
       # `openconnector` register the SPA has nothing to resolve and the suite
       # reports it as a wall of selector timeouts. `occ app:enable` is not a
@@ -332,7 +332,7 @@ jobs:
       # swallows its own failures as warnings and occ still exits 0. The script
       # provisions explicitly and fails loudly when the register or its schemas
       # are still absent. cwd for this step is the Nextcloud server root.
-      playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
+      playwright-seed-command: 'bash apps/integriq/tests/e2e/ci-seed.sh'
 
       # ── PHPUnit ──────────────────────────────────────────────────────────
       # `enable-phpunit` defaults to FALSE in the shared workflow and this
@@ -421,10 +421,10 @@ jobs:
       # So this is turned on against a MEASUREMENT, not a hope. Run locally
       # with the canonical runner (ConductionNL/.github@main b8c7ead,
       # @axe-core/playwright 4.12.1) against a dedicated Nextcloud 34 with
-      # openregister + openconnector installed and the register seeded:
+      # openregister + integriq installed and the register seeded:
       #
-      #   /index.php/apps/openconnector/          HTTP 200  passes=19  violations=0
-      #   /index.php/apps/openconnector/#/sources HTTP 200  passes=17  violations=0
+      #   /index.php/apps/integriq/          HTTP 200  passes=19  violations=0
+      #   /index.php/apps/integriq/#/sources HTTP 200  passes=17  violations=0
       #
       # with `axe self-test OK` and `axe scope control OK` on both. Zero
       # violations at any impact, so zero serious/critical — gate-33 has
@@ -452,7 +452,7 @@ jobs:
       # Until #351 lands this is the app root only. It is a real verdict on a
       # real page — gate-33 has reported SKIPPED in this repo since it was
       # written — but it is one page, not the app.
-      axe-routes: "/index.php/apps/openconnector/"
+      axe-routes: "/index.php/apps/integriq/"
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
