@@ -1,13 +1,13 @@
 schema: conduction
 
 context: |
-  Project: OpenConnector
-  Repo: ConductionNL/openconnector
+  Project: Integriq
+  Repo: ConductionNL/integriq
   Type: Nextcloud App (PHP)
   Description: Integration platform for connecting Nextcloud to external systems (APIs, sources, endpoints)
   Key components: Sources, Endpoints, Jobs, Mappings, Synchronizations, Webhooks
   Database: PostgreSQL (own tables via Nextcloud ORM)
-  Mount path: /var/www/html/custom_apps/openconnector
+  Mount path: /var/www/html/custom_apps/integriq
 
   Shared specs: See ../openspec/specs/ for cross-project conventions
   Project guidelines: See ../project.md for workspace-wide standards
