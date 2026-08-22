@@ -57,6 +57,13 @@ parameters:
         # remedy.
         - lib/Flow/SourcePaginateNode.php
         - lib/Flow/FlowRateLimit.php
+        # SynchronizationLogActions is the run-log helper the four flow nodes
+        # above share. Every one of its users is excluded, so PHPStan sees a
+        # trait that is "used zero times and is not analysed" — which it refuses
+        # to let a baseline or ignoreErrors absorb. It is excluded for exactly
+        # the same reason its users are, not because the trait itself is
+        # unreachable: at runtime all four nodes `use` it.
+        - lib/Flow/SynchronizationLogActions.php
         # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
