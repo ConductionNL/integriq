@@ -76,7 +76,7 @@ query-time providers.
 
 ### D4 — `list()` query shape and the register/schema-context trap
 
-Context is set via `objectService->setRegister('openconnector')->setSchema('synchronization_contract')`
+Context is set via `objectService->setRegister('integriq')->setSchema('synchronization_contract')`
 and the `findAll()` `filters` carry **only** `targetId => $objectId`. Passing
 `register`/`schema` *inside* `filters` sets context but *also* leaks them as
 object-property filters — slug strings compared against the numeric
