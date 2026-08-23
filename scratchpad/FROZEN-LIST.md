@@ -50,7 +50,7 @@ F2. ~~OpenRegister register/schema slugs.~~ **RETRACTED — the register SLUG MO
     (`Open Registers/OpenConnector`) — a Files path already on disk, which the slug
     rename does not move.
 
-F3. **Docs subdomain `openconnector.conduction.nl`.** It is LIVE; `integriq.conduction.nl`
+F3. **Docs subdomain `integriq.conduction.nl`.** It is LIVE; `integriq.conduction.nl`
     does NOT resolve. Pointing at a host that does not resolve is a regression.
     Frozen in: `docs/static/CNAME`, `docs/docusaurus.config.js`, `docs/static/llms.txt`,
     `cname:` in `.github/workflows/documentation.yml`, `documentationUrl` and footer
