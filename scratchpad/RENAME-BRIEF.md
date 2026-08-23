@@ -72,7 +72,7 @@ are the frozen VALUES listed below.
    Reason: OpenID4VCI issuer identifier held by already-issued wallet
    credentials and offers.
 
-6. **Docs subdomain `openconnector.conduction.nl`** in
+6. **Docs subdomain `integriq.conduction.nl`** in
    `docs/static/CNAME`, `.github/workflows/documentation.yml` (`cname:`),
    `docs/docusaurus.config.js`, `docs/static/llms.txt`,
    `src/manifest.json` documentationUrl entries.

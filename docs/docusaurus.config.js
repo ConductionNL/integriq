@@ -23,9 +23,9 @@ const config = createConfig({
   tagline: 'The integration layer for Nextcloud. REST and SOAP sources, plus Dutch government-standard connectors (PDOK, StUF, DSO, Berichtenbox). Pulls data from your existing systems into typed registers without writing glue code.',
   // FROZEN on the OLD id during the app-id rename: this is a live DNS record
   // and the Pages CNAME (docs/static/CNAME, and documentation.yml's `cname:`).
-  // Verified by curl: openconnector.conduction.nl -> 200,
+  // Verified by curl: integriq.conduction.nl -> 200,
   // integriq.conduction.nl -> 000. All three move together in the DNS pass.
-  url: 'https://openconnector.conduction.nl',
+  url: 'https://integriq.conduction.nl',
   baseUrl: '/',
 
   organizationName: 'ConductionNL',

@@ -6,8 +6,8 @@ Integriq is an open-source data-synchronization app for the Nextcloud workspace.
 
 ## Docs
 
-- [Documentation](https://openconnector.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
-- [API reference](https://openconnector.conduction.nl/api): OpenAPI documentation.
+- [Documentation](https://integriq.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
+- [API reference](https://integriq.conduction.nl/api): OpenAPI documentation.
 
 ## Optional
 

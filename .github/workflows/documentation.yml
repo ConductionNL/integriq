@@ -37,5 +37,6 @@ jobs:
       # not exist (measured during the dossiq rename: the new name answered
       # HTTP 000 while the old one answered 200). It moves together with
       # docs/static/CNAME and the DNS record, in a separate pass.
-      cname: openconnector.conduction.nl
+      cname: integriq.conduction.nl
+      docs-hosts: openconnector.conduction.nl,integriq.conduction.nl
       source-folder: docusaurus
