@@ -238,13 +238,30 @@
       re-resolved inside a register that has nothing to do with it. Diagnosed,
       reproduced in a unit test that fails on development, fixed and merged as
       openregister#2790.
-      ⚠️ THE FIX IS NOT YET DEPLOYED HERE, so the number is still unmeasured.
-      The instance's openregister checkout carries 10+ unmerged commits from
-      another session, and taking their working tree out from under them is not
-      worth a measurement. Whoever deploys openregister development next
-      unblocks this: the sweep is one loop over
-      `occ openconnector:synchronization-to-flow <uuid> --json` across the 240.
-      RECORD WHAT COMES BACK. Do not derive it, do not scale a sample — the two
-      wrong numbers this file has already carried (8.3%, ~99%) both came from
-      treating a partial or non-running measurement as a proportional one. A
-      sweep that cannot READ its subjects measures nothing at all.
+      THE SWEEP THEN RAN, 2026-08-23, AND CAUGHT A SECOND DEFECT — IN THIS
+      CHANGE. openregister development was deployed (#2790 plus #2792/#2803/
+      #2804, four passes at one leaked-schema-ref bug) and all 240 became
+      readable. The first honest sweep returned 161 — THE IDENTICAL NUMBER AS
+      BEFORE `fetch-file` EXISTED — and all 74 `actions` refusals said:
+        actions: rule "xxllnc-fetch-files" could not be resolved
+      Not one was refused for its rule's TYPE. The rule was in the database the
+      whole time. `findRule()` delegated to `getRuleById()`, which reads WITH
+      rbac and multitenancy — right for the legacy engine's in-request pipeline,
+      wrong for a generator running under `occ` where there is no session, so a
+      scoped read matched nothing. The feature was complete and unreachable.
+      Fixed in #1541 by reading `_rbac: false, _multitenancy: false`, the way
+      `MigrationEntityReader` already did and documented.
+      🔑 A LOOKUP FAILURE MUST NOT WEAR THE SAME WORDS AS A JUDGEMENT. "could
+      not be resolved" and "is not supported" read the same to anyone scanning
+      output, which is exactly why a shipped-and-dead feature looked like an
+      unfinished one for a day.
+      MEASURED 2026-08-23, all 240, zero non-runs:
+        235 GENERATED / 5 REFUSED = 97.9%   (was 161/240 = 67.1%)
+      The five remaining, by reason: targetId shape 4, sourceType 3,
+      targetType 3, sourceHashMapping 1, conditions 1 (some carry two). NO
+      `actions` refusal remains.
+      THIS NUMBER IS MEASURED, NOT DERIVED. The two wrong numbers this file
+      carried before (8.3%, ~99%) both came from treating a partial or
+      non-running measurement as a proportional one, and the NOTRUN bucket
+      earned its keep twice more this round — once catching a console-wrapped
+      refusal my classifier missed, once catching 240 unreadable subjects.
