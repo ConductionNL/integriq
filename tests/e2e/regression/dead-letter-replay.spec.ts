@@ -12,7 +12,7 @@
  * to `/cloud-events/deliveries`, which is still a valid router entry — a
  * redirect to `/dead-letters?queue=events` since the ADR-080 navigation merge.
  * What was wrong was the URL PREFIX in front of it: the private probe this file
- * used always chose `/apps/openconnector`, which CI's path-mode router does not
+ * used always chose `/apps/integriq`, which CI's path-mode router does not
  * honour, so the navigation fell through the catch-all onto the DASHBOARD. The
  * second test reported "rendered no dead-letter operations vocabulary" and then
  * dumped the dashboard's own text; the FIRST test, asserting only
@@ -67,7 +67,7 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	/Slow network is detected/i,
 	/favicon/i,
 	/the resource at .* was preloaded using link preload but not used/i,
-	/Error fetching OpenConnector settings/i,
+	/Error fetching Integriq settings/i,
 	/Failed to load resource:.*Not Found/i,
 	/Failed to load user status/i,
 	/user_status/i,

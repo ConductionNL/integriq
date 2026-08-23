@@ -5,7 +5,7 @@
  * Application::register() (flow-workflowengine-integration).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\AppInfo
+ * @package  OCA\Integriq\Tests\Unit\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,10 +33,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\AppInfo;
+namespace OCA\Integriq\Tests\Unit\AppInfo;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\IAppContainer;
@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
- * @covers \OCA\OpenConnector\AppInfo\Application
+ * @covers \OCA\Integriq\AppInfo\Application
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
 class ApplicationWorkflowEngineOperationsTest extends TestCase {
@@ -159,7 +159,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end invokeRegister()
 
 	/**
-	 * GIVEN `workflowengine` is enabled WHEN OpenConnector boots THEN
+	 * GIVEN `workflowengine` is enabled WHEN Integriq boots THEN
 	 * RegisterOperationsListener IS registered against RegisterOperationsEvent.
 	 *
 	 * @return void
@@ -180,7 +180,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end testRegistersListenerWhenWorkflowEngineEnabled()
 
 	/**
-	 * GIVEN `workflowengine` is disabled WHEN OpenConnector boots THEN no
+	 * GIVEN `workflowengine` is disabled WHEN Integriq boots THEN no
 	 * registration occurs and nothing is logged (a disabled app is a normal
 	 * state, not a fault).
 	 *
@@ -201,7 +201,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	}//end testNoRegistrationAndNoLogWhenWorkflowEngineDisabled()
 
 	/**
-	 * GIVEN IAppManager resolution throws WHEN OpenConnector boots THEN no
+	 * GIVEN IAppManager resolution throws WHEN Integriq boots THEN no
 	 * registration occurs, a warning (not error) is logged, and no exception
 	 * propagates.
 	 *

@@ -4,7 +4,7 @@
  * Unit tests for KlantinteractiesClient.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Kiss
+ * @package  OCA\Integriq\Tests\Unit\Service\Kiss
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Kiss;
+namespace OCA\Integriq\Tests\Unit\Service\Kiss;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\KissProviderException;
-use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
+use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;

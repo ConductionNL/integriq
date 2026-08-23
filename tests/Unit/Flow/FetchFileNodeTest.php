@@ -10,7 +10,7 @@
  * page.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,12 +26,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Flow\FetchFileNode;
-use OCA\OpenConnector\Flow\FlowNodeSupport;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Flow\FetchFileNode;
+use OCA\Integriq\Flow\FlowNodeSupport;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Service\SynchronizationService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -94,7 +94,7 @@ class FetchFileNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/icon.svg');
 
 		$this->node = new FetchFileNode(
 			synchronizations: $this->synchronizations,
@@ -117,7 +117,6 @@ class FetchFileNodeTest extends TestCase {
 	 */
 	private function context(): array {
 		return ['triggeredBy' => 'alice', 'stepId' => 'step-files'];
-
 	}//end context()
 
 	/**
@@ -141,7 +140,6 @@ class FetchFileNodeTest extends TestCase {
 	 */
 	private function item(array $json): array {
 		return ['json' => $json, 'binary' => []];
-
 	}//end item()
 
 	/**

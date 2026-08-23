@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector mTLS Transport Options Builder.
+ * Integriq mTLS Transport Options Builder.
  *
  * Materialises an {@see MtlsCertificateBundle}'s PEM strings to transient,
  * `0600`-permission temp files (Guzzle/cURL requires file paths for `cert`/
  * `ssl_key`/`verify`, not raw PEM bytes) and builds the corresponding Guzzle
- * request-options array. Mirrors {@see \OCA\OpenConnector\Service\CallService::writeFile()}'s
+ * request-options array. Mirrors {@see \OCA\Integriq\Service\CallService::writeFile()}'s
  * already-audited hygiene (#1012(a)): `tempnam()` in the system temp dir for
  * unpredictable names, `chmod 0600` re-asserted before AND after the write
  * so the exposure window is never wider than necessary.
@@ -16,7 +16,7 @@
  * it created via {@see MaterializedFiles} return value.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Mtls
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,21 +25,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Mtls;
+namespace OCA\Integriq\Service\Mtls;
 
 /**
  * Materialises mTLS certificate material to secure temp files and builds
  * the corresponding Guzzle TLS request options.
  *
  * `@`-silenced `chmod`/`unlink` calls are DELIBERATE and mirror
- * {@see \OCA\OpenConnector\Service\CallService::writeFile()}/`removeFile()`'s
+ * {@see \OCA\Integriq\Service\CallService::writeFile()}/`removeFile()`'s
  * identical, already-baselined hygiene: the `0600` re-assertion must not
  * raise on a filesystem that reports it unsupported, and cleanup must never
  * raise when the file is already gone — a cleanup that throws would mask

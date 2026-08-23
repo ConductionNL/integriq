@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Authentication Twig Extension.
+ * Integriq Authentication Twig Extension.
  *
  * Registers Twig functions for the various authentication flows
  * (OAuth, Decos, JWT) exposed to template authors.
  *
  * @category Twig
- * @package  OCA\OpenConnector\Twig
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Twig;
+namespace OCA\Integriq\Twig;
 
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;

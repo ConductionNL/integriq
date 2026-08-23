@@ -4,7 +4,7 @@
  * ArrayCache — in-memory ICache fake for LTI service tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Helpers
+ * @package  OCA\Integriq\Tests\Helpers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Helpers;
+namespace OCA\Integriq\Tests\Helpers;
 
 use OCP\ICache;
 

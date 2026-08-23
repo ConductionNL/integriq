@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 ## Context
 
-`CallService` is openconnector's outbound-request hot path: 11 methods, 831 LOC, every
+`CallService` is integriq's outbound-request hot path: 11 methods, 831 LOC, every
 configured Source's REST dispatch flows through `call()`. `SOAPService` is the SOAP-side
 counterpart (4 methods, 305 LOC) reached via `call()` when the Source is `type=soap`.
 The two services together implement Twig templating over request config, certificate

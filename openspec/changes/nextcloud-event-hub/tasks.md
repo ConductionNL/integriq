@@ -4,7 +4,7 @@
 
 ### Task 1: Add `action` and `retryPolicy` properties to the `event_subscription` register descriptor
 - **spec_ref**: `openspec/changes/nextcloud-event-hub/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008`
-- **files**: `lib/Settings/openconnector_register.json`
+- **files**: `lib/Settings/integriq_register.json`
 - **acceptance_criteria**:
   - GIVEN the descriptor is parsed WHEN inspecting `components.schemas.event_subscription.properties` THEN
     `action` and `retryPolicy` object properties exist, both absent from `required`
@@ -91,7 +91,7 @@
 - **spec_ref**: `openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003`
 - **files**: `lib/EventListener/NextcloudTablesEventListener.php`, `lib/AppInfo/Application.php`
 - **acceptance_criteria**:
-  - GIVEN `tables` is not installed WHEN OpenConnector boots THEN no listener is registered and no error is
+  - GIVEN `tables` is not installed WHEN Integriq boots THEN no listener is registered and no error is
     logged
   - GIVEN `tables` is installed and a row is created/updated/deleted WHEN the row event fires THEN a
     correctly-typed `event` record is persisted
@@ -102,7 +102,7 @@
 - **spec_ref**: `openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004`
 - **files**: `lib/EventListener/NextcloudFormsEventListener.php`, `lib/AppInfo/Application.php`
 - **acceptance_criteria**:
-  - GIVEN `forms` is not installed WHEN OpenConnector boots THEN no listener is registered
+  - GIVEN `forms` is not installed WHEN Integriq boots THEN no listener is registered
   - GIVEN `forms` is installed and a form is submitted WHEN the submission event fires THEN a correctly-typed
     `event` record is persisted with `data.formId`
 - [ ] Implement

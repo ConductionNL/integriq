@@ -153,7 +153,7 @@
 - **type**: functional
 - **persona**: Noor (Municipal CISO / Functional Admin) — reviews configured automation
 - **preconditions**: authenticated admin
-- **steps**: navigate to `/apps/openconnector/flows` via sidebar nav
+- **steps**: navigate to `/apps/integriq/flows` via sidebar nav
 - **expected result**: Flows index page renders with content; lists name, enabled state, last-run status
 - **test command**: `/test-functional`
 

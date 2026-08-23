@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector LogCleanUpTask.
+ * Integriq LogCleanUpTask.
  *
- * Background job task for cleaning up old logs in the OpenConnector
+ * Background job task for cleaning up old logs in the Integriq
  * application. Removes expired call logs and job logs to maintain
  * database performance.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,10 +16,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

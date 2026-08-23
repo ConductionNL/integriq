@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Authentication Twig Runtime.
+ * Integriq Authentication Twig Runtime.
  *
  * Runtime class invoked by the AuthenticationExtension Twig functions to
  * fetch authentication tokens for outbound calls.
  *
  * @category Twig
- * @package  OCA\OpenConnector\Twig
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Twig;
+namespace OCA\Integriq\Twig;
 
 use Adbar\Dot;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\AuthenticationService;
+use OCA\Integriq\Service\AuthenticationService;
 use Twig\Extension\RuntimeExtensionInterface;
 
 /**

@@ -19,19 +19,19 @@
 <template>
 	<div class="notificatiesAbonnementen">
 		<div class="notificatiesAbonnementen__header">
-			<h2>{{ t('openconnector', 'Abonnementen') }}</h2>
+			<h2>{{ t('integriq', 'Abonnementen') }}</h2>
 			<NcButton
 				variant="primary"
 				data-testid="add-abonnement"
 				@click="openCreate">
-				{{ t('openconnector', 'Add Item') }}
+				{{ t('integriq', 'Add Item') }}
 			</NcButton>
 		</div>
 
 		<p class="notificatiesAbonnementen__intro">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					"Manage this app's subscriber registrations against remote ZGW Notificaties API kanalen (Logius/VNG API Notificatiestandaard voor ZGW APIs).",
 				)
 			}}
@@ -45,10 +45,10 @@
 		<NcEmptyContent
 			v-else-if="!rows.length"
 			data-testid="empty-state"
-			:name="t('openconnector', 'No abonnementen yet')"
+			:name="t('integriq', 'No abonnementen yet')"
 			:description="
 				t(
-					'openconnector',
+					'integriq',
 					'Register an abonnement to subscribe to a Notificaties API kanaal.',
 				)
 			">
@@ -63,10 +63,10 @@
 			data-testid="abonnementen-table">
 			<thead>
 				<tr>
-					<th scope="col">{{ t('openconnector', 'Name') }}</th>
-					<th scope="col">{{ t('openconnector', 'Kanalen') }}</th>
-					<th scope="col">{{ t('openconnector', 'Status') }}</th>
-					<th scope="col">{{ t('openconnector', 'Last error') }}</th>
+					<th scope="col">{{ t('integriq', 'Name') }}</th>
+					<th scope="col">{{ t('integriq', 'Kanalen') }}</th>
+					<th scope="col">{{ t('integriq', 'Status') }}</th>
+					<th scope="col">{{ t('integriq', 'Last error') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -86,10 +86,10 @@
 					</td>
 					<td class="notificatiesAbonnementen__actions">
 						<NcButton variant="tertiary" @click="openEdit(row)">
-							{{ t('openconnector', 'Edit') }}
+							{{ t('integriq', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="remove(row)">
-							{{ t('openconnector', 'Delete') }}
+							{{ t('integriq', 'Delete') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -150,11 +150,11 @@ export default {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/notificaties/abonnementen'),
+					generateUrl('/apps/integriq/api/notificaties/abonnementen'),
 				)
 				this.rows = response.data?.results || []
 			} catch (err) {
-				showError(t('openconnector', 'Failed to load abonnementen'))
+				showError(t('integriq', 'Failed to load abonnementen'))
 			} finally {
 				this.loading = false
 			}
@@ -224,15 +224,15 @@ export default {
 			try {
 				await axios.delete(
 					generateUrl(
-						`/apps/openconnector/api/notificaties/abonnementen/${id}`,
+						`/apps/integriq/api/notificaties/abonnementen/${id}`,
 					),
 				)
-				showSuccess(t('openconnector', 'Abonnement deleted'))
+				showSuccess(t('integriq', 'Abonnement deleted'))
 				this.reload()
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
-					t('openconnector', 'Failed to delete abonnement')
+					t('integriq', 'Failed to delete abonnement')
 						+ (detail ? `: ${detail}` : ''),
 				)
 			}

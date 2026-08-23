@@ -14,7 +14,7 @@
  * choosing apiKey auth over JWT.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,27 +28,27 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
-use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferenceNumberRule;
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\ConsumerScopeService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\Helper\FlowToken;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
-use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
-use OCA\OpenConnector\Service\RuleService;
-use OCA\OpenConnector\Service\StorageService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Rule\AvgBsnPolicyRule;
+use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ConsumerScopeService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\RateLimit\RateLimitDecision;
+use OCA\Integriq\Service\RuleService;
+use OCA\Integriq\Service\StorageService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Configurar danunder che las datas vegnan.",
         "Configure where data is written to.": "Configurar nua che las datas vegnan scrittas.",
         "Content path (optional)": "Percurs dal cuntegn (opziunal)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decidai tge gruppas Nextcloud che dastgan invocar mintga acziun OpenConnector (ADR-023). Ils administraturs passan adina. Mintga acziun è da standard mo per administraturs — marcai ina gruppa per la spandair.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Decidai tge gruppas Nextcloud che dastgan invocar mintga acziun Integriq (ADR-023). Ils administraturs passan adina. Mintga acziun è da standard mo per administraturs — marcai ina gruppa per la spandair.",
         "Discard": "Stizzar",
         "Dot-path to the id field in each record": "Percurs cun puncts al champ id en mintga datasatz",
         "Dot-path to the id field in the API response": "Percurs cun puncts al champ id en la resposta API",

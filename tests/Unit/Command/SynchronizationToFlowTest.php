@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:synchronization-to-flow command.
+ * Tests for the integriq:synchronization-to-flow command.
  *
  * The command's whole contract is that it WRITES NOTHING and that a refusal is
  * visible: {@see testARefusalNamesEveryUnsupportedFeatureAndFails()} asserts the
@@ -9,7 +9,7 @@
  * on a synchronization it could not express reads exactly like one that did.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Command
+ * @package  OCA\Integriq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,17 +18,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Command;
+namespace OCA\Integriq\Tests\Unit\Command;
 
-use OCA\OpenConnector\Command\SynchronizationToFlow;
-use OCA\OpenConnector\Exception\SynchronizationNotMigratableException;
-use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Command\SynchronizationToFlow;
+use OCA\Integriq\Exception\SynchronizationNotMigratableException;
+use OCA\Integriq\Service\SynchronizationFlowGenerator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * @covers \OCA\OpenConnector\Command\SynchronizationToFlow
+ * @covers \OCA\Integriq\Command\SynchronizationToFlow
  */
 class SynchronizationToFlowTest extends TestCase {
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OCC command: openconnector:contracts:dedupe.
+ * OCC command: integriq:contracts:dedupe.
  *
  * Removes the duplicate `SynchronizationContract` rows left behind by the
  * identity defect fixed in #1306/#1307/#1309/#1311. Until that fix,
@@ -23,12 +23,12 @@
  * choice is deterministic and a dry run predicts exactly what an apply does.
  *
  * Usage:
- *   occ openconnector:contracts:dedupe                        # dry run, every synchronization
- *   occ openconnector:contracts:dedupe --apply                # actually delete
- *   occ openconnector:contracts:dedupe --synchronization=<id> # limit to one
+ *   occ integriq:contracts:dedupe                        # dry run, every synchronization
+ *   occ integriq:contracts:dedupe --apply                # actually delete
+ *   occ integriq:contracts:dedupe --synchronization=<id> # limit to one
  *
  * @category Command
- * @package  OCA\OpenConnector\Command
+ * @package  OCA\Integriq\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -44,9 +44,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Command;
+namespace OCA\Integriq\Command;
 
-use OCA\OpenConnector\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -71,7 +71,7 @@ class DedupeContracts extends Command {
 	 * Constructor.
 	 *
 	 * @param SynchronizationContractService $contracts The contract lifecycle service.
-	 * @param OrObjectService                $objects   The OpenRegister object service.
+	 * @param OrObjectService $objects The OpenRegister object service.
 	 */
 	public function __construct(
 		private readonly SynchronizationContractService $contracts,
@@ -89,7 +89,7 @@ class DedupeContracts extends Command {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openconnector:contracts:dedupe')
+		$this->setName(name: 'integriq:contracts:dedupe')
 			->setDescription(
 				'Collapse duplicate SynchronizationContract rows to one per '
 				. '(synchronization, origin), keeping the newest by sourceLastChecked. '
@@ -120,7 +120,7 @@ class DedupeContracts extends Command {
 	 * @param array $contracts Contract payload arrays for a single synchronization.
 	 *
 	 * @return array{keep: array<string, string>, delete: string[]} Survivors keyed by
-	 *         "originId", and the uuids to remove.
+	 *                                                              "originId", and the uuids to remove.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
@@ -169,13 +169,12 @@ class DedupeContracts extends Command {
 		}
 
 		return ['keep' => $keep, 'delete' => $delete];
-
 	}//end planDeletions()
 
 	/**
 	 * Execute the dedupe.
 	 *
-	 * @param InputInterface  $input  Console input.
+	 * @param InputInterface $input Console input.
 	 * @param OutputInterface $output Console output.
 	 *
 	 * @return int 0 on success.
@@ -211,16 +210,15 @@ class DedupeContracts extends Command {
 		}
 
 		return $this->summarise(output: $output, apply: $apply, totals: $totals);
-
 	}//end execute()
 
 	/**
 	 * Dedupe one synchronization's contracts, accumulating into $totals.
 	 *
-	 * @param string          $synchronizationId The synchronization to walk.
-	 * @param bool            $apply             Whether to actually delete.
-	 * @param OutputInterface $output            Console output.
-	 * @param array           $totals            Running totals, modified in place.
+	 * @param string $synchronizationId The synchronization to walk.
+	 * @param bool $apply Whether to actually delete.
+	 * @param OutputInterface $output Console output.
+	 * @param array $totals Running totals, modified in place.
 	 *
 	 * @return void
 	 *
@@ -230,7 +228,7 @@ class DedupeContracts extends Command {
 		string $synchronizationId,
 		bool $apply,
 		OutputInterface $output,
-		array &$totals
+		array &$totals,
 	): void {
 		$rows = $this->contracts->findAllObjects(filters: ['synchronizationId' => $synchronizationId]);
 		// FindAllObjects() returns ObjectEntity[], so an is_array() guard here
@@ -295,15 +293,14 @@ class DedupeContracts extends Command {
 		}
 
 		return ['deleted' => $deleted, 'skipped' => $skipped];
-
 	}//end deleteBatches()
 
 	/**
 	 * Print the run summary and decide the exit code.
 	 *
 	 * @param OutputInterface $output Console output.
-	 * @param bool            $apply  Whether deletions were attempted.
-	 * @param array           $totals The accumulated counts.
+	 * @param bool $apply Whether deletions were attempted.
+	 * @param array $totals The accumulated counts.
 	 *
 	 * @return int 0 on success, 1 when fewer rows were deleted than planned.
 	 *
@@ -344,7 +341,6 @@ class DedupeContracts extends Command {
 		}
 
 		return 0;
-
 	}//end summarise()
 
 	/**
@@ -379,6 +375,5 @@ class DedupeContracts extends Command {
 		}
 
 		return $ids;
-
 	}//end synchronizationIds()
 }//end class

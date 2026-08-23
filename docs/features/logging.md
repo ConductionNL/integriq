@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenConnector provides comprehensive logging for all outbound HTTP calls, synchronization runs, and job executions. Logs are queryable via the REST API and visible in the OpenConnector UI. Prometheus metrics and a JSON health endpoint are available for integration with monitoring stacks.
+Integriq provides comprehensive logging for all outbound HTTP calls, synchronization runs, and job executions. Logs are queryable via the REST API and visible in the Integriq UI. Prometheus metrics and a JSON health endpoint are available for integration with monitoring stacks.
 
 ## Call Logging
 
@@ -28,9 +28,9 @@ Every HTTP request made through `CallService` to an external source is recorded 
 ### Accessing Call Logs
 
 ```
-GET /index.php/apps/openconnector/api/logs
-GET /index.php/apps/openconnector/api/logs?sourceId={id}
-GET /index.php/apps/openconnector/api/logs?synchronizationId={id}
+GET /index.php/apps/integriq/api/logs
+GET /index.php/apps/integriq/api/logs?sourceId={id}
+GET /index.php/apps/integriq/api/logs?synchronizationId={id}
 ```
 
 ## Synchronization Logging
@@ -58,10 +58,10 @@ Job executions are logged per run. See [Jobs](jobs.md) for details.
 
 ## Prometheus Metrics
 
-OpenConnector exposes metrics in the [Prometheus text exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/) at:
+Integriq exposes metrics in the [Prometheus text exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/) at:
 
 ```
-GET /index.php/apps/openconnector/api/metrics
+GET /index.php/apps/integriq/api/metrics
 ```
 
 **Authentication:** Requires Nextcloud admin session or API token.
@@ -70,25 +70,32 @@ GET /index.php/apps/openconnector/api/metrics
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `openconnector_info` | gauge | App version info (labels: `version`, `php_version`, `nextcloud_version`) |
-| `openconnector_up` | gauge | 1 if healthy, 0 if database unavailable |
-| `openconnector_sources_total` | gauge | Source count by type |
-| `openconnector_endpoints_total` | gauge | Total registered endpoints |
-| `openconnector_mappings_total` | gauge | Total registered mappings |
-| `openconnector_synchronizations_total` | gauge | Total synchronization definitions |
-| `openconnector_synchronization_runs_total` | counter | Sync run count by status |
-| `openconnector_calls_total` | counter | HTTP call count by status code |
-| `openconnector_jobs_total` | gauge | Total job definitions |
-| `openconnector_job_runs_total` | counter | Job run count by result |
+| `integriq_info` | gauge | App version info (labels: `version`, `php_version`, `nextcloud_version`) |
+| `integriq_up` | gauge | 1 if healthy, 0 if database unavailable |
+| `integriq_sources_total` | gauge | Source count by type |
+| `integriq_endpoints_total` | gauge | Total registered endpoints |
+| `integriq_mappings_total` | gauge | Total registered mappings |
+| `integriq_synchronizations_total` | gauge | Total synchronization definitions |
+| `integriq_synchronization_runs_total` | counter | Sync run count by status |
+| `integriq_calls_total` | counter | HTTP call count by status code |
+| `integriq_jobs_total` | gauge | Total job definitions |
+| `integriq_job_runs_total` | counter | Job run count by result |
+
+> **Renamed in the Integriq release.** The metric prefix is derived from the app
+> id by the AppHost observability engine, so every family moved from
+> `openconnector_*` to `integriq_*` when the app id moved. This cannot be held
+> back at code level — **update your existing Grafana dashboards and alerting
+> rules** (and any recording rules) to the new names, or use
+> `label_replace`/a recording rule to bridge the two while you migrate.
 
 ### Prometheus Scrape Configuration
 
 ```yaml
 scrape_configs:
-  - job_name: 'openconnector'
+  - job_name: 'integriq'
     static_configs:
       - targets: ['your-nextcloud.example.com']
-    metrics_path: '/index.php/apps/openconnector/api/metrics'
+    metrics_path: '/index.php/apps/integriq/api/metrics'
     scheme: https
     basic_auth:
       username: admin
@@ -99,7 +106,7 @@ scrape_configs:
 ## Health Check
 
 ```
-GET /index.php/apps/openconnector/api/health
+GET /index.php/apps/integriq/api/health
 ```
 
 Returns JSON with application health status. HTTP 200 when healthy, HTTP 503 when degraded.

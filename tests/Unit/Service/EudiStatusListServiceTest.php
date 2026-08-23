@@ -4,7 +4,7 @@
  * Unit tests for EudiStatusListService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,11 +15,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateTime;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
-use OCA\OpenConnector\Service\EudiStatusListService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Service\EudiStatusListService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;

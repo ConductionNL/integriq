@@ -9,13 +9,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Util;
+namespace OCA\Integriq\Tests\Unit\Util;
 
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Util\SafeXmlParser;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenConnector\Util\SafeXmlParser
+ * @covers \OCA\Integriq\Util\SafeXmlParser
  */
 class SafeXmlParserTest extends TestCase {
 

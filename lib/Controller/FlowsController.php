@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flows Controller.
+ * Integriq Flows Controller.
  *
  * Bespoke, non-CRUD flow actions only — standard `flow` object CRUD goes
  * through OpenRegister's generic `/api/objects/openconnector/flow/*`
@@ -12,7 +12,7 @@
  * `JobsController::run()` / `SynchronizationsController::run()` precedent.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,19 +21,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\OpenConnector\Exception\FlowRunException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\FlowRunnerService;
+use OCA\Integriq\Exception\FlowRunException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\FlowRunnerService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Corporate Card-Feed Sync Service.
+ * Integriq Corporate Card-Feed Sync Service.
  *
  * Core of the corporate-card-feed connector: resolves the configured card
  * program source + provider binding, enrolls a source (discovers its cards), and
@@ -14,7 +14,7 @@
  * emits events (ADR-022).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,21 +23,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\CardfeedProviderException;
-use OCA\OpenConnector\Service\Cardfeed\CardfeedProviderInterface;
-use OCA\OpenConnector\Service\Cardfeed\LogCardfeedProvider;
-use OCA\OpenConnector\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
+use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
+use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -59,6 +59,8 @@ class CardfeedSyncService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -141,7 +143,7 @@ class CardfeedSyncService {
 	 * existing account (keyed by cardId) rather than creating a second account
 	 * or duplicating a card (REQ-002).
 	 *
-	 * @param string $sourceSlug The cardfeed source slug (openconnector Source).
+	 * @param string $sourceSlug The cardfeed source slug (integriq Source).
 	 *
 	 * @return array<string, mixed> The enrolled account summary
 	 *                              (`accountId`, `cardfeedSourceSlug`, `cards`, `lifecycleState`).
@@ -442,7 +444,7 @@ class CardfeedSyncService {
 	/**
 	 * Resolve the enabled cardfeed source for a slug.
 	 *
-	 * @param string $sourceSlug The openconnector Source slug (or uuid).
+	 * @param string $sourceSlug The integriq Source slug (or uuid).
 	 *
 	 * @return ObjectEntity The resolved source.
 	 *

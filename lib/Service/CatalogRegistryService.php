@@ -20,20 +20,20 @@
  * entry for a live re-check when the detail dialog opens (REQ-002).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/connector-catalog/spec.md#scenario-materialization-is-idempotent
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -60,7 +60,7 @@ class CatalogRegistryService {
 
 	/**
 	 * Human-readable category labels keyed by the source schema's free-form
-	 * `type` field (lib/Settings/openconnector_register.json's documented
+	 * `type` field (lib/Settings/integriq_register.json's documented
 	 * vocabulary: api, database, file, soap, dso, peppol, psd2, sms, payment).
 	 *
 	 * @var array<string,string>
@@ -303,7 +303,7 @@ class CatalogRegistryService {
 
 			$data = json_decode($raw, true);
 			if (json_last_error() !== JSON_ERROR_NONE || is_array($data) === false) {
-				$this->logger->warning('[openconnector] CatalogRegistryService: skipping malformed seed fragment ' . basename($file));
+				$this->logger->warning('[integriq] CatalogRegistryService: skipping malformed seed fragment ' . basename($file));
 				continue;
 			}
 
@@ -470,7 +470,7 @@ class CatalogRegistryService {
 				return 'dormant';
 			}
 
-			$raw = $this->appConfig->getValueString('openconnector', $flagKey, '0');
+			$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
 			if ($raw === '1' || strtolower($raw) === 'true') {
 				return 'available';
 			}

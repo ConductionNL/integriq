@@ -6,7 +6,7 @@
  * Adds the actions column to the openconnector_synchronizations table.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
@@ -14,12 +14,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;

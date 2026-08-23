@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Namespace Constants.
+ * Integriq StUF-ZKN Namespace Constants.
  *
  * Centralises the XML namespace URIs this bridge assumes for StUF-ZKN 3.10
  * (VNG/EGEM) SOAP envelopes — shared by every translator/envelope builder in
@@ -14,7 +14,7 @@
  * and every field this bridge reads/writes under them.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
 /**
  * StUF-ZKN 3.10 XML namespace URIs assumed by this bridge.

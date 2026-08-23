@@ -82,7 +82,7 @@
         },
         "name": "Avropa Sweden Weekly Sync",
         "description": "Runs the sweden-avropa-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "sweden-avropa-to-spectr-tender"
         },

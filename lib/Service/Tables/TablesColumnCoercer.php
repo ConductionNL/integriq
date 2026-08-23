@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Column-Type Coercer.
+ * Integriq Tables Column-Type Coercer.
  *
  * Coerces a mapped value against a target Tables column's declared
  * `type`/`subtype` (design.md Decision 6). Extracted from
@@ -11,7 +11,7 @@
  * that as a per-row skip, never a silent truncation/guess.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Tables
+ * @package  OCA\Integriq\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,17 +20,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Tables;
+namespace OCA\Integriq\Service\Tables;
 
 use DateTime;
-use OCA\OpenConnector\Exception\TablesConfigException;
+use OCA\Integriq\Exception\TablesConfigException;
 
 /**
  * Column-type-driven value coercion for Tables row writes.

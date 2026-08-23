@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log DSO Connector Provider.
+ * Integriq Log DSO Connector Provider.
  *
  * Sandbox/mock binding for {@see DsoConnectorProviderInterface}: performs no
  * real network call and returns a synthetic `MOCK-DSO-<n>` reference. It
@@ -10,7 +10,7 @@
  * convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Dso
+ * @package  OCA\Integriq\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Dso;
+namespace OCA\Integriq\Service\Dso;
 
 /**
  * Sandbox DSO outbound provider: no network call, synthetic reference.

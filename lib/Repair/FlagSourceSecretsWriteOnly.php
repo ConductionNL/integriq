@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — flag the source schema's credential fields write-only.
+ * Integriq — flag the source schema's credential fields write-only.
  *
  * Phase 2 of ocon#147 (openregister#380). The register fragment marks apikey/secret/
  * password/jwt/authenticationConfig `writeOnly: true` so OpenRegister's render boundary
@@ -18,7 +18,7 @@
  * system context, which the redaction never touches.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://conduction.nl
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -34,7 +34,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -47,7 +47,7 @@ use Throwable;
  */
 class FlagSourceSecretsWriteOnly implements IRepairStep {
 	/**
-	 * OR's SchemaMapper, resolved lazily so OpenConnector still boots without OpenRegister.
+	 * OR's SchemaMapper, resolved lazily so Integriq still boots without OpenRegister.
 	 *
 	 * @var string
 	 */
@@ -78,7 +78,7 @@ class FlagSourceSecretsWriteOnly implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Flag the OpenConnector source schema credential fields as write-only';
+		return 'Flag the Integriq source schema credential fields as write-only';
 	}//end getName()
 
 	/**
@@ -92,7 +92,7 @@ class FlagSourceSecretsWriteOnly implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\' . self::SCHEMA_MAPPER) === false) {
-			$output->info('OpenConnector: OpenRegister not available; skipping source-secret write-only flagging.');
+			$output->info('Integriq: OpenRegister not available; skipping source-secret write-only flagging.');
 			return;
 		}
 
@@ -121,20 +121,20 @@ class FlagSourceSecretsWriteOnly implements IRepairStep {
 			}
 
 			if ($changed === false) {
-				$output->info('OpenConnector: source-secret write-only flags already set.');
+				$output->info('Integriq: source-secret write-only flags already set.');
 				return;
 			}
 
 			$schema->setProperties($properties);
 			$schemaMapper->update($schema);
 
-			$output->info('OpenConnector: flagged source credential fields (apikey/secret/password/jwt/authenticationConfig) write-only.');
+			$output->info('Integriq: flagged source credential fields (apikey/secret/password/jwt/authenticationConfig) write-only.');
 		} catch (Throwable $e) {
 			// Never fatal: leaving the flags unset is the pre-existing state. But it is a
 			// security control, so say so loudly.
-			$output->warning('OpenConnector: could not flag source secrets write-only: ' . $e->getMessage());
+			$output->warning('Integriq: could not flag source secrets write-only: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: FlagSourceSecretsWriteOnly failed; source credentials may still be returned by the API',
+				'Integriq: FlagSourceSecretsWriteOnly failed; source credentials may still be returned by the API',
 				['exception' => $e->getMessage()]
 			);
 		}//end try

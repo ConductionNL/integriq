@@ -13,7 +13,7 @@
  * REQ-CON-001 describes backend consumer auth enforcement that carries
  * @e2e exclude and is covered by PHPUnit/Newman.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  *
  * Known bug #996: Table view renders all cells as "—". Assertions use

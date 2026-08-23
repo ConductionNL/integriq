@@ -13,7 +13,7 @@
  * end-to-end here too.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,12 +24,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
-use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
+use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -234,7 +234,7 @@ class TestableRecordStep extends RecordInlineSecretMigrationStatus {
 }//end class
 
 /**
- * @covers \OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus
+ * @covers \OCA\Integriq\Repair\RecordInlineSecretMigrationStatus
  */
 class RecordInlineSecretMigrationStatusTest extends TestCase {
 
@@ -463,10 +463,10 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 			$steps[] = (string)$node;
 		}
 
-		$flag = array_search('OCA\\OpenConnector\\Repair\\FlagSourceSecretsWriteOnly', $steps, true);
-		$record = array_search('OCA\\OpenConnector\\Repair\\RecordInlineSecretMigrationStatus', $steps, true);
-		$remove = array_search('OCA\\OpenConnector\\Repair\\RemoveMigratedSourceSecretFields', $steps, true);
-		$mat = array_search('OCA\\OpenConnector\\Repair\\MaterializeCatalogItems', $steps, true);
+		$flag = array_search('OCA\\Integriq\\Repair\\FlagSourceSecretsWriteOnly', $steps, true);
+		$record = array_search('OCA\\Integriq\\Repair\\RecordInlineSecretMigrationStatus', $steps, true);
+		$remove = array_search('OCA\\Integriq\\Repair\\RemoveMigratedSourceSecretFields', $steps, true);
+		$mat = array_search('OCA\\Integriq\\Repair\\MaterializeCatalogItems', $steps, true);
 
 		$this->assertIsInt($flag);
 		$this->assertIsInt($record);

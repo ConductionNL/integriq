@@ -119,7 +119,7 @@ created/updated object, or the target's response), plus an
 
 New OpenRegister schema `approval_request`, declared via a `register.d`
 fragment (`lib/Settings/register.d/hitl-approval-rule-action.json`, ADR-037
-pattern — does not touch `openconnector_register.json` directly):
+pattern — does not touch `integriq_register.json` directly):
 
 | Field | Type | Notes |
 |---|---|---|
@@ -186,7 +186,7 @@ this app) covers who/when for every field mutation — no separate audit table.
   not by replaying credentials. Flagged as a hard requirement, not a nice-to-have:
   storing bearer tokens/API keys in a long-lived, admin-and-approver-readable
   OR object would be a credential-exposure regression.
-- **CSRF.** `approve`/`reject` are state-changing POSTs from the OpenConnector
+- **CSRF.** `approve`/`reject` are state-changing POSTs from the Integriq
   SPA — standard NC CSRF protection applies (no `#[NoCSRFRequired]`), unlike
   the webhook-style endpoints elsewhere in this app.
 - **Expiry enforcement.** `approve()`/`reject()` MUST re-check `expiresAt`
@@ -205,7 +205,7 @@ this app) covers who/when for every field mutation — no separate audit table.
 Pending Approvals list + detail page use standard NC components
 (`NcAppContent`, `NcListItem`, `NcButton`, `NcTextArea` for the reject
 comment, `NcEmptyContent` for the zero-pending state) and CSS variables only
-— no hardcoded colors, consistent with the rest of the OpenConnector SPA
+— no hardcoded colors, consistent with the rest of the Integriq SPA
 (Rules/Synchronizations index pages already follow this convention, per
 `rule-pipeline`/`synchronization-engine` REQ-UI-001 scenarios). WCAG AA:
 the approve/reject actions are reachable via standard NC button semantics,
@@ -329,7 +329,7 @@ processes," not "no synchronous work."
 
 ### Decision 4: Approver notification is dispatched imperatively via `OCP\Notification\IManager`; ops-visibility notification stays declarative (ADR-031)
 **Why:** confirmed by inspecting every existing `x-openregister-notifications`
-block in `lib/Settings/openconnector_register.json` (9 occurrences) — the
+block in `lib/Settings/integriq_register.json` (9 occurrences) — the
 dialect supports exactly two recipient kinds, `field` (a single userId
 property on the created object) and `groups` (a **static**, schema-level
 list of NC group names), and carries no action/button configuration at all

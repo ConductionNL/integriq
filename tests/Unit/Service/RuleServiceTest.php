@@ -4,7 +4,7 @@
  * Unit tests for RuleService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,14 +13,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use Exception;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\RuleService;
-use OCA\OpenConnector\Service\SoftwareCatalogueService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\RuleService;
+use OCA\Integriq\Service\SoftwareCatalogueService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;

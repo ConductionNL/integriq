@@ -26,7 +26,7 @@
 
 - [x] Updated `openspec/specs/app-shell-and-logs-ui/spec.md` REQ-SHELLUI-003 to
       match observed reality (the manifest's `"type": "logs"` pages resolved by
-      nc-vue's `CnLogsPage`, not an openconnector-owned wrapper) — applied the
+      nc-vue's `CnLogsPage`, not an integriq-owned wrapper) — applied the
       change's own MODIFIED-requirement delta verbatim, plus a Notes line
       recording why the file was safe to delete.
 - [ ] NOT DONE — closing GitHub issue #814 is a live external repo action

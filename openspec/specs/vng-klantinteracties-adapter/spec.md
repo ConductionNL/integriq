@@ -6,7 +6,7 @@ status: done
 
 ## Purpose
 
-OpenConnector serves the VNG Klantinteracties API (OpenKlant 2.x, OpenAPI
+Integriq serves the VNG Klantinteracties API (OpenKlant 2.x, OpenAPI
 v0.8.0) — `klantcontacten`, `partijen`, `betrokkenen`, `digitaleadressen`,
 `actoren`, `onderwerpobjecten`, `internetaken`, `bijlagen` and the composite
 `POST /maak-klantcontact` — as a **packaged, ADR-015 slug-referenced
@@ -41,7 +41,7 @@ and hydra ADR-031 (external-integration exception).
 ### Requirement: Packaged VNG Klantinteracties configuration set (REQ-001)
 
 The system MUST ship the VNG Klantinteracties dialect as a self-contained
-OpenConnector configuration set — Endpoints (one per VNG resource plus the
+Integriq configuration set — Endpoints (one per VNG resource plus the
 composite `maak-klantcontact`), input and output Mappings (VNG ↔ canonical
 schema.org), Rules (composite fan-out, AVG BSN policy, self-URL/HAL,
 `referentienummer`), and at least one Consumer — exported through
@@ -156,7 +156,7 @@ relation embedding, returning VNG-shaped resources with absolute self-URLs.
   and ready to serve them; adding them is a config-only follow-up.
 - **BRP flow delegation.** REQ-003 as originally proposed described hashing "via
   pipelinq's BRP flow." pipelinq's BRP verification flow is a leaf-side (sibling
-  repo) concern not accessible from openconnector; this producer-side
+  repo) concern not accessible from integriq; this producer-side
   `AvgBsnPolicyRule` performs the 11-proef checksum + SHA-256 hash directly
   (dialect-agnostic gateway policy), which does not require a BRP lookup. Full
   BRP-backed verification remains the leaf's responsibility.

@@ -1,4 +1,4 @@
-# Tasks: openconnector-flow-nodes
+# Tasks: integriq-flow-nodes
 
 Before starting: the working copy is `0.2.19` while the installed app reports
 `0.3.3`. Re-verify `CallService::call()`'s named arguments, the Source
@@ -15,15 +15,15 @@ deployed tree before wiring anything. See `design.md`.
 
 Create `lib/Flow/` with the listener, the fail-closed owner resolver and the
 item templater, and register the listener in `Application.php` behind a
-`class_exists` guard so OpenConnector still boots without OpenRegister's flow
+`class_exists` guard so Integriq still boots without OpenRegister's flow
 engine. Add both palette icons. Follow `hermiq/lib/Flow/HermiqFlowNodeListener.php`
 for registration shape only.
 
-- **spec_ref**: `openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-openconnector-contributes-flow-nodes-to-openregisters-flow-engine`
+- **spec_ref**: `openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-integriq-contributes-flow-nodes-to-openregisters-flow-engine`
 - **files**: `lib/Flow/FlowNodeListener.php`, `lib/Flow/FlowOwner.php`, `lib/Flow/FlowTemplate.php`, `lib/AppInfo/Application.php`, `img/flow-source-call.svg`, `img/flow-synchronization-run.svg`
 - **acceptance_criteria**:
   - GIVEN both apps enabled WHEN OpenRegister dispatches `RegisterFlowNodesEvent` THEN both node ids appear in the palette with non-empty name, description and icon
-  - GIVEN an instance without `RegisterFlowNodesEvent` WHEN OpenConnector boots THEN it boots cleanly and registers no listener
+  - GIVEN an instance without `RegisterFlowNodesEvent` WHEN Integriq boots THEN it boots cleanly and registers no listener
   - GIVEN a colliding node id WHEN registration runs THEN it fails loudly rather than displacing a node
   - GIVEN a run context with no `triggeredBy` WHEN `FlowOwner` resolves THEN it raises; no admin, creator or anonymous fallback exists
   - GIVEN an item `{"issue":{"number":42}}` WHEN `FlowTemplate` renders `/issues/{{issue.number}}` THEN it yields `/issues/42`; a missing path resolves deterministically and never leaves literal `{{...}}`
@@ -39,7 +39,7 @@ endpoint/query/body/headers against the item, call
 the response onto author-named keys. No URL field, no find-or-create, no direct
 HTTP client.
 
-- **spec_ref**: `openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-the-source-call-node-targets-a-configured-source-never-a-raw-url`
+- **spec_ref**: `openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-the-source-call-node-targets-a-configured-source-never-a-raw-url`
 - **files**: `lib/Flow/SourceCallNode.php`, `lib/Flow/FlowNodeListener.php`
 - **acceptance_criteria**:
   - GIVEN a step naming an enabled Source WHEN it executes THEN `CallService::call()` receives the resolved Source object, endpoint and method, and no HTTP client is invoked directly
@@ -62,7 +62,7 @@ fields, and implement `validateConfig()` + `isAvailableForScope()`. Explicitly
 do NOT reproduce `HermiqAgentNode`'s `catch (Throwable) { $answer = ''; }` or its
 `config.owner` fallback.
 
-- **spec_ref**: `openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-failed-call-is-explicit-and-never-a-silent-empty-success`
+- **spec_ref**: `openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-failed-call-is-explicit-and-never-a-silent-empty-success`
 - **files**: `lib/Flow/SourceCallNode.php`, `lib/Flow/FlowOwner.php`
 - **acceptance_criteria**:
   - GIVEN a 500 response and the default policy WHEN it executes THEN the node raises, the run stops, and status, message, Source and endpoint are logged
@@ -87,7 +87,7 @@ Sources and the demo flow from `design.md` (nil-UUID placeholders,
 `demo-forge-api` seeded disabled, no secrets); then run the demo flow live and
 confirm a real response lands on the item.
 
-- **spec_ref**: `openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-the-synchronization-run-node-emits-one-item-per-synchronised-object`
+- **spec_ref**: `openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-the-synchronization-run-node-emits-one-item-per-synchronised-object`
 - **files**: `lib/Flow/SynchronizationRunNode.php`, `lib/Flow/FlowNodeListener.php`, `lib/sources.seed.json`, `tests/Unit/Flow/SynchronizationRunNodeTest.php`
 - **acceptance_criteria**:
   - GIVEN a configured Synchronization and a resolvable owner WHEN the node executes THEN it runs through the existing synchronization service
@@ -113,7 +113,7 @@ confirm a real response lands on the item.
 ## Tests (company-wide ADR-009)
 - [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/Flow/`)
 - [ ] Newman/Postman tests — N/A: this change adds no HTTP API endpoint, only flow node types
-- [ ] Browser tests (Playwright MCP) — N/A for OpenConnector: no UI added; palette rendering belongs to OpenRegister's flow editor. Replaced by a live flow run against the seeded demo Source (Task 4)
+- [ ] Browser tests (Playwright MCP) — N/A for Integriq: no UI added; palette rendering belongs to OpenRegister's flow editor. Replaced by a live flow run against the seeded demo Source (Task 4)
 - [ ] All tests pass (`composer test`, `composer check:strict`)
 
 ## Documentation (company-wide ADR-010)

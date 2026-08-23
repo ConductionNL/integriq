@@ -41,7 +41,7 @@
 				<label
 					:for="'cn-subscription-form-' + field.key"
 					class="cn-subscription-action-fields__label">
-					{{ field.label || t('openconnector', 'Event types')
+					{{ field.label || t('integriq', 'Event types')
 					}}{{ field.required ? ' *' : '' }}
 				</label>
 				<textarea
@@ -51,7 +51,7 @@
 					rows="3"
 					:placeholder="
 						t(
-							'openconnector',
+							'integriq',
 							'One CloudEvents type per line, e.g. com.nextcloud.files.node.created',
 						)
 					"
@@ -60,7 +60,7 @@
 					{{
 						field.description
 						|| t(
-							'openconnector',
+							'integriq',
 							'CloudEvents type filters this subscription matches (any-of). Leave empty to match every type.',
 						)
 					}}
@@ -95,12 +95,12 @@
 			<label
 				for="cn-subscription-action-kind"
 				class="cn-subscription-action-fields__label">
-				{{ t('openconnector', 'Delivery action') }}
+				{{ t('integriq', 'Delivery action') }}
 			</label>
 			<NcSelect
 				inputId="cn-subscription-action-kind"
-				:inputLabel="t('openconnector', 'Delivery action')"
-				:aria-label-combobox="t('openconnector', 'Delivery action')"
+				:inputLabel="t('integriq', 'Delivery action')"
+				:aria-label-combobox="t('integriq', 'Delivery action')"
 				:modelValue="selectedKindOption"
 				:options="kindOptions"
 				:clearable="false"
@@ -108,7 +108,7 @@
 			<span class="cn-subscription-action-fields__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.',
 					)
 				}}
@@ -118,17 +118,17 @@
 				<label
 					for="cn-subscription-action-target"
 					class="cn-subscription-action-fields__label">
-					{{ t('openconnector', 'Synchronization') }}
+					{{ t('integriq', 'Synchronization') }}
 				</label>
 				<NcSelect
 					inputId="cn-subscription-action-target"
-					:inputLabel="t('openconnector', 'Synchronization')"
-					:aria-label-combobox="t('openconnector', 'Synchronization')"
+					:inputLabel="t('integriq', 'Synchronization')"
+					:aria-label-combobox="t('integriq', 'Synchronization')"
 					:modelValue="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Select a synchronization')"
+					:placeholder="t('integriq', 'Select a synchronization')"
 					@update:modelValue="onSynchronizationPick" />
 			</template>
 
@@ -136,17 +136,17 @@
 				<label
 					for="cn-subscription-action-target"
 					class="cn-subscription-action-fields__label">
-					{{ t('openconnector', 'Job') }}
+					{{ t('integriq', 'Job') }}
 				</label>
 				<NcSelect
 					inputId="cn-subscription-action-target"
-					:inputLabel="t('openconnector', 'Job')"
-					:aria-label-combobox="t('openconnector', 'Job')"
+					:inputLabel="t('integriq', 'Job')"
+					:aria-label-combobox="t('integriq', 'Job')"
 					:modelValue="selectedJob"
 					:options="jobOptions"
 					:loading="jobsLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Select a job')"
+					:placeholder="t('integriq', 'Select a job')"
 					@update:modelValue="onJobPick" />
 			</template>
 		</div>
@@ -158,12 +158,12 @@
 				:modelValue="retryPolicyEnabled"
 				type="switch"
 				@update:modelValue="onToggleRetryPolicy">
-				{{ t('openconnector', 'Custom retry policy') }}
+				{{ t('integriq', 'Custom retry policy') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-subscription-action-fields__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Overrides the default backoff (60s, x4, 6h cap, 5 retries). Any field left blank falls back to the default.',
 					)
 				}}
@@ -172,28 +172,28 @@
 			<template v-if="retryPolicyEnabled">
 				<div class="cn-subscription-action-fields__retry-grid">
 					<NcTextField
-						:label="t('openconnector', 'Base seconds')"
+						:label="t('integriq', 'Base seconds')"
 						:modelValue="retryPolicyValue('baseSeconds')"
 						type="number"
 						@update:modelValue="
 							(value) => onRetryPolicyField('baseSeconds', value)
 						" />
 					<NcTextField
-						:label="t('openconnector', 'Factor')"
+						:label="t('integriq', 'Factor')"
 						:modelValue="retryPolicyValue('factor')"
 						type="number"
 						@update:modelValue="
 							(value) => onRetryPolicyField('factor', value)
 						" />
 					<NcTextField
-						:label="t('openconnector', 'Cap seconds')"
+						:label="t('integriq', 'Cap seconds')"
 						:modelValue="retryPolicyValue('capSeconds')"
 						type="number"
 						@update:modelValue="
 							(value) => onRetryPolicyField('capSeconds', value)
 						" />
 					<NcTextField
-						:label="t('openconnector', 'Max retries')"
+						:label="t('integriq', 'Max retries')"
 						:modelValue="retryPolicyValue('maxRetries')"
 						type="number"
 						@update:modelValue="

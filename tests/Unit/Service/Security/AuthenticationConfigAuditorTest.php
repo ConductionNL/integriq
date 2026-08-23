@@ -19,7 +19,7 @@
  *     InlineSecretMigrationPlanner::readRawSource() and this test fails.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Security
+ * @package  OCA\Integriq\Tests\Unit\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -28,21 +28,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Security;
+namespace OCA\Integriq\Tests\Unit\Service\Security;
 
-use OCA\OpenConnector\Service\Security\AuthenticationConfigAuditor;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
-use OCA\OpenConnector\Tests\Helpers\MigrationSimulatingObjectService;
-use OCA\OpenConnector\Tests\Helpers\RecordingLogger;
+use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Tests\Helpers\MigrationSimulatingObjectService;
+use OCA\Integriq\Tests\Helpers\RecordingLogger;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenConnector\Service\Security\AuthenticationConfigAuditor
+ * @covers \OCA\Integriq\Service\Security\AuthenticationConfigAuditor
  */
 class AuthenticationConfigAuditorTest extends TestCase {
 

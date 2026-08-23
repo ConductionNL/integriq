@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector Settings Service
+ * Integriq Settings Service
  *
- * This file contains the service class for handling settings in the OpenConnector application.
+ * This file contains the service class for handling settings in the Integriq application.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,12 +14,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  * Service for handling settings-related operations.
  *
  * Provides functionality for retrieving database statistics and
- * system information for the OpenConnector application.
+ * system information for the Integriq application.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -129,10 +129,12 @@ class SettingsService {
 	 * @return array The current retention settings configuration.
 	 *
 	 * @throws \RuntimeException If settings retrieval fails.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-settingscontroller-must-shrink-to-connector-specific-actions-only
 	 */
 	public function getSettings(): array {
 		try {
-			$retentionConfig = $this->config->getValueString('openconnector', 'retention', '');
+			$retentionConfig = $this->config->getValueString('integriq', 'retention', '');
 			if (empty($retentionConfig) === true) {
 				return [
 					'retention' => [

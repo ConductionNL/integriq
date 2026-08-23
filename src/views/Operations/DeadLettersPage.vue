@@ -1,7 +1,7 @@
 <!--
   DeadLettersPage — one operations surface for every dead letter.
 
-  OpenConnector shipped TWO dead-letter pages with identical operator verbs
+  Integriq shipped TWO dead-letter pages with identical operator verbs
   (Replay / Discard, per-row and bulk) that differed only in which table they
   read: `event_message` (CloudEvent delivery failures, /api/events/dead-letter)
   and `sync_item_dead_letter` (sync items that exhausted retry + circuit
@@ -27,7 +27,7 @@
 		<NcAppContent>
 			<div class="dead-letters-page__header">
 				<h2 class="dead-letters-page__title">
-					{{ t('openconnector', 'Dead letters') }}
+					{{ t('integriq', 'Dead letters') }}
 				</h2>
 				<!--
 					Queue switch. A real control, not a cosmetic tab strip:
@@ -38,7 +38,7 @@
 				<div
 					class="dead-letters-page__queues"
 					role="tablist"
-					:aria-label="t('openconnector', 'Dead letter queues')">
+					:aria-label="t('integriq', 'Dead letter queues')">
 					<NcButton
 						v-for="queue in queues"
 						:key="queue.id"
@@ -107,8 +107,8 @@ export default {
 		 */
 		queues() {
 			return [
-				{ id: 'events', label: t('openconnector', 'Event deliveries') },
-				{ id: 'sync', label: t('openconnector', 'Synchronization items') },
+				{ id: 'events', label: t('integriq', 'Event deliveries') },
+				{ id: 'sync', label: t('integriq', 'Synchronization items') },
 			]
 		},
 	},

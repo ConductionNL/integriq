@@ -31,20 +31,20 @@
 			<label
 				class="rule-action-config__label"
 				:for="'rule-action-type-' + uid">
-				{{ t('openconnector', 'Action type') }}
+				{{ t('integriq', 'Action type') }}
 			</label>
 			<NcSelect
 				:inputId="'rule-action-type-' + uid"
-				:aria-label-combobox="t('openconnector', 'Action type')"
+				:aria-label-combobox="t('integriq', 'Action type')"
 				:modelValue="selectedTypeOption"
 				:options="typeOptions"
 				:clearable="false"
-				:placeholder="t('openconnector', 'Pick an action type')"
+				:placeholder="t('integriq', 'Pick an action type')"
 				@update:modelValue="onTypePick" />
 			<p class="rule-action-config__hint">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Selecting an action type changes which configuration fields are required below. The rule engine matches on this value at evaluation time.',
 					)
 				}}
@@ -97,7 +97,7 @@
 				{{
 					rawError
 					|| t(
-						'openconnector',
+						'integriq',
 						'No bespoke form yet for this action type. Edit the raw JSON for now — it is written back as configuration.{type}.',
 						{ type: actionType },
 					)
@@ -242,7 +242,7 @@ export default {
 		typeOptions() {
 			return ACTION_TYPES.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -281,7 +281,7 @@ export default {
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawEditorLabel() {
-			return this.t('openconnector', 'Raw configuration for {type}', {
+			return this.t('integriq', 'Raw configuration for {type}', {
 				type: this.actionType,
 			})
 		},
@@ -387,7 +387,7 @@ export default {
 				}
 				this.$emit('update', next)
 			} catch (parseErr) {
-				this.rawError = this.t('openconnector', 'Invalid JSON: {message}', {
+				this.rawError = this.t('integriq', 'Invalid JSON: {message}', {
 					message: parseErr.message,
 				})
 			}

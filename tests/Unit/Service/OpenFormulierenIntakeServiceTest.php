@@ -4,7 +4,7 @@
  * Unit tests for OpenFormulierenIntakeService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\OpenFormulierenException;
-use OCA\OpenConnector\Service\OpenFormulieren\FormFieldMapper;
-use OCA\OpenConnector\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\FileService;

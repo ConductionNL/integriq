@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenConnector Synchronization Contract Log Service.
+ * Integriq Synchronization Contract Log Service.
  *
  * Write path for synchronization contract logs, backed by OpenRegister.
  *
  * Post OpenRegister-cutover the `openconnector_synchronization_contract_logs`
  * table was dropped. The W5 SynchronizationService rewrite replaces the
  * `SynchronizationContractLogMapper` adapter with this service so the engine
- * no longer carries an `OCA\OpenConnector\Db\SynchronizationContractLogMapper`
+ * no longer carries an `OCA\Integriq\Db\SynchronizationContractLogMapper`
  * import.
  *
  * W14 tier-2 cleanup further drops the residual
- * `OCA\OpenConnector\Db\SynchronizationContractLog` value-object import: the
+ * `OCA\Integriq\Db\SynchronizationContractLog` value-object import: the
  * service now operates on plain arrays end-to-end (matching the array shapes
  * the OpenRegister `synchronization_contract_log` schema persists). Callers
  * receive arrays they can mutate freely and persist via update()/insert().
@@ -27,7 +27,7 @@
  *    log are a safe no-op.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -35,10 +35,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -59,6 +59,8 @@ class SynchronizationContractLogService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'openconnector';
 
 	/**

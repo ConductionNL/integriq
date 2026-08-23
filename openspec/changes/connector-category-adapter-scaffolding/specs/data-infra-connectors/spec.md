@@ -17,7 +17,7 @@ document/CMS, SaaS, and data-infra).
 - **WHEN** a sibling app resolves the `data-infra-s3` integration slot slug via
   OR's integration registry
 - **THEN** it receives a working read/write/list adapter without importing any
-  openconnector PHP class directly, and without hardcoding S3 credentials —
+  integriq PHP class directly, and without hardcoding S3 credentials —
   credentials resolve through the shared OR credential broker
 
 #### Scenario: Adapter credential resolution never hardcodes secrets

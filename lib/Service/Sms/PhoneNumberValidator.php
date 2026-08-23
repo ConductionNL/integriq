@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Phone Number Validator.
+ * Integriq Phone Number Validator.
  *
  * Pure, dependency-free E.164 normalisation + validation with a configurable
  * default calling code (NL, `31`, unless overridden). Deliberately does NOT
@@ -12,7 +12,7 @@
  * conservative rather than exhaustively region-aware.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Sms
+ * @package  OCA\Integriq\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,14 +21,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Sms;
+namespace OCA\Integriq\Service\Sms;
 
 /**
  * Normalises and validates SMS recipient numbers to E.164.

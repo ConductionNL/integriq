@@ -6,11 +6,11 @@
  * OpenRegister is a peer Nextcloud app that is not available in the standalone
  * composer dev-environment. This stub mirrors the deployed interface exactly
  * (verified against openregister/lib/Service/Flow/IFlowNode.php) so the two
- * node classes OpenConnector contributes can be loaded and unit-tested without
+ * node classes Integriq contributes can be loaded and unit-tested without
  * a full Nextcloud installation.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

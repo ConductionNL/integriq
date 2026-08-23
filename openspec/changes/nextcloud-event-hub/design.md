@@ -1,7 +1,7 @@
 # Design: nextcloud-event-hub
 
 ## Architecture Overview
-Today: NC core → nothing (OpenConnector has no listeners) or (separately) `webhook_listeners` core app →
+Today: NC core → nothing (Integriq has no listeners) or (separately) `webhook_listeners` core app →
 polled background job → unsigned, unretried HTTP POST. OR object writes → `ObjectCreatedEvent` etc. →
 `lib/EventListener/Object*EventListener.php` → `EventService::handleObjectCreated/Updated/Deleted` →
 persists an `event` OR-object in the CloudEvents envelope → `EventService::processEvent` → matches
@@ -60,7 +60,7 @@ admin UI with zero UI changes.
 
 ## Database Changes
 No new Nextcloud migration / SQL table. All new fields (`action`, `retryPolicy`) are additive properties
-on the existing `event_subscription` OR-managed schema in `lib/Settings/openconnector_register.json` — OR
+on the existing `event_subscription` OR-managed schema in `lib/Settings/integriq_register.json` — OR
 schemas are schema-less at the storage layer (JSON column), so no `lib/Migration/VersionXXXXXXXXXX.php` is
 required; see `migration.md` for the register-descriptor-only migration note. The self-service allow list
 lives in the existing ADR-023 action matrix (`IAppConfig` key `actions`, managed by `ActionAuthService` —
@@ -136,7 +136,7 @@ lib/
     InitializeActions.php                   # EXISTING, unchanged — seeds new actions from actions.seed.json
   actions.seed.json                         # + 4 new event.subscribe-nextcloud-* action entries (["admin"])
   Settings/
-    openconnector_register.json             # event_subscription: + action, retryPolicy fields
+    integriq_register.json             # event_subscription: + action, retryPolicy fields
 src/
   views/EventDelivery/EventDeliveriesPage.vue        # + NC-native event type filter/badge
   modals/EventDelivery/EventDeliveryDetailModal.vue  # + action.kind display (webhook/sync/job)
@@ -256,7 +256,7 @@ matrix storage stays in `IAppConfig` key `actions`; seeding on install/upgrade v
 admin editing via the existing `ActionMatrixController` (`GET`/`PUT /api/admin/action-matrix`) and
 `src/views/admin/ActionAuthMatrix.vue` — whose `getMatrix()` response already unions seed-file keys, so the
 new actions surface in the UI with zero new endpoint/UI/service code.
-**Why:** OpenConnector already ships a complete ADR-023 implementation at HEAD — `ActionAuthService` with
+**Why:** Integriq already ships a complete ADR-023 implementation at HEAD — `ActionAuthService` with
 `requireAction()`/`can()`/`getMatrix()`/`setMatrix()`, used by eight controllers including
 `EventsController` itself (every events endpoint already enforces a coarse action such as
 `event.subscribe`). Introducing a parallel allow-list mechanism (a `NextcloudEventAuthorizationService` +

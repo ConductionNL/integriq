@@ -146,7 +146,7 @@
 - **expected result**: empty state rendered, not an empty table
 - **test command**: `/test-functional`
 
-### TC-19: openconnector_circuit_breaker_state gauge reflects breaker state
+### TC-19: integriq_circuit_breaker_state gauge reflects breaker state
 - **spec_ref**: `openspec/changes/retry-and-circuit-breaker-policies/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge`
 - **type**: api
 - **preconditions**: sources with open, closed, and never-evaluated breaker states

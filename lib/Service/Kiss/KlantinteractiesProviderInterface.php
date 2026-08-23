@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector KISS Klantinteracties Provider Interface.
+ * Integriq KISS Klantinteracties Provider Interface.
  *
  * Narrow domain seam through which every KISS (Klantinteractie
  * Servicesysteem) klantcontact list/fetch, create, and onderwerpobject-link
@@ -14,7 +14,7 @@
  * IntegrationProvider").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Kiss
+ * @package  OCA\Integriq\Service\Kiss
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,16 +23,16 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Kiss;
+namespace OCA\Integriq\Service\Kiss;
 
-use OCA\OpenConnector\Exception\KissProviderException;
+use OCA\Integriq\Exception\KissProviderException;
 
 /**
  * A KISS/Klantinteracties binding: klantcontact list/fetch, create, and
@@ -46,7 +46,7 @@ interface KlantinteractiesProviderInterface {
 	 * Stable machine identifier for this binding (e.g. `log`, `rest`).
 	 *
 	 * Selected at runtime via the KISS source's `configuration.provider`
-	 * field — see {@see \OCA\OpenConnector\Service\KissSyncService::resolveProvider()}.
+	 * field — see {@see \OCA\Integriq\Service\KissSyncService::resolveProvider()}.
 	 *
 	 * @return string The provider identifier.
 	 *

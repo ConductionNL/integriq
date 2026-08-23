@@ -4,7 +4,7 @@
 
 ### Requirement: Public-facing surfaces SHALL only claim verified, shipped capabilities (REQ-BA-001)
 
-OpenConnector's `appinfo/info.xml` description, the `conduction.nl/apps/openconnector`
+Integriq's `appinfo/info.xml` description, the `conduction.nl/apps/openconnector`
 product page (EN + NL), and the `openconnector.conduction.nl` docs MUST only
 describe connector protocols, adapters, and compliance claims that are
 demonstrably implemented in `lib/` at the time of writing. A protocol or

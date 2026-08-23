@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Job → Flow migration generator.
+ * Integriq Job → Flow migration generator.
  *
  * Task 3.3 of `flow-native-synchronization` ("Jobs → trigger-schedule flows"):
  * renders an existing Job entity into a GENERATED FLOW DOCUMENT whose start node
@@ -61,7 +61,7 @@
  *    only configured the node would validate, save, and never fire.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -72,17 +72,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\SynchronizationRunNode;
 use OCP\IL10N;
 
 /**
@@ -104,28 +104,28 @@ class JobToFlowGenerator {
 	 *
 	 * @var string
 	 */
-	private const ACTION_SYNCHRONIZATION = 'OCA\OpenConnector\Action\SynchronizationAction';
+	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Action\SynchronizationAction';
 
 	/**
 	 * The job action that runs a flow.
 	 *
 	 * @var string
 	 */
-	private const ACTION_FLOW = 'OCA\OpenConnector\Action\FlowAction';
+	private const ACTION_FLOW = 'OCA\Integriq\Action\FlowAction';
 
 	/**
 	 * The job action that pings a source.
 	 *
 	 * @var string
 	 */
-	private const ACTION_PING = 'OCA\OpenConnector\Action\PingAction';
+	private const ACTION_PING = 'OCA\Integriq\Action\PingAction';
 
 	/**
 	 * The job action that emits a CloudEvent.
 	 *
 	 * @var string
 	 */
-	private const ACTION_EVENT = 'OCA\OpenConnector\Action\EventAction';
+	private const ACTION_EVENT = 'OCA\Integriq\Action\EventAction';
 
 	/**
 	 * The job arguments each supported action's node actually consumes.
@@ -322,7 +322,6 @@ class JobToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end scheduleRefusals()
 
 	/**
@@ -414,7 +413,6 @@ class JobToFlowGenerator {
 		}
 
 		return [];
-
 	}//end targetRefusals()
 
 	/**
@@ -540,7 +538,6 @@ class JobToFlowGenerator {
 		}
 
 		return $edges;
-
 	}//end edgesFor()
 
 	/**
@@ -579,7 +576,6 @@ class JobToFlowGenerator {
 	 */
 	private function intervalOf(array $job): int {
 		return $this->cadence->secondsOf(interval: ($job['interval'] ?? null));
-
 	}//end intervalOf()
 
 	/**
@@ -605,7 +601,6 @@ class JobToFlowGenerator {
 		}
 
 		return false;
-
 	}//end isSingleRun()
 
 	/**
@@ -619,7 +614,6 @@ class JobToFlowGenerator {
 	 */
 	private function jobClassOf(array $job): string {
 		return ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
-
 	}//end jobClassOf()
 
 	/**
@@ -638,6 +632,5 @@ class JobToFlowGenerator {
 		}
 
 		return $arguments;
-
 	}//end argumentsOf()
 }//end class

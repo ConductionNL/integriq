@@ -10,7 +10,7 @@
  * `config.responseMapping`.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,9 +19,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Flow\FlowTemplate;
+use OCA\Integriq\Flow\FlowTemplate;
 use PHPUnit\Framework\TestCase;
 
 /**

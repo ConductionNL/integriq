@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Contract guard for the automation deprecation notice
@@ -20,9 +20,9 @@
  *  2. **The action can start claiming a conversion that cannot happen.**
  *     Task 3.1 (Synchronization entity → generated flow) is not built, so
  *     there is nothing per-object to open. The button must navigate to the
- *     Flows INDEX, by ROUTE NAME. A hardcoded `/apps/openconnector/flows`
+ *     Flows INDEX, by ROUTE NAME. A hardcoded `/apps/integriq/flows`
  *     href would leave the SPA on this stack (the router history base is
- *     `generateUrl('/apps/openconnector')`, i.e. an `/index.php/...`
+ *     `generateUrl('/apps/integriq')`, i.e. an `/index.php/...`
  *     prefix), and a button wired to nothing is worse than no button — so
  *     the push payload is asserted exactly, not just "push was called".
  *

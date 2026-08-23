@@ -47,7 +47,7 @@ this change only after Ruben records the D1–D5 outcomes.
 
 ## Affected Projects
 
-- [ ] Project: `openconnector` — not yet started (blocked, see above).
+- [ ] Project: `integriq` — not yet started (blocked, see above).
 
 ## Scope
 

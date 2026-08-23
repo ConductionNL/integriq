@@ -1,6 +1,6 @@
-# OpenConnector — Architectural Decision Records (repo-local)
+# Integriq — Architectural Decision Records (repo-local)
 
-These ADRs capture decisions specific to OpenConnector. For company-wide
+These ADRs capture decisions specific to Integriq. For company-wide
 decisions that apply to every Conduction app, see
 [hydra/openspec/architecture/](../../../hydra/openspec/architecture/).
 
@@ -16,7 +16,7 @@ decisions that apply to every Conduction app, see
 | ADR | Title | Status | One-line summary |
 |-----|-------|--------|-----------------|
 | [ADR-001](adr-001-domain-pinia-stores-app-local.md) | Domain-specific Pinia stores stay app-local | Accepted | 16+ per-resource Pinia stores are intentionally NOT replaced by `createObjectStore`; each encodes connector-domain UX (test mode, logs, retry). |
-| [ADR-002](adr-002-mapping-rule-engine-stays-app-local.md) | Mapping and Rule engine stays app-local | Accepted | Twig mapping and endpoint Rule processing stay in openconnector; only the execution kernel delegates to OR's MappingService. |
+| [ADR-002](adr-002-mapping-rule-engine-stays-app-local.md) | Mapping and Rule engine stays app-local | Accepted | Twig mapping and endpoint Rule processing stay in integriq; only the execution kernel delegates to OR's MappingService. |
 | [ADR-003](adr-003-calllog-primary-observability-surface.md) | CallLog is the primary observability surface for outbound HTTP | Accepted | Every outbound HTTP call MUST go through `CallService` and produce a write-once `CallLog` row. |
 | [ADR-004](adr-004-retention-constants-migrating-to-or-archival.md) | Log retention lives in PHP constants today; migrating to OR archival annotations | Accepted | Existing `DEFAULT_*_RETENTION` constants are kept until the storage migration lands; new retention rules go on the schema declaration. |
 | [ADR-005](adr-005-source-synchronization-contract-triad.md) | Source / Synchronization / SynchronizationContract is the core data triad | Accepted | Every sync integration must use the Source→Synchronization→SynchronizationContract chain; per-object hash comparison is the change-detection primitive. |

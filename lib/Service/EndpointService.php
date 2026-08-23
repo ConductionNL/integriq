@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector endpoint service.
+ * Integriq endpoint service.
  *
  * Service class for handling endpoint requests. Routes to a schema within a
  * register, proxies to an external source, or dispatches to a generic source
  * connector, applying configured before/after rules and request mappings.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,10 +16,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use DateTime;
@@ -28,16 +28,16 @@ use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
-use OCA\OpenConnector\Rule\CompositeFanoutRule;
-use OCA\OpenConnector\Rule\ReferenceNumberRule;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Helper\FlowToken;
-use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
-use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Rule\AvgBsnPolicyRule;
+use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\RateLimit\RateLimitDecision;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -1169,7 +1169,7 @@ class EndpointService {
 				]
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning('openconnector: failed to resolve api_product for endpoint: ' . $e->getMessage());
+			$this->logger->warning('integriq: failed to resolve api_product for endpoint: ' . $e->getMessage());
 			return null;
 		}
 
@@ -1220,7 +1220,7 @@ class EndpointService {
 				]
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning('openconnector: failed to resolve api_product_subscription: ' . $e->getMessage());
+			$this->logger->warning('integriq: failed to resolve api_product_subscription: ' . $e->getMessage());
 			return null;
 		}
 
@@ -1305,7 +1305,7 @@ class EndpointService {
 				$sunset->setTimezone(new \DateTimeZone('UTC'));
 				$headers['Sunset'] = $sunset->format('D, d M Y H:i:s') . ' GMT';
 			} catch (\Throwable $e) {
-				$this->logger->warning('openconnector: invalid api_product.sunsetDate: ' . $e->getMessage());
+				$this->logger->warning('integriq: invalid api_product.sunsetDate: ' . $e->getMessage());
 			}
 		}
 
@@ -1346,7 +1346,7 @@ class EndpointService {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'openconnector: failed to record inbound api-product call_log: ' . $e->getMessage()
+				'integriq: failed to record inbound api-product call_log: ' . $e->getMessage()
 			);
 		}
 
@@ -1356,7 +1356,7 @@ class EndpointService {
 	 * Record an inbound rate-limit/quota 429 on the CallLog observability surface.
 	 *
 	 * Persists an `inbound`-direction call_log with statusCode 429 so the
-	 * `openconnector_calls_total{status="429",direction="inbound"}` metric
+	 * `integriq_calls_total{status="429",direction="inbound"}` metric
 	 * distinguishes consumer throttling from outbound source backoff
 	 * (REQ-CON-RL-004). Best-effort: a logging failure never blocks the 429.
 	 *
@@ -1381,7 +1381,7 @@ class EndpointService {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'openconnector: failed to record inbound rate-limit call_log: ' . $e->getMessage()
+				'integriq: failed to record inbound rate-limit call_log: ' . $e->getMessage()
 			);
 		}
 
@@ -1836,7 +1836,7 @@ class EndpointService {
 
 			$returnArray['next'] = $this->urlGenerator->getAbsoluteURL(
 				$this->urlGenerator->linkToRoute(
-					routeName: 'openconnector.endpoints.handlePathRead',
+					routeName: 'integriq.endpoints.handlePathRead',
 					arguments: $parameters
 				)
 			);
@@ -1848,7 +1848,7 @@ class EndpointService {
 
 			$returnArray['previous'] = $this->urlGenerator->getAbsoluteURL(
 				$this->urlGenerator->linkToRoute(
-					routeName: 'openconnector.endpoints.handlePathRead',
+					routeName: 'integriq.endpoints.handlePathRead',
 					arguments: $parameters
 				)
 			);
@@ -2215,7 +2215,7 @@ class EndpointService {
 			// The message names the offending rendered path, which is built
 			// from caller-supplied values — log it, do not return it.
 			$this->logger->warning(
-				'openconnector: refused upstream endpoint path for endpoint '
+				'integriq: refused upstream endpoint path for endpoint '
 				. ($endpointData['name'] ?? $endpoint->getUuid()) . ': ' . $exception->getMessage()
 			);
 
@@ -2407,7 +2407,7 @@ class EndpointService {
 		}
 
 		$path = implode(separator: '/', array: $location);
-		return $this->urlGenerator->getBaseUrl() . '/apps/openconnector/api/endpoint/' . $path;
+		return $this->urlGenerator->getBaseUrl() . '/apps/integriq/api/endpoint/' . $path;
 	}//end generateEndpointUrl()
 
 	/**
@@ -2768,7 +2768,7 @@ class EndpointService {
 				'status' => 'pending_approval',
 				'approvalRequestId' => $approvalRequest->getUuid(),
 				'statusUrl' => $this->urlGenerator->linkToRouteAbsolute(
-					'openconnector.approvals.show',
+					'integriq.approvals.show',
 					['id' => $approvalRequest->getUuid()]
 				),
 			],
@@ -3399,7 +3399,7 @@ class EndpointService {
 		$id = $resource['id'] ?? ($resource['uuid'] ?? null);
 
 		$endpointPath = trim((string)($endpointData['endpoint'] ?? ''), '/');
-		$baseEndpointUrl = rtrim($this->urlGenerator->getBaseUrl(), '/') . '/apps/openconnector/api/endpoint/' . $endpointPath;
+		$baseEndpointUrl = rtrim($this->urlGenerator->getBaseUrl(), '/') . '/apps/integriq/api/endpoint/' . $endpointPath;
 		$selfUrl = $baseEndpointUrl;
 		if ($id !== null) {
 			$selfUrl = $baseEndpointUrl . '/' . $id;

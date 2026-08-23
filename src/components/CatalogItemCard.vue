@@ -20,7 +20,7 @@
 			tabindex="0"
 			role="button"
 			:aria-label="
-				t('openconnector', 'Open catalog item {name}', { name: displayName })
+				t('integriq', 'Open catalog item {name}', { name: displayName })
 			"
 			@click="openDetail"
 			@keyup.enter="openDetail">
@@ -90,7 +90,7 @@ export default {
 			return (
 				this.catalogItem.name
 				|| this.catalogItem.slug
-				|| t('openconnector', 'Untitled catalog item')
+				|| t('integriq', 'Untitled catalog item')
 			)
 		},
 
@@ -113,8 +113,8 @@ export default {
 		 */
 		statusLabel() {
 			return this.statusKey === 'dormant'
-				? t('openconnector', 'dormant')
-				: t('openconnector', 'available')
+				? t('integriq', 'dormant')
+				: t('integriq', 'available')
 		},
 
 		/**
@@ -126,11 +126,11 @@ export default {
 		kindLabel() {
 			switch (this.catalogItem.kind) {
 				case 'adapter':
-					return t('openconnector', 'Adapter')
+					return t('integriq', 'Adapter')
 				case 'source-template':
-					return t('openconnector', 'Source template')
+					return t('integriq', 'Source template')
 				case 'configuration-template':
-					return t('openconnector', 'Configuration template')
+					return t('integriq', 'Configuration template')
 				default:
 					return this.catalogItem.kind || ''
 			}

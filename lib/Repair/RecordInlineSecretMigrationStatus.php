@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — migrate inline source secrets, then record the Phase D gate
+ * Integriq — migrate inline source secrets, then record the Phase D gate
  * (Phase C / ADR-064; ocon#151).
  *
  * ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@
  * safe thing was to REPORT only. openregister#450 (the sessionless
  * `actingOrganisationId` assertion on `resolveInjectable()`) and the `_rbac: false`
  * sessionless `mint()` (openregister#440) removed that blocker, so this step now
- * EXECUTES {@see \OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor}
+ * EXECUTES {@see \OCA\Integriq\Service\Security\InlineSecretMigrationExecutor}
  * — for every `source` it mints a broker credential, VERIFIES the secret
  * round-trips, and only then writes the `{credentialRef}` placeholder and nulls
  * the inline value — and THEN records the status.
@@ -31,7 +31,7 @@
  *     "Do any `source` objects still hold an inline secret?"
  *
  * That persisted flag is one signal Phase D
- * ({@see \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields}) observes.
+ * ({@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields}) observes.
  * Phase D itself re-derives its OWN four-field gate from a fresh raw scan (it does
  * not trust this flag alone), and it EXCLUDES `authenticationConfig` (manual
  * review) — so an unmigrated auth-config keeps THIS flag `'0'` but does not block
@@ -42,7 +42,7 @@
  * or persisted — only counts, field names and provider ids.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -50,7 +50,7 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://conduction.nl
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -58,10 +58,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
-use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -78,7 +78,7 @@ use Throwable;
 class RecordInlineSecretMigrationStatus implements IRepairStep {
 
 	/**
-	 * FQCN of OpenRegister's ObjectService — resolved lazily so OpenConnector
+	 * FQCN of OpenRegister's ObjectService — resolved lazily so Integriq
 	 * still boots (and this step is a clean no-op) without OpenRegister.
 	 *
 	 * @var string
@@ -90,7 +90,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openconnector';
+	private const APP_ID = 'integriq';
 
 	/**
 	 * Appconfig key: '1' when NO source holds an unmigrated inline secret.
@@ -139,7 +139,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 * @spec exclude Framework IRepairStep metadata accessor; no domain behavior.
 	 */
 	public function getName(): string {
-		return 'Migrate OpenConnector source inline secrets to the broker, then record the Phase D gate';
+		return 'Migrate Integriq source inline secrets to the broker, then record the Phase D gate';
 	}//end getName()
 
 	/**
@@ -153,7 +153,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\' . self::OR_OBJECT_SERVICE) === false) {
-			$output->info('OpenConnector: OpenRegister not available; skipping inline-secret migration and status check.');
+			$output->info('Integriq: OpenRegister not available; skipping inline-secret migration and status check.');
 			return;
 		}
 
@@ -184,16 +184,16 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
 
 			if ($clean === true) {
-				$output->info('OpenConnector: no source holds an inline secret — Phase D gate is CLEAN.');
+				$output->info('Integriq: no source holds an inline secret — Phase D gate is CLEAN.');
 				return;
 			}
 
 			// Secret-free: counts and field names only, never a value.
 			$output->warning(
 				sprintf(
-					'OpenConnector: %d inline source secret(s) awaiting migration, %d need manual review. '
+					'Integriq: %d inline source secret(s) awaiting migration, %d need manual review. '
 					. 'Phase D must NOT remove the schema properties. Run '
-					. '`occ openconnector:migrate-inline-secrets --dry-run` for the per-source breakdown.',
+					. '`occ integriq:migrate-inline-secrets --dry-run` for the per-source breakdown.',
 					$pending,
 					$manual
 				)
@@ -202,9 +202,9 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			// Never fatal. A failure here must not brick an upgrade — but it MUST
 			// fail the gate closed: an unknown status is not a clean status.
 			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_CLEAN, value: '0');
-			$output->warning('OpenConnector: could not compute inline-secret migration status: ' . $e->getMessage());
+			$output->warning('Integriq: could not compute inline-secret migration status: ' . $e->getMessage());
 			$this->logger->error(
-				'[openconnector] RecordInlineSecretMigrationStatus failed; Phase D gate set to NOT-clean',
+				'[integriq] RecordInlineSecretMigrationStatus failed; Phase D gate set to NOT-clean',
 				['errorClass' => get_class($e)]
 			);
 		}//end try
@@ -238,7 +238,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			// Counts only — never a secret.
 			$output->info(
 				sprintf(
-					'OpenConnector: inline-secret migration ran — %d migrated, %d blocked, %d failed, %d skipped.',
+					'Integriq: inline-secret migration ran — %d migrated, %d blocked, %d failed, %d skipped.',
 					(int)$result['migrated'],
 					(int)$result['blocked'],
 					(int)$result['failed'],
@@ -249,9 +249,9 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			// A blocked/old/absent broker (or any executor-level failure) must NOT
 			// abort the upgrade and must NOT record a clean gate. The recording pass
 			// will observe the still-dirty state and keep Phase D closed.
-			$output->warning('OpenConnector: inline-secret migration could not run: ' . $e->getMessage());
+			$output->warning('Integriq: inline-secret migration could not run: ' . $e->getMessage());
 			$this->logger->warning(
-				'[openconnector] RecordInlineSecretMigrationStatus: executor did not run; inline secrets left intact',
+				'[integriq] RecordInlineSecretMigrationStatus: executor did not run; inline secrets left intact',
 				['errorClass' => get_class($e)]
 			);
 		}//end try

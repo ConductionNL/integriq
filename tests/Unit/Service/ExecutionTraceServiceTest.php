@@ -7,13 +7,13 @@ declare(strict_types=1);
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\ExecutionTraceService;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\ExecutionTraceService;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;

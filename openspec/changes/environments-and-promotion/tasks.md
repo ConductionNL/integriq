@@ -6,7 +6,7 @@
 - **spec_ref**: `openspec/changes/environments-and-promotion/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001`
 - **files**: `lib/Settings/register.d/environments-and-promotion.json`
 - **acceptance_criteria**:
-  - GIVEN a fresh `occ app:enable openconnector` WHEN `InitializeRegister` runs THEN the `environment` and `promotion_audit` schemas exist in the `openconnector` register
+  - GIVEN a fresh `occ app:enable integriq` WHEN `InitializeRegister` runs THEN the `environment` and `promotion_audit` schemas exist in the `openconnector` register
   - GIVEN the descriptor fragment WHEN inspected THEN `promotion_audit` declares `appendOnly: true` and `immutable: true`, matching `call_log`/`job_log`
 - [ ] Implement
 - [ ] Test

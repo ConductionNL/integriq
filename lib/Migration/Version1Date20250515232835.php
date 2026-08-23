@@ -8,7 +8,7 @@
  * post-schema step backfills slugs from the existing name columns.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
@@ -16,12 +16,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -32,13 +32,13 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Migration step to add configurations and slug columns to all necessary tables.
  *
- * @package   OCA\OpenConnector\Migration
+ * @package   OCA\Integriq\Migration
  * @category  Migration
- * @author    OpenConnector Team
- * @copyright 2024 OpenConnector
+ * @author    Integriq Team
+ * @copyright 2024 Integriq
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
- * @link      https://github.com/OpenConnector/openconnector
+ * @link      https://github.com/ConductionNL/integriq
  */
 class Version1Date20250515232835 extends SimpleMigrationStep {
 	/**

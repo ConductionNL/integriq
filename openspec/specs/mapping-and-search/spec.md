@@ -7,7 +7,7 @@ status: done
 
 ## Purpose
 
-OpenConnector transforms inbound/outbound payloads through configurable mappings and
+Integriq transforms inbound/outbound payloads through configurable mappings and
 exposes a federated catalog search helper. The mapping engine has largely moved to
 OpenRegister (ADR-022) — `MappingService` now delegates to OpenRegister's
 `MappingService` when present and only falls back to its own dot-array + Twig engine
@@ -23,12 +23,12 @@ code already exists.
 
 ### REQ-UI-001: Mapping Management UI
 
-OpenConnector MUST provide a Mappings section in its SPA where administrators can
+Integriq MUST provide a Mappings section in its SPA where administrators can
 browse, create, edit, and test mapping configurations.
 
 #### Scenario: mappings list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
+- GIVEN an authenticated admin visits the integriq app
 - WHEN they navigate to the Mappings section via the sidebar or direct URL
 - THEN the Mappings index page renders inside the app-content area with content visible
 

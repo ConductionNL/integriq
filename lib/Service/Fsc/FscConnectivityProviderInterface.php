@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector FSC Connectivity Provider Interface.
+ * Integriq FSC Connectivity Provider Interface.
  *
  * Narrow domain seam through which every FSC (Federatieve Service
  * Connectiviteit — the VNG/Common Ground standard that replaced NLX in
@@ -14,7 +14,7 @@
  * feature gating").
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Fsc
+ * @package  OCA\Integriq\Service\Fsc
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,17 +23,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Fsc;
+namespace OCA\Integriq\Service\Fsc;
 
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
 
 /**
  * An FSC transport binding: resolve one organisation+service against the
@@ -46,7 +46,7 @@ interface FscConnectivityProviderInterface {
 	 * Stable machine identifier for this binding (e.g. `log`, `rest`).
 	 *
 	 * Selected at runtime via the FSC source's `configuration.provider`
-	 * field — see {@see \OCA\OpenConnector\Service\FscCallService::resolveProvider()}.
+	 * field — see {@see \OCA\Integriq\Service\FscCallService::resolveProvider()}.
 	 *
 	 * @return string The provider identifier.
 	 *

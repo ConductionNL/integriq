@@ -20,7 +20,7 @@
  * configuration) directly on the source. They are mutually exclusive with a
  * brokered credential from a UX standpoint and are hidden/disabled by
  * SourceFormFields while credentialRef is set. Keys match the `source` schema
- * (lib/Settings/openconnector_register.json).
+ * (lib/Settings/integriq_register.json).
  *
  * @type {string[]}
  */

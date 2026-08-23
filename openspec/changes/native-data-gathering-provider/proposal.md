@@ -3,7 +3,7 @@ kind: config
 status: proposed
 ---
 
-# openconnector — native data-gathering provider (Specter ingestion migration)
+# integriq — native data-gathering provider (Specter ingestion migration)
 
 ## Why
 
@@ -19,7 +19,7 @@ Actions cron, outside Nextcloud, writing into their own database — so flows,
 agents, dashboards and reports on the OpenRegister side never see this data
 natively; it has to be re-imported or queried out-of-band.
 
-OpenConnector already **is** this capability, just not yet positioned as the
+Integriq already **is** this capability, just not yet positioned as the
 fleet's data-gathering provider. It has Sources (fetch an external
 HTTP/REST/file endpoint), Mappings (transform the payload), Synchronizations
 (fetch → map → keyed-upsert into a target OpenRegister register/schema) and
@@ -32,7 +32,7 @@ AusTender, Greece Diavgeia, Sweden Avropa (RSS) and Austria OpenTender
 (gzip/JSONL) — ten distinct engine paths, each `found/created` on first run and
 `updated/created:0` on re-run (keyed-upsert dedup, no duplicates). The prior art
 is real and already partly executed: `spectr/connectors/*.json` are
-OpenConnector-style Source + Mapping + Synchronization + Job bundles authored
+Integriq-style Source + Mapping + Synchronization + Job bundles authored
 directly from the Specter scripts, and `spectr/connectors/IMPORT.md` documents
 the live-verified imports source by source.
 
@@ -43,14 +43,14 @@ capabilities that first blocked this: an XML/RSS fallback
 2026-07-15), POST-body sources + body-based pagination (oc#94, archived),
 markdown-list + HTML/CSS-selector extraction (oc#107, archived), and
 broker-held credentials (`source-broker-credentials`, archived). What remains
-is (a) to **position** OpenConnector as the native gather layer with a clear
+is (a) to **position** Integriq as the native gather layer with a clear
 contract, (b) to **formalize** the already-live connectors as shipped app
 fragments so a fresh install self-provisions them, (c) to **draw the boundary**
 against OpenRegister's per-object leaf data-providers so the two do not overlap,
 and (d) to **enumerate the remaining capability gaps** so the last blocked
 tendrils migrate deliberately rather than shipping silently-zero-yielding.
 
-Crucially, this gather layer uses **OpenConnector's own existing cron**
+Crucially, this gather layer uses **Integriq's own existing cron**
 (`JobTask`/`JobService`), so it needs **no** flow-engine dependency. Flows and
 agents merely *react* to the OpenRegister objects gathering writes, through
 object-created/updated events that OpenRegister already emits. The
@@ -62,7 +62,7 @@ are not touched or depended on.
 
 - **Establish the gather contract** as the sanctioned replacement for a Specter
   sync script: a Source (fetch) + Mapping (transform) + Synchronization
-  (keyed-upsert into an OpenRegister register/schema target) + Job (OpenConnector
+  (keyed-upsert into an OpenRegister register/schema target) + Job (Integriq
   cron schedule). Specify the per-connector config shape and the
   target-register binding (`targetType: "register/schema"`, `targetId:
   "<register>/<schema>"`), matching the shipped, live-verified `tenderned.json`
@@ -72,22 +72,22 @@ are not touched or depended on.
   xWiki seed sources already use), so `occ app:enable`/upgrade folds them into
   the OpenConnector register and OpenRegister's `ImportHandler` materialises them
   idempotently by slug — the connectors become part of the app and self-schedule
-  on OpenConnector's cron, instead of living only as importable files in the
+  on Integriq's cron, instead of living only as importable files in the
   `spectr/` sibling repo.
 - **Draw the boundary** against OpenRegister's per-object leaf data-providers
-  (`integration-leaf-foundation`, `object-source-providers`): OpenConnector =
+  (`integration-leaf-foundation`, `object-source-providers`): Integriq =
   scheduled BULK ingestion (pull many records on cron, persist + dedup into a
   register/schema); a leaf provider = per-object LIVE data (notes / sub-resources
   / a read-time projection for THIS object). Both write to OpenRegister; the
   shapes and lifecycles differ. Clarify the one legitimate overlap: an
-  OpenConnector `source` may be used **transport-only** by a leaf provider (a
+  Integriq `source` may be used **transport-only** by a leaf provider (a
   single live call, no Synchronization, no Job — the BRP/KvK/xWiki seeds), which
   is distinct from a bulk-ingestion source (which carries a Synchronization + a
   Job).
 - **Define the flow-reaction seam** without building it: gathered rows land as
   OpenRegister objects, which emit object-created/updated events; downstream
   flows/agents react via or#2068's trigger set. The on-demand direction — a flow
-  or agent asking OpenConnector to fetch now, via the existing
+  or agent asking Integriq to fetch now, via the existing
   `POST /synchronizations/{id}/run` — is named as a forward hook and deferred.
 - **Enumerate the capability parity gaps** for the last blocked tendrils
   (offset/cursor pagination beyond page 1, incremental since-watermark fetch, CSV
@@ -106,17 +106,17 @@ are not touched or depended on.
 
 ## Impact
 
-- **No OpenConnector engine code changes in this change.** The fetch → map →
+- **No Integriq engine code changes in this change.** The fetch → map →
   upsert → cron path already exists and is live-verified; this change lands
   configuration (`register.d` fragments) plus the positioning/boundary/parity
   contract. Each remaining capability gap is deferred to its own follow-up change
   (the pattern oc#97 / oc#94 / oc#107 already set).
 - **New spec:** `native-data-gathering-provider` (this change) — the gather
-  contract, the OpenConnector-vs-leaf boundary, the flow-reaction seam, and the
+  contract, the Integriq-vs-leaf boundary, the flow-reaction seam, and the
   parity-gap governance rule.
 - **Cross-references (no edits):** OpenRegister `integration-leaf-foundation` and
   `object-source-providers` (the boundary); or#2068 flow-engine trigger set (the
-  reaction seam, referenced only). OpenConnector `synchronization-engine`,
+  reaction seam, referenced only). Integriq `synchronization-engine`,
   `source-management`, `job-scheduling`, `logs-and-statistics`,
   `dead-letter-replay` (the HAVE surface this contract stands on).
 - **Fresh install:** ships the Wave-0 connectors provisioned; keyless public

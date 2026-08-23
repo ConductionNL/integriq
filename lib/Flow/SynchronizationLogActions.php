@@ -20,7 +20,7 @@
  * name would require reading the record.
  *
  * @category Service
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 /**
  * Deep-links a run-log entry back to the synchronization the step acted on.
@@ -91,7 +91,7 @@ trait SynchronizationLogActions {
 		// (manifest id `SynchronizationDetail`), and it is registered AFTER the
 		// literal `/synchronizations/contracts` and `/synchronizations/logs`,
 		// so a reference can never shadow one of those.
-		$root = rtrim($this->urlGenerator->linkToRoute('openconnector.ui.dashboard', ['path' => '']), '/');
+		$root = rtrim($this->urlGenerator->linkToRoute('integriq.ui.dashboard', ['path' => '']), '/');
 
 		return [
 			[
@@ -129,14 +129,13 @@ trait SynchronizationLogActions {
 		}
 
 		return '';
-
 	}//end synchronizationIn()
 
 	/**
 	 * Depth-bounded search for a reference key holding a non-empty scalar.
 	 *
 	 * @param mixed $value The value to search.
-	 * @param int   $depth How deep this call already is.
+	 * @param int $depth How deep this call already is.
 	 *
 	 * @return string The reference, or an empty string.
 	 *
@@ -162,6 +161,5 @@ trait SynchronizationLogActions {
 		}
 
 		return '';
-
 	}//end referenceIn()
 }//end trait

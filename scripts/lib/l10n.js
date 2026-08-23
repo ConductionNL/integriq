@@ -340,7 +340,7 @@ function localeNameOf(file) {
  * never reported unused, never removed by a cleaner.
  *
  * App-specific — this is the one part deliberately NOT shared with
- * openregister's copy. Empty for openconnector: it reaches its dynamic UI copy
+ * openregister's copy. Empty for integriq: it reaches its dynamic UI copy
  * through `src/manifest.json`, which `collectDynamicKeys` below harvests
  * directly (App.vue passes `translateForApp` to CnAppNav / CnPageRenderer), so
  * there is nothing to enumerate by hand yet.

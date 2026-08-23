@@ -14,13 +14,13 @@
 
 import { test, expect } from '@playwright/test'
 
-const MATRIX_URL = '/index.php/apps/openconnector/api/admin/action-matrix'
-const ADMIN_SETTINGS_URL = '/index.php/settings/admin/openconnector'
+const MATRIX_URL = '/index.php/apps/integriq/api/admin/action-matrix'
+const ADMIN_SETTINGS_URL = '/index.php/settings/admin/integriq'
 
 test.describe('action-authorization: the admin-facing matrix', () => {
-	// `lib/Settings/OpenConnectorAdmin.php` is a one-line
+	// `lib/Settings/IntegriqAdmin.php` is a one-line
 	// `extends GenericAdminSettings` with no other implementation, so this URL
-	// rendering openconnector content IS the generic admin-settings stub
+	// rendering integriq content IS the generic admin-settings stub
 	// rendering in the existing section.
 	// @e2e action-authorization::an-administrator-sees-the-action-matrix-in-settings
 	// @e2e apphost-adoption::admin-settings-panel-still-renders
@@ -30,7 +30,7 @@ test.describe('action-authorization: the admin-facing matrix', () => {
 		const section = page.locator('[data-testid=admin-action-auth-section]')
 		await expect(
 			section,
-			'the Action authorization section must render in OpenConnector admin settings',
+			'the Action authorization section must render in Integriq admin settings',
 		).toBeVisible({ timeout: 20_000 })
 
 		await expect(

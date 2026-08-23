@@ -5,7 +5,7 @@
  * The guard for `tests/e2e/support/appRoot.ts`.
  *
  * Since the router moved to path-based history, EVERY deep-linking spec in this
- * suite depends on one fact: which prefix `generateUrl('/apps/openconnector')`
+ * suite depends on one fact: which prefix `generateUrl('/apps/integriq')`
  * returned in the browser. Get it wrong and the URL falls outside the router
  * base, matches nothing, hits the `'/:pathMatch(.*)*'` catch-all and redirects
  * to the Dashboard — with a 200, no 404 and no console error.
@@ -35,7 +35,7 @@ import { resolveAppRoot, gotoAppRoute, expectRouteMatched } from '../support/app
 const ROUTE = '/sources'
 
 /** The two prefixes Nextcloud can serve this app under. */
-const BOTH_PREFIXES = ['/apps/openconnector', '/index.php/apps/openconnector']
+const BOTH_PREFIXES = ['/apps/integriq', '/index.php/apps/integriq']
 
 test.describe('SPA root resolution (path-mode router base)', () => {
 	test('the resolved root is the one the app itself computes', async ({
@@ -53,7 +53,7 @@ test.describe('SPA root resolution (path-mode router base)', () => {
 		// router base, so this is the app's own answer and not a transcription
 		// of it. The resolver probes on its own throwaway page and leaves this
 		// one untouched, so navigate explicitly here.
-		await page.goto('/index.php/apps/openconnector/', {
+		await page.goto('/index.php/apps/integriq/', {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -61,7 +61,7 @@ test.describe('SPA root resolution (path-mode router base)', () => {
 			const oc = (
 				window as unknown as { OC?: { generateUrl?: (p: string) => string } }
 			).OC
-			return oc?.generateUrl?.('/apps/openconnector') ?? null
+			return oc?.generateUrl?.('/apps/integriq') ?? null
 		})
 		expect(
 			fromApp,

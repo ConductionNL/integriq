@@ -25,7 +25,7 @@ jobs:
     # exists on ConductionNL/.github, so the reference was unresolvable.
     uses: ConductionNL/.github/.github/workflows/issue-triage.yml@main
     with:
-      app-name: openconnector
+      app-name: integriq
       backlog-existing: ${{ github.event_name == 'workflow_dispatch' && inputs.backlog-existing || false }}
     secrets:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}

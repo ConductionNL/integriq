@@ -10,7 +10,7 @@
  * REQ-CE-001 describes backend CloudEvents inbound routing internals that
  * carry @e2e exclude and are covered by PHPUnit/Newman.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  *
  * Known bug #996: Table view renders all cells as "—". Assertions use

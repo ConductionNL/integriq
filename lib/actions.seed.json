@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-023 action matrix seed for openconnector. Default admin-only; broaden via Admin Settings > OpenConnector > Action authorization.",
+  "$comment": "ADR-023 action matrix seed for integriq. Default admin-only; broaden via Admin Settings > Integriq > Action authorization.",
   "actions": {
     "source.logs": ["admin"],
     "source.test": ["admin"],

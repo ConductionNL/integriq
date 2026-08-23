@@ -1,7 +1,7 @@
 # flow-workflowengine-operations Specification
 
 ## Purpose
-Registers OpenConnector's `SynchronizationService`, `EndpointService`, and `EventService` as NC core
+Registers Integriq's `SynchronizationService`, `EndpointService`, and `EventService` as NC core
 `OCP\WorkflowEngine` operations ("Run synchronization", "Call endpoint", "Fire CloudEvent"), so an admin can
 trigger them from NC's built-in Flow UI using the same file/tag conditions core Flow rules already use. Each
 operation is a thin adapter over the existing service — no synchronization/endpoint/event business logic is
@@ -12,9 +12,9 @@ per-rule layer.
 ## Requirements
 ### Requirement: WorkflowEngine operation registration MUST be feature-detected on the `workflowengine` app (REQ-001)
 
-`OCA\OpenConnector\AppInfo\Application::register()` MUST call a private `registerWorkflowEngineOperations()`
+`OCA\Integriq\AppInfo\Application::register()` MUST call a private `registerWorkflowEngineOperations()`
 method that resolves `OCP\App\IAppManager` and registers
-`OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener` against
+`OCA\Integriq\WorkflowEngine\RegisterOperationsListener` against
 `OCP\WorkflowEngine\Events\RegisterOperationsEvent` via `IEventDispatcher::addServiceListener()` ONLY WHEN
 `IAppManager::isEnabledForAnyUser('workflowengine')` returns `true`. The `IAppManager` resolution and
 feature-detection check MUST be wrapped in `try/catch (\Throwable)`; on failure the method MUST degrade to
@@ -24,7 +24,7 @@ into `Application::register()` and blocking app registration.
 #### Scenario: WorkflowEngine operations are registered when the app is enabled
 
 - **GIVEN** a Nextcloud instance with the `workflowengine` app enabled
-- **WHEN** OpenConnector boots
+- **WHEN** Integriq boots
 - **THEN** `RegisterOperationsListener` SHALL be registered against `RegisterOperationsEvent`
 - **AND** NC's Flow rule editor SHALL list "Run synchronization", "Call endpoint", and "Fire CloudEvent" as
   available operations for the File entity
@@ -33,7 +33,7 @@ into `Application::register()` and blocking app registration.
 
 - **GIVEN** a Nextcloud instance where the `workflowengine` app is disabled (or `IAppManager` resolution
   throws)
-- **WHEN** OpenConnector boots
+- **WHEN** Integriq boots
 - **THEN** no `RegisterOperationsListener` registration SHALL occur
 - **AND** no exception SHALL propagate out of `Application::register()` — app registration SHALL complete
   normally
@@ -42,7 +42,7 @@ into `Application::register()` and blocking app registration.
 
 ### Requirement: The "Run synchronization" operation's `onEvent()` MUST dispatch to `SynchronizationService` (REQ-002)
 
-`OCA\OpenConnector\WorkflowEngine\RunSynchronizationOperation implements ISpecificOperation` MUST declare
+`OCA\Integriq\WorkflowEngine\RunSynchronizationOperation implements ISpecificOperation` MUST declare
 `getEntityId(): string` returning `\OCA\WorkflowEngine\Entity\File::class`. Its `onEvent(string $eventName,
 Event $event, IRuleMatcher $ruleMatcher)` MUST call `$ruleMatcher->getFlows(false)` and, for each returned
 flow, `json_decode` the flow's `operation` string. When decoding succeeds and yields a non-empty
@@ -81,7 +81,7 @@ propagate into the NC event dispatcher that invoked `onEvent()`.
 
 ### Requirement: The "Call endpoint" operation's `onEvent()` MUST dispatch to `EndpointService::triggerFromFlow()` (REQ-003)
 
-`OCA\OpenConnector\WorkflowEngine\CallEndpointOperation implements ISpecificOperation` MUST resolve, for
+`OCA\Integriq\WorkflowEngine\CallEndpointOperation implements ISpecificOperation` MUST resolve, for
 each flow returned by `$ruleMatcher->getFlows(false)`, a non-empty `endpointId` from the decoded `operation`
 settings (`{"endpointId": "<uuid>", "parameters": {...optional...}}`), fetch the target via
 `EndpointService::getEndpointById($endpointId)`, and — when non-null — call
@@ -111,7 +111,7 @@ dispatcher.
 
 ### Requirement: The "Fire CloudEvent" operation's `onEvent()` MUST dispatch to `EventService::emitCloudEvent()` (REQ-004)
 
-`OCA\OpenConnector\WorkflowEngine\FireCloudEventOperation implements ISpecificOperation` MUST resolve, for
+`OCA\Integriq\WorkflowEngine\FireCloudEventOperation implements ISpecificOperation` MUST resolve, for
 each flow returned by `$ruleMatcher->getFlows(false)`, non-empty `type` and `source` strings from the
 decoded `operation` settings (`{"type": "...", "source": "...", "subject": null, "data": {...optional
 static literal...}}`), and call `EventService::emitCloudEvent(type: $type, source: $source, subject:

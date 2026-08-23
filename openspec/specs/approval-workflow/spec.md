@@ -62,7 +62,7 @@ configured with `timing: after` MUST be rejected as invalid configuration
 
 When an `approval_request` is created, the system MUST notify the
 configured `approverGroup` with an actionable notification carrying
-approve/reject deep links into the OpenConnector Pending Approvals UI. Because
+approve/reject deep links into the Integriq Pending Approvals UI. Because
 the declarative `x-openregister-notifications` dialect (ADR-031) supports
 only a single-userId `field` recipient or a schema-static `groups` recipient
 — neither of which can express a per-rule-configured dynamic approver group
@@ -82,7 +82,7 @@ approval request regardless of its specific approver group.
 - **WHEN** the request is persisted
 - **THEN** every member of the `woo-approvers` NC group receives an NC
   notification with approve/reject actions deep-linking to
-  `/apps/openconnector/approvals/{id}`
+  `/apps/integriq/approvals/{id}`
 
 #### Scenario: ops group receives a passive visibility notification
 
@@ -240,7 +240,7 @@ mutating the request.
 
 ### Requirement: Pending Approvals UI (REQ-007)
 
-OpenConnector MUST provide a Pending Approvals section in its SPA where
+Integriq MUST provide a Pending Approvals section in its SPA where
 authorized users can list approval requests (filterable by `pending`,
 `approved`, `rejected`, `expired`, `dead_letter`), view a request's detail
 (snapshot summary, requester, approver group, timestamps, audit trail), and

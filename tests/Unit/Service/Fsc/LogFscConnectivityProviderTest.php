@@ -4,7 +4,7 @@
  * Unit tests for LogFscConnectivityProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Fsc
+ * @package  OCA\Integriq\Tests\Unit\Service\Fsc
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Fsc;
+namespace OCA\Integriq\Tests\Unit\Service\Fsc;
 
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Service\Fsc\LogFscConnectivityProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -8,40 +8,40 @@
 <template>
 	<div class="action-form">
 		<NcTextField
-			:label="t('openconnector', 'Size location (dot path, required)')"
+			:label="t('integriq', 'Size location (dot path, required)')"
 			:modelValue="value.sizeLocation || ''"
 			placeholder="body.size"
 			@update:modelValue="(next) => patch('sizeLocation', next)" />
-		<label class="action-form__label">{{ t('openconnector', 'Schema') }}</label>
+		<label class="action-form__label">{{ t('integriq', 'Schema') }}</label>
 		<NcSelect
 			data-testid="action-form-fileparts-schema"
-			:aria-label-combobox="t('openconnector', 'Schema')"
+			:aria-label-combobox="t('integriq', 'Schema')"
 			:modelValue="selectedSchema"
 			:options="schemaOptions"
 			:loading="schemasLoading"
-			:placeholder="t('openconnector', 'Select a schema')"
+			:placeholder="t('integriq', 'Select a schema')"
 			@update:modelValue="
 				(option) => patch('schemaId', option?.id ? String(option.id) : '')
 			" />
 		<NcTextField
-			:label="t('openconnector', 'Filename location (default: filename)')"
+			:label="t('integriq', 'Filename location (default: filename)')"
 			:modelValue="value.filenameLocation || ''"
 			placeholder="filename"
 			@update:modelValue="(next) => patch('filenameLocation', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Filepart location (default: fileParts)')"
+			:label="t('integriq', 'Filepart location (default: fileParts)')"
 			:modelValue="value.filePartLocation || ''"
 			placeholder="fileParts"
 			@update:modelValue="(next) => patch('filePartLocation', next)" />
 		<label class="action-form__label">{{
-			t('openconnector', 'Mapping (optional)')
+			t('integriq', 'Mapping (optional)')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
+			:aria-label-combobox="t('integriq', 'Mapping (optional)')"
 			:modelValue="selectedMapping"
 			:options="mappingOptions"
 			:loading="mappingsLoading"
-			:placeholder="t('openconnector', 'Pick a mapping')"
+			:placeholder="t('integriq', 'Pick a mapping')"
 			@update:modelValue="
 				(option) => patch('mappingId', option?.id ? String(option.id) : '')
 			" />

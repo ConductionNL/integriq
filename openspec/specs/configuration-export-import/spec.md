@@ -7,9 +7,9 @@ retrofit: true
 
 ## Purpose
 
-@e2e exclude Pure backend service (ConfigurationService + per-type ConfigurationHandlers). All slug-translation, export/import, and credential-redaction logic is exercised by PHPUnit + Newman API tests; there is no dedicated UI panel for configuration export/import in openconnector's SPA.
+@e2e exclude Pure backend service (ConfigurationService + per-type ConfigurationHandlers). All slug-translation, export/import, and credential-redaction logic is exercised by PHPUnit + Newman API tests; there is no dedicated UI panel for configuration export/import in integriq's SPA.
 
-OpenConnector configurations — Sources, Endpoints, Mappings, Rules, Jobs and
+Integriq configurations — Sources, Endpoints, Mappings, Rules, Jobs and
 Synchronizations — are stored as OpenRegister objects in the `openconnector`
 register and identified locally by UUID. Operators need to move a coherent set
 of these objects between environments (development → acceptance → production)
@@ -29,7 +29,7 @@ for the governing decisions.
 ## Requirements
 ### Requirement: REQ-001 — Export a configuration set as a slug-referenced OAS document
 
-The system SHALL export every OpenConnector entity tagged with a given
+The system SHALL export every Integriq entity tagged with a given
 configuration id into an OpenAPI-Specification-shaped array under a top-level
 `components` key, grouped by entity type (`sources`, `endpoints`, `mappings`,
 `rules`, `jobs`, `synchronizations`) and further organised by component label.
@@ -200,7 +200,7 @@ rewritten, an observed aliasing risk recorded not fixed.
 
 ### Requirement: REQ-005 — Redact source credentials from exported configurations
 
-The system SHALL strip or mask every sensitive value it can detect when exporting any of the six OpenConnector entity types (Source, Endpoint, Mapping, Rule, Job, Synchronization), via a single shared sensitive-field registry (`SensitiveFieldRegistry`), used identically by every `ConfigurationHandler`.
+The system SHALL strip or mask every sensitive value it can detect when exporting any of the six Integriq entity types (Source, Endpoint, Mapping, Rule, Job, Synchronization), via a single shared sensitive-field registry (`SensitiveFieldRegistry`), used identically by every `ConfigurationHandler`.
 
 For Source specifically, the system SHALL continue to strip the following
 top-level fields entirely (`unset`, field absent from the export — unchanged
@@ -300,7 +300,7 @@ for Source alone (see prior Notes on this requirement).
 
 ### Requirement: REQ-006 — Export a configuration from the UI
 
-The system SHALL expose the existing `ConfigurationService::exportConfiguration()` (REQ-001–REQ-005, unchanged) through a routed `POST /api/configurations/{id}/export` endpoint and a Configuration UI page action, so an operator can download a redacted configuration document without using the API directly. The endpoint SHALL be gated by OpenConnector's existing `ActionAuthService::requireAction()` (ADR-023) with a new action key `configuration.export`, seeded `["admin"]` in the existing `lib/actions.seed.json`.
+The system SHALL expose the existing `ConfigurationService::exportConfiguration()` (REQ-001–REQ-005, unchanged) through a routed `POST /api/configurations/{id}/export` endpoint and a Configuration UI page action, so an operator can download a redacted configuration document without using the API directly. The endpoint SHALL be gated by Integriq's existing `ActionAuthService::requireAction()` (ADR-023) with a new action key `configuration.export`, seeded `["admin"]` in the existing `lib/actions.seed.json`.
 
 Notes: This requirement adds reachability only; it does not change REQ-001–REQ-005's export, slug-translation, or redaction behaviour, including the documented substring-match redaction gap (REQ-005 Notes) and the O(all entities) cost note (REQ-001 Notes).
 

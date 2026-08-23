@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-Adapter that lets openconnector consume OpenRegister's organisation features
+Adapter that lets integriq consume OpenRegister's organisation features
 without taking a hard dependency on openregister. Reflects on `IAppManager` +
 the server DI container at every call to decide whether to forward to OR's
 `OrganisationService` or return an unavailable-shape default.

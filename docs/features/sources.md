@@ -2,7 +2,7 @@
 
 ## Overview
 
-A **Source** is a configured connection to an external system. Sources are the foundation of all outbound communication in OpenConnector. Every API call made through a synchronization, endpoint proxy, or job references a Source for its base URL, authentication, and connection defaults.
+A **Source** is a configured connection to an external system. Sources are the foundation of all outbound communication in Integriq. Every API call made through a synchronization, endpoint proxy, or job references a Source for its base URL, authentication, and connection defaults.
 
 ## Source Types
 
@@ -30,20 +30,20 @@ Sources support multiple authentication strategies, configured in the source's
 > If your instance still holds data there, audit it — key names only, never values:
 >
 > ```bash
-> occ openconnector:authentication-config
+> occ integriq:authentication-config
 > ```
 >
 > and then, once you have reviewed what it reports, delete it:
 >
 > ```bash
-> occ openconnector:authentication-config --remove-authentication-config
+> occ integriq:authentication-config --remove-authentication-config
 > ```
 >
 > See [ocon#232](https://codeberg.org/Conduction/openconnector/issues/232).
 
 ### Brokered Credentials (`credentialRef`) — recommended
 
-Instead of embedding an API key or client secret in the source, reference a credential held by the **OpenRegister credential broker**. The secret stays in the broker's vault; OpenConnector never holds it — every call is dispatched in-process through the broker, which enforces its guard chain (credential owner → `allowedApps` → provider allow-rules → host-lock) and injects the secret server-side.
+Instead of embedding an API key or client secret in the source, reference a credential held by the **OpenRegister credential broker**. The secret stays in the broker's vault; Integriq never holds it — every call is dispatched in-process through the broker, which enforces its guard chain (credential owner → `allowedApps` → provider allow-rules → host-lock) and injects the secret server-side.
 
 Set `configuration.authentication` to **exactly** one of:
 
@@ -76,11 +76,23 @@ Set `configuration.authentication` to **exactly** one of:
 
 1. Create the credential in OpenRegister's credential broker (provider, secret, owner). Note its UUID.
 2. Add `openconnector` to the credential's `allowedApps` — a broker refusal is logged as a 403 CallLog with this exact hint.
+
+   > **Yes, `openconnector`, not `integriq`.** This one string did NOT move with
+   > the app-id rename. It is the identity OpenRegister's credential broker
+   > matches against a credential's `allowedApps`, and
+   > `CredentialBrokerService::resolveInjectable()` does a strict
+   > `in_array($appId, $allowedApps, true)`. Every credential already minted
+   > carries `allowedApps: ["openconnector"]`, so moving it would make every
+   > existing brokered credential fail closed at call time — and it would fail
+   > as an authorisation refusal, giving no hint that a rename caused it. It
+   > moves only when the stored credentials are re-provisioned. The constant is
+   > `BrokeredCallService::APP_ID`.
+
 3. Make sure the provider catalogue entry allows the methods + paths your source calls (allow-rules) — the provider's `baseUrl` host is the **sole** authority for where the call goes; the source `location` only documents it and supplies the request path.
 4. Replace the source's embedded auth fields with the `credentialRef` block shown above (remove ALL other keys under `authentication`).
 5. Test the source: a 200/upstream status means the brokered path works; a 403 CallLog names the broker refusal; a 409 CallLog names the config problem.
 
-**Background jobs — owner-pinning policy:** cron-driven synchronizations run without a user session. OpenConnector then **pins the acting user to the credential's `owner`** — read from the OpenRegister credential metadata object **at call time**, never cached, guessed, or configured — and passes it via the broker's acting-user parameter (requires an OpenRegister version that supports it; older brokers make sessionless brokered calls fail with an explanatory 409). The acting user substitutes **only** the session identity: the broker still enforces `allowedApps`, allow-rules, and host-lock against it. Owner-pinning is the deliberate default because it is deterministic and auditable — a background sync always acts as exactly the human who owns the secret.
+**Background jobs — owner-pinning policy:** cron-driven synchronizations run without a user session. Integriq then **pins the acting user to the credential's `owner`** — read from the OpenRegister credential metadata object **at call time**, never cached, guessed, or configured — and passes it via the broker's acting-user parameter (requires an OpenRegister version that supports it; older brokers make sessionless brokered calls fail with an explanatory 409). The acting user substitutes **only** the session identity: the broker still enforces `allowedApps`, allow-rules, and host-lock against it. Owner-pinning is the deliberate default because it is deterministic and auditable — a background sync always acts as exactly the human who owns the secret.
 
 **Sessionless failure modes** (each fails **closed** — a background call never proceeds as no-one or as an administrator):
 
@@ -92,15 +104,15 @@ Set `configuration.authentication` to **exactly** one of:
 | Owner account is disabled | 409 | Cannot act as a disabled user — re-enable or re-assign |
 | Secret not yet migrated to Doriath | 403 | Sign in once as the owner to trigger the one-time vault→Doriath migration, then re-run |
 
-The **un-migrated-secret** case is subtle: OpenRegister's lazy vault→Doriath secret migration only runs in a **user-session** context (the legacy vault is session-scoped). A background (sessionless) read of a secret that has never been read interactively therefore fails closed inside the broker. Because the broker's refusal message is deliberately opaque (secret hygiene — see below), OpenConnector cannot tell this apart from an `allowedApps`/allow-rule refusal, so the **sessionless 403** always carries the additional, actionable migration hint (distinct from the owner-gone / owner-disabled 409s above). The fix is a one-time interactive read: sign in as the owner (or open the credential in OpenRegister), then re-run the sync.
+The **un-migrated-secret** case is subtle: OpenRegister's lazy vault→Doriath secret migration only runs in a **user-session** context (the legacy vault is session-scoped). A background (sessionless) read of a secret that has never been read interactively therefore fails closed inside the broker. Because the broker's refusal message is deliberately opaque (secret hygiene — see below), Integriq cannot tell this apart from an `allowedApps`/allow-rule refusal, so the **sessionless 403** always carries the additional, actionable migration hint (distinct from the owner-gone / owner-disabled 409s above). The fix is a one-time interactive read: sign in as the owner (or open the credential in OpenRegister), then re-run the sync.
 
-**Secret hygiene & trust boundary:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the OpenConnector process at all. The OpenRegister broker is the trust boundary: it resolves and injects the secret server-side and returns only `{status, headers, body}`. Its **refusal reason is logged inside OpenRegister and never crosses the boundary** — the exception OpenConnector catches is a single opaque "Request not permitted", which is why the 403 guidance covers the likely fixes for its context rather than naming the exact guard. OpenConnector's own owner-pin refusals are logged with the **guard name + owner uid + credential id only** — never any secret material.
+**Secret hygiene & trust boundary:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the Integriq process at all. The OpenRegister broker is the trust boundary: it resolves and injects the secret server-side and returns only `{status, headers, body}`. Its **refusal reason is logged inside OpenRegister and never crosses the boundary** — the exception Integriq catches is a single opaque "Request not permitted", which is why the 403 guidance covers the likely fixes for its context rather than naming the exact guard. Integriq's own owner-pin refusals are logged with the **guard name + owner uid + credential id only** — never any secret material.
 
 ### App-side injection (`credentialRef` placeholder) — for arbitrary / self-hosted hosts {#app-side-injection}
 
-The brokered proxy above is **host-locked**: it only works for a provider in OpenRegister's immutable catalogue (Mollie, KVK, GitHub, …), whose `baseUrl` pins where every call may go. That is deliberately the strongest option — the secret is *zero-knowledge* (it never enters the OpenConnector process). But it cannot cover a Source that points at an **arbitrary or self-hosted host** — a municipality's own API, an on-prem ZGW registry, a customer's staging server — because those hosts can't be host-locked from a file shipped with OpenRegister.
+The brokered proxy above is **host-locked**: it only works for a provider in OpenRegister's immutable catalogue (Mollie, KVK, GitHub, …), whose `baseUrl` pins where every call may go. That is deliberately the strongest option — the secret is *zero-knowledge* (it never enters the Integriq process). But it cannot cover a Source that points at an **arbitrary or self-hosted host** — a municipality's own API, an on-prem ZGW registry, a customer's staging server — because those hosts can't be host-locked from a file shipped with OpenRegister.
 
-App-side injection closes that gap **without storing the secret in the Source schema**. Instead of the whole call being proxied, **any leaf value under `configuration.authentication` may be a placeholder** of the shape `{ "credentialRef": { … } }`. At call time OpenConnector resolves each placeholder from the vault (through the broker) and substitutes the plaintext **in place**, so every normal auth mechanism — API-key header, HTTP Basic, OAuth token exchange, JWT signing — runs unchanged against a hydrated config.
+App-side injection closes that gap **without storing the secret in the Source schema**. Instead of the whole call being proxied, **any leaf value under `configuration.authentication` may be a placeholder** of the shape `{ "credentialRef": { … } }`. At call time Integriq resolves each placeholder from the vault (through the broker) and substitutes the plaintext **in place**, so every normal auth mechanism — API-key header, HTTP Basic, OAuth token exchange, JWT signing — runs unchanged against a hydrated config.
 
 The vault credential must use one of OpenRegister's **generic, inject-only providers** (they carry no `baseUrl` and no allow-rules, so they can *only* be injected app-side — never proxied):
 
@@ -135,7 +147,7 @@ At call time `authentication.apikey` becomes the vault secret, so the `Authoriza
 | Config shape | `authentication.credentialRef` (the **whole** auth block) | a `credentialRef` **nested** at a secret's own position |
 | Provider | host-locked catalogue entry (Mollie, KVK, …) | a `generic-*` inject-only provider |
 | Where the call goes | provider `baseUrl` (host-locked) | the Source's own `location` |
-| Secret exposure | zero-knowledge — never enters OpenConnector | resolved into the OpenConnector process, then injected |
+| Secret exposure | zero-knowledge — never enters Integriq | resolved into the Integriq process, then injected |
 | Broker guards | owner → allowedApps → allow-rules → host-lock | owner → allowedApps (no host-lock — there is no fixed host) |
 | Use it for | catalogued SaaS | arbitrary / self-hosted hosts |
 
@@ -168,7 +180,7 @@ Set a static value directly in the `headers` or `query` fields of the source:
 
 ### OAuth 2.0
 
-Use a Twig expression in the Authorization header. OpenConnector resolves the token automatically:
+Use a Twig expression in the Authorization header. Integriq resolves the token automatically:
 
 ```
 Bearer {{ oauthToken(source) }}
@@ -248,7 +260,7 @@ For connections to Dutch government services requiring client certificate authen
 | `headers` | Default headers added to every request |
 | `query` | Default query parameters added to every request |
 | `configuration` | Auth-specific configuration (OAuth params, cert paths). **`configuration.authentication` is where credentials belong.** |
-| `authenticationConfig` | **Deprecated / vestigial — nothing reads it.** Retained only so existing data is not silently pruned; audit and remove it with `occ openconnector:authentication-config` (ocon#232). |
+| `authenticationConfig` | **Deprecated / vestigial — nothing reads it.** Retained only so existing data is not silently pruned; audit and remove it with `occ integriq:authentication-config` (ocon#232). |
 | `timeout` | HTTP request timeout in seconds |
 | `verify` | TLS certificate verification (boolean) |
 | `isEnabled` | Whether the source is active |
@@ -263,11 +275,11 @@ When `logging` is enabled on a source, every HTTP request and response is stored
 - Execution duration
 - Associated synchronization or job reference
 
-Logs are accessible via the Logs section in the OpenConnector UI and the `/api/logs` endpoint.
+Logs are accessible via the Logs section in the Integriq UI and the `/api/logs` endpoint.
 
 ## Rate Limit Handling
 
-OpenConnector detects rate limiting responses (HTTP 429, `Retry-After` headers, and common rate limit headers). When detected, the service throws a `TooManyRequestsHttpException` which causes the calling synchronization or job to back off and reschedule.
+Integriq detects rate limiting responses (HTTP 429, `Retry-After` headers, and common rate limit headers). When detected, the service throws a `TooManyRequestsHttpException` which causes the calling synchronization or job to back off and reschedule.
 
 ## Implementation
 

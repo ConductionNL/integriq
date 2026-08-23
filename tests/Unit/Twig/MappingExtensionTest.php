@@ -4,7 +4,7 @@
  * Unit tests for the mapping Twig extension.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Twig
+ * @package  OCA\Integriq\Tests\Unit\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,9 +13,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Twig;
+namespace OCA\Integriq\Tests\Unit\Twig;
 
-use OCA\OpenConnector\Twig\MappingExtension;
+use OCA\Integriq\Twig\MappingExtension;
 use PHPUnit\Framework\TestCase;
 
 /**

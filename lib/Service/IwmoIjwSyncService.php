@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Sync Service.
+ * Integriq iWMO/iJW Sync Service.
  *
  * Core of the iwmo-ijw-adapter: resolves the configured iWMO/iJW
  * (`type=iwmo-ijw`) source + provider binding, drives the outbound PUSH
@@ -13,7 +13,7 @@
  * and {@see PeppolTransmissionService} (signed inbound webhook consumer).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,24 +22,24 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
-use OCA\OpenConnector\Service\IwmoIjw\IwmoIjwProviderInterface;
-use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
+use OCA\Integriq\Service\IwmoIjw\IwmoIjwProviderInterface;
+use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
+use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
+use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

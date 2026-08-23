@@ -6,11 +6,11 @@
  *
  * Tests REQ-001 through REQ-005 (configuration export/import) against
  * the live Nextcloud instance. The spec describes exporting and importing
- * OpenConnector configuration sets (sources, endpoints, mappings, rules,
+ * Integriq configuration sets (sources, endpoints, mappings, rules,
  * jobs, synchronizations) as slug-referenced OAS documents.
  *
  * After the chain-C OR-cutover the export/import controller routes were
- * removed from openconnector's routes.php and the capability moved to
+ * removed from integriq's routes.php and the capability moved to
  * OpenRegister's `/api/registers/{id}/export` and
  * `/api/configurations/{id}/import` surfaces (see routes.php comments).
  * This file tests:
@@ -26,20 +26,17 @@ const OR_BASE = '/index.php/apps/openregister/api'
 let _appBase: string | null = null
 async function appBase(page: Page): Promise<string> {
 	if (_appBase) return _appBase
-	for (const candidate of [
-		'/apps/openconnector',
-		'/index.php/apps/openconnector',
-	]) {
+	for (const candidate of ['/apps/integriq', '/index.php/apps/integriq']) {
 		const res = await page.request.get(`${candidate}/import`, {
 			failOnStatusCode: false,
 		})
 		const body = await res.text()
-		if (res.ok() && body.includes('openconnector')) {
+		if (res.ok() && body.includes('integriq')) {
 			_appBase = candidate
 			return candidate
 		}
 	}
-	throw new Error('Cannot resolve openconnector app base')
+	throw new Error('Cannot resolve integriq app base')
 }
 
 test.describe('REQ-001: Configuration export — OR API surface', () => {

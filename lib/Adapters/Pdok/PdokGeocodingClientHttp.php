@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector PDOK Geocoding Client (HTTPS).
+ * Integriq PDOK Geocoding Client (HTTPS).
  *
  * Active implementation of {@see PdokGeocodingClient}. Issues real outbound
  * requests to the PDOK Locatieserver v3.1 and normalises the responses into
  * the canonical PostalAddress shape documented in
  * `hydra/openspec/changes/shared-pdok-via-openconnector/design.md`.
  *
- * DI in {@see \OCA\OpenConnector\AppInfo\Application::register()} binds this
+ * DI in {@see \OCA\Integriq\AppInfo\Application::register()} binds this
  * class behind the `pdok.feature_flag === '1'` (or `'true'`) app-config flag;
  * while the flag is dormant the abstract resolves to
  * {@see PdokGeocodingClientMock} instead.
@@ -19,7 +19,7 @@
  *   - GET /reverse?lat=…&lon=…&rows=…
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,12 +28,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;

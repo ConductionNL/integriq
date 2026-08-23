@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Sync Service.
+ * Integriq StUF-ZKN Sync Service.
  *
  * Core of the stuf-zkn-bridge: resolves the configured `type=stuf-zkn`
  * source + provider binding, drives the INBOUND path (parse+translate a
@@ -11,7 +11,7 @@
  * kennisgeving, dispatch via the configured provider, persist a
  * `stuf_message` audit record). Mirrors {@see IwmoIjwSyncService}
  * (provider seam + per-message persistence + isolated retry) and
- * {@see \OCA\OpenConnector\Service\DsoIngestService} (translate + persist +
+ * {@see \OCA\Integriq\Service\DsoIngestService} (translate + persist +
  * outbound-provider dispatch split).
  *
  * IDEMPOTENCY: a redelivered inbound StUF message (same
@@ -31,7 +31,7 @@
  * full replay of the original payload).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,25 +40,25 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\StufZknProviderException;
-use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
-use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
-use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
-use OCA\OpenConnector\Service\StufZkn\StufZknClient;
-use OCA\OpenConnector\Service\StufZkn\StufZknProviderInterface;
+use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
+use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
+use OCA\Integriq\Service\StufZkn\OutboundNotificationTranslator;
+use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
+use OCA\Integriq\Service\StufZkn\StufZknClient;
+use OCA\Integriq\Service\StufZkn\StufZknProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;

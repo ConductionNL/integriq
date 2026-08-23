@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Apply Mapping flow node.
+ * Integriq Apply Mapping flow node.
  *
  * `openconnector.apply-mapping` — applies one configured Mapping to EVERY
  * item's record inside ONE step execution, through the existing
@@ -35,7 +35,7 @@
  * node's job is only to never let a failed item masquerade as a mapped one.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -46,17 +46,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\MappingService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\MappingService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -77,6 +77,11 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -145,7 +150,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-synchronization-run.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
 	}//end getIcon()
 
 	/**

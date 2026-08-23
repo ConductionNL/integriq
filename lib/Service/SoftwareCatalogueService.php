@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector Software Catalogue Service.
+ * Integriq Software Catalogue Service.
  *
  * Service for handling Software Catalogue operations. Provides functionality
  * for managing software catalogue items, including version management,
  * synchronization, view extension and event handling.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,7 +16,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.MissingImport)
@@ -24,7 +24,7 @@
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -46,7 +46,7 @@ class SoftwareCatalogueService {
 
 	/**
 	 * Software catalogue slug suffix — read from admin-config
-	 * `openconnector.software_catalogue.suffix` (default `-sc`).
+	 * `integriq.software_catalogue.suffix` (default `-sc`).
 	 *
 	 * @var string
 	 */
@@ -90,7 +90,7 @@ class SoftwareCatalogueService {
 		IAppConfig $appConfig,
 	) {
 		$this->suffix = $appConfig->getValueString(
-			app: 'openconnector',
+			app: 'integriq',
 			key: 'software_catalogue.suffix',
 			default: '-sc'
 		);

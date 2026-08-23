@@ -8,7 +8,7 @@
 // mapping/rule/synchronization/contract/webhooks) were deleted in the
 // cutover; the UI-only navigation + search stores were deleted alongside
 // the legacy modal/sidebar trees they were the only consumers of; the
-// importExport store followed when the openconnector-specific Import
+// importExport store followed when the integriq-specific Import
 // page was dropped in favour of per-index CnMassImportDialog. The settings
 // store was deleted in #885 — its only call site fetched a route deleted
 // in chain-C (`GET /api/settings`), spamming 404s on every page load.

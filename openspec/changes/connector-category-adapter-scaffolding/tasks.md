@@ -92,7 +92,7 @@
 - Each of the four category directories exists with exactly one working
   reference adapter, registered through OR's integration registry (ADR-019).
 - A sibling app can resolve any of the four reference adapters by integration
-  slot slug without importing openconnector PHP directly (ADR-022).
+  slot slug without importing integriq PHP directly (ADR-022).
 - No vendor SDK credentials are hardcoded; all credential resolution goes
   through the shared OR credential broker.
 - The remaining vendors named in each spec stay explicitly backlog — this

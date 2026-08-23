@@ -1,6 +1,6 @@
 # Nextcloud Forms as a synchronization source, and outbound answer mapping
 
-OpenConnector can read a **Nextcloud Forms** form's submissions into a
+Integriq can read a **Nextcloud Forms** form's submissions into a
 synchronization, and map a Forms submission's answers — resolved by
 question, not raw numeric position — into an outbound call to an external
 system on the Forms submission trigger, using the same Source →
@@ -49,7 +49,7 @@ source. Form-specific settings live in the free-form config blob:
 
 ## Forms as a source
 
-OpenConnector reads submissions page-by-page
+Integriq reads submissions page-by-page
 (`GET .../forms/{formId}/submissions`) and feeds each submission (including
 its `answers`) into the mapping pipeline exactly as any other source's
 fetched objects. The Forms submission id is used as the origin id, and
@@ -117,7 +117,7 @@ when the backend reports the Forms app is enabled.
 ## Out of scope
 
 - Writing submissions into Forms from external data.
-- Building/editing forms in OpenConnector.
+- Building/editing forms in Integriq.
 - Forms submission-created events as a synchronization trigger — that is
   covered by the `nextcloud-event-hub`/`nextcloud-event-triggers` change;
   this document only covers the `nextcloud-form` source and the

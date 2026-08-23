@@ -1,6 +1,6 @@
 # Tasks — native data-gathering provider (Specter ingestion migration)
 
-> Proposal only. No OpenConnector engine code changes: the fetch → map → upsert
+> Proposal only. No Integriq engine code changes: the fetch → map → upsert
 > → cron path already exists on `development` and is live-verified for ten
 > connectors. This change lands configuration (`register.d` fragments) plus the
 > positioning / boundary / parity contract. Each capability GAP is a separate
@@ -12,7 +12,7 @@
   bundle (Source + Mapping×2 + Synchronization + Job; `targetType:
   "register/schema"`, `targetId: "spectr/tender"`) and against
   `SynchronizationService` / `JobService` / `Cron/JobTask` at HEAD
-- [ ] Confirm the OpenConnector-vs-leaf split against OpenRegister
+- [ ] Confirm the Integriq-vs-leaf split against OpenRegister
   `integration-leaf-foundation` and `object-source-providers` (transport-only
   source = no Synchronization + no Job; leaf = per-object live read)
 - [ ] Confirm the flow-reaction seam: OpenRegister emits object-created/updated
@@ -24,7 +24,7 @@
 - [x] Land `tenderned` connector fragment (`isEnabled: true`); verify
   self-provision on `occ app:enable` — landed at
   `lib/Settings/register.d/tenderned-connector.json`; already present as live
-  OpenConnector objects on the shared dev instance (localhost:8080) prior to
+  Integriq objects on the shared dev instance (localhost:8080) prior to
   this change (created during authoring/live-verification), confirmed intact
   (Source+Mapping×2+Synchronization+Job, Job `isEnabled:true`,
   `interval:604800`) and re-verified live 2026-07-25: `tender` register/schema
@@ -127,7 +127,7 @@
 
 - [ ] Document that the analytics/scoring scripts (`sync_adoption_metrics.py`,
   relevance/classification, `run_sync.py` orchestration) are NOT ingestion and
-  remain scheduled Python jobs (earlier routing decision) — no OpenConnector
+  remain scheduled Python jobs (earlier routing decision) — no Integriq
   connector for these
 - [ ] Document the dead tendrils (croatia native NIAS login-wall; dead legacy
   APIs) as not-addressable, per `spectr/connectors/IMPORT.md`

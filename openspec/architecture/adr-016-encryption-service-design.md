@@ -46,13 +46,13 @@ look like when it is.
 
 ## Decision
 
-Once an `OCA\OpenConnector\Service\EncryptionService` class is introduced,
+Once an `OCA\Integriq\Service\EncryptionService` class is introduced,
 it MUST conform to the following design:
 
 ### API surface
 
 ```php
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\Security\ICrypto;
 
@@ -73,7 +73,7 @@ final class EncryptionService
   not an extension point).
 - Constructor dependencies: Nextcloud's `\OCP\Security\ICrypto` (provides
   AES-256-GCM via OpenSSL with a Nextcloud-managed key) and `\OCP\IConfig`
-  (to read an openconnector-scoped salt from app-config if added).
+  (to read an integriq-scoped salt from app-config if added).
 - Two methods only: `encrypt(string): string` returns ciphertext;
   `decrypt(string): string` returns plaintext.
 - Both methods MUST be synchronous (no futures, no streaming) — the
@@ -103,14 +103,14 @@ final class EncryptionService
   Nextcloud's `ICrypto` switches algorithm in a future release, the
   EncryptionService inherits the new algorithm transparently.
 - Key source: Nextcloud's `secret` instance config value (the same key
-  Nextcloud uses for app-config encryption). No openconnector-specific
+  Nextcloud uses for app-config encryption). No integriq-specific
   key vault. Rationale: zero new key-management surface; encrypted
-  credentials remain readable across openconnector restarts and
+  credentials remain readable across integriq restarts and
   in-place upgrades; key rotation is a Nextcloud-level operation (not an
-  openconnector-level operation).
-- An openconnector-scoped salt MAY be added (via app-config
+  integriq-level operation).
+- An integriq-scoped salt MAY be added (via app-config
   `openconnector.encryption_salt`) to namespace ciphertexts so that
-  decrypting an openconnector-encrypted value with another app's
+  decrypting an integriq-encrypted value with another app's
   `ICrypto` instance fails. Defaults to no salt if the app-config key
   is unset; existing ciphertexts MUST decrypt successfully whether or
   not the salt was set when they were encrypted (lazy salt adoption).
@@ -121,7 +121,7 @@ When this class ships, all existing plaintext credentials in OR storage
 MUST be migrated to ciphertext via a one-shot OCC command:
 
 ```
-occ openconnector:encrypt-credentials [--dry-run] [--batch-size=N]
+occ integriq:encrypt-credentials [--dry-run] [--batch-size=N]
 ```
 
 - Idempotent: re-running on already-encrypted columns is a no-op (detection
@@ -145,17 +145,17 @@ EncryptionService present" to "abort if migration has not run".
 - **For chain B**: the plaintext-state startup-gate assertion remains
   correct against the current codebase. When `EncryptionService` ships,
   the gate is reversed (abort if NOT migrated).
-- **For openconnector security posture**: this ADR does NOT improve
+- **For integriq security posture**: this ADR does NOT improve
   security on its own — the implementation is a separate follow-up change.
   But it removes the design ambiguity that would otherwise produce
   inconsistent encryption surfaces across services and controllers.
 - **For Nextcloud upgrade compatibility**: depending on `\OCP\Security\ICrypto`
-  (a stable Nextcloud public API) means openconnector inherits any
+  (a stable Nextcloud public API) means integriq inherits any
   algorithm changes Nextcloud makes without code changes here.
 - **For key rotation**: handled at the Nextcloud level (rotate `secret`
   config + re-run a one-shot re-encryption command). Out of scope for
   this ADR.
-- **For multi-tenant scenarios**: not addressed. If openconnector ever
+- **For multi-tenant scenarios**: not addressed. If integriq ever
   needs per-tenant encryption keys (different keys per Nextcloud group
   or per user), this ADR must be revised.
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Approvals Controller.
+ * Integriq Approvals Controller.
  *
  * REST controller for the human-in-the-loop (HITL) Pending Approvals
  * surface: list/detail, approve, reject. Orchestrates `ApprovalService`
@@ -16,7 +16,7 @@
  * class docblock for the full rationale.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,21 +25,21 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/hitl-approval-rule-action/design.md#api-design
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\ApprovalStateException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\ApprovalStateException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;

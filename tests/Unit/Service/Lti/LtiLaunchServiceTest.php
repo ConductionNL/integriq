@@ -8,7 +8,7 @@
  * and REQ-LTI-006 (Platform-role launch initiation + Deep Linking).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Lti
+ * @package  OCA\Integriq\Tests\Unit\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,7 +19,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Lti;
+namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
@@ -27,13 +27,13 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\Lti\LtiJwksResolverService;
-use OCA\OpenConnector\Service\Lti\LtiKeyService;
-use OCA\OpenConnector\Service\Lti\LtiLaunchService;
-use OCA\OpenConnector\Service\Lti\LtiRegistrationResolverService;
-use OCA\OpenConnector\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Lti\LtiJwksResolverService;
+use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
+use OCA\Integriq\Tests\Helpers\ArrayCache;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;

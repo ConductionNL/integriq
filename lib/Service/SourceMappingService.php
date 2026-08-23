@@ -1,26 +1,26 @@
 <?php
 
 /**
- * OpenConnector Source Mapping Service.
+ * Integriq Source Mapping Service.
  *
- * Thin wrapper over the MongoDB Data API used by OpenConnector to persist and
+ * Thin wrapper over the MongoDB Data API used by Integriq to persist and
  * query freeform JSON objects when OpenRegister is not the storage backend.
  * Previously named ObjectService; renamed to SourceMappingService to avoid
  * cognitive collision with OR's generic ObjectService.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#task-7
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use Exception;
@@ -34,7 +34,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * MongoDB Data API client wrapper for OpenConnector's optional Mongo backend.
+ * MongoDB Data API client wrapper for Integriq's optional Mongo backend.
  *
  * Connector-specific source + mapping orchestrator.  NOT a generic object CRUD
  * service — that role belongs to OR's ObjectService.
@@ -201,6 +201,13 @@ class SourceMappingService {
 	 * @throws GuzzleException When the HTTP request fails.
 	 *
 	 * @spec openspec/specs/object-service-shim/spec.md
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1535. Zero production callers, verified on both
+	 * `origin/development` and the app-id rename branch, so the finding is
+	 * pre-existing rather than rename damage. Most likely an unused arm of this
+	 * Mongo-backend CRUD shim, in which case the fix is deletion — but that is
+	 * unrelated behaviour change and does not belong in an app-id rename.
 	 */
 	public function updateObject(array $filters, array $update, array $config): array {
 		$client = $this->getClient(config: $config);

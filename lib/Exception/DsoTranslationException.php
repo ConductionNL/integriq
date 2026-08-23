@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector DSO Translation Exception.
+ * Integriq DSO Translation Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\Dso\DsoRequestTranslator} when a
+ * Raised by {@see \OCA\Integriq\Service\Dso\DsoRequestTranslator} when a
  * DSO Verzoek cannot be translated into the normalised handoff-ready fields
  * a `dso_verzoek` record carries — a missing `verzoekId` (the correlation
  * reference), or a mandatory contract field with no resolvable source data.
@@ -13,7 +13,7 @@
  * raises this, never a placeholder/blank string masquerading as data.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector LtiKeyService.
+ * Integriq LtiKeyService.
  *
  * Owns the per-registration signing-key lifecycle for LTI 1.3 / LTI
  * Advantage: generation, rotation (active -> previous -> retired) with a
  * grace window, and the publishable (active + previous) JWKS document.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,11 +21,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use Jose\Component\KeyManagement\JWKFactory;
-use OCA\OpenConnector\Exception\LtiValidationException;
+use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;

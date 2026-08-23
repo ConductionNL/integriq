@@ -8,7 +8,7 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector's data-flow contract is "fetch from source -> transform -> persist
+Integriq's data-flow contract is "fetch from source -> transform -> persist
 to target". The transformation half is implemented by two app-local services:
 
 - `lib/Service/MappingService.php` — Twig-based field mapping with type casts,
@@ -25,8 +25,8 @@ because:
 
 1. The Twig environment is bootstrapped per-app with connector-specific
    extensions (`MappingExtension`, `AuthenticationRuntimeLoader`,
-   `MappingRuntimeLoader`) that source from openconnector's mappers + sources.
-2. Rules are an openconnector-specific concept (authentication, sync triggers,
+   `MappingRuntimeLoader`) that source from integriq's mappers + sources.
+2. Rules are an integriq-specific concept (authentication, sync triggers,
    download/upload, locking, audit-trail enforcement at the endpoint layer);
    they have no OR equivalent.
 3. The 2026-05-03 OR-abstraction audit (stream 1) flagged this and explicitly
@@ -35,24 +35,24 @@ because:
 
 ## Decision
 
-Keep `MappingService` and `RuleService` as openconnector-local services. The
+Keep `MappingService` and `RuleService` as integriq-local services. The
 mapping execution engine (Twig expression evaluation) is delegated to OR where
 available, but the surrounding orchestration (engine bootstrap, extension
 loading, rule processing, conditional logic, download/upload handling) stays in
-openconnector.
+integriq.
 
 ## Consequences
 
 - `MappingService` keeps its `@deprecated` annotation as a signal that the
   EXECUTION engine has moved, even though the wrapper service itself stays.
   New code should call OR's mapping service directly when possible (the
-  delegation path), and fall back to openconnector's wrapper only when
+  delegation path), and fall back to integriq's wrapper only when
   connector-specific Twig extensions or runtime loaders are needed.
 - `RuleService` has no OR equivalent and remains the sole owner of endpoint
   rule processing. Future audits should NOT flag it as duplicated
   abstraction.
 - Authentication rules, sync triggers, locking, and audit-trail rules stay
-  bound to the endpoint lifecycle in openconnector; they will not be
+  bound to the endpoint lifecycle in integriq; they will not be
   generalised into OR.
 - Cross-reference: hydra ADR-022 (apps consume OR abstractions) — this ADR
   specialises ADR-022 for the case where the OR abstraction (mapping

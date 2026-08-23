@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector — WS-Security signer/verifier tests.
+ * Integriq — WS-Security signer/verifier tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,15 +15,15 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling;
+namespace OCA\Integriq\Tests\Unit\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Adapters\Digikoppeling\WsSecuritySigner;
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Adapters\Digikoppeling\WsSecuritySigner;
+use OCA\Integriq\Exception\DigikoppelingException;
 use PHPUnit\Framework\TestCase;
 
 /**

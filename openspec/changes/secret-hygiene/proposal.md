@@ -1,7 +1,7 @@
 # Proposal: secret-hygiene
 
 ## Summary
-This change closes the one remaining credential-leak surface in OpenConnector's
+This change closes the one remaining credential-leak surface in Integriq's
 secret-handling pipeline: configuration export/import redacts credentials for
 Sources only, leaving five of six `ConfigurationHandler` implementations
 (Endpoint, Mapping, Rule, Job, Synchronization) exporting their `configuration`
@@ -40,7 +40,7 @@ REQ-004 notes on nested-key rewriting); any secret value placed in one of those
 configs is exported verbatim today. This is the change's real remaining work.
 
 ## Affected Projects
-- [ ] Project: `openconnector` — shared sensitive-field registry, redaction
+- [ ] Project: `integriq` — shared sensitive-field registry, redaction
   applied to all six `ConfigurationHandler::export()` implementations, and
   regression tests for CallLog redaction, config-export redaction, and
   temp-credential-file permissions/cleanup.
@@ -82,9 +82,9 @@ configs is exported verbatim today. This is the change's real remaining work.
 
 ### Out of Scope
 - The credential broker migration (`source-broker-credentials`, active
-  separately) — moving Source secrets out of OpenConnector storage entirely is
+  separately) — moving Source secrets out of Integriq storage entirely is
   a different change; this change only hardens what is exported/logged while
-  secrets remain in OpenConnector.
+  secrets remain in Integriq.
 - SSRF/SSTI/XXE fixes (#1004/#962/#960) — separate security wave, unrelated
   surface.
 - Re-deriving or reversing the redaction fixes already shipped in `8b6d6a27`
@@ -130,7 +130,7 @@ None.
   redaction-matrix test class) gain the regression coverage described above.
 
 ## Cross-Project Dependencies
-None. This is fully contained within `openconnector`. The `source-broker-credentials`
+None. This is fully contained within `integriq`. The `source-broker-credentials`
 change (also open) touches `CallService::call()`'s brokered-dispatch branch but
 not the redaction/export/temp-file code paths this change modifies — no
 sequencing dependency, but both changes should be reviewed together since they
@@ -165,7 +165,7 @@ exported configuration documents are not retroactively touched.
 
 ## Open Questions
 - Should the temp-credential-file location move from `sys_get_temp_dir()` to a
-  dedicated `chmod(0700)` OpenConnector-owned subdirectory, as the
+  dedicated `chmod(0700)` Integriq-owned subdirectory, as the
   `http-call-engine` spec's Notes originally flagged? Deferred here since the
   unpredictable-filename + `0600`-permission approach already closes the
   world-readability risk; revisit if a future audit needs directory-level

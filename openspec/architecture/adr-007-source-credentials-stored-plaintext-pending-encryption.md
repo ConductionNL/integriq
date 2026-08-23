@@ -35,7 +35,7 @@ any `EncryptionService` references to determine whether encryption is
 The in-flight chain C spec (`openconnector-services-direct-or-usage`) resolves
 this (discovery.md Q5 at line 152-165): the answer is
 **column-level, via a separate `EncryptionService`**. However, the service
-class `OCA\OpenConnector\Service\EncryptionService` does not exist in the
+class `OCA\Integriq\Service\EncryptionService` does not exist in the
 current codebase (`find lib/ -name EncryptionService.php` → no output).
 The chain C discovery documents an implicit decrypt call in `Source` entity
 getters (`getApikey()` etc.) that was present in a prior version of the code

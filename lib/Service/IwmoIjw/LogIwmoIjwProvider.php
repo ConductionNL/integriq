@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log iWMO/iJW Provider.
+ * Integriq Log iWMO/iJW Provider.
  *
  * Sandbox/mock binding for {@see IwmoIjwProviderInterface}: performs no
  * real network call and returns a synthetic `MOCK-IWMO-<n>` reference. It
@@ -9,7 +9,7 @@
  * LogKlantinteractiesProvider / LogSmsProvider sandbox convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\IwmoIjw
+ * @package  OCA\Integriq\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\IwmoIjw;
+namespace OCA\Integriq\Service\IwmoIjw;
 
 /**
  * Sandbox iWMO/iJW provider: no network call, synthetic reference.

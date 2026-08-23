@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Authentication Twig Runtime Loader.
+ * Integriq Authentication Twig Runtime Loader.
  *
  * Loads the AuthenticationRuntime for Twig when one of the authentication
  * helper functions is invoked from a template.
  *
  * @category Twig
- * @package  OCA\OpenConnector\Twig
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Twig;
+namespace OCA\Integriq\Twig;
 
-use OCA\OpenConnector\Service\AuthenticationService;
+use OCA\Integriq\Service\AuthenticationService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
 /**

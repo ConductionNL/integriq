@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector SafeXmlParser utility.
+ * Integriq SafeXmlParser utility.
  *
  * Centralises all SimpleXML parsing behind a defensive wrapper that:
  *   - pins the libxml external-entity loader to null before every parse
@@ -11,7 +11,7 @@
  *     resolving entities.
  *
  * @category Util
- * @package  OCA\OpenConnector\Util
+ * @package  OCA\Integriq\Util
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -19,12 +19,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Util;
+namespace OCA\Integriq\Util;
 
 use DOMDocument;
 use SimpleXMLElement;

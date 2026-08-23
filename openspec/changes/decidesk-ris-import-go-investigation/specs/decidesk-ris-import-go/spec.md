@@ -6,7 +6,7 @@ status: needs-api-investigation
 
 ## Purpose
 
-OpenConnector SHALL eventually provide a GemeenteOplossingen (GO) RIS import bundle
+Integriq SHALL eventually provide a GemeenteOplossingen (GO) RIS import bundle
 that writes meetings, agenda items, motions/decisions and votes into decidesk's
 OpenRegister objects, mirroring the iBabs/Notubiz bundle — but only after the GO
 RIS API has been investigated. This spec captures the investigation gate.

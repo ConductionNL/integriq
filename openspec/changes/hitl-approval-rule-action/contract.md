@@ -3,18 +3,18 @@
 ## Consumers
 
 None. Per proposal.md's "Cross-Project Dependencies" section, this change
-is self-contained within OpenConnector. No other `apps-extra` project calls
+is self-contained within Integriq. No other `apps-extra` project calls
 `/api/approvals*`, reads `approval_request` objects directly, or depends on
 the `approval` rule action type. The only cross-app dependency is
 OpenRegister object persistence/audit, which is already a required runtime
-dependency of every OpenConnector schema (not a new contract introduced by
+dependency of every Integriq schema (not a new contract introduced by
 this change).
 
 This document is therefore not applicable in its full form — see
 design.md's API Design section for the concrete endpoint definitions
 (`GET /api/approvals`, `GET /api/approvals/{id}`,
 `POST /api/approvals/{id}/approve`, `POST /api/approvals/{id}/reject}`),
-which remain OpenConnector-internal (consumed only by its own SPA).
+which remain Integriq-internal (consumed only by its own SPA).
 
 ## Endpoints
 
@@ -29,13 +29,13 @@ for the scenarios each code corresponds to.
 
 ## Versioning
 
-Internal-only REST surface, versioned implicitly with the OpenConnector app
+Internal-only REST surface, versioned implicitly with the Integriq app
 release (no separate API version). No external consumer commitment is made.
 
 ## Breaking Change Policy
 
 N/A — no external consumers. Changes to `/api/approvals*` only need to stay
-in sync with the OpenConnector frontend SPA, tracked in the same change/PR.
+in sync with the Integriq frontend SPA, tracked in the same change/PR.
 
 ## SLA
 

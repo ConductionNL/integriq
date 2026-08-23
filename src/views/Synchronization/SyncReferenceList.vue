@@ -73,7 +73,7 @@ export default {
 		/** Accessible label for the combobox input. */
 		inputLabel: {
 			type: String,
-			default: () => t('openconnector', 'References'),
+			default: () => t('integriq', 'References'),
 		},
 	},
 

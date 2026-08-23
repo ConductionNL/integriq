@@ -184,7 +184,7 @@ upgrade). Per source it SHALL null the value and save with `_rbac: false,
 _multitenancy: false`; it SHALL isolate failures per source, skip already-clear
 sources (idempotent), refuse Twig-referenced sources, and log secret-free.
 
-`authenticationConfig` SHALL remain declared in `lib/Settings/openconnector_register.json`:
+`authenticationConfig` SHALL remain declared in `lib/Settings/integriq_register.json`:
 `Schema::hydrate()` replaces `properties` wholesale, so removing it there would prune
 the property fleet-wide and ungated on the next version-bumping import.
 

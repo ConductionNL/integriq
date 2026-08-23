@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector — dashboard HTTP data-source resolve façade.
+ * Integriq — dashboard HTTP data-source resolve façade.
  *
  * Governed, read-only "resolve one value from a configured HTTP source"
  * service for dashboard/widget hosts (LaunchPad's `live-data-tile-widget` is
  * the first consumer). Runs the named `source` through the existing
- * {@see \OCA\OpenConnector\Service\CallService} HTTP-call engine (honouring
+ * {@see \OCA\Integriq\Service\CallService} HTTP-call engine (honouring
  * the source's own configured auth from the encrypted secret store),
  * evaluates a JSONPath-lite expression against the decoded response, and
  * caches the resolved value. No new transport code — this is a thin,
@@ -14,7 +14,7 @@
  * `http-call-engine` + `authentication-twig`, none of which are modified.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Datasource
+ * @package  OCA\Integriq\Service\Datasource
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,24 +22,24 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Datasource;
+namespace OCA\Integriq\Service\Datasource;
 
 use DateTime;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
- * Resolves a single scalar value from a configured OpenConnector `source`.
+ * Resolves a single scalar value from a configured Integriq `source`.
  *
  * Single shared code path for both the HTTP controller and any in-process
  * caller — `resolve()` is the entire public surface.
@@ -107,7 +107,7 @@ class DashboardDatasourceService {
 		private readonly int $rateLimitPerWindow = 30,
 		private readonly int $rateLimitWindowSeconds = 60,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openconnector.dashboarddatasource');
+		$this->cache = $cacheFactory->createDistributed('integriq.dashboarddatasource');
 
 	}//end __construct()
 
@@ -295,7 +295,7 @@ class DashboardDatasourceService {
 	/**
 	 * Whether the given source has exceeded its resolve rate limit for the
 	 * current window. Uses a fixed calendar-window counter, mirroring
-	 * {@see \OCA\OpenConnector\Service\RateLimit\InboundRateLimitService}.
+	 * {@see \OCA\Integriq\Service\RateLimit\InboundRateLimitService}.
 	 *
 	 * @param string $sourceId Source UUID.
 	 *

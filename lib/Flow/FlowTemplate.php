@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Template.
+ * Integriq Flow Template.
  *
  * A thin, node-local renderer for `{{dotted.path}}` placeholders resolved
  * against the CURRENT FLOW ITEM's `json` record. It exists because that
@@ -28,7 +28,7 @@
  * is string interpolation, and arrays interpolate as compact JSON.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,19 +39,19 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 /**
  * Renders `{{dotted.path}}` placeholders against a flow item's `json`.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 final class FlowTemplate {
 
@@ -80,7 +80,7 @@ final class FlowTemplate {
 	 *
 	 * @return boolean Whether a placeholder is present.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function hasPlaceholder(string $value): bool {
 		return (preg_match(self::PLACEHOLDER, $value) === 1);
@@ -97,7 +97,7 @@ final class FlowTemplate {
 	 *
 	 * @return string The rendered string.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function renderString(string $template, array $json): string {
 		return (string)preg_replace_callback(
@@ -135,7 +135,7 @@ final class FlowTemplate {
 	 *
 	 * @return mixed The rendered value.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function renderValue(mixed $value, array $json): mixed {
 		if (is_array($value) === true) {
@@ -172,7 +172,7 @@ final class FlowTemplate {
 	 *
 	 * @return mixed The resolved value, or null when the path is absent.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function lookup(string $path, array $json): mixed {
 		$value = $json;
@@ -201,7 +201,7 @@ final class FlowTemplate {
 	 *
 	 * @return array The record, with the value written.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function write(array $json, string $path, mixed $value): array {
 		$segments = explode('.', $path);
@@ -239,7 +239,7 @@ final class FlowTemplate {
 	 *
 	 * @return mixed The selected value, or null when the selector matches nothing.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function select(mixed $payload, string $selector): mixed {
 		$normalised = trim($selector);
@@ -271,7 +271,7 @@ final class FlowTemplate {
 	 *
 	 * @return mixed The selected value, or null.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private static function walk(mixed $value, array $segments): mixed {
 		if ($segments === []) {

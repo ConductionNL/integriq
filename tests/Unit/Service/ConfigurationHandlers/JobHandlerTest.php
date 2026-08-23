@@ -4,7 +4,7 @@
  * Unit tests for JobHandler export redaction (secret-hygiene).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\ConfigurationHandlers
+ * @package  OCA\Integriq\Tests\Unit\Service\ConfigurationHandlers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,11 +13,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\ConfigurationHandlers;
+namespace OCA\Integriq\Tests\Unit\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Service\ConfigurationHandlers\JobHandler;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 
 /**

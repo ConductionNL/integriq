@@ -133,7 +133,7 @@ describe('catalog store (connector-catalog-ui)', () => {
 		const result = await store.fetchStatus('abc')
 
 		expect(get).toHaveBeenCalledWith(
-			'/index.php/apps/openconnector/api/catalog/items/abc/status',
+			'/index.php/apps/integriq/api/catalog/items/abc/status',
 		)
 		expect(result).toEqual(status)
 		expect(store.statusById.abc).toEqual(status)
@@ -149,12 +149,12 @@ describe('catalog store (connector-catalog-ui)', () => {
 		const result = await store.instantiate('abc')
 
 		expect(post).toHaveBeenCalledWith(
-			'/index.php/apps/openconnector/api/catalog/items/abc/instantiate',
+			'/index.php/apps/integriq/api/catalog/items/abc/instantiate',
 			{},
 		)
 		expect(result.created).toBe(true)
 		expect(get).toHaveBeenCalledWith(
-			'/index.php/apps/openconnector/api/catalog/items/abc/status',
+			'/index.php/apps/integriq/api/catalog/items/abc/status',
 		)
 	})
 

@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Stilltu hvaðan gögn koma.",
         "Configure where data is written to.": "Stilltu hvert gögn eru skrifuð.",
         "Content path (optional)": "Efnisslóð (valkvætt)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Ákveddu hvaða Nextcloud-hópar mega kalla á hverja OpenConnector-aðgerð (ADR-023). Kerfisstjórar standast alltaf. Hver aðgerð er sjálfgefið aðeins fyrir kerfisstjóra — merktu við hóp til að víkka hana.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Ákveddu hvaða Nextcloud-hópar mega kalla á hverja Integriq-aðgerð (ADR-023). Kerfisstjórar standast alltaf. Hver aðgerð er sjálfgefið aðeins fyrir kerfisstjóra — merktu við hóp til að víkka hana.",
         "Discard": "Henda",
         "Dot-path to the id field in each record": "Punktaslóð að auðkennisreitnum í hverri færslu",
         "Dot-path to the id field in the API response": "Punktaslóð að auðkennisreitnum í API-svarinu",

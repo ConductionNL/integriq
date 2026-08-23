@@ -43,8 +43,8 @@ test.describe('the Flows surface', () => {
 		page,
 	}) => {
 		// `gotoAppRoute`, not a literal path: on a stack without pretty URLs
-		// the router's base is `/index.php/apps/openconnector`, and a literal
-		// `/apps/openconnector/flows` mounts the SPA whose router then cannot
+		// the router's base is `/index.php/apps/integriq`, and a literal
+		// `/apps/integriq/flows` mounts the SPA whose router then cannot
 		// match the path — the catch-all lands it on the Dashboard, which is
 		// exactly what this spec's first CI run photographed.
 		await gotoAppRoute(page, '/flows')

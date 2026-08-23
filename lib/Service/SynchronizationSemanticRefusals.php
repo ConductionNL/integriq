@@ -15,7 +15,7 @@
  * translations, so they move without dragging shared helpers behind them.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\IL10N;
 
@@ -54,7 +54,9 @@ class SynchronizationSemanticRefusals {
 	 *
 	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
 	 */
-	public function __construct(private readonly IL10N $l10n) {
+	public function __construct(
+		private readonly IL10N $l10n,
+	) {
 
 	}//end __construct()
 
@@ -115,7 +117,6 @@ class SynchronizationSemanticRefusals {
 		}
 
 		return array_merge($reasons, $this->sourceConfigRefusals(sourceConfig: $sourceConfig));
-
 	}//end refusalsFor()
 
 	/**
@@ -154,6 +155,5 @@ class SynchronizationSemanticRefusals {
 		}
 
 		return $reasons;
-
 	}//end sourceConfigRefusals()
 }//end class

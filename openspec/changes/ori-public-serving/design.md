@@ -9,7 +9,7 @@ register/schema pair from a hard-coded `RESOURCE_MAP`, call
 `OriSerializer` for JSON-LD field renaming before wrapping it in a
 `{@context, @type, count, items}` envelope.
 
-This change replaces that bespoke path with **10 openconnector `Endpoint`
+This change replaces that bespoke path with **10 integriq `Endpoint`
 objects** (one per ORI resource — `motions` and `amendments` both target the
 decidesk `decision` schema, discriminated the same way
 `OriController::DECISION_TYPE_MAP` does today), each:
@@ -25,7 +25,7 @@ decidesk `decision` schema, discriminated the same way
   projection
 
 ```
-GET /api/ori/v1/{resource}          openconnector public dispatch (REQ-EP-001)
+GET /api/ori/v1/{resource}          integriq public dispatch (REQ-EP-001)
         │                            (endpoint cache resolves path+method)
         ▼
   Endpoint(resource)
@@ -48,12 +48,12 @@ the change's single biggest open engineering question.
 
 **Goals**
 - Reproduce `OriController`'s observable HTTP contract (paths, methods,
-  filters, field names, envelope shape, anonymous access) as openconnector
+  filters, field names, envelope shape, anonymous access) as integriq
   configuration, so the companion decidesk change can retire the controller
   with zero observable difference to a public caller.
 - Be honest about what the existing engine cannot do today rather than
   shipping a narrower public API silently.
-- Keep decidesk owning its data and the config *content*; openconnector owns
+- Keep decidesk owning its data and the config *content*; integriq owns
   the serving *mechanism* it already runs for every other integration.
 
 **Non-Goals**
@@ -82,7 +82,7 @@ behaviour" split intact rather than reintroducing an imperative
 ### D1 — One Endpoint per ORI resource, not one wildcard `{resource}` endpoint
 
 `OriController` uses a single controller method with a `{resource}` path
-parameter and an in-PHP dispatch table (`RESOURCE_MAP`). openconnector's
+parameter and an in-PHP dispatch table (`RESOURCE_MAP`). integriq's
 Endpoint model has no equivalent "one endpoint, N backing schemas" concept —
 each Endpoint has exactly one `targetId`. The natural fit is 10 Endpoints,
 each with its own path (`/api/ori/v1/organizations`, `/api/ori/v1/persons`,
@@ -103,7 +103,7 @@ Confirmed by reading `EndpointService::processRules()`/
 This is exactly decidesk's `#[PublicPage]` today. The 10 ORI Endpoints
 simply carry no `authentication` rule. Rate-limiting
 (`AnonRateLimit(limit: 120, period: 60)` on decidesk's controller today) maps
-to openconnector's existing consumer-management rate-limit machinery
+to integriq's existing consumer-management rate-limit machinery
 (`consumer-management` spec, `REQ-CON-RL-*`) — sized in `tasks.md`, not a
 gap, since that machinery already exists and already runs ahead of
 authentication in the pipeline.
@@ -113,7 +113,7 @@ authentication in the pipeline.
 `OriController::buildFilters()` always adds `register`/`schema` plus,
 per-resource, `lifecycle=published`, or `isPublished=public` +
 `decisionType=<motion|amendment>`, or nothing (the two lifecycle-free
-resources, `persons`/`memberships`). openconnector has no dedicated "static
+resources, `persons`/`memberships`). integriq has no dedicated "static
 filter" field on `Endpoint`, but `inputMapping` already runs on inbound
 request parameters before `getObjects()` (`handleSchemaRequest()` line 1890)
 and a `Mapping` recipe can emit fixed literal values regardless of input
@@ -188,7 +188,7 @@ in PHP that this bypasses entirely:
 
 1. **`narrowToDecisionType()`** — `/api/ori/v1/amendments/{id}` must 404 if
    the object at that id is actually a `motion` (both share the `decision`
-   schema). openconnector's id-fetch has no discriminator concept.
+   schema). integriq's id-fetch has no discriminator concept.
 2. **`isLifecycleBlocked()`** — a non-`published` object (draft, closed) must
    404 for anonymous callers on lifecycle-gated resources. Not an OR-RBAC
    rule today (decidesk's own comment: "M2: only enforce the lifecycle gate
@@ -200,7 +200,7 @@ in PHP that this bypasses entirely:
    RBAC on the schema (`publicationDate <= $now`), enforced at the OR storage
    layer regardless of caller — so `find()` already throws
    `DoesNotExistException` for this one case *if* that RBAC evaluates the
-   same way when reached via openconnector's `ObjectService` as it does via
+   same way when reached via integriq's `ObjectService` as it does via
    decidesk's own. That "if" is Risk 3 in the proposal and needs empirical
    verification, not an assumption.
 
@@ -229,12 +229,12 @@ closed before cutover, not deferred as a "known limitation."
   same way `PublicationPayload`'s publish-window already works, so OR denies
   the read unconditionally regardless of caller. This is architecturally
   cleaner (RBAC lives once, at the data layer) but is decidesk schema work,
-  not an openconnector engine change, and is out of this change's Impact
+  not an integriq engine change, and is out of this change's Impact
   section as scoped — flagged as an alternative worth a real decision before
   implementation, not decided unilaterally here.
 
 `tasks.md` sizes Option A as the default implementation path (keeps this
-change self-contained inside openconnector) and records Option B as a
+change self-contained inside integriq) and records Option B as a
 recommendation to raise with decidesk's `ori-adoption` owners.
 
 ## API Design
@@ -267,7 +267,7 @@ discriminator/lifecycle/publish-window gate (Gap 2), matching
 anonymous caller cannot distinguish "unknown" from "hidden").
 
 ### `OPTIONS /api/ori/v1/{resource}` and `/api/ori/v1/{resource}/{id}`
-CORS preflight — openconnector's existing `preflightedCors` (REQ-EP-001)
+CORS preflight — integriq's existing `preflightedCors` (REQ-EP-001)
 covers this without per-resource configuration.
 
 ## Database Changes
@@ -283,7 +283,7 @@ code, not new tables/columns.
 - Services: `EndpointService`, `MappingService` (existing); two candidate
   small method additions if Gap 1/Gap 2 are closed rather than deferred.
 - Mappers/Entities: reuses OpenRegister's `ObjectService`/mapper via
-  `targetType: register/schema` — no new openconnector entities.
+  `targetType: register/schema` — no new integriq entities.
 - Events/Hooks: none.
 
 ## Security Considerations
@@ -297,17 +297,17 @@ code, not new tables/columns.
   wrong-discriminator, or (pending Risk 3 verification) not-yet-published
   object by UUID. This change treats Gap 2 as a blocking item for the parity
   test plan, not an accepted limitation.
-- **CORS** — reuses openconnector's existing preflight/CORS machinery;
+- **CORS** — reuses integriq's existing preflight/CORS machinery;
   decidesk's current `applyCorsHeaders()` reads `overwrite.cli.url`, which
-  openconnector's own CORS config should mirror (task in `tasks.md`).
+  integriq's own CORS config should mirror (task in `tasks.md`).
 - **Rate limiting** — decidesk's `AnonRateLimit(limit: 120, period: 60)` maps
-  onto openconnector's consumer-management rate-limit config for these
+  onto integriq's consumer-management rate-limit config for these
   Endpoints (sized in `tasks.md`).
 
 ## File Structure
 
 ```
-openconnector/
+integriq/
   openspec/changes/ori-public-serving/     # this change
   lib/Service/EndpointService.php          # candidate small addition (Gap 2, Option A)
   lib/Service/MappingService.php           # candidate small addition (Gap 1, if two-rule fallback needs a helper)
@@ -316,7 +316,7 @@ openconnector/
 
 ## Seed Data
 
-Not a new schema — these are new **instances** of openconnector's existing
+Not a new schema — these are new **instances** of integriq's existing
 `endpoint` and `mapping` schemas. Representative seed content (one of the 10
 resource Endpoints shown; the remaining 9 follow the same shape per D1/D3):
 
@@ -349,7 +349,7 @@ objects; no files/notes/tasks/contacts attach to them).
 
 - **10 Endpoints vs. one wildcard controller** (D1): more config objects to
   maintain, but each is independently cacheable/rate-limitable and matches
-  openconnector's existing Endpoint model rather than inventing a
+  integriq's existing Endpoint model rather than inventing a
   multi-schema dispatch concept for this one case.
 - **Config-first with two named engine gaps** vs. "ship a narrower ORI API
   and call it done": the narrower option was rejected — Gap 2 in particular
@@ -357,8 +357,8 @@ objects; no files/notes/tasks/contacts attach to them).
   hiding it behind "config-driven, no code" framing would be dishonest about
   what the change actually delivers.
 - **Option A vs. Option B for Gap 2**: Option A (declarative id-fetch guard
-  in openconnector) is chosen as the default implementation path because it
-  keeps this change's Impact scoped to openconnector; Option B (push into OR
+  in integriq) is chosen as the default implementation path because it
+  keeps this change's Impact scoped to integriq; Option B (push into OR
   RBAC) is architecturally preferable long-term but is decidesk/OR schema
   work outside this change's boundary, and is recorded as a recommendation
   rather than silently adopted.

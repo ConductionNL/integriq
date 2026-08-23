@@ -16,7 +16,7 @@ action-matrix entries and the new cron job registration.
 ## Migration Class
 
 **None.** This change does not require an `lib/Migration/VersionXXXXXXXXXX.php`
-class. OpenConnector schemas (like every other schema in this app,
+class. Integriq schemas (like every other schema in this app,
 including the most recently added `eudi_credential_offer`/
 `eudi_issuance_session`/`eudi_status_list` trio from the
 `eudi-wallet-credential-issuance` change, which also shipped without a
@@ -80,6 +80,6 @@ idempotent-on-presence, not destructive.
 - After upgrade, confirm the `approval_request` schema is queryable via the
   OpenRegister admin UI (Settings > OpenRegister > openconnector register).
 - Confirm `approval.approve`/`approval.reject` appear in Admin Settings >
-  OpenConnector > Action Authorization, both defaulting to `admin`.
+  Integriq > Action Authorization, both defaulting to `admin`.
 - Confirm `ApprovalTimeoutSweepJob` appears in `occ background-job:list`
   after the next app load.

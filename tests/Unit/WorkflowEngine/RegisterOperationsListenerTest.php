@@ -4,7 +4,7 @@
  * Unit tests for RegisterOperationsListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\WorkflowEngine
+ * @package  OCA\Integriq\Tests\Unit\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,12 +18,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\WorkflowEngine;
+namespace OCA\Integriq\Tests\Unit\WorkflowEngine;
 
-use OCA\OpenConnector\WorkflowEngine\CallEndpointOperation;
-use OCA\OpenConnector\WorkflowEngine\FireCloudEventOperation;
-use OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener;
-use OCA\OpenConnector\WorkflowEngine\RunSynchronizationOperation;
+use OCA\Integriq\WorkflowEngine\CallEndpointOperation;
+use OCA\Integriq\WorkflowEngine\FireCloudEventOperation;
+use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
+use OCA\Integriq\WorkflowEngine\RunSynchronizationOperation;
 use OCP\EventDispatcher\Event;
 use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use OCP\WorkflowEngine\IManager;

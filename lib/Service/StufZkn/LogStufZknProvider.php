@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log StUF-ZKN Provider.
+ * Integriq Log StUF-ZKN Provider.
  *
  * Sandbox/mock binding for {@see StufZknProviderInterface}: performs no
  * real network call and returns a synthetic `MOCK-STUFZKN-<n>` reference.
@@ -9,7 +9,7 @@
  * `LogIwmoIjwProvider`/`LogDsoConnectorProvider`'s sandbox convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\StufZkn
+ * @package  OCA\Integriq\Service\StufZkn
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\StufZkn;
+namespace OCA\Integriq\Service\StufZkn;
 
 /**
  * Sandbox StUF-ZKN outbound provider: no network call, synthetic reference.

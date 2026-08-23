@@ -1,6 +1,6 @@
 # Decidesk RIS import bundle
 
-OpenConnector configuration bundle that imports **raadsinformatie (RIS)** data —
+Integriq configuration bundle that imports **raadsinformatie (RIS)** data —
 vergaderingen (meetings), agendapunten (agenda items), besluiten/moties
 (motions/decisions) and stemmen (votes) — from the **iBabs** and **Notubiz**
 raadsinformatiesystemen straight into **decidesk's** OpenRegister objects.
@@ -13,9 +13,9 @@ in the decision-model refactor, so RIS besluiten/moties map to
 
 ## Contents
 
-The JSON files here follow the OpenConnector `configurations/` convention (same
+The JSON files here follow the Integriq `configurations/` convention (same
 shape as `xxllnc-zoekendpoint-woo/`). They are meant to be imported via the
-OpenConnector import UI / API (copy/paste into a Postman request that creates
+Integriq import UI / API (copy/paste into a Postman request that creates
 that object type). **No credentials are committed** (ADR-003 zero-knowledge);
 every source ships with empty placeholder credentials and `isEnabled: false`.
 
@@ -40,7 +40,7 @@ ingestion you must, **per municipality**:
 1. Fill the source credentials (`headers.Authorization` + `organisatieId` for iBabs;
    `organisation_id` (+ optional OAuth2) for Notubiz) and set `isEnabled: true`.
 2. Replace the `targetId` placeholder `decidesk/<schema>` with this instance's real
-   OpenRegister register + schema ids (e.g. `42/137`). OpenConnector resolves
+   OpenRegister register + schema ids (e.g. `42/137`). Integriq resolves
    `register/schema` by id pair; the `decidesk/<schema>` form documents intent.
 3. Supply the per-run path variables (`{{vergaderingId}}`, `{{besluitId}}`,
    `{{event_id}}`, `{{decision_id}}`) for the child syncs.

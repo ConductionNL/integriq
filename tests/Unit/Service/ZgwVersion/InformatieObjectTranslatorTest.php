@@ -4,7 +4,7 @@
  * Unit tests for InformatieObjectTranslator.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\ZgwVersion
+ * @package  OCA\Integriq\Tests\Unit\Service\ZgwVersion
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\ZgwVersion;
+namespace OCA\Integriq\Tests\Unit\Service\ZgwVersion;
 
-use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
-use OCA\OpenConnector\Service\ZgwVersion\InformatieObjectTranslator;
+use OCA\Integriq\Exception\ZgwLiteralLeakException;
+use OCA\Integriq\Service\ZgwVersion\InformatieObjectTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**

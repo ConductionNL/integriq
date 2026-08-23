@@ -15,7 +15,7 @@ status: needs-api-investigation
 The decidesk RIS import bundle (`decidesk-ris-import-bundle`) covers iBabs and
 Notubiz. GemeenteOplossingen (GO) is the third major Dutch raadsinformatiesysteem
 vendor, but unlike iBabs/Notubiz there is **no existing connector service** in
-OpenConnector and **no documented API surface** in this repo. We must not
+Integriq and **no documented API surface** in this repo. We must not
 fabricate endpoints or field names — they have to be investigated first.
 
 ## What a GO RIS importer would need (to be built once investigated)

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\UiController;
+use OCA\Integriq\Controller\UiController;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -14,16 +14,16 @@ class UiControllerTest extends TestCase {
 	 * Build a controller with a mocked request.
 	 */
 	private function controller(): UiController {
-		return new UiController('openconnector', $this->createMock(IRequest::class));
+		return new UiController('integriq', $this->createMock(IRequest::class));
 	}
 
 	/**
 	 * Every SPA route returns the same shell: the `index` template of the
-	 * `openconnector` app, with no server-rendered parameters.
+	 * `integriq` app, with no server-rendered parameters.
 	 */
 	private function assertSpaShell(TemplateResponse $response, string $route): void {
 		$this->assertInstanceOf(TemplateResponse::class, $response, $route . ' should return a TemplateResponse');
-		$this->assertSame('openconnector', $response->getApp(), $route . ' should render the openconnector app');
+		$this->assertSame('integriq', $response->getApp(), $route . ' should render the integriq app');
 		$this->assertSame('index', $response->getTemplateName(), $route . ' should render the index template');
 		$this->assertSame([], $response->getParams(), $route . ' should render no server-side parameters');
 	}

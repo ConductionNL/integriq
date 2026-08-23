@@ -9,7 +9,7 @@
  * record shaped like a mapped one.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Flow\ApplyMappingNode;
-use OCA\OpenConnector\Flow\FlowNodeSupport;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Service\MappingService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\FlowNodeSupport;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Service\MappingService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -86,7 +86,7 @@ class ApplyMappingNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new ApplyMappingNode(
 			mappingService: $this->mappingService,

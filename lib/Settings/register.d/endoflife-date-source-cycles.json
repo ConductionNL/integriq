@@ -58,7 +58,7 @@
         },
         "name": "endoflife.date — PHP cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-php-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-php-cycles"
         },
@@ -122,7 +122,7 @@
         },
         "name": "endoflife.date — Node.js cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-nodejs-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nodejs-cycles"
         },
@@ -186,7 +186,7 @@
         },
         "name": "endoflife.date — Python cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-python-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-python-cycles"
         },
@@ -250,7 +250,7 @@
         },
         "name": "endoflife.date — PostgreSQL cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-postgresql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-postgresql-cycles"
         },
@@ -314,7 +314,7 @@
         },
         "name": "endoflife.date — MySQL cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-mysql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-mysql-cycles"
         },
@@ -378,7 +378,7 @@
         },
         "name": "endoflife.date — Nextcloud cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-nextcloud-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nextcloud-cycles"
         },
@@ -442,7 +442,7 @@
         },
         "name": "endoflife.date — WordPress cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-wordpress-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-wordpress-cycles"
         },
@@ -506,7 +506,7 @@
         },
         "name": "endoflife.date — Laravel cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-laravel-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-laravel-cycles"
         },

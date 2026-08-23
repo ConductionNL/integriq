@@ -88,7 +88,7 @@
         },
         "name": "Austria OpenTender Weekly Sync",
         "description": "Runs the austria-opentender-to-spectr-tender synchronization weekly. Fetches the complete `full.jsonl.gz` export in a single HTTP request each run; the synchronization-contract-keyed upsert dedups on re-run. Enabled 2026-07-07 after live-verifying the gzip+JSONL path (oc#105) against a small single-year export on the spectr-spike.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "austria-opentender-to-spectr-tender"
         },

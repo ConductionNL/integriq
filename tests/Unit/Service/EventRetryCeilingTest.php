@@ -11,7 +11,7 @@
  * while being re-scanned on every pass.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,15 +25,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
 /**
- * @covers \OCA\OpenConnector\Service\EventService
+ * @covers \OCA\Integriq\Service\EventService
  */
 class EventRetryCeilingTest extends TestCase {
 	/**

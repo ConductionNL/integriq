@@ -4,7 +4,7 @@
  * Unit tests for LogCardfeedProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Cardfeed
+ * @package  OCA\Integriq\Tests\Unit\Service\Cardfeed
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Cardfeed;
+namespace OCA\Integriq\Tests\Unit\Service\Cardfeed;
 
-use OCA\OpenConnector\Service\Cardfeed\LogCardfeedProvider;
+use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

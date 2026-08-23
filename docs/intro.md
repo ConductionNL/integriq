@@ -1,11 +1,11 @@
 ---
 sidebar_position: 1
-description: Get started with OpenConnector, the integration layer for Nextcloud. Connect REST and SOAP sources — including Dutch government-standard adapters (PDOK, StUF, DSO, Berichtenbox) — to typed OpenRegister stores.
+description: Get started with Integriq, the integration layer for Nextcloud. Connect REST and SOAP sources — including Dutch government-standard adapters (PDOK, StUF, DSO, Berichtenbox) — to typed OpenRegister stores.
 ---
 
-# Introduction to OpenConnector
+# Introduction to Integriq
 
-OpenConnector is a powerful Nextcloud application that enables seamless data synchronization between various sources and targets. It's designed to help you integrate your Nextcloud environment with external systems and the Open Register.
+Integriq is a powerful Nextcloud application that enables seamless data synchronization between various sources and targets. It's designed to help you integrate your Nextcloud environment with external systems and the Open Register.
 
 ## Key Features
 
@@ -57,15 +57,15 @@ Secure JSON-based API endpoints for user management and authentication:
 - See [User API Documentation](user-api.md) for complete reference
 
 ### ⚙️ Settings
-Configure global settings for OpenConnector.
+Configure global settings for Integriq.
 
 ## Getting Started
 
-To get started with OpenConnector, check out our [Getting Started Guide](getting-started) or dive into our [Tutorial](tutorial/installation).
+To get started with Integriq, check out our [Getting Started Guide](getting-started) or dive into our [Tutorial](tutorial/installation).
 
-# OpenConnector Documentation
+# Integriq Documentation
 
-This directory contains the documentation website for OpenConnector, built with [Docusaurus 2](https://docusaurus.io/).
+This directory contains the documentation website for Integriq, built with [Docusaurus 2](https://docusaurus.io/).
 
 ## Installation
 

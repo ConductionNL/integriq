@@ -2,7 +2,7 @@
 
 ## Summary
 This change adds first-class named environments (e.g. staging, production) and a
-promotion workflow to OpenConnector: promoting a configuration group means
+promotion workflow to Integriq: promoting a configuration group means
 exporting it from the local instance via the existing `ConfigurationService`
 and pushing it into a registered target environment's existing import
 endpoints, with a pre-promotion diff preview, explicit credential re-binding
@@ -14,7 +14,7 @@ in either is forked.
 
 ## Motivation
 n8n gates environment promotion behind its paid Enterprise tier; Workato
-sells this as "Recipe Lifecycle Management." OpenConnector already has the
+sells this as "Recipe Lifecycle Management." Integriq already has the
 hard parts — slug-referenced export/import, credential redaction, an import
 preview endpoint, and a `credentialRef`-based credential broker — but no
 concept of a *named* target environment, no automated push between
@@ -25,7 +25,7 @@ alternatives can get environment promotion without an enterprise license.
 Codeberg issue #155.
 
 ## Affected Projects
-- [x] Project: `openconnector` — new `environment` and `promotion_audit`
+- [x] Project: `integriq` — new `environment` and `promotion_audit`
   OpenRegister schemas, `PromotionService`, `PromotionController` + routes,
   new `environment.manage` / `environment.promote` ADR-023 action keys, and
   an Environments & Promotion manifest-v2 UI page.
@@ -35,7 +35,7 @@ Codeberg issue #155.
 ### In Scope
 1. An `environment` OpenRegister object schema (name, slug, role, and a
    `sourceRef` pointing at an existing `source`-schema object of
-   `type: "api"` that describes how to reach that environment's OpenConnector
+   `type: "api"` that describes how to reach that environment's Integriq
    API — reusing the Source schema's existing `location` +
    `configuration.authentication.credentialRef` shape instead of inventing a
    new connection-descriptor format).
@@ -100,7 +100,7 @@ None — reuses `ConfigurationService`, `ConfigurationImportPreviewService`,
 
 ## Impact
 - New: `lib/Service/PromotionService.php`, `lib/Controller/PromotionController.php`,
-  `lib/Settings/openconnector_register.json` additions (`environment`,
+  `lib/Settings/integriq_register.json` additions (`environment`,
   `promotion_audit` schemas), `lib/actions.seed.json` additions, `appinfo/routes.php`
   additions, a new manifest-v2 page + Vue components under `src/`.
 - Unchanged: `ConfigurationService`, `ConfigurationHandlers/*`,
@@ -119,7 +119,7 @@ credential re-bindings. No other apps consume this change.
 **Severity:** Medium — **Mitigation:** `PromotionService` calls the target's
 `/api/configurations/import/preview` and `/api/configurations/import`
 endpoints exactly as documented in `configuration-export-import` (REQ-007/
-REQ-008); a target running an older OpenConnector without those routes
+REQ-008); a target running an older Integriq without those routes
 returns 404, surfaced to the operator as a promotion failure with an
 actionable message, not a silent partial write.
 

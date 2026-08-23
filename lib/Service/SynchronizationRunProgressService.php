@@ -1,20 +1,21 @@
 <?php
+
 /**
- * OpenConnector — live progress for a synchronization run.
+ * Integriq — live progress for a synchronization run.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://github.com/ConductionNL/integriq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -63,6 +64,8 @@ class SynchronizationRunProgressService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -140,7 +143,7 @@ class SynchronizationRunProgressService {
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param LoggerInterface $logger        The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
@@ -156,8 +159,8 @@ class SynchronizationRunProgressService {
 	 * guarded — an unavailable register must not stop a synchronization.
 	 *
 	 * @param string $synchronizationId The synchronization being run.
-	 * @param bool   $enabled           False leaves the run unrecorded, and every
-	 *                                  later tick/finish a no-op.
+	 * @param bool $enabled False leaves the run unrecorded, and every
+	 *                      later tick/finish a no-op.
 	 *
 	 * @return void
 	 *
@@ -237,8 +240,8 @@ class SynchronizationRunProgressService {
 	 * always be written, or a finished run stays `running` forever and every
 	 * watcher reads it as hung.
 	 *
-	 * @param string      $status  One of `success` or `failed`.
-	 * @param array       $counters Final counters to merge.
+	 * @param string $status One of `success` or `failed`.
+	 * @param array $counters Final counters to merge.
 	 * @param string|null $message Terminal message, if any.
 	 *
 	 * @return void
@@ -275,6 +278,13 @@ class SynchronizationRunProgressService {
 	 * @return int The number of issued writes.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
+	 *
+	 * @orphaned-write-capability exclude Read-only accessor returning
+	 * `$this->writes`; it performs no write and has no side effect at all. It
+	 * matched the gate only because the method name begins with `write`. The
+	 * actual write capability is the private `write()` below, which this merely
+	 * counts. Re-verify in one glance from the body: a single `return` of an
+	 * int property.
 	 */
 	public function writeCount(): int {
 		return $this->writes;
@@ -283,8 +293,8 @@ class SynchronizationRunProgressService {
 	/**
 	 * Persist the record on the cheap save path.
 	 *
-	 * @param array       $object The record.
-	 * @param string|null $uuid   The record's uuid on update; null creates it.
+	 * @param array $object The record.
+	 * @param string|null $uuid The record's uuid on update; null creates it.
 	 *
 	 * @return string|null The record's uuid, or null when the write failed.
 	 */

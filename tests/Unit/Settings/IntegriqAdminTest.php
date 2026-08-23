@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector Admin Settings — AppHost adapter tests.
+ * Integriq Admin Settings — AppHost adapter tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,16 +13,16 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
@@ -31,24 +31,24 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pins the auth-critical semantics of the AppHost-adopted admin settings.
  *
- * `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` gates ~30 controller
+ * `#[AuthorizedAdminSetting(IntegriqAdmin::class)]` gates ~30 controller
  * methods across the app; this test verifies the adopted class keeps the
  * exact fail-closed (full-admin-only) posture of the pre-adoption bespoke
  * implementation it replaces.
  */
-class OpenConnectorAdminTest extends TestCase {
+class IntegriqAdminTest extends TestCase {
 	/**
 	 * Build a settings instance with mocked collaborators.
 	 *
-	 * @return OpenConnectorAdmin
+	 * @return IntegriqAdmin
 	 */
-	private function makeSettings(): OpenConnectorAdmin {
+	private function makeSettings(): IntegriqAdmin {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppVersion')->willReturn('0.2.21');
 
-		return new OpenConnectorAdmin(
-			appId: 'openconnector',
-			sectionId: 'openconnector',
+		return new IntegriqAdmin(
+			appId: 'integriq',
+			sectionId: 'integriq',
 			priority: 10,
 			appManager: $appManager,
 			initialState: $this->createMock(IInitialState::class),
@@ -68,12 +68,12 @@ class OpenConnectorAdminTest extends TestCase {
 	}//end testAuthorizedAppConfigStaysEmpty()
 
 	/**
-	 * The section id must stay `openconnector`, matching the pre-adoption value.
+	 * The section id must stay `integriq`, matching the registered value.
 	 *
 	 * @return void
 	 */
 	public function testSectionIdUnchanged(): void {
-		$this->assertSame('openconnector', $this->makeSettings()->getSection());
+		$this->assertSame('integriq', $this->makeSettings()->getSection());
 	}//end testSectionIdUnchanged()
 
 	/**

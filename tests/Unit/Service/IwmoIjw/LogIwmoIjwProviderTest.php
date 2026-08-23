@@ -4,7 +4,7 @@
  * Unit tests for LogIwmoIjwProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\IwmoIjw
+ * @package  OCA\Integriq\Tests\Unit\Service\IwmoIjw
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\IwmoIjw;
+namespace OCA\Integriq\Tests\Unit\Service\IwmoIjw;
 
-use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
+use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

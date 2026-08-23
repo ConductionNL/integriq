@@ -3,13 +3,13 @@
 /**
  * The {@see RawSourceResolver} contract (ocon#242).
  *
- * The resolver is the shared form of {@see \OCA\OpenConnector\Service\CallService::resolveSourceForDispatch()}
+ * The resolver is the shared form of {@see \OCA\Integriq\Service\CallService::resolveSourceForDispatch()}
  * (ocon#236) for the six clients that never reach CallService. Its whole job is one
  * argument — `_render: false` — so these tests assert the ARGUMENTS it passes, not a
  * stub's return value.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Security
+ * @package  OCA\Integriq\Tests\Unit\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,15 +18,15 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Security;
+namespace OCA\Integriq\Tests\Unit\Service\Security;
 
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;

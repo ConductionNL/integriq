@@ -1,14 +1,14 @@
 # Migration: notificaties-api-subscriber
 
 ## Current State
-`lib/Settings/openconnector_register.json` declares the `openconnector` register's schemas, including
+`lib/Settings/integriq_register.json` declares the `openconnector` register's schemas, including
 `event_subscription` (with `action.kind ∈ {webhook, synchronization, job}`, per `nextcloud-event-hub`) and
 `consumer` (apiKey/jwt/basic/oauth2/none auth). There is no `notificaties_abonnement` schema, and
 `event_subscription.action.kind` has no `notificaties` value. All OR schemas in this app are stored
 schema-less (JSON column) — there is no per-schema SQL table to migrate.
 
 ## Target State
-- `openconnector_register.json` gains a new `notificaties_abonnement` schema entry (slug
+- `integriq_register.json` gains a new `notificaties_abonnement` schema entry (slug
   `notificaties_abonnement`) with fields `sourceId`, `kanalen` (array of `{naam, filters}`), `callbackUrl`,
   `url` (remote-assigned), `consumerId`, `status` (`pending|active|error|deleted`), `lastError`, `created`,
   `updated`.
@@ -21,13 +21,13 @@ schema-less (JSON column) — there is no per-schema SQL table to migrate.
 No `lib/Migration/VersionXXXXXXXXXX.php` is required. Following the exact precedent set by
 `nextcloud-event-hub`'s `action`/`retryPolicy` additions to `event_subscription` (see that change's
 archived `migration.md`/`design.md`): OR schemas are schema-less JSON-column storage, so a new schema
-entry or a new optional field on an existing schema is a `lib/Settings/openconnector_register.json`
+entry or a new optional field on an existing schema is a `lib/Settings/integriq_register.json`
 descriptor change only, picked up by OpenRegister's existing register-sync mechanism (`register-import`)
 on next app upgrade/repair run — not a Nextcloud DB migration.
 
 ```
 Version: N/A — no lib/Migration/VersionXXXXXXXXXX.php required
-File: lib/Settings/openconnector_register.json (descriptor change only)
+File: lib/Settings/integriq_register.json (descriptor change only)
 Key operations:
 - Add `notificaties_abonnement` schema entry to `components.schemas`
 - Add `notificaties_abonnement` to the register's top-level `schemas` array
@@ -37,7 +37,7 @@ Key operations:
 ```
 
 ## Migration Steps
-1. Land the `openconnector_register.json` descriptor change (new schema + updated `action.kind`
+1. Land the `integriq_register.json` descriptor change (new schema + updated `action.kind`
    description) in the same PR as the code that reads/writes it — descriptor and code MUST ship together
    so a partially-upgraded instance never has `EventService` code expecting a schema the register hasn't
    registered yet.
@@ -56,7 +56,7 @@ capacity, transforms nothing, and is fully safe to run on live data — there is
 transformation step at all, only a schema-descriptor addition.
 
 ## Rollback Procedure
-Revert the `openconnector_register.json` descriptor change and the accompanying code in the same PR
+Revert the `integriq_register.json` descriptor change and the accompanying code in the same PR
 revert. Any `notificaties_abonnement` records created in the interim become orphaned OR objects (no code
 references the removed schema after rollback) — harmless, and cleanable via a follow-up repair step if
 desired, but not required for correctness (matches proposal.md's Rollback Strategy).

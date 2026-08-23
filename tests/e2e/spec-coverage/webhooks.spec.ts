@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Genuine behavioral UI coverage for the openconnector Webhooks page.
+ * Genuine behavioral UI coverage for the integriq Webhooks page.
  *
  * FIXED: src/manifest.json's "Webhooks" page used to be a schema-driven index
  * bound to schema "consumer" (the SAME schema as the Consumers page) — an exact

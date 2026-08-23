@@ -77,32 +77,32 @@ coverage is below 70%.
 
 ### Requirement: Newman collection MUST exist and cover all REST endpoints
 
-The file `tests/postman/openconnector.postman_collection.json` MUST exist as a valid
+The file `tests/postman/integriq.postman_collection.json` MUST exist as a valid
 Postman Collection v2.1 JSON. It MUST contain at least one happy-path request and one
 error-path request for every controller method registered in `appinfo/routes.php`.
 
 #### Scenario: Newman collection runs without failures against a seeded dev container
 
-- GIVEN the dev container is running with seed data from `openconnector_seed_data.json`
-- WHEN `newman run tests/postman/openconnector.postman_collection.json --environment tests/postman/openconnector.postman_environment.json` is executed
+- GIVEN the dev container is running with seed data from `integriq_seed_data.json`
+- WHEN `newman run tests/postman/integriq.postman_collection.json --environment tests/postman/integriq.postman_environment.json` is executed
 - THEN Newman exits 0 with 0 failures
 
 #### Scenario: Newman asserts 401 for unauthenticated GET /api/sources
 
 - GIVEN no auth credentials are set in the request
-- WHEN `GET /index.php/apps/openconnector/api/sources` is called
+- WHEN `GET /index.php/apps/integriq/api/sources` is called
 - THEN the response status is 401
 
 #### Scenario: Newman asserts 403 for non-admin POST /api/sources
 
 - GIVEN a valid non-admin session credential is used
-- WHEN `POST /index.php/apps/openconnector/api/sources` is called with a valid body
+- WHEN `POST /index.php/apps/integriq/api/sources` is called with a valid body
 - THEN the response status is 403
 
 ### Requirement: `npm run test:newman` script MUST exist in package.json
 
 The `package.json` scripts section MUST include a `test:newman` entry that runs the Newman
-collection against the `openconnector.postman_environment.json` environment.
+collection against the `integriq.postman_environment.json` environment.
 
 #### Scenario: test:newman script is present
 
@@ -133,7 +133,7 @@ search/filter returns expected results.
 #### Scenario: sources.spec.ts create flow
 
 - GIVEN the dev container is running with at least one seed Source in OR storage
-- WHEN the Playwright test navigates to `/index.php/apps/openconnector/sources` and clicks "Add Source"
+- WHEN the Playwright test navigates to `/index.php/apps/integriq/sources` and clicks "Add Source"
 - THEN a form opens, the test fills name and type, submits, and the new Source appears in the list
 
 #### Scenario: sources.spec.ts delete flow
@@ -145,7 +145,7 @@ search/filter returns expected results.
 #### Scenario: endpoints.spec.ts page loads
 
 - GIVEN the dev container is running
-- WHEN the Playwright test navigates to `/index.php/apps/openconnector/endpoints`
+- WHEN the Playwright test navigates to `/index.php/apps/integriq/endpoints`
 - THEN the page renders without console errors and the list or empty-state is visible
 
 ### Requirement: `playwright.config.ts` MUST set workers to 4 for the regression project
@@ -162,13 +162,13 @@ parallel workers to keep E2E wall time under 10 minutes.
 ### Requirement: Playwright MUST include a migration round-trip spec
 
 The file `tests/e2e/migration-round-trip.spec.ts` MUST exist and MUST verify: install
-with legacy data present → run `occ openconnector:migrate-storage` → all 10 resource pages
+with legacy data present → run `occ integriq:migrate-storage` → all 10 resource pages
 still show the same data counts as before migration.
 
 #### Scenario: migration round-trip preserves source count
 
 - GIVEN 3 Source objects exist in `oc_openconnector_sources` before migration
-- WHEN `occ openconnector:migrate-storage` is run and `storage_migrated` is set to `true`
+- WHEN `occ integriq:migrate-storage` is run and `storage_migrated` is set to `true`
 - THEN the Sources list page shows 3 sources and each retains its original name and type
 
 ### Requirement: CI MUST upload Playwright failure artifacts

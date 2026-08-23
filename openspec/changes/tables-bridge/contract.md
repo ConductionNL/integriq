@@ -1,6 +1,6 @@
 # Contract: tables-bridge
 
-This is an internal contract between OpenConnector's backend (new discovery
+This is an internal contract between Integriq's backend (new discovery
 endpoints) and its own `sync-editor-ui` Vue frontend — not a cross-project
 API (no other apps-extra project consumes it). Captured formally anyway
 because the editor's table picker and column-mapping helper need a pinned
@@ -8,13 +8,13 @@ shape to build against.
 
 ## Consumers
 
-- `openconnector` (`src/` Vue, `sync-editor-ui` capability): `SyncConfigWidget.vue`
+- `integriq` (`src/` Vue, `sync-editor-ui` capability): `SyncConfigWidget.vue`
   (table picker) and the new column-mapping helper component call these
   endpoints when the selected source/target kind is `nextcloud-table`.
 
 ## Endpoints
 
-### `GET /apps/openconnector/api/synchronizations/tables-bridge/tables`
+### `GET /apps/integriq/api/synchronizations/tables-bridge/tables`
 
 **Auth**: Nextcloud session (admin/authenticated user), `@NoAdminRequired`
 + `@NoCSRFRequired` per the existing `SynchronizationsController` posture.
@@ -39,7 +39,7 @@ are used to list tables).
 | 409  | Tables app not enabled (`IAppManager::isEnabledForUser('tables')` false) |
 | 502  | Upstream Tables call failed (network/5xx) — message carries the CallLog reference, never raw upstream body |
 
-### `GET /apps/openconnector/api/synchronizations/tables-bridge/tables/{tableId}/columns`
+### `GET /apps/integriq/api/synchronizations/tables-bridge/tables/{tableId}/columns`
 
 **Auth**: same as above.
 
@@ -91,7 +91,7 @@ are used to list tables).
 
 ## Versioning
 
-Unversioned (same convention as the rest of OpenConnector's REST surface —
+Unversioned (same convention as the rest of Integriq's REST surface —
 no `/v1/` segment observed elsewhere in `appinfo/routes.php`). Additive-only
 evolution expected: new optional response fields are non-breaking; any
 removal of a response field is a breaking change requiring a new endpoint
@@ -111,5 +111,5 @@ standard cross-project review process before that consumer is built.
 Best-effort, synchronous request/response bound by the upstream Tables call
 latency (itself bound by `CallService`'s existing timeout/retry
 configuration — no new timeout policy introduced). Not on any availability
-SLA beyond OpenConnector's own app availability; a Tables outage surfaces as
+SLA beyond Integriq's own app availability; a Tables outage surfaces as
 a 502 to the editor, not a hang.

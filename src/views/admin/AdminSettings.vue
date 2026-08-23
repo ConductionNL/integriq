@@ -5,11 +5,11 @@
 
 <template>
 	<CnAdminSettingsShell
-		appId="openconnector"
-		appName="OpenConnector"
+		appId="integriq"
+		appName="Integriq"
 		:showVersionCard="false"
 		:showReimport="false">
-		<div class="openconnector-admin">
+		<div class="integriq-admin">
 			<ActionAuthMatrix />
 			<DsoPkiSettings />
 		</div>
@@ -22,16 +22,16 @@ import ActionAuthMatrix from './ActionAuthMatrix.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 
 /**
- * Root admin settings panel for OpenConnector.
+ * Root admin settings panel for Integriq.
  *
  * Wraps the app's settings in the shared CnAdminSettingsShell (uniform title
  * header + version/support chrome) and renders the ADR-023
  * action-authorization matrix editor plus the DSO STAM PKIoverheid signature
  * configuration editor as its content.
  *
- * The version card is disabled: openconnector's admin getForm() does not
+ * The version card is disabled: integriq's admin getForm() does not
  * provide a `version` initial state, so the card would show "Unknown".
- * Re-import is disabled: openconnector is not a standard AppHost settings app
+ * Re-import is disabled: integriq is not a standard AppHost settings app
  * and exposes no `POST /api/settings/load` route (see appinfo/routes.php —
  * the standard /api/settings surface was removed in the OR-cutover).
  *

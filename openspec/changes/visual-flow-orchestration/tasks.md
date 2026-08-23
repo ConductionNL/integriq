@@ -112,7 +112,7 @@
 - **spec_ref**: `openspec/changes/visual-flow-orchestration/specs/job-management/spec.md#requirement-flowaction-runs-a-flow-as-a-scheduled-job-req-job-003`
 - **files**: `lib/Action/FlowAction.php`
 - **acceptance_criteria**:
-  - GIVEN a `job` OR object with `jobClass: 'OCA\OpenConnector\Action\FlowAction'` WHEN `JobService::executeJob()` invokes it THEN `FlowRunnerService::run()` executes the referenced flow and `run()` returns `{level, message, stackTrace}` derived from `flow_run.status`, matching `SynchronizationAction::run()`'s return shape
+  - GIVEN a `job` OR object with `jobClass: 'OCA\Integriq\Action\FlowAction'` WHEN `JobService::executeJob()` invokes it THEN `FlowRunnerService::run()` executes the referenced flow and `run()` returns `{level, message, stackTrace}` derived from `flow_run.status`, matching `SynchronizationAction::run()`'s return shape
 - [ ] Implement
 - [ ] Test
 
@@ -184,7 +184,7 @@
 
 ### Task 21: File follow-up issues for explicitly out-of-scope v2 items
 - **spec_ref**: `openspec/changes/visual-flow-orchestration/proposal.md#out-of-scope`
-- **files**: N/A (GitHub issues in `ConductionNL/openconnector`)
+- **files**: N/A (GitHub issues in `ConductionNL/integriq`)
 - **acceptance_criteria**:
   - GIVEN this change is archived THEN three follow-up issues exist: (1) drag-and-drop canvas UI for the step editor, (2) parallel/fan-out step execution, (3) loop/iteration step types — each referencing this change's proposal.md Out of Scope section
 - [ ] Implement

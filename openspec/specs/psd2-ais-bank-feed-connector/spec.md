@@ -6,14 +6,14 @@ status: done
 
 ## Purpose
 
-OpenConnector consumes PSD2 Account Information Service (AIS) feeds from
+Integriq consumes PSD2 Account Information Service (AIS) feeds from
 licensed EU aggregators (GoCardless Bank Account Data, Tink, Klarna Kosma,
 Yapily, etc.) and exposes them to sibling apps as bank transactions, per ADR-022
 and shillinq's `bookkeeping-bank-connectors` REQ-BC-001. It owns the
 redirect-based SCA/consent flow, consent-token storage (credential broker,
 ADR-007), account discovery, and the scheduled transaction sync that emits
 `nl.conduction.bankfeed.transactions.synced`. shillinq references the
-openconnector `Source` slug and consumes the events; no aggregator client,
+integriq `Source` slug and consumes the events; no aggregator client,
 OAuth flow, or consent record lives in shillinq. Built on the existing
 `source-management`, `job-scheduling`, and `events-cloudevents` capabilities.
 

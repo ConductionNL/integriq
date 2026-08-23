@@ -580,7 +580,7 @@ All error responses include:
  */
 async function loginUser(username, password) {
   try {
-    const response = await fetch('/index.php/apps/openconnector/api/user/login', {
+    const response = await fetch('/index.php/apps/integriq/api/user/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -646,7 +646,7 @@ async function loginUser(username, password) {
  */
 async function getCurrentUser() {
   try {
-    const response = await fetch('/index.php/apps/openconnector/api/user/me', {
+    const response = await fetch('/index.php/apps/integriq/api/user/me', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -688,7 +688,7 @@ async function getCurrentUser() {
  */
 async function updateUser(updates) {
   try {
-    const response = await fetch('/index.php/apps/openconnector/api/user/me', {
+    const response = await fetch('/index.php/apps/integriq/api/user/me', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -1264,7 +1264,7 @@ batchOrganizationOperations();
 
 ```bash
 # Login user (creates session)
-curl -X POST 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/login' \
+curl -X POST 'https://your-nextcloud.com/index.php/apps/integriq/api/user/login' \
   -H 'Content-Type: application/json' \
   -c 'cookies.txt' \
   -d '{
@@ -1273,12 +1273,12 @@ curl -X POST 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/l
   }'
 
 # Get current user information (requires authentication)
-curl -X GET 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me' \
+curl -X GET 'https://your-nextcloud.com/index.php/apps/integriq/api/user/me' \
   -H 'Content-Type: application/json' \
   -b 'cookies.txt'
 
 # Update user information
-curl -X PUT 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me' \
+curl -X PUT 'https://your-nextcloud.com/index.php/apps/integriq/api/user/me' \
   -H 'Content-Type: application/json' \
   -b 'cookies.txt' \
   -d '{
@@ -1287,7 +1287,7 @@ curl -X PUT 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me
   }'
 
 # Switch active organization
-curl -X PUT 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me' \
+curl -X PUT 'https://your-nextcloud.com/index.php/apps/integriq/api/user/me' \
   -H 'Content-Type: application/json' \
   -b 'cookies.txt' \
   -d '{
@@ -1295,7 +1295,7 @@ curl -X PUT 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me
   }'
 
 # Update user and switch organization in one request
-curl -X PUT 'https://your-nextcloud.com/index.php/apps/openconnector/api/user/me' \
+curl -X PUT 'https://your-nextcloud.com/index.php/apps/integriq/api/user/me' \
   -H 'Content-Type: application/json' \
   -b 'cookies.txt' \
   -d '{
@@ -1311,34 +1311,34 @@ For local development, use the Docker container approach as described in the tes
 
 ```bash
 # Login from within Docker container
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' -X POST 'http://localhost/index.php/apps/openconnector/api/user/login' -d '{\"username\": \"admin\", \"password\": \"admin\"}'"
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' -X POST 'http://localhost/index.php/apps/integriq/api/user/login' -d '{\"username\": \"admin\", \"password\": \"admin\"}'"
 
 # Get user info with organizations
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' 'http://localhost/index.php/apps/openconnector/api/user/me'"
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' 'http://localhost/index.php/apps/integriq/api/user/me'"
 
 # Switch organization
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' -d '{\"activeOrganisation\": \"e6d272630b866cad2dee3aa3ac879281\"}'"
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'Content-Type: application/json' -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' -d '{\"activeOrganisation\": \"e6d272630b866cad2dee3aa3ac879281\"}'"
 
 ### Organization Switching cURL Examples
 
 ```bash
 # Example 1: Get current user with organization data
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq '.organisations'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq '.organisations'
 
 # Example 2: Switch to specific organization
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' \
+  -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' \
   -d '{"activeOrganisation": "e6d272630b866cad2dee3aa3ac879281"}'
 
 # Example 3: Switch to default organization (first available)
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' \
+  -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' \
   -d '{"activeOrganisation": "0a2083b5602d9ac663abae79a985d453"}'
 
 # Example 4: Update user and switch organization in one request
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' \
+  -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' \
   -d '{
     "firstName": "John",
     "lastName": "Doe",
@@ -1347,15 +1347,15 @@ curl -u 'admin:admin' -H 'Content-Type: application/json' \
 
 # Example 5: Verify organization switch was successful
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq '.organisations.active'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq '.organisations.active'
 
 # Example 6: List all user organizations
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq '.organisations.results[] | {uuid: .uuid, name: .name, isDefault: .isDefault}'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq '.organisations.results[] | {uuid: .uuid, name: .name, isDefault: .isDefault}'
 
 # Example 7: Switch to invalid organization (error handling)
 curl -u 'admin:admin' -H 'Content-Type: application/json' \
-  -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' \
+  -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' \
   -d '{"activeOrganisation": "invalid-uuid-format"}'
 
 # Example 8: Batch organization operations script
@@ -1365,21 +1365,21 @@ echo "=== Organization Management Script ==="
 # Get current organization
 echo "1. Current organization:"
 curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq -r '.organisations.active.name'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq -r '.organisations.active.name'
 
 # List all organizations
 echo -e "\n2. Available organizations:"
 curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq -r '.organisations.results[] | "  - \(.name) (\(.uuid))"'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq -r '.organisations.results[] | "  - \(.name) (\(.uuid))"'
 
 # Switch to first non-default organization
 echo -e "\n3. Switching to first non-default organization:"
 ORG_UUID=$(curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq -r '.organisations.results[] | select(.isDefault == false) | .uuid' | head -1)
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq -r '.organisations.results[] | select(.isDefault == false) | .uuid' | head -1)
 
 if [ "$ORG_UUID" != "null" ] && [ -n "$ORG_UUID" ]; then
   curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
-    -X PUT 'http://localhost/index.php/apps/openconnector/api/user/me' \
+    -X PUT 'http://localhost/index.php/apps/integriq/api/user/me' \
     -d "{\"activeOrganisation\": \"$ORG_UUID\"}" | jq -r '.organisations.active.name'
 else
   echo "No non-default organization found"
@@ -1387,7 +1387,7 @@ fi
 
 echo -e "\n4. Final organization state:"
 curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
-  'http://localhost/index.php/apps/openconnector/api/user/me' | jq -r '.organisations.active.name'
+  'http://localhost/index.php/apps/integriq/api/user/me' | jq -r '.organisations.active.name'
 ```
 
 ## AJAX Call Best Practices
@@ -1399,7 +1399,7 @@ curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
 - `credentials: 'include'` - Required for session management in JavaScript
 
 **URL Structure:**
-- Use full NextCloud URL: `/index.php/apps/openconnector/api/user/...`
+- Use full NextCloud URL: `/index.php/apps/integriq/api/user/...`
 - Don't use relative paths like `/api/user/...` as they won't work
 
 ### Session Management
@@ -1407,7 +1407,7 @@ curl -s -u 'admin:admin' -H 'Content-Type: application/json' \
 **JavaScript (Fetch API):**
 ```javascript
 // Always include credentials for session management
-const response = await fetch('/index.php/apps/openconnector/api/user/login', {
+const response = await fetch('/index.php/apps/integriq/api/user/login', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -1498,7 +1498,7 @@ if (result.success) {
 fetch('/api/user/me')
 
 // Correct - full NextCloud path
-fetch('/index.php/apps/openconnector/api/user/me')
+fetch('/index.php/apps/integriq/api/user/me')
 ```
 
 ❌ **Don't forget Content-Type header:**

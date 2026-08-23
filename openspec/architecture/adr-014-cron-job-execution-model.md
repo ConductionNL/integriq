@@ -8,7 +8,7 @@ Accepted (capturing existing decision)
 
 ## Context
 
-OpenConnector exposes a `Job` entity that lets administrators schedule arbitrary
+Integriq exposes a `Job` entity that lets administrators schedule arbitrary
 action classes to run on a recurring interval. No ADR has documented how jobs
 are discovered, scheduled, executed, retried, or expired, nor how the
 `LogCleanUpTask` retention sweep interacts with the log-retention windows

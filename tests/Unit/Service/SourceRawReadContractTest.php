@@ -3,7 +3,7 @@
 /**
  * The raw-source-read contract for the six direct-Guzzle clients (ocon#242).
  *
- * These six bypass {@see \OCA\OpenConnector\Service\CallService} entirely, so they
+ * These six bypass {@see \OCA\Integriq\Service\CallService} entirely, so they
  * never benefit from its `_render: false` re-resolve (`resolveSourceForDispatch`,
  * ocon#236). Each located its active source through a RENDERED `findAll()` and then
  * decrypted `configuration.authentication.encryptedToken` / `mtls.*` itself — which
@@ -28,7 +28,7 @@
  * three dead fixes (ocon#212/#226) and once sent webhooks out unsigned for weeks.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,40 +37,40 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
-use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
-use OCA\OpenConnector\Service\DsoIngestService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
-use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
-use OCA\OpenConnector\Service\FscCallService;
-use OCA\OpenConnector\Service\IwmoIjw\InboundReturnTranslator;
-use OCA\OpenConnector\Service\IwmoIjw\IStandardsClient;
-use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
-use OCA\OpenConnector\Service\IwmoIjw\OutboundMessageTranslator;
-use OCA\OpenConnector\Service\IwmoIjwSyncService;
-use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
-use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
-use OCA\OpenConnector\Service\KissSyncService;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\Sms\LogSmsProvider;
-use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
-use OCA\OpenConnector\Service\SmsDispatchService;
-use OCA\OpenConnector\Service\StufZkn\InboundMessageTranslator;
-use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
-use OCA\OpenConnector\Service\StufZkn\OutboundNotificationTranslator;
-use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
-use OCA\OpenConnector\Service\StufZkn\StufZknClient;
-use OCA\OpenConnector\Service\StufZknSyncService;
-use OCA\OpenConnector\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
+use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Dso\DsoRequestTranslator;
+use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Fsc\FscDirectoryClient;
+use OCA\Integriq\Service\Fsc\LogFscConnectivityProvider;
+use OCA\Integriq\Service\FscCallService;
+use OCA\Integriq\Service\IwmoIjw\InboundReturnTranslator;
+use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
+use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
+use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
+use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
+use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Service\Sms\LogSmsProvider;
+use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
+use OCA\Integriq\Service\SmsDispatchService;
+use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
+use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
+use OCA\Integriq\Service\StufZkn\OutboundNotificationTranslator;
+use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
+use OCA\Integriq\Service\StufZkn\StufZknClient;
+use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;

@@ -1,8 +1,8 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest configuration for OpenConnector frontend unit tests.
+ * Vitest configuration for Integriq frontend unit tests.
  *
  * Post the OR-cutover the app keeps almost no Pinia state (CnIndexPage /
  * CnDetailPage manage list/detail state against OR endpoints), so the

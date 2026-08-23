@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector Rules Controller.
+ * Integriq Rules Controller.
  *
- * Placeholder controller backing the rules tab of the OpenConnector
+ * Placeholder controller backing the rules tab of the Integriq
  * Vue UI. All UI rendering is delegated to UiController; this class
  * is retained for Nextcloud's DI container registration only.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,16 +16,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\IRequest;
 
 /**
- * Controller for managing rules in the OpenConnector app.
+ * Controller for managing rules in the Integriq app.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)

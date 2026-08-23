@@ -7,7 +7,7 @@
  * maps activiteiten to zaaktypen, and handles samenloop strategies.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
@@ -82,7 +82,7 @@ class DSOAdapterService {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-4
 	 */
 	public function getConfiguredApiUrl(): string {
-		return $this->appConfig->getValueString('openconnector', 'dso_api_url', '');
+		return $this->appConfig->getValueString('integriq', 'dso_api_url', '');
 	}//end getConfiguredApiUrl()
 
 	/**

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector Health Controller — OpenRegister dependency guard tests.
+ * Integriq Health Controller — OpenRegister dependency guard tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\HealthController;
+use OCA\Integriq\Controller\HealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
@@ -47,7 +47,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase {
 		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(false);
 
 		$controller = new HealthController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->createMock(IRequest::class),
 			appManager: $appManager,
 			delegate: null
@@ -79,7 +79,7 @@ class HealthControllerOpenRegisterGuardTest extends TestCase {
 			->willReturn(new JSONResponse(['status' => 'healthy'], Http::STATUS_OK));
 
 		$controller = new HealthController(
-			appName: 'openconnector',
+			appName: 'integriq',
 			request: $this->createMock(IRequest::class),
 			appManager: $appManager,
 			delegate: $delegate

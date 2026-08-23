@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log Payment Provider.
+ * Integriq Log Payment Provider.
  *
  * Sandbox/mock binding for {@see PaymentProviderInterface}: performs no real
  * network call, returns a synthetic `MOCK-PAY-<n>` provider payment id and a
@@ -14,7 +14,7 @@
  * sandbox convention.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Payment
+ * @package  OCA\Integriq\Service\Payment
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Payment;
+namespace OCA\Integriq\Service\Payment;
 
 /**
  * Sandbox payment provider: canned checkout URL, synthetic payment ids, seeded status.

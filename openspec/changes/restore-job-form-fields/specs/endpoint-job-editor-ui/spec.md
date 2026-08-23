@@ -42,7 +42,7 @@ descriptor can address.
 #### Scenario: The class select preserves an off-list value
 
 - WHEN a job holds a job class that is not in the offered list — a seeded
-  `OCA\OpenConnector\Cron\Example*Job`, or an Action class registered by another app
+  `OCA\Integriq\Cron\Example*Job`, or an Action class registered by another app
 - THEN the select displays that stored value instead of reading as unset, and saving the job
   does not silently replace it
 

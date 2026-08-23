@@ -8,7 +8,7 @@
  * this service exposes; only `approved` registrations resolve.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Lti
+ * @package  OCA\Integriq\Tests\Unit\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,10 +19,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Lti;
+namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\Lti\LtiRegistrationResolverService;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;

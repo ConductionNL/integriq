@@ -6,7 +6,7 @@ description: Publish data from OpenRegister (or a source) as a public REST endpo
 
 # Expose an endpoint
 
-An **Endpoint** publishes data over HTTP. OpenConnector lets you serve OpenRegister objects, source proxies, or completely synthetic responses on a path you control, with the auth, headers, and rules you configure.
+An **Endpoint** publishes data over HTTP. Integriq lets you serve OpenRegister objects, source proxies, or completely synthetic responses on a path you control, with the auth, headers, and rules you configure.
 
 ## Goal
 
@@ -48,7 +48,7 @@ You are done when: a call to the endpoint URL returns the expected status code, 
 
 | Symptom | Fix |
 |---|---|
-| External call returns `404 Not Found` | The endpoint path collides with another OpenConnector or Nextcloud route — try a deeper path (e.g. `/api/v1/zaken` instead of `/zaken`). |
+| External call returns `404 Not Found` | The endpoint path collides with another Integriq or Nextcloud route — try a deeper path (e.g. `/api/v1/zaken` instead of `/zaken`). |
 | External call returns `403` even with a valid token | The endpoint rules reject the caller — open the endpoint's **Rules** tab and check which rule fired. |
 | Response body is wrapped in OpenRegister metadata you don't want | Attach a **Response mapping** that picks only the public fields, or use the endpoint's response shape options to flatten the envelope. |
 
