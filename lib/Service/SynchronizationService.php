@@ -8387,6 +8387,25 @@ class SynchronizationService {
 	 * more, and re-implementing the lookup against register `openconnector` /
 	 * schema `rule` in a second place is how the two drift.
 	 *
+	 * ⚠️ THE READ IS DELIBERATELY UNSCOPED, and delegating to `getRuleById()`
+	 * was wrong for exactly that reason. That method reads WITH rbac and
+	 * multitenancy, which is right for the legacy engine's in-request rule
+	 * pipeline and wrong here: the generator runs under `occ`, where there is
+	 * no user session, so a scoped read filters every rule away and returns
+	 * null. The generator then cannot establish what the rule does and refuses
+	 * the synchronization — which is not "this rule is unsupported", it is "I
+	 * could not look".
+	 *
+	 * MEASURED, and this is why the flag matters rather than being defensive:
+	 * after `openconnector.fetch-file` shipped, a full sweep of all 240
+	 * synchronizations still refused the same 74, and ALL 74 gave
+	 * `actions: rule "…" could not be resolved`. Not one of them was refused
+	 * for its rule's TYPE. The feature was complete and unreachable.
+	 *
+	 * `MigrationEntityReader` already reads this way and says why in its own
+	 * docblock; this is the same rule applied to the one entity that did not go
+	 * through it.
+	 *
 	 * @param string $id The rule's OpenRegister uuid or slug.
 	 *
 	 * @return array|null The rule payload, or null when there is no such rule.
@@ -8394,7 +8413,30 @@ class SynchronizationService {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	public function findRule(string $id): ?array {
-		return $this->getRuleById(id: $id);
+		try {
+			$object = $this->orObjectService->find(
+				id: $id,
+				register: 'openconnector',
+				schema: 'rule',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			// FULLY QUALIFIED on purpose: this file declares
+			// `namespace OCA\Integriq\Service` and imports `Exception` but not
+			// `Throwable`, so a bare `Throwable` here would resolve to
+			// `OCA\Integriq\Service\Throwable`, match nothing, and let the
+			// failure escape as a fatal instead of the null this contract
+			// promises. `php -l` does not catch that.
+			return null;
+		}
+
+		if ($object === null) {
+			return null;
+		}
+
+		return $object->jsonSerialize();
+
 	}//end findRule()
 
 	/**
