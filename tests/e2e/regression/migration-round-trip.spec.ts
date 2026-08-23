@@ -45,7 +45,7 @@ const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
 const OR = '/index.php/apps/openregister/api'
-const OC_REGISTER = 'openconnector'
+const OC_REGISTER = 'integriq'
 
 // The 15 schemas the chain-B migrator copies out of the legacy
 // oc_openconnector_* tables (LegacyToRegisterMigrator::ENTITY_ORDER).
