@@ -1152,12 +1152,9 @@
               "type": "scheduled",
               "intervalSec": 3600,
               "filter": {
-                "isEnabled": {
-                  "op": "equals",
-                  "value": true
-                },
+                "isEnabled": true,
                 "nextRun": {
-                  "op": "lt",
+                  "operator": "before",
                   "value": "now"
                 }
               }
@@ -1935,16 +1932,11 @@
         "slug": "call_log",
         "x-openregister-notifications": {
           "call-failed": {
+            "_note": "This rule has never fired and still cannot. createdFilterMatches() (AnnotationNotificationDispatcher) reads a single clause {field, operator, value} and implements only equals|in|notIn, comparing as strings — there is NO numeric operator on the created path, so 'statusCode >= 400' is not expressible. The previous shape ({statusCode:{op:'gte'}}) was wrong twice over: a field=>spec map instead of a clause, and an operator that does not exist. It is left disabled rather than rewritten as an in-list of every 4xx/5xx code, which would be wrong the first time an unusual status appeared. Blocked on numeric comparison operators for created triggers — see the created-vs-scheduled convergence deferred by the notification-scheduled-filter-grammar change (ConductionNL/openregister#2787). DO NOT simply flip enabled back to true: with no filter this rule matches EVERY call_log row and would notify on every successful call.",
             "trigger": {
-              "type": "created",
-              "filter": {
-                "statusCode": {
-                  "op": "gte",
-                  "value": 400
-                }
-              }
+              "type": "created"
             },
-            "enabled": true,
+            "enabled": false,
             "channels": [
               "nc-notification"
             ],
@@ -2112,10 +2104,9 @@
             "trigger": {
               "type": "created",
               "filter": {
-                "level": {
-                  "op": "equals",
-                  "value": "ERROR"
-                }
+                "field": "level",
+                "operator": "equals",
+                "value": "ERROR"
               }
             },
             "enabled": true,
