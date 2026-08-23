@@ -200,9 +200,7 @@ export default {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/integriq/mapping',
-					),
+					generateUrl('/apps/openregister/api/objects/integriq/mapping'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().

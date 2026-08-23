@@ -255,9 +255,7 @@ async function createViaUi(
 		page.waitForResponse(
 			(r) => {
 				const u = r.url()
-				const isObjects = u.includes(
-					`/api/objects/integriq/${schemaSlug}`,
-				)
+				const isObjects = u.includes(`/api/objects/integriq/${schemaSlug}`)
 				return (
 					isObjects && r.request().method() === 'POST' && r.status() < 400
 				)

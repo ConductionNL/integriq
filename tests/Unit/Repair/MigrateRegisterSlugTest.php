@@ -358,6 +358,58 @@ final class MigrateRegisterSlugTest extends TestCase {
 	}//end testAConfigValueThatIsNotAnOldSlugIsLeftAlone()
 
 	/**
+	 * A config READ that throws is logged, and plans no write.
+	 *
+	 * IAppConfig can throw on a type conflict, and this step runs under
+	 * <install> where an escaping exception aborts the install and the app never
+	 * enables at all. Failing to read a value must therefore mean "leave it
+	 * alone", not "abort the upgrade".
+	 *
+	 * @return void
+	 */
+	public function testAConfigReadFailureIsLoggedNotThrown(): void {
+		$written = [];
+		$cfg = $this->createMock(IAppConfig::class);
+		$cfg->method('getValueString')->willThrowException(new \RuntimeException('type conflict'));
+		$cfg->expects(self::never())->method('setValueString');
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('warning')->with(self::stringContains('could not read app config'));
+
+		$step = new MigrateRegisterSlug($this->dbReturning([]), $cfg, $logger);
+		$step->run($this->createMock(IOutput::class));
+
+		self::assertSame([], $written);
+
+	}//end testAConfigReadFailureIsLoggedNotThrown()
+
+	/**
+	 * A config WRITE that throws is logged and counted as not re-pointed.
+	 *
+	 * Same reason as the read: under <install> a throw costs the whole install.
+	 * The count in the summary must also stay honest — a write that failed is
+	 * not a value re-pointed.
+	 *
+	 * @return void
+	 */
+	public function testAConfigWriteFailureIsLoggedNotThrown(): void {
+		$cfg = $this->createMock(IAppConfig::class);
+		$cfg->method('getValueString')->willReturn('openconnector');
+		$cfg->method('setValueString')->willThrowException(new \RuntimeException('write refused'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('warning')->with(self::stringContains('could not re-point app config'));
+
+		$step = new MigrateRegisterSlug($this->dbReturning([]), $cfg, $logger);
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects(self::once())->method('info')->with(self::stringContains('0 config value(s) re-pointed'));
+
+		$step->run($output);
+
+	}//end testAConfigWriteFailureIsLoggedNotThrown()
+
+	/**
 	 * The shipped map is a repair step's, and every entry actually moves.
 	 *
 	 * @return void

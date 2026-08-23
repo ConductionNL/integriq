@@ -427,9 +427,7 @@ export default {
 			this.loadingEndpoints = true
 			try {
 				const res = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/integriq/endpoint',
-					),
+					generateUrl('/apps/openregister/api/objects/integriq/endpoint'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
