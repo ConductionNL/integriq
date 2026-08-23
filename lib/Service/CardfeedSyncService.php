@@ -61,7 +61,7 @@ class CardfeedSyncService {
 	 */
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a cardfeed program source.
@@ -427,7 +427,7 @@ class CardfeedSyncService {
 					'since' => $since,
 					'until' => $until,
 					'transactionCount' => count($pull['transactions']),
-					'batchUri' => '/apps/openregister/api/objects/openconnector/cardfeed_batch/' . $batch->getUuid(),
+					'batchUri' => '/apps/openregister/api/objects/integriq/cardfeed_batch/' . $batch->getUuid(),
 				]
 			);
 

@@ -264,7 +264,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 				'type' => 'select',
 				'help' => $this->l10n->t('The synchronization whose source this step fetches.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 			[
 				'key' => 'pageSize',

@@ -522,7 +522,7 @@ class CatalogRegistryService {
 	 */
 	private function findSourceBySlug(string $slug): ?ObjectEntity {
 		$result = $this->orObjectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'slug' => $slug]]
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'source', 'slug' => $slug]]
 		);
 		$items = ($result['results'] ?? $result);
 		foreach ($items as $item) {

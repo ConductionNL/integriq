@@ -81,7 +81,7 @@ class MappingService {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = 'openconnector';
+	private const REGISTER = 'integriq';
 
 	/**
 	 * The OpenRegister schema slug for mapping objects.

@@ -190,7 +190,7 @@ compute `rateLimitReset = time() + rateLimitWindow` and persist it. When
 `X-RateLimit-Remaining` is absent AND a `rateLimitLimit` is configured, the method
 MUST decrement the cached remaining counter by 1 (initialising from `rateLimitLimit`
 on the first call). On any change the method MUST persist the source via OR
-`saveObject(register='openconnector', schema='source', uuid=source.uuid)`. Finally,
+`saveObject(register='integriq', schema='source', uuid=source.uuid)`. Finally,
 when `rateLimitLimit OR rateLimitWindow` is set, the method MUST inject five
 synthesised `X-RateLimit-*` headers into the response header array so downstream
 consumers see a consistent rate-limit shape even when upstream did not emit one. Also,

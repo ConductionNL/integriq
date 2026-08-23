@@ -57,7 +57,7 @@ class ZgwVersionTranslationService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a `zgw_version_translation_log` record.

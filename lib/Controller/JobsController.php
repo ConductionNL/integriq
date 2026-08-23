@@ -154,7 +154,7 @@ class JobsController extends Controller {
 			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
 			// Get job logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'job_log'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
 			$jobLogs = ($matches['results'] ?? $matches);
 			$total = ($matches['total'] ?? count($jobLogs));
@@ -210,7 +210,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.run');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}
@@ -279,7 +279,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.test');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}

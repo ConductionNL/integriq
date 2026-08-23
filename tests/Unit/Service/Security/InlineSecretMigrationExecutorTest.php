@@ -379,7 +379,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawField(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'openconnector', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
 		$object = ($entity?->getObject() ?? []);
 		if (array_key_exists($field, $object) === false) {
 			return '__absent__';
@@ -397,7 +397,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawRef(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'openconnector', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
 		return ($entity?->getObject()['configuration']['authentication'][$field] ?? '__absent__');
 	}//end rawRef()
 

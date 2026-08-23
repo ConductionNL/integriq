@@ -180,7 +180,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 			'sourceId' => self::SOURCE_UUID,
 			'sourceType' => 'api',
 			'targetType' => 'register/schema',
-			'targetId' => 'openconnector/eolCycle',
+			'targetId' => 'integriq/eolCycle',
 			'sourceTargetMapping' => self::SYNC_ID . '-mapping',
 			'sourceConfig' => [
 				'endpoint' => '/php.json',

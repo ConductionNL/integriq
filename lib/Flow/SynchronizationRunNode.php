@@ -248,7 +248,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 				'type' => 'select',
 				'help' => $this->l10n->t('The configured synchronization this step runs, with its own source, mapping and target.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 			[
 				'key' => 'force',

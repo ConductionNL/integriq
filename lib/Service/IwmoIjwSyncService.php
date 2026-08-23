@@ -62,7 +62,7 @@ class IwmoIjwSyncService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for an iWMO/iJW source.

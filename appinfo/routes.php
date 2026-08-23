@@ -2,7 +2,7 @@
 
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
-// lives at OR's `/api/objects/openconnector/{schema}/*`. Re-adding a
+// lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
 return [
@@ -378,7 +378,7 @@ return [
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
 
 		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
-		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// `flow` CRUD goes through OR's generic /api/objects/integriq/flow/*
 		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
 		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
 		// API Products gateway (openspec/changes/api-product-gateway). api_product/
@@ -394,7 +394,7 @@ return [
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
-		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
+		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.
 		// See openspec/changes/connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],

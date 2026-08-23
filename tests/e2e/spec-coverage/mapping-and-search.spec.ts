@@ -26,7 +26,7 @@ import { test, expect } from '@playwright/test'
 // that string that was missing the prefix.
 import { APP_BASE, openAndDismissCreateModal } from './_helpers'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
 
 // ---------------------------------------------------------------------------

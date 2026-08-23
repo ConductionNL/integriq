@@ -71,7 +71,7 @@ class DsoIngestService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a DSO source (outbound provider/credential config).

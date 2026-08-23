@@ -131,7 +131,7 @@ unchanged:
   `result`/`results` keys the engine otherwise looks for; omitting this
   field causes every run to fail with "Cannot determine the position of
   objects in the return body"), `sourceConfig.idPosition: "cycle"`,
-  `targetType: "register/schema"`, `targetId: "openconnector/eolCycle"`,
+  `targetType: "register/schema"`, `targetId: "integriq/eolCycle"`,
   and `sourceTargetMapping` set to that product's seeded `mapping` slug.
 - The `mapping` object SHALL map each fetched cycle's `cycle`,
   `releaseDate`, `eol`, `support`, `latest`, `latestReleaseDate`, and `lts`

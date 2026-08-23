@@ -161,7 +161,7 @@ class EndoflifeDateSyncTest extends TestCase {
 			'sourceId' => self::SOURCE_UUID,
 			'sourceType' => 'api',
 			'targetType' => 'register/schema',
-			'targetId' => 'openconnector/eolCycle',
+			'targetId' => 'integriq/eolCycle',
 			'sourceTargetMapping' => $syncId . '-mapping',
 			'sourceConfig' => [
 				'endpoint' => "/{$productSlug}.json",

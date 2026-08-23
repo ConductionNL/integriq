@@ -25,7 +25,7 @@ Concretely this covers `CallService`, `EndpointService`, `EventService`, `JobSer
 
 - GIVEN `SourceService` is constructed with a mocked `ObjectService`
 - WHEN `getSource('00000000-0000-0000-0000-000000000001')` is called
-- THEN `$objectService->find(id: '00000000-0000-0000-0000-000000000001', register: 'openconnector', schema: 'source')` is called exactly once (verified via `Mock::expects(once())->method('find')->with(id: ..., register: 'openconnector', schema: 'source')`) and the returned object is forwarded to the caller
+- THEN `$objectService->find(id: '00000000-0000-0000-0000-000000000001', register: 'integriq', schema: 'source')` is called exactly once (verified via `Mock::expects(once())->method('find')->with(id: ..., register: 'integriq', schema: 'source')`) and the returned object is forwarded to the caller
 
 #### Scenario: SourceServiceTest covers getSource not-found path
 
@@ -37,7 +37,7 @@ Concretely this covers `CallService`, `EndpointService`, `EventService`, `JobSer
 
 - GIVEN `JobService` is constructed with a mocked `ObjectService`
 - WHEN `createJob(['name' => 'test-job', 'interval' => '0 * * * *'])` is called
-- THEN `$objectService->saveObject(object: $payload, register: 'openconnector', schema: 'job')` is called exactly once with the correct register/schema/payload (verified via `Mock::expects(once())->method('saveObject')->with(object: $payload, register: 'openconnector', schema: 'job')`)
+- THEN `$objectService->saveObject(object: $payload, register: 'integriq', schema: 'job')` is called exactly once with the correct register/schema/payload (verified via `Mock::expects(once())->method('saveObject')->with(object: $payload, register: 'integriq', schema: 'job')`)
 
 ### Requirement: Every write-side DTO MUST have a PHPUnit test file
 

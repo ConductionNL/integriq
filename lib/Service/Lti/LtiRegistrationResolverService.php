@@ -107,7 +107,7 @@ class LtiRegistrationResolverService {
 	 */
 	public function findPlatformByIssuer(string $issuer, ?string $clientId = null): ?ObjectEntity {
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'lti_platform',
 			'issuer' => $issuer,
 		];
@@ -141,7 +141,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_tool',
 					'clientId' => $clientId,
 				],
@@ -178,7 +178,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_deployment',
 					'deploymentId' => $deploymentIdClaim,
 					$relationField => $registrationUuid,
@@ -205,7 +205,7 @@ class LtiRegistrationResolverService {
 		try {
 			$deployment = $this->orObjectService->find(
 				id: $deploymentUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_deployment',
 				_rbac: false,
 				_multitenancy: false
@@ -241,7 +241,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
 				_multitenancy: false

@@ -150,7 +150,7 @@ class RegisterDescriptorTest extends TestCase {
 		// change (#170). It was declared in components.schemas but never listed
 		// here nor in register.openconnector.schemas[], so the schema existed on
 		// the instance while every read and write through
-		// /api/objects/openconnector/sync_item_dead_letter answered
+		// /api/objects/integriq/sync_item_dead_letter answered
 		// "Schema not found" — declaring a schema is not attaching it.
 		// SyncItemDeadLetterService and SyncDeadLetterController both address it
 		// by that slug, so the capture path was inert in production.
@@ -204,7 +204,7 @@ class RegisterDescriptorTest extends TestCase {
 	 */
 	public function testRegisterDeclaresAllSchemaSlugs(): void {
 		$expected = array_values(self::SCHEMA_SLUGS);
-		$actual = $this->descriptor['components']['registers']['openconnector']['schemas'] ?? [];
+		$actual = $this->descriptor['components']['registers']['integriq']['schemas'] ?? [];
 
 		sort(array: $expected);
 		sort(array: $actual);
@@ -247,7 +247,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * to it, and it is then equally invisible to testRegisterDeclaresAllSchemaSlugs()
 	 * for as long as it is ALSO missing from register.openconnector.schemas[]. Both
 	 * guards stay green while the schema is unreachable through
-	 * /api/objects/openconnector/{slug}. That is not hypothetical: sync_item_dead_letter
+	 * /api/objects/integriq/{slug}. That is not hypothetical: sync_item_dead_letter
 	 * shipped in that state and the dead-letter capture path was inert. This closes
 	 * the direction the other two do not cover.
 	 *

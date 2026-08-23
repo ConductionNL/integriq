@@ -103,9 +103,9 @@ All PHP files under `lib/Service/` that previously injected one or more
 `<Resource>Mapper` classes MUST be rewritten to inject
 `\OCA\OpenRegister\Service\ObjectService` via constructor injection instead.
 Services MUST call OR's `ObjectService` using **named-parameter** invocations (NOT positional) to avoid the context-leak footgun documented at `openregister/lib/Service/ObjectService.php:587-589`. The canonical call shapes are:
-- `$objectService->find(id: $uuid, register: 'openconnector', schema: '<schema>')`
-- `$objectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => '<schema>', ...]])`
-- `$objectService->saveObject(object: $data, register: 'openconnector', schema: '<schema>', uuid: $uuid)` — `$uuid` is null for create, set for update
+- `$objectService->find(id: $uuid, register: 'integriq', schema: '<schema>')`
+- `$objectService->findAll(config: ['filters' => ['register' => 'integriq', 'schema' => '<schema>', ...]])`
+- `$objectService->saveObject(object: $data, register: 'integriq', schema: '<schema>', uuid: $uuid)` — `$uuid` is null for create, set for update
 - `$objectService->deleteObject(uuid: $uuid)` — method is `deleteObject`, NOT `delete`; register/schema not needed since the uuid alone uniquely identifies the object
 No service SHALL retain a constructor dependency on any of the 31 deleted types after this change ships.
 
@@ -113,13 +113,13 @@ No service SHALL retain a constructor dependency on any of the 31 deleted types 
 
 GIVEN `SourceService` has been rewritten
 WHEN `SourceService::getSource($uuid)` is called
-THEN the service calls `$this->objectService->find(id: $uuid, register: 'openconnector', schema: 'source')` exactly once and returns the resulting `ObjectEntity`
+THEN the service calls `$this->objectService->find(id: $uuid, register: 'integriq', schema: 'source')` exactly once and returns the resulting `ObjectEntity`
 
 #### Scenario: Job service saves a new job via ObjectService
 
 GIVEN `JobService` has been rewritten
 WHEN `JobService::createJob(array $data)` is called with valid job data
-THEN the service passes the data to `$this->objectService->saveObject(object: $data, register: 'openconnector', schema: 'job')` and returns the resulting `ObjectEntity`
+THEN the service passes the data to `$this->objectService->saveObject(object: $data, register: 'integriq', schema: 'job')` and returns the resulting `ObjectEntity`
 
 #### Scenario: Source service deletes a Source via ObjectService
 
@@ -142,7 +142,7 @@ All PHP files under `lib/Controller/` that previously injected a
 `<Resource>Mapper` class MUST be rewritten so that their constructors ONLY accept
 service-layer or `ObjectService` dependencies — never a mapper. Controllers that
 previously called `$this->sourceMapper->find($id)` MUST instead call the
-corresponding service method or call `$this->objectService->find(id: $uuid, register: 'openconnector', schema: 'source')` directly.
+corresponding service method or call `$this->objectService->find(id: $uuid, register: 'integriq', schema: 'source')` directly.
 The HTTP wire format (response JSON shape) SHALL remain byte-for-byte identical
 to the chain B baseline, produced via `ObjectEntity::jsonSerialize()`.
 
@@ -321,12 +321,12 @@ each format variant plus the unrecognised-format fallback.
 
 GIVEN a `Synchronization` record whose `sourceId` is the string `"42"` (legacy integer PK format)
 WHEN `SyncRefResolver::resolve("42")` is called
-THEN the resolver identifies the variant as `'integer-pk'`, looks up the integer-PK→uuid mapping via the per-resource cache or a one-shot `findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'legacyId' => 42]])` query, then calls `$objectService->find(id: $resolvedUuid, register: 'openconnector', schema: 'source')` to obtain the canonical `ObjectEntity`
+THEN the resolver identifies the variant as `'integer-pk'`, looks up the integer-PK→uuid mapping via the per-resource cache or a one-shot `findAll(config: ['filters' => ['register' => 'integriq', 'schema' => 'source', 'legacyId' => 42]])` query, then calls `$objectService->find(id: $resolvedUuid, register: 'integriq', schema: 'source')` to obtain the canonical `ObjectEntity`
 
 #### Scenario: Register-schema slug-pair sourceId is resolved
 
-GIVEN a `Synchronization` record whose `sourceId` is `"openconnector/source"` (slug-pair format)
-WHEN `SyncRefResolver::resolve("openconnector/source")` is called
+GIVEN a `Synchronization` record whose `sourceId` is `"integriq/source"` (slug-pair format)
+WHEN `SyncRefResolver::resolve("integriq/source")` is called
 THEN the resolver identifies the variant as `'register-schema'` and returns the resolved pair without a direct ObjectService lookup
 
 #### Scenario: UUID sourceId passes through unchanged
@@ -393,7 +393,7 @@ THEN `EndpointService` splits `targetId` on `/`, validates both parts as numeric
 
 GIVEN an Endpoint record with `targetType = 'api'` and `targetId = '00000000-0000-0000-0000-000000000000'` (Source UUID)
 WHEN a request is made to that endpoint
-THEN `EndpointService` reads the Source object via `$objectService->find(id: $targetId, register: 'openconnector', schema: 'source')` and proxies the request through `CallService`
+THEN `EndpointService` reads the Source object via `$objectService->find(id: $targetId, register: 'integriq', schema: 'source')` and proxies the request through `CallService`
 
 #### Scenario: Unknown targetType returns a meaningful error
 
@@ -450,8 +450,8 @@ AND their action routes MUST still be present in `appinfo/routes.php`
 #### Scenario: OR CRUD route handles a Source create without an integriq controller
 
 GIVEN integriq is post-chain-C
-WHEN a client issues `POST /index.php/apps/openregister/api/objects/openconnector/source` with `{"name":"test","type":"api"}`
-THEN OR's generic CRUD route MUST persist the object via `ObjectService::saveObject(object: ..., register: 'openconnector', schema: 'source')` and return the created `ObjectEntity` JSON
+WHEN a client issues `POST /index.php/apps/openregister/api/objects/integriq/source` with `{"name":"test","type":"api"}`
+THEN OR's generic CRUD route MUST persist the object via `ObjectService::saveObject(object: ..., register: 'integriq', schema: 'source')` and return the created `ObjectEntity` JSON
 AND no integriq-side controller MUST be involved in serving this request
 
 ---
@@ -472,7 +472,7 @@ THEN the command produces zero output
 #### Scenario: OR export endpoint serves a Source export without an integriq controller
 
 GIVEN integriq is post-chain-C with at least one Source object stored in OR
-WHEN a client issues `GET /index.php/apps/openregister/api/objects/openconnector/source/{uuid}` with `Accept: application/json`
+WHEN a client issues `GET /index.php/apps/openregister/api/objects/integriq/source/{uuid}` with `Accept: application/json`
 THEN OR's generic objects endpoint MUST return the Source object JSON (no integriq controller involved in the request path)
 AND if the request includes `X-Slug-Translation: true`, the response JSON MUST have integer FK fields replaced with their portable slug form by the `SlugTranslatorService` decorator (per local ADR-015)
 

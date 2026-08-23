@@ -68,7 +68,7 @@ class EnvironmentServiceTest extends TestCase {
 			->method('saveObject')
 			->with(
 				['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid'],
-				'openconnector',
+				'integriq',
 				'environment'
 			)
 			->willReturn($created);

@@ -166,7 +166,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 		$this->assertCount(1, $bySchema['source'], $filename . ' must declare exactly one source');
 		$source = array_values($bySchema['source'])[0];
 		$this->assertTrue($source['isEnabled'] ?? false, $filename . ' source must ship isEnabled:true (Wave 0 = fully live)');
-		$this->assertSame('openconnector', $source['@self']['register'], $filename . ' source must live in the openconnector register');
+		$this->assertSame('integriq', $source['@self']['register'], $filename . ' source must live in the integriq register');
 
 		// At least one Mapping.
 		$this->assertArrayHasKey('mapping', $bySchema, $filename . ' must declare at least one mapping');

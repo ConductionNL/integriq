@@ -134,7 +134,7 @@ class RISPollJob extends TimedJob {
 			$result = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'ris_sync_record',
 						'status' => 'synced',
 					],

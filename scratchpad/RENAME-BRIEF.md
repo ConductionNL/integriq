@@ -25,11 +25,11 @@ are the frozen VALUES listed below.
 ## FROZEN — never rename these (leave the literal on `openconnector`)
 
 1. **OpenRegister register slug `openconnector`.** Recognise it as:
-   - `register: 'openconnector'` / `"register": "openconnector"` (named arg or JSON key)
-   - the segment after `objects/` in `/apps/openregister/api/objects/openconnector/<schema>`
+   - `register: 'integriq'` / `"register": "integriq"` (named arg or JSON key)
+   - the segment after `objects/` in `/apps/openregister/api/objects/integriq/<schema>`
    - `registers: ['openconnector']`, `components.registers.openconnector`,
      its `"slug"`, `"tablePrefix"`, `"folder"`
-   - `targetId: "openconnector/<schema>"`, `objectType: 'openconnector-*'`,
+   - `targetId: "integriq/<schema>"`, `objectType: 'openconnector-*'`,
      channel names `openconnector-<schema>`
    - the FIRST positional/named string arg to OR ObjectService/mapper calls
      (`find`, `findAll`, `getObject`, `getObjects`, `saveObject`, `count`, ...)
@@ -114,7 +114,7 @@ are the frozen VALUES listed below.
 - `Application::APP_ID` value, `appName:`/`appId:` args naming THIS app
 - route names `openconnector.<controller>.<method>` -> `integriq....`
 - URL paths `/apps/openconnector/...`, `/index.php/apps/openconnector/...`
-  (but NOT `/apps/openregister/api/objects/openconnector/...`)
+  (but NOT `/apps/openregister/api/objects/integriq/...`)
 - l10n domain: `OC.L10N.register("openconnector"` and every `t('openconnector', ...)`
 - occ command prefixes `openconnector:<cmd>`
 - `/settings/admin/openconnector`

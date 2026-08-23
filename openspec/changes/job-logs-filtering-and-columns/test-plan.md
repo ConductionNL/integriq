@@ -58,7 +58,7 @@ Specs that carry this change:
      FQCN wraps inside its own cell rather than overlapping `Stack trace`.
      Re-check at a narrow window and at full width.
    - Network tab: exactly **one**
-     `GET …/api/objects/openconnector/job_log?jobId=<uuid>&_limit=50&_page=1&_order={"created":"desc"}`.
+     `GET …/api/objects/integriq/job_log?jobId=<uuid>&_limit=50&_page=1&_order={"created":"desc"}`.
 2. **Change `?jobId=` in the address bar to another job's uuid** (same path).
    Exactly one new request, new row set — this exercises the `$route.query` watcher.
 3. **Click the Time header.** The ▲/▼ indicator flips, one request with the

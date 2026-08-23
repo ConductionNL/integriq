@@ -164,7 +164,7 @@ class SynchronizationServiceTest extends TestCase {
 			->willReturn(['results' => [$syncEntity], 'total' => 1]);
 
 		// Act
-		$result = $this->service->findAllBySourceId('openconnector', 'source');
+		$result = $this->service->findAllBySourceId('integriq', 'source');
 
 		// Assert
 		$this->assertIsArray($result);
@@ -189,7 +189,7 @@ class SynchronizationServiceTest extends TestCase {
 			'obj-uuid-1'
 		);
 		// Positional args only — Entity::__call's setter uses $args[0].
-		$objectEntity->setRegister('openconnector');
+		$objectEntity->setRegister('integriq');
 		$objectEntity->setSchema('source');
 
 		// OR findAll must not be called for invalid mutation type
@@ -463,7 +463,7 @@ class SynchronizationServiceTest extends TestCase {
 			[],
 			'obj-1'
 		);
-		$objectEntity->setRegister('openconnector');
+		$objectEntity->setRegister('integriq');
 		$objectEntity->setSchema('source');
 
 		// OR findAll is invoked at least once on the direct-sync lookup. The
@@ -623,7 +623,7 @@ class SynchronizationServiceTest extends TestCase {
 					function (array $config): bool {
 						$filters = ($config['filters'] ?? []);
 						return ($filters['sourceId'] ?? null) === 'reg-1/schema-1'
-						&& ($filters['register'] ?? null) === 'openconnector'
+						&& ($filters['register'] ?? null) === 'integriq'
 						&& ($filters['schema'] ?? null) === 'synchronization';
 					}
 				)

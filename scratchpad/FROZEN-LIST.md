@@ -28,14 +28,27 @@ Record every frozen hit you leave, with its file:line and which class below it f
 
 F1. **`openspec/changes/archive/**` — DO NOT OPEN OR TOUCH ANY FILE IN IT.** It is history.
 
-F2. **OpenRegister register/schema slugs.** Renaming makes a fresh EMPTY register while
-    existing objects stay orphaned, silently. Frozen forms:
-    - `"register": "openconnector"` (src/manifest.json, register JSON)
-    - `"app": "openconnector"`, `"slug": "openconnector"`, the `components.registers.openconnector` KEY
-    - `tablePrefix`, `folder` values in `lib/Settings/*_register.json`
-    - `REGISTER_SLUG` / `REGISTER` constants
-    - the URL segment after `objects/`: `/apps/openregister/api/objects/openconnector/<schema>`
-    - `appId=openconnector` passed to the OpenRegister importer
+F2. ~~OpenRegister register/schema slugs.~~ **RETRACTED — the register SLUG MOVES to
+    `integriq`, with `lib/Repair/MigrateRegisterSlug` renaming the row first.**
+
+    The original reasoning was right about the mechanism and wrong about the remedy.
+    OpenRegister does resolve a register by slug, and its not-found branch CREATES a
+    second, empty register rather than failing — so a renamed slug WITHOUT a repair step
+    forks the register and strands every object, silently. With the row renamed first,
+    the import recognises it and UPDATES it.
+
+    And the rename moves no data at all. Measured, not assumed: an object is bound to
+    its register by NUMERIC id — every shard table's `_register` column holds the id,
+    and the tables are named `oc_openregister_table_<registerId>_<schemaId>`. The slug
+    appears nowhere in the physical layout, so the rename is one column on one row.
+
+    NOW MOVING: `"register": "openconnector"`, `"app"` / `"slug"` / the
+    `components.registers.openconnector` KEY, `REGISTER_SLUG` / `REGISTER` constants,
+    the URL segment after `objects/`, and `appId=openconnector` passed to the importer.
+
+    STILL FROZEN in the same files: the register `folder`
+    (`Open Registers/OpenConnector`) — a Files path already on disk, which the slug
+    rename does not move.
 
 F3. **Docs subdomain `openconnector.conduction.nl`.** It is LIVE; `integriq.conduction.nl`
     does NOT resolve. Pointing at a host that does not resolve is a regression.

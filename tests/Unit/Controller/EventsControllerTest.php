@@ -416,7 +416,7 @@ class EventsControllerTest extends TestCase {
 		$this->assertSame('order.created', $data['event']['name']);
 		$this->assertSame([['id' => 'msg-1']], $data['messages']);
 
-		$this->assertSame('openconnector', $captured['filters']['register']);
+		$this->assertSame('integriq', $captured['filters']['register']);
 		$this->assertSame('event_message', $captured['filters']['schema']);
 		$this->assertSame(
 			'event-uuid-1',

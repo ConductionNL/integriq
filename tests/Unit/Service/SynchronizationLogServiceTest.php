@@ -100,7 +100,7 @@ final class SynchronizationLogServiceTest extends TestCase {
 
 		$service->update($log);
 
-		$this->assertSame('openconnector', $captured['register']);
+		$this->assertSame('integriq', $captured['register']);
 		$this->assertSame('synchronization_log', $captured['schema']);
 		$this->assertNull($captured['uuid']);
 		$this->assertTrue($log->isPersisted());

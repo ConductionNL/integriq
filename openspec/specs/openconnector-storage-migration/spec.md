@@ -206,7 +206,7 @@ populated lazily on first `find(int)` call and invalidated on any
 - GIVEN a freshly-booted facade with an empty cache
 - AND an OR object exists for `(openconnector, source, uuid=U)` whose legacy
   payload includes `"id": 42`
-- WHEN the facade is asked `find(registerSlug='openconnector', schemaSlug='source', id=42)`
+- WHEN the facade is asked `find(registerSlug='integriq', schemaSlug='source', id=42)`
 - THEN it queries OR with filter `["id" => 42]`, retrieves the object, caches
   `42 → U`, and returns a hydrated `Source` entity
 - AND a second `find(..., id=42)` call resolves via the cache without a new

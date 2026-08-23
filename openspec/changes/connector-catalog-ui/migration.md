@@ -28,7 +28,7 @@ Key operations:
 
 1. Ship `lib/Settings/register.d/catalog-item-schema.json` — picked up automatically by the existing `InitializeRegister` repair step's fragment merge on the next `occ upgrade` or app enable. Verifiable: `catalog_item` appears as a schema under the `openconnector` register.
 2. Ship `lib/Repair/MaterializeCatalogItems.php`, registered as an `IRepairStep` in `Application.php`. Verifiable: repair step name appears in `occ upgrade` output.
-3. First repair-step run materialises `catalog_item` objects for every real adapter/seed source found (see design.md Seed Data — these are not fictional, they mirror already-shipped code). Verifiable: `GET /apps/openregister/api/objects/openconnector/catalog_item` returns one object per entry.
+3. First repair-step run materialises `catalog_item` objects for every real adapter/seed source found (see design.md Seed Data — these are not fictional, they mirror already-shipped code). Verifiable: `GET /apps/openregister/api/objects/integriq/catalog_item` returns one object per entry.
 4. Append `catalog.instantiate`, `configuration.export`, `configuration.import` (each `["admin"]`) to the existing `lib/actions.seed.json`; the existing `InitializeActions` repair step applies them on the next run. Verifiable: the existing admin action-matrix settings panel (`ActionMatrixController`) lists the three new actions.
 5. Re-running steps 1–4 (idempotency check) produces no duplicate `catalog_item` objects and no duplicate action-matrix entries.
 
@@ -45,7 +45,7 @@ Remove `lib/Settings/register.d/catalog-item-schema.json`, `lib/Repair/Materiali
 ## Validation
 
 - `occ upgrade` completes without error; log output shows the `MaterializeCatalogItems` repair step ran.
-- `GET /apps/openregister/api/objects/openconnector/catalog_item` returns the expected object count (~12-16) with no duplicates.
+- `GET /apps/openregister/api/objects/integriq/catalog_item` returns the expected object count (~12-16) with no duplicates.
 - Re-running `occ upgrade` a second time produces the same object count (idempotency).
 - The Catalog page (`/catalog`) renders all materialised items as cards without error.
 - The admin action-matrix settings panel shows `catalog.instantiate`, `configuration.export`, `configuration.import` all defaulted to `["admin"]`.

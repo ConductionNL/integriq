@@ -137,7 +137,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $entry,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'sync_item_dead_letter'
 		);
 
@@ -166,7 +166,7 @@ class SyncItemDeadLetterService {
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 	 */
 	public function replayMessage(string $id, string $actorUid): ObjectEntity {
-		$entry = $this->objectService->find(id: $id, register: 'openconnector', schema: 'sync_item_dead_letter');
+		$entry = $this->objectService->find(id: $id, register: 'integriq', schema: 'sync_item_dead_letter');
 		$data = $entry->getObject();
 		$status = ($data['status'] ?? '');
 
@@ -214,7 +214,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'sync_item_dead_letter',
 			uuid: $entry->getUuid()
 		);
@@ -238,7 +238,7 @@ class SyncItemDeadLetterService {
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-discard-of-a-dead-lettered-sync-item-req-dlr-010
 	 */
 	public function discardMessage(string $id, string $actorUid): ObjectEntity {
-		$entry = $this->objectService->find(id: $id, register: 'openconnector', schema: 'sync_item_dead_letter');
+		$entry = $this->objectService->find(id: $id, register: 'integriq', schema: 'sync_item_dead_letter');
 		$data = $entry->getObject();
 		$status = ($data['status'] ?? '');
 
@@ -254,7 +254,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'sync_item_dead_letter',
 			uuid: $entry->getUuid()
 		);

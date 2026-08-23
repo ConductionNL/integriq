@@ -211,7 +211,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'type' => 'select',
 				'help' => $this->l10n->t('The synchronization whose contracts scope this page.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 			[
 				'key' => 'idPosition',

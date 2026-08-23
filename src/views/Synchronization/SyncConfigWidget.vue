@@ -903,9 +903,7 @@ export default {
 			this.sourcesLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/openconnector/source',
-					),
+					generateUrl('/apps/openregister/api/objects/integriq/source'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().

@@ -193,7 +193,7 @@ class TablesBridgeController extends Controller {
 		try {
 			return $this->orObjectService->find(
 				id: $sourceId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				_rbac: false,
 				_multitenancy: false

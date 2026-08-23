@@ -252,7 +252,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 				'type' => 'select',
 				'help' => $this->l10n->t('The synchronization the committed contracts belong to.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 			[
 				'key' => 'contractPosition',

@@ -7,7 +7,7 @@
  * FIXED: src/manifest.json's "Webhooks" page used to be a schema-driven index
  * bound to schema "consumer" (the SAME schema as the Consumers page) — an exact
  * copy. There is no "webhook" schema in OpenRegister (the OR endpoint
- * /api/objects/openconnector/webhook returns 404). Per ADR-013 the event-bus
+ * /api/objects/integriq/webhook returns 404). Per ADR-013 the event-bus
  * model has no separate webhook entity: a webhook IS an EventSubscription with a
  * delivery `sink` URL + `protocol` + push/pull `style`. The page is now bound to
  * schema "event_subscription" with an `addLabel: "Add Webhook"` override (the

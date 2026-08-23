@@ -519,7 +519,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/synchronization',
+						'/apps/openregister/api/objects/integriq/synchronization',
 					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
@@ -557,7 +557,7 @@ export default {
 			this.jobsLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/job'),
+					generateUrl('/apps/openregister/api/objects/integriq/job'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().

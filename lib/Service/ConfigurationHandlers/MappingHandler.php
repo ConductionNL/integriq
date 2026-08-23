@@ -175,14 +175,14 @@ class MappingHandler implements ConfigurationHandlerInterface {
 			// Update existing mapping.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'mapping',
 				uuid: $mappings['mapping']['slugToId'][$slug]
 			);
 		}
 
 		// Create new mapping.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'mapping');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'mapping');
 	}//end import()
 
 	/**

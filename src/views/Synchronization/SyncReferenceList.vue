@@ -8,7 +8,7 @@
   array of slug strings.
 
   Reuses the #847 picker pattern: NcSelect populated from OR's
-  `/api/objects/openregister/api/objects/openconnector/{schema}` endpoint.
+  `/api/objects/openregister/api/objects/integriq/{schema}` endpoint.
   Multi-mode emits an array of slug strings (matching what
   `SynchronizationAction::run()` expects when looking these up).
 
@@ -141,8 +141,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/'
-							+ this.schema,
+						'/apps/openregister/api/objects/integriq/' + this.schema,
 					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`

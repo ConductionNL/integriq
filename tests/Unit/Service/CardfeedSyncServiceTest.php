@@ -356,7 +356,7 @@ class CardfeedSyncServiceTest extends TestCase {
 		$this->assertSame('2026-07-10T00:00:00+00:00', $payload['since']);
 		$this->assertNotEmpty($payload['until']);
 		$this->assertSame(2, $payload['transactionCount']);
-		$this->assertStringContainsString('/apps/openregister/api/objects/openconnector/cardfeed_batch/', $payload['batchUri']);
+		$this->assertStringContainsString('/apps/openregister/api/objects/integriq/cardfeed_batch/', $payload['batchUri']);
 
 		// Watermark advanced and the two ids recorded in the seen set.
 		$accountSaves = $this->saved['cardfeed_account'];

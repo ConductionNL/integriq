@@ -153,7 +153,7 @@ class MaterializeCatalogItems implements IRepairStep {
 				try {
 					$orObjectService->saveObject(
 						object: $payload,
-						register: 'openconnector',
+						register: 'integriq',
 						schema: 'catalog_item',
 						uuid: ($existingBySlug[$slug] ?? null)
 					);
@@ -190,7 +190,7 @@ class MaterializeCatalogItems implements IRepairStep {
 	 */
 	private function indexExistingBySlug(OrObjectService $orObjectService): array {
 		$result = $orObjectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'catalog_item']]
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'catalog_item']]
 		);
 		$items = ($result['results'] ?? $result);
 

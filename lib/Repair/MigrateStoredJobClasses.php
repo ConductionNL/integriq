@@ -126,7 +126,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = 'openconnector';
+	private const REGISTER = 'integriq';
 
 	/**
 	 * The schema whose objects carry a stored PHP class name.

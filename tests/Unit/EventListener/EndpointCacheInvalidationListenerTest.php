@@ -120,7 +120,7 @@ class EndpointCacheInvalidationListenerTest extends TestCase {
 		$cache = $this->createMock(EndpointCacheService::class);
 		$cache->expects($this->once())->method('clearCache');
 
-		$listener = $this->makeListener('openconnector', 'endpoint', $cache);
+		$listener = $this->makeListener('integriq', 'endpoint', $cache);
 		$listener->handle(new ObjectCreatedEvent($this->entity(1, 2)));
 
 	}//end testClearsCacheWhenEndpointObjectCreated()
@@ -136,7 +136,7 @@ class EndpointCacheInvalidationListenerTest extends TestCase {
 		$cache->expects($this->exactly(2))->method('clearCache');
 
 		$endpoint = $this->entity(1, 2);
-		$listener = $this->makeListener('openconnector', 'endpoint', $cache);
+		$listener = $this->makeListener('integriq', 'endpoint', $cache);
 		$listener->handle(new ObjectUpdatedEvent(newObject: $endpoint, oldObject: $endpoint));
 		$listener->handle(new ObjectDeletedEvent($endpoint));
 
@@ -151,7 +151,7 @@ class EndpointCacheInvalidationListenerTest extends TestCase {
 		$cache = $this->createMock(EndpointCacheService::class);
 		$cache->expects($this->never())->method('clearCache');
 
-		$listener = $this->makeListener('openconnector', 'source', $cache);
+		$listener = $this->makeListener('integriq', 'source', $cache);
 		$listener->handle(new ObjectCreatedEvent($this->entity(1, 9)));
 
 	}//end testIgnoresNonEndpointObject()
@@ -179,7 +179,7 @@ class EndpointCacheInvalidationListenerTest extends TestCase {
 		$cache = $this->createMock(EndpointCacheService::class);
 		$cache->expects($this->never())->method('clearCache');
 
-		$listener = $this->makeListener('openconnector', 'endpoint', $cache);
+		$listener = $this->makeListener('integriq', 'endpoint', $cache);
 		$listener->handle($this->createMock(Event::class));
 
 	}//end testIgnoresUnrelatedEvent()
@@ -193,7 +193,7 @@ class EndpointCacheInvalidationListenerTest extends TestCase {
 		$cache = $this->createMock(EndpointCacheService::class);
 		$cache->expects($this->never())->method('clearCache');
 
-		$listener = $this->makeListener('openconnector', 'endpoint', $cache, throwOnResolve: true);
+		$listener = $this->makeListener('integriq', 'endpoint', $cache, throwOnResolve: true);
 		$listener->handle(new ObjectCreatedEvent($this->entity(1, 2)));
 
 	}//end testFailsSafeWhenRegisterSchemaUnresolvable()

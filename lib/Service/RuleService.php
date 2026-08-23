@@ -452,7 +452,7 @@ class RuleService {
 		// engine-created source can only ever call an unauthenticated URL. Anything that
 		// needs a secret must be configured by an admin and reference a broker credential.
 		$matches = $this->orObjectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $url]],
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'source', 'location' => $url]],
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -468,7 +468,7 @@ class RuleService {
 					'type' => 'api',
 					'isEnabled' => true,
 				],
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				_rbac: false,
 				_multitenancy: false,

@@ -153,7 +153,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 		$orObjectService = $this->objectService->getOpenRegisters();
 		$source = $orObjectService->find(
 			id: $sourceId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			_rbac: false,
 			_multitenancy: false

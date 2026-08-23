@@ -2,7 +2,7 @@
   "$comment": "ADR-037 register fragment (endoflife-date-source, part 1/2). Declares the eolProduct/eolCycle schemas (register openconnector, per openconnector-register-schema REQ-A-001's single-register-per-app convention) and seeds the pre-built, credential-free `endoflife-date` source plus a curated starter set of 8 `eolProduct` objects (static catalog metadata). See openspec/changes/endoflife-date-source/design.md Decisions 1, 3, 8. The per-product mapping/synchronization/job triples that populate `eolCycle` live in the companion fragment endoflife-date-source-cycles.json, kept separate for reviewability (tasks.md Task 2).",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": ["eolProduct", "eolCycle"]
       }
     },
@@ -146,7 +146,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "endoflife-date"
         },
@@ -165,7 +165,7 @@
         "version": "1.0.0"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "php" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "php" },
         "slug": "php",
         "name": "PHP",
         "category": "Language runtime",
@@ -173,7 +173,7 @@
         "endoflifeUrl": "https://endoflife.date/php"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "nodejs" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "nodejs" },
         "slug": "nodejs",
         "name": "Node.js",
         "category": "Language runtime",
@@ -181,7 +181,7 @@
         "endoflifeUrl": "https://endoflife.date/nodejs"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "python" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "python" },
         "slug": "python",
         "name": "Python",
         "category": "Language runtime",
@@ -189,7 +189,7 @@
         "endoflifeUrl": "https://endoflife.date/python"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "postgresql" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "postgresql" },
         "slug": "postgresql",
         "name": "PostgreSQL",
         "category": "Database",
@@ -197,7 +197,7 @@
         "endoflifeUrl": "https://endoflife.date/postgresql"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "mysql" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "mysql" },
         "slug": "mysql",
         "name": "MySQL",
         "category": "Database",
@@ -205,7 +205,7 @@
         "endoflifeUrl": "https://endoflife.date/mysql"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "nextcloud" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "nextcloud" },
         "slug": "nextcloud",
         "name": "Nextcloud",
         "category": "Platform",
@@ -213,7 +213,7 @@
         "endoflifeUrl": "https://endoflife.date/nextcloud"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "wordpress" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "wordpress" },
         "slug": "wordpress",
         "name": "WordPress",
         "category": "CMS",
@@ -221,7 +221,7 @@
         "endoflifeUrl": "https://endoflife.date/wordpress"
       },
       {
-        "@self": { "register": "openconnector", "schema": "eolProduct", "slug": "laravel" },
+        "@self": { "register": "integriq", "schema": "eolProduct", "slug": "laravel" },
         "slug": "laravel",
         "name": "Laravel",
         "category": "Framework",

@@ -44,7 +44,7 @@
         "help": "Total synchronization runs",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization"
         }
       },
@@ -62,7 +62,7 @@
         "help": "Total registered endpoints",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "endpoint"
         }
       },
@@ -72,7 +72,7 @@
         "help": "Total configured jobs",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job"
         }
       },
@@ -82,7 +82,7 @@
         "help": "Total job log entries by level",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job_log",
           "groupBy": [
             "level"
@@ -95,7 +95,7 @@
         "help": "Total configured mappings",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping"
         }
       },
@@ -105,7 +105,7 @@
         "help": "Total configured rules",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "rule"
         }
       },
@@ -123,7 +123,7 @@
         "help": "Total execution traces by status",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "execution_trace",
           "groupBy": [
             "status"
@@ -136,7 +136,7 @@
         "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
         "source": {
           "kind": "objectCount",
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "call_log",
           "groupBy": [
             "product",
@@ -378,7 +378,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "source",
               "aggregate": "count"
             }
@@ -393,7 +393,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "mapping",
               "aggregate": "count"
             }
@@ -408,7 +408,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "synchronization",
               "aggregate": "count"
             }
@@ -423,7 +423,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "synchronization_contract",
               "aggregate": "count"
             }
@@ -438,7 +438,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "job",
               "aggregate": "count"
             }
@@ -453,7 +453,7 @@
               }
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "endpoint",
               "aggregate": "count"
             }
@@ -466,7 +466,7 @@
               "chartKind": "area"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "call_log",
               "bucket": {
                 "field": "created",
@@ -484,7 +484,7 @@
               "chartKind": "bar"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "call_log",
               "bucket": {
                 "field": "created",
@@ -502,7 +502,7 @@
               "chartKind": "area"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "job_log",
               "bucket": {
                 "field": "created",
@@ -520,7 +520,7 @@
               "chartKind": "bar"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "job_log",
               "bucket": {
                 "field": "created",
@@ -538,7 +538,7 @@
               "chartKind": "area"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "synchronization_log",
               "bucket": {
                 "field": "created",
@@ -556,7 +556,7 @@
               "chartKind": "bar"
             },
             "dataSource": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "synchronization_log",
               "bucket": {
                 "field": "created",
@@ -674,7 +674,7 @@
       "type": "index",
       "title": "Sources",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "source",
         "columns": [
           "name",
@@ -744,7 +744,7 @@
       "type": "detail",
       "title": "Source",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "source",
         "_note": "PURPOSE: A source is an external system Integriq calls (REST/SOAP/DB/file). This is the CONFIG/TECHNICAL archetype — an integrator lands here to check whether the connection is healthy and to triage failed calls, not to read documents. DESIGN RATIONALE: the body leads with operational data. Four KPI stats across the top (total calls, errors, avg size, objects fetched) give an at-a-glance health read; the primary body region is a recent-call-log table (child call_log filtered by source UUID = @objectId, sorted newest-first) because triaging HTTP failures is the #1 job on this page. Connection config (data, 3 columns to fit the many auth/rate-limit fields) and Related sit below/beside. NO comms leaves — a source does not email or hold meetings; the schema declares no email/calendar linkedType. Rarely-opened raw JSON blobs (paths/headers/loggingConfig) stay in the sidebar metadata, and audit-trail is a sidebar tab. ADR-062 rev3: the four health KPIs (calls, errors, objects fetched, avg payload) live in ONE in-grid stats-block top-right of the Connection core-data widget — entries[] carries per-entry metric/field so the sum (objectCount) and avg (size, raw bytes via countLabel) are expressible alongside the two counts. Registry icons; call log is read-only (allowCreate:false) with a View-all to SourceLogs.",
         "widgets": [
@@ -758,7 +758,7 @@
                 {
                   "title": "Calls",
                   "countLabel": "logged",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "call_log",
                   "metric": "count",
                   "filter": {
@@ -785,7 +785,7 @@
                   "title": "Errors",
                   "countLabel": ">=400",
                   "variant": "error",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "call_log",
                   "metric": "count",
                   "filter": {
@@ -812,7 +812,7 @@
                 {
                   "title": "Objects",
                   "countLabel": "fetched",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "source",
                   "metric": "sum",
                   "field": "objectCount",
@@ -833,7 +833,7 @@
                 {
                   "title": "Payload",
                   "countLabel": "bytes (avg)",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "call_log",
                   "metric": "avg",
                   "field": "size",
@@ -850,7 +850,7 @@
             "icon": "Timeline",
             "title": "Recent calls",
             "content": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "call_log",
               "filter": {
                 "source": "@objectId"
@@ -907,7 +907,7 @@
             "icon": "Earth",
             "title": "Environments",
             "content": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "environment",
               "filter": {
                 "sourceRef": "@objectId"
@@ -1037,7 +1037,7 @@
       "type": "logs",
       "title": "Source logs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
         "sortOrder": "desc",
@@ -1123,7 +1123,7 @@
       "type": "index",
       "title": "Endpoints",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "endpoint",
         "columns": [
           "name",
@@ -1225,7 +1225,7 @@
       "type": "detail",
       "title": "Endpoint",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "endpoint",
         "_note": "PURPOSE: An endpoint is an inbound route Integriq exposes (path + HTTP method) that maps requests onto a target (register/schema/source/job) via input/output mappings and attached rules. CONFIG/TECHNICAL archetype. DESIGN RATIONALE: unlike a source, an endpoint has NO child log table with an endpoint foreign key (call_log keys on source/synchronization, not endpoint), so there is no runs list to surface — the operational payload IS the routing configuration. The body therefore leads with a wide config panel (data, 2 columns) exposing path/regex, method, targetType/targetId and the input/output mapping references, with a Related panel beside it so the integrator can jump to the mappings and target this endpoint wires together. NO comms leaves — an endpoint routes HTTP, it does not communicate; the schema declares no email/calendar linkedType. The verbose conditions[]/rules[]/endpointArray JSON stays reachable in sidebar metadata; audit-trail is a sidebar tab.",
         "widgets": [
@@ -1288,7 +1288,7 @@
       "type": "logs",
       "title": "Endpoint logs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
         "sortOrder": "desc",
@@ -1365,7 +1365,7 @@
             "width": "24%",
             "widget": "fkResolve",
             "widgetProps": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product",
               "labelField": "name"
             }
@@ -1380,7 +1380,7 @@
       "title": "Consumers",
       "_note": "The create/edit dialog is ConsumerEditorModal via slots['form-dialog'], so there is deliberately NO `includeFields` / `fieldOverrides` here — CnFormDialog never mounts and either key would be dead config that reads as if it governed the form. It replaces the whole dialog rather than its content because it has to own the submit PAYLOAD, which a `form-fields` slot cannot reach: `domains`/`ips` are bare `type: array` → the `tags` widget, and CnFormDialog.initFormData() seeds every tags field to `[]` on create, which ConsumerScopeService::isAllowed() reads as an allowlist admitting nobody (it gates on is_array), so every consumer authored here would have rejected all inbound traffic with a 403. See src/modals/v2/consumerDraft.js for the three-state table. Field ORDER and the object-property widgets live in the consumer schema (lib/Settings/register.d/consumer-form-fields.json) for the DETAIL page's data widget, which does read the schema.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "consumer",
         "columns": [
           "name",
@@ -1414,7 +1414,7 @@
       "type": "detail",
       "title": "Consumer",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "consumer",
         "_note": "PURPOSE: A consumer is an external client authorised to call Integriq (auth type + allowed domains/IPs). CONFIG/TECHNICAL archetype. DESIGN RATIONALE: the two things an admin does here are (1) confirm the access policy and (2) see what this consumer has actually been sent. The body pairs a compact access-config panel (data, 2 columns: authorizationType, domains, ips) with a Related panel, then leads the lower body with an event-delivery table — event_message rows filtered by the consumer UUID (@objectId), newest-first, showing status/retries/last-attempt — because delivery health is the operational signal for a subscribed consumer. Two KPI stats (deliveries, failed) sit up top. NO comms leaves — a consumer is a machine client, not a person; the schema declares no email/calendar linkedType. Audit-trail is a sidebar tab. ADR-062 rev3: deliveries+failed are ONE in-grid stats-block (entries[]) top-right of the access-policy core-data widget, each entry deep-linking into EventDeliveries filtered on this consumer. event_message list is read-only (allowCreate:false) with a View-all to EventDeliveries; registry icons.",
         "widgets": [
@@ -1428,7 +1428,7 @@
                 {
                   "title": "Deliveries",
                   "countLabel": "events sent",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "event_message",
                   "metric": "count",
                   "filter": {
@@ -1456,7 +1456,7 @@
                   "title": "Failed",
                   "countLabel": "dead-letter",
                   "variant": "error",
-                  "register": "openconnector",
+                  "register": "integriq",
                   "schema": "event_message",
                   "metric": "count",
                   "filter": {
@@ -1494,7 +1494,7 @@
             "icon": "Package",
             "title": "API Product subscriptions",
             "content": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product_subscription",
               "filter": {
                 "consumer": "@objectId"
@@ -1528,7 +1528,7 @@
             "icon": "Email",
             "title": "Recent deliveries",
             "content": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "event_message",
               "filter": {
                 "consumer": "@objectId"
@@ -1634,7 +1634,7 @@
       "title": "API Products",
       "_note": "PURPOSE: an api_product is a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier (api-product-gateway REQ-APG-001/002). Plain generic index — browsing/create/delete needs no bespoke chrome; the endpoint picker, tier editor, analytics panel, and subscription approve/reject actions all live on the custom ApiProductDetail page instead (design.md/discovery.md: 'a plain index for browsing').",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "api_product",
         "columns": [
           "name",
@@ -1679,7 +1679,7 @@
       "_note": "Custom detail page for one api_product: endpoint picker (add/remove existing Endpoints), named-tier editor (rateLimit/quota/requiresApproval/approverGroup), the gateway analytics panel (request count, error rate, p50/p95/p99 latency via GET /api/products/{id}/analytics), and pending subscriptions with approve/reject actions — a generic OR CRUD detail page can't express any of these (api-product-gateway REQ-APG-002/007, design.md 'it will be custom, mirroring ApprovalDetail').",
       "title": "API Product",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "api_product",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
@@ -1691,7 +1691,7 @@
       "title": "Webhooks",
       "_note": "A webhook is an EventSubscription with a delivery sink URL (push/pull). The register has no separate 'webhook' schema — per ADR-013 the EventSubscription entity (sink + protocol + style) IS the webhook. addLabel overrides the schema-title-derived default so the create button reads 'Add Webhook' rather than 'Add EventSubscription'.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "event_subscription",
         "addLabel": "Add Webhook",
         "columns": [
@@ -1735,7 +1735,7 @@
       "title": "Abonnementen",
       "_note": "Custom page: abonnement CRUD backed by the dedicated NotificatiesSubscriberController endpoints (create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer) — not the generic OR object CRUD a CnIndexPage drives. See notificaties-api-subscriber REQ-008.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "notificaties_abonnement",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
@@ -1746,7 +1746,7 @@
       "type": "index",
       "title": "Jobs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "job",
         "columns": [
           "name",
@@ -1855,7 +1855,7 @@
       "type": "logs",
       "title": "Job logs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "job_log",
         "sortKey": "created",
         "sortOrder": "desc",
@@ -1936,7 +1936,7 @@
       "type": "index",
       "title": "Mappings",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "mapping",
         "columns": [
           "name",
@@ -1995,7 +1995,7 @@
       "_note": "Custom page: the mapping editor is a bespoke 3-tab rules editor (mapping/cast/unset rules with drag-reorder + per-rule dialogs) that the generic detail page cannot express.",
       "title": "Mapping",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "mapping"
       }
     },
@@ -2005,7 +2005,7 @@
       "type": "index",
       "title": "Rules",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "rule",
         "columns": [
           "name",
@@ -2045,7 +2045,7 @@
       "_note": "Custom page: the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.",
       "title": "Rule",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "rule"
       }
     },
@@ -2055,7 +2055,7 @@
       "type": "index",
       "title": "Synchronizations",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "synchronization",
         "columns": [
           "name",
@@ -2139,7 +2139,7 @@
       "type": "index",
       "title": "Contracts",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "synchronization_contract",
         "columns": [
           "synchronization",
@@ -2161,7 +2161,7 @@
       "type": "logs",
       "title": "Synchronization logs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "synchronization_log",
         "sortKey": "created",
         "sortOrder": "desc",
@@ -2236,7 +2236,7 @@
       "component": "SynchronizationDetailPage",
       "_note": "Custom page: the synchronization editor composes source/target mapping, conditions, follow-ups and run/test controls that the generic detail page cannot express.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "synchronization"
       }
     },
@@ -2246,7 +2246,7 @@
       "type": "index",
       "title": "Cloud events",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "event",
         "columns": [
           "source",
@@ -2299,7 +2299,7 @@
       "type": "detail",
       "title": "Cloud event",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "event",
         "_note": "PURPOSE: A CloudEvent is an immutable event record (CloudEvents 1.0 envelope: source/type/subject/specversion + a data payload) that fans out to subscribed consumers. CONFIG/TECHNICAL, read-only archetype — you inspect what happened and where it went, you do not edit it. DESIGN RATIONALE: the body leads with the CloudEvent envelope (data, 2 columns: source/type/subject/time/status) since that is the record itself, then the operational answer to 'was this delivered?' — an event_message table filtered by the event UUID (@objectId) showing each consumer delivery, status and retry count, newest-first. The `data` payload JSON is the second question, so it stays within the data widget (which renders the data field) and the object metadata rather than crowding the body; Related sits beside the envelope. NO comms leaves — a CloudEvent is a technical message record, not a person; the schema declares no email/calendar linkedType and no files are attached.",
         "widgets": [
@@ -2324,7 +2324,7 @@
             "icon": "Email",
             "title": "Deliveries",
             "content": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "event_message",
               "filter": {
                 "event": "@objectId"
@@ -2413,7 +2413,7 @@
       "type": "logs",
       "title": "Cloud event logs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
         "sortOrder": "desc",
@@ -2501,7 +2501,7 @@
       "_note": "Custom page: HITL Pending Approvals operations view over approval_request, backed by the two-layer-authorized /api/approvals endpoint (returns only caller-actionable rows) with a status filter and per-row navigation into a detail page whose Approve/Reject verbs hit /api/approvals/{id}/approve|reject. Not the generic OR CRUD a CnIndexPage drives. Mirrors EventDeliveries.",
       "title": "Approvals",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "approval_request",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
@@ -2531,7 +2531,7 @@
       "_note": "Custom detail page for one approval_request with Approve/Reject actions (reject requires a comment). See hitl-approval-rule-action.",
       "title": "Approval request",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "approval_request"
       }
     },
@@ -2542,7 +2542,7 @@
       "title": "Traces",
       "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "execution_trace",
         "sortKey": "startedAt",
         "sortOrder": "desc",
@@ -2637,7 +2637,7 @@
       "_note": "Custom detail page: renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output) and a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay). Not expressible as a generic detail page — mirrors ApprovalDetail's custom-detail-for-a-custom-verb pattern.",
       "title": "Trace",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "execution_trace"
       }
     },
@@ -2648,7 +2648,7 @@
       "title": "Store",
       "_note": "ADR-080 store plane: renamed from 'Catalog'. A store is 'browse a registry and install into this instance'; a CATALOGUE is an outward-facing published catalogue (OpenCatalogi's concept) and TEMPLATES are runtime content blueprints. The old name claimed the wrong concept and the old ViewGridOutline glyph is the vocabulary's 'apps' icon, which OpenBuild uses for its Apps page. Card grid over catalog_item, kind-driven quick filters (ADR-080 Decision 5); Enable/Instantiate lives in CatalogItemDetailDialog. Old /catalog route redirects here.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "catalog_item",
         "viewMode": "cards",
         "cardComponent": "CatalogItemCard",
@@ -2719,7 +2719,7 @@
       "title": "Dead letters",
       "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
@@ -2729,7 +2729,7 @@
       "type": "index",
       "title": "Synchronization Runs",
       "config": {
-        "register": "openconnector",
+        "register": "integriq",
         "schema": "synchronization_run",
         "defaultSort": {
           "key": "startedAt",

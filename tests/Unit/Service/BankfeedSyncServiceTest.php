@@ -569,7 +569,7 @@ class BankfeedSyncServiceTest extends TestCase {
 		$this->assertSame('2026-07-10T00:00:00+00:00', $payload['since']);
 		$this->assertNotEmpty($payload['until']);
 		$this->assertSame(2, $payload['transactionCount']);
-		$this->assertStringContainsString('/apps/openregister/api/objects/openconnector/bankfeed_batch/', $payload['batchUri']);
+		$this->assertStringContainsString('/apps/openregister/api/objects/integriq/bankfeed_batch/', $payload['batchUri']);
 
 		// Watermark advanced only after the successful pull.
 		$connectionSaves = $this->saved['bankfeed_connection'];

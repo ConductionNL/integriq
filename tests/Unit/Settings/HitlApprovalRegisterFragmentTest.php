@@ -133,7 +133,7 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 
 	/**
 	 * Task 1: the fragment attaches `approval_request` onto the
-	 * `openconnector` register's schema list AND `components.schemas` when
+	 * `integriq` register's schema list AND `components.schemas` when
 	 * deep-merged onto a representative base descriptor — the two things
 	 * OpenRegister's ImportHandler requires (per EudiRegisterFragmentTest's
 	 * established precedent) — and does not disturb a disjoint pre-existing
@@ -147,8 +147,8 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 		$base = [
 			'components' => [
 				'registers' => [
-					'openconnector' => [
-						'slug' => 'openconnector',
+					'integriq' => [
+						'slug' => 'integriq',
 						'schemas' => ['source', 'consumer', 'endpoint', 'rule', 'synchronization'],
 					],
 				],
@@ -160,7 +160,7 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 
 		$merged = $this->merge($base, $fragment);
 
-		$registerSchemas = $merged['components']['registers']['openconnector']['schemas'];
+		$registerSchemas = $merged['components']['registers']['integriq']['schemas'];
 		$this->assertSame(
 			['source', 'consumer', 'endpoint', 'rule', 'synchronization', 'approval_request'],
 			$registerSchemas,

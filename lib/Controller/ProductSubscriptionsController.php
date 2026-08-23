@@ -65,7 +65,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = 'openconnector';
+	private const REGISTER = 'integriq';
 
 	/**
 	 * Bounded row window for analytics (design.md Decision 3 / REQ-PROM-013).

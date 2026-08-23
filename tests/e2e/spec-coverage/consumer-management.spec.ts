@@ -29,7 +29,7 @@ import { appDialog } from '../support/dialogs'
 // that string that was missing the prefix.
 import { APP_BASE } from './_helpers'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 
 // ---------------------------------------------------------------------------
 // REQ-CON-UI-001: Consumer Management UI

@@ -6,7 +6,7 @@
   Fields mirror what EndpointService::processSyncRule reads at
   evaluation time: `synchronization` (id), `retainResponse`,
   `objectIdPath`, `preDelay`, `postDelay`. Picker shells the
-  OpenRegister `/objects/openconnector/synchronization` endpoint
+  OpenRegister `/objects/integriq/synchronization` endpoint
   once on mount.
 -->
 <template>

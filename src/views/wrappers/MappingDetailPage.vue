@@ -91,7 +91,7 @@
 						<p class="cn-mapping-detail__hint">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'When enabled, fields from the input object are copied through unless explicitly unset.',
 								)
 							}}
@@ -132,7 +132,7 @@
 					<p class="cn-mapping-detail__hint">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Edit the sample input below; the output re-renders as you type and on every rule change.',
 							)
 						}}
@@ -214,7 +214,7 @@ export default {
 		 */
 		register: {
 			type: String,
-			default: 'openconnector',
+			default: 'integriq',
 		},
 
 		/**

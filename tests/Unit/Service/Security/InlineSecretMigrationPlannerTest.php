@@ -180,7 +180,7 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 	public function testRenderedReadLosesTheSecretProvingTheDoubleIsHonest(): void {
 		$this->objectService->stored['src-1'] = ['name' => 'x', 'apikey' => self::SECRET];
 
-		$rendered = $this->objectService->find(id: 'src-1', register: 'openconnector', schema: 'source');
+		$rendered = $this->objectService->find(id: 'src-1', register: 'integriq', schema: 'source');
 
 		$this->assertNotNull($rendered);
 		$this->assertArrayNotHasKey(

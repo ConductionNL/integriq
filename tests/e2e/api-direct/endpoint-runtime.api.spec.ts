@@ -24,7 +24,7 @@
 import { test, expect } from '@playwright/test'
 
 const API_BASE = '/index.php/apps/integriq/api'
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 
 test.describe('Endpoint dispatch HTTP surface — no-match', () => {
 	test('GET /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({

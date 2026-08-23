@@ -282,12 +282,12 @@ jobs:
       # involved and would read as configured while being decided elsewhere.
       # Integration + E2E run against a live Nextcloud server with OR
       # checked out as an additional app (collections + journeys exercise
-      # /index.php/apps/openregister/api/objects/openconnector/*).
+      # /index.php/apps/openregister/api/objects/integriq/*).
       enable-newman: true
       newman-collection-path: "tests/postman"
       newman-environment-path: "tests/postman/integriq.postman_environment.json"
       # WHY THIS SEED EXISTS. The collection's "01 — Fixture setup (via OR)"
-      # folder POSTs to /apps/openregister/api/objects/openconnector/<schema>;
+      # folder POSTs to /apps/openregister/api/objects/integriq/<schema>;
       # since the chain-C cutover every integriq entity is an OpenRegister
       # object. Without a seed step the `openconnector` register does not
       # exist, all 8 fixture POSTs return 404, `{{fxSourceUuid}}` is never set,

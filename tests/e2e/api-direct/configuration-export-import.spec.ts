@@ -131,7 +131,7 @@ test.describe('REQ-001: Configuration objects — OR CRUD for tagged entities', 
 		const name = `pw-cfg-source-${Date.now()}`
 
 		const createResp = await request.post(
-			'/index.php/apps/openregister/api/objects/openconnector/source',
+			'/index.php/apps/openregister/api/objects/integriq/source',
 			{
 				data: {
 					name,
@@ -149,7 +149,7 @@ test.describe('REQ-001: Configuration objects — OR CRUD for tagged entities', 
 
 		// Clean up
 		await request.delete(
-			`/index.php/apps/openregister/api/objects/openconnector/source/${created.id}`,
+			`/index.php/apps/openregister/api/objects/integriq/source/${created.id}`,
 			{ failOnStatusCode: false },
 		)
 	})

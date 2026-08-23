@@ -84,7 +84,7 @@ const OR = '/index.php/apps/openregister/api'
 const OC = '/index.php/apps/integriq/api'
 
 /** The register/schema pair integriq's own entities live in. */
-const OC_REGISTER = 'openconnector'
+const OC_REGISTER = 'integriq'
 
 /** The contract table, as an OpenRegister schema slug. */
 const CONTRACT_SCHEMA = 'synchronization_contract'

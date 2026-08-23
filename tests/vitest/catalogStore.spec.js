@@ -165,7 +165,7 @@ describe('catalog store (connector-catalog-ui)', () => {
 		const items = await store.fetchItems()
 
 		expect(get).toHaveBeenCalledWith(
-			'/index.php/apps/openregister/api/objects/openconnector/catalog_item',
+			'/index.php/apps/openregister/api/objects/integriq/catalog_item',
 			{ params: { _limit: 500 } },
 		)
 		expect(items).toHaveLength(ITEMS.length)

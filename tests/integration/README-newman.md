@@ -8,7 +8,7 @@ correctness lives in Newman**; Playwright drives the UI only.
 
 After the chain-C OR-cutover, integriq controllers no longer own per-schema
 CRUD — it is delegated to **OpenRegister's object API** at
-`/api/objects/openconnector/{schema}/*` (ADR-022). integriq's own controllers
+`/api/objects/integriq/{schema}/*` (ADR-022). integriq's own controllers
 now expose only the integration **actions**: `sources#test`, `jobs#run/test`,
 `synchronizations#run/test/contracts/statistics/logs`, `mappings#test/getObjects`,
 and the events (webhook subscription) lifecycle. This suite covers **both**: the

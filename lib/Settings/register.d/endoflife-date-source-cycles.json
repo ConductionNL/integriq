@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-php-cycles-mapping"
         },
@@ -31,7 +31,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-php-cycles"
         },
@@ -46,13 +46,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-php-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-php-cycles-sync"
         },
@@ -68,7 +68,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-nodejs-cycles-mapping"
         },
@@ -95,7 +95,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-nodejs-cycles"
         },
@@ -110,13 +110,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-nodejs-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-nodejs-cycles-sync"
         },
@@ -132,7 +132,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-python-cycles-mapping"
         },
@@ -159,7 +159,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-python-cycles"
         },
@@ -174,13 +174,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-python-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-python-cycles-sync"
         },
@@ -196,7 +196,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-postgresql-cycles-mapping"
         },
@@ -223,7 +223,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-postgresql-cycles"
         },
@@ -238,13 +238,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-postgresql-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-postgresql-cycles-sync"
         },
@@ -260,7 +260,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-mysql-cycles-mapping"
         },
@@ -287,7 +287,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-mysql-cycles"
         },
@@ -302,13 +302,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-mysql-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-mysql-cycles-sync"
         },
@@ -324,7 +324,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-nextcloud-cycles-mapping"
         },
@@ -351,7 +351,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-nextcloud-cycles"
         },
@@ -366,13 +366,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-nextcloud-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-nextcloud-cycles-sync"
         },
@@ -388,7 +388,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-wordpress-cycles-mapping"
         },
@@ -415,7 +415,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-wordpress-cycles"
         },
@@ -430,13 +430,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-wordpress-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-wordpress-cycles-sync"
         },
@@ -452,7 +452,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-laravel-cycles-mapping"
         },
@@ -479,7 +479,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-laravel-cycles"
         },
@@ -494,13 +494,13 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-laravel-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-laravel-cycles-sync"
         },

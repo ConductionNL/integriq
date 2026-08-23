@@ -10,7 +10,7 @@
   MUST also register/update/delete the abonnement against the remote
   Notificaties API and provision/cascade-delete a companion consumer
   (NotificatiesSubscriberService) — not the generic OR object CRUD a
-  CnIndexPage drives against `/api/objects/openconnector/{schema}`. Mirrors
+  CnIndexPage drives against `/api/objects/integriq/{schema}`. Mirrors
   the EventDeliveries/Approvals precedent for "operational view backed by a
   dedicated non-CRUD endpoint."
 

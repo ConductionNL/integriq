@@ -21,14 +21,14 @@ import { generateUrl } from '@nextcloud/router'
  * components. Tolerates both `{ results: [] }` and bare arrays.
  *
  * @param {string} schema  OpenRegister schema slug (e.g. 'synchronization').
- * @param {string} register Register slug (defaults to 'openconnector').
+ * @param {string} register Register slug (defaults to 'integriq').
  * @param {number} limit   Max rows to load (default 500).
  * @return {Promise<Array<{ id: string, label: string, raw: object }>>}
  *   Resolved options ready for NcSelect.
  */
 export async function fetchOpenRegisterCollection(
 	schema,
-	register = 'openconnector',
+	register = 'integriq',
 	limit = 500,
 ) {
 	try {

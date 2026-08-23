@@ -268,7 +268,7 @@ the original trace's id.
 
 The app's manifest MUST expose a `Traces` page (`"type": "logs"`, following
 the `SourceLogs`/`EndpointLogs`/`CloudEventLogs` precedent, config
-`{register: 'openconnector', schema: 'execution_trace'}`) listing traces
+`{register: 'integriq', schema: 'execution_trace'}`) listing traces
 with filters for `entryPoint`, `status`, and time range, and a `TraceDetail`
 view rendering the ordered step timeline (type, duration, status per step,
 with redacted input/output expandable per step) plus a "Replay" action

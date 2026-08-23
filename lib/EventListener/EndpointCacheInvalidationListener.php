@@ -50,7 +50,7 @@ class EndpointCacheInvalidationListener implements IEventListener {
 	/**
 	 * Register slug that holds Integriq endpoint objects.
 	 */
-	private const ENDPOINT_REGISTER_SLUG = 'openconnector';
+	private const ENDPOINT_REGISTER_SLUG = 'integriq';
 
 	/**
 	 * Schema slug of endpoint objects.

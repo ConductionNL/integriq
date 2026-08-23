@@ -55,7 +55,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var string
 	 */
-	private const REGISTER_SLUG = 'openconnector';
+	private const REGISTER_SLUG = 'integriq';
 
 	/**
 	 * Schema slug for the synchronization contract objects.

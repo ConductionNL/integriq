@@ -2,7 +2,7 @@
   "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). The top-level `authenticationConfig` field is NOT seeded at all: ocon#232 established it is vestigial (nothing reads it), so seeding it would plant dead data on every install and teach the wrong pattern — credentials belong under `configuration.authentication`. Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
   "source": [
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "example-rest-api" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-rest-api" },
       "name": "Example REST API",
       "description": "Placeholder REST source pointing at example.com. Replace `location` and `apikey` before enabling.",
       "type": "api",
@@ -14,7 +14,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "example-basic-auth" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-basic-auth" },
       "name": "Example Basic Auth Source",
       "description": "Placeholder source using HTTP basic authentication. Replace credentials before enabling.",
       "type": "api",
@@ -27,7 +27,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "example-oauth2" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-oauth2" },
       "name": "Example OAuth2 Source",
       "description": "Placeholder source using OAuth2 client credentials. Replace configuration.authentication before enabling.",
       "type": "api",
@@ -50,7 +50,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "example-jwt" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-jwt" },
       "name": "Example JWT Source",
       "description": "Placeholder source using a pre-issued JWT bearer. Replace `jwt` before enabling.",
       "type": "api",
@@ -63,7 +63,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "peppol-sandbox" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "peppol-sandbox" },
       "name": "Peppol Sandbox Access Point",
       "description": "Sandbox Peppol Access Point (log/mock provider). Demonstrates participant lookup and document transmission with no real AP or credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` for production.",
       "type": "peppol",
@@ -78,7 +78,7 @@
       }
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "bank-aggregator-sandbox" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "bank-aggregator-sandbox" },
       "name": "Bank Aggregator Sandbox (PSD2 AIS)",
       "description": "Sandbox PSD2 AIS aggregator (log/mock provider). Demonstrates the full connect -> callback -> discovery -> sync -> synced-event path with no real aggregator and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (GoCardless Bank-Account-Data-style API) for production.",
       "type": "psd2",
@@ -94,7 +94,7 @@
       }
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "card-provider-sandbox" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "card-provider-sandbox" },
       "name": "Card Provider Sandbox (Corporate Card Feed)",
       "description": "Sandbox corporate-card program source (log/mock provider). Demonstrates the full enroll -> discovery -> sync -> synced-event path (idempotent on transaction id) with no real card provider and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (e.g. a Stripe Issuing-style API) for production.",
       "type": "cardfeed",
@@ -109,7 +109,7 @@
       }
     },
     {
-      "@self": { "register": "openconnector", "schema": "source", "slug": "payment-sandbox" },
+      "@self": { "register": "integriq", "schema": "source", "slug": "payment-sandbox" },
       "name": "Payment Sandbox (Live Payment Providers)",
       "description": "Sandbox payment source (log/mock provider). Demonstrates the full create -> checkout -> webhook -> status-mapping -> event path with no real Mollie account and no credential. Switch `configuration.provider` to `mollie`, set `configuration.baseUrl` (defaults to https://api.mollie.com/v2), and add `configuration.authentication.credentialRef` for production.",
       "type": "payment",
@@ -129,38 +129,38 @@
   ],
   "consumer": [
     {
-      "@self": { "register": "openconnector", "schema": "consumer", "slug": "internal-dashboard" },
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "internal-dashboard" },
       "name": "Internal Dashboard",
       "description": "Example consumer representing an internal dashboard subscribing to openconnector endpoints."
     },
     {
-      "@self": { "register": "openconnector", "schema": "consumer", "slug": "partner-portal" },
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "partner-portal" },
       "name": "Partner Portal",
       "description": "Example consumer for an external partner integration. Replace identifiers before enabling."
     },
     {
-      "@self": { "register": "openconnector", "schema": "consumer", "slug": "mobile-app" },
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "mobile-app" },
       "name": "Mobile App",
       "description": "Example consumer representing the corporate mobile app."
     }
   ],
   "endpoint": [
     {
-      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "ping" },
+      "@self": { "register": "integriq", "schema": "endpoint", "slug": "ping" },
       "name": "Ping",
       "description": "Sample health endpoint that returns a fixed payload.",
       "endpoint": "/api/ping",
       "method": "GET"
     },
     {
-      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "echo" },
+      "@self": { "register": "integriq", "schema": "endpoint", "slug": "echo" },
       "name": "Echo",
       "description": "Sample endpoint that echoes the request body.",
       "endpoint": "/api/echo",
       "method": "POST"
     },
     {
-      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "version" },
+      "@self": { "register": "integriq", "schema": "endpoint", "slug": "version" },
       "name": "Version",
       "description": "Sample endpoint returning the running app version.",
       "endpoint": "/api/version",
@@ -169,21 +169,21 @@
   ],
   "event": [
     {
-      "@self": { "register": "openconnector", "schema": "event", "slug": "object-created" },
+      "@self": { "register": "integriq", "schema": "event", "slug": "object-created" },
       "name": "Object Created",
       "description": "Fired when a new object is created in any subscribed register.",
       "source": "openconnector",
       "type": "com.conduction.openconnector.object.created.v1"
     },
     {
-      "@self": { "register": "openconnector", "schema": "event", "slug": "object-updated" },
+      "@self": { "register": "integriq", "schema": "event", "slug": "object-updated" },
       "name": "Object Updated",
       "description": "Fired when an existing object is updated.",
       "source": "openconnector",
       "type": "com.conduction.openconnector.object.updated.v1"
     },
     {
-      "@self": { "register": "openconnector", "schema": "event", "slug": "object-deleted" },
+      "@self": { "register": "integriq", "schema": "event", "slug": "object-deleted" },
       "name": "Object Deleted",
       "description": "Fired when an object is deleted.",
       "source": "openconnector",
@@ -192,36 +192,36 @@
   ],
   "event_message": [
     {
-      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-pending" },
+      "@self": { "register": "integriq", "schema": "event_message", "slug": "example-delivery-pending" },
       "description": "Example pending event-bus delivery referencing the `object-created` event.",
       "status": "pending"
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-delivered" },
+      "@self": { "register": "integriq", "schema": "event_message", "slug": "example-delivery-delivered" },
       "description": "Example delivered event-bus message kept for documentation purposes.",
       "status": "delivered"
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-failed" },
+      "@self": { "register": "integriq", "schema": "event_message", "slug": "example-delivery-failed" },
       "description": "Example failed delivery to illustrate the retry workflow.",
       "status": "failed"
     }
   ],
   "event_subscription": [
     {
-      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "internal-dashboard-subscription" },
+      "@self": { "register": "integriq", "schema": "event_subscription", "slug": "internal-dashboard-subscription" },
       "description": "Example subscription wiring the Internal Dashboard consumer to object-created events."
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "partner-portal-subscription" },
+      "@self": { "register": "integriq", "schema": "event_subscription", "slug": "partner-portal-subscription" },
       "description": "Example subscription wiring the Partner Portal consumer to object-updated events."
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "mobile-app-subscription" },
+      "@self": { "register": "integriq", "schema": "event_subscription", "slug": "mobile-app-subscription" },
       "description": "Example subscription wiring the Mobile App consumer to object-deleted events."
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-file-tagged-sync" },
+      "@self": { "register": "integriq", "schema": "event_subscription", "slug": "seed-nc-file-tagged-sync" },
       "description": "nextcloud-event-hub example: a file tagged 'invoice' drives a synchronization instead of a webhook (action.kind=synchronization). Replace the synchronizationId placeholder with a real synchronization UUID before enabling (see synchronization[example-rest-to-or] for the placeholder-reference convention this seed follows).",
       "types": ["com.nextcloud.files.node.tagged"],
       "filters": [{ "jsonlogic": { "in": ["invoice", { "var": "data.attributes.tags" }] } }],
@@ -230,7 +230,7 @@
       "status": "paused"
     },
     {
-      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-calendar-webhook" },
+      "@self": { "register": "integriq", "schema": "event_subscription", "slug": "seed-nc-calendar-webhook" },
       "description": "nextcloud-event-hub example: a created calendar object drives a signed outbound webhook with a custom (faster, fewer-retries) backoff schedule via retryPolicy. Replace the placeholder sink before enabling.",
       "types": ["com.nextcloud.calendar.object.created"],
       "filters": [],
@@ -244,21 +244,21 @@
   ],
   "job": [
     {
-      "@self": { "register": "openconnector", "schema": "job", "slug": "example-cron-sync" },
+      "@self": { "register": "integriq", "schema": "job", "slug": "example-cron-sync" },
       "name": "Example Cron Sync",
       "description": "Placeholder scheduled job. Replace jobClass before enabling.",
       "jobClass": "OCA\\Integriq\\Cron\\ExampleSyncJob",
       "isEnabled": false
     },
     {
-      "@self": { "register": "openconnector", "schema": "job", "slug": "example-cleanup" },
+      "@self": { "register": "integriq", "schema": "job", "slug": "example-cleanup" },
       "name": "Example Cleanup",
       "description": "Placeholder maintenance job that prunes stale records.",
       "jobClass": "OCA\\Integriq\\Cron\\ExampleCleanupJob",
       "isEnabled": false
     },
     {
-      "@self": { "register": "openconnector", "schema": "job", "slug": "example-health-check" },
+      "@self": { "register": "integriq", "schema": "job", "slug": "example-health-check" },
       "name": "Example Health Check",
       "description": "Placeholder job that pings configured sources and records health metrics.",
       "jobClass": "OCA\\Integriq\\Cron\\ExampleHealthCheckJob",
@@ -267,36 +267,36 @@
   ],
   "mapping": [
     {
-      "@self": { "register": "openconnector", "schema": "mapping", "slug": "passthrough" },
+      "@self": { "register": "integriq", "schema": "mapping", "slug": "passthrough" },
       "name": "Passthrough",
       "description": "Identity mapping that copies the input untouched. Useful as a smoke-test mapping."
     },
     {
-      "@self": { "register": "openconnector", "schema": "mapping", "slug": "lowercase-keys" },
+      "@self": { "register": "integriq", "schema": "mapping", "slug": "lowercase-keys" },
       "name": "Lowercase Keys",
       "description": "Example mapping that lower-cases all top-level keys. Replace mapping rules before use."
     },
     {
-      "@self": { "register": "openconnector", "schema": "mapping", "slug": "iso-date-normalise" },
+      "@self": { "register": "integriq", "schema": "mapping", "slug": "iso-date-normalise" },
       "name": "ISO Date Normalise",
       "description": "Example mapping that normalises date fields to ISO-8601. Replace mapping rules before use."
     }
   ],
   "rule": [
     {
-      "@self": { "register": "openconnector", "schema": "rule", "slug": "allow-all" },
+      "@self": { "register": "integriq", "schema": "rule", "slug": "allow-all" },
       "name": "Allow All",
       "description": "Example rule that allows every request through. Replace with concrete policy before relying on it.",
       "action": "allow"
     },
     {
-      "@self": { "register": "openconnector", "schema": "rule", "slug": "deny-anonymous" },
+      "@self": { "register": "integriq", "schema": "rule", "slug": "deny-anonymous" },
       "name": "Deny Anonymous",
       "description": "Example rule that denies requests without an authenticated user.",
       "action": "deny"
     },
     {
-      "@self": { "register": "openconnector", "schema": "rule", "slug": "transform-payload" },
+      "@self": { "register": "integriq", "schema": "rule", "slug": "transform-payload" },
       "name": "Transform Payload",
       "description": "Example rule that applies the `passthrough` mapping to the request payload.",
       "action": "transform"
@@ -304,7 +304,7 @@
   ],
   "synchronization": [
     {
-      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-rest-to-or" },
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-rest-to-or" },
       "name": "Example REST to OpenRegister",
       "description": "Placeholder synchronization wiring `example-rest-api` source to an OpenRegister target. Replace sourceId and targetId before enabling.",
       "sourceId": "<placeholder>",
@@ -314,7 +314,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-or-to-or" },
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-or-to-or" },
       "name": "Example OpenRegister to OpenRegister",
       "description": "Placeholder synchronization mirroring objects between two OpenRegister schemas.",
       "sourceId": "<placeholder>",
@@ -324,7 +324,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-or-to-rest" },
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-or-to-rest" },
       "name": "Example OpenRegister to REST",
       "description": "Placeholder synchronization pushing OpenRegister objects to an external REST source.",
       "sourceId": "<placeholder>",
@@ -336,7 +336,7 @@
   ],
   "synchronization_contract": [
     {
-      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-1" },
+      "@self": { "register": "integriq", "schema": "synchronization_contract", "slug": "example-contract-1" },
       "uuid": "00000000-0000-0000-0000-000000000001",
       "synchronizationId": "<placeholder>",
       "originId": "<placeholder>",
@@ -344,7 +344,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-2" },
+      "@self": { "register": "integriq", "schema": "synchronization_contract", "slug": "example-contract-2" },
       "uuid": "00000000-0000-0000-0000-000000000002",
       "synchronizationId": "<placeholder>",
       "originId": "<placeholder>",
@@ -352,7 +352,7 @@
       "version": "1.0.0"
     },
     {
-      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-3" },
+      "@self": { "register": "integriq", "schema": "synchronization_contract", "slug": "example-contract-3" },
       "uuid": "00000000-0000-0000-0000-000000000003",
       "synchronizationId": "<placeholder>",
       "originId": "<placeholder>",
@@ -362,7 +362,7 @@
   ],
   "peppol_transmission": [
     {
-      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-gemeente-nijmegen" },
+      "@self": { "register": "integriq", "schema": "peppol_transmission", "slug": "tx-invoice-gemeente-nijmegen" },
       "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
       "sourceApp": "shillinq",
       "recipientPeppolId": "0106:00000000",
@@ -372,7 +372,7 @@
       "detail": "Accepted by receiver AP"
     },
     {
-      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-consultancy" },
+      "@self": { "register": "integriq", "schema": "peppol_transmission", "slug": "tx-invoice-consultancy" },
       "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
       "sourceApp": "shillinq",
       "recipientPeppolId": "0106:11111111",
@@ -382,7 +382,7 @@
       "detail": "Awaiting delivery receipt"
     },
     {
-      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-order-travel" },
+      "@self": { "register": "integriq", "schema": "peppol_transmission", "slug": "tx-order-travel" },
       "objectUri": "/objects/order/00000000-0000-0000-0000-000000000000",
       "sourceApp": "shillinq",
       "recipientPeppolId": "0106:22222222",
@@ -394,7 +394,7 @@
   ],
   "bankfeed_connection": [
     {
-      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-gemeente-nijmegen" },
+      "@self": { "register": "integriq", "schema": "bankfeed_connection", "slug": "conn-gemeente-nijmegen" },
       "connectionId": "00000000-0000-0000-0000-000000000000",
       "aggregatorSourceSlug": "bank-aggregator-sandbox",
       "aggregator": "sandbox",
@@ -409,7 +409,7 @@
       "lifecycleState": "active"
     },
     {
-      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-consultancy-bv" },
+      "@self": { "register": "integriq", "schema": "bankfeed_connection", "slug": "conn-consultancy-bv" },
       "connectionId": "00000000-0000-0000-0000-000000000000",
       "aggregatorSourceSlug": "bank-aggregator-sandbox",
       "aggregator": "sandbox",
@@ -425,7 +425,7 @@
       "lifecycleState": "expiring"
     },
     {
-      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-travel-agency" },
+      "@self": { "register": "integriq", "schema": "bankfeed_connection", "slug": "conn-travel-agency" },
       "connectionId": "00000000-0000-0000-0000-000000000000",
       "aggregatorSourceSlug": "bank-aggregator-sandbox",
       "aggregator": "sandbox",
@@ -442,7 +442,7 @@
   ],
   "bankfeed_batch": [
     {
-      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-nijmegen-2026-07-01" },
+      "@self": { "register": "integriq", "schema": "bankfeed_batch", "slug": "batch-nijmegen-2026-07-01" },
       "connectionId": "00000000-0000-0000-0000-000000000000",
       "accountIban": "NL00BANK0000000001",
       "since": "2026-06-30T06:00:00+00:00",
@@ -460,7 +460,7 @@
       ]
     },
     {
-      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-consultancy-2026-07-01" },
+      "@self": { "register": "integriq", "schema": "bankfeed_batch", "slug": "batch-consultancy-2026-07-01" },
       "connectionId": "00000000-0000-0000-0000-000000000000",
       "accountIban": "NL00BANK0000000002",
       "since": "2026-06-30T06:00:00+00:00",
@@ -480,7 +480,7 @@
   ],
   "cardfeed_account": [
     {
-      "@self": { "register": "openconnector", "schema": "cardfeed_account", "slug": "acct-conduction-cards" },
+      "@self": { "register": "integriq", "schema": "cardfeed_account", "slug": "acct-conduction-cards" },
       "accountId": "00000000-0000-0000-0000-000000000000",
       "cardfeedSourceSlug": "card-provider-sandbox",
       "provider": "sandbox",
@@ -494,7 +494,7 @@
   ],
   "cardfeed_batch": [
     {
-      "@self": { "register": "openconnector", "schema": "cardfeed_batch", "slug": "batch-conduction-cards-2026-07-01" },
+      "@self": { "register": "integriq", "schema": "cardfeed_batch", "slug": "batch-conduction-cards-2026-07-01" },
       "accountId": "00000000-0000-0000-0000-000000000000",
       "cardId": "SANDBOX-CARD-1",
       "since": "2026-06-30T06:00:00+00:00",
@@ -522,7 +522,7 @@
   ],
   "payment_intent": [
     {
-      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-gemeente-nijmegen" },
+      "@self": { "register": "integriq", "schema": "payment_intent", "slug": "pi-invoice-gemeente-nijmegen" },
       "sourceSlug": "payment-sandbox",
       "provider": "log",
       "providerPaymentId": "MOCK-PAY-1",
@@ -539,7 +539,7 @@
       "updatedAt": "2026-07-10T09:05:00+00:00"
     },
     {
-      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-consultancy" },
+      "@self": { "register": "integriq", "schema": "payment_intent", "slug": "pi-invoice-consultancy" },
       "sourceSlug": "payment-sandbox",
       "provider": "log",
       "providerPaymentId": "MOCK-PAY-2",
@@ -556,7 +556,7 @@
       "updatedAt": "2026-07-12T14:00:00+00:00"
     },
     {
-      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-deposit-travel-booking" },
+      "@self": { "register": "integriq", "schema": "payment_intent", "slug": "pi-deposit-travel-booking" },
       "sourceSlug": "payment-sandbox",
       "provider": "log",
       "providerPaymentId": "MOCK-PAY-3",

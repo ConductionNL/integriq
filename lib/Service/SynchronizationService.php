@@ -672,7 +672,7 @@ class SynchronizationService {
 	private function findSynchronizationObject(string|int $id): ObjectEntity {
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization'
 		);
 
@@ -704,7 +704,7 @@ class SynchronizationService {
 	 * @return ObjectEntity[] The OpenRegister synchronization objects.
 	 */
 	private function findAllSynchronizationObjects(array $filters = []): array {
-		$config = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization'], $filters)];
+		$config = ['filters' => array_merge(['register' => 'integriq', 'schema' => 'synchronization'], $filters)];
 		try {
 			$matches = $this->orObjectService->findAll(config: $config);
 		} catch (DoesNotExistException $e) {
@@ -896,7 +896,7 @@ class SynchronizationService {
 
 		$this->orObjectService->saveObject(
 			object: $object,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization',
 			uuid: $uuidValue
 		);
@@ -918,7 +918,7 @@ class SynchronizationService {
 			return $this->synchronizationContractService->findAllObjects(filters: $filters);
 		}
 
-		$config = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters)];
+		$config = ['filters' => array_merge(['register' => 'integriq', 'schema' => 'synchronization_contract'], $filters)];
 		$matches = $this->orObjectService->findAll(config: $config);
 
 		return array_values(($matches['results'] ?? $matches));
@@ -995,7 +995,7 @@ class SynchronizationService {
 
 		return $this->orObjectService->find(
 			id: (string)$id,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization_contract'
 		);
 	}//end findContractObject()
@@ -1455,7 +1455,7 @@ class SynchronizationService {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuidValue
 		);
@@ -1490,7 +1490,7 @@ class SynchronizationService {
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuid
 		);
@@ -1538,7 +1538,7 @@ class SynchronizationService {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuidValue
 		);
@@ -1570,7 +1570,7 @@ class SynchronizationService {
 		// schema back open. Neither is acceptable, so the engine reads as the system.
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			_rbac: false,
 			_multitenancy: false
@@ -1622,7 +1622,7 @@ class SynchronizationService {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
 	 */
 	private function findOrCreateSourceByLocation(string $location, array $defaultData = []): array {
-		$config = ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $location], 'limit' => 1];
+		$config = ['filters' => ['register' => 'integriq', 'schema' => 'source', 'location' => $location], 'limit' => 1];
 		$matches = $this->orObjectService->findAll(config: $config);
 		$objects = array_values(($matches['results'] ?? $matches));
 
@@ -3758,7 +3758,7 @@ class SynchronizationService {
 			try {
 				$sourceHashMapping = $this->orObjectService->find(
 					id: (string)$synchronization['sourceHashMapping'],
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'mapping'
 				);
 			} catch (DoesNotExistException $exception) {
@@ -4342,7 +4342,7 @@ class SynchronizationService {
 			try {
 				$sourceTargetMapping = $this->orObjectService->find(
 					id: (string)$synchronization['sourceTargetMapping'],
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'mapping'
 				);
 			} catch (DoesNotExistException $exception) {
@@ -6645,7 +6645,7 @@ class SynchronizationService {
 			$knownObjects = $this->orObjectService->count(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'synchronization_contract',
 						'synchronizationId' => $synchronizationId,
 					],
@@ -8416,7 +8416,7 @@ class SynchronizationService {
 		try {
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'rule',
 				_rbac: false,
 				_multitenancy: false
@@ -8436,7 +8436,6 @@ class SynchronizationService {
 		}
 
 		return $object->jsonSerialize();
-
 	}//end findRule()
 
 	/**
@@ -8506,7 +8505,7 @@ class SynchronizationService {
 		try {
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'rule'
 			);
 		} catch (Exception $e) {

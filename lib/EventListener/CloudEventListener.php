@@ -62,7 +62,7 @@ class CloudEventListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	private const SELF_REGISTER = 'openconnector';
+	private const SELF_REGISTER = 'integriq';
 
 	/**
 	 * Resolved ids of {@see self::SELF_SCHEMAS}, or null until first use.

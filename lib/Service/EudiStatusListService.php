@@ -88,7 +88,7 @@ class EudiStatusListService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_status_list',
 					'organisationId' => $scope,
 				],
@@ -114,7 +114,7 @@ class EudiStatusListService {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $uuid
 		);
@@ -162,7 +162,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -188,7 +188,7 @@ class EudiStatusListService {
 	public function revokeIndex(string $statusListId, int $index): bool {
 		$entity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
 			_multitenancy: false
@@ -206,7 +206,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -216,7 +216,7 @@ class EudiStatusListService {
 		// background refresh window.
 		$refreshedEntity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
 			_multitenancy: false
@@ -338,7 +338,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -360,7 +360,7 @@ class EudiStatusListService {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $statusListId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'eudi_status_list',
 				_rbac: false,
 				_multitenancy: false
@@ -389,7 +389,7 @@ class EudiStatusListService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_status_list',
 				],
 			],

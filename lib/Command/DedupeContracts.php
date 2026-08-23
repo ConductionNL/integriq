@@ -356,7 +356,7 @@ class DedupeContracts extends Command {
 		}
 
 		$found = $this->objects->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization']]
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'synchronization']]
 		);
 
 		$results = ($found['results'] ?? $found);

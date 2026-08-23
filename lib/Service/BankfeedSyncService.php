@@ -61,7 +61,7 @@ class BankfeedSyncService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a PSD2 aggregator source.
@@ -502,7 +502,7 @@ class BankfeedSyncService {
 					'since' => $since,
 					'until' => $until,
 					'transactionCount' => count($pull['transactions']),
-					'batchUri' => '/apps/openregister/api/objects/openconnector/bankfeed_batch/' . $batch->getUuid(),
+					'batchUri' => '/apps/openregister/api/objects/integriq/bankfeed_batch/' . $batch->getUuid(),
 				]
 			);
 

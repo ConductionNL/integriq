@@ -117,7 +117,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
 			)
@@ -152,7 +152,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
 			)

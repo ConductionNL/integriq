@@ -133,7 +133,7 @@ class LtiKeyService {
 		try {
 			return $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
 				_multitenancy: false
@@ -286,7 +286,7 @@ class LtiKeyService {
 		$data['signingKeys'] = $signingKeys;
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -347,7 +347,7 @@ class LtiKeyService {
 		$data['signingKeys'] = $signingKeys;
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -399,7 +399,7 @@ class LtiKeyService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -537,7 +537,7 @@ class LtiKeyService {
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => $registrationType,
 					],
 				],
@@ -571,7 +571,7 @@ class LtiKeyService {
 					$data['signingKeys'] = $signingKeys;
 					$this->orObjectService->saveObject(
 						object: $data,
-						register: 'openconnector',
+						register: 'integriq',
 						schema: $registrationType,
 						uuid: $registration->getUuid()
 					);

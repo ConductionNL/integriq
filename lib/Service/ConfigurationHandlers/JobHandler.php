@@ -176,14 +176,14 @@ class JobHandler implements ConfigurationHandlerInterface {
 			// Update existing job.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'job',
 				uuid: $mappings['job']['slugToId'][$slug]
 			);
 		}
 
 		// Create new job.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'job');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'job');
 	}//end import()
 
 	/**

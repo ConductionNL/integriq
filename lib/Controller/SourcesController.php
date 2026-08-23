@@ -192,7 +192,7 @@ class SourcesController extends Controller {
 			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
 			// Get call logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'call_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'call_log'], $filters);
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => $orFilters,
@@ -258,7 +258,7 @@ class SourcesController extends Controller {
 		// ObjectService::find() throws DoesNotExistException on a missing
 		// UUID — catch it so the response is a clean 404 instead of 500.
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -365,7 +365,7 @@ class SourcesController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function tripCircuitBreaker(CallService $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -398,7 +398,7 @@ class SourcesController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function resetCircuitBreaker(CallService $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}

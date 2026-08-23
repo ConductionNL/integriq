@@ -112,6 +112,23 @@
 			     discard the admin's real settings. -->
 			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
 			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
+			<!-- Fourth leg of the rename, and the one that lives on the register
+			     ROW. The register slug moves too (`openconnector` -> `integriq`),
+			     together with `x-openregister.app`, which for a
+			     `type: application` configuration IS a register slug rather than
+			     an attribution label. It MUST run before InitializeRegister,
+			     because OpenRegister resolves a register by slug and its
+			     not-found branch CREATES a second, empty register rather than
+			     failing — so an import that runs first would fork the register
+			     and leave every stored object behind on the old row, silently.
+
+			     It moves no data. An object is bound to its register by NUMERIC
+			     id (`_register` in every shard table, and the tables themselves
+			     are named `oc_openregister_table_<registerId>_<schemaId>`), so
+			     the rename is one column on one row. Idempotent and
+			     non-destructive; declared in both hooks for the same reason the
+			     two steps above it are. -->
+			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
 			<!-- Third leg of the app-id rename, and the one that lives in
 			     OpenRegister rather than in oc_appconfig. A job object stores its
@@ -164,6 +181,23 @@
 			     both routes does the work once. -->
 			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
 			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
+			<!-- Fourth leg of the rename, and the one that lives on the register
+			     ROW. The register slug moves too (`openconnector` -> `integriq`),
+			     together with `x-openregister.app`, which for a
+			     `type: application` configuration IS a register slug rather than
+			     an attribution label. It MUST run before InitializeRegister,
+			     because OpenRegister resolves a register by slug and its
+			     not-found branch CREATES a second, empty register rather than
+			     failing — so an import that runs first would fork the register
+			     and leave every stored object behind on the old row, silently.
+
+			     It moves no data. An object is bound to its register by NUMERIC
+			     id (`_register` in every shard table, and the tables themselves
+			     are named `oc_openregister_table_<registerId>_<schemaId>`), so
+			     the rename is one column on one row. Idempotent and
+			     non-destructive; declared in both hooks for the same reason the
+			     two steps above it are. -->
+			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
 			<!-- See the note on this step in <post-migration>. Idempotent, and a
 			     no-op on a first install (no stored jobs yet), but declared here

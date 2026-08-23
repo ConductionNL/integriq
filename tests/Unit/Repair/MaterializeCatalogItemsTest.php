@@ -101,7 +101,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
-					$this->assertSame('openconnector', $register);
+					$this->assertSame('integriq', $register);
 					$this->assertSame('catalog_item', $schema);
 					$this->assertNull($uuid, 'first run must CREATE (no uuid)');
 					$this->assertSame('dormant', $object['status']);

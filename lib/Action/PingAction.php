@@ -88,7 +88,7 @@ class PingAction {
 		// session at all — and the `source` schema is admin-only now.
 		$source = $this->orObjectService->find(
 			id: $sourceId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			_rbac: false,
 			_multitenancy: false

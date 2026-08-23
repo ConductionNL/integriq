@@ -157,7 +157,7 @@ class ConfigurationService {
 	 */
 	private function buildSchemaSlugMaps(string $schema): array {
 		$result = $this->orObjectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => $schema]]
+			config: ['filters' => ['register' => 'integriq', 'schema' => $schema]]
 		);
 		$items = $result['results'] ?? $result;
 		$idToSlug = [];
@@ -236,7 +236,7 @@ class ConfigurationService {
 	private function fetchBySchema(string $schema, array $filters = []): array {
 		$result = $this->orObjectService->findAll(
 			config: [
-				'filters' => array_merge(['register' => 'openconnector', 'schema' => $schema], $filters),
+				'filters' => array_merge(['register' => 'integriq', 'schema' => $schema], $filters),
 			]
 		);
 		$items = ($result['results'] ?? $result);

@@ -40,7 +40,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'The signature is verified over the raw request body before any other rule runs. For scheme "github" the timestamp tolerance is ignored.',
 				)
 			}}

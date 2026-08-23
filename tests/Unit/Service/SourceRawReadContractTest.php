@@ -313,7 +313,7 @@ class SourceRawReadContractTest extends TestCase {
 			$client . ' must re-read the source EXACTLY once with _render: false.'
 		);
 
-		$this->assertSame('openconnector', $rawReads[0]['register'], $client . ' re-read the wrong register.');
+		$this->assertSame('integriq', $rawReads[0]['register'], $client . ' re-read the wrong register.');
 		$this->assertSame('source', $rawReads[0]['schema'], $client . ' re-read the wrong schema.');
 		$this->assertTrue($rawReads[0]['_rbac'], $client . ' must NOT disable rbac to get the secret — _render is the load-bearing argument.');
 		$this->assertTrue($rawReads[0]['_multitenancy'], $client . ' must NOT disable multitenancy to get the secret.');
@@ -338,7 +338,7 @@ class SourceRawReadContractTest extends TestCase {
 		$this->assertSame('token', ($auth['mode'] ?? null), 'A non-declared sibling must survive the strip.');
 
 		// An `_rbac: false` read is NOT an escape: the strip is schema-gated.
-		$rbacOff = $fake->find(id: self::SOURCE_UUID, register: 'openconnector', schema: 'source', _rbac: false);
+		$rbacOff = $fake->find(id: self::SOURCE_UUID, register: 'integriq', schema: 'source', _rbac: false);
 		$this->assertArrayNotHasKey(
 			'encryptedToken',
 			($rbacOff->getObject()['configuration']['authentication'] ?? []),

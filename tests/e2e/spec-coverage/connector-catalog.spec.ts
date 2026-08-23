@@ -40,12 +40,15 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 	// schema (`catalog_item`) is unchanged, so only the page/menu id moves.
 	//
 	// @e2e openconnector-app-manifest::catalog-page-entry-is-present-and-uses-the-cards-index-pattern
-	test('Store page entry uses type:index + viewMode:cards on openconnector/catalog_item', () => {
+	test('Store page entry uses type:index + viewMode:cards on integriq/catalog_item', () => {
 		const page = manifest.pages.find((p: { id: string }) => p.id === 'Store')
 		expect(page, 'Store page must exist in the manifest').toBeTruthy()
 		expect(page.type).toBe('index')
 		expect(page.config.viewMode).toBe('cards')
-		expect(page.config.register).toBe('openconnector')
+		// The REGISTER slug moved with the app rename; the SCHEMA did not — the
+		// @e2e tag above still names openconnector-app-manifest because that is
+		// the spec file's name, which has not been renamed.
+		expect(page.config.register).toBe('integriq')
 		expect(page.config.schema).toBe('catalog_item')
 		expect(page.config.cardComponent).toBe('CatalogItemCard')
 	})

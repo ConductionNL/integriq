@@ -13,8 +13,8 @@
   },
   "components": {
     "registers": {
-      "openconnector": {
-        "slug": "openconnector",
+      "integriq": {
+        "slug": "integriq",
         "title": "OpenConnector",
         "version": "1.0.0",
         "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, Bankfeed Connection/Batch (PSD2 AIS), Cardfeed Account/Batch (corporate card feed), LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message, FSC Service/Call + 4 log schemas.",
@@ -2816,7 +2816,7 @@
         "x-openregister-seed": [
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-1"
             },
@@ -2832,7 +2832,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-2"
             },
@@ -2848,7 +2848,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-3"
             },
@@ -2860,7 +2860,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-4"
             },
@@ -2873,7 +2873,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "ris_sync_record",
               "slug": "ris-sync-record-demo-5"
             },

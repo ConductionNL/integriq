@@ -45,7 +45,7 @@
 		:title="pageTitle"
 		:description="
 			t(
-				'openconnector',
+				'integriq',
 				'Configure when this rule fires and what it does. Conditions are evaluated as JSON Logic against the incoming request/data.',
 			)
 		"
@@ -200,7 +200,7 @@
 					{{
 						rawConditionsError
 						|| t(
-							'openconnector',
+							'integriq',
 							'Edit the JSON Logic directly. Saved into the rule conditions field exactly as typed.',
 						)
 					}}
@@ -268,7 +268,7 @@ export default {
 		/** Route param `:id` — the rule's UUID (forwarded by CnPageRenderer). */
 		id: { type: [String, Number], default: '' },
 		/** Manifest `config.register` — passed through resolvedProps. */
-		register: { type: String, default: 'openconnector' },
+		register: { type: String, default: 'integriq' },
 		/** Manifest `config.schema` — passed through resolvedProps. */
 		schema: { type: String, default: 'rule' },
 	},
@@ -289,7 +289,7 @@ export default {
 			objectStore.registerObjectType(
 				OBJECT_TYPE,
 				props.schema || 'rule',
-				props.register || 'openconnector',
+				props.register || 'integriq',
 			)
 		}
 		return { objectStore }
@@ -558,7 +558,7 @@ export default {
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
 				this.rawConditionsError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
