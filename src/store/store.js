@@ -13,7 +13,7 @@
 // store was deleted in #885 — its only call site fetched a route deleted
 // in chain-C (`GET /api/settings`), spamming 404s on every page load.
 // nc-vue's CnIndexPage/CnDetailPage/CnLogsPage manage list/detail/log
-// state internally against OR's `/api/objects/openconnector/{schema}/*`
+// state internally against OR's `/api/objects/integriq/{schema}/*`
 // endpoints, so app-local stores for those resources are redundant.
 //
 // Connector-specific action stores (useJobRunner, useSourceTester,

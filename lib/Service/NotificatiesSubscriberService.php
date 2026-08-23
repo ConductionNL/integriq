@@ -177,7 +177,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 	 */
 	public function updateAbonnement(string $id, array $config): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'openconnector', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
 		$source = $this->resolveSource(sourceId: (string)($data['sourceId'] ?? ''));
@@ -245,7 +245,7 @@ class NotificatiesSubscriberService {
 				'authScheme' => (string)($config['authScheme'] ?? ''),
 				'status' => self::STATUS_PENDING,
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'notificaties_abonnement'
 		);
 
@@ -262,7 +262,7 @@ class NotificatiesSubscriberService {
 	private function persistAbonnement(array $data, string $id): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'notificaties_abonnement',
 			uuid: $id
 		);
@@ -295,7 +295,7 @@ class NotificatiesSubscriberService {
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'consumer'
 		);
 
@@ -410,7 +410,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 	 */
 	public function deleteAbonnement(string $id): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'openconnector', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
 		$data = $abonnement->getObject();
 
 		if (($data['status'] ?? '') === self::STATUS_DELETED) {
@@ -485,7 +485,7 @@ class NotificatiesSubscriberService {
 	 */
 	public function findAbonnement(string $abonnementId): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $abonnementId, register: 'openconnector', schema: 'notificaties_abonnement');
+			return $this->objectService->find(id: $abonnementId, register: 'integriq', schema: 'notificaties_abonnement');
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -668,7 +668,7 @@ class NotificatiesSubscriberService {
 		}
 
 		try {
-			return $this->objectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+			return $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source');
 		} catch (Throwable $e) {
 			return null;
 		}

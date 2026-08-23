@@ -111,7 +111,7 @@ final class SyncRefResolver {
 			$result = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'source',
 						'id' => $legacyId,
 					],

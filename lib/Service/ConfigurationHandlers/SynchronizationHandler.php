@@ -324,14 +324,14 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 			// Update existing synchronization.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization',
 				uuid: $mappings['synchronization']['slugToId'][$slug]
 			);
 		}
 
 		// Create new synchronization.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'synchronization');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'synchronization');
 	}//end import()
 
 	/**

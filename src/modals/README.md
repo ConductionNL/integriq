@@ -20,7 +20,7 @@ imports against deleted per-schema stores (`sourceStore`, `mappingStore`,
 …) and the deleted `src/entities/` tree are intentionally broken; they only
 serve as a template / UX spec for the upcoming PR series that re-implements
 each modal as a CnIndexPage `#form-dialog` slot component wired to
-`useObjectStore` (nc-vue) + the OR `/api/objects/openconnector/{schema}/*`
+`useObjectStore` (nc-vue) + the OR `/api/objects/integriq/{schema}/*`
 endpoints.
 
 ESLint and webpack ignore this directory. Once a modal is reborn as a

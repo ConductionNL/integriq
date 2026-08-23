@@ -6,7 +6,7 @@
  * Thin controller over CatalogRegistryService exposing the two bespoke,
  * non-CRUD catalog endpoints — everything else about the Catalog page
  * (listing, search, category filter) goes through OpenRegister's generic
- * `/api/objects/openconnector/catalog_item` endpoint per ADR-022, so no
+ * `/api/objects/integriq/catalog_item` endpoint per ADR-022, so no
  * `index`/`show` methods are added here.
  *
  * @category Controller
@@ -247,7 +247,7 @@ class CatalogController extends Controller {
 			$existingData['isEnabled'] = true;
 			$saved = $this->objectService->saveObject(
 				object: $existingData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				uuid: $existing->getUuid()
 			);
@@ -271,7 +271,7 @@ class CatalogController extends Controller {
 		$seedPayload['isEnabled'] = true;
 		$created = $this->objectService->saveObject(
 			object: $seedPayload,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source'
 		);
 
@@ -297,7 +297,7 @@ class CatalogController extends Controller {
 	 */
 	private function findCatalogItem(string $id): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: 'openconnector', schema: 'catalog_item');
+			return $this->objectService->find(id: $id, register: 'integriq', schema: 'catalog_item');
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
@@ -313,7 +313,7 @@ class CatalogController extends Controller {
 	 */
 	private function findSourceBySlug(string $slug): ?ObjectEntity {
 		$result = $this->objectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'slug' => $slug]]
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'source', 'slug' => $slug]]
 		);
 		$items = ($result['results'] ?? $result);
 		foreach ($items as $item) {

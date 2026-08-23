@@ -77,7 +77,7 @@ class RenameDutchColumns implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const REGISTER_SLUG_PREFIX = 'openconnector';
+	private const REGISTER_SLUG_PREFIX = 'integriq';
 
 	/**
 	 * Old snake_case column name => new snake_case column name.

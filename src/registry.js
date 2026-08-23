@@ -8,7 +8,7 @@
 // component registry is empty (all 23 manifest pages use a standard
 // nc-vue type — CnIndexPage / CnDetailPage / CnLogsPage /
 // CnDashboardPage / CnSettingsPage — and resolve their CRUD against
-// OR's `/api/objects/openconnector/{schema}/*` routes). Bulk import is
+// OR's `/api/objects/integriq/{schema}/*` routes). Bulk import is
 // now per-schema via CnIndexPage's built-in CnMassImportDialog action
 // (Actions → Import on each index page) — the chain-A custom Import
 // page was deleted because its backend `POST /api/import` endpoint had

@@ -12,7 +12,7 @@ Schedules, runs, and logs Integriq background jobs. It registers jobs as Nextclo
 ### Requirement: Job log listing with pagination and filter parameters (REQ-001)
 
 `JobsController::logs(SearchService $searchService): JSONResponse` MUST
-return job-log records from OR (`register: 'openconnector', schema:
+return job-log records from OR (`register: 'integriq', schema:
 'job_log'`) under `@NoAdminRequired` / `@NoCSRFRequired`.
 
 The endpoint MUST accept pagination via `_page` (default 1) and `_limit`
@@ -395,7 +395,7 @@ every five minutes. It sets neither `setTimeSensitivity()` nor
 `LogCleanUpTask`, which sets both).
 
 **Selection.** `run()` MUST query OR with
-`findAll(config: ['filters' => ['register' => 'openconnector', 'schema' =>
+`findAll(config: ['filters' => ['register' => 'integriq', 'schema' =>
 'synchronization_run', 'status' => 'running']], _rbac: false, _multitenancy:
 false)` and read `$result['results'] ?? $result`. Because the filter names
 `status: running`, records already in a terminal state (`success` or `failed`)
@@ -430,7 +430,7 @@ The counter properties (`found`, `processed`, `created`, `updated`, `deleted`,
 they keep their last-observed values, which is what the `message` warns about.
 
 The write MUST be
-`saveObject(object: …, register: 'openconnector', schema: 'synchronization_run',
+`saveObject(object: …, register: 'integriq', schema: 'synchronization_run',
 uuid: $entity->getUuid(), _rbac: false, _multitenancy: false, silent: true,
 _validation: false)`.
 

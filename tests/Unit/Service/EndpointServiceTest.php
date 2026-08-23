@@ -839,7 +839,7 @@ class EndpointServiceTest extends TestCase {
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-save']], 'endpoint-trace-3');
 		$saveRule = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['order' => 10, 'name' => 'Save object', 'type' => 'save_object', 'timing' => 'before', 'configuration' => ['save_object' => ['register' => 'openconnector', 'schema' => 'x']]],
+			['order' => 10, 'name' => 'Save object', 'type' => 'save_object', 'timing' => 'before', 'configuration' => ['save_object' => ['register' => 'integriq', 'schema' => 'x']]],
 			'rule-save'
 		);
 		$this->orObjectService->method('find')->willReturn($saveRule);

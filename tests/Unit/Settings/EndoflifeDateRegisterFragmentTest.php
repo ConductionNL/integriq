@@ -122,7 +122,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 
 	/**
 	 * TC-3 / TC-4: `eolProduct` and `eolCycle` are both declared under
-	 * register `openconnector`'s schema list, and `eolCycle.properties`
+	 * register `integriq`'s schema list, and `eolCycle.properties`
 	 * covers the brief's required field list.
 	 *
 	 * @return void
@@ -132,7 +132,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 
 		$this->assertSame(
 			['eolProduct', 'eolCycle'],
-			$fragment['components']['registers']['openconnector']['schemas'] ?? null
+			$fragment['components']['registers']['integriq']['schemas'] ?? null
 		);
 
 		$schemas = ($fragment['components']['schemas'] ?? []);
@@ -171,7 +171,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 	 * Merging the fragment onto a representative base descriptor attaches
 	 * eolProduct/eolCycle without redeclaring a disjoint pre-existing
 	 * schema slug (ADR-037 union-by-key), and does not create a second
-	 * register (openconnector-register-schema REQ-A-001).
+	 * register (integriq-register-schema REQ-A-001).
 	 *
 	 * @return void
 	 */
@@ -181,8 +181,8 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 		$base = [
 			'components' => [
 				'registers' => [
-					'openconnector' => [
-						'slug' => 'openconnector',
+					'integriq' => [
+						'slug' => 'integriq',
 						'schemas' => ['source', 'synchronization', 'mapping', 'job'],
 					],
 				],
@@ -196,12 +196,12 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 
 		$this->assertSame(
 			['source', 'synchronization', 'mapping', 'job', 'eolProduct', 'eolCycle'],
-			$merged['components']['registers']['openconnector']['schemas'],
+			$merged['components']['registers']['integriq']['schemas'],
 			'existing schema slugs must be preserved with eolProduct/eolCycle appended, not redeclared'
 		);
 
 		// Only one register is ever declared/merged onto.
-		$this->assertSame(['openconnector'], array_keys($merged['components']['registers']));
+		$this->assertSame(['integriq'], array_keys($merged['components']['registers']));
 		$this->assertSame(['type' => 'object'], $merged['components']['schemas']['source'], 'a disjoint pre-existing schema must not be disturbed');
 
 	}//end testMergingSchemasFragmentAttachesWithoutRedeclaringExistingSlugsOrANewRegister()
@@ -308,7 +308,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 			$this->assertSame('cycle', $sync['sourceConfig']['idPosition'] ?? null);
 			$this->assertEqualsWithDelta(0.5, $sync['sourceConfig']['deletionRatioThreshold'] ?? null, 0.0001, "synchronization '$syncSlug' must raise deletionRatioThreshold to 0.5 (design.md Decision 7)");
 			$this->assertSame('register/schema', $sync['targetType'] ?? null);
-			$this->assertSame('openconnector/eolCycle', $sync['targetId'] ?? null);
+			$this->assertSame('integriq/eolCycle', $sync['targetId'] ?? null);
 			$this->assertSame($mappingSlug, $sync['sourceTargetMapping'] ?? null);
 
 			// Job: generic dispatch, daily cadence, correct slug-addressed

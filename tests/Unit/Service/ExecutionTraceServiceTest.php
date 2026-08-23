@@ -67,7 +67,7 @@ final class ExecutionTraceServiceTest extends TestCase {
 		// call resolves to on ORObjectService::saveObject()'s real signature
 		// (object, extend, register, schema, uuid, ...) — assert by value,
 		// not by position, so this stays robust to that resolution.
-		$this->assertContains('openconnector', $capturedArgs);
+		$this->assertContains('integriq', $capturedArgs);
 		$this->assertContains('execution_trace', $capturedArgs);
 		$this->assertContains('trace-abc', $capturedArgs);
 	}//end testPersistSavesUsingTraceIdAsUuid()

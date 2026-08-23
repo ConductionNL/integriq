@@ -358,7 +358,7 @@ class ApprovalsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: (string)$data['synchronizationId'],
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization',
 				_rbac: false,
 				_multitenancy: false

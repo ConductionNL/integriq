@@ -110,7 +110,7 @@ import SynchronizationEditorModal from './SynchronizationEditorModal.vue'
 import { useObjectStore } from '../../store/objectStore.js'
 
 const SCHEMA_SLUG = 'synchronization'
-const REGISTER_SLUG = 'openconnector'
+const REGISTER_SLUG = 'integriq'
 
 export default {
 	name: 'SynchronizationNodeEditor',

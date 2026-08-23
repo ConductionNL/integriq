@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  */
 class LegacyToRegisterMigrator {
 
-	public const REGISTER_SLUG = 'openconnector';
+	public const REGISTER_SLUG = 'integriq';
 
 	/**
 	 * Migration order — entities without intra-openconnector FKs first, then dependents.

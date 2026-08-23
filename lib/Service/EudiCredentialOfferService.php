@@ -283,7 +283,7 @@ class EudiCredentialOfferService {
 
 		$this->orObjectService->saveObject(
 			object: $row,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $uuid
 		);
@@ -327,7 +327,7 @@ class EudiCredentialOfferService {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $uuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
 				_multitenancy: false
@@ -366,7 +366,7 @@ class EudiCredentialOfferService {
 		$data['offerFetchedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $uuid
 		);
@@ -398,7 +398,7 @@ class EudiCredentialOfferService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_credential_offer',
 					'preAuthorizedCodeHash' => $hash,
 				],
@@ -475,7 +475,7 @@ class EudiCredentialOfferService {
 				$offerData['txCodeFailedAttempts'] = ($attempts + 1);
 				$this->orObjectService->saveObject(
 					object: $offerData,
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'eudi_credential_offer',
 					uuid: $entity->getUuid()
 				);
@@ -496,7 +496,7 @@ class EudiCredentialOfferService {
 		$offerData['status'] = 'claimed';
 		$this->orObjectService->saveObject(
 			object: $offerData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $entity->getUuid()
 		);
@@ -519,7 +519,7 @@ class EudiCredentialOfferService {
 				'credentialConfigurationId' => $offerCredentialConfigId,
 				'expiresAt' => $sessionExpires->format('c'),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_issuance_session',
 			uuid: $sessionUuid
 		);
@@ -623,7 +623,7 @@ class EudiCredentialOfferService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_issuance_session',
 					'accessTokenHash' => $hash,
 				],
@@ -660,7 +660,7 @@ class EudiCredentialOfferService {
 		try {
 			$offerEntity = $this->orObjectService->find(
 				id: $offerId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
 				_multitenancy: false
@@ -698,7 +698,7 @@ class EudiCredentialOfferService {
 		$sessionData['consumedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $sessionData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_issuance_session',
 			uuid: $session->getUuid()
 		);
@@ -788,7 +788,7 @@ class EudiCredentialOfferService {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $offerUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
 				_multitenancy: false
@@ -816,7 +816,7 @@ class EudiCredentialOfferService {
 		$data['revokedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $entity->getUuid()
 		);

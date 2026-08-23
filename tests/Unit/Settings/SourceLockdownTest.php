@@ -6,7 +6,7 @@
  * The `source` schema shipped with NO `authorization` block, so it fell back to
  * OpenRegister's default — readable by ANY authenticated user. Because OpenRegister has no
  * field-level redaction (openregister#380), that meant
- * `GET /apps/openregister/api/objects/openconnector/source` handed every Source's
+ * `GET /apps/openregister/api/objects/integriq/source` handed every Source's
  * `apikey`, `secret`, `password` and `jwt` to any account on the instance, in cleartext.
  *
  * Verified on 2026-07-13 by reading them as a brand-new user in zero groups. On a

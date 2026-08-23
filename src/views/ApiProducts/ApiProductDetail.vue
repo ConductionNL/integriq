@@ -10,10 +10,10 @@
   no inline NcModal — everything happens on the page body).
 
   Backend contract: the product itself is a plain OR object
-  (GET/PATCH /api/objects/openconnector/api_product/{id}); Endpoints are
-  listed from /api/objects/openconnector/endpoint (mirrors
+  (GET/PATCH /api/objects/integriq/api_product/{id}); Endpoints are
+  listed from /api/objects/integriq/endpoint (mirrors
   AddEndpointRuleModal's endpoint-picker pattern); subscriptions are listed
-  from /api/objects/openconnector/api_product_subscription filtered by
+  from /api/objects/integriq/api_product_subscription filtered by
   product; approve/reject/analytics are the bespoke, two-layer-authorized
   ProductSubscriptionsController routes.
 
@@ -411,7 +411,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`,
+						`/apps/openregister/api/objects/integriq/api_product/${this.productId}`,
 					),
 				)
 				this.product = res.data
@@ -428,7 +428,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/endpoint',
+						'/apps/openregister/api/objects/integriq/endpoint',
 					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
@@ -470,7 +470,7 @@ export default {
 			try {
 				const res = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/api_product_subscription',
+						'/apps/openregister/api/objects/integriq/api_product_subscription',
 					),
 					// `product` IS meant to be a property filter; `_limit` is a
 					// CONTROL param and needs the underscore. Written as `limit`
@@ -505,7 +505,7 @@ export default {
 			try {
 				await axios.patch(
 					generateUrl(
-						`/apps/openregister/api/objects/openconnector/api_product/${this.productId}`,
+						`/apps/openregister/api/objects/integriq/api_product/${this.productId}`,
 					),
 					{ [field]: value },
 				)

@@ -27,7 +27,7 @@ final class SyncRefResolverTest extends TestCase {
 			->with(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'source',
 						'id' => 42,
 					],
@@ -58,10 +58,10 @@ final class SyncRefResolverTest extends TestCase {
 	public function testRegisterSchemaSlugPair(): void {
 		$resolver = $this->makeResolver();
 
-		$result = $resolver->resolve('openconnector/source');
+		$result = $resolver->resolve('integriq/source');
 
 		$this->assertSame('register-schema', $result['variant']);
-		$this->assertSame('openconnector/source', $result['value']);
+		$this->assertSame('integriq/source', $result['value']);
 	}
 
 	public function testUuidIsPassedThroughUnchanged(): void {

@@ -384,7 +384,7 @@ class PromotionServiceTest extends TestCase {
 							&& !array_key_exists('entities', $payload['previewSummary']);
 					}
 				),
-				'openconnector',
+				'integriq',
 				'promotion_audit'
 			)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-1'));
@@ -422,7 +422,7 @@ class PromotionServiceTest extends TestCase {
 							&& ($payload['callLogId'] ?? null) === 'calllog-404';
 					}
 				),
-				'openconnector',
+				'integriq',
 				'promotion_audit'
 			)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-2'));

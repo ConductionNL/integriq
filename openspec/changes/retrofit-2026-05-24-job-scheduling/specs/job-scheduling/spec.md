@@ -23,7 +23,7 @@ are documented in REQ Notes and design.md without being silently fixed.
 ### REQ-001: Job log listing with pagination and filter parameters
 
 `JobsController::logs(SearchService $searchService): JSONResponse` MUST
-return job-log records from OR (`register: 'openconnector', schema:
+return job-log records from OR (`register: 'integriq', schema:
 'job_log'`) under `@NoAdminRequired` / `@NoCSRFRequired`.
 
 The endpoint MUST accept pagination via `_page` (default 1) and `_limit`

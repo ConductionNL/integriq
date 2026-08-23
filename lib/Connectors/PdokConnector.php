@@ -515,14 +515,14 @@ class PdokConnector {
 
 		try {
 			if ($endpoint === 'lookup' && isset($params['id']) === true) {
-				$docs = $objectService->getMapper(register: 'openconnector', schema: 'addresses')->findAll(
+				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
 					[
 						'limit' => 1,
 						'filter' => ['pdokId' => $params['id']],
 					]
 				);
 			} elseif ($endpoint === 'reverse' && isset($params['lat'], $params['lon']) === true) {
-				$docs = $objectService->getMapper(register: 'openconnector', schema: 'addresses')->findAll(
+				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
 					[
 						'limit' => 1,
 						'geo' => [
@@ -569,7 +569,7 @@ class PdokConnector {
 
 		try {
 			$objectService->saveObject(
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'addresses',
 				object: $doc,
 				uniqueOn: ['pdokId'],

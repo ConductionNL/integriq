@@ -1162,7 +1162,7 @@ class EndpointService {
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'api_product',
 					],
 					'limit' => 500,
@@ -1210,7 +1210,7 @@ class EndpointService {
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'api_product_subscription',
 						'consumer' => $consumerUuid,
 						'product' => $productUuid,
@@ -1341,7 +1341,7 @@ class EndpointService {
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
 				],
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'call_log'
 			);
 		} catch (\Throwable $e) {
@@ -1376,7 +1376,7 @@ class EndpointService {
 					'direction' => 'inbound',
 					'created' => (new DateTime())->format('c'),
 				],
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'call_log'
 			);
 		} catch (\Throwable $e) {
@@ -1692,7 +1692,7 @@ class EndpointService {
 			$epMatches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'endpoint',
 						'endpointRegex' => $parsedPath,
 						'method' => 'GET',
@@ -2189,7 +2189,7 @@ class EndpointService {
 		// needs the source; the caller must not be able to read it.
 		$source = $this->orObjectService->find(
 			id: ($endpointData['targetId'] ?? ''),
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			_rbac: false,
 			_multitenancy: false
@@ -2344,7 +2344,7 @@ class EndpointService {
 		$epMatches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'endpoint',
 					'targetId' => $target,
 					'method' => 'GET',
@@ -2847,7 +2847,7 @@ class EndpointService {
 			// This mirrors CallService::resolveSourceForDispatch()'s raw source re-resolve (ocon#215/#236).
 			return $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'rule',
 				_rbac: false,
 				_multitenancy: false,
@@ -2872,7 +2872,7 @@ class EndpointService {
 	 */
 	public function getEndpointById(string $id): ?ObjectEntity {
 		try {
-			return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'endpoint', _rbac: false, _multitenancy: false);
+			return $this->orObjectService->find(id: $id, register: 'integriq', schema: 'endpoint', _rbac: false, _multitenancy: false);
 		} catch (Exception $e) {
 			$this->logger->error('Error fetching endpoint: ' . $e->getMessage());
 			return null;

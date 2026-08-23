@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Integriq — chain E integration tests",
-    "description": "Post-OR-cutover (chain B/C) integration suite.\n\nDesign:\n1. **OR-backed fixture setup** (folder 01) — creates source/mapping/endpoint/job/synchronization/consumer/rule/event/eventSubscription via OR's `/api/objects/openconnector/{schema}/*`. UUIDs cached in collection variables for downstream use.\n2. **Surviving integriq action endpoints** (folders 02–12) — exercises every named route in `appinfo/routes.php`. Fixtures from step 1 supply IDs.\n3. **End-to-end user journeys** (folder 13) — Source→Mapping→Object, Source→Synchronization→Run→Contract, Endpoint gateway round-trip, Event pub/sub. Each journey owns its own fixtures and cleans up.\n4. **Teardown** (folder 99) — deletes shared fixtures via OR.\n\nThe suite is hermetic: it expects a freshly-seeded dev container, makes no assumption about pre-existing data, and leaves the database in the state it found it.\n\nEnvironment vars: `baseUrl`, `admin_user`, `admin_pass`. Run via `npm run test:newman`.\n\nRoute audit (sync with `appinfo/routes.php`):\n- Resource block removed in this cutover — CRUD now at `/api/objects/openconnector/{schema}/*`.\n- 67 named routes still active. Every one of them is touched by this suite.",
+    "description": "Post-OR-cutover (chain B/C) integration suite.\n\nDesign:\n1. **OR-backed fixture setup** (folder 01) — creates source/mapping/endpoint/job/synchronization/consumer/rule/event/eventSubscription via OR's `/api/objects/integriq/{schema}/*`. UUIDs cached in collection variables for downstream use.\n2. **Surviving integriq action endpoints** (folders 02–12) — exercises every named route in `appinfo/routes.php`. Fixtures from step 1 supply IDs.\n3. **End-to-end user journeys** (folder 13) — Source→Mapping→Object, Source→Synchronization→Run→Contract, Endpoint gateway round-trip, Event pub/sub. Each journey owns its own fixtures and cleans up.\n4. **Teardown** (folder 99) — deletes shared fixtures via OR.\n\nThe suite is hermetic: it expects a freshly-seeded dev container, makes no assumption about pre-existing data, and leaves the database in the state it found it.\n\nEnvironment vars: `baseUrl`, `admin_user`, `admin_pass`. Run via `npm run test:newman`.\n\nRoute audit (sync with `appinfo/routes.php`):\n- Resource block removed in this cutover — CRUD now at `/api/objects/integriq/{schema}/*`.\n- 67 named routes still active. Every one of them is touched by this suite.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "integriq-chain-e-2026-05-20"
   },
@@ -135,7 +135,7 @@
             "method": "POST",
             "url": { "raw": "{{orBase}}/synchronization", "host": ["{{orBase}}"], "path": ["synchronization"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sync\",\"sourceId\":\"{{fxSourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"openconnector/source\",\"targetType\":\"register/schema\"}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sync\",\"sourceId\":\"{{fxSourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"integriq/source\",\"targetType\":\"register/schema\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -815,7 +815,7 @@
                 "method": "POST",
                 "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j2-self-source\",\"type\":\"api\",\"location\":\"{{base_url}}/index.php/apps/openregister/api/objects/openconnector/source\",\"auth\":\"basic\"}" }
+                "body": { "mode": "raw", "raw": "{\"name\":\"j2-self-source\",\"type\":\"api\",\"location\":\"{{base_url}}/index.php/apps/openregister/api/objects/integriq/source\",\"auth\":\"basic\"}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -829,7 +829,7 @@
                 "method": "POST",
                 "url": { "raw": "{{orBase}}/synchronization", "host": ["{{orBase}}"], "path": ["synchronization"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j2-sync\",\"sourceId\":\"{{j2SourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"openconnector/source\",\"targetType\":\"register/schema\"}" }
+                "body": { "mode": "raw", "raw": "{\"name\":\"j2-sync\",\"sourceId\":\"{{j2SourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"integriq/source\",\"targetType\":\"register/schema\"}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -884,7 +884,7 @@
                 "method": "POST",
                 "url": { "raw": "{{orBase}}/endpoint", "host": ["{{orBase}}"], "path": ["endpoint"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j3-endpoint\",\"endpoint\":\"j3-newman\",\"method\":\"GET\",\"targetType\":\"register/schema\",\"targetId\":\"openconnector/source\",\"isEnabled\":true}" }
+                "body": { "mode": "raw", "raw": "{\"name\":\"j3-endpoint\",\"endpoint\":\"j3-newman\",\"method\":\"GET\",\"targetType\":\"register/schema\",\"targetId\":\"integriq/source\",\"isEnabled\":true}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",

@@ -177,14 +177,14 @@ class RuleHandler implements ConfigurationHandlerInterface {
 			// Update existing rule.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'rule',
 				uuid: $mappings['rule']['slugToId'][$slug]
 			);
 		}
 
 		// Create new rule.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'rule');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'rule');
 	}//end import()
 
 	/**

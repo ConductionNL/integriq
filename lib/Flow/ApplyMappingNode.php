@@ -197,7 +197,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 				'type' => 'select',
 				'help' => $this->l10n->t('The configured mapping applied to every item in the page.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/mapping',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/mapping',
 			],
 			[
 				'key' => 'input',

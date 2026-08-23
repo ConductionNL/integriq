@@ -81,7 +81,7 @@ class LogCleanUpTask extends TimedJob {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => $schema,
 					'expires[lt]' => $now,
 				],

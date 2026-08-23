@@ -10,7 +10,7 @@
   Wiring contract:
     - prop `mappingId` is the slug (or id) stored in
       `synchronization.sourceTargetMapping`. The component looks the full
-      mapping record up via `/api/objects/openconnector/mapping/{id}` so
+      mapping record up via `/api/objects/integriq/mapping/{id}` so
       it can POST the object (not just the slug) to the test endpoint —
       that endpoint expects the full mapping payload, not a reference.
     - The sample input defaults to `{}` but can be edited freely. Changes
@@ -20,7 +20,7 @@
 
   Closes #878 part 2. Open follow-ups (intentional non-goals):
     - Pulling a real sample record from the source side. The brief
-      mentioned auto-populating from `/api/objects/openconnector/{schema}/{uuid}`
+      mentioned auto-populating from `/api/objects/integriq/{schema}/{uuid}`
       when sourceType=register; punted because the picker only owns the
       mapping slug, not the source identity. The user can paste a sample
       object directly into the input field — same UX as the test modal.
@@ -271,7 +271,7 @@ export default {
 				// key — so the same URL works for legacy id-keyed rows too.
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/mapping/{id}',
+						'/apps/openregister/api/objects/integriq/mapping/{id}',
 						{
 							id: this.mappingId,
 						},

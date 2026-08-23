@@ -117,7 +117,7 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, register: 'openconnector', schema: 'event', _rbac: false, _multitenancy: false);
+			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -125,7 +125,7 @@ class EventsController extends Controller {
 		// Get all messages for this event.
 		$matches = $this->orObjectService->findAll(
 			config: [
-				'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'event' => $event->getUuid()],
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'event' => $event->getUuid()],
 				'limit' => (int)$this->request->getParam('limit', 50),
 				'offset' => (int)$this->request->getParam('offset', 0),
 			]
@@ -182,7 +182,7 @@ class EventsController extends Controller {
 
 		try {
 			// Create subscription.
-			$subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
+			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
 			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
 		} catch (Exception $e) {
@@ -231,7 +231,7 @@ class EventsController extends Controller {
 			// Update subscription.
 			$subscription = $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				uuid: (string)$subscriptionId
 			);
@@ -268,7 +268,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -310,7 +310,7 @@ class EventsController extends Controller {
 			}
 		}
 
-		$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'event_subscription'], $filters);
+		$orFilters = array_merge(['register' => 'integriq', 'schema' => 'event_subscription'], $filters);
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => $orFilters,
@@ -354,7 +354,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -366,7 +366,7 @@ class EventsController extends Controller {
 		// Get messages for this subscription.
 		$matches = $this->orObjectService->findAll(
 			config: [
-				'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
 				'limit' => (int)$this->request->getParam('limit', 50),
 				'offset' => (int)$this->request->getParam('offset', 0),
 			]
@@ -407,7 +407,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -447,7 +447,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -467,7 +467,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid()
 		);
@@ -499,7 +499,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -524,7 +524,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid()
 		);
@@ -641,7 +641,7 @@ class EventsController extends Controller {
 		}
 
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'event_message',
 			'status' => $statuses,
 		];
@@ -738,7 +738,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -805,7 +805,7 @@ class EventsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'event_message', _rbac: false, _multitenancy: false);
+			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}
@@ -817,7 +817,7 @@ class EventsController extends Controller {
 			try {
 				$subscription = $this->orObjectService->find(
 					id: (string)$subscriptionId,
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'event_subscription',
 					_rbac: false,
 					_multitenancy: false

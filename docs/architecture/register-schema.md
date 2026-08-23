@@ -37,12 +37,12 @@ OpenAPI 3.0 document with `x-openregister` vendor extension. Top-level structure
   "info": { "title": "Integriq Register", "version": "1.1.0" },
   "x-openregister": {
     "type": "application",
-    "app": "openconnector",
+    "app": "integriq",
     "openregister": "^v0.2.10"
   },
   "components": {
     "registers": {
-      "openconnector": { "slug": "openconnector", "schemas": [/* 15 slugs */] }
+      "integriq": { "slug": "integriq", "schemas": [/* 15 slugs */] }
     },
     "schemas": { /* 15 schema definitions */ }
   }

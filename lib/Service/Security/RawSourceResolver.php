@@ -72,7 +72,7 @@ class RawSourceResolver {
 	 */
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * The schema slug re-read raw.

@@ -143,7 +143,7 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 					$schema = null,
 					bool $_rbac = true,
 					bool $_multitenancy = true,
-					...$rest
+					...$rest,
 				) use ($entity, &$seen) {
 					$seen = compact('id', 'register', 'schema', '_rbac', '_multitenancy');
 
@@ -157,7 +157,7 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 		$this->assertSame('fetch_file', $rule['type']);
 
 		$this->assertSame('xxllnc-fetch-files', $seen['id']);
-		$this->assertSame('openconnector', $seen['register']);
+		$this->assertSame('integriq', $seen['register']);
 		$this->assertSame('rule', $seen['schema']);
 
 		// THE ASSERTIONS THIS FILE IS FOR. Under `occ` there is no user session,

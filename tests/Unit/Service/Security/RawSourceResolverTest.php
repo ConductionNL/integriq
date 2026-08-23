@@ -91,7 +91,7 @@ class RawSourceResolverTest extends TestCase {
 		$this->assertFalse($fake->reads[0]['_render'], '_render: false is the load-bearing argument.');
 		$this->assertTrue($fake->reads[0]['_rbac'], 'The resolver must not widen rbac.');
 		$this->assertTrue($fake->reads[0]['_multitenancy'], 'The resolver must not widen multitenancy.');
-		$this->assertSame('openconnector', $fake->reads[0]['register']);
+		$this->assertSame('integriq', $fake->reads[0]['register']);
 		$this->assertSame('source', $fake->reads[0]['schema']);
 	}//end testReturnsRawSourceAndReadsWithRenderFalse()
 

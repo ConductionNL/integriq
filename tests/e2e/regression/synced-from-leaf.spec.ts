@@ -138,7 +138,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// says this suite skips, rather than fails, when that flag isn't set.
 		//
 		// It did not, because the gate measured the wrong thing: it probed
-		// `GET /objects/openconnector/synchronization_contract` and treated a
+		// `GET /objects/integriq/synchronization_contract` and treated a
 		// 200 as "migrated". That endpoint returns 200 whenever the register
 		// exists, which says nothing about the flag — so on any instance with
 		// the register seeded the suite ran anyway and failed on assertions

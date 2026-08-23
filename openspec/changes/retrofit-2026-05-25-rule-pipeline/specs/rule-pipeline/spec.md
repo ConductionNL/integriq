@@ -55,7 +55,7 @@ endpoint name, rule name, rule type, and error message.
    immediately and subsequent rules are not processed.
 
 **Notes:**
-- `getRuleById()` resolves rules via OpenRegister `find(register: 'openconnector', schema: 'rule')` and returns `null` on lookup failure (logged), so an unresolvable rule id is silently dropped from the chain rather than failing the request. Documented as observed behaviour; flagged for future tightening.
+- `getRuleById()` resolves rules via OpenRegister `find(register: 'integriq', schema: 'rule')` and returns `null` on lookup failure (logged), so an unresolvable rule id is silently dropped from the chain rather than failing the request. Documented as observed behaviour; flagged for future tightening.
 - Rule entities are re-fetched and re-sorted on every request; there is no caching of the resolved rule chain.
 
 ### REQ-RULE-002: Data-Mutation Rules

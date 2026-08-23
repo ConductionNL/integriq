@@ -393,7 +393,7 @@ class EventServiceTest extends TestCase {
 		$this->service->deliverMessage($message);
 
 		$this->assertSame(
-			['sub-uuid', 'openconnector', 'event_subscription', false, false, false],
+			['sub-uuid', 'integriq', 'event_subscription', false, false, false],
 			array_slice(($capturedArgs ?? []), 0, 6),
 			'deliverMessage must read the subscription RAW — the trailing false is _render: false. '
 			. '_rbac: false alone is NOT enough (ocon#215, openregister#389): the writeOnly strip is no '

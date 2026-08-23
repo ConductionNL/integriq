@@ -156,7 +156,7 @@ class LtiIdentityLinkService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_identity_link',
 					'ltiPlatformId' => $ltiPlatformId,
 					'subject' => $subject,
@@ -188,7 +188,7 @@ class LtiIdentityLinkService {
 		try {
 			$platform = $this->orObjectService->find(
 				id: $ltiPlatformId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_platform',
 				_rbac: false,
 				_multitenancy: false
@@ -285,7 +285,7 @@ class LtiIdentityLinkService {
 		try {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_identity_link',
 				_rbac: false,
 				_multitenancy: false

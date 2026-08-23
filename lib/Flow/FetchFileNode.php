@@ -227,7 +227,7 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'type' => 'select',
 				'help' => $this->l10n->t('The configured rule describing which files to fetch, and from where.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/rule',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/rule',
 			],
 			[
 				'key' => 'objectIdPath',
@@ -243,7 +243,7 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'label' => $this->l10n->t('Synchronization'),
 				'type' => 'select',
 				'help' => $this->l10n->t('Recorded so the run log can link back. It does not change what is fetched.'),
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 		];
 

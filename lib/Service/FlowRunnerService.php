@@ -73,7 +73,7 @@ class FlowRunnerService {
 	 */
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a flow definition.

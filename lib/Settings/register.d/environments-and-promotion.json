@@ -2,7 +2,7 @@
   "$comment": "ADR-037 register fragment (environments-and-promotion). Declares two schemas: `environment` (named target/source connectivity metadata, wraps an existing `source` object per design.md Decision 1/2 — no new credential or connection format) and `promotion_audit` (append-only/immutable log schema, matching call_log/job_log's x-openregister-archival convention). Also seeds two `environment` rows (`local`, `acceptance`) plus their connectivity `source` rows via `components.objects` + `@ref:<schema>:<slug>` tokens — the SAME mechanism OpenRegister's ImportHandler::resolveSeedReferenceTokens()/importFromJson() object-import loop already processes for every other OpenConnector register fragment's seed rows (verified live against OpenRegister HEAD: lib/Service/Configuration/ImportHandler.php lines ~1946-2030 processes `components.objects` with `@ref:` token resolution INSIDE importFromJson(), called from importFromApp(), which InitializeRegister.php invokes on every occ app:enable/upgrade). Deliberately NOT using `lib/environments.seed.json` (tasks.md's literal suggestion, 'following lib/sources.seed.json convention') or a schema-embedded `x-openregister-seed` array (the convention hitl-approval-rule-action.json used): neither is consumed by any code path in this app or in OpenRegister — `lib/sources.seed.json` has zero PHP references anywhere in lib/, and `x-openregister-seed` is only preserved as a round-trippable Schema config key (lib/Db/Schema.php RESERVED_KEYS) with no importer reading it back out. Following either literal precedent would have shipped a second, orphaned seed file (the exact 'spec-says-done, feature-never-runs' defect class this fleet actively guards against) instead of materialising the two seed environments design.md's Seed Data section requires.",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": ["environment", "promotion_audit"]
       }
     },
@@ -169,7 +169,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "environment-local-source"
         },
@@ -182,7 +182,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "environment-acceptance-source"
         },
@@ -202,7 +202,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "environment",
           "slug": "local"
         },
@@ -214,7 +214,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "environment",
           "slug": "acceptance"
         },

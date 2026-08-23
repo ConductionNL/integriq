@@ -8,11 +8,11 @@
 
   Closes #836.
 
-  Backend contract: the endpoint is an OR object (register=openconnector,
+  Backend contract: the endpoint is an OR object (register=integriq,
   schema=endpoint). The modal lists rules from
-    GET /api/objects/openconnector/rule
+    GET /api/objects/integriq/rule
   and updates the endpoint via
-    PATCH /api/objects/openconnector/endpoint/{id}
+    PATCH /api/objects/integriq/endpoint/{id}
   with `{ rules: [...string ids...] }`. Multi-select is supported so the
   user can attach several rules in one trip.
 -->
@@ -190,7 +190,7 @@ export default {
 			this.loadingRules = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/rule'),
+					generateUrl('/apps/openregister/api/objects/integriq/rule'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
@@ -233,7 +233,7 @@ export default {
 				)
 				await axios.patch(
 					generateUrl(
-						`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`,
+						`/apps/openregister/api/objects/integriq/endpoint/${this.endpointId}`,
 					),
 					{ rules: merged },
 				)

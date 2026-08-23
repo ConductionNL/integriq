@@ -32,7 +32,7 @@ Configuration import/export:
 ## API Design
 
 ### `GET /api/catalog/items`
-Lists catalog items (backs the Catalog `index` page — actually served by OpenRegister's generic object-list endpoint for the `catalog_item` schema, `GET /apps/openregister/api/objects/openconnector/catalog_item`, per ADR-022; no bespoke list endpoint is added). Live status (`available` / `dormant`) is computed at read time by `CatalogRegistryService::resolveStatus()` and written onto each object at materialisation time PLUS re-checked by a light-weight status endpoint below, so a flag flip between repair-step runs is still reflected without waiting for the next materialisation.
+Lists catalog items (backs the Catalog `index` page — actually served by OpenRegister's generic object-list endpoint for the `catalog_item` schema, `GET /apps/openregister/api/objects/integriq/catalog_item`, per ADR-022; no bespoke list endpoint is added). Live status (`available` / `dormant`) is computed at read time by `CatalogRegistryService::resolveStatus()` and written onto each object at materialisation time PLUS re-checked by a light-weight status endpoint below, so a flag flip between repair-step runs is still reflected without waiting for the next materialisation.
 
 ### `GET /api/catalog/items/{id}/status`
 **Response:**

@@ -108,7 +108,7 @@ class NotificatiesSubscriberController extends Controller {
 
 		$matches = $this->orObjectService->findAll(
 			config: [
-				'filters' => ['register' => 'openconnector', 'schema' => 'notificaties_abonnement'],
+				'filters' => ['register' => 'integriq', 'schema' => 'notificaties_abonnement'],
 				'limit' => (int)$this->request->getParam('limit', 50),
 				'offset' => (int)$this->request->getParam('offset', 0),
 			]

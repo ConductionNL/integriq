@@ -10,7 +10,7 @@
 
   Each row is the same Mapping picker, populated once and shared via the
   parent's `mappingOptions`. Reuses the #847 sync-picker pattern
-  (NcSelect populated from OR's `/api/objects/openconnector/mapping`).
+  (NcSelect populated from OR's `/api/objects/integriq/mapping`).
 
   Persisted shape: Mapping is referenced by `slug` per the
   `synchronization.sourceTargetMapping` field description in
@@ -201,7 +201,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/mapping',
+						'/apps/openregister/api/objects/integriq/mapping',
 					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`

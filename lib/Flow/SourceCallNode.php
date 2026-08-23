@@ -308,7 +308,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'type' => 'select',
 				'help' => $this->l10n->t('The configured source this step calls. The call inherits its base URL, authentication and rate limits.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/source',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
 			],
 			[
 				'key' => 'endpoint',

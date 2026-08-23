@@ -222,14 +222,14 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 			// Update existing endpoint.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'endpoint',
 				uuid: $mappings['endpoint']['slugToId'][$slug]
 			);
 		}
 
 		// Create new endpoint.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'endpoint');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'endpoint');
 	}//end import()
 
 	/**

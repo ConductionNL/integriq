@@ -95,7 +95,7 @@ class MigrateStoredJobClassesTest extends TestCase {
 					);
 					$this->assertSame('Nightly sync', $object['name'], 'other properties must be preserved');
 					// The register SLUG is deliberately frozen on the old name.
-					$this->assertSame('openconnector', $register);
+					$this->assertSame('integriq', $register);
 					$this->assertSame('job', $schema);
 					$this->assertSame('job-uuid-1', $uuid, 'must update in place, never create a duplicate');
 					return ObjectServiceMockBuilder::objectEntity($this, $object, 'job-uuid-1');

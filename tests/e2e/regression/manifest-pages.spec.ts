@@ -6,7 +6,7 @@
  *
  * Most integriq pages render via nc-vue's built-in `CnIndexPage` /
  * `CnDetailPage` / `CnLogsPage` / `CnDashboardPage`, with their CRUD wired
- * against OR's `/api/objects/openconnector/{schema}/*` routes. Ten pages are
+ * against OR's `/api/objects/integriq/{schema}/*` routes. Ten pages are
  * `type: custom` and render a bespoke component named by the manifest.
  *
  * This spec navigates to EVERY manifest page route and asserts:

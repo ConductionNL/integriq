@@ -133,7 +133,7 @@ class AuthorizationService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'consumer',
 					'name' => $issuer,
 				],
@@ -838,7 +838,7 @@ class AuthorizationService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'consumer',
 				],
 			],

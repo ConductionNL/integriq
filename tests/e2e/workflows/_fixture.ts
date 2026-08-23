@@ -18,16 +18,16 @@
  * integriq resolves all of its core entities through OpenRegister
  * (register `openconnector`, schema {source,mapping,synchronization,...}):
  *
- *     /index.php/apps/openregister/api/objects/openconnector/<schema>
+ *     /index.php/apps/openregister/api/objects/integriq/<schema>
  *
  * The real OpenRegister/integriq verbs are find / findAll /
  * searchObjects / saveObject / createObject / updateObject / deleteObject.
  * The REST surface maps to:
- *   - createObject  -> POST   .../objects/openconnector/<schema>
- *   - find          -> GET    .../objects/openconnector/<schema>/<id>
- *   - findAll       -> GET    .../objects/openconnector/<schema>?...
- *   - updateObject  -> PUT    .../objects/openconnector/<schema>/<id>
- *   - deleteObject  -> DELETE .../objects/openconnector/<schema>/<id>
+ *   - createObject  -> POST   .../objects/integriq/<schema>
+ *   - find          -> GET    .../objects/integriq/<schema>/<id>
+ *   - findAll       -> GET    .../objects/integriq/<schema>?...
+ *   - updateObject  -> PUT    .../objects/integriq/<schema>/<id>
+ *   - deleteObject  -> DELETE .../objects/integriq/<schema>/<id>
  *
  * CSRF: Nextcloud rejects state-changing requests (POST/PUT/DELETE) that
  * lack a valid `requesttoken`. The Playwright storageState carries the

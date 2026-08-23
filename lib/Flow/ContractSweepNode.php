@@ -220,7 +220,7 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'type' => 'select',
 				'help' => $this->l10n->t('The synchronization whose stale objects this step sweeps.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/synchronization',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
 			],
 			[
 				'key' => 'targetIdsPosition',

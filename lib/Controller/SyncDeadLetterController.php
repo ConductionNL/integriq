@@ -91,7 +91,7 @@ class SyncDeadLetterController extends Controller {
 		}
 
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'sync_item_dead_letter',
 			'status' => $statuses,
 		];
@@ -195,7 +195,7 @@ class SyncDeadLetterController extends Controller {
 		try {
 			$entry = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'sync_item_dead_letter',
 				_rbac: false,
 				_multitenancy: false
@@ -211,7 +211,7 @@ class SyncDeadLetterController extends Controller {
 			try {
 				$synchronization = $this->orObjectService->find(
 					id: (string)$synchronizationId,
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'synchronization',
 					_rbac: false,
 					_multitenancy: false

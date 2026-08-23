@@ -51,7 +51,7 @@ class SynchronizationContractServiceTest extends TestCase {
 
 	/**
 	 * findObject() proxies to the OR ObjectService find() against the
-	 * `openconnector` register and `synchronization_contract` schema.
+	 * `integriq` register and `synchronization_contract` schema.
 	 *
 	 * @return void
 	 */
@@ -62,7 +62,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			->method('find')
 			->with(
 				$this->equalTo('c-1'),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract')
 			)
 			->willReturn($entity);
@@ -96,7 +96,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			->method('findAll')
 			->with($this->callback(function (array $config): bool {
 				$filters = ($config['filters'] ?? []);
-				return ($filters['register'] ?? null) === 'openconnector'
+				return ($filters['register'] ?? null) === 'integriq'
 					&& ($filters['schema'] ?? null) === 'synchronization_contract'
 					&& ($filters['originId'] ?? null) === 'origin-7';
 			}))

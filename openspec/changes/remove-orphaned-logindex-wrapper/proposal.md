@@ -18,7 +18,7 @@ page entries with `"component": "LogIndex"` — none of the five log pages
 (`SourceLogs`, `EndpointLogs`, `JobLogs`, `SynchronizationLogs`,
 `CloudEventLogs`) reference it. All five are declared as `"type": "logs"`
 pages with a plain `{ register, schema }` config (e.g.
-`src/manifest.json` `SourceLogs` → `{"register": "openconnector", "schema":
+`src/manifest.json` `SourceLogs` → `{"register": "integriq", "schema":
 "call_log"}`), which `@conduction/nextcloud-vue`'s generic
 `CnLogsPage` component (`nextcloud-vue/src/components/CnLogsPage/CnLogsPage.vue`)
 resolves declaratively per the ADR-036 universal widget manifest — reading

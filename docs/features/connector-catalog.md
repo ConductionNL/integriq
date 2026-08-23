@@ -56,4 +56,4 @@ Both actions are gated by the `configuration.export` / `configuration.import` ac
 | `POST /api/configurations/import/preview` | Non-mutating import preview |
 | `POST /api/configurations/import` | Confirmed import (`confirmed: true` required, HTTP 400 otherwise) |
 
-Catalog listing itself uses OpenRegister's generic object API (`GET /apps/openregister/api/objects/openconnector/catalog_item`) — there is no bespoke list endpoint.
+Catalog listing itself uses OpenRegister's generic object API (`GET /apps/openregister/api/objects/integriq/catalog_item`) — there is no bespoke list endpoint.

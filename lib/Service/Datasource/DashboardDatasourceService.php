@@ -147,7 +147,7 @@ class DashboardDatasourceService {
 		// exist — the controller maps both to a clean HTTP status.
 		$source = $this->orObjectService->find(
 			id: $sourceId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			_rbac: true,
 			_multitenancy: true

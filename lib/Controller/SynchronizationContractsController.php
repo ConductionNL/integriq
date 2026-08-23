@@ -132,7 +132,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -170,7 +170,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -208,7 +208,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -235,7 +235,7 @@ class SynchronizationContractsController extends Controller {
 	public function statistics(): JSONResponse {
 		try {
 			// Get basic counts by status via OR ObjectService.
-			$baseFilters = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
+			$baseFilters = ['register' => 'integriq', 'schema' => 'synchronization_contract'];
 			$allMatches = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
 			$activeMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'active'])]);
 			$inactiveMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'inactive'])]);
@@ -350,7 +350,7 @@ class SynchronizationContractsController extends Controller {
 			}
 
 			// Get all contracts matching filters (no pagination for export) via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_contract'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$contracts = ($matches['results'] ?? $matches);
 

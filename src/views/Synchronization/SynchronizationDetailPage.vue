@@ -10,7 +10,7 @@
        (api / register/schema / file)
     2. #target-config-widget   — target-type-specific config blob editor
     3. #mapping-picker-widget  — `sourceTargetMapping` Mapping picker
-       (slug-based NcSelect, populated from OR's `/api/objects/openconnector/mapping`)
+       (slug-based NcSelect, populated from OR's `/api/objects/integriq/mapping`)
     4. #actions-list-widget    — `actions[]` rule references (multi-select Rules)
     5. #followups-list-widget  — `followUps[]` synchronization references
        (multi-select sibling Syncs)
@@ -23,7 +23,7 @@
       that navigates to the new route, plus the auto-row-click path.
 
   Reuses the #867 picker pattern: NcSelect populated from OR's
-  `/api/objects/openregister/api/objects/openconnector/{schema}` endpoint.
+  `/api/objects/openregister/api/objects/integriq/{schema}` endpoint.
 
   Persistence: `useObjectStore` (the same store CnDetailPage subscribes to).
   Mutations go through `objectStore.saveObject('synchronization', {...})`
@@ -484,7 +484,7 @@ import {
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
-const REGISTER_SLUG = 'openconnector'
+const REGISTER_SLUG = 'integriq'
 
 export default {
 	name: 'SynchronizationDetailPage',

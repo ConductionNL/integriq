@@ -238,7 +238,7 @@ class SynchronizationContractsControllerTest extends TestCase {
 	}//end testDeactivateReturns404ForAnUnknownContract()
 
 	/**
-	 * The contract is read from the openconnector register's
+	 * The contract is read from the integriq register's
 	 * `synchronization_contract` schema, by the id in the URL.
 	 *
 	 * @return void
@@ -257,7 +257,7 @@ class SynchronizationContractsControllerTest extends TestCase {
 		$controller->activate('contract-1');
 
 		$this->assertContains('contract-1', $captured);
-		$this->assertContains('openconnector', $captured);
+		$this->assertContains('integriq', $captured);
 		$this->assertContains('synchronization_contract', $captured);
 
 	}//end testActivateLooksTheContractUpBySchemaAndId()

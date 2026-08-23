@@ -80,7 +80,7 @@ class StufZknSyncService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a stuf-zkn source.

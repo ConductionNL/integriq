@@ -414,7 +414,7 @@ class ConfigurationImportPreviewService {
 			$maps[$schema] = [];
 
 			$result = $this->orObjectService->findAll(
-				config: ['filters' => ['register' => 'openconnector', 'schema' => $schema]]
+				config: ['filters' => ['register' => 'integriq', 'schema' => $schema]]
 			);
 			$items = ($result['results'] ?? $result);
 

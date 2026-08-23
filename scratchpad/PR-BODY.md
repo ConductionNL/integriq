@@ -43,7 +43,7 @@ value, never a casing.
 
 | # | Literal | Why it cannot move |
 | --- | --- | --- |
-| 1 | OpenRegister **register slug** `openconnector` (+ `objects/openconnector/<schema>` paths, `components.registers.*`, `slug`/`tablePrefix`/`folder`, `x-openregister.app`) | OR matches registers by slug. Rename it and the import creates a fresh **empty** register while every existing object stays behind, orphaned — silently. |
+| 1 | OpenRegister **register slug** `openconnector` (+ `objects/integriq/<schema>` paths, `components.registers.*`, `slug`/`tablePrefix`/`folder`, `x-openregister.app`) | OR matches registers by slug. Rename it and the import creates a fresh **empty** register while every existing object stays behind, orphaned — silently. |
 | 2 | `oc_openconnector_*` table + index names in `lib/Migration/`, `lib/Db/` | Migrations are executed history recorded by version. Rewrite a table name in an already-run migration and a fresh install creates differently-named tables than an upgraded one. No rename migration is written here. |
 | 3 | Flow node type ids `openconnector.{source-call,source-paginate,apply-mapping,contract-commit,contract-sweep,synchronization-run,fetch-file}` | These `type` values are written **into stored flow documents** (OR objects). Rename them and every existing flow references a node type nothing answers to. OpenRegister's own `openregister.trigger-manual` sits right beside them. |
 | 4 | `StUFXMLBuilder` default `zenderApplicatie = 'OpenConnector'` | This app's identity as a municipal StUF zaaksysteem knows it. Renaming it here does not rename it there — messages are rejected until the municipality re-provisions. |

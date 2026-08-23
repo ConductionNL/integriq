@@ -232,7 +232,7 @@ class JobService {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'job',
 				uuid: $job->getUuid()
 			);
@@ -258,7 +258,7 @@ class JobService {
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid()
 		);
@@ -622,7 +622,7 @@ class JobService {
 		// M1: Advance the job's timeline only AFTER the log entry is safely written.
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid()
 		);
@@ -722,7 +722,7 @@ class JobService {
 
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job_log'
 		);
 	}//end saveJobLog()
@@ -742,7 +742,7 @@ class JobService {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'job',
 					'isEnabled' => true,
 				],

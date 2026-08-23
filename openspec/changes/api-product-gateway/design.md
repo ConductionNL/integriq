@@ -38,7 +38,7 @@
 
 `api_product` and `api_product_subscription` are plain OpenRegister-backed
 schemas; CRUD goes through OpenRegister's generic object API
-(`/api/objects/openconnector/api_product`, `/api/objects/openconnector/
+(`/api/objects/integriq/api_product`, `/api/objects/integriq/
 api_product_subscription`) exactly like `endpoint` and `consumer` today — no
 bespoke controller (`openconnector-direct-or-usage` / redundant-controller
 avoidance). Two small custom endpoints are needed for the approval-gated

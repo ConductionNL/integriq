@@ -755,7 +755,7 @@ class CallService {
 				'created' => (new DateTime())->format('c'),
 				'expires' => $this->formatExpires(expires: $expires),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'call_log'
 		);
 
@@ -811,7 +811,7 @@ class CallService {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				uuid: $source->getUuid(),
 				_rbac: false,
@@ -1747,7 +1747,7 @@ class CallService {
 
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'call_log',
 			_rbac: false,
 			_multitenancy: false,
@@ -1833,7 +1833,7 @@ class CallService {
 		try {
 			$this->objectService->saveObjects(
 				objects: $batch,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'call_log',
 				_rbac: false,
 				_multitenancy: false,
@@ -2274,7 +2274,7 @@ class CallService {
 	private function persistSourceState(ObjectEntity $source, array $sourceData): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'source',
 			uuid: $source->getUuid(),
 			_rbac: false,
@@ -2601,7 +2601,7 @@ class CallService {
 		try {
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				_rbac: false,
 				_multitenancy: false,
@@ -3412,7 +3412,7 @@ class CallService {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				uuid: $source->getUuid(),
 				_rbac: false,

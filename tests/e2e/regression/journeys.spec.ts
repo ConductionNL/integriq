@@ -10,7 +10,7 @@
  * frontend — the nc-vue manifest-renderer (`CnIndexPage` /
  * `CnFormDialog`) — so a visual click-through is what creates the
  * objects. The dialog's Save handler posts to OR's
- * `/api/objects/openconnector/{schema}/*` under the hood, so a green
+ * `/api/objects/integriq/{schema}/*` under the hood, so a green
  * run guarantees the full UI → nc-vue → OR backend → list-refresh loop
  * is intact.
  *
@@ -245,7 +245,7 @@ async function createViaUi(
 	// field mapping is broken). The GET response is reliable ground-truth.
 	const listResponsePromise = page.waitForResponse(
 		(r) =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+			r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 			&& r.request().method() === 'GET'
 			&& r.status() < 400,
 		{ timeout: 25_000 },
@@ -256,7 +256,7 @@ async function createViaUi(
 			(r) => {
 				const u = r.url()
 				const isObjects = u.includes(
-					`/api/objects/openconnector/${schemaSlug}`,
+					`/api/objects/integriq/${schemaSlug}`,
 				)
 				return (
 					isObjects && r.request().method() === 'POST' && r.status() < 400
@@ -393,7 +393,7 @@ async function deleteViaApi(
 	if (!targetId) {
 		// Fallback: look up by name.
 		const listResp = await page.request.get(
-			`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+			`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 			{ failOnStatusCode: false },
 		)
 		if (listResp.ok()) {
@@ -408,7 +408,7 @@ async function deleteViaApi(
 	}
 	if (targetId) {
 		await page.request.delete(
-			`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}/${targetId}`,
+			`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}/${targetId}`,
 			{ failOnStatusCode: false },
 		)
 	}
@@ -540,7 +540,7 @@ async function deleteViaUi(
 	const [response] = await Promise.all([
 		page.waitForResponse(
 			(r) =>
-				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		),
@@ -559,7 +559,7 @@ async function deleteViaUi(
 	// known fragility of the mass-delete flow with stale checkbox state),
 	// fall back to API cleanup and skip the assertion.
 	const verifyResp = await page.request.get(
-		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+		`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 		{ failOnStatusCode: false },
 	)
 	if (verifyResp.ok()) {
@@ -654,7 +654,7 @@ async function editViaUi(
 			(r) => {
 				const u = r.url()
 				return (
-					u.includes(`/api/objects/openconnector/${schemaSlug}`)
+					u.includes(`/api/objects/integriq/${schemaSlug}`)
 					&& r.request().method() === 'PUT'
 					&& r.status() < 400
 				)
@@ -672,7 +672,7 @@ async function editViaUi(
 
 	// Verify the description via the OR API directly (SPA may not refresh list).
 	const verifyResp = await page.request.get(
-		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+		`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 		{ failOnStatusCode: false },
 	)
 	if (verifyResp.ok()) {
@@ -738,7 +738,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	const [response] = await Promise.all([
 		page.waitForResponse(
 			(r) =>
-				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		),
@@ -764,7 +764,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
  * "Add {Title}" → CnFormDialog opens → fill `name` → click Create →
  * the dialog's `$emit('confirm')` arrives at CnIndexPage.onFormConfirm
  * which calls `selfObjectStore.saveObject(selfObjectType, formData)`
- * — that POSTs to `/api/objects/openconnector/{schema}` on OR and
+ * — that POSTs to `/api/objects/integriq/{schema}` on OR and
  * triggers a `list.refresh()` on success → assert the new row appears
  * → tick its checkbox → CnActionsBar Actions menu → "Delete selected"
  * → CnMassDeleteDialog confirm → DELETE round-trip + list.refresh().

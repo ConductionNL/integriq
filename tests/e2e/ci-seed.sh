@@ -13,7 +13,7 @@
 #     playwright-seed-command: 'bash apps/integriq/tests/e2e/ci-seed.sh'
 #
 # The `Integration Tests (Newman)` job needs the SAME register provisioning —
-# its collection drives /apps/openregister/api/objects/openconnector/<schema>
+# its collection drives /apps/openregister/api/objects/integriq/<schema>
 # directly — but must NOT run the SPA warm-up or the bundle gate, because that
 # job never builds the frontend. It therefore invokes this same script with
 # the register-only scope:
@@ -224,7 +224,7 @@ if 'openconnector' not in register_slugs:
     sys.exit(1)
 
 # The slugs tests/e2e/workflows/_fixture.ts and the spec-coverage specs resolve
-# objects by, via /apps/openregister/api/objects/openconnector/<schema>.
+# objects by, via /apps/openregister/api/objects/integriq/<schema>.
 required = ['source', 'mapping', 'synchronization', 'job', 'rule', 'endpoint', 'consumer', 'event']
 missing = [slug for slug in required if slug not in schemas]
 if missing:
@@ -299,11 +299,11 @@ import sys
 path, kind, app_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # The hand-maintained floor: what the fixtures and workflow specs create and
-# read through /objects/openconnector/<schema>.
+# read through /objects/integriq/<schema>.
 required = {
     'registers': ['openconnector'],
     # tests/e2e/workflows/_fixture.ts creates Sources / Mappings /
-    # Synchronizations through /objects/openconnector/<schema>; the
+    # Synchronizations through /objects/integriq/<schema>; the
     # spec-coverage index-page specs read jobs, rules, endpoints, consumers
     # and events the same way.
     'schemas': ['source', 'mapping', 'synchronization', 'job', 'rule',
@@ -432,7 +432,7 @@ verify "$SCH_BODY" schemas
 # was in the 71 slugs the check above enumerates — so it printed
 # `all 11 manifest-bound schema(s) resolve` — while
 #
-#     GET /apps/openregister/api/objects/openconnector/synchronization_run
+#     GET /apps/openregister/api/objects/integriq/synchronization_run
 #
 # returned 404 `{"message":"Schema not found: 'synchronization_run'"}`, because
 # declaring a schema in `components.schemas` does NOT attach it to the register:
@@ -479,14 +479,14 @@ for SLUG in $PROBE_SCHEMAS; do
 	PROBE_CODE="$(
 		curl -sS -o /dev/null -w '%{http_code}' \
 			-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-			"${BASE}/index.php/apps/openregister/api/objects/openconnector/${SLUG}?_limit=1" \
+			"${BASE}/index.php/apps/openregister/api/objects/integriq/${SLUG}?_limit=1" \
 			|| echo 000
 	)"
 	if [ "$PROBE_CODE" = "200" ]; then
 		echo "[ci-seed]   ${SLUG}: ${PROBE_CODE}"
 	else
 		PROBE_BAD=$((PROBE_BAD + 1))
-		echo "::warning::objects/openconnector/${SLUG} returned HTTP ${PROBE_CODE} — its index page will log 'Error fetching openconnector-${SLUG} collection' and the spec will fail on the console gate. Attach the schema to the openconnector register (components.registers.openconnector.schemas), not just components.schemas."
+		echo "::warning::objects/integriq/${SLUG} returned HTTP ${PROBE_CODE} — its index page will log 'Error fetching openconnector-${SLUG} collection' and the spec will fail on the console gate. Attach the schema to the openconnector register (components.registers.openconnector.schemas), not just components.schemas."
 	fi
 done
 
@@ -506,7 +506,7 @@ echo "[ci-seed] Integriq register + schemas provisioned."
 # the bundle gate would hard-fail the seed on a bundle the job is not supposed
 # to have. Splitting on scope keeps ONE definition of "provision the register"
 # for both jobs — the Newman failure this exists to fix was 51 assertions all
-# 404ing on /apps/openregister/api/objects/openconnector/<schema> because that
+# 404ing on /apps/openregister/api/objects/integriq/<schema> because that
 # job had no seed step at all.
 if [ "${SEED_SCOPE:-full}" = "register" ]; then
 	echo "[ci-seed] SEED_SCOPE=register — skipping SPA warm-up and bundle gate (API-only consumer)."
@@ -523,8 +523,8 @@ fi
 for path in \
 	"/index.php/apps/integriq/" \
 	"/index.php/apps/openregister/api/registers?_limit=1" \
-	"/index.php/apps/openregister/api/objects/openconnector/source?_limit=1" \
-	"/index.php/apps/openregister/api/objects/openconnector/mapping?_limit=1"
+	"/index.php/apps/openregister/api/objects/integriq/source?_limit=1" \
+	"/index.php/apps/openregister/api/objects/integriq/mapping?_limit=1"
 do
 	code="$(curl -sS -o /dev/null -w '%{http_code}' -u "${USER_NAME}:${USER_PASS}" \
 		-H 'OCS-APIRequest: true' "${BASE}${path}" || echo 000)"

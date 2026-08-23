@@ -16,7 +16,7 @@ no guard on which register or schema the object belongs to
 
 1. A user creates object **X** → `ObjectCreatedEvent`.
 2. `EventService::handleObjectCreated(X)` calls
-   `objectService->saveObject(register: 'openconnector', schema: 'event')`
+   `objectService->saveObject(register: 'integriq', schema: 'event')`
    (`lib/Service/EventService.php:784`) — i.e. it **creates another
    OpenRegister object**, the CloudEvent **E**.
 3. Creating **E** fires `ObjectCreatedEvent` again → step 2 → **E2, E3, …**

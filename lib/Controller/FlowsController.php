@@ -4,7 +4,7 @@
  * Integriq Flows Controller.
  *
  * Bespoke, non-CRUD flow actions only — standard `flow` object CRUD goes
- * through OpenRegister's generic `/api/objects/openconnector/flow/*`
+ * through OpenRegister's generic `/api/objects/integriq/flow/*`
  * routes (ADR-022; see `appinfo/routes.php`'s "Resource block intentionally
  * omitted" note and the `hydra-gate-redundant-controller` gate this
  * controller deliberately avoids tripping). This controller only adds the

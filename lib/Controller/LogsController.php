@@ -205,7 +205,7 @@ class LogsController extends Controller {
 		);
 
 		// Get logs with pagination via OR ObjectService.
-		$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+		$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
 		$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
 		$logs = ($matches['results'] ?? $matches);
 		$total = ($matches['total'] ?? count($logs));
@@ -277,7 +277,7 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_log'
 			);
 		} catch (DoesNotExistException $e) {
@@ -330,7 +330,7 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_log'
 			);
 			if ($log === null) {
@@ -377,7 +377,7 @@ class LogsController extends Controller {
 
 		try {
 			// Get basic counts by level via OR ObjectService.
-			$baseFilters = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
+			$baseFilters = ['register' => 'integriq', 'schema' => 'synchronization_log'];
 			$errorMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'error'])]);
 			$warningMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'warning'])]);
 			$infoMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'info'])]);
@@ -463,7 +463,7 @@ class LogsController extends Controller {
 			);
 
 			// Get all logs matching filters (no pagination for export).
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$logs = ($matches['results'] ?? $matches);
 

@@ -51,7 +51,7 @@ class ExecutionTraceService {
 	 */
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for an execution_trace record.
@@ -356,7 +356,7 @@ class ExecutionTraceService {
 		try {
 			$job = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'job',
 				_rbac: false,
 				_multitenancy: false
@@ -404,7 +404,7 @@ class ExecutionTraceService {
 
 			$message = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_message',
 				_rbac: false,
 				_multitenancy: false

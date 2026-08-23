@@ -244,7 +244,7 @@ class EndpointCacheService {
 	 */
 	private function fetchEndpointsFromOr(): array {
 		$matches = $this->orObjectService->findAll(
-			config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']],
+			config: ['filters' => ['register' => 'integriq', 'schema' => 'endpoint']],
 			_rbac: false,
 			_multitenancy: false
 		);

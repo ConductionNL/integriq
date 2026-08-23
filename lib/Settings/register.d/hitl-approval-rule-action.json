@@ -2,7 +2,7 @@
   "$comment": "ADR-037 register fragment (hitl-approval-rule-action). Declares the approval_request schema backing the human-in-the-loop `approval` rule action type and the Synchronization `sourceConfig.requiresApproval` batch gate. See openspec/changes/hitl-approval-rule-action/design.md#database-changes and specs/approval-workflow/spec.md. `consumedAt` is an addition beyond design.md's table, needed to implement synchronization-engine REQ-015's 'approved, unconsumed approval_request' / 'marked consumed on completion' language precisely — an approved request that gated a synchronization must not silently re-authorize a later run.",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": ["approval_request"]
       }
     },
@@ -179,7 +179,7 @@
         "x-openregister-seed": [
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "approval_request",
               "slug": "approval-woo-publish-pending"
             },
@@ -196,7 +196,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "approval_request",
               "slug": "approval-berichtenbox-approved"
             },
@@ -217,7 +217,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "approval_request",
               "slug": "approval-woo-publish-rejected"
             },

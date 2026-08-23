@@ -126,7 +126,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'map-uuid-42', register: 'openconnector', schema: 'mapping')
+			->with(id: 'map-uuid-42', register: 'integriq', schema: 'mapping')
 			->willReturn($object);
 
 		$result = $this->service->getMapping('map-uuid-42');
@@ -251,7 +251,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-uuid', register: 'openconnector', schema: 'mapping')
+			->with(id: 'lookup-uuid', register: 'integriq', schema: 'mapping')
 			->willReturn($object);
 
 		$result = $this->service->executeMapping('lookup-uuid', ['in' => 'value']);
@@ -276,7 +276,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-slug', register: 'openconnector', schema: 'mapping')
+			->with(id: 'lookup-slug', register: 'integriq', schema: 'mapping')
 			->willReturn(null);
 
 		$this->orObjectService->expects($this->once())
@@ -284,7 +284,7 @@ class MappingServiceTest extends TestCase {
 			->with(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'mapping',
 						'slug' => 'lookup-slug',
 					],
