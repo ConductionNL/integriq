@@ -21,6 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 use OCA\Integriq\Repair\MigrateRegisterSlug;
 use OCA\Integriq\Repair\MigrateRegisterSlugDecisions;
 use OCP\DB\IResult;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -99,7 +100,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 				return 1;
 			});
 
-		$step = new MigrateRegisterSlug($db, $this->createMock(LoggerInterface::class));
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $this->createMock(LoggerInterface::class));
 
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('1 register slug(s) renamed'));
@@ -122,7 +123,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		$db = $this->dbReturning([['slug' => 'integriq']]);
 		$db->expects(self::never())->method('executeStatement');
 
-		$step = new MigrateRegisterSlug($db, $this->createMock(LoggerInterface::class));
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $this->createMock(LoggerInterface::class));
 
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('0 register slug(s) renamed, 0 refused'));
@@ -140,7 +141,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		$db = $this->dbReturning([]);
 		$db->expects(self::never())->method('executeStatement');
 
-		$step = new MigrateRegisterSlug($db, $this->createMock(LoggerInterface::class));
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $this->createMock(LoggerInterface::class));
 
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('0 register slug(s) renamed, 0 refused'));
@@ -166,7 +167,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning')->with(self::stringContains('already exists'));
 
-		$step = new MigrateRegisterSlug($db, $logger);
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $logger);
 
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('0 register slug(s) renamed, 1 refused'));
@@ -190,7 +191,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning')->with(self::stringContains('rename failed'));
 
-		$step = new MigrateRegisterSlug($db, $logger);
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $logger);
 
 		$output = $this->createMock(IOutput::class);
 		$output->expects(self::once())->method('info')->with(self::stringContains('0 register slug(s) renamed'));
@@ -212,7 +213,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning')->with(self::stringContains('could not read register slugs'));
 
-		$step = new MigrateRegisterSlug($db, $logger);
+		$step = new MigrateRegisterSlug($db, $this->appConfig(), $logger);
 		$step->run($this->createMock(IOutput::class));
 
 	}//end testAFailingReadPlansNothing()
@@ -281,6 +282,82 @@ final class MigrateRegisterSlugTest extends TestCase {
 	}//end testPlaceholdersMatchTheParameterCount()
 
 	/**
+	 * An app config whose stored value is $stored, recording what is written.
+	 *
+	 * @param string $stored Current stored value for every key.
+	 * @param array<int, array<int, string>> $written Captured writes, by reference.
+	 *
+	 * @return IAppConfig&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function appConfig(string $stored = '', array &$written = []) {
+		$cfg = $this->createMock(IAppConfig::class);
+		$cfg->method('getValueString')->willReturn($stored);
+		$cfg->method('setValueString')->willReturnCallback(
+			function (string $app, string $key, string $value) use (&$written): bool {
+				$written[] = [$key, $value];
+				return true;
+			}
+		);
+
+		return $cfg;
+	}//end appConfig()
+
+	/**
+	 * A stored config value naming an OLD slug is re-pointed at the new one.
+	 *
+	 * Renaming the register ROW is not enough on its own: this app resolves its
+	 * register through IAppConfig, and MigrateAppConfigKeys copies the old app
+	 * id's value across VERBATIM. Left alone, every reader would go on asking
+	 * for a slug nothing answers to — which OpenRegister resolves by creating an
+	 * empty register. The same silent failure, one layer up.
+	 *
+	 * @return void
+	 */
+	public function testAStoredConfigValueOnTheOldSlugIsRePointed(): void {
+		$written = [];
+		$db = $this->dbReturning([]);
+
+		$step = new MigrateRegisterSlug(
+			$db,
+			$this->appConfig('openconnector', $written),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects(self::once())->method('info')->with(self::stringContains('1 config value(s) re-pointed'));
+
+		$step->run($output);
+
+		self::assertSame([['register', 'integriq']], $written);
+
+	}//end testAStoredConfigValueOnTheOldSlugIsRePointed()
+
+	/**
+	 * A config value that is NOT an old slug is left exactly as it is.
+	 *
+	 * The guard is on the VALUE, not on the key. Apps that store the numeric
+	 * register id here never match, and an administrator's deliberate override
+	 * is not something a repair step may overwrite.
+	 *
+	 * @return void
+	 */
+	public function testAConfigValueThatIsNotAnOldSlugIsLeftAlone(): void {
+		$written = [];
+		$db = $this->dbReturning([]);
+
+		$step = new MigrateRegisterSlug(
+			$db,
+			$this->appConfig('17', $written),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$step->run($this->createMock(IOutput::class));
+
+		self::assertSame([], $written);
+
+	}//end testAConfigValueThatIsNotAnOldSlugIsLeftAlone()
+
+	/**
 	 * The shipped map is a repair step's, and every entry actually moves.
 	 *
 	 * @return void
@@ -300,6 +377,7 @@ final class MigrateRegisterSlugTest extends TestCase {
 		);
 		self::assertNotSame('', (new MigrateRegisterSlug(
 			$this->createMock(IDBConnection::class),
+			$this->appConfig(),
 			$this->createMock(LoggerInterface::class)
 		))->getName());
 

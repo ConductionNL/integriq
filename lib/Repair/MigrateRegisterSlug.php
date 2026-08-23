@@ -56,7 +56,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\AppInfo\Application;
 use OCP\DB\Exception;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -81,9 +83,30 @@ class MigrateRegisterSlug implements IRepairStep {
 	];
 
 	/**
+	 * App-config keys that may hold a register SLUG rather than a numeric id.
+	 *
+	 * Renaming the register row is not enough on its own. This app resolves its
+	 * register through `IAppConfig`, and a stored value still saying the old
+	 * slug sends every reader to a register that no longer answers to that name
+	 * — which OpenRegister resolves by CREATING an empty one. Same silent
+	 * failure as the row rename exists to prevent, one layer up.
+	 *
+	 * The migration is guarded on the value: it rewrites a key ONLY when what is
+	 * stored is exactly an old slug from the map above. An app that stores the
+	 * numeric register id here (dossiq does) never matches, so the guard makes
+	 * this safe to carry everywhere rather than something to remember per app.
+	 *
+	 * @var array<int, string>
+	 */
+	public const APPCONFIG_KEYS = [
+		'register',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
+	 * @param IAppConfig $appConfig App configuration.
 	 * @param LoggerInterface $logger Logger.
 	 * @param MigrateRegisterSlugDecisions $decisions The pure predicates.
 	 *
@@ -93,6 +116,7 @@ class MigrateRegisterSlug implements IRepairStep {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
+		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly MigrateRegisterSlugDecisions $decisions = new MigrateRegisterSlugDecisions(),
 	) {
@@ -140,14 +164,61 @@ class MigrateRegisterSlug implements IRepairStep {
 			}
 		}
 
+		$rekeyed = $this->migrateStoredSlugValues();
+
 		$output->info(
 			sprintf(
-				'MigrateRegisterSlug: %d register slug(s) renamed, %d refused.',
+				'MigrateRegisterSlug: %d register slug(s) renamed, %d refused, %d config value(s) re-pointed.',
 				$renamed,
-				count($plan['refused'])
+				count($plan['refused']),
+				$rekeyed
 			)
 		);
 	}//end run()
+
+	/**
+	 * Re-point app-config values that still name an old register slug.
+	 *
+	 * Runs unconditionally rather than only alongside a rename: on the install
+	 * hook the row may already carry the new slug (a previous run, or a fresh
+	 * install) while a stored config value copied over from the old app id still
+	 * says the old one. Guarded on the VALUE, so a key holding anything else —
+	 * a numeric register id, an admin's deliberate override — is left alone.
+	 *
+	 * @return int Number of values rewritten.
+	 */
+	private function migrateStoredSlugValues(): int {
+		$rekeyed = 0;
+
+		foreach (self::APPCONFIG_KEYS as $key) {
+			try {
+				$current = $this->appConfig->getValueString(Application::APP_ID, $key, '');
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					'MigrateRegisterSlug: could not read app config; leaving it alone.',
+					['key' => $key, 'exception' => $e->getMessage()]
+				);
+				continue;
+			}
+
+			$new = self::SLUG_MAP[$current] ?? null;
+			if ($new === null) {
+				continue;
+			}
+
+			try {
+				$this->appConfig->setValueString(Application::APP_ID, $key, $new);
+				$rekeyed++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					'MigrateRegisterSlug: could not re-point app config.',
+					['key' => $key, 'old' => $current, 'new' => $new, 'exception' => $e->getMessage()]
+				);
+			}
+		}
+
+		return $rekeyed;
+	}//end migrateStoredSlugValues()
 
 	/**
 	 * Read the slugs currently held by the registers on both sides of the map.
