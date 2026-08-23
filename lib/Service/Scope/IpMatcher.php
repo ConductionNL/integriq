@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenConnector — IP allowlist matching for consumer source scope.
+ * Integriq — IP allowlist matching for consumer source scope.
  *
  * Matches a client address against exact IPv4/IPv6 addresses and CIDR ranges.
- * Split out of {@see \OCA\OpenConnector\Service\ConsumerScopeService} so the
+ * Split out of {@see \OCA\Integriq\Service\ConsumerScopeService} so the
  * address arithmetic is testable and reusable independently of the allowlist
  * policy that consumes it.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Scope
+ * @package  OCA\Integriq\Service\Scope
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,12 +17,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Scope;
+namespace OCA\Integriq\Service\Scope;
 
 /**
  * Matches a client IP against exact-address and CIDR allowlist entries.

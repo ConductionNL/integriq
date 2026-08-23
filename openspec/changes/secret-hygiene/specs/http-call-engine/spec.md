@@ -151,7 +151,7 @@ outcome.
 #### Notes
 
 - `writeFile` uses `tempnam()` sourced from `sys_get_temp_dir()` — the shared system
-  temp directory, not a dedicated OpenConnector-owned subdirectory. The
+  temp directory, not a dedicated Integriq-owned subdirectory. The
   unpredictable-name + `0600`-permission combination closes the specific
   world-readability risk that made #1012 CRITICAL; a dedicated
   `chmod(0700)` subdirectory remains a deferred hardening option (see

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector Flow Owner.
+ * Integriq Flow Owner.
  *
- * Fail-closed identity resolution for the node types OpenConnector contributes
+ * Fail-closed identity resolution for the node types Integriq contributes
  * to OpenRegister's flow engine.
  *
  * Every outbound call and every synchronisation a flow performs executes in the
@@ -25,7 +25,7 @@
  * using these nodes fail closed here, by design.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,16 +36,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
+use OCA\Integriq\Exception\FlowNodeException;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -55,7 +55,7 @@ use Throwable;
 /**
  * Resolves and applies the flow run's owner, or refuses.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 class FlowOwner {
 
@@ -91,7 +91,7 @@ class FlowOwner {
 	 *
 	 * @throws FlowNodeException When the run is unattributed or the user is gone.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function resolve(array $context, string $nodeId): IUser {
 		$ownerId = trim((string)($context[self::CONTEXT_KEY] ?? ''));
@@ -125,7 +125,7 @@ class FlowOwner {
 	 *
 	 * The prior session user is captured and restored in a `finally`, so an
 	 * identity never bleeds out of one flow step into the next one — the same
-	 * hazard `JobService` fixed for cron passes (openconnector#1006).
+	 * hazard `JobService` fixed for cron passes (integriq#1006).
 	 *
 	 * @param IUser $user The identity to run as.
 	 * @param callable $callback The work to perform.
@@ -134,7 +134,7 @@ class FlowOwner {
 	 *
 	 * @throws Throwable Whatever the callback threw, unchanged.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function runAs(IUser $user, callable $callback): mixed {
 		$priorSessionUser = $this->userSession->getUser();

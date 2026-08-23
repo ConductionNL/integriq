@@ -4,7 +4,7 @@
  *
  * ADR-079/080 navigation rework: the MERGED dead-letter operations surface.
  *
- * OpenConnector used to ship two dead-letter pages with identical operator
+ * Integriq used to ship two dead-letter pages with identical operator
  * verbs over two different tables — `EventDeliveries` (`event_message`,
  * /api/events/dead-letter) and `SyncDeadLetters` (`sync_item_dead_letter`,
  * /api/sync-dead-letter). Both rendered the SAME EmailAlertOutline glyph, so
@@ -38,7 +38,7 @@ import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
  *
  * ⚠️ This file used to resolve the URL prefix itself, by requesting each
  * candidate and taking the first that served the SPA shell. Both candidates
- * serve the identical shell, so it always chose `/apps/openconnector` — the
+ * serve the identical shell, so it always chose `/apps/integriq` — the
  * prefix CI's path-mode router does NOT honour — and every navigation below
  * fell through the catch-all onto the Dashboard. See
  * tests/e2e/support/appRoot.ts, which asks `OC.generateUrl` instead.

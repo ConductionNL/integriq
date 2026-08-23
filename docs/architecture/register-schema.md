@@ -1,14 +1,19 @@
-# OpenConnector Register Schema Declaration
+# Integriq Register Schema Declaration
 
 **OpenSpec change:** `openconnector-register-schema-declaration`
 **Status:** Implemented (chain A of the storage chain split)
 
 ## Overview
 
-OpenConnector declares its data model as a single OpenRegister register descriptor at
-`lib/Settings/openconnector_register.json`. This file is the authoritative source of truth
+Integriq declares its data model as a single OpenRegister register descriptor at
+`lib/Settings/integriq_register.json`. This file is the authoritative source of truth
 for all 15 schemas in the integration platform — replacing 15 hand-maintained
 `oc_openconnector_*` database tables.
+
+> The register **slug** and the legacy `oc_openconnector_*` table names below stay
+> on `openconnector` after the app-id rename. OpenRegister matches registers by
+> slug: rename it and the import creates a fresh empty register while every
+> existing object stays behind, orphaned.
 
 The companion change `openconnector-register-storage` (chain B) invokes
 `OCA\OpenRegister\Service\ConfigurationService::importFromApp()` at app install/upgrade time
@@ -18,18 +23,18 @@ to provision the register and schemas from this descriptor.
 
 ```
 lib/Settings/
-├── openconnector_register.json   # Register + 15 schema definitions
-└── openconnector_seed_data.json  # Runtime seed (empty; operators populate via UI)
+├── integriq_register.json   # Register + 15 schema definitions
+└── integriq_seed_data.json  # Runtime seed (empty; operators populate via UI)
 ```
 
-### `openconnector_register.json`
+### `integriq_register.json`
 
 OpenAPI 3.0 document with `x-openregister` vendor extension. Top-level structure:
 
 ```json
 {
   "openapi": "3.0.0",
-  "info": { "title": "OpenConnector Register", "version": "1.1.0" },
+  "info": { "title": "Integriq Register", "version": "1.1.0" },
   "x-openregister": {
     "type": "application",
     "app": "openconnector",

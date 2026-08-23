@@ -10,7 +10,7 @@
  * REQ-001 through REQ-005 describe backend sync engine internals (97 methods)
  * that carry @e2e exclude and are covered by PHPUnit/Newman.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  *
  * Known issue #996: Table view renders all cells as "—". Assertions avoid

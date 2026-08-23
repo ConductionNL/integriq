@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Rule → Flow migration generator.
+ * Integriq Rule → Flow migration generator.
  *
  * Task 3.3 of `flow-native-synchronization` ("Rules → trigger-object + switch"):
  * renders an existing Rule entity into a GENERATED FLOW DOCUMENT started by
@@ -62,7 +62,7 @@
  * wrong in exactly the places it looked right. They are refused by name.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -73,17 +73,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\SynchronizationRunNode;
 use OCP\IL10N;
 
 /**
@@ -196,7 +196,6 @@ class RuleToFlowGenerator {
 		);
 
 		return $this->generateFrom(rule: $rule, endpoint: $endpoint);
-
 	}//end generateFor()
 
 	/**
@@ -326,7 +325,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end scopeRefusals()
 
 	/**
@@ -401,7 +399,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end conditionRefusals()
 
 	/**
@@ -471,6 +468,10 @@ class RuleToFlowGenerator {
 		$reasons = [];
 
 		if ($this->synchronizationOf(configuration: $configuration) === '') {
+			// `openconnector.synchronization-run` stays on the old id: flow node `type`
+			// values are written into stored flow documents (OpenRegister objects), so
+			// renaming them makes every existing flow point at a node type nothing
+			// answers to. Same convention as OpenRegister's own `openregister.*` ids.
 			$reasons[] = $this->l10n->t(
 				'configuration.synchronization is not set: "openconnector.synchronization-run" must name a '
 				. 'configured synchronization, and this step never creates one.'
@@ -505,7 +506,6 @@ class RuleToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end synchronizationRuleRefusals()
 
 	/**
@@ -542,7 +542,6 @@ class RuleToFlowGenerator {
 		$nodes[] = ['id' => 'end', 'type' => 'openregister.end', 'config' => []];
 
 		return $nodes;
-
 	}//end nodesFor()
 
 	/**
@@ -716,6 +715,5 @@ class RuleToFlowGenerator {
 		}
 
 		return trim((string)($block ?? ''));
-
 	}//end synchronizationOf()
 }//end class

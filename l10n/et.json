@@ -549,7 +549,7 @@
         "Configure where data comes from.": "Määra, kust andmed pärinevad.",
         "Configure where data is written to.": "Määra, kuhu andmed kirjutatakse.",
         "Content path (optional)": "Sisutee (valikuline)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Otsustage, millised Nextcloudi rühmad võivad iga OpenConnectori toimingut käivitada (ADR-023). Administraatorid pääsevad alati läbi. Iga toiming on vaikimisi ainult administraatoritele — märkige rühm selle laiendamiseks.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Otsustage, millised Nextcloudi rühmad võivad iga Integriqi toimingut käivitada (ADR-023). Administraatorid pääsevad alati läbi. Iga toiming on vaikimisi ainult administraatoritele — märkige rühm selle laiendamiseks.",
         "Discard": "Loobu",
         "Dot-path to the id field in each record": "Punktitee id väljani igas kirjes",
         "Dot-path to the id field in the API response": "Punktitee id väljani API vastuses",

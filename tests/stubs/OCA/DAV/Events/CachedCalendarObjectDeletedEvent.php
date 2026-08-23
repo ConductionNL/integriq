@@ -7,7 +7,7 @@
  * stub exists.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

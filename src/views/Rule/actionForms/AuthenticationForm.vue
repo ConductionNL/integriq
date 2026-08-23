@@ -13,35 +13,35 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Authentication type')
+			t('integriq', 'Authentication type')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Authentication type')"
+			:aria-label-combobox="t('integriq', 'Authentication type')"
 			:modelValue="selectedTypeOption"
 			:options="typeOptions"
 			:clearable="false"
 			@update:modelValue="onTypePick" />
 		<NcTextField
 			v-if="value.type !== 'nc-session'"
-			:label="t('openconnector', 'Header (default: Authorization)')"
+			:label="t('integriq', 'Header (default: Authorization)')"
 			:modelValue="value.header || ''"
 			placeholder="Authorization"
 			@update:modelValue="(next) => patch('header', next)" />
 		<template v-if="value.type === 'apikey'">
 			<NcTextField
-				:label="t('openconnector', 'API keys (comma-separated)')"
+				:label="t('integriq', 'API keys (comma-separated)')"
 				:modelValue="csv(value.keys)"
 				placeholder="key-one,key-two"
 				@update:modelValue="(next) => patch('keys', toArray(next))" />
 		</template>
 		<template v-else-if="usesAllowLists">
 			<NcTextField
-				:label="t('openconnector', 'Allowed users (comma-separated UIDs)')"
+				:label="t('integriq', 'Allowed users (comma-separated UIDs)')"
 				:modelValue="csv(value.users)"
 				placeholder="alice,bob"
 				@update:modelValue="(next) => patch('users', toArray(next))" />
 			<NcTextField
-				:label="t('openconnector', 'Allowed groups (comma-separated)')"
+				:label="t('integriq', 'Allowed groups (comma-separated)')"
 				:modelValue="csv(value.groups)"
 				placeholder="admin,users"
 				@update:modelValue="(next) => patch('groups', toArray(next))" />
@@ -49,7 +49,7 @@
 		<span v-if="value.type === 'nc-session'" class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.',
 				)
 			}}
@@ -57,7 +57,7 @@
 		<span v-else class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'For JWT / JWT-ZGW the rule only checks the signed bearer; no extra fields are required.',
 				)
 			}}
@@ -89,7 +89,7 @@ export default {
 		typeOptions() {
 			return AUTH_TYPES.map((row) => ({
 				id: row.id,
-				label: this.t('openconnector', row.label),
+				label: this.t('integriq', row.label),
 			}))
 		},
 

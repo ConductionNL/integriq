@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector CloudEvent EventListener.
+ * Integriq CloudEvent EventListener.
  *
- * Forwards OpenRegister object change events to the OpenConnector
+ * Forwards OpenRegister object change events to the Integriq
  * EventService so CloudEvents can be dispatched downstream.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  *   (the common case — outbound webhooks are opt-in), skip entirely. No
  *   `event` OR object is persisted, no matching logic runs, for ANY object
  *   mutation fleet-wide.
- * - **Self-reference guard**: OpenConnector's own `event`/`event_message`
+ * - **Self-reference guard**: Integriq's own `event`/`event_message`
  *   plumbing objects (register `openconnector`) are never re-forwarded.
  *   `handleObjectCreated`/`Updated`/`Deleted` themselves persist an `event`
  *   (and, on a match, an `event_message`) OR object — without this guard,

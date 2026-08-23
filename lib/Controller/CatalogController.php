@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector catalog controller.
+ * Integriq catalog controller.
  *
  * Thin controller over CatalogRegistryService exposing the two bespoke,
  * non-CRUD catalog endpoints — everything else about the Catalog page
@@ -10,23 +10,23 @@
  * `index`/`show` methods are added here.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\CatalogRegistryService;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -197,12 +197,12 @@ class CatalogController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('This catalog item has no flag to enable')], Http::STATUS_CONFLICT);
 		}
 
-		$raw = $this->appConfig->getValueString('openconnector', $flagKey, '0');
+		$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
 		if ($raw === '1' || strtolower($raw) === 'true') {
 			return new JSONResponse(['error' => $this->l->t('Already enabled')], Http::STATUS_CONFLICT);
 		}
 
-		$this->appConfig->setValueString('openconnector', $flagKey, '1');
+		$this->appConfig->setValueString('integriq', $flagKey, '1');
 
 		return new JSONResponse(
 			[

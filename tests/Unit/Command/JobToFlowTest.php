@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the openconnector:job-to-flow command.
+ * Tests for the integriq:job-to-flow command.
  *
  * The command's whole contract is that it WRITES NOTHING and that a refusal is
  * visible: {@see testARefusalNamesEveryUnsupportedFeatureAndFails()} asserts the
@@ -9,7 +9,7 @@
  * on a job it could not express reads exactly like one that did.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Command
+ * @package  OCA\Integriq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,18 +18,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Command;
+namespace OCA\Integriq\Tests\Unit\Command;
 
-use OCA\OpenConnector\Command\JobToFlow;
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Service\JobToFlowGenerator;
+use OCA\Integriq\Command\JobToFlow;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Service\JobToFlowGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * @covers \OCA\OpenConnector\Command\JobToFlow
+ * @covers \OCA\Integriq\Command\JobToFlow
  */
 class JobToFlowTest extends TestCase {
 

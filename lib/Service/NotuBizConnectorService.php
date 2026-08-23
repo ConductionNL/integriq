@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector NotuBiz Connector Service
+ * Integriq NotuBiz Connector Service
  *
  * Service for bidirectional integration with the NotuBiz raadsinformatiesysteem.
  * Pushes vergaderstukken to NotuBiz and supports OAuth2 token management.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;

@@ -3,10 +3,10 @@
 /**
  * Synchronization contract integration provider.
  *
- * Exposes openconnector SyncContract objects as "leaves" on the OR objects they
+ * Exposes Integriq SyncContract objects as "leaves" on the OR objects they
  * synchronise. Registered with OR's IntegrationRegistry at app boot (see
- * {@see \OCA\OpenConnector\AppInfo\Application::boot()}). When a user opens any
- * OR object (in opencatalogi, decidesk, openconnector itself, or any fleet
+ * {@see \OCA\Integriq\AppInfo\Application::boot()}). When a user opens any
+ * OR object (in opencatalogi, decidesk, integriq itself, or any fleet
  * app), the object's sidebar shows a "Synced from" leaf with the SyncContract
  * summary — making the cross-app sync origin visible everywhere.
  *
@@ -19,7 +19,7 @@
  * AbstractIntegrationProvider default which throws NotImplementedException.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Integration
+ * @package  OCA\Integriq\Service\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,7 +27,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec GH issue #824
  * @ref  Local ADR-005 (Source/Sync/Contract triad)
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Integration;
+namespace OCA\Integriq\Service\Integration;
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\ObjectService;
@@ -44,7 +44,7 @@ use OCP\AppFramework\Services\IAppConfig;
 use OCP\IL10N;
 
 /**
- * Exposes openconnector SyncContract objects as integration leaves on OR objects.
+ * Exposes Integriq SyncContract objects as integration leaves on OR objects.
  *
  * @spec openspec/specs/synchronization-engine/spec.md
  */
@@ -131,7 +131,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	public function getRequiredApp(): ?string {
-		return 'openconnector';
+		return 'integriq';
 	}//end getRequiredApp()
 
 	/**
@@ -240,7 +240,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 					// Generic-card display keys (CnIntegrationCard reads
 					// title / subtitle / url). Title is the human sync name;
 					// subtitle summarises the last sync; url deep-links into
-					// the OpenConnector synchronization detail page.
+					// the Integriq synchronization detail page.
 					'title' => $syncName,
 					'subtitle' => $this->buildSubtitle(lastSynced: $lastSynced, lastAction: $lastAction),
 					'url' => $this->buildSyncUrl(synchronizationId: (string)$synchronizationId),
@@ -329,7 +329,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	}//end buildSubtitle()
 
 	/**
-	 * Build a deep-link into the OpenConnector synchronization detail page.
+	 * Build a deep-link into the Integriq synchronization detail page.
 	 *
 	 * @param string $synchronizationId The synchronization uuid.
 	 *
@@ -340,7 +340,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 			return null;
 		}
 
-		return '/index.php/apps/openconnector/synchronizations/' . $synchronizationId;
+		return '/index.php/apps/integriq/synchronizations/' . $synchronizationId;
 	}//end buildSyncUrl()
 
 	/**
@@ -359,7 +359,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 				'status' => 'unavailable',
 				'authStatus' => 'configured',
 				'message' => $this->l10n->t(
-					'OpenConnector storage migration has not yet run on this instance.'
+					'Integriq storage migration has not yet run on this instance.'
 					. ' Sync contract leaves will appear after `occ upgrade` runs the chain-C cutover.'
 				),
 			];
@@ -376,10 +376,10 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	/**
 	 * Whether the provider is enabled on this instance.
 	 *
-	 * The provider is available once the openconnector chain-C cutover has
+	 * The provider is available once the integriq chain-C cutover has
 	 * materialised SyncContract objects in OR storage. That happens when
-	 * {@see \OCA\OpenConnector\Migration\Version2Date20260520000001} flips
-	 * `openconnector.storage_migrated` to `'true'`.
+	 * {@see \OCA\Integriq\Migration\Version2Date20260520000001} flips
+	 * `integriq.storage_migrated` to `'true'`.
 	 *
 	 * @return bool True when the storage migration has run, false otherwise.
 	 *

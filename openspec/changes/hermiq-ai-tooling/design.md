@@ -29,12 +29,12 @@ Governance context: Hermiq `ToolReachResolver` (`self/user/instance/external`), 
 
 | Tool id | Scope | Reach | Gate | Delegates to (existing, unchanged) | ADR-023 action |
 |---|---|---|---|---|---|
-| `openconnector.runSynchronization` | update | external | **approval** | `synchronization.run` path incl. sync-safety guardrails; `forceDeletion` never exposed | `synchronization.run` |
-| `openconnector.testSynchronization` | read | external | confirm | test path (absolute no-write guarantee) | `synchronization.test` |
-| `openconnector.testSource` | read | external | confirm | `source.test` path (`CallService`) | `source.test` |
-| `openconnector.replayDeadLetters` | update | external | **approval**, batch | audited replay (REQ-DLR-003/009) for sync + event dead letters | `sync-dead-letter.replay` (new seed) |
-| `openconnector.discardDeadLetters` | delete | instance | **approval**, batch, `destructiveHint` | audited discard (REQ-DLR-004/010) | `sync-dead-letter.discard` (new seed) |
-| `openconnector.listDeadLetters` | read | instance | none | dead-letter listing services, payload stripped | — (read; RBAC + matrix-free like other curated reads) |
+| `integriq.runSynchronization` | update | external | **approval** | `synchronization.run` path incl. sync-safety guardrails; `forceDeletion` never exposed | `synchronization.run` |
+| `integriq.testSynchronization` | read | external | confirm | test path (absolute no-write guarantee) | `synchronization.test` |
+| `integriq.testSource` | read | external | confirm | `source.test` path (`CallService`) | `source.test` |
+| `integriq.replayDeadLetters` | update | external | **approval**, batch | audited replay (REQ-DLR-003/009) for sync + event dead letters | `sync-dead-letter.replay` (new seed) |
+| `integriq.discardDeadLetters` | delete | instance | **approval**, batch, `destructiveHint` | audited discard (REQ-DLR-004/010) | `sync-dead-letter.discard` (new seed) |
+| `integriq.listDeadLetters` | read | instance | none | dead-letter listing services, payload stripped | — (read; RBAC + matrix-free like other curated reads) |
 
 `external` reach on run/test tools is not negotiable: they call remote systems the instance does not control. `discard` is `instance` (terminal bookkeeping, no remote call) but `delete`-scoped and destructive-hinted.
 

@@ -6,7 +6,7 @@
  * (consumer-management REQ-CON-RL-002 / RL-003).
  *
  * These are NOT UI-driving Playwright tests — they assert raw HTTP status
- * codes + RateLimit-* response headers against the openconnector endpoint
+ * codes + RateLimit-* response headers against the integriq endpoint
  * gateway. They are excluded from the gate-19 UI run via the `**​/api-direct/**`
  * testIgnore in playwright.config.ts (API-direct → Newman home).
  *
@@ -25,7 +25,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const API_BASE = '/index.php/apps/openconnector/api'
+const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe('Inbound consumer rate limiting — HTTP contract', () => {
 	// The gateway dispatch path stays healthy (never 500) regardless of

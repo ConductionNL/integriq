@@ -29,7 +29,7 @@
  * These tests pin each control so a future register edit cannot silently reopen the leak.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,12 +38,12 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
 use PHPUnit\Framework\TestCase;
 
@@ -58,7 +58,7 @@ class RemainingSecretLeaksTest extends TestCase {
 	 */
 	private function effectiveSchema(string $name): array {
 		$root = dirname(__DIR__, 3);
-		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 
 		$fragments = glob($root . '/lib/Settings/register.d/*.json');
 		sort($fragments);

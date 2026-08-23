@@ -9,7 +9,7 @@ Bucket 2b cluster `endpoint-runtime` (no capability owner).
 
 The endpoint dispatch / caching / normalisation layer is core platform
 behaviour with no spec coverage. It is the request entry point for every
-configured OpenConnector endpoint and needs a foundational capability spec
+configured Integriq endpoint and needs a foundational capability spec
 under `openspec/specs/`. This is the second of two shared-`EndpointService`
 clusters; the rule-evaluation half is covered separately by the `rule-pipeline`
 cluster. Target dispatch follows ADR-008 (`targetType` / `targetId` polymorphic

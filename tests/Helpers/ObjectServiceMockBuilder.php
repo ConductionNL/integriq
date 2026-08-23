@@ -4,7 +4,7 @@
  * ObjectServiceMockBuilder — static factory for OR ObjectService test doubles.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Helpers
+ * @package  OCA\Integriq\Tests\Helpers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Helpers;
+namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;

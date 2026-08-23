@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Client Interface.
+ * Integriq Forms Client Interface.
  *
  * Narrow domain seam through which every Nextcloud Forms form/question/
  * submission read occurs — the single seam both the outbound
@@ -22,7 +22,7 @@
  * via `IAppManager`.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Forms
+ * @package  OCA\Integriq\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,18 +31,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Forms;
+namespace OCA\Integriq\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsNotFoundException;
-use OCA\OpenConnector\Exception\FormsPermissionDeniedException;
-use OCA\OpenConnector\Exception\FormsUpstreamException;
+use OCA\Integriq\Exception\FormsNotFoundException;
+use OCA\Integriq\Exception\FormsPermissionDeniedException;
+use OCA\Integriq\Exception\FormsUpstreamException;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**

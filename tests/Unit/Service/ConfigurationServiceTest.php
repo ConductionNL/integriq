@@ -4,7 +4,7 @@
  * Unit tests for ConfigurationService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,17 +13,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\ConfigurationHandlers\EndpointHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\JobHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\MappingHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\RuleHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\SourceHandler;
-use OCA\OpenConnector\Service\ConfigurationHandlers\SynchronizationHandler;
-use OCA\OpenConnector\Service\ConfigurationService;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\MappingHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\RuleHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;

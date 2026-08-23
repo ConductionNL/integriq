@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector "Fire CloudEvent" WorkflowEngine Operation.
+ * Integriq "Fire CloudEvent" WorkflowEngine Operation.
  *
  * Thin `OCP\WorkflowEngine\ISpecificOperation` adapter that lets an NC admin
  * wire "file event + checks -> emit this CloudEvent" from Settings > Flow.
@@ -10,7 +10,7 @@
  * delivery, retry, or dead-letter logic is reimplemented here.
  *
  * @category WorkflowEngine
- * @package  OCA\OpenConnector\WorkflowEngine
+ * @package  OCA\Integriq\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,17 +19,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-fire-cloudevent-operations-onevent-must-dispatch-to-eventserviceemitcloudevent-req-004
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\WorkflowEngine;
+namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\OpenConnector\AppInfo\Application;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\EventService;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;

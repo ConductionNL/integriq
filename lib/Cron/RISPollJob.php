@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector RIS Poll Job
+ * Integriq RIS Poll Job
  *
  * Background job task for polling iBabs and NotuBiz for besluit updates.
  * Runs at a configurable interval (default 15 minutes) to retrieve besluiten
  * for all outstanding sync records and updates zaak statuses accordingly.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\IBabsConnectorService;
+use OCA\Integriq\Service\IBabsConnectorService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;

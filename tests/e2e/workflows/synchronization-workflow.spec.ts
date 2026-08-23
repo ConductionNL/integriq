@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * DEEP, DATA-DEPENDENT e2e — the SYNCHRONIZATION workflow, which is the whole
- * point of openconnector: moving and transforming data end-to-end.
+ * point of integriq: moving and transforming data end-to-end.
  *
  * WHAT THIS PROVES (the high-value check)
  * ---------------------------------------
@@ -12,17 +12,17 @@
  *   [OR register/schema  "source data"]   (seeded with 2 objects)
  *            │  served by OpenRegister's own REST API
  *            ▼
- *   [openconnector Source]  type=json, location = the OR objects endpoint
+ *   [integriqSource]  type=json, location = the OR objects endpoint
  *            │  linked into
  *            ▼
- *   [openconnector Synchronization]  sourceType=api  →  targetType=register/schema
+ *   [integriqSynchronization]  sourceType=api  →  targetType=register/schema
  *            │  RUN  (POST /api/synchronizations/{id}/run)
  *            ▼
  *   [OR register/schema  "target"]    ← assert the synced objects land here
  *
  * No external network is needed: the Source points at OpenRegister's REST
  * endpoint (`http://localhost/index.php/apps/openregister/api/objects/...`),
- * which openconnector can reach in-container (verified: HTTP 200) and which
+ * which integriq can reach in-container (verified: HTTP 200) and which
  * loopback-exempts from the TLS policy. This is a genuine api→register/schema
  * transfer, not a render smoke.
  *

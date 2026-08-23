@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector environment CRUD controller.
+ * Integriq environment CRUD controller.
  *
- * Thin, routed wrapper over {@see \OCA\OpenConnector\Service\EnvironmentService}
+ * Thin, routed wrapper over {@see \OCA\Integriq\Service\EnvironmentService}
  * (environments-and-promotion REQ-001/REQ-005). Environment CRUD is gated by
  * the ADR-023 `environment.manage` action key, distinct from the
  * `environment.promote` key that gates the promotion endpoints on
  * {@see PromotionController}.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,18 +19,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\EnvironmentService;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\EnvironmentService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

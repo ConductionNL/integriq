@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector Synchronization Log Service
+ * Integriq Synchronization Log Service
  *
  * Write path for synchronization run-logs, backed by OpenRegister.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,10 +14,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -46,6 +46,8 @@ class SynchronizationLogService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'openconnector';
 
 	/**

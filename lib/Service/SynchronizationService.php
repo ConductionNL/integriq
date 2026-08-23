@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Service.
+ * Integriq Synchronization Service.
  *
  * Service for handling synchronization operations between internal and external
  * data sources. Provides functionality for mapping, transforming, and synchronizing
@@ -9,7 +9,7 @@
  * performance.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,10 +20,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use DateTime;
@@ -35,15 +35,15 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils;
 use JWadhams\JsonLogic;
-use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
-use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Helper\FlowToken;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
-use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -71,12 +71,12 @@ use Twig\Error\SyntaxError;
  * asynchronous file fetching using ReactPHP for improved performance.
  *
  * @category  Service
- * @package   OCA\OpenConnector\Service
+ * @package   OCA\Integriq\Service
  * @author    Conduction b.v.
  * @copyright 2024 Conduction b.v.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
- * @link      https://github.com/ConductionNL/OpenConnector
+ * @link      https://github.com/ConductionNL/integriq
  *
  * @SuppressWarnings(PHPMD.TooManyFields) 21 against a threshold of 15. Every field is
  *   an injected collaborator — this class is the synchronization ENGINE, and the
@@ -298,7 +298,7 @@ class SynchronizationService {
 	/**
 	 * The synchronizations currently on the chaining call stack.
 	 *
-	 * OpenConnector chains synchronizations two ways — a `synchronization` rule
+	 * Integriq chains synchronizations two ways — a `synchronization` rule
 	 * and a `followUps` entry — and both re-enter `synchronize()` on this same
 	 * service. Neither had any cycle or depth guard, so A -> B -> A recursed
 	 * until the process died. One shared stack guards both, because a cycle can
@@ -397,7 +397,7 @@ class SynchronizationService {
 	 * A percentage computed from a handful of contracts is not a meaningful
 	 * signal of "mass deletion" (deleting the single existing contract is
 	 * always a 100% ratio) and the production incidents motivating this guard
-	 * (ConductionNL/openconnector#1000/#1001/#1002) involve synchronizations
+	 * (ConductionNL/integriq#1000/#1001/#1002) involve synchronizations
 	 * with dozens to thousands of contracts, not a handful. Below this floor
 	 * the guard is skipped entirely and deletion proceeds exactly as it did
 	 * before this change (still subject to the fetch-completeness gate).
@@ -570,7 +570,7 @@ class SynchronizationService {
 	 * @param MappingService $mappingService The mapping service.
 	 * @param ContainerInterface $containerInterface The PSR-11 container.
 	 * @param OrObjectService $orObjectService The OpenRegister object service.
-	 * @param ObjectService $objectService The OpenConnector object service.
+	 * @param ObjectService $objectService The Integriq object service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
 	 * @param IAppConfig $appConfig The app configuration.
@@ -627,8 +627,8 @@ class SynchronizationService {
 			$this->runProgressService = $runProgressService;
 		}
 
-		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-			$retention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true);
+		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
+			$retention = json_decode($appConfig->getValueString(app: 'integriq', key: 'retention'), true);
 
 			$this->errorRetention = ($retention['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
 			$this->errorContractRetention = ($retention['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
@@ -721,9 +721,9 @@ class SynchronizationService {
 			// would flood the log on any instance without the register — including
 			// the bulk-import scenario this guard exists for. The operator-facing
 			// signal already lives at app registration ("legacy storage has not been
-			// migrated… run occ openconnector:migrate-storage").
+			// migrated… run occ integriq:migrate-storage").
 			$this->logger->debug(
-				'openconnector synchronization store not found; skipping event synchronization: ' . $e->getMessage(),
+				'integriq synchronization store not found; skipping event synchronization: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return [];
@@ -969,7 +969,7 @@ class SynchronizationService {
 			} catch (\Throwable $exception) {
 				// FULLY QUALIFIED deliberately: this file does not import
 				// Throwable, so an unqualified catch resolves to
-				// OCA\OpenConnector\Service\Throwable and silently matches
+				// OCA\Integriq\Service\Throwable and silently matches
 				// nothing — the exception sails straight through a catch block
 				// that looks correct.
 				// The loop will raise this again for this item, in the place that
@@ -1052,8 +1052,8 @@ class SynchronizationService {
 	 * concerns, so each item still resolves its own contract, from memory.
 	 *
 	 * @param string $synchronizationId The synchronization the contracts belong to.
-	 * @param array  $originIds         The page's origin ids.
-	 * @param bool   $justByOriginId    Match on origin id alone.
+	 * @param array $originIds The page's origin ids.
+	 * @param bool $justByOriginId Match on origin id alone.
 	 *
 	 * @return array<string, array<int, array>> Origin id => all matching contract payloads.
 	 *
@@ -1063,7 +1063,7 @@ class SynchronizationService {
 	private function indexContractsByOrigin(
 		string $synchronizationId,
 		array $originIds,
-		bool $justByOriginId = false
+		bool $justByOriginId = false,
 	): array {
 		$originIds = array_values(array_unique(array_filter($originIds, static fn ($id): bool => $id !== '')));
 		if ($originIds === []) {
@@ -1095,11 +1095,11 @@ class SynchronizationService {
 	/**
 	 * Find a contract by synchronizationId + originId (and optionally just origin).
 	 *
-	 * @param string     $synchronizationId The synchronization id.
-	 * @param string     $originId          The origin id.
-	 * @param bool|null  $justByOriginId    When true, match on origin id only.
-	 * @param array|null $allMatches       By-reference output: ALL matching contract
-	 *                                     payloads.
+	 * @param string $synchronizationId The synchronization id.
+	 * @param string $originId The origin id.
+	 * @param bool|null $justByOriginId When true, match on origin id only.
+	 * @param array|null $allMatches By-reference output: ALL matching contract
+	 *                               payloads.
 	 * @param-out array $allMatches        Callers may pass null IN, but this method
 	 *                                     always assigns an array back out — empty
 	 *                                     when there is no match.
@@ -1253,7 +1253,7 @@ class SynchronizationService {
 	 * previous check there is nothing to be newer than, so the run must fall
 	 * through and write.
 	 *
-	 * @param mixed $mapping     The resolved mapping, or null when none is set.
+	 * @param mixed $mapping The resolved mapping, or null when none is set.
 	 * @param mixed $lastChecked The contract's `sourceLastChecked`.
 	 *
 	 * @return bool True when the mapping is no reason to rewrite.
@@ -1290,7 +1290,7 @@ class SynchronizationService {
 	 * value returns false — "cannot prove it is older" must fall through to the
 	 * update path, never silently skip a write.
 	 *
-	 * @param mixed $moment    The earlier candidate (DateTimeInterface or string).
+	 * @param mixed $moment The earlier candidate (DateTimeInterface or string).
 	 * @param mixed $reference The later candidate (DateTimeInterface or string).
 	 *
 	 * @return bool True when both parse and `$moment` is strictly earlier.
@@ -1604,7 +1604,7 @@ class SynchronizationService {
 	 *
 	 * A genuinely unmatched location resolves to a transient, in-memory source
 	 * configuration for the current call only — it is NEVER persisted as a new,
-	 * enabled Source object (REQ-012 / ConductionNL/openconnector#1009: an
+	 * enabled Source object (REQ-012 / ConductionNL/integriq#1009: an
 	 * ad-hoc, caller-supplied location string must not silently become
 	 * reviewable-config-grade state; an admin who needs a reusable Source for
 	 * that location should configure one, which is the intended path). The
@@ -1840,11 +1840,13 @@ class SynchronizationService {
 	 * @param string $eventMutationType The triggering mutation: create|update|delete
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
 	 */
 	public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void {
-		// OpenConnector subscribes to OpenRegister's object lifecycle events
+		// Integriq subscribes to OpenRegister's object lifecycle events
 		// synchronously, so this runs inside the host save that triggered the
-		// event — even when the saving app has nothing to do with OpenConnector.
+		// event — even when the saving app has nothing to do with Integriq.
 		// A failure here must never unwind into that save (which would 500 the
 		// host operation), so swallow everything and log instead.
 		try {
@@ -2659,9 +2661,9 @@ class SynchronizationService {
 			// stays null rather than raising.
 			$contractIds = array_values(
 				array_filter(
-                    ($result['contracts'] ?? []),
-                    static fn ($id): bool => $id !== null
-                )
+					($result['contracts'] ?? []),
+					static fn ($id): bool => $id !== null
+				)
 			);
 
 			// EMBEDDING IS BOUNDED, and the bound is the point. `_embed` exists so
@@ -2700,14 +2702,14 @@ class SynchronizationService {
 				try {
 					foreach ($this->findAllContractObjects(filters: ['uuid' => $contractIds]) as $match) {
 						$payload = $match->jsonSerialize();
-						$key     = (string) (($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
+						$key = (string)(($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
 						if ($key !== '') {
 							$resolved[$key] = $payload;
 						}
 					}
 				} catch (\Throwable $embedException) {
 					$this->logger->warning(
-						'Could not resolve contracts for _embed: '.$embedException->getMessage()
+						'Could not resolve contracts for _embed: ' . $embedException->getMessage()
 					);
 				}
 			}
@@ -2842,7 +2844,7 @@ class SynchronizationService {
 
 		// Stage 6: Follow-up synchronizations.
 		//
-		// This is openconnector's oldest chaining mechanism and it had no cycle
+		// This is Integriq's oldest chaining mechanism and it had no cycle
 		// or depth guard: A listing B as a follow-up while B lists A recursed
 		// until the process died, taking the whole request with it. The shared
 		// chain stack bounds it — a follow-up already running higher up the
@@ -4903,7 +4905,7 @@ class SynchronizationService {
 
 		return (string)Uuid::v5(
 			Uuid::fromString(self::TARGET_UUID_NAMESPACE),
-			$synchronizationId.'|'.$originId
+			$synchronizationId . '|' . $originId
 		);
 	}//end deriveTargetUuid()
 
@@ -4934,7 +4936,7 @@ class SynchronizationService {
 		array $row,
 		array $sourceConfig,
 	): void {
-		$groupKey = $register.'/'.$schema;
+		$groupKey = $register . '/' . $schema;
 
 		if (isset($this->targetWriteBuffer[$groupKey]) === false) {
 			$this->targetWriteBuffer[$groupKey] = [
@@ -5071,7 +5073,7 @@ class SynchronizationService {
 		$this->logger->warning(
 			'Bulk target write rejected rows during a synchronization flush',
 			[
-				'target' => $group['register'].'/'.$group['schema'],
+				'target' => $group['register'] . '/' . $group['schema'],
 				'requested' => count($rows),
 				'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
 				'updated' => (int)(($bulkResult['statistics']['updated'] ?? 0)),
@@ -5111,7 +5113,7 @@ class SynchronizationService {
 					// re-created on the next run, so this is never just noise.
 					$this->logger->error(
 						'Bulk contract write rejected rows during a synchronization flush; '
-						.'the objects they map may be re-created on the next run.',
+						. 'the objects they map may be re-created on the next run.',
 						[
 							'requested' => count($contracts),
 							'saved' => (int)(($bulkResult['statistics']['saved'] ?? 0)),
@@ -5146,7 +5148,7 @@ class SynchronizationService {
 				// because of one would re-create all of those objects next run.
 				$this->logger->error(
 					'Could not persist a buffered synchronization contract; '
-					.'the object it maps may be re-created on the next run.',
+					. 'the object it maps may be re-created on the next run.',
 					[
 						'originId' => ($contract['originId'] ?? null),
 						'targetId' => ($contract['targetId'] ?? null),
@@ -5586,7 +5588,7 @@ class SynchronizationService {
 	 * A per-row coercion/ambiguous-mapping failure is signalled by the adapter
 	 * returning `null`; this method logs it and leaves the contract's
 	 * `targetId` unchanged (so a later run retries) WITHOUT aborting — only a
-	 * {@see \OCA\OpenConnector\Exception\TablesPermissionDeniedException}
+	 * {@see \OCA\Integriq\Exception\TablesPermissionDeniedException}
 	 * (401/403) is allowed to propagate uncaught and abort the run (REQ-006).
 	 *
 	 * @param array $synchronizationContract The synchronization contract being updated.
@@ -6492,7 +6494,7 @@ class SynchronizationService {
 		string $endpoint,
 		array $config,
 		array $synchronization,
-		int $fromPage
+		int $fromPage,
 	): void {
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
@@ -6653,7 +6655,7 @@ class SynchronizationService {
 			// A prediction is an optimisation; failing to make one must never
 			// fail the run that would have gone ahead without it.
 			$this->logger->debug(
-				'Could not predict the page count from existing contracts: '.$e->getMessage()
+				'Could not predict the page count from existing contracts: ' . $e->getMessage()
 			);
 			return null;
 		}
@@ -6740,10 +6742,10 @@ class SynchronizationService {
 	/**
 	 * Fetch one page of source data.
 	 *
-	 * @param array  $source          The source to call.
-	 * @param string $endpoint        The endpoint to call.
-	 * @param array  $config          The call configuration.
-	 * @param array  $synchronization The synchronization being run.
+	 * @param array $source The source to call.
+	 * @param string $endpoint The endpoint to call.
+	 * @param array $config The call configuration.
+	 * @param array $synchronization The synchronization being run.
 	 *
 	 * @return array The page's objects and raw result.
 	 */
@@ -8385,6 +8387,25 @@ class SynchronizationService {
 	 * more, and re-implementing the lookup against register `openconnector` /
 	 * schema `rule` in a second place is how the two drift.
 	 *
+	 * ⚠️ THE READ IS DELIBERATELY UNSCOPED, and delegating to `getRuleById()`
+	 * was wrong for exactly that reason. That method reads WITH rbac and
+	 * multitenancy, which is right for the legacy engine's in-request rule
+	 * pipeline and wrong here: the generator runs under `occ`, where there is
+	 * no user session, so a scoped read filters every rule away and returns
+	 * null. The generator then cannot establish what the rule does and refuses
+	 * the synchronization — which is not "this rule is unsupported", it is "I
+	 * could not look".
+	 *
+	 * MEASURED, and this is why the flag matters rather than being defensive:
+	 * after `openconnector.fetch-file` shipped, a full sweep of all 240
+	 * synchronizations still refused the same 74, and ALL 74 gave
+	 * `actions: rule "…" could not be resolved`. Not one of them was refused
+	 * for its rule's TYPE. The feature was complete and unreachable.
+	 *
+	 * `MigrationEntityReader` already reads this way and says why in its own
+	 * docblock; this is the same rule applied to the one entity that did not go
+	 * through it.
+	 *
 	 * @param string $id The rule's OpenRegister uuid or slug.
 	 *
 	 * @return array|null The rule payload, or null when there is no such rule.
@@ -8392,7 +8413,29 @@ class SynchronizationService {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	public function findRule(string $id): ?array {
-		return $this->getRuleById(id: $id);
+		try {
+			$object = $this->orObjectService->find(
+				id: $id,
+				register: 'openconnector',
+				schema: 'rule',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			// FULLY QUALIFIED on purpose: this file declares
+			// `namespace OCA\Integriq\Service` and imports `Exception` but not
+			// `Throwable`, so a bare `Throwable` here would resolve to
+			// `OCA\Integriq\Service\Throwable`, match nothing, and let the
+			// failure escape as a fatal instead of the null this contract
+			// promises. `php -l` does not catch that.
+			return null;
+		}
+
+		if ($object === null) {
+			return null;
+		}
+
+		return $object->jsonSerialize();
 
 	}//end findRule()
 
@@ -8420,8 +8463,8 @@ class SynchronizationService {
 	 * while reporting success. A step that does nothing and says it worked is
 	 * the failure this whole change keeps running into, so it refuses instead.
 	 *
-	 * @param string      $ruleId   The rule's OpenRegister uuid or slug.
-	 * @param array       $data     The item data the rule acts on.
+	 * @param string $ruleId The rule's OpenRegister uuid or slug.
+	 * @param array $data The item data the rule acts on.
 	 * @param string|null $objectId The written object, when there is one.
 	 *
 	 * @return array The data, with placeholders applied when configured.
@@ -8444,7 +8487,6 @@ class SynchronizationService {
 		}
 
 		return $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId);
-
 	}//end runFetchFileRule()
 
 	/**
@@ -9314,17 +9356,17 @@ class SynchronizationService {
 	 * so a rotated credential is picked up at run time rather than frozen at
 	 * queue time.
 	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
+	 * @param array $config The fetch_file rule configuration.
+	 * @param mixed $endpoint The endpoint(s) to fetch.
 	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
+	 * @param int $ruleId The rule id, for error attribution.
 	 *
 	 * @return void
 	 */
 	private function enqueueFileFetch(array $config, mixed $endpoint, string $objectId, int $ruleId): void {
 		try {
 			$this->containerInterface->get(\OCP\BackgroundJob\IJobList::class)->add(
-				\OCA\OpenConnector\Cron\FetchFilesJob::class,
+				\OCA\Integriq\Cron\FetchFilesJob::class,
 				[
 					'config' => $config,
 					'endpoint' => $endpoint,
@@ -9345,16 +9387,16 @@ class SynchronizationService {
 	}//end enqueueFileFetch()
 
 	/**
-	 * Public entry point for {@see \OCA\OpenConnector\Cron\FetchFilesJob}.
+	 * Public entry point for {@see \OCA\Integriq\Cron\FetchFilesJob}.
 	 *
 	 * Re-resolves the source and runs the SAME fetch path the inline mode uses,
 	 * so `sync` and `async` cannot drift into fetching differently — the only
 	 * intended difference is when the work happens, never what it does.
 	 *
-	 * @param array  $config   The fetch_file rule configuration.
-	 * @param mixed  $endpoint The endpoint(s) to fetch.
+	 * @param array $config The fetch_file rule configuration.
+	 * @param mixed $endpoint The endpoint(s) to fetch.
 	 * @param string $objectId The object the files belong to.
-	 * @param int    $ruleId   The rule id, for error attribution.
+	 * @param int $ruleId The rule id, for error attribution.
 	 *
 	 * @return void
 	 *
@@ -10571,7 +10613,7 @@ class SynchronizationService {
 	 * @param array $source The source value object.
 	 *
 	 * @return array{concurrency: int, byteBudget: int, maxFileSize: int} The clamped cap, the in-flight
-	 *               byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
+	 *                                                                    byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
 	 *
 	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */

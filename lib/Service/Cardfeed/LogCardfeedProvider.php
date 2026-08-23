@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Log Corporate Card-Feed Provider.
+ * Integriq Log Corporate Card-Feed Provider.
  *
  * Sandbox/mock binding for {@see CardfeedProviderInterface}: performs no real
  * network call, returns canned cards and canned transactions, and reads no
@@ -11,7 +11,7 @@
  * idempotency (REQ-004) is exercisable with a fixed sandbox feed.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Cardfeed
+ * @package  OCA\Integriq\Service\Cardfeed
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Cardfeed;
+namespace OCA\Integriq\Service\Cardfeed;
 
 /**
  * Sandbox corporate-card provider: canned cards and stable-id transactions.

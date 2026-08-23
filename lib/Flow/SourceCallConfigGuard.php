@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Source Call config guard.
+ * Integriq Source Call config guard.
  *
  * The save-time rules that are specific to `openconnector.source-call`: which
  * HTTP method it may name, which statuses it may accept, what shape its
@@ -30,7 +30,7 @@
  * wrote something unusable must be told, not left believing it is in use.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,14 +41,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCP\IL10N;
 use UnexpectedValueException;
@@ -56,7 +56,7 @@ use UnexpectedValueException;
 /**
  * Save-time configuration rules owned by the Source Call node.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
 final class SourceCallConfigGuard {
 
@@ -85,7 +85,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the method is unsupported.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertMethod(array $config, IL10N $l10n): void {
 		$method = strtoupper(trim((string)($config['method'] ?? '')));
@@ -119,7 +119,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the value is not a list of statuses.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertAcceptStatuses(array $config, IL10N $l10n): void {
 		if (array_key_exists('acceptStatuses', $config) === false) {
@@ -153,7 +153,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When a request part has the wrong shape.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertRequestParts(array $config, IL10N $l10n): void {
 		foreach (['query', 'headers'] as $field) {
@@ -195,7 +195,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the policy is unknown.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertOnError(array $config, IL10N $l10n): void {
 		if (array_key_exists('onError', $config) === false) {

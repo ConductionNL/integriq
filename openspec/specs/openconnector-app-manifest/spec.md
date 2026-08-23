@@ -5,18 +5,18 @@ TBD - created by archiving change openconnector-app-manifest. Update Purpose aft
 ## Requirements
 ### Requirement: Manifest file MUST exist at canonical path
 
-The openconnector app MUST ship a file at `src/manifest.json` adjacent to `src/main.js`
+The integriq app MUST ship a file at `src/manifest.json` adjacent to `src/main.js`
 and `src/App.vue`. The file MUST be valid JSON parseable without errors.
 
 #### Scenario: Manifest file present at canonical path
-- GIVEN a checkout of the openconnector repo
-- WHEN inspecting `openconnector/src/`
+- GIVEN a checkout of the integriq repo
+- WHEN inspecting `integriq/src/`
 - THEN `manifest.json` MUST exist as a regular file
 - AND it MUST parse as valid JSON with no syntax errors
 
 #### Scenario: Manifest file is adjacent to main.js
-- GIVEN a checkout of the openconnector repo
-- WHEN listing `openconnector/src/`
+- GIVEN a checkout of the integriq repo
+- WHEN listing `integriq/src/`
 - THEN `manifest.json`, `main.js`, and `App.vue` MUST all be present in the same directory
 
 ---
@@ -80,19 +80,19 @@ Required menu entries (confirmed from `src/navigation/MainMenu.vue`):
 
 | id | label | section | order |
 |----|-------|---------|-------|
-| Dashboard | openconnector navigation.dashboard | — | 10 |
-| Sources | openconnector navigation.sources | — | 20 |
-| Endpoints | openconnector navigation.endpoints | — | 30 |
-| Consumers | openconnector navigation.consumers | — | 40 |
-| Webhooks | openconnector navigation.webhooks | — | 50 |
-| Mappings | openconnector navigation.mappings | — | 60 |
-| Jobs | openconnector navigation.jobs | — | 70 |
-| CloudEvents | openconnector navigation.cloudEvents | — | 80 |
-| Synchronizations | openconnector navigation.synchronizations | — | 90 |
-| Rules | openconnector navigation.rules | — | 100 |
-| Import | openconnector navigation.import | settings | 110 |
-| Documentation | openconnector navigation.documentation | settings | 120 |
-| Settings | openconnector navigation.settings | settings | 130 |
+| Dashboard | integriq navigation.dashboard | — | 10 |
+| Sources | integriq navigation.sources | — | 20 |
+| Endpoints | integriq navigation.endpoints | — | 30 |
+| Consumers | integriq navigation.consumers | — | 40 |
+| Webhooks | integriq navigation.webhooks | — | 50 |
+| Mappings | integriq navigation.mappings | — | 60 |
+| Jobs | integriq navigation.jobs | — | 70 |
+| CloudEvents | integriq navigation.cloudEvents | — | 80 |
+| Synchronizations | integriq navigation.synchronizations | — | 90 |
+| Rules | integriq navigation.rules | — | 100 |
+| Import | integriq navigation.import | settings | 110 |
+| Documentation | integriq navigation.documentation | settings | 120 |
+| Settings | integriq navigation.settings | settings | 130 |
 
 #### Scenario: All 15 menu entries are present
 - GIVEN the manifest file is loaded
@@ -220,7 +220,7 @@ checked by the `validateManifest` utility function.
 ### Requirement: main.js MUST import and register the manifest composable
 
 `src/main.js` MUST import `manifest.json` as a bundled static import and pass it to
-`useAppManifest('openconnector', bundledManifest)` from `@conduction/nextcloud-vue`
+`useAppManifest('integriq', bundledManifest)` from `@conduction/nextcloud-vue`
 before `new Vue().$mount('#content')`. The composable call returns `{ manifest,
 isLoading, validationErrors }` which MUST be stored in a variable accessible for
 chain D2's `CnAppRoot` wiring.
@@ -233,7 +233,7 @@ chain D2's `CnAppRoot` wiring.
 #### Scenario: main.js calls useAppManifest
 - GIVEN the file `src/main.js` is read
 - WHEN scanning its body
-- THEN `useAppManifest('openconnector', bundledManifest)` MUST be called
+- THEN `useAppManifest('integriq', bundledManifest)` MUST be called
 - AND `useAppManifest` MUST be imported from `@conduction/nextcloud-vue`
 
 #### Scenario: useAppManifest call is before Vue mount

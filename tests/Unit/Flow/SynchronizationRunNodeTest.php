@@ -9,7 +9,7 @@
  * a ceiling that raises rather than truncating.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Flow\FlowNodeSupport;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Flow\FlowNodeSupport;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -103,7 +103,7 @@ class SynchronizationRunNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new SynchronizationRunNode(
 			synchronizationService: $this->synchronizationService,
@@ -134,7 +134,6 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->assertFalse($this->node->isAvailableForScope(-1));
 
 	}//end testPaletteMetadata()
-
 
 	/**
 	 * The declared vocabulary is what the node actually reads.
@@ -172,7 +171,7 @@ class SynchronizationRunNodeTest extends TestCase {
 
 		$this->assertSame('select', $byKey['synchronization']['type']);
 		$this->assertTrue($byKey['synchronization']['required']);
-		$this->assertNotSame('', (string) ($byKey['synchronization']['optionsFrom'] ?? ''));
+		$this->assertNotSame('', (string)($byKey['synchronization']['optionsFrom'] ?? ''));
 
 	}//end testConfigFormDescribesOnlyKeysTheNodeReads()
 

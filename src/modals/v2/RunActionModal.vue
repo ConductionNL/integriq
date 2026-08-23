@@ -61,17 +61,14 @@
 				<NcNoteCard v-if="!subjectId" type="error">
 					<p>
 						{{
-							t(
-								'openconnector',
-								'This row has no id, so it cannot be run.',
-							)
+							t('integriq', 'This row has no id, so it cannot be run.')
 						}}
 					</p>
 				</NcNoteCard>
 
 				<div class="cn-run-action__actions">
 					<NcButton @click="onClose">
-						{{ t('openconnector', 'Cancel') }}
+						{{ t('integriq', 'Cancel') }}
 					</NcButton>
 					<NcButton variant="primary" :disabled="!subjectId" @click="fire">
 						<template #icon>
@@ -88,7 +85,7 @@
 				<p>
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Running… this can take a while for a large source.',
 						)
 					}}
@@ -163,7 +160,7 @@
 				</section>
 
 				<details v-if="payload !== null" class="cn-run-action__raw">
-					<summary>{{ t('openconnector', 'Raw payload') }}</summary>
+					<summary>{{ t('integriq', 'Raw payload') }}</summary>
 					<pre class="cn-run-action__pre">{{ formattedPayload }}</pre>
 				</details>
 
@@ -172,7 +169,7 @@
 						<template #icon>
 							<TextBoxOutlineIcon :size="20" />
 						</template>
-						{{ t('openconnector', 'View full log') }}
+						{{ t('integriq', 'View full log') }}
 					</NcButton>
 					<NcButton
 						v-if="retryAction"
@@ -187,10 +184,10 @@
 						<template #icon>
 							<RestartIcon :size="20" />
 						</template>
-						{{ t('openconnector', 'Run again') }}
+						{{ t('integriq', 'Run again') }}
 					</NcButton>
 					<NcButton variant="primary" @click="onClose">
-						{{ t('openconnector', 'Close') }}
+						{{ t('integriq', 'Close') }}
 					</NcButton>
 				</div>
 			</template>
@@ -500,7 +497,7 @@ export default {
 				return detail
 			}
 
-			return t('openconnector', 'The request failed.')
+			return t('integriq', 'The request failed.')
 		},
 
 		/**
@@ -523,7 +520,7 @@ export default {
 				if (err && err.name !== 'NavigationDuplicated') {
 					// eslint-disable-next-line no-console
 					console.warn(
-						'[openconnector] RunActionModal log navigation failed',
+						'[integriq] RunActionModal log navigation failed',
 						err,
 					)
 				}

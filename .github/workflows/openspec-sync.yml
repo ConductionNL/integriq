@@ -20,6 +20,6 @@ jobs:
     # exists on ConductionNL/.github, so the reference was unresolvable.
     uses: ConductionNL/.github/.github/workflows/openspec-sync.yml@main
     with:
-      app-name: openconnector
+      app-name: integriq
     secrets:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}

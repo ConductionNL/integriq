@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Runner Service.
+ * Integriq Flow Runner Service.
  *
  * Executes a `flow` OpenRegister object's ordered `steps[]` by dispatching
  * each step to the EXISTING service that already implements that step
@@ -18,7 +18,7 @@
  * (design.md Decision 2); no new generic context object is introduced.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,19 +27,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/flow-orchestration/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use JWadhams\JsonLogic;
-use OCA\OpenConnector\Exception\FlowRunException;
-use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\Integriq\Exception\FlowRunException;
+use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -71,6 +71,8 @@ class FlowRunnerService {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**

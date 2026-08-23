@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector DSO Ingest Service.
+ * Integriq DSO Ingest Service.
  *
  * Completes the dso-connector-adapter: persists an already-verified,
  * already-parsed DSO Verzoek ({@see DSOParserService::parseRequest()}) as a
@@ -23,7 +23,7 @@
  * entirely missing — the controller logged and dropped every verzoek).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,23 +32,23 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\DsoProviderException;
-use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\Dso\DsoClient;
-use OCA\OpenConnector\Service\Dso\DsoConnectorProviderInterface;
-use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
-use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
+use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
+use OCA\Integriq\Service\Dso\DsoRequestTranslator;
+use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -103,7 +103,7 @@ class DsoIngestService {
 
 	/**
 	 * The declared `x-openregister-handoff` entry id on `dso_verzoek` (see
-	 * lib/Settings/openconnector_register.json).
+	 * lib/Settings/integriq_register.json).
 	 *
 	 * @var string
 	 */

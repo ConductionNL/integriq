@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector NotifyNL Controller.
+ * Integriq NotifyNL Controller.
  *
  * REST controller for the notifynl-sms-channel: the send endpoint sibling apps
  * (e.g. procest) call directly over an authenticated NC session (mirrors
@@ -10,7 +10,7 @@
  * `PeppolController::inbound()`).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,19 +19,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\SmsProviderException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\SmsDispatchService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\SmsDispatchService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -59,7 +59,7 @@ class NotifyNlController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param SmsDispatchService $dispatchService Send / status-poll / callback logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.

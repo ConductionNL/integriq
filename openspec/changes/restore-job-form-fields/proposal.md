@@ -71,7 +71,7 @@ interval, the four flags two-up, scheduleAfter, userId, logRetention, errorReten
 ## Non-goals
 
 - **An `enum` on the `job` schema's `jobClass`.** An enum is enforced on save, which would
-  make the three jobs seeded with the non-existent `OCA\OpenConnector\Cron\Example*Job`
+  make the three jobs seeded with the non-existent `OCA\Integriq\Cron\Example*Job`
   classes unsaveable and would forbid Action classes registered by third-party apps —
   `jobClass` is resolved through the DI container at run time, so any resolvable class is
   legal. The list stays presentational, in the manifest, and the form displays off-list

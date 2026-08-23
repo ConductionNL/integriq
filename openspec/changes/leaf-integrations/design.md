@@ -4,9 +4,9 @@
 
 OpenRegister's leaf machinery (verified at `origin/development`): ~17 providers under `lib/Service/Integration/Providers/` + built-ins; stage 2 of the three-stage filter reads the schema's linked types (`Schema::getConfiguration()['linkedTypes']`, validated at import against `IntegrationRegistry::listIds()`); stage 3 is the surface — a manifest integration widget on a `type: "detail"` page, or the shared object sidebar.
 
-OpenConnector verified state:
+Integriq verified state:
 
-- Zero integration widgets in `src/manifest.json`; zero `linkedTypes` in `lib/Settings/openconnector_register.json` (39 schemas).
+- Zero integration widgets in `src/manifest.json`; zero `linkedTypes` in `lib/Settings/integriq_register.json` (39 schemas).
 - Manifest-driven `detail` pages: **SourceDetail, EndpointDetail, ConsumerDetail, CloudEventDetail** only. `MappingDetail`, `RuleDetail`, `SynchronizationDetail`, `FlowDetail`, `ApprovalDetail`, `TraceDetail`, `DeadLetters` are `type: "custom"` Vue pages — a manifest widget cannot land on them.
 - `source` carries plaintext credential properties (`password`, `apikey`, `secret`, `jwt`, `authenticationConfig` — local ADR-007) plus operational state (`circuitBreakerState`, `lastCall`, `status`).
 

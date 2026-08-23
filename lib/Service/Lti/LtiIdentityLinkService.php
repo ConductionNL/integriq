@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiIdentityLinkService.
+ * Integriq LtiIdentityLinkService.
  *
  * Resolves (or, under an explicit per-platform opt-in, provisions) the
  * Nextcloud user a validated LTI launch's `sub` claim maps to. Runs strictly
@@ -10,7 +10,7 @@
  * decision, only what happens after it (REQ-LTI-012).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
-use OCA\OpenConnector\Exception\LtiValidationException;
+use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;

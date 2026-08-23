@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PSD2 Consent Revoked Exception.
+ * Integriq PSD2 Consent Revoked Exception.
  *
  * Raised when the aggregator signals that a previously granted PSD2 AIS
  * consent is no longer usable (revoked at the bank or aggregator side, e.g. a
@@ -11,7 +11,7 @@
  * dead consent.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 /**
  * Thrown when the aggregator reports a revoked/unusable PSD2 consent.

@@ -4,7 +4,7 @@
  * Unit tests for DSOParserService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,9 +13,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\DSOParserService;
+use OCA\Integriq\Service\DSOParserService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

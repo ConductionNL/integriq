@@ -83,7 +83,7 @@
         },
         "name": "Germany Bund Weekly Sync",
         "description": "Runs the germany-bund-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "germany-bund-to-spectr-tender"
         },

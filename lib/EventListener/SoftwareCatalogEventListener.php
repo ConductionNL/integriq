@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector SoftwareCatalog EventListener.
+ * Integriq SoftwareCatalog EventListener.
  *
  * Handles organization and contact related events in the software catalog,
  * including user management and email notifications.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @todo This listener should be moved to the software catalog app.
  */
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\SoftwareCatalogueService;
+use OCA\Integriq\Service\SoftwareCatalogueService;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;

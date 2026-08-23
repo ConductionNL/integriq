@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Forms Feature-Disabled Exception.
+ * Integriq Forms Feature-Disabled Exception.
  *
  * Raised when a `nextcloud-form` source/discovery/outbound-mapping operation
  * is attempted while the Nextcloud Forms app is not installed/enabled for
@@ -13,7 +13,7 @@
  * off, mirroring `TablesFeatureDisabledException` exactly.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-feature-detection--forms-app-absence-hides-the-type-entirely-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

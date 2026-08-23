@@ -4,8 +4,8 @@
 The context brief calls for "promote = export from environment A, import into
 environment B" and "credential re-binding via the credential broker." Two
 things needed verifying against HEAD before design could proceed: (1) does
-OpenConnector have ANY existing outbound-call capability suitable for
-reaching a *different* OpenConnector instance's API, or would promotion
+Integriq have ANY existing outbound-call capability suitable for
+reaching a *different* Integriq instance's API, or would promotion
 require a brand-new HTTP client; and (2) does the existing export/import
 pipeline already do anything with `credentialRef`-shaped values, or is
 re-binding entirely new ground.

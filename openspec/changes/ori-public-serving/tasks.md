@@ -4,7 +4,7 @@
 
 ### Task 1: Author the 10 ORI Endpoint + Mapping register.d configs
 - **spec_ref**: `openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md#requirement-anonymous-ori-resource-dispatch-req-oripub-001`, `#requirement-fixed-per-resource-filter-injection-req-oripub-002`, `#requirement-field-projection-to-ori-popolo-json-ld-shape-req-oripub-003`
-- **files**: `lib/Settings/openconnector_ori_register.d/*.json` (or the app's existing register.d convention), `openspec/changes/ori-public-serving/design.md` Seed Data (source table)
+- **files**: `lib/Settings/integriq_ori_register.d/*.json` (or the app's existing register.d convention), `openspec/changes/ori-public-serving/design.md` Seed Data (source table)
 - **acceptance_criteria**:
   - GIVEN the 10 resources in design.md D1 WHEN each Endpoint is created THEN it carries `targetType: register/schema`, the correct `targetId`, no `authentication` rule, and the `inputMapping` fixed-filter recipe from D3/contract.md's per-resource table
   - GIVEN each resource's Mapping recipe WHEN the after-rule runs THEN field projection matches `OriSerializer::FIELD_RULES`/`PAYLOAD_FIELD_RULES`/`EMAIL_TYPES` (design.md D4)
@@ -24,7 +24,7 @@
 
 ### Task 3: Wire anonymous rate-limiting and CORS parity for the ORI Endpoints
 - **spec_ref**: `openspec/changes/ori-public-serving/contract.md#error-codes`, `openspec/changes/ori-public-serving/design.md#security-considerations`
-- **files**: `lib/Settings/openconnector_ori_register.d/*.json` (Endpoint consumer/rate-limit config), openconnector's existing `consumer-management` rate-limit + CORS config surface
+- **files**: `lib/Settings/integriq_ori_register.d/*.json` (Endpoint consumer/rate-limit config), integriq's existing `consumer-management` rate-limit + CORS config surface
 - **acceptance_criteria**:
   - GIVEN 121 requests in 60 seconds to one ORI Endpoint WHEN the ceiling is exceeded THEN request 121 returns 429 (TC-12), matching `OriController`'s current `AnonRateLimit(limit: 120, period: 60)`
   - GIVEN an `OPTIONS` preflight to an ORI Endpoint WHEN it is served THEN `Access-Control-Allow-*` headers match `OriController::applyCorsHeaders()`'s current values (TC-13)
@@ -36,7 +36,7 @@
 - **files**: none (validation + a cross-repo note, no new source in this task)
 - **acceptance_criteria**:
   - GIVEN the 10 Endpoints deployed under a validation path prefix (test-plan.md preamble) WHEN TC-1 through TC-14 run against both `OriController` and the new Endpoints THEN every TC passes with zero response diffs
-  - GIVEN decidesk's pending `notubiz-ibabs-griffie-koppeling` change (`kind: openconnector`) proposes new NOTUBIZ/iBabs adapters that duplicate openconnector's already-shipped `NotuBizConnectorService`/`IBabsConnectorService`/`RISPollJob` (archived changes `2026-06-14-ibabs-notubiz-connector`, `2026-06-15-decidesk-ris-import-bundle`) WHEN this task completes THEN a note/issue is filed against decidesk's change recommending it fold into or reference the shipped connectors instead of re-specifying them, and TC-14 (non-regression against the existing RIS poll job) has run and passed
+  - GIVEN decidesk's pending `notubiz-ibabs-griffie-koppeling` change (`kind: openconnector`) proposes new NOTUBIZ/iBabs adapters that duplicate integriq's already-shipped `NotuBizConnectorService`/`IBabsConnectorService`/`RISPollJob` (archived changes `2026-06-14-ibabs-notubiz-connector`, `2026-06-15-decidesk-ris-import-bundle`) WHEN this task completes THEN a note/issue is filed against decidesk's change recommending it fold into or reference the shipped connectors instead of re-specifying them, and TC-14 (non-regression against the existing RIS poll job) has run and passed
 - [ ] Implement
 - [ ] Test
 
@@ -55,7 +55,7 @@
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] Feature documentation — N/A for openconnector's `docs/`; the ORI contract is documented in this change's `contract.md` and design.md, which is the correct home for a config-driven Endpoint capability (no new UI to screenshot)
+- [ ] Feature documentation — N/A for integriq's `docs/`; the ORI contract is documented in this change's `contract.md` and design.md, which is the correct home for a config-driven Endpoint capability (no new UI to screenshot)
 - [ ] Screenshot captured — N/A, no UI surface (see above)
 
 ## i18n (company-wide hydra ADR-007)

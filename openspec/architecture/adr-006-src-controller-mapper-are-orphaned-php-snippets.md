@@ -52,7 +52,7 @@ as-is for now to avoid spurious diff noise.
 ## Consequences
 
 - A developer discovering `src/Controller/JobLogController.php` must NOT
-  assume there is a frontend Controller/Mapper convention for openconnector.
+  assume there is a frontend Controller/Mapper convention for integriq.
   The real HTTP-call layer is the store modules; read ADR-001.
 - Code-review tooling that checks for PHP files under `src/` should flag these
   as candidates for removal, not as intended architecture.
@@ -70,7 +70,7 @@ as-is for now to avoid spurious diff noise.
   declaration; not importable from Vue code.
 - `src/Mapper/JobLogMapper.php:1-28` — PHP fragment; raw SQL at line 12
   bypasses `IQueryBuilder`.
-- `src/store/modules/source.ts:8` — `apiEndpoint = '/index.php/apps/openconnector/api/sources'`
+- `src/store/modules/source.ts:8` — `apiEndpoint = '/index.php/apps/integriq/api/sources'`
   — the actual frontend HTTP-adapter layer.
 - `src/store/modules/source.ts:71-79` — `fetch(endpoint, { method: 'GET' })`
   called directly in the store; no separate Controller class.

@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-`EventService` + `EventsController` together implement openconnector's CloudEvents
+`EventService` + `EventsController` together implement integriq's CloudEvents
 (`com.nextcloud.openregister.object.*`) producer + delivery pipeline. The service
 materialises OR object lifecycle changes (created/updated/deleted) into `event` records,
 fans them out against active `event_subscription` records via filter matching, and

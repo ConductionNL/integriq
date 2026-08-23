@@ -5,7 +5,7 @@
  * outbound seam (REQ-LTI-008).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,14 +16,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\LtiController;
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\Lti\LtiAgsService;
-use OCA\OpenConnector\Service\Lti\LtiKeyService;
-use OCA\OpenConnector\Service\Lti\LtiLaunchService;
-use OCA\OpenConnector\Service\Lti\LtiNrpsService;
+use OCA\Integriq\Controller\LtiController;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Lti\LtiAgsService;
+use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The Tool-role half of REQ-LTI-008 had no route at all until
- * openconnector#1192: `LtiAgsService::publishScore()` was implemented and
+ * integriq#1192: `LtiAgsService::publishScore()` was implemented and
  * unit-tested by calling the service directly, while every `lti#*` route was
  * the Platform (inbound) role — so nothing in production could reach it.
  *
@@ -73,7 +73,7 @@ class LtiControllerAgsPublishScoreTest extends TestCase {
 		$this->agsService = $this->createMock(LtiAgsService::class);
 
 		$this->controller = new LtiController(
-			'openconnector',
+			'integriq',
 			$this->request,
 			$this->createMock(LtiLaunchService::class),
 			$this->agsService,

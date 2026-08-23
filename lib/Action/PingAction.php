@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Ping Action.
+ * Integriq Ping Action.
  *
  * Cron action that executes a simple GET / ping call against a configured
  * source and records the call log entry.
  *
  * @category Action
- * @package  OCA\OpenConnector\Action
+ * @package  OCA\Integriq\Action
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Action;
+namespace OCA\Integriq\Action;
 
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
- * Runs ping actions wired into the OpenConnector cron job list.
+ * Runs ping actions wired into the Integriq cron job list.
  */
 class PingAction {
 

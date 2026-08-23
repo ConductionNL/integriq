@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Ikkonfigura minn fejn tiġi d-dejta.",
         "Configure where data is written to.": "Ikkonfigura fejn tinkiteb id-dejta.",
         "Content path (optional)": "Path tal-kontenut (mhux obbligatorju)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Iddeċiedi liema gruppi ta' Nextcloud jistgħu jinvokaw kull azzjoni ta' OpenConnector (ADR-023). L-amministraturi dejjem jgħaddu. Kull azzjoni hija awtomatikament limitata għall-amministraturi biss — immarka grupp biex twessagħha.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Iddeċiedi liema gruppi ta' Nextcloud jistgħu jinvokaw kull azzjoni ta' Integriq (ADR-023). L-amministraturi dejjem jgħaddu. Kull azzjoni hija awtomatikament limitata għall-amministraturi biss — immarka grupp biex twessagħha.",
         "Discard": "Warrab",
         "Dot-path to the id field in each record": "Dot-path għall-field tal-id f'kull rekord",
         "Dot-path to the id field in the API response": "Dot-path għall-field tal-id fir-rispons tal-API",

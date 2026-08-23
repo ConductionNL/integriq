@@ -9,15 +9,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Action;
+namespace OCA\Integriq\Tests\Unit\Action;
 
-use OCA\OpenConnector\Action\EventAction;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Action\EventAction;
+use OCA\Integriq\Service\EventService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenConnector\Action\EventAction
+ * @covers \OCA\Integriq\Action\EventAction
  */
 class EventActionTest extends TestCase {
 

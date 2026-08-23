@@ -24,7 +24,7 @@ translate adapter that closes over the app id for the design-system components.
 
 #### Scenario: Translate adapter
 - WHEN a design-system component calls the injected translate function with a key
-- THEN `translateForApp` returns the openconnector-scoped translation (or the key on miss)
+- THEN `translateForApp` returns the integriq-scoped translation (or the key on miss)
 
 Notes: `App.vue` (2).
 

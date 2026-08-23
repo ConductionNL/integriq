@@ -4,7 +4,7 @@
  * Unit tests for NextcloudCalendarEventListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,11 +18,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
-use OCA\OpenConnector\EventListener\NextcloudCalendarEventListener;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
+use OCA\Integriq\Service\EventService;
 use OCP\Calendar\Events\CalendarObjectCreatedEvent;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
 use OCP\Calendar\Events\CalendarObjectUpdatedEvent;

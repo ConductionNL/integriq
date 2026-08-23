@@ -13,14 +13,14 @@ These parameters can be set in the source configuration. For example, if the sou
 > **Prefer brokered credentials.** Instead of embedding a key or secret in the source, set
 > `configuration.authentication` to `{"credentialRef": {"credentialId": "<uuid>"}}` (or
 > `{"credentialName": "<name>"}`) and let the OpenRegister credential broker hold the secret and
-> perform the call — OpenConnector never sees the secret. When `credentialRef` is present, any
+> perform the call — Integriq never sees the secret. When `credentialRef` is present, any
 > sibling authentication field is a hard 409 config error, and there is no fallback to embedded
 > secrets. See [Sources — Brokered Credentials](features/sources.md#brokered-credentials-credentialref--recommended)
 > for the full contract and operator recipe.
 
 Usually, sources tend to use dynamic authorization parameters in order to prevent the same authentication parameter from being used by adversaries that catch a call and deduce the parameter.
 
-At the moment, OpenConnector supports two dynamic authentication methods, OAuth and JWT Bearers.
+At the moment, Integriq supports two dynamic authentication methods, OAuth and JWT Bearers.
 
 ### OAuth
 
@@ -30,7 +30,7 @@ Bearer {{ oauthToken(source) }}
 ```
 This will impose an OAuth 2.0 access token after `Bearer` if the source's
 `configuration.authentication` object contains correct values.
-OpenConnector supports the OAuth 2.0 protocol with client credentials and password credentials as grant_types.
+Integriq supports the OAuth 2.0 protocol with client credentials and password credentials as grant_types.
 
 >[!WARNING]
 > **These parameters go in `configuration.authentication`, NOT in the top-level
@@ -41,11 +41,11 @@ OpenConnector supports the OAuth 2.0 protocol with client credentials and passwo
 > there is inert and the call goes out unauthenticated.
 >
 > Audit any leftover data (key names only, never values) with
-> `occ openconnector:authentication-config`, then remove it with
-> `occ openconnector:authentication-config --remove-authentication-config`.
+> `occ integriq:authentication-config`, then remove it with
+> `occ integriq:authentication-config --remove-authentication-config`.
 > See [ocon#232](https://codeberg.org/Conduction/openconnector/issues/232).
 
-When using OAuth, OpenConnector supports the following parameters:
+When using OAuth, Integriq supports the following parameters:
 
 #### Standard parameters
 * `grant_type`: The type of grant we have to use at the source. Supported are `client_credentials` and `password`
@@ -78,7 +78,7 @@ This results in the following example:
 > [!WARNING] 
 > Custom parameters are currently in beta, it is not recommended to use them in production environments.
 
-At the moment, OpenConnector is tested with the following custom parameters:
+At the moment, Integriq is tested with the following custom parameters:
 
 * `client_assertion_type`, only meaningful at the moment when value is set to `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. When this is set (for Microsoft authentications) the following fields are needed to generate the `client-assertion`-field
   - `private_key`: The base64 encoded private key of the certificate uploaded to Microsoft.

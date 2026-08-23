@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector Admin Section — AppHost adapter tests.
+ * Integriq Admin Section — AppHost adapter tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Sections
+ * @package  OCA\Integriq\Tests\Unit\Sections
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,16 +13,16 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Sections;
+namespace OCA\Integriq\Tests\Unit\Sections;
 
-use OCA\OpenConnector\Sections\OpenConnectorAdmin;
+use OCA\Integriq\Sections\IntegriqAdmin;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
@@ -30,23 +30,23 @@ use PHPUnit\Framework\TestCase;
  * Pins the pre-adoption metadata (id, name, icon, priority) of the
  * AppHost-adopted admin section.
  */
-class OpenConnectorAdminTest extends TestCase {
+class IntegriqAdminTest extends TestCase {
 	/**
 	 * Build a section instance with mocked collaborators.
 	 *
 	 * @param string $name Section display name, as the leaf factory
 	 *                     translates it before construction.
 	 *
-	 * @return OpenConnectorAdmin
+	 * @return IntegriqAdmin
 	 */
-	private function makeSection(string $name = 'Open Connector'): OpenConnectorAdmin {
+	private function makeSection(string $name = 'Integriq'): IntegriqAdmin {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->with('openconnector', 'app-dark.svg')->willReturn('/img/app-dark.svg');
+		$urlGenerator->method('imagePath')->with('integriq', 'app-dark.svg')->willReturn('/img/app-dark.svg');
 
-		return new OpenConnectorAdmin(
-			sectionId: 'openconnector',
+		return new IntegriqAdmin(
+			sectionId: 'integriq',
 			name: $name,
-			appId: 'openconnector',
+			appId: 'integriq',
 			iconFile: 'app-dark.svg',
 			priority: 97,
 			urlGenerator: $urlGenerator
@@ -54,12 +54,12 @@ class OpenConnectorAdminTest extends TestCase {
 	}//end makeSection()
 
 	/**
-	 * The section id must stay `openconnector`, matching the pre-adoption value.
+	 * The section id must stay `integriq`, matching the registered value.
 	 *
 	 * @return void
 	 */
 	public function testSectionIdUnchanged(): void {
-		$this->assertSame('openconnector', $this->makeSection()->getID());
+		$this->assertSame('integriq', $this->makeSection()->getID());
 	}//end testSectionIdUnchanged()
 
 	/**
@@ -80,7 +80,7 @@ class OpenConnectorAdminTest extends TestCase {
 	 * @return void
 	 */
 	public function testNameIsPassedThroughUntranslatedByTheGenericItself(): void {
-		$this->assertSame('Open Connector (translated)', $this->makeSection(name: 'Open Connector (translated)')->getName());
+		$this->assertSame('Integriq (translated)', $this->makeSection(name: 'Integriq (translated)')->getName());
 	}//end testNameIsPassedThroughUntranslatedByTheGenericItself()
 
 	/**

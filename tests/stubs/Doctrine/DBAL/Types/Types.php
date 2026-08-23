@@ -11,7 +11,7 @@
  * errors with "Class Doctrine\DBAL\Types\Types not found".
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

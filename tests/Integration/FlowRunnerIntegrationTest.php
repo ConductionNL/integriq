@@ -8,7 +8,7 @@
  * `flow_run_log` contents.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Integration
+ * @package  OCA\Integriq\Tests\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,14 +29,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Integration;
+namespace OCA\Integriq\Tests\Integration;
 
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\FlowRunnerService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;

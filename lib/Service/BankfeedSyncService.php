@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Bankfeed Sync Service.
+ * Integriq Bankfeed Sync Service.
  *
  * Core of the psd2-ais-bank-feed-connector: resolves the configured PSD2
  * aggregator source + provider binding, drives the redirect-based SCA
@@ -13,7 +13,7 @@
  * this connector never mutates a consuming app's records (REQ-005).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,22 +22,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\Psd2ConsentRevokedException;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
-use OCA\OpenConnector\Service\Psd2\LogPsd2AggregatorProvider;
-use OCA\OpenConnector\Service\Psd2\Psd2AggregatorProviderInterface;
-use OCA\OpenConnector\Service\Psd2\RestPsd2AggregatorProvider;
+use OCA\Integriq\Exception\Psd2ConsentRevokedException;
+use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
+use OCA\Integriq\Service\Psd2\Psd2AggregatorProviderInterface;
+use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

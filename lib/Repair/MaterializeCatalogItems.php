@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector MaterializeCatalogItems Repair Step
+ * Integriq MaterializeCatalogItems Repair Step
  *
  * Upserts one `catalog_item` OpenRegister object per entry returned by
- * {@see \OCA\OpenConnector\Service\CatalogRegistryService::collect()},
+ * {@see \OCA\Integriq\Service\CatalogRegistryService::collect()},
  * keyed by a stable `kind:slug` identifier so re-runs update in place
  * rather than duplicating (REQ-003 idempotency).
  *
@@ -14,22 +14,22 @@
  * materialised — resolveStatus() reads them live.
  *
  * @category Repair
- * @package  OCA\OpenConnector\Repair
+ * @package  OCA\Integriq\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://conduction.nl
  *
  * @spec openspec/specs/connector-catalog/spec.md#scenario-materialization-is-idempotent
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Repair;
+namespace OCA\Integriq\Repair;
 
-use OCA\OpenConnector\Service\CatalogRegistryService;
+use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
@@ -69,7 +69,7 @@ class MaterializeCatalogItems implements IRepairStep {
 	 * @spec exclude Repair-step display name for occ output — framework metadata, no domain behavior.
 	 */
 	public function getName(): string {
-		return 'Materialize OpenConnector catalog_item objects (connector-catalog-ui)';
+		return 'Materialize Integriq catalog_item objects (connector-catalog-ui)';
 	}//end getName()
 
 	/**
@@ -83,7 +83,7 @@ class MaterializeCatalogItems implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry') === false) {
-			$output->info('OpenConnector: OpenRegister IntegrationRegistry not available, skipping catalog materialization');
+			$output->info('Integriq: OpenRegister IntegrationRegistry not available, skipping catalog materialization');
 			return;
 		}
 
@@ -91,9 +91,9 @@ class MaterializeCatalogItems implements IRepairStep {
 			$registryService = $this->container->get(CatalogRegistryService::class);
 			$orObjectService = $this->container->get(OrObjectService::class);
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: could not resolve catalog services: ' . $e->getMessage());
+			$output->warning('Integriq: could not resolve catalog services: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: MaterializeCatalogItems service resolution failed',
+				'Integriq: MaterializeCatalogItems service resolution failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -102,9 +102,9 @@ class MaterializeCatalogItems implements IRepairStep {
 		try {
 			$entries = $registryService->collect();
 		} catch (\Throwable $e) {
-			$output->warning('OpenConnector: CatalogRegistryService::collect() failed: ' . $e->getMessage());
+			$output->warning('Integriq: CatalogRegistryService::collect() failed: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenConnector: catalog collect() failed',
+				'Integriq: catalog collect() failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -159,9 +159,9 @@ class MaterializeCatalogItems implements IRepairStep {
 					);
 					$upserted++;
 				} catch (\Throwable $e) {
-					$output->warning('OpenConnector: failed to upsert catalog_item "' . $slug . '": ' . $e->getMessage());
+					$output->warning('Integriq: failed to upsert catalog_item "' . $slug . '": ' . $e->getMessage());
 					$this->logger->error(
-						'OpenConnector: catalog_item upsert failed',
+						'Integriq: catalog_item upsert failed',
 						['slug' => $slug, 'exception' => $e->getMessage()]
 					);
 				}
@@ -176,7 +176,7 @@ class MaterializeCatalogItems implements IRepairStep {
 			$upserted = $materialise();
 		}
 
-		$output->info('OpenConnector: materialized ' . $upserted . ' of ' . count($entries) . ' catalog_item entries.');
+		$output->info('Integriq: materialized ' . $upserted . ' of ' . count($entries) . ' catalog_item entries.');
 
 	}//end run()
 

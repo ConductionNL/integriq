@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Legacy → OR Storage Migrator.
+ * Integriq Legacy → OR Storage Migrator.
  *
  * Chain B (openconnector-register-storage) — legacy → OR row migrator.
  *
@@ -26,12 +26,12 @@
  *     target_id, applying the 3-format branching rules.
  *
  * On full success (no skips, no errors), flips
- * `openconnector.storage_migrated` to 'true' and emits ONE audit-trail entry.
+ * `integriq.storage_migrated` to 'true' and emits ONE audit-trail entry.
  *
  * Cross-ref: openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md REQ-001..REQ-012
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Migration
+ * @package  OCA\Integriq\Service\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -39,12 +39,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Migration;
+namespace OCA\Integriq\Service\Migration;
 
 use InvalidArgumentException;
 use LogicException;
@@ -448,11 +448,11 @@ class LegacyToRegisterMigrator {
 	 * @return void
 	 */
 	private function assertPlaintextCredentialsState(): void {
-		if (class_exists('OCA\\OpenConnector\\Service\\EncryptionService', false) === true
-			|| class_exists('OCA\\OpenConnector\\Service\\EncryptionService', true) === true
+		if (class_exists('OCA\\Integriq\\Service\\EncryptionService', false) === true
+			|| class_exists('OCA\\Integriq\\Service\\EncryptionService', true) === true
 		) {
 			throw new LogicException(
-				'chain-B: OCA\\OpenConnector\\Service\\EncryptionService class has been introduced'
+				'chain-B: OCA\\Integriq\\Service\\EncryptionService class has been introduced'
 				. ' since this spec was written — the verbatim-copy strategy no longer applies.'
 				. ' Revise openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md'
 				. ' before re-running.'

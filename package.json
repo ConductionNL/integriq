@@ -1,5 +1,5 @@
 {
-  "name": "openconnector",
+  "name": "integriq",
   "version": "1.0.0",
   "license": "EUPL-1.2",
   "engines": {
@@ -32,7 +32,7 @@
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
-    "test:newman": "newman run tests/postman/openconnector.postman_collection.json --environment tests/postman/openconnector.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/newman-report.json",
+    "test:newman": "newman run tests/postman/integriq.postman_collection.json --environment tests/postman/integriq.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/newman-report.json",
     "test:regression": "playwright test --project regression --workers=4",
     "format": "prettier --check \"**/*.{js,ts,vue,css,scss}\"",
     "format:fix": "prettier --write \"**/*.{js,ts,vue,css,scss}\"",

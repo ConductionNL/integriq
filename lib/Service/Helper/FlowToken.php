@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector FlowToken.
+ * Integriq FlowToken.
  *
  * Mutable container that carries the original + amended request / response /
  * sync-input / sync-output payloads across the rule pipeline.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Helper
+ * @package  OCA\Integriq\Service\Helper
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service\Helper;
+namespace OCA\Integriq\Service\Helper;
 
-use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\Integriq\Util\SafeXmlParser;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
 

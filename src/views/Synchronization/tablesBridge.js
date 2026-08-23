@@ -9,9 +9,9 @@
  * exactly like src/modals/v2/sourceCredentialRef.js.
  *
  * Backend contract: openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
- *   GET /apps/openconnector/api/synchronizations/tables-bridge/status
- *   GET /apps/openconnector/api/synchronizations/tables-bridge/tables?sourceId=…
- *   GET /apps/openconnector/api/synchronizations/tables-bridge/tables/{id}/columns?sourceId=…
+ *   GET /apps/integriq/api/synchronizations/tables-bridge/status
+ *   GET /apps/integriq/api/synchronizations/tables-bridge/tables?sourceId=…
+ *   GET /apps/integriq/api/synchronizations/tables-bridge/tables/{id}/columns?sourceId=…
  *
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
@@ -21,7 +21,7 @@
 export const NEXTCLOUD_TABLE_KIND = 'nextcloud-table'
 
 /**
- * Unwrap the OR/OpenConnector list envelope (`{results:[...]}`) or a bare
+ * Unwrap the OR/Integriq list envelope (`{results:[...]}`) or a bare
  * array — same soft-fail-safe unwrap the other sync pickers use.
  *
  * @param {*} data The axios response body.

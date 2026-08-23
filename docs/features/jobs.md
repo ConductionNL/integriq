@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Jobs** enable scheduled execution of synchronizations and other tasks within OpenConnector. Each job is configured with a cron expression that determines when it runs. The Nextcloud background job system (`IJobList`) drives execution. All job runs are logged with their outcome, duration, and any errors.
+**Jobs** enable scheduled execution of synchronizations and other tasks within Integriq. Each job is configured with a cron expression that determines when it runs. The Nextcloud background job system (`IJobList`) drives execution. All job runs are logged with their outcome, duration, and any errors.
 
 ## Job Configuration
 
@@ -56,11 +56,11 @@ Every job execution produces a log entry with:
 - Number of objects processed
 - Error message and stack trace (on failure)
 
-Logs are accessible in the OpenConnector UI under the Logs section and via `GET /api/logs?jobId={id}`.
+Logs are accessible in the Integriq UI under the Logs section and via `GET /api/logs?jobId={id}`.
 
 ## Log Cleanup
 
-OpenConnector automatically purges old job log entries to prevent unbounded storage growth. Retention periods are configurable:
+Integriq automatically purges old job log entries to prevent unbounded storage growth. Retention periods are configurable:
 
 | Setting | Default | Description |
 |---------|---------|-------------|

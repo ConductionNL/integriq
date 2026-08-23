@@ -5,7 +5,7 @@ depends_on: []
 
 ## Why
 
-OpenConnector is Technical Core and already routed at `/connext`. Before beta
+Integriq is Technical Core and already routed at `/connext`. Before beta
 release, its four public-facing surfaces — `appinfo/info.xml`, `src/manifest.json`
 nav, the `conduction.nl/apps/openconnector` product page (EN+NL), and the
 `openconnector.conduction.nl` docs — must agree on feature vocabulary, version,
@@ -64,8 +64,8 @@ verification trail:
 | **Message queues (RabbitMQ/Kafka)** | Zero code. Only appears in the unimplemented `data-infra-connectors` spec (REQ-DIC-001, aspirational "MUST be implemented" language, not retrofit). No `RdKafka`/`PhpAmqpLib` dependency, no registered `IntegrationProvider` for either. |
 | **Database connectors (MySQL/PostgreSQL/MSSQL) as source types** | Those are the app's *own storage backend* options (`<dependencies><database>` in `info.xml`), not source adapters. No source-side DB client code exists. |
 | **File drops (FTP/SFTP)** as a working feature | `ftp`/`sftp` exist as enum values on the Source schema, but `CallService::callSource()` only branches on `soap` vs. everything-else-via-Guzzle-HTTP — no FTP/SFTP client code, no `phpseclib`/`ssh2` dependency. Corrected to describe only what actually executes (REST/SOAP over HTTP); the enum values are a known gap, not a shipped capability. |
-| **LLM adapters (Claude, Mistral, Ollama, OpenAI)**, entire Showcase panel with a fake `AgentTrace` call log | Zero hits for `mistral`, `ollama`, `openai`, `claude`, or `anthropic` anywhere in `lib/`. No LLM integration code exists in openconnector at all — this was 100% fabricated marketing copy. Removed and replaced with the three real government-standard adapters. |
-| **Windmill/n8n workflow bridge**, named-product Showcase panel | Zero hits for `windmill` or `n8n` in `lib/` (the only "n8n" grep hits were false positives inside vendor lockfiles / unrelated spec slugs, e.g. "software-catalogus-events"). No dedicated bridge code exists; openconnector's generic REST Endpoints capability *could* be called by any workflow engine, but claiming a named, dedicated integration was unverified. Removed. |
+| **LLM adapters (Claude, Mistral, Ollama, OpenAI)**, entire Showcase panel with a fake `AgentTrace` call log | Zero hits for `mistral`, `ollama`, `openai`, `claude`, or `anthropic` anywhere in `lib/`. No LLM integration code exists in integriq at all — this was 100% fabricated marketing copy. Removed and replaced with the three real government-standard adapters. |
+| **Windmill/n8n workflow bridge**, named-product Showcase panel | Zero hits for `windmill` or `n8n` in `lib/` (the only "n8n" grep hits were false positives inside vendor lockfiles / unrelated spec slugs, e.g. "software-catalogus-events"). No dedicated bridge code exists; integriq's generic REST Endpoints capability *could* be called by any workflow engine, but claiming a named, dedicated integration was unverified. Removed. |
 | **Mail/Files sidebar routing**, third Showcase panel | Zero `OCA\Mail` / `OCA\Files` references, no sidebar registration code in `lib/AppInfo/Application.php` beyond the one real `IntegrationProvider` (`SynchronizationContractProvider`, which surfaces sync-contract data generically on OR objects — not a dedicated Mail/Files routing feature). Removed. |
 | "Tamper-evident" + "WOO and BIO compliance evidence shipped with the install" | The audit trail is real (OR's `getLogs()`), but the hash-chain that would make it tamper-evident is tracked elsewhere as **not yet wired** (see project memory: OR audit-hash-chain never wired). Softened to a factual "keeps an audit trail per record" claim; removed the unverifiable WOO/BIO compliance-evidence assertion. |
 
@@ -105,7 +105,7 @@ NL translation)
 - `docs/intro.md` frontmatter description and "Sources" bullet list corrected
   (removed "Databases"/"File systems", named the real gov-standard adapters).
 - Fixed a copy-paste leftover: the bottom of `intro.md` was headed "# Open
-  Register Documentation" (wrong app name) — corrected to "# OpenConnector
+  Register Documentation" (wrong app name) — corrected to "# Integriq
   Documentation".
 - `docs/docusaurus.config.js` site tagline corrected to match the product page.
 

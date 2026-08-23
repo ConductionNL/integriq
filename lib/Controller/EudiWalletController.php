@@ -1,20 +1,20 @@
 <?php
 
 /**
- * OpenConnector EudiWalletController.
+ * Integriq EudiWalletController.
  *
  * Dedicated protocol controller for the OpenID4VCI (pre-authorized code
  * flow) EUDI wallet credential issuer surface: issuer metadata, app-facing
  * offer creation, wallet-facing offer resolution, token exchange,
  * credential issuance, status-list publish, and revocation.
  *
- * Mirrors {@see \OCA\OpenConnector\Controller\LtiController} /
- * {@see \OCA\OpenConnector\Controller\DSOController}'s dedicated-controller
+ * Mirrors {@see \OCA\Integriq\Controller\LtiController} /
+ * {@see \OCA\Integriq\Controller\DSOController}'s dedicated-controller
  * shape (not the generic Endpoint pipeline) — see proposal.md's cited
  * precedent and design.md D-ROUTE.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,14 +27,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Exception\EudiIssuanceException;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\EudiCredentialOfferService;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
-use OCA\OpenConnector\Service\EudiStatusListService;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Service\EudiStatusListService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -252,7 +252,7 @@ class EudiWalletController extends Controller {
 	public function issuerMetadata(): JSONResponse {
 		$organisationId = $this->offerService->resolveOrganisationId();
 		$baseUrl = $this->buildBaseUrl();
-		$apiBase = $baseUrl . '/index.php/apps/openconnector/api/eudi';
+		$apiBase = $baseUrl . '/index.php/apps/integriq/api/eudi';
 
 		$metadata = [
 			'credential_issuer' => $baseUrl,
@@ -305,7 +305,7 @@ class EudiWalletController extends Controller {
 		}
 
 		$credentialOfferUri = $this->buildBaseUrl()
-			. '/index.php/apps/openconnector/api/eudi/credential-offers/' . $result['uuid'];
+			. '/index.php/apps/integriq/api/eudi/credential-offers/' . $result['uuid'];
 		$offerUrl = 'openid-credential-offer://?credential_offer_uri=' . rawurlencode($credentialOfferUri);
 
 		return new JSONResponse(

@@ -4,7 +4,7 @@
  * Configuration Import Preview Service
  *
  * Non-mutating dry-run companion to the existing
- * {@see \OCA\OpenConnector\Service\ConfigurationService::importConfiguration()}:
+ * {@see \OCA\Integriq\Service\ConfigurationService::importConfiguration()}:
  * given the same OAS document, computes the creates/updates/collisions
  * classification the import would perform, the set of unresolved slug
  * references (the REQ-004 "left verbatim" case) it would leave dangling,
@@ -20,20 +20,20 @@
  * the way the real import resolves them.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;

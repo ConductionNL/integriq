@@ -10,17 +10,17 @@
 <template>
 	<div class="action-form">
 		<NcTextField
-			:label="t('openconnector', 'Upload path')"
+			:label="t('integriq', 'Upload path')"
 			:modelValue="value.path || ''"
 			placeholder="/path/to/upload/directory"
 			@update:modelValue="(next) => patch('path', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Allowed file types (comma-separated)')"
+			:label="t('integriq', 'Allowed file types (comma-separated)')"
 			:modelValue="value.allowedTypes || ''"
 			placeholder="jpg,png,pdf"
 			@update:modelValue="(next) => patch('allowedTypes', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Max file size (MB)')"
+			:label="t('integriq', 'Max file size (MB)')"
 			type="number"
 			:modelValue="value.maxSize != null ? String(value.maxSize) : ''"
 			placeholder="10"
@@ -28,7 +28,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Note: the backend handler for upload is still pending. Configuration is persisted so it activates once the dispatcher case lands.',
 				)
 			}}

@@ -189,7 +189,7 @@ fetch itself failed or returned a partial page set).
 The system MUST treat a 401/403 response from the Tables API on the first
 row write attempted in a run as a run-level failure (abort remaining writes
 for that run) rather than a per-row skip, and MUST log a clear, actionable
-message identifying the table and the identity used. OpenConnector MUST NOT
+message identifying the table and the identity used. Integriq MUST NOT
 pre-check or re-implement Tables' authorization — the Tables API's own
 response is the sole authority.
 

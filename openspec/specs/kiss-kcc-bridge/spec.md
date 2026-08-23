@@ -5,7 +5,7 @@ TBD - created by archiving change kiss-kcc-bridge. Update Purpose after archive.
 ## Requirements
 ### Requirement: Klantinteracties provider abstraction with log and REST bindings (REQ-001)
 
-OpenConnector MUST define a `KlantinteractiesProviderInterface`
+Integriq MUST define a `KlantinteractiesProviderInterface`
 (`lib/Service/Kiss/KlantinteractiesProviderInterface.php`) with
 `getProviderId()`, `getConfigSchema()`, `listKlantcontacten(sourceConfiguration,
 since, pageSize)`, `createKlantcontact(sourceConfiguration, payload)`, and

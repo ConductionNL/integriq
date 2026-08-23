@@ -8,7 +8,7 @@
  * override signatures in the production class drive the interface shape.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

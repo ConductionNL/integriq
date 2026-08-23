@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector DSOSignatureVerifierService.
+ * Integriq DSOSignatureVerifierService.
  *
  * Cryptographic signature verification for the DSO / Omgevingsloket STAM
  * koppelvlak inbound webhook (`DSOController::receiveRequest()`). Fails
@@ -10,7 +10,7 @@
  * return `false`.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,9 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\AppInfo\Application;
+use OCA\Integriq\AppInfo\Application;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;

@@ -3,7 +3,7 @@
 /**
  * Unit tests for ad-hoc Source resolution non-persistence.
  *
- * Reproduces ConductionNL/openconnector#1009: a caller-supplied ad-hoc
+ * Reproduces ConductionNL/integriq#1009: a caller-supplied ad-hoc
  * `source` location string that matches no configured Source must resolve to
  * a transient, in-memory source for that call only — it must never silently
  * persist a new, enabled Source object. Resolution against an existing,
@@ -11,7 +11,7 @@
  * change sync-safety-guardrails).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -20,14 +20,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -152,7 +152,7 @@ class SynchronizationServiceAdHocSourceTest extends TestCase {
 					$logger,
 					$logService,
 					$appConfig,
-					$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 				]
 			)
 			->onlyMethods(['synchronizeContract'])

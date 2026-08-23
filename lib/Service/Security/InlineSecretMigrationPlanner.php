@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Inline Secret Migration Planner.
+ * Integriq Inline Secret Migration Planner.
  *
  * Phase C of ocon#151 / ADR-064: plans the migration of a `source` object's
  * INLINE credential fields (`apikey`, `secret`, `password`, `jwt`,
@@ -13,7 +13,7 @@
  * never nulls an inline value. It answers exactly two questions:
  *
  *   1. "What WOULD migrate?" — the per-source / per-field plan behind
- *      `occ openconnector:migrate-inline-secrets --dry-run`.
+ *      `occ integriq:migrate-inline-secrets --dry-run`.
  *   2. "Are there ZERO unmigrated inline secrets left?" — the machine-readable
  *      gate Phase D must pass before it may remove the schema properties.
  *
@@ -28,7 +28,7 @@
  * only a classification.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -39,12 +39,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -59,10 +59,12 @@ use Throwable;
 class InlineSecretMigrationPlanner {
 
 	/**
-	 * The OpenRegister register slug holding openconnector's objects.
+	 * The OpenRegister register slug holding integriq's objects.
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	public const REGISTER = 'openconnector';
 
 	/**
@@ -81,6 +83,11 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
+	// OpenRegister's credential broker matches against a stored credential's
+	// `allowedApps` (strict in_array), so a minted credential MUST carry this exact
+	// string. Renaming it fails every brokered resolve CLOSED. Moves only with a
+	// credential re-provisioning pass.
 	public const APP_ID = 'openconnector';
 
 	/**
@@ -214,7 +221,7 @@ class InlineSecretMigrationPlanner {
 			// Secret-free: the uuid is not a secret, the exception text may not
 			// be quoted verbatim in case an upstream ever interpolates data.
 			$this->logger->warning(
-				'[openconnector] inline-secret planner: raw source read failed',
+				'[integriq] inline-secret planner: raw source read failed',
 				['uuid' => $uuid, 'errorClass' => get_class($e)]
 			);
 			return [];
@@ -332,7 +339,7 @@ class InlineSecretMigrationPlanner {
 	 *      ("resolve it back and assert it round-trips") can never pass. Under
 	 *      ADR-064 §6 we may not null an inline value without that proof, so an
 	 *      organisation-scoped migration is a guaranteed no-op.
-	 *   2. Worse at runtime: openconnector's source calls are predominantly
+	 *   2. Worse at runtime: integriq's source calls are predominantly
 	 *      sessionless background sync jobs. An organisation-scoped credential
 	 *      would fail closed on every one of them — trading a stripped secret
 	 *      for a broken integration.
@@ -412,7 +419,7 @@ class InlineSecretMigrationPlanner {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'[openconnector] inline-secret planner: source listing failed',
+				'[integriq] inline-secret planner: source listing failed',
 				['errorClass' => get_class($e)]
 			);
 			return [];

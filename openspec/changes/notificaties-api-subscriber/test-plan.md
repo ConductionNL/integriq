@@ -151,7 +151,7 @@
 - **type**: functional
 - **persona**: Noor (Municipal CISO / Functional Admin) — configures gov-facing integrations
 - **preconditions**: authenticated admin session
-- **steps**: navigate to `/apps/openconnector/notificaties/abonnementen`
+- **steps**: navigate to `/apps/integriq/notificaties/abonnementen`
 - **expected result**: index page renders inside the main content area with content visible
 - **test command**: `/test-functional`
 

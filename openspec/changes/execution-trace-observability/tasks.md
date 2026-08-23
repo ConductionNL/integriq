@@ -96,9 +96,9 @@
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007`
 - **files**: `lib/Controller/ExecutionTracesController.php`, `appinfo/routes.php`
 - **acceptance_criteria**:
-  - GIVEN `GET /apps/openconnector/api/execution-traces` WHEN called THEN it lists `execution_trace` objects with `entryPoint`/`status`/time-range filters and pagination, matching the `LogsController::index` pattern (`logs-and-statistics` REQ-001)
-  - GIVEN `GET /apps/openconnector/api/execution-traces/{id}` WHEN called THEN it returns the full trace including the ordered `steps` array
-  - GIVEN `POST /apps/openconnector/api/execution-traces/{id}/replay` WHEN called with no body or `{force: false}` THEN it performs a dry-run replay (REQ-005); WHEN called with `{force: true}` THEN it performs a forced replay (REQ-006)
+  - GIVEN `GET /apps/integriq/api/execution-traces` WHEN called THEN it lists `execution_trace` objects with `entryPoint`/`status`/time-range filters and pagination, matching the `LogsController::index` pattern (`logs-and-statistics` REQ-001)
+  - GIVEN `GET /apps/integriq/api/execution-traces/{id}` WHEN called THEN it returns the full trace including the ordered `steps` array
+  - GIVEN `POST /apps/integriq/api/execution-traces/{id}/replay` WHEN called with no body or `{force: false}` THEN it performs a dry-run replay (REQ-005); WHEN called with `{force: true}` THEN it performs a forced replay (REQ-006)
   - All three endpoints carry `@NoAdminRequired` + `@NoCSRFRequired`, consistent with the existing `LogsController`/`SourcesController` posture in this codebase (documented as observed convention, not re-litigated by this change)
 - [ ] Implement
 - [ ] Test
@@ -128,7 +128,7 @@
 - **files**: `src/manifest.json`
 - **acceptance_criteria**:
   - GIVEN `observability.metrics` WHEN a `traces_total` descriptor is added THEN it follows the exact `source.kind: 'tableCount'`/`groupBy`/`labelMap`/`labelDefaults` shape of the existing `calls_total`/`synchronization_runs_total` descriptors (lines 40-59/69-86), grouped by `status`
-  - GIVEN a seeded instance with mixed-status `execution_trace` rows WHEN `GET /apps/openconnector/api/metrics` is called THEN `openconnector_traces_total{status="..."}` values match direct table counts
+  - GIVEN a seeded instance with mixed-status `execution_trace` rows WHEN `GET /apps/integriq/api/metrics` is called THEN `integriq_traces_total{status="..."}` values match direct table counts
 - [ ] Implement
 - [ ] Test
 
@@ -142,7 +142,7 @@
 
 ### Task 15: Integration test — one endpoint call spans rule → mapping → call
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002`
-- **files**: `tests/Integration/ExecutionTraceIntegrationTest.php`, `tests/postman/openconnector.postman_collection.json` (new "Execution traces" folder)
+- **files**: `tests/Integration/ExecutionTraceIntegrationTest.php`, `tests/postman/integriq.postman_collection.json` (new "Execution traces" folder)
 - **acceptance_criteria**:
   - GIVEN an endpoint configured with a `mapping` rule and a `save_object` rule that triggers one outbound `CallService` call WHEN the endpoint is called THEN exactly one `execution_trace` is persisted with steps for the rule, the mapping, and the call, all sharing one `traceId`, and the call step's snapshot matches the persisted `call_log`'s redacted data (per `http-call-engine` REQ-011)
 - [ ] Implement

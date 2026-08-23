@@ -5,7 +5,7 @@ TBD - created by archiving change ibabs-notubiz-connector. Update Purpose after 
 ## Requirements
 ### Requirement: iBabs REST API Connection (REQ-RIS-001)
 
-The connector MUST establish authenticated connections to the iBabs REST API using API key authentication. The connection is configured as an OpenConnector Source entity of type `json` with auth method `apikey`. The source stores the iBabs API URL (typically `https://api.ibabs.eu`), API key, and organisatie-ID. All API calls are routed through CallService which logs each request in the CallLog for audit and debugging.
+The connector MUST establish authenticated connections to the iBabs REST API using API key authentication. The connection is configured as an Integriq Source entity of type `json` with auth method `apikey`. The source stores the iBabs API URL (typically `https://api.ibabs.eu`), API key, and organisatie-ID. All API calls are routed through CallService which logs each request in the CallLog for audit and debugging.
 
 @e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
@@ -111,7 +111,7 @@ The connector MUST retrieve the besluitenlijst (PDF/document) from iBabs after v
 
 ### Requirement: NotuBiz API Connection (REQ-RIS-020)
 
-The connector MUST connect to the NotuBiz API with OAuth2 or API key authentication. The connection is configured as an OpenConnector Source entity with NotuBiz-specific configuration including organisatie-ID and default vergadertype. Authentication supports both OAuth2 (via AuthenticationService's existing client_credentials flow) and API key methods.
+The connector MUST connect to the NotuBiz API with OAuth2 or API key authentication. The connection is configured as an Integriq Source entity with NotuBiz-specific configuration including organisatie-ID and default vergadertype. Authentication supports both OAuth2 (via AuthenticationService's existing client_credentials flow) and API key methods.
 
 @e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
@@ -147,7 +147,7 @@ The connector MUST push vergaderstukken (voorstel plus bijlagen) to NotuBiz for 
 
 ### Requirement: Status-Based Outbound Sync (REQ-RIS-030)
 
-The connector MUST trigger outbound sync when a zaak reaches the configurable status "Ter besluitvorming" in Procest. The trigger is implemented via OpenConnector's EventService which listens for zaak status change events from Procest. Only zaken with completed parafering (all required parafen collected) are eligible for push.
+The connector MUST trigger outbound sync when a zaak reaches the configurable status "Ter besluitvorming" in Procest. The trigger is implemented via Integriq's EventService which listens for zaak status change events from Procest. Only zaken with completed parafering (all required parafen collected) are eligible for push.
 
 @e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
@@ -253,9 +253,9 @@ The connector MUST track parafering status within Procest before allowing push t
 - **WHEN** all required paraferingen are completed and the secretariaat adds the final paraaf
 - **THEN** the zaak automatically transitions to "Ter besluitvorming" and the outbound sync triggers
 
-### Requirement: OpenConnector Endpoint Registration (REQ-RIS-060)
+### Requirement: Integriq Endpoint Registration (REQ-RIS-060)
 
-The connector MUST be registered as OpenConnector endpoint types with separate configurations for iBabs and NotuBiz. Connection settings include API URL, authentication credentials, organisatie-ID, and default vergadertype. Health checks validate API connectivity and authentication.
+The connector MUST be registered as Integriq endpoint types with separate configurations for iBabs and NotuBiz. Connection settings include API URL, authentication credentials, organisatie-ID, and default vergadertype. Health checks validate API connectivity and authentication.
 
 @e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 

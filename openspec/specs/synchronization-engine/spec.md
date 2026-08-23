@@ -7,7 +7,7 @@ retrofit: true
 
 ## Purpose
 
-Synchronize data between OpenConnector and external systems in both directions
+Synchronize data between Integriq and external systems in both directions
 (extern→intern pull, intern→extern push), event-driven and on-demand, using the
 ADR-005 Source → Synchronization → SynchronizationContract triad for incremental
 change detection. Covers orchestration, source fetching with pagination and
@@ -22,13 +22,13 @@ flag observed-but-suspicious behavior rather than silently correcting it.
 ## Requirements
 ### Requirement: Synchronization Management UI (REQ-UI-001)
 
-OpenConnector MUST provide a Synchronizations section in its SPA where administrators
+Integriq MUST provide a Synchronizations section in its SPA where administrators
 can browse, create, edit, and manage synchronization configurations and view their
 contracts and logs.
 
 #### Scenario: synchronizations list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
+- GIVEN an authenticated admin visits the integriq app
 - WHEN they navigate to the Synchronizations section via the sidebar or direct URL
 - THEN the Synchronizations index page renders inside the app-content area
 
@@ -397,7 +397,7 @@ strategy/health/enablement.
   immediately executes `synchronize()`). Any authenticated Nextcloud user can
   trigger arbitrary sync runs, dry-runs, contract execution/activation, log
   export, and log deletion against any synchronization id. This is observed
-  behavior, flagged here per the openconnector security-finding history (IDOR /
+  behavior, flagged here per the integriq security-finding history (IDOR /
   silent-swallow / XXE class); it is NOT fixed in this retrofit. Recommend a
   follow-up authorization change (ADR-005 / ADR-023 action-level authz).
 - `processRules()` catches every `Exception` and returns a 500 `JSONResponse`

@@ -4,7 +4,7 @@
       and that `CnLogsPage.resolvedColumns` falls back to
       `timestamp / actor / action / target / details`.
 - [x] 1.2 Confirm none of those five properties exists on `job_log`
-      (`lib/Settings/openconnector_register.json`, `components.schemas.job_log`).
+      (`lib/Settings/integriq_register.json`, `components.schemas.job_log`).
 - [x] 1.3 Confirm `CnLogsPage.fetch()` calls `fetchCollection(type)` with no
       second argument and that the component never reads `$route.query`.
 - [x] 1.4 Confirm `JobService::saveJobLog()` writes `jobId`, while
@@ -12,7 +12,7 @@
 - [x] 1.5 Confirm OpenRegister passes non-`_`-prefixed query params through as
       property filters (`ObjectsController::getConfig()` → `'filters' => $params`),
       so `?jobId=` filters and `?job=` matches nothing.
-- [x] 1.6 Confirm OpenConnector is the only workspace app declaring
+- [x] 1.6 Confirm Integriq is the only workspace app declaring
       `type: "logs"` pages, bounding the library blast radius.
 
 ## 2. Shared library — extract the filter resolvers (behaviour-neutral)
@@ -103,7 +103,7 @@
 - [x] 6.4 Regenerate `docs/components/_generated/` and confirm `check:docs`
       passes (433 exports, 233 component docs).
 
-## 7. OpenConnector
+## 7. Integriq
 
 - [x] 7.1 `src/handlers/logTargets.js` — `view-job-logs` → `queryParam: 'jobId'`,
       with the `endpoint` / `event` mismatches recorded as a known gap.
@@ -126,7 +126,7 @@ and `stackTrace` were squeezed narrow enough that their text overlapped.
       inline `max-width` CnDataTable puts on sized cells is inert under
       `table-layout: auto` — the browser sizes columns from content. So
       `message`, the one unsized column, absorbed all slack, and the unbreakable
-      45-char FQCN `OCA\OpenConnector\Action\SynchronizationAction` painted past
+      45-char FQCN `OCA\Integriq\Action\SynchronizationAction` painted past
       its cell box into the next column.
 - [x] 8.2 Add an opt-in `fixedLayout` prop to `CnDataTable` (default false)
       putting `cn-data-table--fixed` on the `<table>`.
@@ -260,7 +260,7 @@ top-level `uuid`. Verified against a live synchronization object — its keys ar
       payloads, which is why no test caught this.
 
 **Not verifiable locally:** the PHP unit suite cannot run in this checkout —
-`vendor/` was installed `--no-dev`, so the `OCA\OpenConnector\Tests\` namespace
+`vendor/` was installed `--no-dev`, so the `OCA\Integriq\Tests\` namespace
 is absent from the autoloader and every test in the file errors with
 `Class "…\Helpers\ObjectServiceMockBuilder" not found`, the untouched
 neighbouring test included. The new tests are written but unrun; CI (with dev
@@ -274,4 +274,4 @@ matching them to synchronizations by timestamp would be guesswork.
 ## 13. Manual verification (browser — user-driven)
 
 See `test-plan.md`. Requires `npm run dev` in **both** repos, the library first:
-OpenConnector imports `dist/esm` through the `node_modules` symlink, not `src`.
+Integriq imports `dist/esm` through the `node_modules` symlink, not `src`.

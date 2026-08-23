@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Flow Config Guard.
+ * Integriq Flow Config Guard.
  *
  * The save-time validation both contributed node types share: what a node's
  * configuration may NOT contain, and what an endpoint path may NOT be.
@@ -33,7 +33,7 @@
  * between them would be a security defect, not a style inconsistency.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -44,22 +44,22 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCP\IL10N;
 use UnexpectedValueException;
 
 /**
- * Shared save-time configuration rules for OpenConnector's flow nodes.
+ * Shared save-time configuration rules for Integriq's flow nodes.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-3-explicit-failure-fail-closed-attribution-validation-and-scope
  */
 final class FlowConfigGuard {
 
@@ -202,7 +202,7 @@ final class FlowConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When a forbidden field is present.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertNoForbiddenFields(array $config, IL10N $l10n): void {
 		foreach (array_keys($config) as $key) {
@@ -259,7 +259,7 @@ final class FlowConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When an authentication header is present.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private static function assertNoAuthHeaders(array $config, IL10N $l10n): void {
 		$headers = ($config['headers'] ?? []);
@@ -295,7 +295,7 @@ final class FlowConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the key is reserved.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertOutputKeyAllowed(string $outputKey, IL10N $l10n): void {
 		if (trim($outputKey) === '') {
@@ -334,7 +334,7 @@ final class FlowConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the endpoint escapes the Source.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function assertEndpointContained(string $endpoint, IL10N $l10n, bool $rendered = false): void {
 		$subject = trim($endpoint);
@@ -381,7 +381,7 @@ final class FlowConfigGuard {
 	 *
 	 * @return string|null The reason, or null when the endpoint is contained.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private static function endpointEscapeReason(string $endpoint, IL10N $l10n): ?string {
 		return match (self::endpointEscapeCode(endpoint: $endpoint)) {
@@ -402,7 +402,7 @@ final class FlowConfigGuard {
 	 * THE RULES LIVE HERE AND ONLY HERE. This is the single containment
 	 * predicate for the whole app: {@see endpointEscapeReason()} translates its
 	 * verdict for the flow-node validation messages, and
-	 * {@see \OCA\OpenConnector\Service\CallService::renderEndpointPath()} calls
+	 * {@see \OCA\Integriq\Service\CallService::renderEndpointPath()} calls
 	 * it directly (it has no IL10N and needs a verdict, not a sentence) for the
 	 * templated `targetType: api` upstream path (ocon#1069). The class docblock
 	 * already states that a divergence between two copies of these rules would
@@ -413,7 +413,7 @@ final class FlowConfigGuard {
 	 *
 	 * @return string|null One of the ESCAPE_* codes, or null when contained.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function endpointEscapeCode(string $endpoint): ?string {
 		// A control character or a newline would let an endpoint smuggle a
@@ -457,7 +457,7 @@ final class FlowConfigGuard {
 	 *
 	 * @return string The lower-cased, alphanumeric-only form.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private static function normaliseKey(string $key): string {
 		return strtolower((string)preg_replace('/[^A-Za-z0-9]/', '', $key));

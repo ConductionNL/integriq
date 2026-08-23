@@ -8,10 +8,10 @@ Two app-lifecycle hooks that run before any user-facing controller is invoked:
 
 1. `lib/Repair/InitializeRegister.php::run()` — an `IRepairStep` wired in
    `appinfo/info.xml` under both `<install>` and `<post-migration>`. Imports the
-   openconnector register descriptor (`lib/Settings/openconnector_register.json`,
+   openconnector register descriptor (`lib/Settings/integriq_register.json`,
    15 schemas) into OpenRegister via `ConfigurationService::importFromApp()`.
 2. `lib/AppInfo/Application.php::registerIntegrationProviders()` — runs from
-   `boot()` on every request. Registers openconnector's
+   `boot()` on every request. Registers integriq's
    `SynchronizationContractProvider` with OR's
    `IntegrationRegistry` (ADR-019 pluggable integration registry) so the SyncContract
    leaf surfaces in OR object sidebars.
@@ -28,7 +28,7 @@ guarantee on a cold `occ app:enable`.
 | Site | Issue | Severity |
 |---|---|---|
 | `InitializeRegister::run` catch blocks | every `\Throwable` becomes a `$output->warning()` + `LoggerInterface::error()`; the repair step never fails the upgrade. Install can complete with the register missing and the user only sees a warning line in `occ` output. | medium — install appears green when it actually didn't |
-| `InitializeRegister::run::class_exists` | `class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false` returns silently with `$output->warning`. No alternative bootstrap path — if OR is disabled at install time and enabled later, openconnector's register never imports until the next `occ upgrade` or manual repair. | medium — fleet pattern but worth pinning in spec |
+| `InitializeRegister::run::class_exists` | `class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false` returns silently with `$output->warning`. No alternative bootstrap path — if OR is disabled at install time and enabled later, integriq's register never imports until the next `occ upgrade` or manual repair. | medium — fleet pattern but worth pinning in spec |
 | `registerIntegrationProviders` double-catch | the inner `try { logger->warning } catch (\Throwable)` swallows logger-resolution failures so the boot path is exception-safe even when no logger is wired. Defensible, but masks misconfigured DI containers. | low |
 | `InitializeRegister::run` no `storage_migrated` guard | the class docblock (line 47) advertises a `storage_migrated` IAppConfig guard for "the legacy → OR row migration", but `run()` itself never reads or sets that key. Legacy-row migration is implemented elsewhere (or not at all); the docblock is misleading. | low — docstring drift |
 
@@ -47,7 +47,7 @@ These are documented in REQ Notes rather than silently fixed via spec text.
   string.
 - `Application::__construct` / `register()` — event-listener wiring is a separate
   concern (cluster `events-cloudevents` covers the listener contracts).
-- The descriptor file contents (`openconnector_register.json`) — the schema /
+- The descriptor file contents (`integriq_register.json`) — the schema /
   register list is configuration data, not behaviour.
 
 ## Validation

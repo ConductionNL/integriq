@@ -15,12 +15,12 @@
  * Re-examining it for ocon#232 shows a migration would be POINTLESS, because NO
  * PHP CODE AUTHENTICATES FROM IT. Verified at `origin/development`:
  *
- *  - {@see \OCA\OpenConnector\Service\AuthenticationService} builders
+ *  - {@see \OCA\Integriq\Service\AuthenticationService} builders
  *    (`createClientCredentialConfig`, `createPasswordConfig`, `fetchOAuthTokens`,
  *    `fetchJWTToken`, `buildWsSecurityHeader`) read `$configuration['client_secret']`
  *    / `['username']` / `['password']` / `['secret']` — from the `configuration`
  *    array handed to them, never from `authenticationConfig`.
- *  - {@see \OCA\OpenConnector\Twig\AuthenticationRuntime} does
+ *  - {@see \OCA\Integriq\Twig\AuthenticationRuntime} does
  *    `new Dot($source['configuration'])` and passes the `configuration.authentication.*`
  *    region onward. It has NOT read `authenticationConfig` since commit b6470597
  *    (2024-11-19), which replaced `$source->getAuthenticationConfig()` with
@@ -39,7 +39,7 @@
  * THE ONE LIVE PATH — WHY {@see auditSource()} SCANS FOR TWIG REFERENCES
  * ─────────────────────────────────────────────────────────────────────────────
  * "No PHP code reads it" is NOT the same as "nothing can read it".
- * {@see \OCA\OpenConnector\Service\CallService::renderValue()} renders every
+ * {@see \OCA\Integriq\Service\CallService::renderValue()} renders every
  * `configuration` value as a Twig template with `context: ['source' => $sourceData]`,
  * and since ocon#215 `$sourceData` is the RAW source (`_render: false`) — secrets
  * intact. So an OPERATOR-AUTHORED template such as
@@ -62,7 +62,7 @@
  * A VALUE IS NEVER emitted, logged, or returned. See {@see describeValue()}.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -73,12 +73,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 /**
  * Reports, per source, what `authenticationConfig` holds — key names only, never values.

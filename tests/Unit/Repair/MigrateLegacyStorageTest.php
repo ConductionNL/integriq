@@ -9,7 +9,7 @@
  * the logic was never the broken part.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\MigrateLegacyStorage;
+use OCA\Integriq\Repair\MigrateLegacyStorage;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -312,7 +312,7 @@ class MigrateLegacyStorageTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheTableListMatchesTheCleanupMigration(): void {
-		$migration = new \ReflectionClass(\OCA\OpenConnector\Migration\Version2Date20260520000099::class);
+		$migration = new \ReflectionClass(\OCA\Integriq\Migration\Version2Date20260520000099::class);
 		$expected = $migration->getConstant('LEGACY_TABLES');
 
 		$this->assertIsArray($expected, 'the cleanup migration should still declare LEGACY_TABLES');

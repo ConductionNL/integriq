@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — Digikoppeling adapter catalogue descriptor.
+ * Integriq — Digikoppeling adapter catalogue descriptor.
  *
  * ADR-017 Rule 1: a new adapter family ships as a CARD in the *Adapters*
  * catalogue plus a configuration schema — never as a new top-level menu item or
@@ -11,11 +11,11 @@
  * Verbinding (source/endpoint) fills in to select the adapter.
  *
  * The adapter provides TRANSPORT only. StUF/ZGW message bodies remain owned by
- * the content services ({@see \OCA\OpenConnector\Service\StUFXMLBuilder} etc.);
+ * the content services ({@see \OCA\Integriq\Service\StUFXMLBuilder} etc.);
  * this adapter signs and delivers the envelope (D1 — composition, not merge).
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
 /**
  * Catalogue descriptor for the Digikoppeling transport adapter (ADR-017 Rule 1).

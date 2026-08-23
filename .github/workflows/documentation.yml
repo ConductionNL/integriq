@@ -31,5 +31,11 @@ jobs:
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     with:
+      # FROZEN on the OLD id during the app-id rename. This is a live DNS
+      # record and the GitHub Pages CNAME; integriq.conduction.nl does not
+      # resolve yet. Moving it here just points readers at a host that does
+      # not exist (measured during the dossiq rename: the new name answered
+      # HTTP 000 while the old one answered 200). It moves together with
+      # docs/static/CNAME and the DNS record, in a separate pass.
       cname: openconnector.conduction.nl
       source-folder: docusaurus

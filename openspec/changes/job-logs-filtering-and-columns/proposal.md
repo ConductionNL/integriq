@@ -39,7 +39,7 @@ Three distinct defects, all verified against HEAD:
    param is passed through as a property filter, so `?job=` would have matched
    nothing even once filtering worked.
 
-`app-shell-and-logs-ui` REQ-SHELLUI-003 forbids an OpenConnector-owned log-index
+`app-shell-and-logs-ui` REQ-SHELLUI-003 forbids an Integriq-owned log-index
 component, so defects 1 and 2 had to be fixed upstream in the shared
 `@conduction/nextcloud-vue` `CnLogsPage` rather than worked around here.
 
@@ -83,7 +83,7 @@ component, so defects 1 and 2 had to be fixed upstream in the shared
   no overflow handling at all and the inline `max-width` on a sized cell is
   inert under auto layout, so the single unsized column absorbed all slack while
   a long unbreakable value — the 45-char FQCN
-  `OCA\OpenConnector\Action\SynchronizationAction` — painted past its cell into
+  `OCA\Integriq\Action\SynchronizationAction` — painted past its cell into
   the next column. Fixed layout plus `overflow-wrap: anywhere` on its cells
   fixes both.
 - `resolveQueryFilters` / `resolveFilterMap` moved out of
@@ -94,7 +94,7 @@ component, so defects 1 and 2 had to be fixed upstream in the shared
   component only ever read a thrown error), and a `v-if` tested
   `$slots.actions || $slots.actions`.
 
-### OpenConnector
+### Integriq
 
 - `src/handlers/logTargets.js`: `view-job-logs` now sends `?jobId=`. Every other
   entry was then checked against a populated instance, since applying a filter
@@ -170,7 +170,7 @@ REQ-SHELLUI-003 is unaffected and still passes: the route stays a manifest
 `type: "logs"` page resolved by the shared `CnLogsPage`, and nothing was added
 to `src/views/`.
 
-Library blast radius is limited to OpenConnector. OpenConnector is the only app
+Library blast radius is limited to Integriq. Integriq is the only app
 in the workspace that declares `type: "logs"` pages — OpenRegister, OpenCatalogi,
 LaunchPad and Pipelinq declare none, so no other consumer can regress. Every new
 prop defaults to the prior behaviour, and a hand-rolled `store` prop that

@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-OpenConnector is the integration plane underneath every Conduction app: it
+Integriq is the integration plane underneath every Conduction app: it
 owns sources, sinks, transports, schedules, mappings, message logs,
 authentication brokers, and a catalogue of pre-built adapters for the Dutch
 and international ecosystems (StUF, ZGW, Digikoppeling, HaalCentraal,
@@ -45,7 +45,7 @@ hydra Tier-0..Tier-4 ADRs; this ADR governs only the top-level shape.
 
 ## Decision
 
-OpenConnector ships **five top-level menu items**, in this order:
+Integriq ships **five top-level menu items**, in this order:
 
 1. **Verbindingen** — configured connections (each connection = adapter +
    endpoint + auth + mapping + schedule).
@@ -60,7 +60,7 @@ OpenConnector ships **five top-level menu items**, in this order:
    settings.
 
 The IA is governed by the following numbered rules. They are normative for
-every new spec, page, menu or feature shipped under openconnector.
+every new spec, page, menu or feature shipped under integriq.
 
 ### Rule 1 — Adapters are catalogue entries, not menu items
 
@@ -170,7 +170,7 @@ admin dashboard, AI-tool provider config, or an ops endpoint card
 controls or tenant-wide settings.
 
 **Rationale.** The operator and the integrator are the same persona for
-openconnector, but the *task* still differs ("I'm wiring a connection"
+integriq, but the *task* still differs ("I'm wiring a connection"
 vs. "I'm tuning the tenant"). One door for tenant work keeps the wiring
 flow uncluttered and lets us add new admin surfaces (Prometheus, alerting,
 future AI-tool providers) without touching the user-flow IA.
@@ -248,13 +248,13 @@ MUST be rejected at spec review.
     *Beheer > Authenticatie*.
   - ADR-014 (cron job execution) — the data backing *Verbinding
     detail > Schedule*.
-  - Hydra ADR-022 (Tier-4 manifest-driven UI) and the openconnector
+  - Hydra ADR-022 (Tier-4 manifest-driven UI) and the integriq
     frontend rewrite chain — the rendering layer that implements this
     IA; this ADR governs structure, those govern rendering.
 
 ## Evidence
 
-- IA source: `/tmp/ia-doc-dec-cat-conn.md` section 4 (openconnector),
+- IA source: `/tmp/ia-doc-dec-cat-conn.md` section 4 (integriq),
   including the four design rules at section 4.F and the splits note
   at section 4.G that this ADR consolidates and elevates to a numbered
   rule set.

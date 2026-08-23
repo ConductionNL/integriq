@@ -169,8 +169,8 @@
                 <referencedClass name="OCA\OpenRegister\Exception\ValidationException"/>
                 <!-- PHP extension classes (loaded at runtime) -->
                 <referencedClass name="SoapFault"/>
-                <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
-                <referencedClass name="OCA\OpenConnector\Service\Rule"/>
+                <!-- Legacy Integriq Rule type (deleted entity; survives only as FQCN in one method) -->
+                <referencedClass name="OCA\Integriq\Service\Rule"/>
                 <!-- nextcloud-event-hub: NC-core-app / optional-app event classes
                      referenced only via `::class` (compile-time string) and
                      instanceof (safe when the class is absent). OCA\DAV\* is an NC

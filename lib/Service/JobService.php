@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector JobService.
+ * Integriq JobService.
  *
- * Service class for handling job execution logic in the OpenConnector application.
+ * Service class for handling job execution logic in the Integriq application.
  * This service manages job retrieval, validation, execution, and logging.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
@@ -112,9 +112,9 @@ class JobService {
 	) {
 		$this->errorRetention = 2592000000;
 		$this->successRetention = 3600000;
-		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
 			$retentionPayload = json_decode(
-				$appConfig->getValueString(app: 'openconnector', key: 'retention'),
+				$appConfig->getValueString(app: 'integriq', key: 'retention'),
 				true
 			);
 			$this->errorRetention = ($retentionPayload['jobLogRetention'] ?? 2592000000);
@@ -198,6 +198,16 @@ class JobService {
 	 * @phpstan-return ObjectEntity
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1534. This method genuinely has zero production
+	 * callers, verified on both `origin/development` and the app-id rename
+	 * branch, so the finding is pre-existing and real rather than rename damage.
+	 * If it is what it looks like, jobs never get their `jobListId` stamped and
+	 * so never reach Nextcloud's scheduler — failing silently, the same family
+	 * as the stored-jobClass defect. Wiring or removing it is unrelated
+	 * behaviour change that does not belong in an app-id rename; #1534 carries
+	 * the symptoms to check.
 	 */
 	public function scheduleJob(ObjectEntity $job): ObjectEntity {
 		$jobData = $job->getObject();
@@ -236,15 +246,15 @@ class JobService {
 		$scheduleAfter = ($jobData['scheduleAfter'] ?? null);
 		if ($scheduleAfter !== null) {
 			$runAfter = (new DateTime($scheduleAfter))->getTimestamp();
-			$this->jobList->scheduleAfter(\OCA\OpenConnector\Cron\JobTask::class, $runAfter, $arguments);
+			$this->jobList->scheduleAfter(\OCA\Integriq\Cron\JobTask::class, $runAfter, $arguments);
 		}
 
 		if ($scheduleAfter === null) {
-			$this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
+			$this->jobList->add(\OCA\Integriq\Cron\JobTask::class, $arguments);
 		}
 
 		// Set the job list id.
-		$jobData['jobListId'] = $this->getJobListId(job: \OCA\OpenConnector\Cron\JobTask::class);
+		$jobData['jobListId'] = $this->getJobListId(job: \OCA\Integriq\Cron\JobTask::class);
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,

@@ -31,7 +31,7 @@
 
   GET /api/metrics ──► MetricsController
                          ├─ declarative groupBy(call_log, product) → request/error counts
-                         └─ OpenConnectorMetricsProvider (escape hatch) → p50/p95/p99 gauges
+                         └─ IntegriqMetricsProvider (escape hatch) → p50/p95/p99 gauges
 ```
 
 ## API Design
@@ -137,7 +137,7 @@ access.
 
 ### Decision 3: Percentiles are computed from a bounded per-product `call_log` window at scrape time, not pre-aggregated storage
 
-**Choice:** `OpenConnectorMetricsProvider::metrics()` gains one new sample
+**Choice:** `IntegriqMetricsProvider::metrics()` gains one new sample
 producer that, per `api_product`, fetches the most recent N (bound: 1000,
 matching the existing `REQ-PROM-007` top-100-cardinality-class precedent
 scaled for a per-row not per-series cap) inbound `call_log` rows with that
@@ -246,7 +246,7 @@ See `migration.md`.
   `lib/Service/ApprovalService.php` (extended, one new method).
 - Mappers/Entities: none new — everything is an OpenRegister object, no
   app-local `Db\` entity/mapper per `openconnector-direct-or-usage`.
-- Observability: `lib/Observability/OpenConnectorMetricsProvider.php`
+- Observability: `lib/Observability/IntegriqMetricsProvider.php`
   (extended), `src/manifest.json` `observability.metrics[]` (extended
   `calls_total` groupBy + one new declarative descriptor).
 
@@ -278,7 +278,7 @@ lib/
     EndpointService.php                  (modified — tier resolution, deprecation headers, inbound logging)
     ApprovalService.php                  (modified — suspendForSubscription())
   Observability/
-    OpenConnectorMetricsProvider.php     (modified — percentile gauges)
+    IntegriqMetricsProvider.php     (modified — percentile gauges)
   Settings/
     register.d/
       api-product-gateway.json           (new)
@@ -290,7 +290,7 @@ src/
       ApiProductDetail.vue               (new — endpoint picker, tier editor, analytics panel, subscriptions)
 tests/
   Unit/Service/EndpointServiceTierPolicyTest.php   (new)
-  Unit/Observability/OpenConnectorMetricsProviderTest.php (extended)
+  Unit/Observability/IntegriqMetricsProviderTest.php (extended)
   postman/ (Newman collection additions — over-tier 429, deprecated headers)
 ```
 

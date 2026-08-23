@@ -33,16 +33,14 @@
 		<!-- Validation schema picker -->
 		<div v-if="showSchemaPicker" class="cn-mapping-result__field">
 			<label class="cn-mapping-result__label" :for="schemaInputId">
-				{{ t('openconnector', 'Validation schema (optional)') }}
+				{{ t('integriq', 'Validation schema (optional)') }}
 			</label>
 			<NcSelect
 				v-model="selectedSchema"
-				:aria-label-combobox="
-					t('openconnector', 'Validation schema (optional)')
-				"
+				:aria-label-combobox="t('integriq', 'Validation schema (optional)')"
 				:options="schemaOptions"
 				:loading="schemasLoading"
-				:placeholder="t('openconnector', 'No validation')"
+				:placeholder="t('integriq', 'No validation')"
 				:clearable="true"
 				:inputId="schemaInputId" />
 		</div>
@@ -50,7 +48,7 @@
 		<!-- Run status -->
 		<div class="cn-mapping-result__status">
 			<span class="cn-mapping-result__label">{{
-				t('openconnector', 'Output')
+				t('integriq', 'Output')
 			}}</span>
 			<NcLoadingIcon v-if="running" :size="16" />
 		</div>
@@ -63,20 +61,12 @@
 		<template v-if="hasResult && selectedSchema">
 			<p v-if="isValid" class="cn-mapping-result__valid">
 				<CheckCircleIcon :size="18" />
-				{{
-					t(
-						'openconnector',
-						'Result is valid against the selected schema.',
-					)
-				}}
+				{{ t('integriq', 'Result is valid against the selected schema.') }}
 			</p>
 			<p v-else class="cn-mapping-result__invalid">
 				<CloseCircleIcon :size="18" />
 				{{
-					t(
-						'openconnector',
-						'Result is not valid against the selected schema.',
-					)
+					t('integriq', 'Result is not valid against the selected schema.')
 				}}
 			</p>
 		</template>
@@ -85,8 +75,8 @@
 			<table>
 				<thead>
 					<tr>
-						<th scope="col">{{ t('openconnector', 'Field') }}</th>
-						<th scope="col">{{ t('openconnector', 'Errors') }}</th>
+						<th scope="col">{{ t('integriq', 'Field') }}</th>
+						<th scope="col">{{ t('integriq', 'Errors') }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -116,15 +106,15 @@
 		<!-- Persist the transformed result as an OpenRegister object -->
 		<div v-if="showSaveBlock" class="cn-mapping-result__save">
 			<h4 class="cn-mapping-result__save-title">
-				{{ t('openconnector', 'Save result as object') }}
+				{{ t('integriq', 'Save result as object') }}
 			</h4>
 
 			<NcSelect
 				v-model="selectedRegister"
-				:aria-label-combobox="t('openconnector', 'Register')"
+				:aria-label-combobox="t('integriq', 'Register')"
 				:options="registerOptions"
 				:loading="registersLoading"
-				:placeholder="t('openconnector', 'Select a register')"
+				:placeholder="t('integriq', 'Select a register')"
 				:clearable="true"
 				:inputId="registerInputId">
 				<template #option="{ label, description }">
@@ -133,7 +123,7 @@
 						<span>
 							<strong>{{ label }}</strong>
 							<small>{{
-								description || t('openconnector', 'No description')
+								description || t('integriq', 'No description')
 							}}</small>
 						</span>
 					</div>
@@ -148,7 +138,7 @@
 				class="cn-mapping-result__hint">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Pick a validation schema above — the result is stored against that schema.',
 					)
 				}}
@@ -162,7 +152,7 @@
 					<NcLoadingIcon v-if="savingResult" :size="20" />
 					<ContentSaveOutlineIcon v-else :size="20" />
 				</template>
-				{{ t('openconnector', 'Save to register') }}
+				{{ t('integriq', 'Save to register') }}
 			</NcButton>
 		</div>
 	</div>
@@ -310,10 +300,10 @@ export default {
 		emptyText() {
 			return this.auto
 				? this.t(
-						'openconnector',
+						'integriq',
 						'Output appears here once an input object and rules produce a result.',
 					)
-				: this.t('openconnector', 'Run the test to see the result here.')
+				: this.t('integriq', 'Run the test to see the result here.')
 		},
 
 		/**
@@ -469,7 +459,7 @@ export default {
 			} catch (parseErr) {
 				this.$emit(
 					'input-error',
-					this.t('openconnector', 'Input is not valid JSON: {message}', {
+					this.t('integriq', 'Input is not valid JSON: {message}', {
 						message: parseErr.message,
 					}),
 				)
@@ -510,7 +500,7 @@ export default {
 					payload.validation = true
 				}
 				const response = await axios.post(
-					generateUrl('/apps/openconnector/api/mappings/test'),
+					generateUrl('/apps/integriq/api/mappings/test'),
 					payload,
 				)
 				if (runId !== this.runSequence) return
@@ -527,7 +517,7 @@ export default {
 					|| err?.message
 					|| ''
 				this.runError =
-					this.t('openconnector', 'Mapping test failed')
+					this.t('integriq', 'Mapping test failed')
 					+ (status ? ` (${status})` : '')
 					+ (message ? `: ${message}` : '')
 			} finally {
@@ -598,7 +588,7 @@ export default {
 			this.registersLoading = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openconnector/api/mappings/objects'),
+					generateUrl('/apps/integriq/api/mappings/objects'),
 				)
 				this.openRegisterAvailable = response.data?.openRegisters === true
 				const list = Array.isArray(response.data?.availableRegisters)
@@ -631,14 +621,14 @@ export default {
 			this.savingResult = true
 			try {
 				await axios.post(
-					generateUrl('/apps/openconnector/api/mappings/objects'),
+					generateUrl('/apps/integriq/api/mappings/objects'),
 					{
 						object: this.result,
 						register: this.selectedRegister.id,
 						schema: this.selectedSchema.id,
 					},
 				)
-				showSuccess(this.t('openconnector', 'Result saved as object'))
+				showSuccess(this.t('integriq', 'Result saved as object'))
 			} catch (err) {
 				const message =
 					err?.response?.data?.error
@@ -646,7 +636,7 @@ export default {
 					|| err?.message
 					|| ''
 				showError(
-					this.t('openconnector', 'Failed to save result')
+					this.t('integriq', 'Failed to save result')
 						+ (message ? `: ${message}` : ''),
 				)
 			} finally {

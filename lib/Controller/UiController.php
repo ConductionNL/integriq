@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector UI controller.
+ * Integriq UI controller.
  *
  * UI Controller that serves the SPA entry template for history-mode deep
  * links. Every public method returns the same SPA shell so the client-side
  * Vue router can take over.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,10 +16,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;

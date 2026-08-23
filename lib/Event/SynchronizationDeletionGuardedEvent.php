@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector SynchronizationDeletionGuarded Event.
+ * Integriq SynchronizationDeletionGuarded Event.
  *
  * Dispatched by SynchronizationService::deleteInvalidObjects() whenever a
  * cleanup pass is aborted by a safety guard (an incomplete preceding fetch,
@@ -9,7 +9,7 @@
  * with the garbage-collection delete.
  *
  * @category Event
- * @package  OCA\OpenConnector\Event
+ * @package  OCA\Integriq\Event
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,10 +17,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Event;
+namespace OCA\Integriq\Event;
 
 use OCP\EventDispatcher\Event;
 

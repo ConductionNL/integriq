@@ -2,13 +2,13 @@
 
 ## Purpose
 
-OpenConnector gains an iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
+Integriq gains an iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
 bridge so sibling apps (e.g. procest's social-domain case module) can
 register a Wmo/Jeugdwet care assignment (toewijzing) or invoice (declaratie)
 and receive the standard's retour outcomes back onto the OR case, without
 embedding a client of their own. iWMO/iJW are legally required
 interoperability standards between Dutch municipalities and care providers.
-Per ADR-022 integrations live in openconnector, not as nc-vue leaves and not
+Per ADR-022 integrations live in integriq, not as nc-vue leaves and not
 per-app. A narrow `IwmoIjwProviderInterface` (send) lets a compatible
 alternative transport be added later; this change ships a `log`/sandbox
 binding and a `rest` binding (`IStandaardenClient`) so the whole
@@ -18,7 +18,7 @@ credential.
 ## Requirements
 ### Requirement: IwmoIjw provider abstraction with log and REST bindings (REQ-001)
 
-OpenConnector MUST define an `IwmoIjwProviderInterface`
+Integriq MUST define an `IwmoIjwProviderInterface`
 (`lib/Service/IwmoIjw/IwmoIjwProviderInterface.php`) with `getProviderId()`,
 `getConfigSchema()`, and `send(sourceConfiguration, berichttype, envelopeXml)`.
 A source's `configuration.provider` (`log`|`rest`) selects the binding at

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector SyncDeadLetterController.
+ * Integriq SyncDeadLetterController.
  *
  * Controller for listing/inspecting/replaying/discarding dead-lettered
  * synchronization items (`sync_item_dead_letter`). Mirrors EventsController's
  * dead-letter method shapes (see openconnector-dead-letter-replay).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,19 +19,19 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
-use OCA\OpenConnector\Service\SyncItemDeadLetterService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\SyncItemDeadLetterService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -81,7 +81,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function index(): JSONResponse {
 		$statusParam = (string)$this->request->getParam('status', '');
 		if ($statusParam !== '') {
@@ -190,7 +190,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-inspection-req-dlr-008
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function show(string $id): JSONResponse {
 		try {
 			$entry = $this->orObjectService->find(
@@ -245,7 +245,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function replay(string $id): JSONResponse {
 		$actor = $this->currentUid();
 
@@ -269,7 +269,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-discard-of-a-dead-lettered-sync-item-req-dlr-010
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function discard(string $id): JSONResponse {
 		$actor = $this->currentUid();
 
@@ -292,7 +292,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function bulkReplay(): JSONResponse {
 		return $this->bulkApply(verb: 'replay');
 	}//end bulkReplay()
@@ -305,7 +305,7 @@ class SyncDeadLetterController extends Controller {
 	 *
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function bulkDiscard(): JSONResponse {
 		return $this->bulkApply(verb: 'discard');
 	}//end bulkDiscard()

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Client Interface.
+ * Integriq Tables Client Interface.
  *
  * Narrow domain seam through which every Nextcloud Tables table/column/row
  * read and write occurs. Deliberately API-version-agnostic in its method
@@ -12,7 +12,7 @@
  * gains authenticated single-row CRUD.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Tables
+ * @package  OCA\Integriq\Service\Tables
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,18 +21,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Tables;
+namespace OCA\Integriq\Service\Tables;
 
-use OCA\OpenConnector\Exception\TablesNotFoundException;
-use OCA\OpenConnector\Exception\TablesPermissionDeniedException;
-use OCA\OpenConnector\Exception\TablesUpstreamException;
+use OCA\Integriq\Exception\TablesNotFoundException;
+use OCA\Integriq\Exception\TablesPermissionDeniedException;
+use OCA\Integriq\Exception\TablesUpstreamException;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Health Controller — AppHost adapter with OpenRegister guard.
+ * Integriq Health Controller — AppHost adapter with OpenRegister guard.
  *
  * Thin app-namespace health endpoint (URL `/api/health`, route name
  * `health#index`, both unchanged). It carries no health logic of its own for
  * the healthy path: when OpenRegister is present it delegates to the
  * OpenRegister AppHost {@see \OCA\OpenRegister\AppHost\Controller\GenericHealthController},
- * which reads openconnector's `src/manifest.json` `observability.health` block
+ * which reads integriq's `src/manifest.json` `observability.health` block
  * and renders the ADR-006 `{status, app, version, checks}` shape.
  *
  * OpenRegister is a hard runtime dependency (all entities are OpenRegister
@@ -20,10 +20,10 @@
  * OpenRegister class.
  *
  * The constructor + delegate wiring is registered in
- * {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostObservability()}.
+ * {@see \OCA\Integriq\AppInfo\Application::registerAppHostObservability()}.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,12 +31,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCP\App\IAppManager;
@@ -65,7 +65,7 @@ class HealthController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Calling app id (openconnector).
+	 * @param string $appName Calling app id (integriq).
 	 * @param IRequest $request HTTP request.
 	 * @param IAppManager $appManager App-enablement query service (never touches OpenRegister classes).
 	 * @param GenericHealthController|null $delegate Engine health controller, or null when OpenRegister is absent.
@@ -106,7 +106,7 @@ class HealthController extends Controller {
 						[
 							'name' => 'openregister-dependency',
 							'status' => 'unhealthy',
-							'message' => 'OpenConnector requires the OpenRegister app — install and enable it.',
+							'message' => 'Integriq requires the OpenRegister app — install and enable it.',
 						],
 					],
 				],

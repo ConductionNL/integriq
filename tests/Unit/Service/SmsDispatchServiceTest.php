@@ -4,7 +4,7 @@
  * Unit tests for SmsDispatchService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,16 +18,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\SmsProviderException;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\Security\RawSourceResolver;
-use OCA\OpenConnector\Service\Sms\DeliveryResult;
-use OCA\OpenConnector\Service\Sms\LogSmsProvider;
-use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
-use OCA\OpenConnector\Service\SmsDispatchService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Service\Sms\DeliveryResult;
+use OCA\Integriq\Service\Sms\LogSmsProvider;
+use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
+use OCA\Integriq\Service\SmsDispatchService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

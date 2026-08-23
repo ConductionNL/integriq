@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Konfigurer hvor data kommer fra.",
         "Configure where data is written to.": "Konfigurer hvor data skrives til.",
         "Content path (optional)": "Innholdssti (valgfritt)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Bestem hvilke Nextcloud-grupper som kan utløse hver OpenConnector-handling (ADR-023). Administratorer slipper alltid gjennom. Hver handling er standard begrenset til administratorer – kryss av en gruppe for å utvide den.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Bestem hvilke Nextcloud-grupper som kan utløse hver Integriq-handling (ADR-023). Administratorer slipper alltid gjennom. Hver handling er standard begrenset til administratorer – kryss av en gruppe for å utvide den.",
         "Discard": "Forkast",
         "Dot-path to the id field in each record": "Punktsti til id-feltet i hver post",
         "Dot-path to the id field in the API response": "Punktsti til id-feltet i API-responsen",

@@ -21,7 +21,7 @@
  * node, which is the entire forge path of the pipeline.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,9 +32,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\BrokeredCallService;
+use OCA\Integriq\Service\BrokeredCallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -81,17 +81,17 @@ class CallServiceBrokeredAsyncTest extends TestCase {
 	 * @return boolean The helper's answer.
 	 */
 	private function dispatchesThroughBroker(ObjectEntity $source, array $config): bool {
-		$service = (new \ReflectionClass(\OCA\OpenConnector\Service\CallService::class))
+		$service = (new \ReflectionClass(\OCA\Integriq\Service\CallService::class))
 			->newInstanceWithoutConstructor();
 
-		$broker = new \ReflectionProperty(\OCA\OpenConnector\Service\CallService::class, 'brokeredCallService');
+		$broker = new \ReflectionProperty(\OCA\Integriq\Service\CallService::class, 'brokeredCallService');
 		$broker->setAccessible(true);
 		$broker->setValue(
 			$service,
 			(new \ReflectionClass(BrokeredCallService::class))->newInstanceWithoutConstructor()
 		);
 
-		$method = new ReflectionMethod(\OCA\OpenConnector\Service\CallService::class, 'dispatchesThroughBroker');
+		$method = new ReflectionMethod(\OCA\Integriq\Service\CallService::class, 'dispatchesThroughBroker');
 		$method->setAccessible(true);
 
 		return (bool)$method->invoke($service, $source, $config);

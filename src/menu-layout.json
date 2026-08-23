@@ -7,7 +7,7 @@
     "relocations": {},
     "sections": {},
     "settingsSection": [],
-    "_settingsSectionNote": "ADR-079: EMPTY on purpose. App-level configuration lives in Nextcloud's settings framework at /settings/admin/openconnector (lib/Settings/OpenConnectorAdmin.php), which authorizes it server-side. The in-app `type: settings` AppSettings page is deleted and /settings redirects there. The gear foldout is per-user only: 'Personal settings' plus the admin-gated 'Admin settings' link CnAppNav renders fleet-wide. Previously this listed ['Settings'], which produced a foldout reading Settings > Settings — a child labelled with its own parent's name.",
+    "_settingsSectionNote": "ADR-079: EMPTY on purpose. App-level configuration lives in Nextcloud's settings framework at /settings/admin/integriq (lib/Settings/IntegriqAdmin.php), which authorizes it server-side. The in-app `type: settings` AppSettings page is deleted and /settings redirects there. The gear foldout is per-user only: 'Personal settings' plus the admin-gated 'Admin settings' link CnAppNav renders fleet-wide. Previously this listed ['Settings'], which produced a foldout reading Settings > Settings — a child labelled with its own parent's name.",
     "removals": [],
     "_navigationRationale": {
         "_why": "Menu entries are additionalProperties:false in app-manifest-v2, so per-entry rationale cannot live on the entry itself (gate 53). It lives here.",

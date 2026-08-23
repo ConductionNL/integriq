@@ -17,7 +17,7 @@
  * native flow store (nodes[]/edges[]), not this app's own `flow`/`steps[]`
  * schema the old editor was built on. See
  * openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note and
- * openconnector#1255 for the full backend-state writeup.
+ * integriq#1255 for the full backend-state writeup.
  *
  * The shared canvas's own editor behaviour (dirty tracking, node palette,
  * keyboard operability) is `@conduction/nextcloud-vue`'s to test — duplicating
@@ -32,7 +32,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * The index list's exact columns (Name / Trigger / Status, measured
  * 2026-08-16 — a different shape than the old Name/Enabled/Description table
- * openconnector#1214 was filed against) are not pinned here. `CnFlowIndexPage`
+ * integriq#1214 was filed against) are not pinned here. `CnFlowIndexPage`
  * owns that presentation; pinning its column set from a consumer app couples
  * this file to a shared-library layout choice it doesn't control.
  *
@@ -134,8 +134,8 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  * router-less `php -S` server).
  *
  * Measured 2026-08-16: on this Apache-based dev container, a DEEP path
- * under `/index.php/apps/openconnector/<route>` (e.g. `/traces/<id>`)
- * redirects to the bare `/apps/openconnector/` app root, discarding the
+ * under `/index.php/apps/integriq/<route>` (e.g. `/traces/<id>`)
+ * redirects to the bare `/apps/integriq/` app root, discarding the
  * route — a real, pre-existing Nextcloud redirect that path-mode routing
  * now exposes (hash-mode was accidentally immune: a fragment with no
  * `#` of its own in the redirect's Location header is re-appended by the
@@ -148,7 +148,7 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  *
  * 🔴 The probe it originally used (try each candidate, take the first that
  * serves the SPA shell) could not do that job: BOTH prefixes serve the
- * identical shell, so it always returned `/apps/openconnector` — right for
+ * identical shell, so it always returned `/apps/integriq` — right for
  * this dev container by luck, wrong for CI, where the router base is the
  * `/index.php/` form. The two tests in this file that used it failed in CI
  * while the two that use `APP_BASE` passed, in the same run — a controlled

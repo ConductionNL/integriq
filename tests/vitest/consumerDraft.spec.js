@@ -15,7 +15,7 @@
  *      on every create (initFormData seeds `tags` fields to `[]`).
  *   2. Sending a blank `authorizationConfiguration` wipes the stored credential,
  *      because the field is write-only and therefore ALWAYS opens blank on edit.
- *      This is openconnector#245's shape.
+ *      This is integriq#245's shape.
  *
  * `src/modals/v2/**` is also silently unlinted — eslint.config.js intends to
  * un-ignore it with `!src/modals/v2/**`, but `eslint src` prunes the
@@ -227,7 +227,7 @@ describe('buildConsumerPayload — allowlist omission (REQ-CON-SCOPE-001)', () =
 	})
 })
 
-describe('buildConsumerPayload — write-only credential (openconnector#245)', () => {
+describe('buildConsumerPayload — write-only credential (integriq#245)', () => {
 	it('OMITS the credential when it was not touched', () => {
 		// undefined = "the operator typed nothing". OpenRegister's
 		// collectOmittedWriteOnlyPaths() then carries the stored value forward.
@@ -421,7 +421,7 @@ describe('Consumer form configuration consistency', () => {
 	const detailPage = manifest.pages.find((page) => page.id === 'ConsumerDetail')
 	const register = JSON.parse(
 		fs.readFileSync(
-			path.join(REPO_ROOT, 'lib/Settings/openconnector_register.json'),
+			path.join(REPO_ROOT, 'lib/Settings/integriq_register.json'),
 			'utf8',
 		),
 	)

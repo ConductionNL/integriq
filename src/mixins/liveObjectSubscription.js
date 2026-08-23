@@ -54,7 +54,7 @@ export default {
 		 * Subscribe to live updates for one object (or-object-{uuid}).
 		 * Idempotent per (type, uuid); releases the previous subscription
 		 * when the scope changes. The type must already be registered on
-		 * the openconnector object store (the detail pages register it
+		 * the integriq object store (the detail pages register it
 		 * before their first fetch).
 		 *
 		 * @param {string} type Registered object type slug (e.g. 'rule')

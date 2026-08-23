@@ -1,11 +1,11 @@
 # Flow Tokens
 
-Flow tokens are a special data structure within OpenConnector to retain access to data throughout flows.
+Flow tokens are a special data structure within Integriq to retain access to data throughout flows.
 A flow token keeps track of original and amended data that is passed through a flow. This means that at any point in a flow
 both the original and the amended data is available.
 
 ## Data structure
-A flow in OpenConnector can pass through multiple steps:
+A flow in Integriq can pass through multiple steps:
 
 - A request to an endpoint
 - The request being amended by actions

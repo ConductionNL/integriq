@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector mTLS Certificate Bundle.
+ * Integriq mTLS Certificate Bundle.
  *
  * Immutable, in-memory-only value object carrying decrypted mutual-TLS
  * client-certificate material for the duration of a single resolve→dispatch
  * cycle. Never cached, never persisted, never logged — {@see
- * \OCA\OpenConnector\Service\Mtls\MtlsConfigResolver} produces it and {@see
- * \OCA\OpenConnector\Service\Mtls\MtlsTransportService} consumes it once.
+ * \OCA\Integriq\Service\Mtls\MtlsConfigResolver} produces it and {@see
+ * \OCA\Integriq\Service\Mtls\MtlsTransportService} consumes it once.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Mtls
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Mtls;
+namespace OCA\Integriq\Service\Mtls;
 
 /**
  * Decrypted mTLS client-certificate material for one request cycle.

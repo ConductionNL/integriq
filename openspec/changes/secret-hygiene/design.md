@@ -1,7 +1,7 @@
 # Design: secret-hygiene
 
 ## Architecture Overview
-Three independent secret-handling surfaces exist in OpenConnector today, each
+Three independent secret-handling surfaces exist in Integriq today, each
 implementing its own idea of "what looks like a secret":
 
 1. **`CallService`** (outbound HTTP dispatch + CallLog persistence) — already
@@ -50,7 +50,7 @@ Surfaces 1–3 all currently lack.
   future change that reintroduces any of these leaks fails CI.
 
 **Non-Goals:**
-- Moving Source credentials out of OpenConnector storage (that is the
+- Moving Source credentials out of Integriq storage (that is the
   `source-broker-credentials` change).
 - Changing where temp files are written (`sys_get_temp_dir()` stays; see
   proposal Open Questions).

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Run flow node.
+ * Integriq Synchronization Run flow node.
  *
  * `openconnector.synchronization-run` — runs an ALREADY-CONFIGURED
  * Synchronization as one flow step, and emits ONE ITEM PER SYNCHRONISED OBJECT.
@@ -9,7 +9,7 @@
  * WHY A SECOND NODE
  * -----------------
  * `openconnector.source-call` covers "make one request and put the answer on
- * the item". It does not cover OpenConnector's other governed outbound
+ * the item". It does not cover Integriq's other governed outbound
  * capability: running a Synchronization — pagination across pages, mapping,
  * contract and state tracking, the SynchronizationLog. Expressing that as a
  * chain of call steps would make a flow author re-implement pagination and
@@ -44,7 +44,7 @@
  * it is never mistaken for a synchronised object.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -55,35 +55,35 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
-use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
 use UnexpectedValueException;
 
 /**
  * Runs a configured Synchronization as one flow step, fanning out its objects.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-4-synchronizationrunnode-with-bounded-fan-out-seed-data-and-a-live-end-to-end-run
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-4-synchronizationrunnode-with-bounded-fan-out-seed-data-and-a-live-end-to-end-run
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class sat at the
  *   threshold before `configKeys()` — a one-line vocabulary declaration —
@@ -95,9 +95,13 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 
 	use SynchronizationLogActions;
 
-
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -154,7 +158,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return string The type identifier.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string {
 		return self::NODE_ID;
@@ -165,7 +169,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Run a synchronization');
@@ -176,7 +180,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -190,10 +194,10 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-synchronization-run.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
 	}//end getIcon()
 
 	/**
@@ -203,7 +207,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return boolean Whether it is available.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -219,7 +223,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array<int, string> The accepted top-level config keys.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configKeys(): array {
 		return ['synchronization', 'force', 'output', 'maxItems', 'onError'];
@@ -234,7 +238,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configForm(): array {
 		return [
@@ -292,7 +296,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws UnexpectedValueException When the configuration is unusable.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		FlowConfigGuard::assertNoForbiddenFields(config: $config, l10n: $this->l10n);
@@ -357,7 +361,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws FlowNodeException On an unattributed run, a failed synchronisation or a ceiling breach.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -388,7 +392,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws FlowNodeException On a failed synchronisation or a ceiling breach.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function runForEachItem(array $items, array $config, array $context): array {
 		$reference = trim((string)$config['synchronization']);
@@ -468,7 +472,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws FlowNodeException When the reference resolves to nothing.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function resolveSynchronization(string $reference): ObjectEntity {
 		try {
@@ -527,7 +531,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md#requirement-a-rate-limited-synchronization-suspends-the-run-instead-of-ending-it
 	 */
 	private function suspendUntilTheLimitLifts(
 		TooManyRequestsHttpException $exception,
@@ -546,7 +550,6 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 		);
 
 		return $suspension;
-
 	}//end suspendUntilTheLimitLifts()
 
 	/**
@@ -560,7 +563,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws FlowNodeException When the synchronisation fails.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function runSynchronization(ObjectEntity $synchronization, bool $force, string $reference): array {
 		try {
@@ -602,7 +605,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array<int, array<string, mixed>> One entry per synchronised object.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function objectsFrom(array $log): array {
 		$result = (array)($log['result'] ?? []);
@@ -646,7 +649,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array<string, mixed> The summary.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function summaryFrom(array $log, string $reference): array {
 		$result = (array)($log['result'] ?? []);
@@ -678,7 +681,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array<int, array<string, mixed>> The output items.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function itemsFor(
 		array $objects,
@@ -744,7 +747,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @throws FlowNodeException When the ceiling would be exceeded.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function assertWithinCeiling(
 		int $count,
@@ -787,7 +790,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function warnOnLargeFanOut(int $count, int $maxItems, string $stepId, string $reference): void {
 		if ($count < self::WARNING_THRESHOLD) {
@@ -826,7 +829,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @return array The output item carrying explicit error state.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function errorItem(
 		array $item,

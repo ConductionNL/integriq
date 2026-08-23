@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenConnector Tables Permission-Denied Exception.
+ * Integriq Tables Permission-Denied Exception.
  *
  * Raised when the Nextcloud Tables API returns 401/403 for a row write
  * (create/update/delete). Per `tables-bridge` REQ-006 / design.md Decision 8,
- * OpenConnector never pre-checks or re-implements Tables' own authorization —
+ * Integriq never pre-checks or re-implements Tables' own authorization —
  * Tables' response is the sole authority. This exception is deliberately
  * left UNCAUGHT by `TablesSyncAdapter`/`SynchronizationService` so it
  * propagates out of the per-object processing loop and aborts the rest of
@@ -13,7 +13,7 @@
  * propagated from that loop (GuzzleException, LoaderError, etc.).
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

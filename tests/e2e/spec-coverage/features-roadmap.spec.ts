@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Genuine behavioral UI coverage for the openconnector Features & roadmap
+ * Genuine behavioral UI coverage for the integriq Features & roadmap
  * page (manifest type "roadmap"). Reached from the footer nav entry; shows
  * a "Features" surface with "Show roadmap" / "Suggest a feature" actions.
  */

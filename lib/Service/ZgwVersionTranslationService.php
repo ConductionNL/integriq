@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector ZGW Version Translation Service.
+ * Integriq ZGW Version Translation Service.
  *
  * Core of the zgw-version-translation change: resolves the resource
  * translator by slug, short-circuits to passthrough when `fromVersion ===
@@ -10,7 +10,7 @@
  * {@see FscCallService} (resolve-then-dispatch + per-attempt persistence).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,26 +19,26 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenConnector\Exception\ZgwUnknownResourceException;
-use OCA\OpenConnector\Exception\ZgwVersionTranslationException;
-use OCA\OpenConnector\Service\ZgwVersion\DecisionTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\InformatieObjectTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ResultTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\RolTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\StatusTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\CaseTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\CaseTypeTranslator;
-use OCA\OpenConnector\Service\ZgwVersion\ZgwResourceTranslatorInterface;
+use OCA\Integriq\Exception\ZgwUnknownResourceException;
+use OCA\Integriq\Exception\ZgwVersionTranslationException;
+use OCA\Integriq\Service\ZgwVersion\CaseTranslator;
+use OCA\Integriq\Service\ZgwVersion\CaseTypeTranslator;
+use OCA\Integriq\Service\ZgwVersion\DecisionTranslator;
+use OCA\Integriq\Service\ZgwVersion\InformatieObjectTranslator;
+use OCA\Integriq\Service\ZgwVersion\ResultTranslator;
+use OCA\Integriq\Service\ZgwVersion\RolTranslator;
+use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
+use OCA\Integriq\Service\ZgwVersion\ZgwResourceTranslatorInterface;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**

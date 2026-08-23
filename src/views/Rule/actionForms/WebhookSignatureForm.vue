@@ -11,27 +11,27 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Signature scheme')
+			t('integriq', 'Signature scheme')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Signature scheme')"
+			:aria-label-combobox="t('integriq', 'Signature scheme')"
 			:modelValue="selectedSchemeOption"
 			:options="schemeOptions"
 			:clearable="false"
 			@update:modelValue="onSchemePick" />
 		<NcTextField
-			:label="t('openconnector', 'Signature header')"
+			:label="t('integriq', 'Signature header')"
 			:modelValue="value.header || ''"
 			placeholder="X-OpenConnector-Signature"
 			@update:modelValue="(next) => patch('header', next)" />
 		<NcTextField
-			:label="t('openconnector', 'Shared secret')"
+			:label="t('integriq', 'Shared secret')"
 			type="password"
 			:modelValue="value.secret || ''"
 			@update:modelValue="(next) => patch('secret', next)" />
 		<NcTextField
 			v-if="value.scheme !== 'github'"
-			:label="t('openconnector', 'Timestamp tolerance (seconds)')"
+			:label="t('integriq', 'Timestamp tolerance (seconds)')"
 			:modelValue="String(value.toleranceSeconds || 300)"
 			placeholder="300"
 			@update:modelValue="
@@ -67,7 +67,7 @@ export default {
 		schemeOptions() {
 			return SCHEMES.map((row) => ({
 				id: row.id,
-				label: this.t('openconnector', row.label),
+				label: this.t('integriq', row.label),
 			}))
 		},
 

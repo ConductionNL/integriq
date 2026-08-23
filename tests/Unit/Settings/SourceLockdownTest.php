@@ -21,7 +21,7 @@
  * the register that quietly drops the authorization block.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,12 +30,12 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
 use PHPUnit\Framework\TestCase;
 
@@ -48,7 +48,7 @@ class SourceLockdownTest extends TestCase {
 	private function effectiveSourceSchema(): array {
 		$root = dirname(__DIR__, 3);
 
-		$base = json_decode((string)file_get_contents($root . '/lib/Settings/openconnector_register.json'), true);
+		$base = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true);
 		$schema = $base['components']['schemas']['source'];
 
 		foreach (glob($root . '/lib/Settings/register.d/*.json') as $fragmentPath) {

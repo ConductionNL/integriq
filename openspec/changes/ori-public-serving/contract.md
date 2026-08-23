@@ -22,7 +22,7 @@ representative example, with resource-specific filter/type notes below.
 design.md D2)
 
 **Request:** no body. Optional pagination query params (`_limit`, `_page`)
-per openconnector's standard `findAllPaginated()` contract.
+per integriq's standard `findAllPaginated()` contract.
 
 **Response (200):**
 ```json
@@ -73,7 +73,7 @@ resource's discriminator/lifecycle/publish-window gate (design.md Gap 2).
 **Auth**: none
 
 **Response (200):** empty body, `Access-Control-Allow-*` headers per
-openconnector's existing `preflightedCors` (REQ-EP-001) — no per-resource
+integriq's existing `preflightedCors` (REQ-EP-001) — no per-resource
 configuration needed.
 
 ## Per-resource filter and type reference
@@ -106,25 +106,25 @@ design.md D4, `EMAIL_TYPES`) — `memberships`/`events`/etc. do not.
 ## Versioning
 
 `v1` in the path (`/api/ori/v1/*`) mirrors decidesk's current URL scheme —
-ORI is versioned independently of openconnector's own API version, matching
+ORI is versioned independently of integriq's own API version, matching
 `OriController`'s documented rationale (ORI's spec version, not decidesk's or
-openconnector's release version, drives the path segment).
+integriq's release version, drives the path segment).
 
 ## Breaking Change Policy
 
 The companion decidesk retirement change MUST NOT cut the public
-`/api/ori/v1/*` mount over to these openconnector Endpoints until the parity
+`/api/ori/v1/*` mount over to these integriq Endpoints until the parity
 test plan (`test-plan.md`) passes with zero diffs against `OriController`'s
 current responses, including the two named gaps (Gap 1 envelope shape, Gap 2
 single-item guard) being closed — not merely documented. Any future
 behavioural change to these Endpoints (new resource, changed field mapping)
-follows openconnector's existing Endpoint-versioning convention (new path
+follows integriq's existing Endpoint-versioning convention (new path
 segment or new Endpoint object; no in-place breaking edits to a published
 Endpoint).
 
 ## SLA
 
-Matches openconnector's existing endpoint-runtime cache-backed dispatch
+Matches integriq's existing endpoint-runtime cache-backed dispatch
 (`endpoint-runtime` REQ-EP-004: request-lifetime + 1-hour-TTL distributed
 cache) — no new SLA target introduced; ORI resources are cached exactly like
 every other Endpoint.

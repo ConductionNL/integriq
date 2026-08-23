@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-05-24T12:00:00Z",
-  "app": "openconnector",
+  "app": "integriq",
   "branch": "feat/header-view-logs-v2",
   "scanner_version": "1",
   "buckets": {
@@ -97,13 +97,13 @@
       { "file": "lib/Exception/AuthenticationException.php", "method": "getDetails()", "reason": "trivial getter" },
       { "file": "lib/Connectors/PdokUpstreamException.php", "method": "__construct()", "reason": "exception ctor" },
       { "file": "lib/Connectors/PdokUpstreamException.php", "method": "getStatusCode()", "reason": "trivial getter" },
-      { "file": "lib/Sections/OpenConnectorAdmin.php", "method": "getIcon()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Sections/OpenConnectorAdmin.php", "method": "getID()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Sections/OpenConnectorAdmin.php", "method": "getName()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Sections/OpenConnectorAdmin.php", "method": "getPriority()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Settings/OpenConnectorAdmin.php", "method": "getForm()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Settings/OpenConnectorAdmin.php", "method": "getSection()", "reason": "NC settings boilerplate" },
-      { "file": "lib/Settings/OpenConnectorAdmin.php", "method": "getPriority()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Sections/IntegriqAdmin.php", "method": "getIcon()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Sections/IntegriqAdmin.php", "method": "getID()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Sections/IntegriqAdmin.php", "method": "getName()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Sections/IntegriqAdmin.php", "method": "getPriority()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Settings/IntegriqAdmin.php", "method": "getForm()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Settings/IntegriqAdmin.php", "method": "getSection()", "reason": "NC settings boilerplate" },
+      { "file": "lib/Settings/IntegriqAdmin.php", "method": "getPriority()", "reason": "NC settings boilerplate" },
       { "file": "lib/Twig/AuthenticationExtension.php", "method": "getFunctions()", "reason": "Twig wiring" },
       { "file": "lib/Twig/AuthenticationRuntimeLoader.php", "method": "load()", "reason": "Twig wiring" },
       { "file": "lib/Twig/MappingExtension.php", "method": "getFilters()", "reason": "Twig wiring" },
@@ -119,12 +119,12 @@
     ],
     "bucket_1": [
       { "file": "lib/Controller/MetricsController.php", "method": "index()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-001/002/003", "confidence": 0.97, "needs_review": false, "signal": "method assembles Prometheus text + sets content-type per scenario; file is named MetricsController; spec explicitly references this file in Current Implementation Status", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectSourceMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-004", "confidence": 0.97, "needs_review": false, "signal": "queries sources table grouped by type; emits openconnector_sources_total{type=...}", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectCallMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-005", "confidence": 0.97, "needs_review": false, "signal": "queries call_logs grouped by status_code; emits openconnector_calls_total{status=...}", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectSyncMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-006", "confidence": 0.97, "needs_review": false, "signal": "emits openconnector_synchronizations_total + openconnector_synchronization_runs_total per spec", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectEndpointMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-007", "confidence": 0.78, "needs_review": true, "signal": "partial — emits openconnector_endpoints_total gauge but NOT the per-endpoint openconnector_endpoint_hits_total counter required by the REQ-PROM-007 scenarios. Spec's 'Not implemented' note confirms this", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectJobMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-008", "confidence": 0.95, "needs_review": false, "signal": "emits openconnector_jobs_total + openconnector_job_runs_total{status} per spec scenarios — spec's 'Not implemented' note is stale", "inherits_from": null },
-      { "file": "lib/Controller/MetricsController.php", "method": "collectMappingRuleMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-009", "confidence": 0.97, "needs_review": false, "signal": "emits openconnector_mappings_total + openconnector_rules_total per spec — spec's 'Not implemented' note is stale", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectSourceMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-004", "confidence": 0.97, "needs_review": false, "signal": "queries sources table grouped by type; emits integriq_sources_total{type=...}", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectCallMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-005", "confidence": 0.97, "needs_review": false, "signal": "queries call_logs grouped by status_code; emits integriq_calls_total{status=...}", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectSyncMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-006", "confidence": 0.97, "needs_review": false, "signal": "emits integriq_synchronizations_total + integriq_synchronization_runs_total per spec", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectEndpointMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-007", "confidence": 0.78, "needs_review": true, "signal": "partial — emits integriq_endpoints_total gauge but NOT the per-endpoint integriq_endpoint_hits_total counter required by the REQ-PROM-007 scenarios. Spec's 'Not implemented' note confirms this", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectJobMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-008", "confidence": 0.95, "needs_review": false, "signal": "emits integriq_jobs_total + integriq_job_runs_total{status} per spec scenarios — spec's 'Not implemented' note is stale", "inherits_from": null },
+      { "file": "lib/Controller/MetricsController.php", "method": "collectMappingRuleMetrics()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-009", "confidence": 0.97, "needs_review": false, "signal": "emits integriq_mappings_total + integriq_rules_total per spec — spec's 'Not implemented' note is stale", "inherits_from": null },
       { "file": "lib/Controller/MetricsController.php", "method": "countTable()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-004/006/007/008/009", "confidence": 0.95, "needs_review": false, "signal": "Pass B helper — called by all collect* methods that landed in Bucket 1", "inherits_from": "collectSourceMetrics/etc" },
       { "file": "lib/Controller/HealthController.php", "method": "index()", "capability": "prometheus-metrics", "req_id": "REQ-PROM-010", "confidence": 0.96, "needs_review": false, "signal": "returns JSON {status,checks} with database+sources_table probes per spec; spec explicitly references this file", "inherits_from": null }
     ],
@@ -677,7 +677,7 @@
       ]
     },
     "bucket_3a": [
-      { "req": "prometheus-metrics#REQ-PROM-007 (per-endpoint hits)", "evidence": "current code emits endpoints_total gauge but lacks per-endpoint counter — REQ scenarios require openconnector_endpoint_hits_total{endpoint,method}; not in current MetricsController. Removed-lines cache has 4 references to collectEndpointMetrics — partial implementation history" }
+      { "req": "prometheus-metrics#REQ-PROM-007 (per-endpoint hits)", "evidence": "current code emits endpoints_total gauge but lacks per-endpoint counter — REQ scenarios require integriq_endpoint_hits_total{endpoint,method}; not in current MetricsController. Removed-lines cache has 4 references to collectEndpointMetrics — partial implementation history" }
     ],
     "bucket_3b": [
       { "req": "prometheus-metrics#REQ-PROM-007 (cardinality cap)", "note": "no top-100 cardinality limiter in MetricsController; spec scenario 3 unimplemented" },
@@ -721,7 +721,7 @@
         { "file": "lib/Exception/AuthenticationException.php" },
         { "file": "lib/Http/XMLResponse.php" },
         { "file": "lib/Repair/InitializeRegister.php" },
-        { "file": "lib/Sections/OpenConnectorAdmin.php" },
+        { "file": "lib/Sections/IntegriqAdmin.php" },
         { "file": "lib/Service/AuthenticationService.php" },
         { "file": "lib/Service/AuthorizationService.php" },
         { "file": "lib/Service/CallService.php" },
@@ -753,7 +753,7 @@
         { "file": "lib/Service/StorageService.php" },
         { "file": "lib/Service/SynchronizationService.php" },
         { "file": "lib/Service/UserService.php" },
-        { "file": "lib/Settings/OpenConnectorAdmin.php" },
+        { "file": "lib/Settings/IntegriqAdmin.php" },
         { "file": "lib/Twig/AuthenticationExtension.php" },
         { "file": "lib/Twig/AuthenticationRuntime.php" },
         { "file": "lib/Twig/AuthenticationRuntimeLoader.php" },

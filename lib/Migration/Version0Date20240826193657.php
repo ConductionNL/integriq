@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Initial schema migration creating the OpenConnector tables.
+ * Initial schema migration creating the Integriq tables.
  *
  * Creates the endpoints, jobs, mappings, sources, synchronizations,
  * synchronization contracts, consumers, call logs, job logs, and
  * synchronization contract logs tables used by the app.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
+ * @package  OCA\Integriq\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,12 +16,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Migration;
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -30,7 +30,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Creates the initial OpenConnector table set on first install.
+ * Creates the initial Integriq table set on first install.
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -50,7 +50,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep {
 	}//end preSchemaChange()
 
 	/**
-	 * Creates the OpenConnector tables when they do not yet exist.
+	 * Creates the Integriq tables when they do not yet exist.
 	 *
 	 * @param IOutput $output Migration output interface.
 	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.

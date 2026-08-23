@@ -8,7 +8,7 @@ Partially superseded by `openconnector-frontend-vue-rewrite` (chain D2): the per
 
 ## Context
 
-OpenConnector's frontend is organised around a per-resource UI convention.
+Integriq's frontend is organised around a per-resource UI convention.
 For each resource domain (Source, Endpoint, Job, Synchronization, Mapping,
 Rule, Consumer, Contract, Log) the current code ships:
 
@@ -49,7 +49,7 @@ and modal wiring into a schema-driven single component.
 ## Decision
 
 The current per-resource UI triad (index view + modals + sidebar) is the
-accepted convention for all 10+ resources in openconnector's current codebase.
+accepted convention for all 10+ resources in integriq's current codebase.
 New resources added before chain D2 lands MUST follow the same structure:
 
 - Add an `{Resource}sIndex.vue` under `src/views/{Resource}/`.

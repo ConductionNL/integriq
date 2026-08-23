@@ -4,7 +4,7 @@
  * Unit tests for the eudi-wallet-credential-issuance register fragment.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,9 +15,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -131,7 +131,7 @@ class EudiRegisterFragmentTest extends TestCase {
 	}//end testMergingFragmentAttachesSchemasToTheRegistersList()
 
 	/**
-	 * The fragment does not touch `openconnector_register.json` itself —
+	 * The fragment does not touch `integriq_register.json` itself —
 	 * that file's own schema declarations are unaffected (verified
 	 * independently by RegisterDescriptorTest, which parses ONLY that
 	 * file and never this fragment).
@@ -139,7 +139,7 @@ class EudiRegisterFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testFragmentDoesNotModifyTheDescriptorFile(): void {
-		$descriptorPath = __DIR__ . '/../../../lib/Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../../../lib/Settings/integriq_register.json';
 		$descriptor = json_decode((string)file_get_contents($descriptorPath), true);
 
 		$this->assertArrayNotHasKey(

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Tables Feature-Disabled Exception.
+ * Integriq Tables Feature-Disabled Exception.
  *
  * Raised when a `nextcloud-table` source/target/discovery operation is
  * attempted while the Nextcloud Tables app is not installed/enabled for the
@@ -11,7 +11,7 @@
  * discovery controller (409 response) key off.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

@@ -4,7 +4,7 @@
 
 ### Requirement: REQ-006 — Export a configuration from the UI
 
-The system SHALL expose the existing `ConfigurationService::exportConfiguration()` (REQ-001–REQ-005, unchanged) through a routed `POST /api/configurations/{id}/export` endpoint and a Configuration UI page action, so an operator can download a redacted configuration document without using the API directly. The endpoint SHALL be gated by OpenConnector's existing `ActionAuthService::requireAction()` (ADR-023) with a new action key `configuration.export`, seeded `["admin"]` in the existing `lib/actions.seed.json`.
+The system SHALL expose the existing `ConfigurationService::exportConfiguration()` (REQ-001–REQ-005, unchanged) through a routed `POST /api/configurations/{id}/export` endpoint and a Configuration UI page action, so an operator can download a redacted configuration document without using the API directly. The endpoint SHALL be gated by Integriq's existing `ActionAuthService::requireAction()` (ADR-023) with a new action key `configuration.export`, seeded `["admin"]` in the existing `lib/actions.seed.json`.
 
 Notes: This requirement adds reachability only; it does not change REQ-001–REQ-005's export, slug-translation, or redaction behaviour, including the documented substring-match redaction gap (REQ-005 Notes) and the O(all entities) cost note (REQ-001 Notes).
 

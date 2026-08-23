@@ -5,13 +5,13 @@ status: planned
 # connector-catalog Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - connector-catalog-ui
 
 ## Purpose
 
-OpenConnector ships real integration capability — seeded PDOK/BRP/KVK/xWiki/messaging/OpenCorporates sources and four registered category adapters (Azure Virtual Desktop, SharePoint Online, Microsoft 365, S3) — but none of it is browsable. This capability defines a Catalog: a single, register/schema-backed, card-grid page that lists every built-in connector adapter, seeded source template, and importable configuration template, with search, category filtering, live status badges (`available` vs `dormant`), and an authorized Enable/Instantiate action. It is populated by a PHP-side `CatalogRegistryService` that reads the existing OpenRegister `IntegrationRegistry`, a small static descriptor list for adapters not yet in that registry, and the `register.d/*-source.json` seed fragments — no catalog entry is invented; every entry corresponds to real, already-shipped code. See ADR-023 (action-level authorization) for the Enable/Instantiate authorization model.
+Integriq ships real integration capability — seeded PDOK/BRP/KVK/xWiki/messaging/OpenCorporates sources and four registered category adapters (Azure Virtual Desktop, SharePoint Online, Microsoft 365, S3) — but none of it is browsable. This capability defines a Catalog: a single, register/schema-backed, card-grid page that lists every built-in connector adapter, seeded source template, and importable configuration template, with search, category filtering, live status badges (`available` vs `dormant`), and an authorized Enable/Instantiate action. It is populated by a PHP-side `CatalogRegistryService` that reads the existing OpenRegister `IntegrationRegistry`, a small static descriptor list for adapters not yet in that registry, and the `register.d/*-source.json` seed fragments — no catalog entry is invented; every entry corresponds to real, already-shipped code. See ADR-023 (action-level authorization) for the Enable/Instantiate authorization model.
 
 ## ADDED Requirements
 
@@ -42,7 +42,7 @@ The system MUST provide a Catalog page listing every registered `catalog_item` o
 
 ### Requirement: Catalog detail modal offers an authorized Enable or Instantiate action (REQ-002)
 
-The system MUST provide a detail modal for each catalog item, opened from its card, showing the item's full description and standards, plus a primary action: "Enable" for a `flag-gated` item, or "Instantiate" for a `mock-seeded` or `always-available` item. The action MUST be gated at the action layer by OpenConnector's existing ADR-023 implementation — `ActionAuthService::requireAction()` (`lib/Service/ActionAuthService.php`) against a new `catalog.instantiate` action key seeded `["admin"]` in the existing `lib/actions.seed.json` (following its established `<domain>.<verb>` naming, e.g. `source.test`, `job.run`) — and MUST still pass through the underlying OpenRegister data-layer authorization for the object being created or updated (e.g. the `source` schema's admin-only lock). The catalog action MUST NOT introduce a new authorization service or a bypass of existing data-layer authorization.
+The system MUST provide a detail modal for each catalog item, opened from its card, showing the item's full description and standards, plus a primary action: "Enable" for a `flag-gated` item, or "Instantiate" for a `mock-seeded` or `always-available` item. The action MUST be gated at the action layer by Integriq's existing ADR-023 implementation — `ActionAuthService::requireAction()` (`lib/Service/ActionAuthService.php`) against a new `catalog.instantiate` action key seeded `["admin"]` in the existing `lib/actions.seed.json` (following its established `<domain>.<verb>` naming, e.g. `source.test`, `job.run`) — and MUST still pass through the underlying OpenRegister data-layer authorization for the object being created or updated (e.g. the `source` schema's admin-only lock). The catalog action MUST NOT introduce a new authorization service or a bypass of existing data-layer authorization.
 
 #### Scenario: Enable action flips a feature flag for a flag-gated item
 - GIVEN an operator with the `catalog.instantiate` action permission opens the PDOK WMS detail modal while it is dormant
@@ -71,7 +71,7 @@ The system MUST provide a detail modal for each catalog item, opened from its ca
 The system MUST assemble catalog entries from exactly one service, `CatalogRegistryService`, which MUST source its data from (a) OpenRegister's existing `IntegrationRegistry` for adapters already registered there, (b) a static descriptor list for built-in adapters not registered there, and (c) the `register.d/*-source.json` seed fragments for seeded source templates. The frontend MUST NOT hardcode any catalog entry — every card rendered on the Catalog page MUST originate from a `catalog_item` OpenRegister object materialized by this service.
 
 #### Scenario: A newly registered IntegrationRegistry provider appears in the catalog without a frontend change
-- GIVEN a fifth `IntegrationProvider` is registered into OpenRegister's `IntegrationRegistry` by OpenConnector
+- GIVEN a fifth `IntegrationProvider` is registered into OpenRegister's `IntegrationRegistry` by Integriq
 - WHEN the next `CatalogRegistryService` materialization repair-step run occurs
 - THEN a corresponding `catalog_item` object is created or updated
 - AND it appears on the Catalog page without any change to `CatalogItemCard.vue` or the manifest

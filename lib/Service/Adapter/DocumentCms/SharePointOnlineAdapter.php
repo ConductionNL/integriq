@@ -7,7 +7,7 @@
  * category.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Adapter\DocumentCms
+ * @package  OCA\Integriq\Service\Adapter\DocumentCms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Adapter\DocumentCms;
+namespace OCA\Integriq\Service\Adapter\DocumentCms;
 
-use OCA\OpenConnector\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use OCP\IL10N;
@@ -43,7 +43,7 @@ use OCP\IUserSession;
  * Persistence NOTE (partial per ADR-022 "no local file store"): fetched
  * document bytes are written into Nextcloud's own Files storage via
  * `IRootFolder` (a real NC storage backend, not a raw local-disk write), not
- * a bespoke openconnector table. A dedicated hand-off into docudesk's own
+ * a bespoke integriq table. A dedicated hand-off into docudesk's own
  * attachment ingestion surface was scoped by this change's proposal, but no
  * such public API/route currently exists in the docudesk app (confirmed:
  * no `attachment`-named controller/route in `docudesk/appinfo/routes.php`
@@ -59,6 +59,9 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old name: this folder already exists in users' NC Files and
+	// holds every document fetched so far. Renaming it creates a second folder and
+	// strands the existing one. Moves only with a folder-migration step.
 	private const TARGET_FOLDER = 'OpenConnector SharePoint Documents';
 
 	/**

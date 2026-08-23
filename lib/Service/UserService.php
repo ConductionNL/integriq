@@ -8,7 +8,7 @@
  * and provides a clean interface for controllers and other services.
  *
  * @category Service
- * @package  OpenConnector
+ * @package  Integriq
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCP\Accounts\IAccountManager;
 use OCP\IConfig;

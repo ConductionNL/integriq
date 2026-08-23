@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Schedule a synchronization job
-description: Run a synchronization automatically on a cron schedule via the OpenConnector Jobs runner.
+description: Run a synchronization automatically on a cron schedule via the Integriq Jobs runner.
 ---
 
 # Schedule a synchronization job
 
-A **Job** wraps a recurring task — most often a Synchronization — and runs it on a schedule. OpenConnector's job runner integrates with Nextcloud's background jobs so once a job is enabled the schedule fires without anyone keeping a browser tab open.
+A **Job** wraps a recurring task — most often a Synchronization — and runs it on a schedule. Integriq's job runner integrates with Nextcloud's background jobs so once a job is enabled the schedule fires without anyone keeping a browser tab open.
 
 ## Goal
 
@@ -14,7 +14,7 @@ By the end you will have wrapped one of your synchronizations in a job, set a cr
 
 ## Prerequisites
 
-- You are an administrator on the Nextcloud instance, or your user has been granted the OpenConnector configuration role.
+- You are an administrator on the Nextcloud instance, or your user has been granted the Integriq configuration role.
 - You have at least one Synchronization that runs cleanly on demand (see [Run a synchronization](../user/04-run-synchronization.md)).
 - Nextcloud's background-jobs subsystem is healthy on the instance — `occ background-job:list` shows job runs and `cron.php` is wired (AJAX is OK but cron is recommended for production).
 
@@ -49,7 +49,7 @@ You are done when: the manual *Run now* completes with a `success` status, the c
 | Symptom | Fix |
 |---|---|
 | Manual *Run now* works but scheduled ticks never fire | Nextcloud background jobs are not running — switch the cron mode to *Cron* on the instance and confirm `cron.php` is invoked from a system cron. |
-| Cron expression rejected as invalid | OpenConnector uses the standard 5-field cron format (`min hour day month weekday`); 6-field expressions (with seconds) are not supported. |
+| Cron expression rejected as invalid | Integriq uses the standard 5-field cron format (`min hour day month weekday`); 6-field expressions (with seconds) are not supported. |
 | Job runs at the right time but reports `0 changes` every tick | The underlying synchronization is up to date — that's a healthy steady state. To verify the job is doing real work, change one source object and wait for the next tick. |
 
 ## Reference

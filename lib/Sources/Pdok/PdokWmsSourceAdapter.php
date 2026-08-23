@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK WMS Source Adapter (dormant).
+ * Integriq PDOK WMS Source Adapter (dormant).
  *
  * Source-pattern facade over the lower-level `PdokWmsClient` family
  * (`lib/Adapters/Pdok/`). Ships dormant: every call logs the intent and
@@ -10,14 +10,14 @@
  * `migrate-pdok-to-openconnector`, mandaat) can develop and test against
  * a stable surface without hitting the live PDOK WMS endpoint.
  *
- * Lives under `lib/Sources/Pdok/` so it can be discovered by the openconnector
+ * Lives under `lib/Sources/Pdok/` so it can be discovered by the integriq
  * Source registry (Source row `pdok-wms`, category=`geo`). The active HTTP
- * implementation is `\OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp` —
- * see {@see \OCA\OpenConnector\Adapters\Pdok\PdokSourceAdapter} for the
+ * implementation is `\OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp` —
+ * see {@see \OCA\Integriq\Adapters\Pdok\PdokSourceAdapter} for the
  * `pdok.feature_flag` activation steps.
  *
  * @category Source
- * @package  OCA\OpenConnector\Sources\Pdok
+ * @package  OCA\Integriq\Sources\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,21 +26,21 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Sources\Pdok;
+namespace OCA\Integriq\Sources\Pdok;
 
-use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Dormant source adapter for the PDOK WMS (Web Map Service).
  *
- * Registered as openconnector Source row id `pdok-wms`, category `geo`.
+ * Registered as integriq Source row id `pdok-wms`, category `geo`.
  * Until the `pdok.feature_flag` app-config key is flipped to `1`, every
  * method returns the canned response below and logs a single debug entry
  * so operators can verify the wiring without burning quota on the real
@@ -52,7 +52,7 @@ final class PdokWmsSourceAdapter {
 	/**
 	 * App id used for IAppConfig look-ups.
 	 */
-	public const APP_ID = 'openconnector';
+	public const APP_ID = 'integriq';
 
 	/**
 	 * App-config key for the dormant-flag toggle (shared with the other
@@ -170,7 +170,7 @@ final class PdokWmsSourceAdapter {
 	}//end getCapabilities()
 
 	/**
-	 * Source-registry descriptor for the openconnector Source row.
+	 * Source-registry descriptor for the integriq Source row.
 	 *
 	 * Mirrors the OR `source` schema fields the Source registry inserts when
 	 * the InitializeRegister repair step runs. Kept here next to the adapter

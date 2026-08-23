@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Open Formulieren Exception.
+ * Integriq Open Formulieren Exception.
  *
  * Raised on any Open Formulieren submission-ingest or handoff-trigger
  * failure: an unknown form slug, no active `open-formulieren` source
@@ -10,7 +10,7 @@
  * (mirrors `SmsProviderException` / ADR-007).
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,14 +19,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

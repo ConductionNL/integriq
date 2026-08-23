@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenConnector ZGW Version Not Implemented Exception.
+ * Integriq ZGW Version Not Implemented Exception.
  *
- * Raised by {@see \OCA\OpenConnector\Service\ZgwVersionNegotiationService}
+ * Raised by {@see \OCA\Integriq\Service\ZgwVersionNegotiationService}
  * when a caller declares the `"2.0"` next-generation ZGW placeholder
  * version — a version this shim RECOGNISES (it is not an unknown value,
  * see {@see ZgwUnknownVersionException}) but does not yet translate,
@@ -13,7 +13,7 @@
  * genuinely unsupported-yet target.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 /**
  * Thrown when a recognised-but-unimplemented ZGW version is targeted.

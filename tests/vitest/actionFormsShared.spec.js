@@ -80,6 +80,10 @@ describe('fetchOpenRegisterCollection', () => {
 	it('tolerates a bare-array response shape', async () => {
 		get.mockResolvedValueOnce({ data: [{ id: 5, name: 'X' }] })
 		const opts = await fetchOpenRegisterCollection(
+			// The OpenRegister REGISTER SLUG, which does not move with the app
+			// id — OR matches registers by slug, so `integriq` here would
+			// address a fresh EMPTY register while every existing object stayed
+			// behind, orphaned and silently invisible.
 			'mapping',
 			'openconnector',
 			10,

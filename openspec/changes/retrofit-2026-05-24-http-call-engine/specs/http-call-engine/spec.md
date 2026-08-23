@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-`CallService` is openconnector's outbound-request engine: every Source-targeted REST
+`CallService` is integriq's outbound-request engine: every Source-targeted REST
 call across the app routes through `CallService::call()`. It renders Twig templates
 into the request configuration, materialises certificates to disk, dispatches via
 Guzzle (or hands off to the SOAP service for `type=soap` sources), parses rate-limit

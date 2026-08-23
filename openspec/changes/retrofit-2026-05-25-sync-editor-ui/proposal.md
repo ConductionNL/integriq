@@ -9,7 +9,7 @@ retroactively specifies it. Source: `openspec/coverage-report.md` generated
 
 The synchronization authoring + run/test UI (detail page, config widget, mapping
 picker/preview, reference list, edit/run/test modals) is core platform behaviour
-with no spec coverage. It is an openconnector-local Vue surface, so it gets a
+with no spec coverage. It is an integriq-local Vue surface, so it gets a
 foundational capability spec under `openspec/specs/`.
 
 ## Affected code units

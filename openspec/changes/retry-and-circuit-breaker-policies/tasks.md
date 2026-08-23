@@ -4,7 +4,7 @@
 
 ### Task 1: Extend the register descriptor — RetryPolicy + circuit breaker fields on Source
 - **spec_ref**: `openspec/changes/retry-and-circuit-breaker-policies/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007`
-- **files**: `lib/Settings/openconnector_register.json` (source schema properties)
+- **files**: `lib/Settings/integriq_register.json` (source schema properties)
 - **acceptance_criteria**:
   - GIVEN the `source` schema WHEN inspected THEN it carries `retryPolicy` (object; `maxAttempts`, `backoffStrategy`, `baseDelayMs`, `maxDelayMs`, `jitter`, `retryableStatusCodes`, `retryOnTimeout`), `circuitBreakerState`, `circuitBreakerFailureCount`, `circuitBreakerOpenedAt`, `circuitBreakerLastProbeAt`, `circuitBreakerThreshold` (default 5), `circuitBreakerCooldownSeconds` (default 30)
   - GIVEN an existing Source with none of these fields set WHEN read THEN defaults reproduce today's single-attempt, always-closed behavior (verify against `docs/schema/Source.json` regeneration)
@@ -13,7 +13,7 @@
 
 ### Task 2: Extend the register descriptor — retryPolicyOverride on Synchronization + sync_item_dead_letter schema
 - **spec_ref**: `openspec/changes/retry-and-circuit-breaker-policies/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007`
-- **files**: `lib/Settings/openconnector_register.json` (synchronization schema properties + new `sync_item_dead_letter` schema entry)
+- **files**: `lib/Settings/integriq_register.json` (synchronization schema properties + new `sync_item_dead_letter` schema entry)
 - **acceptance_criteria**:
   - GIVEN the `synchronization` schema WHEN inspected THEN it carries `retryPolicyOverride` (object, all keys optional)
   - GIVEN the new `sync_item_dead_letter` schema WHEN inspected THEN it mirrors `event_message`'s shape: `uuid`, `synchronization` (FK CASCADE), `synchronizationContract` (FK SET NULL, nullable), `originId`, `phase` (default `item-processing`), `payload`, `error`, `status` (enum `failed|replayed|discarded`), `retryCount`, `attempts[]`, `replayedBy`/`replayedAt`, `discardedBy`/`discardedAt`, `created`/`updated`
@@ -64,7 +64,7 @@
 - **spec_ref**: `openspec/changes/retry-and-circuit-breaker-policies/specs/prometheus-metrics/spec.md#req-prom-011-circuit-breaker-state-gauge`
 - **files**: `lib/Controller/MetricsController.php`
 - **acceptance_criteria**:
-  - GIVEN sources with mixed breaker states WHEN `GET /api/metrics` is called THEN `openconnector_circuit_breaker_state{source="<name>"}` reports `1` for open, `0` for closed/unset
+  - GIVEN sources with mixed breaker states WHEN `GET /api/metrics` is called THEN `integriq_circuit_breaker_state{source="<name>"}` reports `1` for open, `0` for closed/unset
   - GIVEN the breaker-state query fails WHEN metrics are collected THEN a zero-value fallback is emitted with a warning logged and the endpoint still returns 200
 - [ ] Implement
 - [ ] Test

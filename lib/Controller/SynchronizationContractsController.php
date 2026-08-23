@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector SynchronizationContractsController.
+ * Integriq SynchronizationContractsController.
  *
  * Controller for managing synchronization contracts. Handles action operations
  * (activate/deactivate/execute/statistics/performance/export); CRUD operations
  * are served by OR's generic routes.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,15 +16,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -231,7 +231,7 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function statistics(): JSONResponse {
 		try {
 			// Get basic counts by status via OR ObjectService.
@@ -267,7 +267,7 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function performance(): JSONResponse {
 		try {
 			// Get performance data for different time periods.
@@ -312,7 +312,7 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function export(
 		?string $synchronizationId = null,
 		?string $status = null,

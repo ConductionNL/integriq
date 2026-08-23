@@ -1,4 +1,4 @@
-# OpenConnector — Conduction PHPStan config.
+# Integriq — Conduction PHPStan config.
 #
 # The shared base is the single source of truth. Everything here is either the
 # app's own tracked debt or an ignore naming a symbol that exists in no other
@@ -23,13 +23,13 @@ parameters:
         # errors — exclusion is required (same pattern as SynchronizationContractProvider).
         - lib/Controller/HealthController.php
         - lib/Controller/MetricsController.php
-        # adopt-apphost: Settings/OpenConnectorAdmin, Sections/OpenConnectorAdmin
+        # adopt-apphost: Settings/IntegriqAdmin, Sections/IntegriqAdmin
         # and Repair/InitializeActions extend OCA\OpenRegister\AppHost generics
         # (GenericAdminSettings / GenericSettingsSection / GenericInitializeActions)
         # which are only available at runtime. Same "extends unknown class"
         # PHPStan limitation as HealthController/MetricsController above.
-        - lib/Settings/OpenConnectorAdmin.php
-        - lib/Sections/OpenConnectorAdmin.php
+        - lib/Settings/IntegriqAdmin.php
+        - lib/Sections/IntegriqAdmin.php
         - lib/Repair/InitializeActions.php
         # The contributed flow nodes and their registration listener implement /
         # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
@@ -69,14 +69,14 @@ parameters:
         # unreachable: at runtime all of them `use` it — FetchFileNode included,
         # which is why that entry sits directly above this one.
         - lib/Flow/SynchronizationLogActions.php
-        # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
+        # IntegriqMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
         # types that exist only at runtime. PHPStan reports these as *general* errors
         # ("cannot be ignored, use excludePaths instead"), which no baseline can absorb:
         # they abort the run regardless of ignoreErrors. Same pattern as
         # SynchronizationContractProvider above and opencatalogi's metrics provider.
-        - lib/Observability/OpenConnectorMetricsProvider.php
+        - lib/Observability/IntegriqMetricsProvider.php
         - lib/Service/Adapter/AbstractCategoryAdapterProvider.php
         # DeferredViewCascadeJob extends OCA\OpenRegister\BackgroundJob\ActorForwardedJob,
         # the ADR-078 actor-forwarding deferral base, which exists only at runtime.
@@ -162,17 +162,17 @@ parameters:
         # unknown OR classes) — Application.php registers them via DI without knowing
         # the parent constructor. The "does not have a constructor" error in Application.php
         # is a downstream effect of the excludePaths exclusion.
-        - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
-        - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
-        # Downstream effect of the lib/Settings/OpenConnectorAdmin.php exclusion above.
-        # Every #[AuthorizedAdminSetting(OpenConnectorAdmin::class)] attribute resolves to
+        - '#Class OCA\\Integriq\\Controller\\HealthController does not have a constructor#'
+        - '#Class OCA\\Integriq\\Controller\\MetricsController does not have a constructor#'
+        # Downstream effect of the lib/Settings/IntegriqAdmin.php exclusion above.
+        # Every #[AuthorizedAdminSetting(IntegriqAdmin::class)] attribute resolves to
         # a plain `string` for PHPStan because the class is excluded from analysis, so it
-        # cannot see that OpenConnectorAdmin -> GenericAdminSettings implements
+        # cannot see that IntegriqAdmin -> GenericAdminSettings implements
         # OCP\Settings\IDelegatedSettings. The attribute IS correct at runtime; this is an
         # artifact of excluding the class, not a real type error. 41 occurrences.
         - '#Parameter \#1 \$settings of attribute class OCP\\AppFramework\\Http\\Attribute\\AuthorizedAdminSetting constructor expects class-string<OCP\\Settings\\IDelegatedSettings>, string given\.#'
-        # adopt-apphost: same downstream effect for Settings/OpenConnectorAdmin,
-        # Sections/OpenConnectorAdmin and Repair/InitializeActions (see excludePaths above).
-        - '#Class OCA\\OpenConnector\\Settings\\OpenConnectorAdmin does not have a constructor#'
-        - '#Class OCA\\OpenConnector\\Sections\\OpenConnectorAdmin does not have a constructor#'
-        - '#Class OCA\\OpenConnector\\Repair\\InitializeActions does not have a constructor#'
+        # adopt-apphost: same downstream effect for Settings/IntegriqAdmin,
+        # Sections/IntegriqAdmin and Repair/InitializeActions (see excludePaths above).
+        - '#Class OCA\\Integriq\\Settings\\IntegriqAdmin does not have a constructor#'
+        - '#Class OCA\\Integriq\\Sections\\IntegriqAdmin does not have a constructor#'
+        - '#Class OCA\\Integriq\\Repair\\InitializeActions does not have a constructor#'

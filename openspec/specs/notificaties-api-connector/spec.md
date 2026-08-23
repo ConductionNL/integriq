@@ -1,7 +1,7 @@
 # notificaties-api-connector Specification
 
 ## Purpose
-OpenConnector acts as a ZGW **Notificaties API** (Logius/VNG "API Notificatiestandaard voor ZGW APIs")
+Integriq acts as a ZGW **Notificaties API** (Logius/VNG "API Notificatiestandaard voor ZGW APIs")
 client — both a SUBSCRIBER (registers an `abonnement` on a remote Notificaties API for one or more
 `kanalen`, receives notifications at a callback endpoint, and routes them into the existing CloudEvents
 fan-out) and a PUBLISHER (sends an internal CloudEvent onward to a configured `kanaal` in the standard
@@ -208,7 +208,7 @@ registration without inspecting logs.
 - **AND** it SHALL settle to `active` or `error` once the remote call completes (REQ-001)
 
 ### Requirement: Abonnementen Config UI (REQ-008)
-OpenConnector MUST provide an Abonnementen section in its SPA where administrators can browse, create,
+Integriq MUST provide an Abonnementen section in its SPA where administrators can browse, create,
 edit, and delete `notificaties_abonnement` configurations, following the existing typed-manifest-page
 convention used by Consumers/Webhooks/Endpoints. The kanalen multi-select MUST use `NcSelect` with an
 explicit `inputLabel` (ADR-004 / `hydra-gate-nc-input-labels` — a bare `<label>` paired with `NcSelect`
@@ -216,9 +216,9 @@ breaks the component's internal accessibility wiring).
 
 #### Scenario: abonnementen list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
+- GIVEN an authenticated admin visits the integriq app
 - WHEN they navigate to the Abonnementen section via the sidebar nav or direct URL
-  `/apps/openconnector/notificaties/abonnementen`
+  `/apps/integriq/notificaties/abonnementen`
 - THEN the Abonnementen index page renders inside the main content area with content visible
 
 #### Scenario: add abonnement button opens the creation modal with a labeled kanalen select

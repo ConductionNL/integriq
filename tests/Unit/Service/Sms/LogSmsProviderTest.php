@@ -4,7 +4,7 @@
  * Unit tests for LogSmsProvider.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Sms
+ * @package  OCA\Integriq\Tests\Unit\Service\Sms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Sms;
+namespace OCA\Integriq\Tests\Unit\Service\Sms;
 
-use OCA\OpenConnector\Service\Sms\LogSmsProvider;
+use OCA\Integriq\Service\Sms\LogSmsProvider;
 use PHPUnit\Framework\TestCase;
 
 /**

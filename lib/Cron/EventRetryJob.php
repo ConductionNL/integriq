@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector Event Retry Job.
+ * Integriq Event Retry Job.
  *
  * Background job that sweeps undelivered event messages and re-attempts their
  * delivery according to the retry-hardening backoff schedule. Without this job
  * EventService::processRetries() has no caller and retries never run.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Service\EventService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

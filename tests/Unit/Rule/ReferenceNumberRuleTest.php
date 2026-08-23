@@ -4,7 +4,7 @@
  * Unit tests for ReferenceNumberRule.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Rule
+ * @package  OCA\Integriq\Tests\Unit\Rule
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,9 +13,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Rule;
+namespace OCA\Integriq\Tests\Unit\Rule;
 
-use OCA\OpenConnector\Rule\ReferenceNumberRule;
+use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK WFS Client (mock).
+ * Integriq PDOK WFS Client (mock).
  *
  * Deterministic, no-network implementation of {@see PdokWfsClient}. Ships
  * dormant; DI returns this class until `pdok.feature_flag` is set to `1`.
@@ -11,7 +11,7 @@
  * exercise its branches off real-looking data.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Pdok
+ * @package  OCA\Integriq\Adapters\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,12 +20,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Pdok;
+namespace OCA\Integriq\Adapters\Pdok;
 
 /**
  * Mock PDOK WFS client — dormant default.

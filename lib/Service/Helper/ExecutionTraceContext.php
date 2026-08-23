@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector ExecutionTraceContext.
+ * Integriq ExecutionTraceContext.
  *
  * Lightweight, in-process value object minted once per execution entry point
  * (endpoint call, job run, event delivery, manual synchronization run) and
@@ -13,7 +13,7 @@
  * write, REQ-004).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Helper
+ * @package  OCA\Integriq\Service\Helper
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,17 +21,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service\Helper;
+namespace OCA\Integriq\Service\Helper;
 
 use DateTime;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Carries a traceId and an in-memory ordered Step[] buffer across one
- * logical OpenConnector execution.
+ * logical Integriq execution.
  *
  * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
  */

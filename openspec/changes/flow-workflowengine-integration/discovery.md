@@ -81,7 +81,7 @@ so building one synthetically is a well-established (if unofficial) pattern rath
 **5. No bundled `ICheck` work is needed.** The brief's "operation admin UI check classes as needed" is
 already satisfied by NC's existing built-in `File`-entity checks (`FileMimeType`, `FileName`, `FileSize`,
 `FileSystemTags`, all in `apps/workflowengine/lib/Check/`) — an admin scopes a Flow rule using these
-unmodified, exactly as they would for any core file Flow. OpenConnector does not need to register any new
+unmodified, exactly as they would for any core file Flow. Integriq does not need to register any new
 `ICheck`.
 
 **6. No bundled `IEntity` work is needed.** NC core's only shipped `IEntity` is

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector JobTask.
+ * Integriq JobTask.
  *
- * Background job task for executing jobs in the OpenConnector application.
+ * Background job task for executing jobs in the Integriq application.
  * This task runs scheduled jobs by delegating execution to the JobService.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\JobService;
+use OCA\Integriq\Service\JobService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

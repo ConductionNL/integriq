@@ -11,7 +11,7 @@
  * (Twig/dot engine, cast directives, OR object shim, search helper) that
  * carry @e2e exclude and are covered by PHPUnit.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  *
  * Known bug #996: Table view renders all cells as "—". Detail-page assertions
@@ -27,7 +27,7 @@ import { test, expect } from '@playwright/test'
 import { APP_BASE, openAndDismissCreateModal } from './_helpers'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-const API_BASE = '/index.php/apps/openconnector/api'
+const API_BASE = '/index.php/apps/integriq/api'
 
 // ---------------------------------------------------------------------------
 // REQ-UI-001: Mapping Management UI

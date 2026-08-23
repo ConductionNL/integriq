@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Conduction B.V.
 
 /**
- * OpenConnector object store instance.
+ * Integriq object store instance.
  *
  * Created via `createObjectStore` (@conduction/nextcloud-vue >= beta.212) so
  * the liveUpdatesPlugin is installed default-on: the store exposes

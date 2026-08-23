@@ -5,7 +5,7 @@
  * EndpointService::processAuthenticationRule() (ocon#1068).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -14,11 +14,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\EndpointService;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\EndpointService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;

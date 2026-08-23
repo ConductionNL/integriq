@@ -6,7 +6,7 @@
  *
  * NOT UI-driving Playwright tests — raw HTTP status assertions covered
  * canonically by the Newman suite
- * (tests/postman/openconnector.postman_collection.json). Excluded from the
+ * (tests/postman/integriq.postman_collection.json). Excluded from the
  * gate-19 UI run via the `**​/api-direct/**` testIgnore (gate-19: API-direct →
  * Newman). The UI scenarios for rule-pipeline carry @e2e tags and remain in
  * tests/e2e/spec-coverage/rule-pipeline.spec.ts.
@@ -20,7 +20,7 @@
 import { test, expect } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-const API_BASE = '/index.php/apps/openconnector/api'
+const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe('Rules OR API — list', () => {
 	test('GET rules list from OR returns rule objects', async ({ request }) => {

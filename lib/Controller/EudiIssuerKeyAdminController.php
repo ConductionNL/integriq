@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenConnector EudiIssuerKeyAdminController.
+ * Integriq EudiIssuerKeyAdminController.
  *
  * Admin-gated (Beheer > Authenticatie) generate/rotate/status endpoints for
  * the EUDI wallet credential issuer's own signing key, mirroring
- * {@see \OCA\OpenConnector\Controller\LtiController}'s Phase 4 tenant-wide
+ * {@see \OCA\Integriq\Controller\LtiController}'s Phase 4 tenant-wide
  * key management shape and scholiq's `KeyAdminController` pattern
  * (design.md D-KEY).
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,11 +23,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\EudiCredentialOfferService;
-use OCA\OpenConnector\Service\EudiIssuerKeyService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Beheer > Authenticatie: EUDI issuer key section — admin-gated
  * generate/rotate/status. Every method here is guarded by
- * `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` (CSRF-protected,
+ * `#[AuthorizedAdminSetting(IntegriqAdmin::class)]` (CSRF-protected,
  * NC-session-authenticated admin only), never `#[PublicPage]`.
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
@@ -85,7 +85,7 @@ class EudiIssuerKeyAdminController extends Controller {
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function status(): JSONResponse {
 		$organisationId = $this->resolveOrganisationId();
 
@@ -119,7 +119,7 @@ class EudiIssuerKeyAdminController extends Controller {
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function generateKey(): JSONResponse {
 		try {
 			$entry = $this->keyService->generateKey($this->resolveOrganisationId());
@@ -145,7 +145,7 @@ class EudiIssuerKeyAdminController extends Controller {
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function rotateKey(): JSONResponse {
 		try {
 			$entry = $this->keyService->rotateKey($this->resolveOrganisationId());

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — inbound consumer source-scope (domains/ips) enforcement.
+ * Integriq — inbound consumer source-scope (domains/ips) enforcement.
  *
  * The `consumer` schema advertises `ips` ("Allowed source IP addresses") and
  * `domains` ("Allowed source domains") as scope controls. Until this service
@@ -27,7 +27,7 @@
  * would replace one fabricated control with another.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,15 +35,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Service\Scope\IpMatcher;
-use OCA\OpenConnector\Service\Scope\ReverseDnsResolver;
+use OCA\Integriq\Service\Scope\IpMatcher;
+use OCA\Integriq\Service\Scope\ReverseDnsResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -115,7 +115,7 @@ class ConsumerScopeService {
 		}
 
 		$this->logger->warning(
-			'OpenConnector: consumer source-scope rejected a request',
+			'Integriq: consumer source-scope rejected a request',
 			[
 				'consumer' => (string)$consumer->getUuid(),
 				'clientIp' => $clientIp,

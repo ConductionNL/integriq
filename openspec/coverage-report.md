@@ -1,4 +1,4 @@
-# Coverage Report — openconnector
+# Coverage Report — integriq
 
 Generated: 2026-05-24 12:00 UTC
 Branch: feat/header-view-logs-v2
@@ -10,9 +10,9 @@ Scanner: opsx-coverage-scan v1
 |---|---|---|
 | annotated | 42 | — (already tagged) |
 | plumbing | 65 | — (never tagged) |
-| 1 — REQ matched | 9 | `/opsx-annotate openconnector` |
+| 1 — REQ matched | 9 | `/opsx-annotate integriq` |
 | 2a — existing capability, no REQ | 0 (0 clusters) | — |
-| 2b — no capability owner | 405 (22 clusters) | `/opsx-reverse-spec openconnector --cluster <name>` (bias toward draft-change-aligned clusters first) |
+| 2b — no capability owner | 405 (22 clusters) | `/opsx-reverse-spec integriq --cluster <name>` (bias toward draft-change-aligned clusters first) |
 | 3a — REQ broken (code removed) | 1 | Manual triage on metrics endpoint counter |
 | 3b — REQ never implemented | 4 | Most map to in-flight changes; track via opsx instead of deferring |
 | 4 — ADR conformance | 75 findings across 3 rules | Follow-up issue (most are missing `@spec` in file docblock) |
@@ -24,12 +24,12 @@ Scanner: opsx-coverage-scan v1
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
 | lib/Controller/MetricsController.php | index() | REQ-PROM-001/002/003 | 0.97 | builds Prometheus text + sets content-type; spec names this file |
-| lib/Controller/MetricsController.php | collectSourceMetrics() | REQ-PROM-004 | 0.97 | sources grouped by type; emits openconnector_sources_total{type} |
-| lib/Controller/MetricsController.php | collectCallMetrics() | REQ-PROM-005 | 0.97 | call_logs grouped by status; emits openconnector_calls_total{status} |
-| lib/Controller/MetricsController.php | collectSyncMetrics() | REQ-PROM-006 | 0.97 | emits openconnector_synchronizations_total + sync_runs_total{status} |
+| lib/Controller/MetricsController.php | collectSourceMetrics() | REQ-PROM-004 | 0.97 | sources grouped by type; emits integriq_sources_total{type} |
+| lib/Controller/MetricsController.php | collectCallMetrics() | REQ-PROM-005 | 0.97 | call_logs grouped by status; emits integriq_calls_total{status} |
+| lib/Controller/MetricsController.php | collectSyncMetrics() | REQ-PROM-006 | 0.97 | emits integriq_synchronizations_total + sync_runs_total{status} |
 | lib/Controller/MetricsController.php | collectEndpointMetrics() | REQ-PROM-007 | 0.78 (**NEEDS-REVIEW**) | emits gauge but missing per-endpoint hits counter scenario |
-| lib/Controller/MetricsController.php | collectJobMetrics() | REQ-PROM-008 | 0.95 | emits openconnector_jobs_total + job_runs_total{status} — spec's "Not implemented" note is stale |
-| lib/Controller/MetricsController.php | collectMappingRuleMetrics() | REQ-PROM-009 | 0.97 | emits openconnector_mappings_total + openconnector_rules_total — spec's "Not implemented" note is stale |
+| lib/Controller/MetricsController.php | collectJobMetrics() | REQ-PROM-008 | 0.95 | emits integriq_jobs_total + job_runs_total{status} — spec's "Not implemented" note is stale |
+| lib/Controller/MetricsController.php | collectMappingRuleMetrics() | REQ-PROM-009 | 0.97 | emits integriq_mappings_total + integriq_rules_total — spec's "Not implemented" note is stale |
 | lib/Controller/MetricsController.php | countTable() | REQ-PROM-004/006/007/008/009 | 0.95 | Pass B helper used by all collect* methods |
 | lib/Controller/HealthController.php | index() | REQ-PROM-010 | 0.96 | returns {status,checks} with database+sources_table probes |
 
@@ -72,7 +72,7 @@ _None._ The only main spec (prometheus-metrics) is fully covered; every other ca
 ## Bucket 3 — Surfaced for human triage
 
 ### 3a — possibly broken / partial
-- **prometheus-metrics#REQ-PROM-007 (per-endpoint hits counter)** — current `collectEndpointMetrics()` emits the `openconnector_endpoints_total` gauge but NOT the per-endpoint `openconnector_endpoint_hits_total{endpoint,method}` counter required by scenarios 1 and 2. Removed-lines cache shows 4 historical references — implementation may have been started then dropped. Spec's "Not implemented" note already calls this out.
+- **prometheus-metrics#REQ-PROM-007 (per-endpoint hits counter)** — current `collectEndpointMetrics()` emits the `integriq_endpoints_total` gauge but NOT the per-endpoint `integriq_endpoint_hits_total{endpoint,method}` counter required by scenarios 1 and 2. Removed-lines cache shows 4 historical references — implementation may have been started then dropped. Spec's "Not implemented" note already calls this out.
 
 ### 3b — never implemented (within the prometheus-metrics spec)
 - **prometheus-metrics#REQ-PROM-007 scenario 3** — no top-100 cardinality cap on endpoint metrics.
@@ -101,7 +101,7 @@ These are tracked by the opsx pipeline (`/opsx-apply` per change). Not Bucket-3b
 
 - **Branch scanned: `feat/header-view-logs-v2`** (current working branch). Specs are present on this branch; no need to re-run on `development`.
 - **Spec staleness flagged**: The `prometheus-metrics/spec.md` "Not implemented" section incorrectly lists REQ-PROM-008 (jobs) and REQ-PROM-009 (mapping/rule totals) as unimplemented. They are implemented in `MetricsController::collectJobMetrics()` and `collectMappingRuleMetrics()` respectively. Update the spec when running `/opsx-annotate`.
-- **Bucket 2b is large but well-clustered**: 405 methods across 22 clusters — every cluster is behaviorally named (no namespace-word warnings). About half (synchronization-engine, endpoint-runtime, rule-pipeline, http-call-engine, configuration-export-import) describe the core platform behavior of openconnector and need foundational spec coverage. Recommend prioritising those before adapter-specific clusters.
+- **Bucket 2b is large but well-clustered**: 405 methods across 22 clusters — every cluster is behaviorally named (no namespace-word warnings). About half (synchronization-engine, endpoint-runtime, rule-pipeline, http-call-engine, configuration-export-import) describe the core platform behavior of integriq and need foundational spec coverage. Recommend prioritising those before adapter-specific clusters.
 - **DSO is the model**: 42 methods are already annotated to `openspec/changes/dso-omgevingsloket/tasks.md` — a clean retrofit example of how to ghost-change-annotate a slice of behavior.
 - **Several Bucket 2b clusters map directly to in-flight changes** (iBabs/STuF/PDOK adapters, frontend-vue-spa). When those changes promote from `proposed`→`implemented`, the corresponding cluster transitions from Bucket 2b into the annotated set without needing a separate reverse-spec run — `/opsx-apply` will tag those methods.
 - **`OrganisationBridgeService::getOrganisationService()`** has the catch-Throwable→return-null shape flagged by `hydra-gate-unsafe-auth-resolver`. Out of scope for this scan but worth a follow-up gate run.

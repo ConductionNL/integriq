@@ -10,7 +10,7 @@ Dispatches outbound HTTP and SOAP calls to configured sources and records each o
 @e2e exclude backend outbound HTTP call engine + CallLog persistence (no browser UI) — covered by PHPUnit/Newman
 
 **OpenSpec changes**
-- `source-broker-credentials` (active) — Sources gain a `credentialRef` authentication option; brokered sources dispatch in-process through OpenRegister's `CredentialBrokerService` (constrained proxy, secret injected server-side, never held by OpenConnector). While active, the normative brokered-dispatch requirements (REQ-SBC-001..004) live in the change's delta spec and merge here on archive.
+- `source-broker-credentials` (active) — Sources gain a `credentialRef` authentication option; brokered sources dispatch in-process through OpenRegister's `CredentialBrokerService` (constrained proxy, secret injected server-side, never held by Integriq). While active, the normative brokered-dispatch requirements (REQ-SBC-001..004) live in the change's delta spec and merge here on archive.
 ## Requirements
 ### Requirement: Outbound HTTP call orchestration with CallLog persistence (REQ-001)
 
@@ -171,7 +171,7 @@ outcome.
 #### Notes
 
 - `writeFile` uses `tempnam()` sourced from `sys_get_temp_dir()` — the shared system
-  temp directory, not a dedicated OpenConnector-owned subdirectory. The
+  temp directory, not a dedicated Integriq-owned subdirectory. The
   unpredictable-name + `0600`-permission combination closes the specific
   world-readability risk that made #1012 CRITICAL; a dedicated
   `chmod(0700)` subdirectory remains a deferred hardening option (see
@@ -623,7 +623,7 @@ PSR-7 response so `buildResponseData()`, `buildAndPersistCallLog()`, and
 `sourceRateLimit()` operate unchanged; an upstream non-2xx status returned by
 the broker is a completed call and MUST flow through as a normal CallLog with
 that status. Pagination, rate-limiting, and retry logic MUST remain in
-OpenConnector: each page fetched by
+Integriq: each page fetched by
 `SynchronizationService::fetchSinglePageData()` is one brokered request. In
 v1 the engine MUST reject as a 409 config error: `credentialRef` on
 `type: soap` sources, `asynchronous=true` dispatch, and `cert`/`ssl_key`
@@ -697,7 +697,7 @@ the acting-user parameter, a sessionless brokered call MUST soft-fail as a
 
 The brokered credential's secret value MUST NEVER appear in source
 configuration, synchronization logs, call logs, or error messages — with
-brokering the secret never enters the OpenConnector process. Broker refusals
+brokering the secret never enters the Integriq process. Broker refusals
 (`CredentialAccessDeniedException`) MUST be persisted as 403 CallLogs whose
 statusMessage carries the broker-surfaced guard name (e.g. `allowedApps`,
 with the actionable hint that the credential's allowedApps must include

@@ -4,7 +4,7 @@
  * Unit tests for MtlsTransportService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Mtls
+ * @package  OCA\Integriq\Tests\Unit\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Mtls;
+namespace OCA\Integriq\Tests\Unit\Service\Mtls;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
@@ -26,11 +26,11 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Exception\MtlsHandshakeException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\MtlsHandshakeException;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsCertificateBundle;
+use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

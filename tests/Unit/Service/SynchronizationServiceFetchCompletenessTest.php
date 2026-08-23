@@ -3,7 +3,7 @@
 /**
  * Unit tests for fetch-completeness tracking and the fetch-incomplete deletion gate.
  *
- * Reproduces the ConductionNL/openconnector#1000/#1001/#1002 mass-deletion
+ * Reproduces the ConductionNL/integriq#1000/#1001/#1002 mass-deletion
  * scenarios: a source erroring mid-fetch, failing partway through pagination,
  * or rate-limiting (HTTP 429) must never cause `deleteInvalidObjects()` to
  * garbage-collect the objects the failed fetch did not see (spec REQ-009 +
@@ -19,7 +19,7 @@
  * result records the fetch_incomplete reason.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -28,14 +28,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -114,7 +114,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 					$this->logger,
 					$logService,
 					$appConfig,
-					$this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
 				]
 			)
 			->onlyMethods(['updateTarget'])

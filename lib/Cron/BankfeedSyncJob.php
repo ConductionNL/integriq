@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Bankfeed Sync Job.
+ * Integriq Bankfeed Sync Job.
  *
  * Background job that runs the scheduled PSD2 AIS transaction sync: for every
  * `active` bankfeed_connection it pulls transactions since the last watermark,
@@ -10,7 +10,7 @@
  * default, mirroring EventRetryJob's TimedJob registration pattern.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Service\BankfeedSyncService;
+use OCA\Integriq\Service\BankfeedSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Inline Secret Migration Executor.
+ * Integriq Inline Secret Migration Executor.
  *
  * Phase C (executor half) of ocon#151 / ADR-064 §6. Where
  * {@see InlineSecretMigrationPlanner} only REPORTS what would migrate, this
@@ -52,7 +52,7 @@
  *    carries a secret value.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -63,12 +63,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -99,6 +99,11 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @var string
 	 */
+	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
+	// OpenRegister's credential broker matches against a stored credential's
+	// `allowedApps` (strict in_array). Every credential minted so far carries
+	// "openconnector"; renaming it fails every brokered resolve CLOSED.
+	// Moves only with a credential re-provisioning pass.
 	public const APP_ID = 'openconnector';
 
 	/**
@@ -231,7 +236,7 @@ class InlineSecretMigrationExecutor {
 			// Fail closed for the whole source; the post-run plan keeps the gate
 			// closed while its secret survives. Secret-free by construction.
 			$this->logger->warning(
-				'[openconnector] inline-secret executor: raw source read failed; source left untouched',
+				'[integriq] inline-secret executor: raw source read failed; source left untouched',
 				['uuid' => $uuid]
 			);
 			return [
@@ -548,7 +553,7 @@ class InlineSecretMigrationExecutor {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[openconnector] inline-secret executor: raw entity read threw',
+				'[integriq] inline-secret executor: raw entity read threw',
 				['uuid' => $uuid, 'errorClass' => get_class($e)]
 			);
 			return null;
@@ -696,7 +701,7 @@ class InlineSecretMigrationExecutor {
 			$context['errorClass'] = get_class($e);
 		}
 
-		$this->logger->warning('[openconnector] inline-secret executor: field left intact after failure', $context);
+		$this->logger->warning('[integriq] inline-secret executor: field left intact after failure', $context);
 	}//end logFailure()
 
 	/**

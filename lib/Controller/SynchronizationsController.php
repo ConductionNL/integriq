@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector SynchronizationsController.
+ * Integriq SynchronizationsController.
  *
  * Controller for the synchronization detail page, test/run actions, statistics,
  * log listings and exports.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,17 +15,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -94,7 +94,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function contracts(int $id): JSONResponse {
 		$matches = $this->orObjectService->findAll(
 			config: [
@@ -130,7 +130,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchService $searchService): JSONResponse {
 		try {
 			// Get filters from request.
@@ -477,7 +477,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function statistics(): JSONResponse {
 		try {
 			// Get basic counts via OR ObjectService.
@@ -542,7 +542,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logsStatistics(): JSONResponse {
 		try {
 			// Get basic counts by status/level via OR ObjectService.
@@ -628,7 +628,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logsExport(): JSONResponse {
 		try {
 			// Get filters from request parameters.

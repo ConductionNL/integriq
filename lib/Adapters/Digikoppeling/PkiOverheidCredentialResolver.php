@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector — PKIoverheid signing-material resolver (broker, fail-closed).
+ * Integriq — PKIoverheid signing-material resolver (broker, fail-closed).
  *
  * WS-Security message signing needs the PKIoverheid client certificate and its
  * private key IN-PROCESS. Per REQ-DK-005 / ADR-007 that key material MUST be
@@ -23,7 +23,7 @@
  * automatically without a code change here when the broker adds it.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,14 +31,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Digikoppeling;
+namespace OCA\Integriq\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Exception\DigikoppelingException;
+use OCA\Integriq\Exception\DigikoppelingException;
 use Psr\Container\ContainerInterface;
 
 /**

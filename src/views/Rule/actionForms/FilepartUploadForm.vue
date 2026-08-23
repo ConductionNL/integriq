@@ -7,28 +7,28 @@
 <template>
 	<div class="action-form">
 		<label class="action-form__label">{{
-			t('openconnector', 'Inbound mapping (required)')
+			t('integriq', 'Inbound mapping (required)')
 		}}</label>
 		<NcSelect
 			data-testid="action-form-filepart-upload-mapping"
-			:aria-label-combobox="t('openconnector', 'Inbound mapping (required)')"
+			:aria-label-combobox="t('integriq', 'Inbound mapping (required)')"
 			:modelValue="selectedInbound"
 			:options="mappingOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a mapping')"
+			:placeholder="t('integriq', 'Select a mapping')"
 			@update:modelValue="
 				(option) => patch('mappingId', option?.id ? String(option.id) : '')
 			" />
 
 		<label class="action-form__label">{{
-			t('openconnector', 'Outbound mapping (optional)')
+			t('integriq', 'Outbound mapping (optional)')
 		}}</label>
 		<NcSelect
-			:aria-label-combobox="t('openconnector', 'Outbound mapping (optional)')"
+			:aria-label-combobox="t('integriq', 'Outbound mapping (optional)')"
 			:modelValue="selectedOutbound"
 			:options="mappingOptions"
 			:loading="loading"
-			:placeholder="t('openconnector', 'Select a mapping')"
+			:placeholder="t('integriq', 'Select a mapping')"
 			@update:modelValue="
 				(option) =>
 					patch('mappingOutId', option?.id ? String(option.id) : '')
@@ -36,7 +36,7 @@
 		<span class="action-form__helper">
 			{{
 				t(
-					'openconnector',
+					'integriq',
 					'Inbound runs before the part is written; outbound runs over the written object before it returns.',
 				)
 			}}

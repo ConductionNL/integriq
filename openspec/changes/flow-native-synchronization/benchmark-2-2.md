@@ -52,7 +52,7 @@ defects below.
 
 ## The decomposed side is blocked, and by what exactly
 
-1. `occ openconnector:synchronization-to-flow b1e14f05…` generates the full
+1. `occ integriq:synchronization-to-flow b1e14f05…` generates the full
    11-node chain (`trigger → fetch → explode → map → contract → target-uuid →
    write → synced-id → commit → sweep → end`).
 2. `POST /api/flow/validate` **refuses it** on this instance:

@@ -1,7 +1,7 @@
 # Proposal: notificaties-api-subscriber
 
 ## Summary
-OpenConnector already emits and consumes NL GOV CloudEvents internally (`events-cloudevents` /
+Integriq already emits and consumes NL GOV CloudEvents internally (`events-cloudevents` /
 `nextcloud-event-triggers`), but has no way to act as a ZGW **Notificaties API** participant — the
 publish/subscribe protocol (Logius/VNG "API Notificatiestandaard voor ZGW APIs") that Dutch-gov ZGW
 components (Zaken API, Documenten API, etc.) use to announce object lifecycle changes over `kanalen`
@@ -15,13 +15,13 @@ event bus, no new HTTP client, and no new auth stack.
 ## Motivation
 Every ZGW-adjacent connector this app already ships (StUF, VNG Klantinteracties, DSO, Digikoppeling)
 sits next to gov components that publish or expect Notificaties API traffic. Without subscriber/publisher
-support, OpenConnector can only be reached by point-to-point webhooks configured out-of-band, which is not
+support, Integriq can only be reached by point-to-point webhooks configured out-of-band, which is not
 how ZGW components discover each other — they publish to `kanalen` and expect consumers to self-register
 an `abonnement`. Shipping this closes a recurring integration gap and lets a `synchronization` be triggered
 directly off a `zaken`/`documenten` kanaal notification instead of a bespoke poller.
 
 ## Affected Projects
-- [x] Project: `openconnector` — new `notificaties-api-connector` capability (abonnement lifecycle,
+- [x] Project: `integriq` — new `notificaties-api-connector` capability (abonnement lifecycle,
       callback endpoint, publish action), plus deltas to `events-cloudevents` (new subscription
       `action.kind`, inbound-notification-to-CloudEvent normalization) and `consumer-management`
       (formalizes that apiKey consumer authentication is a public contract usable outside the
@@ -79,14 +79,14 @@ API client library is introduced.
 - New `lib/Service/NotificatiesSubscriberService.php` — abonnement CRUD against the remote API,
   notification→CloudEvent normalization.
 - New `lib/Controller/NotificatiesSubscriberController.php` — callback route + abonnement management API.
-- `lib/Settings/openconnector_register.json` — new `notificaties_abonnement` schema; `event_subscription`
+- `lib/Settings/integriq_register.json` — new `notificaties_abonnement` schema; `event_subscription`
   gains the `notificaties` action.kind (additive, backward compatible).
 - `src/` — new Abonnementen manifest page + modal.
 - No change to `EndpointService`/`EndpointsController` (endpoint-runtime is not modified).
 
 ## Cross-Project Dependencies
-None. This is entirely internal to `openconnector`; it does not require or block changes in any other
-`apps-extra` project. Apps that already consume OpenConnector CloudEvents (e.g. via `event_subscription`)
+None. This is entirely internal to `integriq`; it does not require or block changes in any other
+`apps-extra` project. Apps that already consume Integriq CloudEvents (e.g. via `event_subscription`)
 gain the ability to subscribe to `nl.conduction.zgw.notificatie.*` events with zero changes on their side.
 
 ## Risks

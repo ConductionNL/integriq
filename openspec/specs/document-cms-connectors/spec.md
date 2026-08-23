@@ -40,15 +40,15 @@ registry per ADR-019. Adapter classes MUST live under
 
 This spec scopes EXTERNAL DMS connectors only. Any document
 storage on the Conduction side MUST be consumed from docudesk
-per ADR-022; openconnector MUST NOT re-implement file storage,
+per ADR-022; integriq MUST NOT re-implement file storage,
 metadata indexing, or retention. A document fetched from
 SharePoint and persisted on the Conduction side lands as a
 docudesk attachment via the existing docudesk file API; the
 DCC adapter is the transport, docudesk is the home.
 
-#### Scenario: Reviewer confirms no Conduction-side document store in openconnector
+#### Scenario: Reviewer confirms no Conduction-side document store in integriq
 
-- **GIVEN** the openconnector codebase under
+- **GIVEN** the integriq codebase under
   `lib/Service/Adapter/DocumentCms/`
 - **WHEN** scanned for persistence calls into
   `OCP\Files\IRootFolder`, `OCA\OpenRegister\Db\FileMapper`,
@@ -63,7 +63,7 @@ DCC adapter is the transport, docudesk is the home.
 - **WHEN** scanned for `Microsoft\Graph\\*`, `Google\Service\Drive`,
   `Box\\*`, `Alfresco\\*`, or any SharePoint REST client
 - **THEN** no such imports SHALL exist; DMS access MUST route
-  through openconnector by integration slot slug.
+  through integriq by integration slot slug.
 
 ### Requirement: Each DCC adapter manifest entry SHALL declare the four canonical capabilities — file-crud, metadata-sync, search-federation, acl-bridging — with explicit support flags (REQ-DCC-002)
 
@@ -113,14 +113,14 @@ app can render "Jan has read access in SharePoint" without
 modifying the remote DMS. Write-side propagation
 (Conduction-side RBAC change → remote ACL change) is OPT-IN
 per `Source` record via an `aclWriteBack: boolean` setting on
-the source's configuration JSON (stored in openconnector, not
+the source's configuration JSON (stored in integriq, not
 in any sibling app).
 
 When `aclWriteBack: false` (the default), any caller invoking
 the adapter's `setRemoteAcl()` method MUST receive a
 `AclWriteDisabledException` and the call MUST NOT mutate
 remote state. The adapter MUST log the rejected attempt
-through openconnector's existing CallLog.
+through integriq's existing CallLog.
 
 #### Scenario: Default source rejects ACL write-back
 
@@ -129,7 +129,7 @@ through openconnector's existing CallLog.
 - **WHEN** a sibling app invokes `setRemoteAcl(...)` via the
   adapter
 - **THEN** the call MUST throw `AclWriteDisabledException`;
-  **AND** an entry MUST land in the existing openconnector
+  **AND** an entry MUST land in the existing integriq
   `CallLog` table with outcome `rejected-acl-write-disabled`.
 
 #### Scenario: Operator opts in and ACL write-back succeeds
@@ -149,7 +149,7 @@ of underlying API. Each hit MUST carry:
 
 | Field | Type | Purpose |
 |---|---|---|
-| `sourceSlug` | string | Which openconnector source returned the hit |
+| `sourceSlug` | string | Which integriq source returned the hit |
 | `remoteId` | string | The DMS's native identifier |
 | `title` | string | Document title |
 | `mimeType` | string | Normalised MIME type |
@@ -164,7 +164,7 @@ of underlying API. Each hit MUST carry:
 Adapter authors MUST implement the per-DMS hit-to-envelope
 mapping; consuming apps MUST consume only this normalised
 shape. Per ADR-022, the normalisation logic lives in
-openconnector (one place per DMS) — sibling apps MUST NOT
+integriq (one place per DMS) — sibling apps MUST NOT
 reach into DMS-native response shapes.
 
 #### Scenario: Federated query across two DMS returns one merged envelope shape
@@ -182,7 +182,7 @@ reach into DMS-native response shapes.
 
 Per ADR-005, the adapter manifest entry MUST declare a
 `defaultReadOnly: boolean` field. Per-source overrides live on
-the openconnector source record's configuration JSON. When
+the integriq source record's configuration JSON. When
 `readOnly: true`, the adapter MUST reject every method whose
 effect on the remote system is mutative
 (`createFile`, `updateFile`, `deleteFile`, `setMetadata`,
@@ -205,7 +205,7 @@ which is itself derivable from the manifest's `capabilities[]`.
   no remote-side state SHALL change; **AND** the rejection MUST
   land in CallLog.
 
-### Requirement: Documents persisted on the Conduction side from a DCC adapter SHALL land as docudesk attachments referenced by URI, never as openconnector-owned files (REQ-DCC-006)
+### Requirement: Documents persisted on the Conduction side from a DCC adapter SHALL land as docudesk attachments referenced by URI, never as integriq-owned files (REQ-DCC-006)
 
 Documents persisted on the Conduction side MUST land as docudesk attachments.
 When a sibling app's workflow needs to retain a document
@@ -226,8 +226,8 @@ bytes anywhere itself beyond the request-scoped transfer buffer.
 - **WHEN** the workflow persists the file
 - **THEN** the file bytes MUST be POSTed to docudesk's file
   endpoint; the OR object MUST carry a docudesk URI; no file
-  bytes SHALL be written under openconnector's app data or
-  any openconnector-owned table.
+  bytes SHALL be written under integriq's app data or
+  any integriq-owned table.
 
 ### Requirement: Individual per-DMS adapters are explicitly out of scope for this spec — each adapter MUST ship in its own `add-openconnector-{slug}-adapter` change (REQ-DCC-007)
 
@@ -246,7 +246,7 @@ the category-level contract.
   `openspec/changes/add-openconnector-sharepoint-adapter/`
 - **WHEN** its proposal.md is inspected
 - **THEN** the `Depends on` line MUST include
-  `document-cms-connectors (openconnector)` and
+  `document-cms-connectors (integriq)` and
   `docudesk` (for the persistence path); the proposal MUST
   cite REQ-DCC-002 (capabilities), REQ-DCC-004 (search
   envelope), and REQ-DCC-006 (docudesk persistence) by REQ id.
