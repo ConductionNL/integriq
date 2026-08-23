@@ -41,7 +41,7 @@ const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
-const OR = '/index.php/apps/openregister/api/objects/openconnector'
+const OR = '/index.php/apps/openregister/api/objects/integriq'
 
 /**
  * Compute the integriq URL base for the current Nextcloud install.

@@ -47,7 +47,7 @@ import {
 } from '@playwright/test'
 import * as path from 'path'
 
-export const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+export const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 export const OC_API = '/index.php/apps/integriq/api'
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 

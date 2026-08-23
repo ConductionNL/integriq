@@ -19,7 +19,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe('Rules OR API — list', () => {

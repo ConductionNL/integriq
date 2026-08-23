@@ -32,7 +32,7 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "ocBase", "value": "{{base_url}}/index.php/apps/integriq/api" },
-    { "key": "orBase", "value": "{{base_url}}/index.php/apps/openregister/api/objects/openconnector" }
+    { "key": "orBase", "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq" }
   ],
   "item": [
     {
