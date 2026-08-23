@@ -4,9 +4,9 @@
  *
  * Chain E regression: manifest-driven page smoke test.
  *
- * Most openconnector pages render via nc-vue's built-in `CnIndexPage` /
+ * Most integriq pages render via nc-vue's built-in `CnIndexPage` /
  * `CnDetailPage` / `CnLogsPage` / `CnDashboardPage`, with their CRUD wired
- * against OR's `/api/objects/openconnector/{schema}/*` routes. Ten pages are
+ * against OR's `/api/objects/integriq/{schema}/*` routes. Ten pages are
  * `type: custom` and render a bespoke component named by the manifest.
  *
  * This spec navigates to EVERY manifest page route and asserts:
@@ -106,27 +106,28 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
 // In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
 // default for the apache-served dev container) `generateUrl` returns
-// `/apps/openconnector` and the Vue Router's `base` is set to that —
+// `/apps/integriq` and the Vue Router's `base` is set to that —
 // any URL prefixed with `/index.php/` then sits outside the router
 // base, so no route matches and the page renders empty. In CI's php -S
 // install (no htaccess processing) the inverse is true and only the
 // `/index.php/...` form works. Resolve at runtime via a HEAD probe.
-const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
-let _root: string | null = null
+// 🔴 The candidate-probe that used to live here could not answer that
+// question. Nextcloud serves the IDENTICAL SPA shell under both prefixes, so
+// `res.ok() && body.includes('integriq-main.js')` is true for the first
+// candidate every time — and on CI that is the prefix the router does NOT
+// honour. Every one of the 36 mount tests below therefore navigated to a URL
+// outside the router base, fell through the `'/:pathMatch(.*)*'` catch-all,
+// landed on the DASHBOARD, and then passed: they asserted only
+// "innerHTML.length > 100 and no console errors", which the dashboard
+// satisfies. 36 green tests photographing one page.
+//
+// Resolution now comes from `OC.generateUrl` — the function src/main.js itself
+// calls to build the router base — and each test asserts the router MATCHED
+// before looking at anything.
+import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
+
 async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
-	if (_root) return _root
-	for (const candidate of ROOT_CANDIDATES) {
-		const res = await page.request.get(`${candidate}/sources`, {
-			failOnStatusCode: false,
-		})
-		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
-			_root = candidate
-			return candidate
-		}
-	}
-	throw new Error(
-		'Neither /apps nor /index.php form serves the openconnector SPA shell',
-	)
+	return await resolveAppRoot(page)
 }
 
 /** One manifest page, transcribed verbatim from src/manifest.json. */
@@ -196,6 +197,7 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'index',
 	},
 	{ id: 'SynchronizationLogs', route: '/synchronizations/logs', type: 'logs' },
+	{ id: 'SynchronizationRuns', route: '/synchronization-runs', type: 'index' },
 	{
 		id: 'SynchronizationDetail',
 		route: '/synchronizations/:id',
@@ -211,7 +213,12 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'ApprovalsIndex',
 	},
-	{ id: 'Flows', route: '/flows', type: 'index' },
+	{
+		id: 'Flows',
+		route: '/flows',
+		type: 'custom',
+		component: 'FlowsIndex',
+	},
 	{
 		id: 'FlowDetail',
 		route: '/flows/:id',
@@ -253,7 +260,7 @@ function navigableRoute(page: ManifestPage): string {
 
 /**
  * Errors we ignore — these come from Nextcloud's own bootstrap, not
- * openconnector. Customer instances often surface deprecation warnings
+ * integriq. Customer instances often surface deprecation warnings
  * from third-party scripts that don't break the page.
  */
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
@@ -272,7 +279,7 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	// The user_status app returns HTTP 500 on this dev instance due to a
 	// PostgreSQL collation version mismatch (database was created with
 	// collation 2.41, OS provides 2.36). This is a pre-existing platform
-	// issue unrelated to openconnector — filter it globally.
+	// issue unrelated to integriq — filter it globally.
 	/Failed to load user status/i,
 	/user_status/i,
 	// Generic 500 resource failures that accompany the user_status 500.
@@ -312,20 +319,29 @@ test.describe('manifest pages — schema-driven render', () => {
 			const { errors } = attachConsoleSpy(page)
 
 			const root = await rootUrl(page)
-			// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`),
-			// so the route must be a hash fragment (`/apps/openconnector/#/sources`).
-			// A path-form deep-link (`/apps/openconnector/sources`) is ignored by
-			// the router and silently lands on the dashboard, so each page would
-			// be smoke-tested against the dashboard rather than its own component.
+			// The in-app router runs in PATH mode (`createWebHistory()`,
+			// src/main.js), so the route is a plain path
+			// (`/apps/integriq/sources`) — a hash fragment
+			// (`/apps/integriq/#/sources`) would now be ignored by the
+			// router and silently land on the dashboard, so each page would be
+			// smoke-tested against the dashboard rather than its own component.
 			// Use `domcontentloaded` rather than `networkidle` — NC's
 			// notification poll keeps the network busy indefinitely, so
 			// `networkidle` always times out. The SPA mounts after DOM
 			// ready, and the `#app-content` + content-length assertions
 			// below verify the mount completed.
-			await page.goto(`${root}/#${navigableRoute(pg)}`, {
+			const route = navigableRoute(pg)
+			await page.goto(`${root}${route}`, {
 				waitUntil: 'domcontentloaded',
 				timeout: 30_000,
 			})
+
+			// FIRST, and before any content assertion: did the router actually
+			// MATCH this route? The catch-all redirects an unmatched path to
+			// `/`, so the address bar is an exact test — and its absence is
+			// what let all 36 of these tests pass against the dashboard.
+			// Everything below is only meaningful once this holds.
+			await expectRouteMatched(page, route)
 
 			// The Nextcloud SPA shell mounts inside #app-content.
 			await expect(
@@ -510,7 +526,7 @@ test.describe('manifest schema validation', () => {
 				expect(
 					p.config?.register,
 					`${p.id} (type:${p.type}) is missing config.register`,
-				).toBe('openconnector')
+				).toBe('integriq')
 				expect(
 					p.config?.schema,
 					`${p.id} (type:${p.type}) is missing config.schema`,
