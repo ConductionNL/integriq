@@ -24,7 +24,7 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const APP_BASE = '/index.php/apps/integriq'
+const APP_BASE = '/index.php/apps/openconnector'
 
 test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-manifest delta)', () => {
 	const manifest = JSON.parse(
@@ -108,14 +108,14 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('catalog renders cards and the kind quick-filter narrows the grid', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const cards = page.getByTestId('catalog-item-card')
 		await expect(
@@ -144,14 +144,14 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('PDOK card shows a dormant badge while pdok.feature_flag is off', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const pdokCard = page
 			.getByTestId('catalog-item-card')
@@ -167,14 +167,14 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('BRP HaalCentraal card shows available (mock mode is not dormant)', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const brpCard = page
 			.getByTestId('catalog-item-card')
@@ -190,14 +190,14 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 	test('typing "brp" into the search narrows the grid to matching items', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const cards = page.getByTestId('catalog-item-card')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
@@ -230,14 +230,14 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		const pdokCard = page
 			.getByTestId('catalog-item-card')
@@ -266,14 +266,14 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 	test('instantiating a dormant source-template creates the Source (visible on Sources page)', async ({
 		page,
 	}) => {
-		// The integriq SPA is hash-routed (vue-router createWebHashHistory,
+		// The openconnector SPA is hash-routed (vue-router createWebHashHistory,
 		// unchanged from the Vue 2 `mode: 'hash'` build), so a bare path deep-link
-		// like `/apps/integriq/catalog` is ignored by the router and resolves
+		// like `/apps/openconnector/catalog` is ignored by the router and resolves
 		// to the default Dashboard route. Deep-link via the hash fragment so we
 		// actually land on the Catalog page. (These connector-catalog-ui specs were
 		// authored "per the test plan but NOT executed against a live instance", so
 		// this navigation was never validated before.)
-		await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/catalog`, { waitUntil: 'domcontentloaded' })
 
 		// xWiki seeds with isEnabled:false → dormant → Instantiate offered.
 		const card = page
@@ -291,7 +291,7 @@ test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', (
 		})
 
 		// The Source now appears in the Sources index.
-		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/#/sources`, { waitUntil: 'domcontentloaded' })
 		await expect(page.getByText('xWiki', { exact: false }).first()).toBeVisible({
 			timeout: 15_000,
 		})
