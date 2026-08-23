@@ -779,7 +779,7 @@
 				},
 				{
 					"name": "metrics#index admin (200, exposition format, all 11 metric names)",
-					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics 200', () => pm.response.to.have.status(200));", "const body = pm.response.text();", "['openconnector_info','openconnector_up','openconnector_sources_total','openconnector_calls_total','openconnector_synchronizations_total','openconnector_synchronization_runs_total','openconnector_endpoints_total','openconnector_jobs_total','openconnector_job_runs_total','openconnector_mappings_total','openconnector_rules_total'].forEach((n) => pm.test('metrics contains ' + n, () => pm.expect(body).to.include(n)));" ] } } ],
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics 200', () => pm.response.to.have.status(200));", "const body = pm.response.text();", "['integriq_info','integriq_up','integriq_sources_total','integriq_calls_total','integriq_synchronizations_total','integriq_synchronization_runs_total','integriq_endpoints_total','integriq_jobs_total','integriq_job_runs_total','integriq_mappings_total','integriq_rules_total'].forEach((n) => pm.test('metrics contains ' + n, () => pm.expect(body).to.include(n)));" ] } } ],
 					"request": {
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "GET",

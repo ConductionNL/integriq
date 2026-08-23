@@ -1840,6 +1840,8 @@ class SynchronizationService {
 	 * @param string $eventMutationType The triggering mutation: create|update|delete
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
 	 */
 	public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void {
 		// Integriq subscribes to OpenRegister's object lifecycle events

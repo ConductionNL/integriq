@@ -89,6 +89,8 @@ class MigrateToOpenRegister extends Command {
 	 * Configure the command name, description, and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/openconnector-storage-migration/spec.md#requirement-migration-class-must-provision-the-register-via-importfromapp
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:migrate-storage')

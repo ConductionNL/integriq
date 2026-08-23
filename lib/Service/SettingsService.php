@@ -129,6 +129,8 @@ class SettingsService {
 	 * @return array The current retention settings configuration.
 	 *
 	 * @throws \RuntimeException If settings retrieval fails.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-settingscontroller-must-shrink-to-connector-specific-actions-only
 	 */
 	public function getSettings(): array {
 		try {
