@@ -133,9 +133,7 @@ test.describe('REQ-PROM-006: Synchronization metrics', () => {
 		expect(body).toMatch(/^integriq_synchronizations_total\s+\d+/m)
 
 		expect(body).toMatch(/# HELP integriq_synchronization_runs_total/i)
-		expect(body).toMatch(
-			/# TYPE integriq_synchronization_runs_total counter/i,
-		)
+		expect(body).toMatch(/# TYPE integriq_synchronization_runs_total counter/i)
 		expect(body).toMatch(
 			/integriq_synchronization_runs_total\{status="[^"]+"\}\s+\d+/,
 		)
