@@ -106,7 +106,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @var string
 	 */
-	private const SOURCE_REGISTER = 'openconnector';
+	private const SOURCE_REGISTER = 'integriq';
 
 	/**
 	 * The OpenRegister schema Sources live in.
