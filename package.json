@@ -10,6 +10,7 @@
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "check:schema-l10n": "node scripts/check-schema-l10n.js",
     "check:l10n": "node scripts/check-l10n.js",
     "clean:l10n": "node scripts/clean-l10n.js",
     "find:unwrapped": "node scripts/find-unwrapped.js",
