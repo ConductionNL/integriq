@@ -38,10 +38,22 @@ const CONFIGURATIONS_API = '/index.php/apps/openregister/api/configurations'
  * Seeding here is cheaper and more honest than standing the suite down.
  */
 async function ensureConfigurationGroup(page: Page): Promise<number> {
-	const list = await page.request.get(`${CONFIGURATIONS_API}?_limit=50`, {
+	// NO QUERY STRING. This is a native-table controller, not the objects API:
+	// ConfigurationsController::index() takes `$this->request->getParams()`,
+	// unsets only `_route`, and passes the REST straight to the mapper as
+	// column filters. A paging parameter borrowed from the objects API —
+	// `?_limit=50` — therefore becomes a filter on a `_limit` column that does
+	// not exist, and the endpoint fails rather than ignoring it. (The objects
+	// API does the same thing more quietly: there an unknown parameter filters
+	// to an empty set, which is how learniq's suite came to blame its fixtures
+	// for data that was present all along.)
+	const list = await page.request.get(CONFIGURATIONS_API, {
 		headers: { Accept: 'application/json' },
 	})
-	expect(list.ok(), 'the configurations endpoint must be reachable').toBe(true)
+	expect(
+		list.ok(),
+		`the configurations endpoint must be reachable (HTTP ${list.status()})`,
+	).toBe(true)
 	const body = await list.json()
 	const existing = body.results ?? body.configurations ?? body ?? []
 	if (Array.isArray(existing) && existing.length > 0) return existing.length
