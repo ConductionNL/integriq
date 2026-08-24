@@ -86,7 +86,24 @@ concurrency:
   # This is hermiq's form, already live there. Pull requests keep the bare
   # group (so a PR still supersedes its own earlier run); push, dispatch and
   # schedule each get their own lane.
-  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'development')) && format('-{0}', github.event_name) || '' }}
+  #
+  # THE BRANCH RESTRICTION IS GONE, because it contradicted the sentence above.
+  #
+  # The suffix used to apply only when `ref_name` was `main` or `development`,
+  # so on every OTHER branch push and pull_request computed the SAME group —
+  # and `cancel-in-progress` made them kill each other. That became reachable
+  # when the push allow-list widened on 2026-08-14 to include `feat/**`,
+  # `fix/**`, `perf/**`, `refactor/**` and `chore/**`: those branches now get
+  # both a push run and a pull_request run for one commit.
+  #
+  # `quality / Quality Report` is a `needs:`-gated aggregator and reports
+  # FAILURE when its dependencies are CANCELLED, so the collision showed up as
+  # a red gate on a PR that had never actually been evaluated — and re-running
+  # collided the same way. See .github#563.
+  #
+  # A branch name is not a unique lane when two event types can each produce a
+  # run for it, so the event is now always part of the key.
+  group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
