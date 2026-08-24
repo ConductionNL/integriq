@@ -34,16 +34,26 @@ jobs:
       contents: write
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
-    # A called workflow receives NO secrets from its caller unless they are
-    # passed explicitly or inherited — `with:` carries inputs, never secrets,
-    # and the `permissions:` block above governs the TOKEN, not the secrets.
-    # Without this line `secrets.CF_API_TOKEN` is EMPTY inside the callee, so
-    # its "Publish to the Cloudflare Worker" step skips itself on its own
-    # guard and the run finishes GREEN having written only gh-pages, which
-    # nothing serves. The live site never changes and no check goes red to
-    # say so — the exact failure mode the pinned inputs below guard against,
-    # arriving one layer earlier.
-    secrets: inherit
+    # A reusable workflow receives NO secrets by default, and the
+    # `permissions:` block above governs the TOKEN, not the secrets. Without
+    # this block `secrets.CF_API_TOKEN` is empty inside the callee, its
+    # "Publish to the Cloudflare Worker" step skips itself on its own guard,
+    # and the run finishes GREEN having written only gh-pages — which nothing
+    # serves. The live site never changes and no check goes red to say so.
+    #
+    # Mapped explicitly rather than `secrets: inherit`, because `inherit`
+    # hands the callee EVERY secret this repo holds — signing cert and key,
+    # appstore token, deploy keys — for the sake of two Cloudflare values.
+    # This way only those two cross the boundary.
+    #
+    # The names also differ on each side (org `CLOUDFLARE_*`, callee `CF_*`),
+    # and `inherit` passes secrets under their ORIGINAL names — so it would
+    # have left `CF_API_TOKEN` empty even setting the exposure aside. Needs
+    # ConductionNL/.github#568: a mapping only compiles for secrets the callee
+    # declares.
+    secrets:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     with:
       # `integriq.conduction.nl` resolves as of 2026-08-23 — attached as a
       # second custom domain on the SAME `openconnector-docs` worker that
