@@ -177,14 +177,31 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 			enabled: true,
 			trigger: 'manual',
 			nodes: [
+				// `name` is what makes these nodes ASSERTABLE, and it has to be here
+				// rather than in the assertion below.
+				//
+				// @conduction/nextcloud-vue 2.15.0 rewrote the canvas on Vue Flow and
+				// fills each node's accessible name from `nodeLabel()`, which returns
+				// `node.name` first and otherwise DERIVES one from config:
+				//
+				//     no config keys        -> t('nextcloud-vue', 'not configured')
+				//     one key               -> `${key}: ${value}`
+				//
+				// Without a name, neither seeded node can be asserted on. `trigger1`
+				// has no config, so it would announce the TRANSLATED string "not
+				// configured" — green in CI's locale, red on a Dutch instance. `step1`
+				// would announce `synchronization: <runId>`, which is regenerated every
+				// run. Naming them fixes the cause instead of chasing the derived text.
 				{
 					id: 'trigger1',
+					name: 'Seeded manual trigger',
 					type: 'openregister.trigger-manual',
 					config: [],
 					position: { x: 80, y: 160 },
 				},
 				{
 					id: 'step1',
+					name: 'Seeded synchronization run',
 					type: 'openconnector.synchronization-run',
 					// A syntactically valid config (validateConfig() only requires a
 					// non-empty string) — this test proves the CANVAS renders the
@@ -253,16 +270,23 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 			'the canvas must mount and load the seeded flow, not an empty shell',
 		).toBeVisible({ timeout: 25_000 })
 
-		// The two seeded nodes render as placed canvas nodes. Nodes' accessible
-		// name IS their node id ("trigger1"/"step1") — the Steps palette's own
-		// list items are never named this way, so this can't accidentally match
-		// the palette instead of the canvas.
+		// The two seeded nodes render as placed canvas nodes, asserted by the
+		// `name` the seed gives them (see the nodes[] block above for why the
+		// name has to be seeded rather than derived).
+		//
+		// This used to assert the node IDs, because up to 2.11.1 the canvas
+		// passed nodes straight through and an unnamed node's accessible name
+		// fell back to its id. That was an accident of the pass-through, not a
+		// deliberate contract, and 2.15.0's Vue Flow rewrite ended it. The old
+		// comment here also argued the ids could not collide with the Steps
+		// palette; that reasoning is void now, so these names are chosen to be
+		// distinct from any palette entry instead.
 		await expect(
-			page.getByRole('button', { name: 'trigger1' }),
+			page.getByRole('button', { name: 'Seeded manual trigger' }),
 			'the seeded trigger node must render on the canvas',
 		).toBeVisible()
 		await expect(
-			page.getByRole('button', { name: 'step1' }),
+			page.getByRole('button', { name: 'Seeded synchronization run' }),
 			'the seeded synchronization-run node must render on the canvas',
 		).toBeVisible()
 
