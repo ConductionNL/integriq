@@ -43,7 +43,7 @@ Integriq supports the OAuth 2.0 protocol with client credentials and password cr
 > Audit any leftover data (key names only, never values) with
 > `occ integriq:authentication-config`, then remove it with
 > `occ integriq:authentication-config --remove-authentication-config`.
-> See [ocon#232](https://github.com/ConductionNL/openconnector/issues/232).
+> See [ocon#232](https://github.com/ConductionNL/integriq/issues/232).
 
 When using OAuth, Integriq supports the following parameters:
 

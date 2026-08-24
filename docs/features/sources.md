@@ -39,7 +39,7 @@ Sources support multiple authentication strategies, configured in the source's
 > occ integriq:authentication-config --remove-authentication-config
 > ```
 >
-> See [ocon#232](https://github.com/ConductionNL/openconnector/issues/232).
+> See [ocon#232](https://github.com/ConductionNL/integriq/issues/232).
 
 ### Brokered Credentials (`credentialRef`) — recommended
 
