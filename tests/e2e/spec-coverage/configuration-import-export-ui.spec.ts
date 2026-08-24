@@ -48,7 +48,21 @@ async function gotoCatalog(page: Page): Promise<void> {
 // TRACKED IN #1187. (The rationale previously ended at "separate feature-test
 // work" with no tracker; #1187 carries the re-enable checklist for all four
 // skipped blocks in this suite.)
-test.describe.skip('REQ-006: Export a configuration from the UI', () => {
+// `test.skip(true, reason)` at describe scope rather than `test.describe.skip`.
+// Both disable the block; only this form puts the REASON in the run's report.
+// The rationale above is thorough and correctly tracked, but a comment is
+// invisible to anyone reading a Playwright run — the report showed four skipped
+// tests with no explanation at all, indistinguishable from a spec someone
+// disabled and forgot. See ConductionNL/.github#559.
+test.describe('REQ-006: Export a configuration from the UI', () => {
+	test.skip(
+		true,
+		'unvalidated feature spec — assumes top-level Export/Import buttons; the '
+			+ 'live CnIndexPage puts them in the Actions overflow menu, and the flow '
+			+ 'needs a seeded configuration group + upload fixtures. Re-enable '
+			+ 'checklist in #1187.',
+	)
+
 	// @e2e configuration-export-import::exporting-a-configuration-from-the-ui-produces-a-redacted-downloadable-file
 	test('export dialog downloads a JSON file with no credential fields', async ({
 		page,
@@ -94,7 +108,14 @@ test.describe.skip('REQ-006: Export a configuration from the UI', () => {
 // toolbar "Actions" overflow menu, not as a top-level button, and the preview
 // flow needs a seeded configuration group plus upload fixtures.
 // TRACKED IN #1187.
-test.describe.skip('REQ-007/REQ-008: Import preview + confirmation', () => {
+test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
+	test.skip(
+		true,
+		'unvalidated feature spec — needs a seeded configuration group plus upload '
+			+ 'fixtures, and drives buttons the live CnIndexPage renders inside the '
+			+ 'Actions overflow menu. Re-enable checklist in #1187.',
+	)
+
 	// @e2e configuration-export-import::preview-classifies-creates-updates-and-collisions
 	test('uploading a document shows the creates/updates preview without writing', async ({
 		page,
