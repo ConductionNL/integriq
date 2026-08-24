@@ -8,7 +8,7 @@ depends_on: []
 Integriq is Technical Core and already routed at `/connext`. Before beta
 release, its four public-facing surfaces — `appinfo/info.xml`, `src/manifest.json`
 nav, the `conduction.nl/apps/openconnector` product page (EN+NL), and the
-`openconnector.conduction.nl` docs — must agree on feature vocabulary, version,
+`integriq.conduction.nl` docs — must agree on feature vocabulary, version,
 and dependency declarations. They did not:
 
 - `info.xml` had a single no-lang `<summary>` ("Gateway and Service bus
@@ -97,7 +97,7 @@ NL translation)
   RotatingCard, and the entire Showcase block rewritten per the table above.
 - Fixed a dead-docs-link bug found while reconciling: NL page's `secondaryCta`
   pointed at `docs.conduction.nl/openconnector` (does not exist); corrected to
-  `openconnector.conduction.nl` to match the EN page and the actual docs deploy
+  `integriq.conduction.nl` to match the EN page and the actual docs deploy
   topology.
 
 ### Docs (`openconnector/docs/`)

@@ -38,7 +38,7 @@
       three verified capabilities: gov-standard adapters, dead-letter replay,
       endpoint rule pipeline. Remove the now-unused `AgentTrace` import.
 - [x] 3.7 Fix NL page's dead `docs.conduction.nl/openconnector` link →
-      `openconnector.conduction.nl`.
+      `integriq.conduction.nl`.
 
 ## 4. Fix docs
 
