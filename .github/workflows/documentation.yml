@@ -34,6 +34,16 @@ jobs:
       contents: write
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    # A called workflow receives NO secrets from its caller unless they are
+    # passed explicitly or inherited — `with:` carries inputs, never secrets,
+    # and the `permissions:` block above governs the TOKEN, not the secrets.
+    # Without this line `secrets.CF_API_TOKEN` is EMPTY inside the callee, so
+    # its "Publish to the Cloudflare Worker" step skips itself on its own
+    # guard and the run finishes GREEN having written only gh-pages, which
+    # nothing serves. The live site never changes and no check goes red to
+    # say so — the exact failure mode the pinned inputs below guard against,
+    # arriving one layer earlier.
+    secrets: inherit
     with:
       # `integriq.conduction.nl` resolves as of 2026-08-23 — attached as a
       # second custom domain on the SAME `openconnector-docs` worker that
