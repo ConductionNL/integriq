@@ -11,66 +11,114 @@
  * and are covered by PHPUnit
  * (tests/Unit/Controller/ConfigurationControllerTest.php).
  *
- * NOTE (connector-catalog-ui apply): written per the test plan but NOT
- * executed against a live instance in the build environment — requires a
- * running Nextcloud with at least one configuration group. Run via
- * `npx playwright test tests/e2e/spec-coverage/configuration-import-export-ui.spec.ts`
- * against a provisioned instance.
+ * This file was written per the test plan and never executed, then disabled
+ * with a reason that turned out to describe the wrong problem. It now seeds its
+ * own configuration group and drives the real UI; see openStoreActions() for
+ * what the stand-down reason got right and what nobody had checked.
  */
 
 import { test, expect, type Page } from '@playwright/test'
 
 const APP_BASE = '/index.php/apps/integriq'
 
+/** The page that actually carries the configuration header actions. */
+const STORE_URL = `${APP_BASE}/store`
+
+/** OpenRegister's native configuration-group table (not an object schema). */
+const CONFIGURATIONS_API = '/index.php/apps/openregister/api/configurations'
+
 /**
- * Open the Catalog page (which hosts the configuration import/export
- * header actions — see src/manifest.json Catalog `_configurationUiNote`).
+ * Ensure at least one configuration group exists, and return how many there are.
+ *
+ * The suite used to be disabled partly because it "needs a seeded configuration
+ * group". It does — and it can make one: configuration groups are a NATIVE
+ * OpenRegister table (`lib/Db/Configuration.php`) exposed at
+ * `/apps/openregister/api/configurations`, whose `create()` accepts the entity's
+ * own fields and requires admin, which is what the e2e session already is.
+ * Seeding here is cheaper and more honest than standing the suite down.
  */
-async function gotoCatalog(page: Page): Promise<void> {
-	// Hash-routed SPA (createWebHashHistory): deep-link via the hash fragment,
-	// else a bare `/catalog` path resolves to the default Dashboard route.
-	await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
-	await expect(page.getByTestId('catalog-item-card').first()).toBeVisible({
-		timeout: 15_000,
+async function ensureConfigurationGroup(page: Page): Promise<number> {
+	const list = await page.request.get(`${CONFIGURATIONS_API}?_limit=50`, {
+		headers: { Accept: 'application/json' },
 	})
+	expect(list.ok(), 'the configurations endpoint must be reachable').toBe(true)
+	const body = await list.json()
+	const existing = body.results ?? body.configurations ?? body ?? []
+	if (Array.isArray(existing) && existing.length > 0) return existing.length
+
+	const created = await page.request.post(CONFIGURATIONS_API, {
+		headers: { Accept: 'application/json' },
+		data: {
+			title: 'e2e configuration group',
+			description: 'Seeded by configuration-import-export-ui.spec.ts',
+			type: 'configuration',
+			app: 'integriq',
+			version: '1.0.0',
+		},
+	})
+	expect(created.ok(), 'seeding a configuration group must succeed').toBe(true)
+	return 1
 }
 
-// SKIPPED (unvalidated feature specs, not a Vue-3 migration regression): as the
-// file header NOTE states, these were "written per the test plan but NOT executed
-// against a live instance". They assume a UI the live CnIndexPage does not
-// present — the Export/Import actions live inside the toolbar "Actions" overflow
-// menu (not as top-level buttons the specs click by role/name), and the flows
-// need a seeded configuration group + upload fixtures. The migration render is
-// verified live: the "Export configuration" action opens ExportConfigurationDialog
-// with its (v9-migrated) NcSelect. Re-enabling needs the specs reworked to drive
-// the Actions menu + provisioned config groups — separate feature-test work.
-//
-// TRACKED IN #1187. (The rationale previously ended at "separate feature-test
-// work" with no tracker; #1187 carries the re-enable checklist for all four
-// skipped blocks in this suite.)
-// `test.skip(true, reason)` at describe scope rather than `test.describe.skip`.
-// Both disable the block; only this form puts the REASON in the run's report.
-// The rationale above is thorough and correctly tracked, but a comment is
-// invisible to anyone reading a Playwright run — the report showed four skipped
-// tests with no explanation at all, indistinguishable from a spec someone
-// disabled and forgot. See ConductionNL/.github#559.
-test.describe('REQ-006: Export a configuration from the UI', () => {
-	test.skip(
-		true,
-		'unvalidated feature spec — assumes top-level Export/Import buttons; the '
-			+ 'live CnIndexPage puts them in the Actions overflow menu, and the flow '
-			+ 'needs a seeded configuration group + upload fixtures. Re-enable '
-			+ 'checklist in #1187.',
-	)
+/**
+ * Open the Store page and its Actions overflow menu.
+ *
+ * TWO CORRECTIONS ARE BAKED IN HERE, both of which this suite got wrong.
+ *
+ * 1. THE PAGE. The old helper opened `${APP_BASE}/catalog` and its docblock
+ *    said that page "hosts the configuration import/export header actions".
+ *    No route containing "catalog" exists in this app's 36 manifest pages.
+ *    `export-configuration` / `import-configuration` are `headerActions` on the
+ *    STORE page (`/store`), exactly as that page's own `_configurationUiNote`
+ *    records. Navigating to a route that does not exist resolves to the default
+ *    page, so every assertion here would have run against the Dashboard.
+ *
+ * 2. THE ROUTER. The old comment claimed "Hash-routed SPA
+ *    (createWebHashHistory)" and then used a path URL with no hash — the note
+ *    and the code contradicted each other. integriq builds
+ *    `createWebHistory(generateUrl('/apps/integriq'))`, so the PATH form is
+ *    correct and the comment was simply wrong.
+ *
+ * The actions are not top-level buttons: CnActionsBar renders manifest
+ * `headerActions` as `NcActionButton`s inside `<NcActions data-testid=
+ * "cn-actions">`, after the built-in Refresh entry. So the menu has to be
+ * opened first — which is what the old skip reason described but nothing did.
+ */
+async function openStoreActions(page: Page): Promise<void> {
+	await page.goto(STORE_URL, { waitUntil: 'domcontentloaded' })
+	const actions = page.getByTestId('cn-actions')
+	await expect(actions, 'the Store page must render its actions bar').toBeVisible({
+		timeout: 15_000,
+	})
+	await actions.getByRole('button').first().click()
+}
 
+// RE-ENABLED (#1187). The stand-down reason named three obstacles; each has
+// been dealt with rather than described:
+//
+//   "assumes top-level Export/Import buttons"  -> openStoreActions() opens the
+//        NcActions overflow, which is where CnActionsBar renders manifest
+//        headerActions.
+//   "needs a seeded configuration group"       -> ensureConfigurationGroup()
+//        creates one through OpenRegister's configurations API, which the admin
+//        e2e session may write.
+//   "upload fixtures"                          -> the import block below builds
+//        its payload in-process with setInputFiles({ buffer }); no checked-in
+//        binary is needed.
+//
+// A fourth obstacle was never in the reason because nobody had checked: the
+// helper opened `/catalog`, a route this app does not have. See
+// openStoreActions() for that and for the contradictory hash-router comment.
+test.describe('REQ-006: Export a configuration from the UI', () => {
 	// @e2e configuration-export-import::exporting-a-configuration-from-the-ui-produces-a-redacted-downloadable-file
 	test('export dialog downloads a JSON file with no credential fields', async ({
 		page,
 	}) => {
-		await gotoCatalog(page)
+		await ensureConfigurationGroup(page)
+		await openStoreActions(page)
 
 		await page
-			.getByRole('button', { name: /Export configuration/i })
+			.getByRole('menuitem', { name: /Export configuration/i })
 			.first()
 			.click()
 		const dialog = page.getByTestId('export-configuration-dialog')
@@ -104,26 +152,20 @@ test.describe('REQ-006: Export a configuration from the UI', () => {
 	})
 })
 
-// SKIPPED — same rationale as REQ-006 above: the Import action lives in the
-// toolbar "Actions" overflow menu, not as a top-level button, and the preview
-// flow needs a seeded configuration group plus upload fixtures.
-// TRACKED IN #1187.
+// RE-ENABLED (#1187) — same three obstacles as REQ-006, same treatment. The
+// "upload fixtures" half of the reason was already untrue when it was written:
+// every test in this block builds its payload in-process with
+// `setInputFiles({ buffer })`, so no checked-in file was ever required.
 test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
-	test.skip(
-		true,
-		'unvalidated feature spec — needs a seeded configuration group plus upload '
-			+ 'fixtures, and drives buttons the live CnIndexPage renders inside the '
-			+ 'Actions overflow menu. Re-enable checklist in #1187.',
-	)
-
 	// @e2e configuration-export-import::preview-classifies-creates-updates-and-collisions
 	test('uploading a document shows the creates/updates preview without writing', async ({
 		page,
 	}) => {
-		await gotoCatalog(page)
+		await ensureConfigurationGroup(page)
+		await openStoreActions(page)
 
 		await page
-			.getByRole('button', { name: /Import configuration/i })
+			.getByRole('menuitem', { name: /Import configuration/i })
 			.first()
 			.click()
 		const dialog = page.getByTestId('import-preview-dialog')
@@ -160,10 +202,11 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 	test('an unresolvable slug reference blocks confirmation until acknowledged', async ({
 		page,
 	}) => {
-		await gotoCatalog(page)
+		await ensureConfigurationGroup(page)
+		await openStoreActions(page)
 
 		await page
-			.getByRole('button', { name: /Import configuration/i })
+			.getByRole('menuitem', { name: /Import configuration/i })
 			.first()
 			.click()
 		await page.getByTestId('import-file-input').setInputFiles({
@@ -204,10 +247,11 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 	test('confirming the import writes the entities and flags credential re-entry', async ({
 		page,
 	}) => {
-		await gotoCatalog(page)
+		await ensureConfigurationGroup(page)
+		await openStoreActions(page)
 
 		await page
-			.getByRole('button', { name: /Import configuration/i })
+			.getByRole('menuitem', { name: /Import configuration/i })
 			.first()
 			.click()
 		await page.getByTestId('import-file-input').setInputFiles({
