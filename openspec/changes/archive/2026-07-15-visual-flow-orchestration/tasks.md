@@ -187,7 +187,7 @@
 - **files**: N/A (GitHub issues in `ConductionNL/openconnector`)
 - **acceptance_criteria**:
   - GIVEN this change is archived THEN three follow-up issues exist: (1) drag-and-drop canvas UI for the step editor, (2) parallel/fan-out step execution, (3) loop/iteration step types — each referencing this change's proposal.md Out of Scope section
-- [x] Implement — filed on Codeberg (the app's actual live issue tracker post-migration; `ConductionNL/openconnector` on GitHub is archived, per `git remote -v` → `codeberg.org/Conduction/openconnector`): [#206](https://codeberg.org/Conduction/openconnector/issues/206) (canvas UI), [#207](https://codeberg.org/Conduction/openconnector/issues/207) (fan-out), [#208](https://codeberg.org/Conduction/openconnector/issues/208) (loops).
+- [x] Implement — filed on Codeberg (believed at the time to be the app's live issue tracker; `ConductionNL/openconnector` on GitHub was read as archived, per `git remote -v` → `codeberg.org/Conduction/openconnector`): Codeberg issues `openconnector#206` (canvas UI), `#207` (fan-out), `#208` (loops) — all pre-migration, not migrated to GitHub. *(Correction, added later: that reading was wrong. A `git remote` URL is not the current repo name — GitHub redirects renames. The live repo is `ConductionNL/integriq` on GitHub, which is now the only issue tracker; Codeberg is retired.)*
 - [x] Test — verified all three issues exist via the Codeberg API (`GET /repos/Conduction/openconnector/issues/{206,207,208}`, all `state: open`).
 
 ## Verification
