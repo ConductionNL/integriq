@@ -138,12 +138,21 @@ class FlowOwner {
 	 */
 	public function runAs(IUser $user, callable $callback): mixed {
 		$priorSessionUser = $this->userSession->getUser();
-		$this->userSession->setUser($user);
+
+		// 🔴 Volatile, not `setUser()`. This is a scoped identity for one flow
+		// step, and `setUser()` would persist it into the PHP session — where the
+		// `finally` below cannot reach it if the step dies on a fatal rather than
+		// an exception.
+		//
+		// This duplicate of OpenRegister's `ObjectService::runAs()` is retired in
+		// its own change; until then it must at least not carry the defect the
+		// canonical one no longer has. See ADR-099.
+		$this->userSession->setVolatileActiveUser($user);
 
 		try {
 			return $callback();
 		} finally {
-			$this->userSession->setUser($priorSessionUser);
+			$this->userSession->setVolatileActiveUser($priorSessionUser);
 		}
 
 	}//end runAs()

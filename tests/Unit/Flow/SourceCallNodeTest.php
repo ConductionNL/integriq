@@ -775,7 +775,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($prior);
 
 		$seen = [];
-		$this->userSession->method('setUser')->willReturnCallback(
+		$this->userSession->method('setVolatileActiveUser')->willReturnCallback(
 			static function (?IUser $user) use (&$seen): void {
 				$seen[] = $user;
 			}
