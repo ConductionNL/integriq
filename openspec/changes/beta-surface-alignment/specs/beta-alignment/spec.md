@@ -5,7 +5,7 @@
 ### Requirement: Public-facing surfaces SHALL only claim verified, shipped capabilities (REQ-BA-001)
 
 Integriq's `appinfo/info.xml` description, the `conduction.nl/apps/openconnector`
-product page (EN + NL), and the `openconnector.conduction.nl` docs MUST only
+product page (EN + NL), and the `integriq.conduction.nl` docs MUST only
 describe connector protocols, adapters, and compliance claims that are
 demonstrably implemented in `lib/` at the time of writing. A protocol or
 adapter name MUST NOT appear on a public surface unless it is traceable to a

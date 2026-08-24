@@ -326,7 +326,7 @@
       "id": "Documentation",
       "label": "Documentation",
       "icon": "BookOpenVariantOutline",
-      "href": "https://openconnector.conduction.nl",
+      "href": "https://integriq.conduction.nl",
       "section": "footer",
       "order": 90
     },
@@ -353,7 +353,7 @@
       "type": "roadmap",
       "title": "Features & roadmap",
       "config": {
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -665,7 +665,7 @@
             "gridHeight": 4
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -732,7 +732,7 @@
             "handler": "viewLogsHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "slots": {
         "form-fields": "SourceFormFields"
@@ -1028,7 +1028,7 @@
             }
           ]
         },
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1213,7 +1213,7 @@
             "handler": "viewLogsHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "slots": {
         "form-fields": "EndpointFormFields"
@@ -1279,7 +1279,7 @@
             }
           ]
         },
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1402,7 +1402,7 @@
             "route": "ConsumerDetail"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "slots": {
         "form-dialog": "ConsumerEditorModal"
@@ -1624,7 +1624,7 @@
             }
           ]
         },
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1668,7 +1668,7 @@
             "route": "ApiProductDetail"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1681,7 +1681,7 @@
       "config": {
         "register": "integriq",
         "schema": "api_product",
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1721,7 +1721,7 @@
             "handler": "manageSigningHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "slots": {
         "form-fields": "SubscriptionActionFields"
@@ -1737,7 +1737,7 @@
       "config": {
         "register": "integriq",
         "schema": "notificaties_abonnement",
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -1841,7 +1841,7 @@
             "handler": "viewLogsHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "_note": "flow-native-synchronization task 3.2: Jobs become trigger-schedule flows (task 3.3). The page, its actions and the job runner all stay — `below-header` renders AutomationDeprecationNotice between the header and the actions bar, stating the direction of travel and offering a way to the Flows index. Nothing is removed here; page removal is task 3.4, gated on the task-2.2 benchmark.",
       "slots": {
@@ -1979,7 +1979,7 @@
             "handler": "testMappingModalHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column MappingEditorModal. View still navigates to the MappingDetail page for a deep-linkable URL.",
       "slots": {
@@ -2029,7 +2029,7 @@
             "route": "RuleDetail"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by RuleEditorModal. The `includeFields` list that used to sit here is gone with it: it produced free-text inputs for the enum-less `action`/`timing`/`type` strings and could reach neither `conditions` (a `type: object` property, dropped by fieldsFromSchema) nor `order` nor the nested `configuration.error.*` fields. Per-type parameters beyond `error` are authored on the RuleDetail page, which hosts all 18 views/Rule/actionForms/ components — that is what \"Open full editor\" navigates to.",
       "slots": {
@@ -2125,7 +2125,7 @@
             "target": "SynchronizationContracts"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       },
       "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column SynchronizationEditorModal. `open-editor` and the row click still navigate to the SynchronizationDetail page, which carries what the modal omits (cursor reset, live subscription).",
       "slots": {
@@ -2152,7 +2152,7 @@
           "enabled": true,
           "showMetadata": true
         },
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -2290,7 +2290,7 @@
             "handler": "viewLogsHandler"
           }
         ],
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -2404,7 +2404,7 @@
             }
           ]
         },
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -2503,7 +2503,7 @@
       "config": {
         "register": "integriq",
         "schema": "approval_request",
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -2707,7 +2707,7 @@
           "enabled": true,
           "showMetadata": false
         },
-        "documentationUrl": "https://openconnector.conduction.nl",
+        "documentationUrl": "https://integriq.conduction.nl",
         "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
       }
     },
@@ -2720,7 +2720,7 @@
       "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
       "config": {
         "register": "integriq",
-        "documentationUrl": "https://openconnector.conduction.nl"
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
