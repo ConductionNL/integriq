@@ -1,12 +1,16 @@
 name: Documentation
 
 on:
+  # `development` is where the work lands. This used to trigger on a
+  # `documentation` branch that exists but nobody updates — so the workflow
+  # was green and idle while the live site aged. Measured today:
+  # openconnector.conduction.nl and integriq.conduction.nl both still serve
+  # the pre-rename "OpenConnector" title while docs/docusaurus.config.js
+  # says 'Integriq'.
   push:
-    branches:
-      - documentation
+    branches: [development]
   pull_request:
-    branches:
-      - documentation
+    branches: [development]
 
 jobs:
   deploy:
@@ -19,7 +23,7 @@ jobs:
     #
     # ⚠️ `packages: write` is load-bearing at RUNTIME, not merely statically:
     # the callee's `build-image` input DEFAULTS TO TRUE, so the `image` job
-    # really does run on a push to `documentation` and really does push to
+    # really does run on a push to `development` and really does push to
     # GHCR. Dropping it 403s that push.
     #
     # It would be required even if that job were disabled, because GitHub
@@ -31,12 +35,17 @@ jobs:
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     with:
-      # FROZEN on the OLD id during the app-id rename. This is a live DNS
-      # record and the GitHub Pages CNAME; integriq.conduction.nl does not
-      # resolve yet. Moving it here just points readers at a host that does
-      # not exist (measured during the dossiq rename: the new name answered
-      # HTTP 000 while the old one answered 200). It moves together with
-      # docs/static/CNAME and the DNS record, in a separate pass.
+      # `integriq.conduction.nl` resolves as of 2026-08-23 — attached as a
+      # second custom domain on the SAME `openconnector-docs` worker that
+      # serves `openconnector.conduction.nl`. Both hosts answer 200.
       cname: integriq.conduction.nl
+
       docs-hosts: openconnector.conduction.nl,integriq.conduction.nl
-      source-folder: docusaurus
+
+      # The worker that ALREADY holds both custom domains. Without this the
+      # callee derives the name from `cname` — `integriq-docs` — which does
+      # not exist. Deploying that would create a SECOND worker while both
+      # custom domains keep routing to `openconnector-docs`: every deploy
+      # green, reaching nobody. Renaming the worker is a Cloudflare-side move,
+      # not something this file can perform.
+      worker-name: openconnector-docs
