@@ -129,6 +129,34 @@
 			     non-destructive; declared in both hooks for the same reason the
 			     two steps above it are. -->
 			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
+			<!-- SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+			     OpenRegister resolves the two halves of a configuration by
+			     DIFFERENT keys: a REGISTER by slug alone
+			     (RegisterMapper::find), a SCHEMA by the PAIR
+			     (SchemaMapper::findByApplicationAndSlug(slug, application)).
+			     This app now passes `appId: Application::APP_ID` = `integriq`,
+			     while every schema it already owns still carries
+			     `application = openconnector` — so the pair matches nothing,
+			     and ImportHandler's not-found branch is not an error path, it
+			     is the "create a new one" path. The import would build a
+			     SECOND, EMPTY schema set under the new application id while
+			     every stored object stayed bound to the old rows. Nothing
+			     errors; the app renders empty collections.
+
+			     Measured on a live install: 200 schemas still under
+			     `openconnector`, and ALL 200 already have a twin under
+			     `integriq` — the fork has already happened here. This step
+			     therefore REFUSES all 200 and logs them, because re-pointing
+			     would leave two rows sharing (application, slug) and
+			     findByApplicationAndSlug() caps at one row: one would silently
+			     win every lookup and the other's objects would become
+			     unreachable. Choosing between them is a decision about data,
+			     not a migration.
+
+			     Never deletes a schema, and never throws — it runs under
+			     <install>, where an escaping exception aborts the install and
+			     the app never enables. -->
+			<step>OCA\Integriq\Repair\MigrateSchemaApplicationId</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
 			<!-- Third leg of the app-id rename, and the one that lives in
 			     OpenRegister rather than in oc_appconfig. A job object stores its
@@ -198,6 +226,34 @@
 			     non-destructive; declared in both hooks for the same reason the
 			     two steps above it are. -->
 			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
+			<!-- SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+			     OpenRegister resolves the two halves of a configuration by
+			     DIFFERENT keys: a REGISTER by slug alone
+			     (RegisterMapper::find), a SCHEMA by the PAIR
+			     (SchemaMapper::findByApplicationAndSlug(slug, application)).
+			     This app now passes `appId: Application::APP_ID` = `integriq`,
+			     while every schema it already owns still carries
+			     `application = openconnector` — so the pair matches nothing,
+			     and ImportHandler's not-found branch is not an error path, it
+			     is the "create a new one" path. The import would build a
+			     SECOND, EMPTY schema set under the new application id while
+			     every stored object stayed bound to the old rows. Nothing
+			     errors; the app renders empty collections.
+
+			     Measured on a live install: 200 schemas still under
+			     `openconnector`, and ALL 200 already have a twin under
+			     `integriq` — the fork has already happened here. This step
+			     therefore REFUSES all 200 and logs them, because re-pointing
+			     would leave two rows sharing (application, slug) and
+			     findByApplicationAndSlug() caps at one row: one would silently
+			     win every lookup and the other's objects would become
+			     unreachable. Choosing between them is a decision about data,
+			     not a migration.
+
+			     Never deletes a schema, and never throws — it runs under
+			     <install>, where an escaping exception aborts the install and
+			     the app never enables. -->
+			<step>OCA\Integriq\Repair\MigrateSchemaApplicationId</step>
 			<step>OCA\Integriq\Repair\InitializeRegister</step>
 			<!-- See the note on this step in <post-migration>. Idempotent, and a
 			     no-op on a first install (no stored jobs yet), but declared here
