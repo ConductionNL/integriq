@@ -136,9 +136,29 @@ test.describe('REQ-006: Export a configuration from the UI', () => {
 		const dialog = page.getByTestId('export-configuration-dialog')
 		await expect(dialog).toBeVisible({ timeout: 10_000 })
 
-		// Pick the first configuration group in the NcSelect.
-		await dialog.getByRole('combobox').first().click()
-		await page.getByRole('option').first().click()
+		// Pick a configuration group. NcSelect wraps vue-select, whose options
+		// exist in the DOM only while the dropdown is open — clicking the
+		// combobox focuses it but does not reliably open it, and the previous
+		// version of this line then waited out the full timeout on
+		// `getByRole('option')` against a dropdown that was never opened. The
+		// failure snapshot shows the dialog with `combobox [active]` and no
+		// listbox at all.
+		//
+		// Keyboard is the reliable path: ArrowDown opens the list and highlights
+		// the first option, Enter takes it.
+		const combobox = dialog.getByRole('combobox').first()
+		await combobox.click()
+		await combobox.press('ArrowDown')
+		await combobox.press('Enter')
+
+		// Assert the selection actually landed, rather than trusting the
+		// keystrokes: the confirm button is disabled until a group is chosen, so
+		// it becoming enabled IS the proof, and a failure here names the real
+		// problem instead of surfacing later as a stuck download.
+		await expect(
+			page.getByTestId('export-configuration-confirm'),
+			'choosing a configuration group must enable Export',
+		).toBeEnabled({ timeout: 10_000 })
 
 		const downloadPromise = page.waitForEvent('download')
 		await page.getByTestId('export-configuration-confirm').click()
@@ -304,7 +324,31 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 			'apikey',
 		)
 
-		// The imported source appears on the Sources index (REQ-008 written-check).
+		// REQ-008 written-check, asserted in two steps so a failure says WHICH
+		// half broke.
+		//
+		// First the write itself, against the store: "the import writes the
+		// entities" is a claim about persistence, and the import dialog has
+		// already reported success by this point. If this assertion is the one
+		// that fails, the dialog is lying — which is worth knowing plainly
+		// rather than reading it off a missing table row.
+		const written = await page.request.get(
+			'/index.php/apps/openregister/api/objects/integriq/source',
+			{ headers: { Accept: 'application/json' } },
+		)
+		expect(
+			written.ok(),
+			`sources must be listable after import (HTTP ${written.status()})`,
+		).toBe(true)
+		const sources = (await written.json()).results ?? []
+		expect(
+			sources.some((s: Record<string, unknown>) =>
+				String(s.name ?? '').includes('E2E imported source'),
+			),
+			'the confirmed import must have written the source',
+		).toBe(true)
+
+		// Then the surface a user would look at.
 		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 		await expect(
 			page.getByText('E2E imported source', { exact: false }).first(),
