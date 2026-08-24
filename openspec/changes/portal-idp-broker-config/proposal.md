@@ -8,11 +8,11 @@ depends_on: [portal-idp-broker]
 **Status:** blocked — do not start design/tasks artifacts until Open Decisions
 D1–D5 are recorded (see `openspec/changes/portal-idp-broker/proposal.md`
 §"Open Questions — decisions for the human"). Tracking issue:
-[Conduction/openconnector#189](https://codeberg.org/Conduction/openconnector/issues/189).
+Codeberg issue #189 (pre-migration tracker, not migrated to GitHub).
 
 **Chain position:** link 1 of the `digid-eherkenning-auth-adapter`
 implementation chain (proposal §Chaining narrative in `portal-idp-broker`,
-tracking [Conduction/openconnector#99](https://codeberg.org/Conduction/openconnector/issues/99)).
+tracking Codeberg issue #99 (pre-migration tracker, not migrated to GitHub)).
 
 ## Summary
 
