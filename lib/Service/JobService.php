@@ -423,7 +423,12 @@ class JobService {
 				);
 			}
 
-			$this->userSession->setUser($user);
+			// Volatile: a job's acting identity belongs to the job, not to any
+			// session. `setUser()` would also write `user_id` into the PHP
+			// session, and the `finally` below does not run on a fatal — so a
+			// crashed job could leave its identity behind for whatever ran next
+			// in the same process. See ADR-099.
+			$this->userSession->setVolatileActiveUser($user);
 			$sessionUserOverridden = true;
 		}//end if
 
@@ -483,7 +488,7 @@ class JobService {
 			// Always restore the prior session user so identity does not bleed
 			// across jobs in the same cron pass (#1006).
 			if ($sessionUserOverridden === true) {
-				$this->userSession->setUser($priorSessionUser);
+				$this->userSession->setVolatileActiveUser($priorSessionUser);
 			}
 		}
 

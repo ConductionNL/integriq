@@ -435,7 +435,25 @@ class AuthorizationService {
 
 		$this->validatePayload(payload: $payload);
 
-		$this->userSession->setUser($this->userManager->get($issuerData['userId'] ?? ''));
+		// 🔴 `setVolatileActiveUser()`, NOT `setUser()`.
+		//
+		// The two differ in one way that decides a security property here:
+		// `setUser()` also writes `user_id` into the PHP session, and
+		// `lib/base.php` starts a real session on every request but `status.php`.
+		// This runs on a `#[PublicPage]` endpoint dispatch route, and unlike a
+		// scoped `runAs()` there is NOTHING here that restores the previous
+		// identity afterwards — the request simply ends.
+		//
+		// So with `setUser()`, an inbound call authenticated by credential wrote
+		// that identity into whatever session the caller carried, and the response
+		// returned a cookie for it. A browser already signed in as somebody else
+		// had its session silently reassigned to the credential's backing user.
+		//
+		// `setVolatileActiveUser()` (Nextcloud 29.0+; this app declares
+		// `min-version="32"`) sets the acting user for THIS REQUEST and persists
+		// nothing, which is exactly the lifetime an authenticated API call should
+		// have. See ADR-099.
+		$this->userSession->setVolatileActiveUser($this->userManager->get($issuerData['userId'] ?? ''));
 	}//end authorizeJwt()
 
 	/**
@@ -483,7 +501,25 @@ class AuthorizationService {
 			}
 		}
 
-		$this->userSession->setUser($user);
+		// 🔴 `setVolatileActiveUser()`, NOT `setUser()`.
+		//
+		// The two differ in one way that decides a security property here:
+		// `setUser()` also writes `user_id` into the PHP session, and
+		// `lib/base.php` starts a real session on every request but `status.php`.
+		// This runs on a `#[PublicPage]` endpoint dispatch route, and unlike a
+		// scoped `runAs()` there is NOTHING here that restores the previous
+		// identity afterwards — the request simply ends.
+		//
+		// So with `setUser()`, an inbound call authenticated by credential wrote
+		// that identity into whatever session the caller carried, and the response
+		// returned a cookie for it. A browser already signed in as somebody else
+		// had its session silently reassigned to the credential's backing user.
+		//
+		// `setVolatileActiveUser()` (Nextcloud 29.0+; this app declares
+		// `min-version="32"`) sets the acting user for THIS REQUEST and persists
+		// nothing, which is exactly the lifetime an authenticated API call should
+		// have. See ADR-099.
+		$this->userSession->setVolatileActiveUser($user);
 
 	}//end authorizeBasic()
 
@@ -783,7 +819,9 @@ class AuthorizationService {
 					throw new AuthenticationException(message: 'Invalid API key', details: []);
 				}
 
-				$this->userSession->setUser(user: $user);
+				// Same reason as authorizeJwt()/authorizeBasic(): scoped to this
+				// request, never written into the caller's session.
+				$this->userSession->setVolatileActiveUser(user: $user);
 				return;
 			}
 		}
@@ -809,7 +847,8 @@ class AuthorizationService {
 		if ($userId !== '') {
 			$user = $this->userManager->get(uid: $userId);
 			if ($user !== null) {
-				$this->userSession->setUser(user: $user);
+				// Scoped to this request. See authorizeJwt().
+				$this->userSession->setVolatileActiveUser(user: $user);
 			}
 		}
 
