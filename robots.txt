@@ -85,4 +85,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://openconnector.conduction.nl/sitemap.xml
+Sitemap: https://integriq.conduction.nl/sitemap.xml
