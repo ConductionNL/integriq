@@ -371,7 +371,17 @@ class JobToFlowGeneratorTest extends TestCase {
 		}
 
 		$flow = $this->generator->generateFrom(job: $this->job());
-		$trigger = new $scheduleNode($this->l10n, $this->createMock(IURLGenerator::class));
+		// CONSTRUCTED ACROSS AN APP BOUNDARY, so its signature is not ours to
+		// control. openregister added `IUserManager` to this constructor on
+		// 2026-08-24 (94a0d1c5, "acting on behalf of a user is a granted,
+		// run-scoped capability"). Nothing failed at merge time: openregister's
+		// own tests construct it correctly, and integriq's CI had last run
+		// twenty minutes earlier — the break only appeared on the next run here.
+		$trigger = new $scheduleNode(
+			$this->l10n,
+			$this->createMock(IURLGenerator::class),
+			$this->createMock(IUserManager::class)
+		);
 		$trigger->validateConfig($this->node(flow: $flow, id: 'trigger')['config']);
 		$this->assertSame([], array_diff(['cron'], $trigger->configKeys()));
 
