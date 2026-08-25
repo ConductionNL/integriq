@@ -371,7 +371,21 @@ class JobToFlowGeneratorTest extends TestCase {
 		}
 
 		$flow = $this->generator->generateFrom(job: $this->job());
-		$trigger = new $scheduleNode($this->l10n, $this->createMock(IURLGenerator::class));
+		// Three arguments, not two. OpenRegister's TriggerScheduleNode takes
+		// `(IL10N, IURLGenerator, IUserManager)` — the third resolves the
+		// declared `runAs` to prove the account exists before a flow is stored.
+		// This call still passed two, so every PHPUnit cell died with
+		// "Too few arguments … 2 passed … and exactly 3 expected".
+		//
+		// The signature changed in OpenRegister, which this suite installs from
+		// `development` rather than pinning, so the break arrives here without a
+		// commit in this repository. The `class_exists()` guard above cannot
+		// catch it: the class exists, it is its constructor that moved.
+		$trigger = new $scheduleNode(
+			$this->l10n,
+			$this->createMock(IURLGenerator::class),
+			$this->createMock(IUserManager::class),
+		);
 		$trigger->validateConfig($this->node(flow: $flow, id: 'trigger')['config']);
 		$this->assertSame([], array_diff(['cron'], $trigger->configKeys()));
 
