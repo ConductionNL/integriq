@@ -282,7 +282,7 @@ class JobToFlowGenerator {
 	/**
 	 * Refusals about WHO the generated flow runs as.
 	 *
-	 * openregister's `trigger-schedule` requires a `runAs` naming an existing
+	 * OpenRegister's `trigger-schedule` requires a `runAs` naming an existing
 	 * account and refuses to fall back to the flow's owner: nobody is present
 	 * when a schedule fires, and authoring a flow is not consent to unattended
 	 * execution as its author.
