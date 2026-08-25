@@ -114,7 +114,7 @@ class JobToFlowTest extends TestCase {
 				message: 'cannot be migrated yet',
 				reasons: [
 					'interval 420 seconds: a five-field cron is absolute wall-clock time.',
-					'userId "alice": a scheduled flow runs as its OWNER.',
+					'no acting identity: the job names no userId, and a schedule trigger must carry a "runAs".',
 				]
 			)
 		);
@@ -125,7 +125,11 @@ class JobToFlowTest extends TestCase {
 		$this->assertSame(Command::FAILURE, $status);
 		$this->assertStringContainsString('cannot be migrated yet', $display);
 		$this->assertStringContainsString('420 seconds', $display);
-		$this->assertStringContainsString('alice', $display);
+		// The second reason's distinctive words. It used to be 'alice' — the
+		// userId a refusal named back when HAVING one was the unsupported case.
+		// OpenRegister now requires an explicit `runAs`, so the refusable case
+		// is a job that names nobody, and the display has to carry that instead.
+		$this->assertStringContainsString('no acting identity', $display);
 
 	}//end testARefusalNamesEveryUnsupportedFeatureAndFails()
 }//end class

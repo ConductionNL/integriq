@@ -313,11 +313,30 @@ class JobToFlowGenerator {
 			);
 		}
 
-		if (trim((string)($job['userId'] ?? '')) !== '') {
+		// A schedule trigger must name the account its runs act as, and the job
+		// is the only place that identity can come from.
+		//
+		// This used to refuse the OPPOSITE case — a job that HAS a userId — on
+		// the grounds that "a scheduled flow runs as its OWNER … and a generated
+		// document cannot set an owner, so the run identity would silently
+		// change". OpenRegister has since reversed that premise:
+		// TriggerScheduleNode::validateActingIdentity() requires an explicit
+		// `runAs` and says outright that "the flow's owner is not used as a
+		// fallback — authoring a flow is not consent to unattended execution as
+		// its author".
+		//
+		// So a userId is no longer a problem to refuse; it is the answer, and it
+		// is carried explicitly into the trigger config by nodesFor(). What must
+		// be refused now is a job that names NOBODY: generating a flow without a
+		// runAs produces a document OpenRegister rejects at validation, and
+		// picking an account on the job's behalf would be exactly the silent
+		// identity change the old reason was written to prevent.
+		if (trim((string)($job['userId'] ?? '')) === '') {
 			$reasons[] = $this->l10n->t(
-				'userId "%1$s": a scheduled flow runs as its OWNER — the account that creates it — and a '
-				. 'generated document cannot set an owner, so the run identity would silently change.',
-				[trim((string)$job['userId'])]
+				'no acting identity: the job names no userId, and a schedule trigger must carry a '
+				. '"runAs" naming an existing account. Nobody is present when a schedule fires, so '
+				. 'there is no session to take an identity from, and choosing an account on the job\'s '
+				. 'behalf would be the silent identity change this refusal exists to prevent.'
 			);
 		}
 
@@ -459,7 +478,21 @@ class JobToFlowGenerator {
 			[
 				'id' => 'trigger',
 				'type' => 'openregister.trigger-schedule',
-				'config' => ['cron' => $cron],
+				// `runAs` is REQUIRED by OpenRegister's TriggerScheduleNode: a
+				// schedule fires with nobody present, so there is no session to
+				// take an identity from, and it refuses to fall back to the
+				// flow's owner. Without this key every generated document is
+				// rejected at validation — which is what
+				// testGeneratedConfigPassesTheOpenRegisterNodesOwnValidateConfig
+				// caught.
+				//
+				// The job's own userId is the only identity in scope, and
+				// scheduleRefusals() above refuses the job outright when it
+				// names none, so this is never an empty string.
+				'config' => [
+					'cron' => $cron,
+					'runAs' => trim((string)($job['userId'] ?? '')),
+				],
 			],
 			$this->actionNodeFor(job: $job),
 			['id' => 'end', 'type' => 'openregister.end', 'config' => []],

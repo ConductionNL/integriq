@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -149,6 +150,11 @@ class JobToFlowGeneratorTest extends TestCase {
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 3600,
 				'isEnabled' => true,
+				// A schedule trigger must name the account its runs act as, so a
+				// convertible job names one. OpenRegister's TriggerScheduleNode
+				// refuses a config without `runAs` and will not fall back to the
+				// flow's owner.
+				'userId' => 'alice',
 			],
 			$overrides
 		);
@@ -381,10 +387,26 @@ class JobToFlowGeneratorTest extends TestCase {
 		// `development` rather than pinning, so the break arrives here without a
 		// commit in this repository. The `class_exists()` guard above cannot
 		// catch it: the class exists, it is its constructor that moved.
+		// The user manager must RESOLVE the account the config names.
+		// validateActingIdentity() rejects a `runAs` that
+		// `$userManager->get()` returns null for, and a bare mock returns null
+		// for everything — so an unconfigured double would fail this test for a
+		// reason that has nothing to do with the generator.
+		$userManager = $this->createMock(IUserManager::class);
+		$account = $this->createMock(IUser::class);
+		$userManager->method('get')->willReturnCallback(
+			static function (string $uid) use ($account) {
+				// `IUserManager::get()` is typed `?IUser`, so the double has to
+				// hand back a real IUser — a truthy placeholder would fail the
+				// mock's own return-type check.
+				return $uid === 'alice' ? $account : null;
+			}
+		);
+
 		$trigger = new $scheduleNode(
 			$this->l10n,
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(IUserManager::class),
+			$userManager,
 		);
 		$trigger->validateConfig($this->node(flow: $flow, id: 'trigger')['config']);
 		$this->assertSame([], array_diff(['cron'], $trigger->configKeys()));
@@ -545,17 +567,39 @@ class JobToFlowGeneratorTest extends TestCase {
 	}//end singleRunSpellings()
 
 	/**
-	 * A user-scoped job is refused: a flow runs as its owner.
+	 * A job naming NO user is refused: the trigger would have no acting identity.
+	 *
+	 * The inverse of this test used to stand here — a user-scoped job was the
+	 * refusable one, because "a flow runs as its owner". OpenRegister reversed
+	 * that: TriggerScheduleNode::validateActingIdentity() requires an explicit
+	 * `runAs` and states that the owner is deliberately NOT a fallback. So a
+	 * userId is now what makes a job convertible, and its absence is the refusal.
 	 *
 	 * @return void
 	 */
-	public function testAUserScopedJobIsRefused(): void {
+	public function testAJobWithNoActingIdentityIsRefused(): void {
 		$this->assertStringContainsString(
-			'runs as its OWNER',
-			$this->refusal(job: $this->job(['userId' => 'alice']))
+			'no acting identity',
+			$this->refusal(job: $this->job(['userId' => '']))
 		);
 
-	}//end testAUserScopedJobIsRefused()
+	}//end testAJobWithNoActingIdentityIsRefused()
+
+	/**
+	 * The generated trigger carries the job's user as its `runAs`.
+	 *
+	 * @return void
+	 */
+	public function testTheTriggerCarriesTheJobsUserAsRunAs(): void {
+		$flow = $this->generator->generateFrom(job: $this->job(['userId' => 'alice']));
+
+		$this->assertSame(
+			'alice',
+			$this->node(flow: $flow, id: 'trigger')['config']['runAs'] ?? null,
+			'the schedule trigger must name the account its runs act as'
+		);
+
+	}//end testTheTriggerCarriesTheJobsUserAsRunAs()
 
 	/**
 	 * A job with no action class is refused.
@@ -674,8 +718,13 @@ class JobToFlowGeneratorTest extends TestCase {
 	 */
 	public function testARefusalNamesEveryUnsupportedFeatureAtOnce(): void {
 		try {
+			// `userId => ''` is the third unsupported feature now. A NAMED user is
+			// no longer refusable — it is what makes a job convertible — so this
+			// case uses the absence of one to keep three reasons in play and go
+			// on testing what it was written to test: that a refusal names every
+			// feature at once, not just the first.
 			$this->generator->generateFrom(
-				job: $this->job(['interval' => 420, 'userId' => 'alice', 'singleRun' => true])
+				job: $this->job(['interval' => 420, 'userId' => '', 'singleRun' => true])
 			);
 		} catch (EntityNotMigratableException $refusal) {
 			$this->assertCount(3, $refusal->getReasons());
