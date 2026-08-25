@@ -149,6 +149,12 @@ class JobToFlowGeneratorTest extends TestCase {
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 3600,
 				'isEnabled' => true,
+				// The default job names a user, because a job that does not is
+				// no longer convertible: the schedule trigger must carry a
+				// `runAs`, and there is nothing to carry forward without one.
+				// Leaving this out of the default would make every case below
+				// exercise the refusal path instead of the thing it is named for.
+				'userId' => 'alice',
 			],
 			$overrides
 		);
@@ -531,17 +537,42 @@ class JobToFlowGeneratorTest extends TestCase {
 	}//end singleRunSpellings()
 
 	/**
-	 * A user-scoped job is refused: a flow runs as its owner.
+	 * A user-scoped job is CONVERTIBLE, and its user becomes the run identity.
+	 *
+	 * This assertion is inverted from what it used to be. A user-scoped job was
+	 * refused because a scheduled flow ran as its owner and a generated
+	 * document cannot set an owner — so converting silently changed who the
+	 * runs acted as. OpenRegister now takes `runAs` on the trigger itself, so
+	 * the job's own user is carried forward and the identity is PRESERVED.
 	 *
 	 * @return void
 	 */
-	public function testAUserScopedJobIsRefused(): void {
-		$this->assertStringContainsString(
-			'runs as its OWNER',
-			$this->refusal(job: $this->job(['userId' => 'alice']))
+	public function testAUserScopedJobCarriesItsUserAsTheRunIdentity(): void {
+		$flow = $this->generator->generateFrom(job: $this->job(['userId' => 'alice']));
+
+		$trigger = $this->node(flow: $flow, id: 'trigger');
+
+		$this->assertSame(
+			'alice',
+			$trigger['config']['runAs'] ?? null,
+			'The trigger must run as the job\'s own user. Anything else — the flow owner, the '
+			. 'admin — is the guess OpenRegister refuses to make, relocated into this repo.'
 		);
 
-	}//end testAUserScopedJobIsRefused()
+	}//end testAUserScopedJobCarriesItsUserAsTheRunIdentity()
+
+	/**
+	 * A job naming NO user is refused: there is no identity to carry forward.
+	 *
+	 * @return void
+	 */
+	public function testAJobWithNoUserIsRefused(): void {
+		$this->assertStringContainsString(
+			'runAs',
+			$this->refusal(job: $this->job(['userId' => '']))
+		);
+
+	}//end testAJobWithNoUserIsRefused()
 
 	/**
 	 * A job with no action class is refused.
@@ -660,8 +691,11 @@ class JobToFlowGeneratorTest extends TestCase {
 	 */
 	public function testARefusalNamesEveryUnsupportedFeatureAtOnce(): void {
 		try {
+			// `userId => ''` is the refusable case now, not `userId => 'alice'`.
+			// A named user is carried into the trigger's `runAs`; an ABSENT one
+			// is what cannot be converted.
 			$this->generator->generateFrom(
-				job: $this->job(['interval' => 420, 'userId' => 'alice', 'singleRun' => true])
+				job: $this->job(['interval' => 420, 'userId' => '', 'singleRun' => true])
 			);
 		} catch (EntityNotMigratableException $refusal) {
 			$this->assertCount(3, $refusal->getReasons());
@@ -689,6 +723,10 @@ class JobToFlowGeneratorTest extends TestCase {
 				'jobClass' => self::SYNC_ACTION,
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 86400,
+				// Names a user for the same reason the job() helper does: a job
+				// without one is refused, because the schedule trigger has no
+				// identity to carry forward.
+				'userId' => 'alice',
 			]
 		);
 		$this->objectService->method('find')->willReturn($entity);

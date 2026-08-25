@@ -313,11 +313,30 @@ class JobToFlowGenerator {
 			);
 		}
 
-		if (trim((string)($job['userId'] ?? '')) !== '') {
+		// THIS REFUSAL IS INVERTED FROM WHAT IT USED TO BE.
+		//
+		// It used to refuse a job that HAD a `userId`, because a scheduled flow
+		// ran as its owner — the account that created it — and a generated
+		// document cannot set an owner, so converting would have silently
+		// changed the run identity.
+		//
+		// OpenRegister now takes `runAs` on the schedule trigger itself, so the
+		// identity is expressible: `triggerConfigFor()` copies the job's own
+		// `userId` into it and the run identity is preserved rather than
+		// changed. A job WITH a userId is therefore now convertible.
+		//
+		// A job WITHOUT one is not. OpenRegister requires `runAs` and refuses to
+		// guess, because nobody is present when a cron fires and the flow's
+		// owner is not a fallback. With no userId on the job there is nothing to
+		// carry forward, and picking the owner or the admin here would
+		// re-introduce, in this repo, exactly the assumption OpenRegister
+		// rejected in its own.
+		if (trim((string)($job['userId'] ?? '')) === '') {
 			$reasons[] = $this->l10n->t(
-				'userId "%1$s": a scheduled flow runs as its OWNER — the account that creates it — and a '
-				. 'generated document cannot set an owner, so the run identity would silently change.',
-				[trim((string)$job['userId'])]
+				'userId: the job names no user, and a schedule trigger must carry a "runAs" naming the '
+				. 'account its runs act as. Nobody is present when a cron fires, so there is no session '
+				. 'to take an identity from and the flow owner is not used as a fallback. Set the job\'s '
+				. 'user before converting it.'
 			);
 		}
 
@@ -459,13 +478,51 @@ class JobToFlowGenerator {
 			[
 				'id' => 'trigger',
 				'type' => 'openregister.trigger-schedule',
-				'config' => ['cron' => $cron],
+				'config' => $this->triggerConfigFor(job: $job, cron: $cron),
 			],
 			$this->actionNodeFor(job: $job),
 			['id' => 'end', 'type' => 'openregister.end', 'config' => []],
 		];
 
 	}//end nodesFor()
+
+	/**
+	 * The schedule trigger's config: the cadence, and who the runs act as.
+	 *
+	 * `runAs` IS THE JOB'S OWN `userId`, NOT A GUESS.
+	 *
+	 * OpenRegister requires a schedule trigger to name the user its runs act as
+	 * (ADR: "acting on behalf of a user is a granted, run-scoped identity").
+	 * Nobody is present when a cron fires, so there is no session to take an
+	 * identity from, and it deliberately does NOT fall back to the flow's
+	 * owner — authoring a flow is not consent to unattended execution as its
+	 * author.
+	 *
+	 * That is exactly the identity a Job already carries. `oc_jobs.userId` is
+	 * the account the job's runs have always acted as, so copying it forward
+	 * PRESERVES the run identity rather than inventing one. A job with no
+	 * `userId` emits no `runAs` and is refused upstream by
+	 * `scheduleRefusals()`, because there is then nothing to preserve and
+	 * guessing is the thing the requirement exists to prevent.
+	 *
+	 * @param array  $job  The job's serialised record.
+	 * @param string $cron The derived cron expression.
+	 *
+	 * @return array<string, mixed> The trigger node's config.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function triggerConfigFor(array $job, string $cron): array {
+		$config = ['cron' => $cron];
+
+		$runAs = trim((string)($job['userId'] ?? ''));
+		if ($runAs !== '') {
+			$config['runAs'] = $runAs;
+		}
+
+		return $config;
+
+	}//end triggerConfigFor()
 
 	/**
 	 * The one step that stands in for the job's action.
