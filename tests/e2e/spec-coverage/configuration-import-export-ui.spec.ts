@@ -105,6 +105,46 @@ async function openStoreActions(page: Page): Promise<void> {
 	await actions.getByRole('button').first().click()
 }
 
+/**
+ * Page forward through an index table until a row containing `name` is visible.
+ *
+ * The index pages render 20 rows and a pager, so "the row I just created is not
+ * on screen" and "the row was never written" look identical if you only ever
+ * look at page 1. Returns whether the row was found anywhere in the list, so
+ * the caller can assert on it rather than on the page size.
+ *
+ * Mirrors `walkToRow()` in `tests/e2e/workflows/source-mapping-crud.spec.ts`,
+ * which is what let the Source CRUD cycle pass against a 2-page list.
+ *
+ * @param page The Playwright page, already on the index route.
+ * @param name Text the target row must contain.
+ * @return True when the row was found on some page of the list.
+ */
+async function walkToRow(page: Page, name: string): Promise<boolean> {
+	// Bounded so a broken pager can never spin forever.
+	for (let hop = 0; hop < 40; hop++) {
+		const row = page.locator('tr', { hasText: name }).first()
+		if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			return true
+		}
+
+		// `isEnabled()` is false on the last page (the button renders disabled)
+		// and the call throws when there is no pager at all — a single-page
+		// list. Both mean "nowhere left to look".
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
+			return false
+		}
+
+		await next.click()
+		await page.waitForTimeout(900)
+	}
+
+	return false
+}
+
 // RE-ENABLED (#1187). The stand-down reason named three obstacles; each has
 // been dealt with rather than described:
 //
@@ -270,7 +310,32 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 		// Blocking: confirm is disabled until the operator acknowledges.
 		const confirm = page.getByTestId('confirm-import')
 		await expect(confirm).toBeDisabled()
-		await page.getByTestId('unresolved-ack').click()
+
+		// TICK THE BOX BY KEYBOARD, NOT BY CLICKING THE INPUT.
+		//
+		// `data-testid` lands on the `<input>`: NcCheckboxRadioSwitch spreads
+		// `$attrs` onto the input, not onto its wrapper. That input is
+		// `position: absolute; z-index: -1; opacity: 0 !important`
+		// (NcCheckboxRadioSwitch's own stylesheet), and the component renders
+		// NO `<label for>` — its wrapper defaults to a plain `<span>`. So the
+		// visible `<span class="checkbox-content">` sits on top of the input
+		// and `.click()` can never reach it: Playwright retried for the full
+		// 60s timeout reporting "…checkbox-content… intercepts pointer events".
+		//
+		// The input is nonetheless focusable, and `change` is the handler the
+		// component binds, so Space on the focused checkbox is both the real
+		// accessible interaction and the one that actually toggles the model.
+		// (Same reason this suite drives NcSelect by keyboard.)
+		//
+		// `toBeChecked()` is not decoration — it is what stops this from
+		// becoming a test that cannot fail. Without it a silently-swallowed
+		// keypress would leave `confirm` disabled and the failure would point
+		// at the button instead of at the box that was never ticked.
+		const ack = page.getByTestId('unresolved-ack')
+		await ack.focus()
+		await ack.press(' ')
+		await expect(ack, 'the acknowledgement box must actually tick').toBeChecked()
+
 		await expect(confirm).toBeEnabled()
 	})
 
@@ -332,15 +397,33 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 		// already reported success by this point. If this assertion is the one
 		// that fails, the dialog is lying — which is worth knowing plainly
 		// rather than reading it off a missing table row.
+		//
+		// 🔴 ASK FOR THE WHOLE LIST. The objects API pages at 20 by default.
+		// This check first ran unpaged against an instance holding 23 sources
+		// (`total: 23, pages: 2, limit: 20`) and reported "the confirmed import
+		// must have written the source" — while the very same run's import
+		// response said `"written": {"sources": ["e2e-import-source"]}`. The
+		// row was real and on page 2; the number being measured was the page
+		// size. That is the trap `tests/e2e/ci-seed.sh` already documents
+		// against three earlier specs, arriving here through a different door.
 		const written = await page.request.get(
-			'/index.php/apps/openregister/api/objects/integriq/source',
+			'/index.php/apps/openregister/api/objects/integriq/source?_limit=200',
 			{ headers: { Accept: 'application/json' } },
 		)
 		expect(
 			written.ok(),
 			`sources must be listable after import (HTTP ${written.status()})`,
 		).toBe(true)
-		const sources = (await written.json()).results ?? []
+		const writtenBody = await written.json()
+		const sources = writtenBody.results ?? []
+		// Guard the guard: if the list ever outgrows one page again, say so
+		// instead of quietly searching a prefix. Without this the `_limit`
+		// above is a fix that expires silently the moment the fixture grows.
+		expect(
+			sources.length,
+			`the whole source list must fit in one page for this check to be `
+				+ `meaningful (got ${sources.length} of ${writtenBody.total})`,
+		).toBe(Number(writtenBody.total ?? sources.length))
 		expect(
 			sources.some((s: Record<string, unknown>) =>
 				String(s.name ?? '').includes('E2E imported source'),
@@ -348,8 +431,15 @@ test.describe('REQ-007/REQ-008: Import preview + confirmation', () => {
 			'the confirmed import must have written the source',
 		).toBe(true)
 
-		// Then the surface a user would look at.
+		// Then the surface a user would look at — which pages at 20 exactly as
+		// the API does, so walk it rather than assuming page 1. Walking makes
+		// this STRICTER than a page-1 check, not looser: it fails only when the
+		// row is absent from the entire list.
 		await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
+		expect(
+			await walkToRow(page, 'E2E imported source'),
+			'the imported source must appear somewhere in the Sources list',
+		).toBe(true)
 		await expect(
 			page.getByText('E2E imported source', { exact: false }).first(),
 		).toBeVisible({ timeout: 15_000 })
