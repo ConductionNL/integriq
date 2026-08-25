@@ -992,8 +992,21 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		// ⚠️ toHaveCount, never toBeVisible. An edge is an SVG <path>, and a
 		// straight vertical connector has a ZERO-WIDTH bounding box, which
 		// Playwright reports as "not visible" even though it renders.
+		//
+		// THE EDGE STOPPED BEING OURS IN nextcloud-vue 2.15.0.
+		//
+		// CnFlowDetail used to hand-draw edges into a `#edge` slot with its own
+		// `edgePath()`, classed `.cn-flow-detail__edge`. 2.15.0 hands routing to
+		// Vue Flow — its own comment reads "Edges are Vue Flow's now. The
+		// hand-drawn `#edge` slot and its orthogonal `edgePath()` are gone."
+		// Nothing renders the old class any more, so this counted zero while the
+		// edges were being drawn correctly.
+		//
+		// The trap: `.cn-flow-detail__edge` still has a live style rule in
+		// CnFlowDetail, so grepping the library for it finds it and the contract
+		// looks intact. See nextcloud-vue#749.
 		await expect(
-			page.locator('.cn-flow-detail__edge'),
+			page.locator('.vue-flow__edge'),
 			'every consecutive pair of steps must be connected',
 		).toHaveCount((generated!.edges as unknown[]).length)
 

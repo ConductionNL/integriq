@@ -34,6 +34,34 @@ jobs:
       contents: write
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    # A reusable workflow receives NO secrets by default, and the
+    # `permissions:` block above governs the TOKEN, not the secrets. Without
+    # this block `secrets.CF_API_TOKEN` is empty inside the callee, its
+    # "Publish to the Cloudflare Worker" step skips itself on its own guard,
+    # and the run finishes GREEN having written only gh-pages — which nothing
+    # serves. The live site never changes and no check goes red to say so.
+    #
+    # Mapped explicitly rather than `secrets: inherit`, because `inherit`
+    # hands the callee EVERY secret this repo holds — signing cert and key,
+    # appstore token, deploy keys — for the sake of two Cloudflare values.
+    # This way only those two cross the boundary.
+    #
+    # The exposure above is the ONLY reason for the explicit mapping. The
+    # names are the same on both sides: the org secrets really are
+    # `CF_API_TOKEN` / `CF_ACCOUNT_ID` — the names ConductionNL/.github's own
+    # deploy-docs.yml reads directly, and the names the callee declares under
+    # `workflow_call.secrets`.
+    #
+    # This block used to read `secrets.CLOUDFLARE_API_TOKEN` /
+    # `secrets.CLOUDFLARE_ACCOUNT_ID`, which are not secrets anywhere in this
+    # org. Mapping from a name that does not exist is NOT an error — it
+    # yields an empty string — so the callee's publish step skipped itself on
+    # its own guard and the run still finished green. Measured on planninq
+    # run 32760529026: "Publish to the Cloudflare Worker" SKIPPED, the log
+    # showing `CF_API_TOKEN:` with no value.
+    secrets:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
     with:
       # `integriq.conduction.nl` resolves as of 2026-08-23 — attached as a
       # second custom domain on the SAME `openconnector-docs` worker that

@@ -39,6 +39,7 @@ use OCA\Integriq\Service\MigrationSubject;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -75,6 +76,16 @@ class JobToFlowGeneratorTest extends TestCase {
 	private const FLOW_ACTION = 'OCA\Integriq\Action\FlowAction';
 
 	/**
+	 * The configured account converted jobs act as.
+	 *
+	 * Arbitrary, but it must be a plausible uid: it ends up in the generated
+	 * trigger's `runAs` and openregister validates that the account exists.
+	 *
+	 * @var string
+	 */
+	private const RUN_AS = 'integriq-scheduler';
+
+	/**
 	 * The entity reader double.
 	 *
 	 * @var ORObjectService&MockObject
@@ -105,11 +116,30 @@ class JobToFlowGeneratorTest extends TestCase {
 
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->l10n = $this->translations();
+
+		// THE ACTING ACCOUNT IS CONFIGURED, NOT DERIVED.
+		//
+		// openregister's trigger-schedule requires a `runAs` naming an existing
+		// user and refuses to fall back to the flow's owner. A background job
+		// has no session either, so integriq reads the account from app config
+		// and REFUSES generation when it is missing — see
+		// JobToFlowGenerator::actingIdentityRefusals().
+		//
+		// These doubles put the generator in the configured-and-valid state, so
+		// the tests below exercise generation rather than that refusal. The
+		// refusal has its own test.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn(self::RUN_AS);
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($this->createMock(IUser::class));
+
 		$this->generator = new JobToFlowGenerator(
 			reader: new MigrationEntityReader(objectService: $this->objectService, l10n: $this->l10n),
 			cadence: new JobIntervalCron(),
 			subject: new MigrationSubject(),
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			appConfig: $appConfig,
+			userManager: $userManager
 		);
 
 	}//end setUp()
@@ -150,11 +180,6 @@ class JobToFlowGeneratorTest extends TestCase {
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 3600,
 				'isEnabled' => true,
-				// A schedule trigger must name the account its runs act as, so a
-				// convertible job names one. OpenRegister's TriggerScheduleNode
-				// refuses a config without `runAs` and will not fall back to the
-				// flow's owner.
-				'userId' => 'alice',
 			],
 			$overrides
 		);
@@ -377,39 +402,30 @@ class JobToFlowGeneratorTest extends TestCase {
 		}
 
 		$flow = $this->generator->generateFrom(job: $this->job());
-		// Three arguments, not two. OpenRegister's TriggerScheduleNode takes
-		// `(IL10N, IURLGenerator, IUserManager)` — the third resolves the
-		// declared `runAs` to prove the account exists before a flow is stored.
-		// This call still passed two, so every PHPUnit cell died with
-		// "Too few arguments … 2 passed … and exactly 3 expected".
-		//
-		// The signature changed in OpenRegister, which this suite installs from
-		// `development` rather than pinning, so the break arrives here without a
-		// commit in this repository. The `class_exists()` guard above cannot
-		// catch it: the class exists, it is its constructor that moved.
-		// The user manager must RESOLVE the account the config names.
-		// validateActingIdentity() rejects a `runAs` that
-		// `$userManager->get()` returns null for, and a bare mock returns null
-		// for everything — so an unconfigured double would fail this test for a
-		// reason that has nothing to do with the generator.
-		$userManager = $this->createMock(IUserManager::class);
-		$account = $this->createMock(IUser::class);
-		$userManager->method('get')->willReturnCallback(
-			static function (string $uid) use ($account) {
-				// `IUserManager::get()` is typed `?IUser`, so the double has to
-				// hand back a real IUser — a truthy placeholder would fail the
-				// mock's own return-type check.
-				return $uid === 'alice' ? $account : null;
-			}
-		);
+		// CONSTRUCTED ACROSS AN APP BOUNDARY, so its signature is not ours to
+		// control. openregister added `IUserManager` to this constructor on
+		// 2026-08-24 (94a0d1c5, "acting on behalf of a user is a granted,
+		// run-scoped capability"). Nothing failed at merge time: openregister's
+		// own tests construct it correctly, and integriq's CI had last run
+		// twenty minutes earlier — the break only appeared on the next run here.
+		// The node resolves `runAs` through IUserManager to prove the account
+		// exists, so this double must answer for the uid the generator emitted.
+		// A bare mock returns null and the node would refuse a config that is
+		// in fact correct.
+		$nodeUserManager = $this->createMock(IUserManager::class);
+		$nodeUserManager->method('get')->willReturn($this->createMock(IUser::class));
 
 		$trigger = new $scheduleNode(
 			$this->l10n,
 			$this->createMock(IURLGenerator::class),
-			$userManager,
+			$nodeUserManager
 		);
-		$trigger->validateConfig($this->node(flow: $flow, id: 'trigger')['config']);
-		$this->assertSame([], array_diff(['cron'], $trigger->configKeys()));
+		$triggerConfig = $this->node(flow: $flow, id: 'trigger')['config'];
+		$trigger->validateConfig($triggerConfig);
+		$this->assertSame([], array_diff(['cron', 'runAs'], $trigger->configKeys()));
+
+		// The generated flow names the CONFIGURED account, not a derived one.
+		$this->assertSame(self::RUN_AS, $triggerConfig['runAs']);
 
 		if (class_exists($subFlowNode) === true) {
 			$subFlow = $this->generator->generateFrom(
@@ -567,39 +583,17 @@ class JobToFlowGeneratorTest extends TestCase {
 	}//end singleRunSpellings()
 
 	/**
-	 * A job naming NO user is refused: the trigger would have no acting identity.
-	 *
-	 * The inverse of this test used to stand here — a user-scoped job was the
-	 * refusable one, because "a flow runs as its owner". OpenRegister reversed
-	 * that: TriggerScheduleNode::validateActingIdentity() requires an explicit
-	 * `runAs` and states that the owner is deliberately NOT a fallback. So a
-	 * userId is now what makes a job convertible, and its absence is the refusal.
+	 * A user-scoped job is refused: a flow runs as its owner.
 	 *
 	 * @return void
 	 */
-	public function testAJobWithNoActingIdentityIsRefused(): void {
+	public function testAUserScopedJobIsRefused(): void {
 		$this->assertStringContainsString(
-			'no acting identity',
-			$this->refusal(job: $this->job(['userId' => '']))
+			'runs as its OWNER',
+			$this->refusal(job: $this->job(['userId' => 'alice']))
 		);
 
-	}//end testAJobWithNoActingIdentityIsRefused()
-
-	/**
-	 * The generated trigger carries the job's user as its `runAs`.
-	 *
-	 * @return void
-	 */
-	public function testTheTriggerCarriesTheJobsUserAsRunAs(): void {
-		$flow = $this->generator->generateFrom(job: $this->job(['userId' => 'alice']));
-
-		$this->assertSame(
-			'alice',
-			$this->node(flow: $flow, id: 'trigger')['config']['runAs'] ?? null,
-			'the schedule trigger must name the account its runs act as'
-		);
-
-	}//end testTheTriggerCarriesTheJobsUserAsRunAs()
+	}//end testAUserScopedJobIsRefused()
 
 	/**
 	 * A job with no action class is refused.
@@ -718,13 +712,8 @@ class JobToFlowGeneratorTest extends TestCase {
 	 */
 	public function testARefusalNamesEveryUnsupportedFeatureAtOnce(): void {
 		try {
-			// `userId => ''` is the third unsupported feature now. A NAMED user is
-			// no longer refusable — it is what makes a job convertible — so this
-			// case uses the absence of one to keep three reasons in play and go
-			// on testing what it was written to test: that a refusal names every
-			// feature at once, not just the first.
 			$this->generator->generateFrom(
-				job: $this->job(['interval' => 420, 'userId' => '', 'singleRun' => true])
+				job: $this->job(['interval' => 420, 'userId' => 'alice', 'singleRun' => true])
 			);
 		} catch (EntityNotMigratableException $refusal) {
 			$this->assertCount(3, $refusal->getReasons());
@@ -752,11 +741,6 @@ class JobToFlowGeneratorTest extends TestCase {
 				'jobClass' => self::SYNC_ACTION,
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 86400,
-				// This fixture builds its own record rather than using job(), so
-				// it needs the acting identity too: a schedule trigger must name
-				// the account its runs act as, and a job that names none is
-				// refused before it can be rendered.
-				'userId' => 'alice',
 			]
 		);
 		$this->objectService->method('find')->willReturn($entity);

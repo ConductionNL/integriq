@@ -128,7 +128,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 			->with('svc-partner-a')
 			->willReturn($user);
 		$this->userSession->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$service = $this->makeService();
@@ -174,7 +174,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 		);
 		$this->orObjectService->method('findAll')->willReturn(['results' => [$consumer]]);
 
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 
@@ -226,7 +226,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 			->with('admin')
 			->willReturn($user);
 		$this->userSession->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$service = $this->makeService();
@@ -253,7 +253,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 
 		$user = $this->createMock(IUser::class);
 		$this->userManager->expects($this->once())->method('get')->with('alice')->willReturn($user);
-		$this->userSession->expects($this->once())->method('setUser')->with($user);
+		$this->userSession->expects($this->once())->method('setVolatileActiveUser')->with($user);
 
 		$service = $this->makeService();
 		$service->authorizeApiKey(header: 'SUPER-SECRET-INBOUND-KEY-1', keys: $rawRuleKeys);
@@ -274,7 +274,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 	public function testStrippedRuleKeysRefuseInboundApiKey(): void {
 		// A stripped rule yields an empty keys map; no consumer matches the presented key.
 		$this->orObjectService->method('findAll')->willReturn(['results' => []]);
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 
@@ -299,7 +299,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 
 		// No userId on the consumer → no NC user is set, but auth still passes.
 		$this->userManager->expects($this->never())->method('get');
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 		$service->authorizeApiKey(header: 'sk_live_secret', keys: []);
