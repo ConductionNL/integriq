@@ -752,6 +752,11 @@ class JobToFlowGeneratorTest extends TestCase {
 				'jobClass' => self::SYNC_ACTION,
 				'arguments' => ['synchronizationId' => 'tenderned-datasets'],
 				'interval' => 86400,
+				// This fixture builds its own record rather than using job(), so
+				// it needs the acting identity too: a schedule trigger must name
+				// the account its runs act as, and a job that names none is
+				// refused before it can be rendered.
+				'userId' => 'alice',
 			]
 		);
 		$this->objectService->method('find')->willReturn($entity);
