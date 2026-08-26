@@ -294,7 +294,13 @@ function parseOccJson(raw: string, command: string): unknown {
 function flowRunWorkerJobId(): string {
 	const raw = occ().run([
 		'background-job:list',
-		'--class=OCA\\OpenRegister\\Cron\\FlowRunWorker',
+		// `BackgroundJob\`, not `Cron\`. OpenRegister registers the job as
+		// OCA\OpenRegister\BackgroundJob\FlowRunWorker (appinfo/info.xml) and
+		// there is no lib/Cron/ directory in that repo at all — the class was
+		// moved and this filter was not. An exact --class filter that matches
+		// nothing returns 0 rows and looks identical to "the job was never
+		// scheduled", which is what this assertion then reported.
+		'--class=OCA\\OpenRegister\\BackgroundJob\\FlowRunWorker',
 		'--output=json',
 	])
 	const rows = parseOccJson(raw, 'background-job:list') as Array<{
