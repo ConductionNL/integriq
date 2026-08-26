@@ -289,12 +289,19 @@ function parseOccJson(raw: string, command: string): unknown {
  * substring of nothing else today — which is exactly the kind of thing that
  * stops being true without warning.
  *
+ * THE NAMESPACE IS `BackgroundJob`, NOT `Cron`. OpenRegister moved every job
+ * out of `OCA\OpenRegister\Cron` and this string was left behind, so the
+ * lookup matched nothing and the assertion below failed on a count of 0. It is
+ * a CROSS-REPO reference: the class lives in openregister, which this app's
+ * e2e installs at `ref: development` (code-quality.yml), so it must track that
+ * branch's namespace — nothing in this repo's own build can catch it drifting.
+ *
  * @return The job id.
  */
 function flowRunWorkerJobId(): string {
 	const raw = occ().run([
 		'background-job:list',
-		'--class=OCA\\OpenRegister\\Cron\\FlowRunWorker',
+		'--class=OCA\\OpenRegister\\BackgroundJob\\FlowRunWorker',
 		'--output=json',
 	])
 	const rows = parseOccJson(raw, 'background-job:list') as Array<{
