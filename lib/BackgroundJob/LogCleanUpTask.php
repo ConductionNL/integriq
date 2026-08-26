@@ -8,7 +8,7 @@
  * database performance.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -19,7 +19,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

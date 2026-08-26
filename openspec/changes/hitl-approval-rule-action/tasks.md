@@ -83,7 +83,7 @@
 
 ### Task 10: `ApprovalTimeoutSweepJob` cron + synchronous expiry re-check
 - **spec_ref**: `openspec/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes`
-- **files**: `lib/Cron/ApprovalTimeoutSweepJob.php`, `lib/AppInfo/Application.php`, `lib/Controller/ApprovalsController.php`
+- **files**: `lib/BackgroundJob/ApprovalTimeoutSweepJob.php`, `lib/AppInfo/Application.php`, `lib/Controller/ApprovalsController.php`
 - **acceptance_criteria**:
   - GIVEN a `pending` request with `expiresAt` in the past and `onTimeout: dead_letter` WHEN `ApprovalTimeoutSweepJob` runs THEN `status` becomes `dead_letter`
   - GIVEN a `pending` request with `expiresAt` in the past that the sweep job has not yet processed WHEN an approver attempts to approve it THEN HTTP 409 and the pipeline is not resumed

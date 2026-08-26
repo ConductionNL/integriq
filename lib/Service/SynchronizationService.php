@@ -9365,7 +9365,7 @@ class SynchronizationService {
 	private function enqueueFileFetch(array $config, mixed $endpoint, string $objectId, int $ruleId): void {
 		try {
 			$this->containerInterface->get(\OCP\BackgroundJob\IJobList::class)->add(
-				\OCA\Integriq\Cron\FetchFilesJob::class,
+				\OCA\Integriq\BackgroundJob\FetchFilesJob::class,
 				[
 					'config' => $config,
 					'endpoint' => $endpoint,
@@ -9386,7 +9386,7 @@ class SynchronizationService {
 	}//end enqueueFileFetch()
 
 	/**
-	 * Public entry point for {@see \OCA\Integriq\Cron\FetchFilesJob}.
+	 * Public entry point for {@see \OCA\Integriq\BackgroundJob\FetchFilesJob}.
 	 *
 	 * Re-resolves the source and runs the SAME fetch path the inline mode uses,
 	 * so `sync` and `async` cannot drift into fetching differently — the only

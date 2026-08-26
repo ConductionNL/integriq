@@ -115,7 +115,7 @@ fragment (ADR-037 pattern, avoids touching the 2000+-line
 inside the approving user's own request (a separate PHP process boundary
 from the original suspended request, satisfying "no long-running process"
 without needing NC background-job/cron latency); only timeout sweeping runs
-on a cron `TimedJob` (matching the existing `lib/Cron/EventRetryJob.php`
+on a cron `TimedJob` (matching the existing `lib/BackgroundJob/EventRetryJob.php`
 pattern). See design.md for the full suspend/resume state machine and the
 notification-dialect decision.
 
@@ -135,7 +135,7 @@ previously called from this app).
 - `lib/Service/SynchronizationService.php` — new pre-write approval gate
   check in the orchestration path (REQ-001/REQ-004 boundary).
 - New: `lib/Service/ApprovalService.php`, `lib/Controller/ApprovalsController.php`,
-  `lib/Cron/ApprovalTimeoutSweepJob.php`, `lib/Settings/register.d/hitl-approval-rule-action.json`.
+  `lib/BackgroundJob/ApprovalTimeoutSweepJob.php`, `lib/Settings/register.d/hitl-approval-rule-action.json`.
 - `lib/actions.seed.json` — add `approval.approve`, `approval.reject`.
 - `src/views/Rule/RuleActionConfig.vue` — new `approval` entry in
   `ACTION_TYPES`/`ACTION_FORM_MAP`; new `src/views/Rule/actionForms/ApprovalForm.vue`.

@@ -7,9 +7,9 @@ Describes observed behavior of 13 methods under `job-scheduling` as 5 new REQs. 
 - `lib/Controller/JobsController.php::logs()`
 - `lib/Controller/JobsController.php::run()`
 - `lib/Controller/JobsController.php::test()`
-- `lib/Cron/JobTask.php::run()`
-- `lib/Cron/LogCleanUpTask.php::run()`
-- `lib/Cron/LogCleanUpTask.php::cleanupSchema()`
+- `lib/BackgroundJob/JobTask.php::run()`
+- `lib/BackgroundJob/LogCleanUpTask.php::run()`
+- `lib/BackgroundJob/LogCleanUpTask.php::cleanupSchema()`
 - `lib/Service/JobService.php::scheduleJob()`
 - `lib/Service/JobService.php::executeJob()`
 - `lib/Service/JobService.php::getJobListId()`

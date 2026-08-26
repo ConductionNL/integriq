@@ -9,7 +9,7 @@
  * expired even though the bitstring contents rarely change.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\EudiStatusListService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -34,7 +34,7 @@ use Throwable;
 /**
  * Background job that periodically re-signs near-expiry EUDI status list tokens.
  *
- * Mirrors {@see \OCA\Integriq\Cron\EventRetryJob}'s `TimedJob` shape
+ * Mirrors {@see \OCA\Integriq\BackgroundJob\EventRetryJob}'s `TimedJob` shape
  * (design.md D-REVOKE / tasks.md "Status list refresh cron").
  *
  * @psalm-api
@@ -84,7 +84,7 @@ class EudiStatusListRefreshJob extends TimedJob {
 	 *
 	 * A single poisoned row must never wedge the cron pipeline, so any
 	 * exception from the sweep is caught and logged rather than rethrown
-	 * (mirrors {@see \OCA\Integriq\Cron\EventRetryJob::run()}).
+	 * (mirrors {@see \OCA\Integriq\BackgroundJob\EventRetryJob::run()}).
 	 *
 	 * @param mixed $argument Task arguments (not used).
 	 *

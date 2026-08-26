@@ -14,7 +14,7 @@ are discovered, scheduled, executed, retried, or expired, nor how the
 `LogCleanUpTask` retention sweep interacts with the log-retention windows
 described in ADR-004.
 
-Two Nextcloud `TimedJob` subclasses ship in `lib/Cron/`:
+Two Nextcloud `TimedJob` subclasses ship in `lib/BackgroundJob/`:
 
 - `JobTask.php` — drives execution of user-defined `Job` records.
 - `LogCleanUpTask.php` — sweeps expired log rows from four mapper tables.
@@ -31,7 +31,7 @@ runner itself fires (typically every 5 minutes on a properly configured server).
 **Job discovery — `JobTask` and `JobMapper::findRunnable()`**
 
 `JobTask` extends `\OCP\BackgroundJob\TimedJob` with a 300-second (5-minute)
-interval (`setInterval(300)` at `lib/Cron/JobTask.php:61`). On each Nextcloud
+interval (`setInterval(300)` at `lib/BackgroundJob/JobTask.php:61`). On each Nextcloud
 cron tick it calls `JobService::run()`, which calls
 `JobMapper::findRunnable()`. `findRunnable()` issues a query against
 `oc_openconnector_jobs` selecting rows where `is_enabled = true` AND
@@ -76,7 +76,7 @@ future `nextRun` epoch to defer its next run).
 **LogCleanUpTask**
 
 `LogCleanUpTask` extends `TimedJob` with a 60-second interval
-(`setInterval(60)` at `lib/Cron/LogCleanUpTask.php:75`; a TODO comment
+(`setInterval(60)` at `lib/BackgroundJob/LogCleanUpTask.php:75`; a TODO comment
 acknowledges this should be raised to hourly). It calls four mapper cleanup
 methods in sequence:
 
@@ -122,13 +122,13 @@ time (this cron) independently.
 
 ## Evidence
 
-- `lib/Cron/JobTask.php:34` — `class JobTask extends TimedJob`.
-- `lib/Cron/JobTask.php:61` — `$this->setInterval(300)` (5-minute interval).
-- `lib/Cron/JobTask.php:84-88` — `run()` delegates to `$this->jobService->run()`.
-- `lib/Cron/LogCleanUpTask.php:37` — `class LogCleanUpTask extends TimedJob`.
-- `lib/Cron/LogCleanUpTask.php:75` — `$this->setInterval(60)` (60-second
+- `lib/BackgroundJob/JobTask.php:34` — `class JobTask extends TimedJob`.
+- `lib/BackgroundJob/JobTask.php:61` — `$this->setInterval(300)` (5-minute interval).
+- `lib/BackgroundJob/JobTask.php:84-88` — `run()` delegates to `$this->jobService->run()`.
+- `lib/BackgroundJob/LogCleanUpTask.php:37` — `class LogCleanUpTask extends TimedJob`.
+- `lib/BackgroundJob/LogCleanUpTask.php:75` — `$this->setInterval(60)` (60-second
   interval; TODO: change to hour).
-- `lib/Cron/LogCleanUpTask.php:97-108` — `run()` calls four mapper cleanup
+- `lib/BackgroundJob/LogCleanUpTask.php:97-108` — `run()` calls four mapper cleanup
   methods: `callLogMapper->clearLogs()`, `jobLogMapper->clearLogs()`,
   `syncContractLogMapper->clearLogs()`, `syncLogMapper->cleanupExpired()`.
 - `lib/Db/JobMapper.php:337-350` — `findRunnable()`: SQL query selecting

@@ -55,7 +55,7 @@ accordingly.
 
 **Chain C** deletes the facade AND the 15 mapper files AND the 15 entity files
 (31 files total), and rewrites every consumer in `lib/Service/`,
-`lib/Controller/`, and `lib/Cron/` to use `ObjectService` directly. After chain
+`lib/Controller/`, and `lib/BackgroundJob/` to use `ObjectService` directly. After chain
 C ships, integriq contains no `lib/Db/*Mapper.php` or `lib/Db/<Entity>.php`
 files for domain data. The `storage_migrated` flag becomes load-bearing rather
 than a toggle: the legacy branches inside the chain-B facade are gone.

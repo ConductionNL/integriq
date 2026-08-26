@@ -46,8 +46,8 @@ verification trail:
 | Mappings (dot-notation + Twig, delegates to OR per ADR-022) | `lib/Service/MappingService.php`, `lib/Service/SourceMappingService.php`, `openspec/specs/mapping-and-search/spec.md` |
 | Rules / endpoint rule pipeline | `lib/Service/RuleService.php`, `openspec/specs/rule-pipeline/spec.md` |
 | Synchronizations + per-run contracts | `lib/Service/SynchronizationService.php`, `SynchronizationContractService.php`, `openspec/specs/synchronization-engine` (features.json) |
-| Jobs (cron-style scheduling, manual run/test) | `lib/Cron/JobTask.php`, `openspec/specs/job-scheduling/spec.md` |
-| CloudEvents dispatch, webhook delivery, **dead-letter capture + replay + discard** | `lib/Service/EventService.php`, `lib/Controller/EventsController.php`, `lib/Cron/EventRetryJob.php` (registered in `info.xml` `<background-jobs>`), `openspec/specs/dead-letter-replay` (archived) |
+| Jobs (cron-style scheduling, manual run/test) | `lib/BackgroundJob/JobTask.php`, `openspec/specs/job-scheduling/spec.md` |
+| CloudEvents dispatch, webhook delivery, **dead-letter capture + replay + discard** | `lib/Service/EventService.php`, `lib/Controller/EventsController.php`, `lib/BackgroundJob/EventRetryJob.php` (registered in `info.xml` `<background-jobs>`), `openspec/specs/dead-letter-replay` (archived) |
 | Per-object audit trail | `lib/Service/EndpointService.php:1755-1790` reads `objectService->getOpenRegisters()->getLogs($objectId)` |
 | PDOK Locatieserver adapter (geocoding, WFS, WMS) | `lib/Sources/Pdok/*SourceAdapter.php`, `lib/Adapters/Pdok/*Client*.php`, `openspec/specs/pdok-adapter/spec.md` |
 | StUF-ZKN / StUF-BG adapter | `lib/Service/StUFZKNService.php`, `StUFBGService.php`, `StUFFieldMapper.php`, `StUFXMLBuilder.php`, `openspec/specs/stuf-adapter` |

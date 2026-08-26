@@ -12,7 +12,7 @@
  * throws out of the sweep loop).
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,7 +28,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\KissSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;

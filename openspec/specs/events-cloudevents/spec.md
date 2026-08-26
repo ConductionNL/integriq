@@ -360,7 +360,7 @@ recent outcome.
 ### Requirement: Scheduled retry sweep background job (REQ-007)
 
 The retry sweep MUST run from cron without any manual call site. A NC
-background job `lib/Cron/EventRetryJob.php` (TimedJob, interval 300
+background job `lib/BackgroundJob/EventRetryJob.php` (TimedJob, interval 300
 seconds) SHALL invoke `EventService::processRetries()`. The job MUST be
 registered via `<background-jobs>` in `appinfo/info.xml` (NOT via a
 non-existent `IRegistrationContext::registerJob()` call). The job MUST catch
