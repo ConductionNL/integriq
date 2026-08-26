@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Unit tests for BankfeedSyncJob.
+ * Unit tests for CardfeedSyncJob.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Cron
+ * @package  OCA\Integriq\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/tasks.md#task-5
+ * @spec openspec/changes/corporate-card-feed/tasks.md#task-4
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -18,23 +18,23 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Cron;
+namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
-use OCA\Integriq\Cron\BankfeedSyncJob;
-use OCA\Integriq\Service\BankfeedSyncService;
+use OCA\Integriq\BackgroundJob\CardfeedSyncJob;
+use OCA\Integriq\Service\CardfeedSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Tests for the scheduled bankfeed sync background job.
+ * Tests for the scheduled cardfeed sync background job.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+ * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
  */
-class BankfeedSyncJobTest extends TestCase {
+class CardfeedSyncJobTest extends TestCase {
 
 	/**
-	 * @var BankfeedSyncService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var CardfeedSyncService|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $syncService;
 
@@ -44,9 +44,9 @@ class BankfeedSyncJobTest extends TestCase {
 	private $logger;
 
 	/**
-	 * @var BankfeedSyncJob
+	 * @var CardfeedSyncJob
 	 */
-	private BankfeedSyncJob $job;
+	private CardfeedSyncJob $job;
 
 	/**
 	 * Set up test fixtures.
@@ -57,10 +57,10 @@ class BankfeedSyncJobTest extends TestCase {
 		parent::setUp();
 
 		$timeFactory = $this->createMock(ITimeFactory::class);
-		$this->syncService = $this->createMock(BankfeedSyncService::class);
+		$this->syncService = $this->createMock(CardfeedSyncService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->job = new BankfeedSyncJob($timeFactory, $this->syncService, $this->logger);
+		$this->job = new CardfeedSyncJob($timeFactory, $this->syncService, $this->logger);
 
 	}//end setUp()
 
@@ -70,17 +70,17 @@ class BankfeedSyncJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testConstructs(): void {
-		$this->assertInstanceOf(BankfeedSyncJob::class, $this->job);
+		$this->assertInstanceOf(CardfeedSyncJob::class, $this->job);
 
 	}//end testConstructs()
 
 	/**
-	 * Running the job invokes one syncAll sweep — REQ-004.
+	 * Running the job invokes one syncAll sweep — REQ-003.
 	 *
 	 * @return void
 	 */
 	public function testRunInvokesSyncAll(): void {
-		$this->syncService->expects($this->once())->method('syncAll')->willReturn(2);
+		$this->syncService->expects($this->once())->method('syncAll')->willReturn(1);
 
 		$this->job->run(null);
 

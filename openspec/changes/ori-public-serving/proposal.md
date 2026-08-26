@@ -41,7 +41,7 @@ Separately, decidesk carries a pending change `notubiz-ibabs-griffie-koppeling`
 (`kind: openconnector`) that proposes NEW NOTUBIZ/iBabs adapters, a sync
 engine, and four new OpenRegister schemas. integriq already ships
 `lib/Service/NotuBizConnectorService.php`, `lib/Service/IBabsConnectorService.php`,
-and `lib/Cron/RISPollJob.php` (archived changes
+and `lib/BackgroundJob/RISPollJob.php` (archived changes
 `2026-06-14-ibabs-notubiz-connector`, `2026-06-15-decidesk-ris-import-bundle`).
 That pending change was written without visibility into the already-shipped
 connectors and duplicates them structurally (new adapters, new sync engine)

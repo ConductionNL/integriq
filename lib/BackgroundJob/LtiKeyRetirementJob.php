@@ -10,7 +10,7 @@
  * published forever.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -35,7 +35,7 @@ use Throwable;
 /**
  * Background job that periodically retires grace-window-expired LTI signing keys.
  *
- * Mirrors {@see \OCA\Integriq\Cron\EventRetryJob}'s cron-registration
+ * Mirrors {@see \OCA\Integriq\BackgroundJob\EventRetryJob}'s cron-registration
  * pattern (design.md, task 2.1).
  *
  * @psalm-api

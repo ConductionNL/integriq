@@ -4,7 +4,7 @@
  * Integriq — deferred file fetching for one synchronised object.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,7 +15,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\SynchronizationService;
 use OCP\AppFramework\Utility\ITimeFactory;

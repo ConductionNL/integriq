@@ -306,7 +306,7 @@ expired.
 The system MUST periodically re-sign every `eudi_status_list` row whose
 current token `exp` is within a configurable refresh window (default:
 re-sign when less than 25% of the token's total validity window remains),
-via a new `lib/Cron/EudiStatusListRefreshJob.php` (a `TimedJob`, mirroring
+via a new `lib/BackgroundJob/EudiStatusListRefreshJob.php` (a `TimedJob`, mirroring
 `EventRetryJob`'s shape). Re-signing MUST produce a new signed token with a
 fresh `exp` and leave the bitstring contents unchanged. A rotation of the
 issuing organisation's

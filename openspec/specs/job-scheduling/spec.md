@@ -387,7 +387,7 @@ permanently-`running` row is indistinguishable from a genuinely live one, so the
 UI built to answer *"is my sync still going?"* answers it wrongly.
 
 `StaleRunSweepJob` (registered in `appinfo/info.xml` as
-`OCA\Integriq\Cron\StaleRunSweepJob`) MUST close such records.
+`OCA\Integriq\BackgroundJob\StaleRunSweepJob`) MUST close such records.
 
 **Trigger.** An `OCP\BackgroundJob\TimedJob` with `setInterval(seconds: 300)` —
 every five minutes. It sets neither `setTimeSensitivity()` nor

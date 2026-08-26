@@ -379,7 +379,7 @@ class EudiStatusListService {
 
 	/**
 	 * Sweep every status list row and re-sign any token nearing its own
-	 * expiry (REQ-EUDI-008b). Called by {@see \OCA\Integriq\Cron\EudiStatusListRefreshJob}.
+	 * expiry (REQ-EUDI-008b). Called by {@see \OCA\Integriq\BackgroundJob\EudiStatusListRefreshJob}.
 	 *
 	 * @return integer Number of tokens refreshed.
 	 *

@@ -140,7 +140,7 @@ or the equivalent NotuBiz handler.
 |------|---------|
 | `lib/Service/IBabsConnectorService.php` | iBabs REST API integration |
 | `lib/Service/NotuBizConnectorService.php` | NotuBiz REST API + OAuth2 integration |
-| `lib/Cron/RISPollJob.php` | 15-minute background poll for besluiten |
+| `lib/BackgroundJob/RISPollJob.php` | 15-minute background poll for besluiten |
 | `tests/Unit/Service/IBabsConnectorServiceTest.php` | iBabs service unit tests |
 | `tests/Unit/Service/NotuBizConnectorServiceTest.php` | NotuBiz service unit tests |
 | `tests/Unit/Cron/RISPollJobTest.php` | Poll job unit tests |

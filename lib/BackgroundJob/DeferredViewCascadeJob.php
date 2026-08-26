@@ -4,7 +4,7 @@
  * Integriq — deferred cascade delete of extended views (ADR-078).
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,7 +15,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\SourceMappingService;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;

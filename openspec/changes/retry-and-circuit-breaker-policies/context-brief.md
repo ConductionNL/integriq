@@ -9,7 +9,7 @@ Issues: #863 (ipaas-reliability spec request: retry/error handling), #1005 (HIGH
 - lib/Service/CallService.php: outbound rate-limit detection with backoff creates synthetic 409/429 CallLogs; no generic retry policy (max attempts / exponential backoff / retryable status codes).
 - Circuit breaker exists ONLY inside the PDOK adapter (verify lib/Adapters or lib/Sources PDOK classes) — not generalized.
 - Events have EventRetryJob + dead-letter replay (EventDeliveries) — data-plane sync failures have NO DLQ.
-- lib/Cron/JobTask.php runs scheduled jobs; verify iteration/failure semantics for #1005/#1006.
+- lib/BackgroundJob/JobTask.php runs scheduled jobs; verify iteration/failure semantics for #1005/#1006.
 
 ## In scope
 1. RetryPolicy config object on Source (and overridable per Synchronization): maxAttempts, backoff strategy (fixed/exponential), jitter, retryable HTTP codes, retry-on-timeout; enforced centrally in CallService.
