@@ -284,28 +284,42 @@ function parseOccJson(raw: string, command: string): unknown {
 /**
  * The scheduled job id of OpenRegister's FlowRunWorker.
  *
- * Asked for BY CLASS through occ's json output rather than grepped out of the
- * table: a table row is matched by a substring, and `FlowRunWorker` is also a
- * substring of nothing else today — which is exactly the kind of thing that
- * stops being true without warning.
+ * ⚠️ MATCHED ON THE LEAF CLASS, NOT THE FULL NAMESPACE — because the namespace
+ * moved and took this suite down with it.
+ *
+ * This asked occ for `--class=OCA\OpenRegister\Cron\FlowRunWorker`. OpenRegister
+ * then moved its background jobs out of `lib/Cron` into `lib/BackgroundJob`, so
+ * the registered class became `OCA\OpenRegister\BackgroundJob\FlowRunWorker`,
+ * the filter matched nothing, and this returned 0 rows. integriq's development
+ * went red on a change made in a DIFFERENT repository — a cross-app class name
+ * is a runtime lookup, and renaming the target breaks the consumer with no
+ * compile-time warning anywhere.
+ *
+ * Filtering here on `endsWith('\\FlowRunWorker')` keeps the precision the
+ * original docblock was reaching for — it is the whole leaf class, not a loose
+ * substring of the printed table — while surviving the namespace it lives in.
+ * If OpenRegister moves it again, this keeps working; if it ever ships a SECOND
+ * class with that leaf name, the count assertion below says so rather than
+ * silently picking one.
  *
  * @return The job id.
  */
 function flowRunWorkerJobId(): string {
-	const raw = occ().run([
-		'background-job:list',
-		'--class=OCA\\OpenRegister\\Cron\\FlowRunWorker',
-		'--output=json',
-	])
-	const rows = parseOccJson(raw, 'background-job:list') as Array<{
+	const raw = occ().run(['background-job:list', '--output=json'])
+	const all = parseOccJson(raw, 'background-job:list') as Array<{
 		id: string
 		class: string
 	}>
+	const rows = all.filter((row) =>
+		String(row.class ?? '').endsWith('\\FlowRunWorker'),
+	)
 	expect(
 		rows.length,
 		`exactly one FlowRunWorker job must be scheduled (via ${occ().how}); `
-			+ `occ reported ${rows.length}. Without it a queued run is never picked up and every `
-			+ 'assertion below would be about a run that had not happened.',
+			+ `occ reported ${rows.length} of ${all.length} job(s). Without it a queued run is `
+			+ 'never picked up and every assertion below would be about a run that had not '
+			+ 'happened. Registered classes: '
+			+ `${all.map((r) => String(r.class ?? '')).join(', ') || '<none>'}`,
 	).toBe(1)
 	return String(rows[0].id)
 }
