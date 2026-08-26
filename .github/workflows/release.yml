@@ -28,7 +28,7 @@ permissions:
   # MEASURED 2026-08-20: every run of this workflow in this repo has ended in
   # startup_failure, while apps whose callers declare NO permissions block at
   # all (decidesk, procest) release normally — because with no block there is
-  # no ceiling to fall short of. openconnector was the only app in the fleet
+  # no ceiling to fall short of. integriq was the only app in the fleet
   # that stated one, and stating an incomplete ceiling is worse than stating
   # none.
   pull-requests: write
