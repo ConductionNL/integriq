@@ -188,6 +188,26 @@
 			     keeps all five fields on purpose (see the step's docblock). -->
 			<step>OCA\Integriq\Repair\RemoveMigratedSourceSecretFields</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- The background jobs moved from OCA\Integriq\Cron to
+			     OCA\Integriq\BackgroundJob in #1579. The <job> entries above are
+			     a REGISTRATION instruction, not a description of state: on
+			     upgrade Nextcloud ADDS a job it does not have, but never removes
+			     one whose class disappeared — it cannot tell a renamed class
+			     from one merely unavailable this boot.
+
+			     THIS APP HAS THE MOST TO CLEAN UP: 13 of the 16 moved classes
+			     are registered, so an instance that carried the old build ends
+			     up with 13 rows naming classes that no longer exist. Each fails
+			     to build on every cron tick and logs rather than raises.
+
+			     Measured on a live instance after the equivalent opencatalogi
+			     move: oc_jobs still held OCA\OpenCatalogi\Cron\DirectorySync
+			     beside its replacement.
+
+			     Last in the block, and post-migration only: it removes rows and
+			     creates nothing, so no step depends on it, and a fresh install
+			     has nothing to remove. -->
+			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
