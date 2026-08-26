@@ -1,23 +1,24 @@
 <?php
+
 /**
- * OpenConnector — close out synchronization runs whose process died.
+ * Integriq — close out synchronization runs whose process died.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://github.com/ConductionNL/integriq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
 use DateTime;
-use OCA\OpenConnector\Service\SynchronizationRunProgressService;
+use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -73,9 +74,9 @@ class StaleRunSweepJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory    $time          The time factory.
+	 * @param ITimeFactory $time The time factory.
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param LoggerInterface $logger        The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,

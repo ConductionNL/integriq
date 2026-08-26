@@ -4,7 +4,7 @@
  * A node type that offers links from its own run-log entries.
  *
  * When a run is inspected, the entry a node wrote often points at something
- * elsewhere: an openconnector call has the source or the contract it used, an
+ * elsewhere: an integriq call has the source or the contract it used, an
  * agent step has the session it created. Only the app that ships the node knows
  * what those are or where they live, so the app that ships the node declares
  * them.

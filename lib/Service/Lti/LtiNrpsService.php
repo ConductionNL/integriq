@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiNrpsService.
+ * Integriq LtiNrpsService.
  *
  * Names & Role Provisioning Services (NRPS): inbound roster reads served
  * synchronously from a deployment's configured `register/schema` source
@@ -10,7 +10,7 @@
  * roster pulls reusing the AGS/NRPS JWT-bearer client-credentials mechanism.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\MappingService;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Bankfeed Sync Service.
+ * Integriq Bankfeed Sync Service.
  *
  * Core of the psd2-ais-bank-feed-connector: resolves the configured PSD2
  * aggregator source + provider binding, drives the redirect-based SCA
@@ -13,7 +13,7 @@
  * this connector never mutates a consuming app's records (REQ-005).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,22 +22,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\Psd2ConsentRevokedException;
-use OCA\OpenConnector\Exception\Psd2ProviderException;
-use OCA\OpenConnector\Service\Psd2\LogPsd2AggregatorProvider;
-use OCA\OpenConnector\Service\Psd2\Psd2AggregatorProviderInterface;
-use OCA\OpenConnector\Service\Psd2\RestPsd2AggregatorProvider;
+use OCA\Integriq\Exception\Psd2ConsentRevokedException;
+use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
+use OCA\Integriq\Service\Psd2\Psd2AggregatorProviderInterface;
+use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -61,7 +61,7 @@ class BankfeedSyncService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for a PSD2 aggregator source.
@@ -257,6 +257,15 @@ class BankfeedSyncService {
 		 */
 
 		$data = $connection->getObject();
+
+		// The connection AS LOADED, kept unmutated. $data gains consentGrantedAt /
+		// consentExpiresAt / accounts / lifecycleState below, and static analysis
+		// then narrows it to the keys this method assigns — so a later `??` read of
+		// a key it never assigns is reported as an offset that does not exist.
+		// Reading identifiers from the loaded copy is both analysable and closer to
+		// what they mean. Mirrors $jobConfig in JobService::executeJob().
+		$loaded = $data;
+
 		if (($data['lifecycleState'] ?? '') !== 'pending') {
 			throw new Psd2ProviderException(
 				message: 'This consent reference was already finalised — replayed callbacks are rejected.'
@@ -291,8 +300,8 @@ class BankfeedSyncService {
 		$this->emitConsentEvent(type: self::EVENT_TYPE_CONSENT_GRANTED, connection: $saved);
 
 		return [
-			'redirectUrl' => (string)($data['redirectUrl'] ?? ''),
-			'connectionId' => (string)($data['connectionId'] ?? ''),
+			'redirectUrl' => (string)($loaded['redirectUrl'] ?? ''),
+			'connectionId' => (string)($loaded['connectionId'] ?? ''),
 		];
 
 	}//end finaliseConsent()
@@ -437,6 +446,8 @@ class BankfeedSyncService {
 
 		$data = $connection->getObject();
 
+		// AS LOADED: $data gains lastSyncAt below and analysis then narrows it.
+		$loaded = $data;
 		$source = $this->resolveSource(sourceSlug: (string)($data['aggregatorSourceSlug'] ?? ''));
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
@@ -491,7 +502,7 @@ class BankfeedSyncService {
 					'since' => $since,
 					'until' => $until,
 					'transactionCount' => count($pull['transactions']),
-					'batchUri' => '/apps/openregister/api/objects/openconnector/bankfeed_batch/' . $batch->getUuid(),
+					'batchUri' => '/apps/openregister/api/objects/integriq/bankfeed_batch/' . $batch->getUuid(),
 				]
 			);
 
@@ -512,7 +523,7 @@ class BankfeedSyncService {
 		if ($batchCount > 0) {
 			$this->logger->info(
 				$this->l->t('Transactions synced'),
-				['connectionId' => ($data['connectionId'] ?? null), 'batches' => $batchCount]
+				['connectionId' => ($loaded['connectionId'] ?? null), 'batches' => $batchCount]
 			);
 		}
 
@@ -540,6 +551,12 @@ class BankfeedSyncService {
 		 */
 
 		$data = $connection->getObject();
+
+		// The connection AS LOADED — $data gains lifecycleState / expiryWarnedAt
+		// below, after which static analysis narrows it and the connectionId reads
+		// in the log calls report as non-existent offsets. connectionId is never
+		// mutated here, so the two are the same value at runtime.
+		$loaded = $data;
 
 		if (($data['lifecycleState'] ?? '') !== 'active') {
 			return false;
@@ -583,7 +600,7 @@ class BankfeedSyncService {
 			$connection->setObject($saved->getObject());
 			$this->logger->info(
 				$this->l->t('Consent expiring soon'),
-				['connectionId' => ($data['connectionId'] ?? null), 'consentExpiresAt' => $expiresAtRaw]
+				['connectionId' => ($loaded['connectionId'] ?? null), 'consentExpiresAt' => $expiresAtRaw]
 			);
 			$this->emitConsentEvent(type: self::EVENT_TYPE_CONSENT_EXPIRING, connection: $saved);
 		}

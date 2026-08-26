@@ -13,7 +13,7 @@
  * REQ-CON-001 describes backend consumer auth enforcement that carries
  * @e2e exclude and is covered by PHPUnit/Newman.
  *
- * NOTE: /index.php/apps/openconnector/* redirects to /apps/openconnector/ (loses
+ * NOTE: /index.php/apps/integriq/* redirects to /apps/integriq/ (loses
  * the deep-link path). Always use the /apps/ prefix.
  *
  * Known bug #996: Table view renders all cells as "—". Assertions use
@@ -29,7 +29,7 @@ import { appDialog } from '../support/dialogs'
 // that string that was missing the prefix.
 import { APP_BASE } from './_helpers'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
+const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 
 // ---------------------------------------------------------------------------
 // REQ-CON-UI-001: Consumer Management UI

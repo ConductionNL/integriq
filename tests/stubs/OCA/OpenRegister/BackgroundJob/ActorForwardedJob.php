@@ -19,11 +19,11 @@
  * returns `?object` rather than the real `?Organisation`, because the
  * Organisation entity is not stubbed in this repository. The drift log is
  * observability only — it can never change what the job does — and it is
- * OpenRegister's behaviour, not OpenConnector's, so it is not under test here.
+ * OpenRegister's behaviour, not Integriq's, so it is not under test here.
  * Its own `catch (\Throwable) { return; }` is mirrored faithfully.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 
@@ -47,11 +47,11 @@ abstract class ActorForwardedJob extends QueuedJob {
 	/**
 	 * Wire the identity plumbing shared by all actor-forwarded jobs.
 	 *
-	 * @param ITimeFactory        $time         Time factory for the parent job class.
-	 * @param IUserSession        $userSession  Session to impersonate on / restore.
-	 * @param IUserManager        $userManager  Resolver for the captured user id.
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationService $organisation Active-organisation resolver (drift detection).
-	 * @param LoggerInterface     $logger       PSR logger (shared with subclasses).
+	 * @param LoggerInterface $logger PSR logger (shared with subclasses).
 	 */
 	public function __construct(
 		ITimeFactory $time,

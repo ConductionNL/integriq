@@ -50,7 +50,7 @@
 					:text="
 						field.description
 						|| t(
-							'openconnector',
+							'integriq',
 							'Path segments, split on commas. Left empty the backend derives them from the endpoint path.',
 						)
 					"
@@ -93,7 +93,7 @@
 						class="cn-endpoint-form-fields__note cn-endpoint-form-fields__note--warn">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.',
 							)
 						}}
@@ -107,13 +107,11 @@
 								<label
 									for="cn-endpoint-form-register"
 									class="cn-endpoint-form-fields__label">
-									{{ t('openconnector', 'Register') }} *
+									{{ t('integriq', 'Register') }} *
 								</label>
 								<NcSelect
 									inputId="cn-endpoint-form-register"
-									:aria-label-combobox="
-										t('openconnector', 'Register')
-									"
+									:aria-label-combobox="t('integriq', 'Register')"
 									:modelValue="selectedRegister"
 									:options="registerOptions"
 									:loading="registersLoading"
@@ -124,13 +122,11 @@
 								<label
 									for="cn-endpoint-form-schema"
 									class="cn-endpoint-form-fields__label">
-									{{ t('openconnector', 'Schema') }} *
+									{{ t('integriq', 'Schema') }} *
 								</label>
 								<NcSelect
 									inputId="cn-endpoint-form-schema"
-									:aria-label-combobox="
-										t('openconnector', 'Schema')
-									"
+									:aria-label-combobox="t('integriq', 'Schema')"
 									:modelValue="selectedSchema"
 									:options="schemaOptions"
 									:disabled="!selectedRegister"
@@ -141,7 +137,7 @@
 						<CnFieldHelper
 							:text="
 								t(
-									'openconnector',
+									'integriq',
 									'Stored together as the endpoint\'s target id.',
 								)
 							" />

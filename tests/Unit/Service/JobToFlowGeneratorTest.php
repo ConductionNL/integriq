@@ -18,7 +18,7 @@
  * that feature do NOT fire it.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,20 +27,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
-use OCA\OpenConnector\Service\JobIntervalCron;
-use OCA\OpenConnector\Service\MigrationEntityReader;
-use OCA\OpenConnector\Service\MigrationSubject;
-use OCA\OpenConnector\Service\JobToFlowGenerator;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\JobIntervalCron;
+use OCA\Integriq\Service\JobToFlowGenerator;
+use OCA\Integriq\Service\MigrationEntityReader;
+use OCA\Integriq\Service\MigrationSubject;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -51,11 +53,11 @@ use RuntimeException;
 /**
  * Tests for the Job → flow migration generator.
  *
- * @covers \OCA\OpenConnector\Service\JobToFlowGenerator
- * @covers \OCA\OpenConnector\Service\JobIntervalCron
- * @covers \OCA\OpenConnector\Service\MigrationSubject
- * @covers \OCA\OpenConnector\Service\MigrationEntityReader
- * @covers \OCA\OpenConnector\Exception\EntityNotMigratableException
+ * @covers \OCA\Integriq\Service\JobToFlowGenerator
+ * @covers \OCA\Integriq\Service\JobIntervalCron
+ * @covers \OCA\Integriq\Service\MigrationSubject
+ * @covers \OCA\Integriq\Service\MigrationEntityReader
+ * @covers \OCA\Integriq\Exception\EntityNotMigratableException
  */
 class JobToFlowGeneratorTest extends TestCase {
 
@@ -64,14 +66,24 @@ class JobToFlowGeneratorTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private const SYNC_ACTION = 'OCA\OpenConnector\Action\SynchronizationAction';
+	private const SYNC_ACTION = 'OCA\Integriq\Action\SynchronizationAction';
 
 	/**
 	 * The action class a migratable flow job points at.
 	 *
 	 * @var string
 	 */
-	private const FLOW_ACTION = 'OCA\OpenConnector\Action\FlowAction';
+	private const FLOW_ACTION = 'OCA\Integriq\Action\FlowAction';
+
+	/**
+	 * The configured account converted jobs act as.
+	 *
+	 * Arbitrary, but it must be a plausible uid: it ends up in the generated
+	 * trigger's `runAs` and openregister validates that the account exists.
+	 *
+	 * @var string
+	 */
+	private const RUN_AS = 'integriq-scheduler';
 
 	/**
 	 * The entity reader double.
@@ -104,11 +116,30 @@ class JobToFlowGeneratorTest extends TestCase {
 
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->l10n = $this->translations();
+
+		// THE ACTING ACCOUNT IS CONFIGURED, NOT DERIVED.
+		//
+		// openregister's trigger-schedule requires a `runAs` naming an existing
+		// user and refuses to fall back to the flow's owner. A background job
+		// has no session either, so integriq reads the account from app config
+		// and REFUSES generation when it is missing — see
+		// JobToFlowGenerator::actingIdentityRefusals().
+		//
+		// These doubles put the generator in the configured-and-valid state, so
+		// the tests below exercise generation rather than that refusal. The
+		// refusal has its own test.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn(self::RUN_AS);
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($this->createMock(IUser::class));
+
 		$this->generator = new JobToFlowGenerator(
 			reader: new MigrationEntityReader(objectService: $this->objectService, l10n: $this->l10n),
 			cadence: new JobIntervalCron(),
 			subject: new MigrationSubject(),
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			appConfig: $appConfig,
+			userManager: $userManager
 		);
 
 	}//end setUp()
@@ -131,7 +162,6 @@ class JobToFlowGeneratorTest extends TestCase {
 		);
 
 		return $l10n;
-
 	}//end translations()
 
 	/**
@@ -372,9 +402,30 @@ class JobToFlowGeneratorTest extends TestCase {
 		}
 
 		$flow = $this->generator->generateFrom(job: $this->job());
-		$trigger = new $scheduleNode($this->l10n, $this->createMock(IURLGenerator::class));
-		$trigger->validateConfig($this->node(flow: $flow, id: 'trigger')['config']);
-		$this->assertSame([], array_diff(['cron'], $trigger->configKeys()));
+		// CONSTRUCTED ACROSS AN APP BOUNDARY, so its signature is not ours to
+		// control. openregister added `IUserManager` to this constructor on
+		// 2026-08-24 (94a0d1c5, "acting on behalf of a user is a granted,
+		// run-scoped capability"). Nothing failed at merge time: openregister's
+		// own tests construct it correctly, and integriq's CI had last run
+		// twenty minutes earlier — the break only appeared on the next run here.
+		// The node resolves `runAs` through IUserManager to prove the account
+		// exists, so this double must answer for the uid the generator emitted.
+		// A bare mock returns null and the node would refuse a config that is
+		// in fact correct.
+		$nodeUserManager = $this->createMock(IUserManager::class);
+		$nodeUserManager->method('get')->willReturn($this->createMock(IUser::class));
+
+		$trigger = new $scheduleNode(
+			$this->l10n,
+			$this->createMock(IURLGenerator::class),
+			$nodeUserManager
+		);
+		$triggerConfig = $this->node(flow: $flow, id: 'trigger')['config'];
+		$trigger->validateConfig($triggerConfig);
+		$this->assertSame([], array_diff(['cron', 'runAs'], $trigger->configKeys()));
+
+		// The generated flow names the CONFIGURED account, not a derived one.
+		$this->assertSame(self::RUN_AS, $triggerConfig['runAs']);
 
 		if (class_exists($subFlowNode) === true) {
 			$subFlow = $this->generator->generateFrom(
@@ -529,7 +580,6 @@ class JobToFlowGeneratorTest extends TestCase {
 	 */
 	public static function singleRunSpellings(): array {
 		return ['schema property' => ['singleRun'], 'what JobService reads' => ['isSingleRun']];
-
 	}//end singleRunSpellings()
 
 	/**
@@ -567,7 +617,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\OpenConnector\Action\PingAction',
+					'jobClass' => 'OCA\Integriq\Action\PingAction',
 					'arguments' => ['sourceId' => 'some-source'],
 				]
 			)
@@ -587,7 +637,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\OpenConnector\Action\EventAction',
+					'jobClass' => 'OCA\Integriq\Action\EventAction',
 					'arguments' => ['type' => 'x', 'source' => 'y'],
 				]
 			)

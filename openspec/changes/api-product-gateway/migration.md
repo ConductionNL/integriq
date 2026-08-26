@@ -2,7 +2,7 @@
 
 ## Current State
 
-`openconnector_register.json` (loaded via `ConfigurationService::importFromApp`,
+`integriq_register.json` (loaded via `ConfigurationService::importFromApp`,
 `openconnector-storage-migration`) declares 15 core schemas, including
 `call_log` with `uuid`, `statusCode`, `statusMessage`, `direction`
 (`inbound`|`outbound`), `request`, `response`, `sourceId`/`source`,
@@ -42,7 +42,7 @@ Key operations:
   and is idempotent. Adding a new register.d/*.json file requires no new
   Version*.php migration class — the existing migration class that calls
   importFromApp picks it up automatically on next `occ upgrade` /
-  `occ app:update openconnector`.
+  `occ app:update integriq`.
 ```
 
 No `Version*.php` class is added by this change. The existing storage
@@ -57,9 +57,9 @@ for schemas/fields that already exist, additive for new ones).
 1. Add `lib/Settings/register.d/api-product-gateway.json` with the two new
    schema declarations and the `call_log` deep-merge block (verifiable:
    `git diff` shows only new-file addition + no edits to
-   `openconnector_register.json`).
+   `integriq_register.json`).
 2. Deploy the app version carrying the fragment; on `occ app:update
-   openconnector` (or fresh `occ app:enable`), the existing migration class
+   integriq` (or fresh `occ app:enable`), the existing migration class
    re-runs `ConfigurationService::importFromApp()`, which merges the
    fragment into the live OpenRegister register/schema tables (verifiable:
    `oc_openregister_schemas` gains 2 rows for `api_product` and
@@ -108,7 +108,7 @@ for schemas/fields that already exist, additive for new ones).
   Product', 'Api Product Subscription');` → expect `2` after deploy.
 - `SELECT properties::jsonb ? 'responseTime' FROM oc_openregister_schemas
   WHERE slug = 'call_log';` (Postgres) → expect `true` after deploy.
-- Re-run `occ app:update openconnector` a second time → expect no error, no
+- Re-run `occ app:update integriq` a second time → expect no error, no
   duplicate schema rows (idempotency, per
   openconnector-storage-migration's "Idempotent re-run" scenario).
 - Create one `api_product` and one `api_product_subscription` via the OR

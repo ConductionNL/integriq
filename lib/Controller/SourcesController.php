@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector sources controller.
+ * Integriq sources controller.
  *
  * Controller for source listing pages and source-test/call-log endpoints.
  * Surfaces filtered call logs and runs ad-hoc test calls against a source.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,15 +15,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -86,7 +86,7 @@ class SourcesController extends Controller {
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchService $searchService): JSONResponse {
 		try {
 			// Get filters from request.
@@ -192,7 +192,7 @@ class SourcesController extends Controller {
 			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
 			// Get call logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'call_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'call_log'], $filters);
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => $orFilters,
@@ -258,7 +258,7 @@ class SourcesController extends Controller {
 		// ObjectService::find() throws DoesNotExistException on a missing
 		// UUID — catch it so the response is a clean 404 instead of 500.
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -321,7 +321,7 @@ class SourcesController extends Controller {
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Source test failed: ' . $e->getMessage(),
-				['app' => 'openconnector', 'sourceId' => $id, 'exception' => $e]
+				['app' => 'integriq', 'sourceId' => $id, 'exception' => $e]
 			);
 			return new JSONResponse(
 				data: ['error' => $this->l->t('The source test could not be completed: %s', [$e->getMessage()])],
@@ -362,10 +362,10 @@ class SourcesController extends Controller {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function tripCircuitBreaker(CallService $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -395,10 +395,10 @@ class SourcesController extends Controller {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function resetCircuitBreaker(CallService $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}

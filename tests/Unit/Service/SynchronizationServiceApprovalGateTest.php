@@ -5,7 +5,7 @@
  * (synchronization-engine REQ-015).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,15 +19,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\ApprovalService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;

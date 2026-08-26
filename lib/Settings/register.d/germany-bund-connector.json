@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "germany-bund"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "germany-bund-to-tender"
         },
@@ -51,7 +51,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "germany-bund-to-spectr-tender"
         },
@@ -77,13 +77,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "germany-bund-weekly-sync"
         },
         "name": "Germany Bund Weekly Sync",
         "description": "Runs the germany-bund-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "germany-bund-to-spectr-tender"
         },

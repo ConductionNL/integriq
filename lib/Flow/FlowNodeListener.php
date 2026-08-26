@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector Flow Node Listener.
+ * Integriq Flow Node Listener.
  *
- * Contributes OpenConnector's node types to OpenRegister's flow palette when
+ * Contributes Integriq's node types to OpenRegister's flow palette when
  * OpenRegister dispatches `RegisterFlowNodesEvent`.
  *
  * This is Nextcloud's own discovery pattern — the same listener an app writes
  * for `RegisterOperationsEvent` in core's workflow engine — and it is the
- * reason OpenConnector contributes NODES rather than running a graph of its
+ * reason Integriq contributes NODES rather than running a graph of its
  * own. The fleet has one flow engine (ADR-065); apps contribute steps to it.
  *
  * The listener is registered from `Application::register()` behind a
@@ -21,7 +21,7 @@
  * it prevents the reference from being resolved at all.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,25 +32,25 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
- * Registers OpenConnector's flow nodes when OpenRegister builds its palette.
+ * Registers Integriq's flow nodes when OpenRegister builds its palette.
  *
  * @template-implements IEventListener<RegisterFlowNodesEvent>
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 class FlowNodeListener implements IEventListener {
 	/**
@@ -63,6 +63,7 @@ class FlowNodeListener implements IEventListener {
 	 * @param ContractMatchNode $contractMatchNode The page-level contract-decision node.
 	 * @param ContractCommitNode $contractCommitNode The page-level contract-upsert node.
 	 * @param ContractSweepNode $contractSweepNode The guarded stale-object sweep node.
+	 * @param FetchFileNode $fetchFileNode The fetch-file rule node.
 	 */
 	public function __construct(
 		private readonly SourceCallNode $sourceCallNode,
@@ -72,6 +73,7 @@ class FlowNodeListener implements IEventListener {
 		private readonly ContractMatchNode $contractMatchNode,
 		private readonly ContractCommitNode $contractCommitNode,
 		private readonly ContractSweepNode $contractSweepNode,
+		private readonly FetchFileNode $fetchFileNode,
 	) {
 
 	}//end __construct()
@@ -87,7 +89,7 @@ class FlowNodeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof RegisterFlowNodesEvent) === false) {
@@ -101,6 +103,7 @@ class FlowNodeListener implements IEventListener {
 		$event->registerNode(node: $this->contractMatchNode);
 		$event->registerNode(node: $this->contractCommitNode);
 		$event->registerNode(node: $this->contractSweepNode);
+		$event->registerNode(node: $this->fetchFileNode);
 
 	}//end handle()
 }//end class

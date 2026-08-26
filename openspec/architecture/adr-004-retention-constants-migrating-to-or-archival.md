@@ -48,7 +48,7 @@ bug; the migration unifies on the schema-declared value.
 
 - A developer adding a new log table must NOT copy the
   `DEFAULT_*_RETENTION` pattern; instead, set the retention on the schema
-  declaration in `lib/Settings/openconnector_register.json` once the
+  declaration in `lib/Settings/integriq_register.json` once the
   in-flight change lands.
 - The IAppConfig override hook (`getValueString('openconnector',
   'retention')`) stays operative; admins can still tenant-tune retention

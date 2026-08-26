@@ -1,4 +1,4 @@
-# OpenConnector app manifest
+# Integriq app manifest
 # Declares tier, dependencies, and consumed shared specs per Hydra adopt-app-manifest change.
 # See openspec/changes/openconnector-adopt-or-abstractions/design.md#phase-8
 

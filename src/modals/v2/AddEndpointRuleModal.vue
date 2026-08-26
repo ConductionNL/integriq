@@ -8,11 +8,11 @@
 
   Closes #836.
 
-  Backend contract: the endpoint is an OR object (register=openconnector,
+  Backend contract: the endpoint is an OR object (register=integriq,
   schema=endpoint). The modal lists rules from
-    GET /api/objects/openconnector/rule
+    GET /api/objects/integriq/rule
   and updates the endpoint via
-    PATCH /api/objects/openconnector/endpoint/{id}
+    PATCH /api/objects/integriq/endpoint/{id}
   with `{ rules: [...string ids...] }`. Multi-select is supported so the
   user can attach several rules in one trip.
 -->
@@ -23,12 +23,12 @@
 		size="normal"
 		@close="onClose">
 		<div class="cn-add-endpoint-rule-modal">
-			<h2>{{ t('openconnector', 'Add rule to endpoint') }}</h2>
+			<h2>{{ t('integriq', 'Add rule to endpoint') }}</h2>
 
 			<NcNoteCard v-if="endpointName" type="info">
 				<p>
 					{{
-						t('openconnector', 'Endpoint: {name}', {
+						t('integriq', 'Endpoint: {name}', {
 							name: endpointName,
 						})
 					}}
@@ -36,7 +36,7 @@
 			</NcNoteCard>
 
 			<NcNoteCard v-if="success" type="success">
-				<p>{{ t('openconnector', 'Rule(s) added to endpoint.') }}</p>
+				<p>{{ t('integriq', 'Rule(s) added to endpoint.') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -44,17 +44,17 @@
 
 			<form v-if="!success" @submit.prevent="onSave">
 				<label for="cn-add-endpoint-rule-select">
-					{{ t('openconnector', 'Select rules to add') }}
+					{{ t('integriq', 'Select rules to add') }}
 				</label>
 				<NcSelect
 					id="cn-add-endpoint-rule-select"
 					v-model="selectedRules"
-					:aria-label-combobox="t('openconnector', 'Select rules to add')"
+					:aria-label-combobox="t('integriq', 'Select rules to add')"
 					:options="availableRules"
 					:loading="loadingRules"
 					:multiple="true"
 					:clearable="true"
-					:placeholder="t('openconnector', 'Pick one or more rules')"
+					:placeholder="t('integriq', 'Pick one or more rules')"
 					inputId="cn-add-endpoint-rule-select" />
 			</form>
 
@@ -63,7 +63,7 @@
 					<template #icon>
 						<CancelIcon :size="20" />
 					</template>
-					{{ t('openconnector', 'Cancel') }}
+					{{ t('integriq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -74,10 +74,10 @@
 						<NcLoadingIcon v-if="saving" :size="20" />
 						<ContentSaveOutline v-else :size="20" />
 					</template>
-					{{ t('openconnector', 'Save') }}
+					{{ t('integriq', 'Save') }}
 				</NcButton>
 				<NcButton v-if="success" @click="onClose">
-					{{ t('openconnector', 'Close') }}
+					{{ t('integriq', 'Close') }}
 				</NcButton>
 			</div>
 		</div>
@@ -190,7 +190,7 @@ export default {
 			this.loadingRules = true
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/rule'),
+					generateUrl('/apps/openregister/api/objects/integriq/rule'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
@@ -215,7 +215,7 @@ export default {
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[AddEndpointRuleModal] rules fetch failed', err)
-				this.error = t('openconnector', 'Failed to load available rules.')
+				this.error = t('integriq', 'Failed to load available rules.')
 			} finally {
 				this.loadingRules = false
 			}
@@ -233,16 +233,16 @@ export default {
 				)
 				await axios.patch(
 					generateUrl(
-						`/apps/openregister/api/objects/openconnector/endpoint/${this.endpointId}`,
+						`/apps/openregister/api/objects/integriq/endpoint/${this.endpointId}`,
 					),
 					{ rules: merged },
 				)
 				this.success = true
-				showSuccess(t('openconnector', 'Rule(s) added to endpoint.'))
+				showSuccess(t('integriq', 'Rule(s) added to endpoint.'))
 			} catch (err) {
 				const detail = err?.response?.data?.message || err?.message || ''
 				this.error =
-					t('openconnector', 'Failed to add rule to endpoint')
+					t('integriq', 'Failed to add rule to endpoint')
 					+ (detail ? `: ${detail}` : '')
 				showError(this.error)
 			} finally {

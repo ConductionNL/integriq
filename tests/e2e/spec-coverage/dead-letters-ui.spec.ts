@@ -162,7 +162,7 @@ test.describe('Sync dead letters — empty state (REQ-DLR-012)', () => {
 		// queue is empty. If it returns rows, this test is being run against a
 		// dirty queue and must SKIP rather than assert a falsehood.
 		const probe = await fx.api.request.get(
-			'/index.php/apps/openconnector/api/sync-dead-letter',
+			'/index.php/apps/integriq/api/sync-dead-letter',
 			{
 				failOnStatusCode: false,
 			},

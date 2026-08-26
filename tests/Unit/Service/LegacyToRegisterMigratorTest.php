@@ -10,7 +10,7 @@
  * migrator writes into oc_openregister_objects.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -21,10 +21,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;

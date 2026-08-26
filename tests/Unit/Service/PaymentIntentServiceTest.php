@@ -4,7 +4,7 @@
  * Unit tests for PaymentIntentService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,15 +19,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Exception\PaymentProviderException;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\Payment\LogPaymentProvider;
-use OCA\OpenConnector\Service\Payment\MolliePaymentProvider;
-use OCA\OpenConnector\Service\PaymentIntentService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Payment\LogPaymentProvider;
+use OCA\Integriq\Service\Payment\MolliePaymentProvider;
+use OCA\Integriq\Service\PaymentIntentService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

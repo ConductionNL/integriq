@@ -5,7 +5,7 @@ depends_on: []
 
 ## Why
 
-Four openconnector specs declare fleet-wide MUST requirements for connector
+Four integriq specs declare fleet-wide MUST requirements for connector
 adapters, created by archiving `add-openconnector-connector-categories`:
 
 - `openspec/specs/endpoint-workspace-connectors/spec.md` (REQ-EWC-001) — Citrix,
@@ -24,7 +24,7 @@ adapters, created by archiving `add-openconnector-connector-categories`:
 None of the four `lib/Service/Adapter/{EndpointWorkspace,DocumentCms,Saas,DataInfra}/`
 directories exist. `lib/Service/Integration/` — the only directory currently
 registering an `IntegrationProvider` — contains exactly one provider,
-`SynchronizationContractProvider.php`, which surfaces openconnector's own
+`SynchronizationContractProvider.php`, which surfaces integriq's own
 synchronization-contract widget to OR, not an external SaaS/DMS/EWC/data-infra
 system. Zero external-vendor adapters exist anywhere in the codebase (confirmed:
 `lib/Connectors/` holds only `PdokConnector.php`, `lib/Adapters/` holds only

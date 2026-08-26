@@ -89,7 +89,7 @@ Two mechanisms, complementary:
   `registerFlowNodeEditor(nodeId, component)`. `CnFlowDetail` opens the
   registered component instead of the generic `CnFlowNodeEditModal`; the
   component receives the node draft and the same Done/Cancel/Remove contract.
-  OpenConnector registers: `synchronization-run` → the existing
+  Integriq registers: `synchronization-run` → the existing
   Synchronization dialog (plus the node's own fields: output, maxItems,
   onError), `apply-mapping` → the Mapping editor, source nodes → the Source
   picker.

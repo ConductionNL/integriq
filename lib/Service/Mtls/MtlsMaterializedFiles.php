@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector mTLS Materialized Files.
+ * Integriq mTLS Materialized Files.
  *
  * Immutable record of the transient, `0600`-permission temp-file paths
  * {@see MtlsTransportOptionsBuilder::materialize()} created for one
@@ -9,7 +9,7 @@
  * remove exactly those paths afterwards — success or failure.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Mtls
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-certificate-material-is-materialised-to-disk-only-transiently-with-guaranteed-cleanup-req-002
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Mtls;
+namespace OCA\Integriq\Service\Mtls;
 
 /**
  * The set of temp-file paths materialized for one mTLS request cycle.

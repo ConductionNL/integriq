@@ -43,7 +43,7 @@ export { EMPTY_ROOT_GROUP, emptyRootGroup, normaliseConditions }
 /**
  * Polymorphic type discriminator options shared between source and target.
  * Keep in sync with the `synchronization.sourceType` / `targetType`
- * descriptions in `lib/Settings/openconnector_register.json`.
+ * descriptions in `lib/Settings/integriq_register.json`.
  */
 export const TYPE_OPTIONS = [
 	{ id: 'api', label: 'API' },
@@ -73,7 +73,7 @@ export const NEXTCLOUD_FORM_OPTION = {
 
 /**
  * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync with
- * the `syncMode` enum in `lib/Settings/openconnector_register.json`.
+ * the `syncMode` enum in `lib/Settings/integriq_register.json`.
  */
 export const SYNC_MODE_OPTIONS = [
 	{ id: 'full', label: 'Full' },
@@ -156,7 +156,7 @@ export async function fetchBridgeStatus(bridge) {
 	try {
 		const response = await axios.get(
 			generateUrl(
-				`/apps/openconnector/api/synchronizations/${bridge}-bridge/status`,
+				`/apps/integriq/api/synchronizations/${bridge}-bridge/status`,
 			),
 		)
 		return Boolean(response.data?.enabled)

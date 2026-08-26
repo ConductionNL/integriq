@@ -86,7 +86,7 @@ numeric schema `order`; orders are unique; the four flags are contiguous by orde
   `normalizePersistedDates` writes the truncation back. Library-wide, matched here on
   purpose.
 - **Make `src/modals/v2/` lint** (shared with the rule-editor change's follow-ups).
-- **Three seeded jobs point at non-existent `OCA\OpenConnector\Cron\Example*Job` classes**
+- **Three seeded jobs point at non-existent `OCA\Integriq\Cron\Example*Job` classes**
   and throw at `JobService.php:432` if run. Tolerated here, broken regardless.
 - **`job.executionTime` is a dead property** on the job object — written only onto job logs.
   Retiring it, or renaming it `lastExecutionTime` to match its own description, is a schema

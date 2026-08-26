@@ -29,7 +29,7 @@ A ready-to-run, credential-free source preset for the public
 - **Synchronizations** page: 8 synchronizations named
   `endoflife.date — <Product> cycles`, one per curated product.
 - **Jobs** page: 8 jobs named `endoflife.date — <Product> cycles sync`,
-  each running daily via `OCA\OpenConnector\Action\SynchronizationAction`.
+  each running daily via `OCA\Integriq\Action\SynchronizationAction`.
 - **Catalog** page: an "endoflife.date" card appears automatically among
   the source-template entries (no bespoke UI code — this is a side effect
   of the seed fragment declaring a `source` object, picked up by the
@@ -89,7 +89,7 @@ To track a ninth product (e.g. `django`) from the 460+ listed at
    `items`/`result`/`results` keys the engine otherwise falls back to.
    Omitting it fails every run with "Cannot determine the position of
    objects in the return body."
-4. Re-run `InitializeRegister` (`occ app:enable openconnector` or an
+4. Re-run `InitializeRegister` (`occ app:enable integriq` or an
    upgrade). The new product's `eolCycle` data begins syncing on the same
    daily cadence — no PHP or engine change required.
 

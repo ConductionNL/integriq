@@ -4,7 +4,7 @@
  * Unit tests for CloudEventListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\OpenConnector\EventListener\CloudEventListener;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\EventListener\CloudEventListener;
+use OCA\Integriq\Service\EventService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;

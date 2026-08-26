@@ -15,12 +15,12 @@
 <template>
 	<NcModal v-if="open" labelId="testMappingModal" size="large" @close="onClose">
 		<div class="cn-test-mapping-modal">
-			<h2>{{ t('openconnector', 'Test mapping') }}</h2>
+			<h2>{{ t('integriq', 'Test mapping') }}</h2>
 
 			<NcNoteCard v-if="mappingName" type="info">
 				<p>
 					{{
-						t('openconnector', 'Testing mapping: {name}', {
+						t('integriq', 'Testing mapping: {name}', {
 							name: mappingName,
 						})
 					}}
@@ -30,9 +30,9 @@
 			<div class="cn-test-mapping-modal__panes">
 				<!-- Left: input -->
 				<section class="cn-test-mapping-modal__pane">
-					<h3>{{ t('openconnector', 'Input') }}</h3>
+					<h3>{{ t('integriq', 'Input') }}</h3>
 					<label for="cn-test-mapping-input">
-						{{ t('openconnector', 'Input object (JSON)') }}
+						{{ t('integriq', 'Input object (JSON)') }}
 					</label>
 					<textarea
 						id="cn-test-mapping-input"
@@ -47,7 +47,7 @@
 
 					<div class="cn-test-mapping-modal__actions">
 						<NcButton @click="onClose">
-							{{ t('openconnector', 'Close') }}
+							{{ t('integriq', 'Close') }}
 						</NcButton>
 						<NcButton
 							variant="primary"
@@ -56,14 +56,14 @@
 							<template #icon>
 								<PlayOutlineIcon :size="20" />
 							</template>
-							{{ t('openconnector', 'Run test') }}
+							{{ t('integriq', 'Run test') }}
 						</NcButton>
 					</div>
 				</section>
 
 				<!-- Right: result -->
 				<section class="cn-test-mapping-modal__pane">
-					<h3>{{ t('openconnector', 'Result') }}</h3>
+					<h3>{{ t('integriq', 'Result') }}</h3>
 					<MappingResultPanel
 						ref="result"
 						:mapping="mapping"

@@ -1,7 +1,7 @@
 # Proposal: nextcloud-event-hub
 
 ## Summary
-OpenConnector already ships a complete CloudEvents pipeline — `event`/`event_subscription`/`event_message`
+Integriq already ships a complete CloudEvents pipeline — `event`/`event_subscription`/`event_message`
 schemas, filter-and-deliver logic (`EventService::processEvent`/`deliverMessage`), a scheduled retry sweep
 (`EventRetryJob`), HMAC request signing (`WebhookSignatureService`, already wired into delivery), and a
 dead-letter + replay UI (`EventDeliveriesPage.vue`) — but today it only reacts to **OpenRegister object**
@@ -11,21 +11,21 @@ whose delivery is background-job-polled (up to 5 minutes of latency) and ships w
 no signing, and no dead-lettering. This change adds in-process PHP listeners for Nextcloud core events,
 normalizes them into the existing CloudEvents `event` envelope, and lets admins — and, for allow-listed
 event types, non-admin users — subscribe those events to a synchronization, a job, or an outbound signed
-webhook, entirely through machinery OpenConnector already operates and already tests. It is a pure
+webhook, entirely through machinery Integriq already operates and already tests. It is a pure
 differentiator: no other App Store app offers guaranteed, self-service, in-process Nextcloud event routing.
 
 ## Motivation
 Specter deep-research insight #1250 identified this as a market gap: Nextcloud's own answer to
 "do something when a file changes" is either `workflow_engine` (no outbound HTTP, no retries) or
 `webhook_listeners` + a second product (Windmill) for anything resembling delivery guarantees. Every
-OpenConnector building block needed to close this gap already exists and is already spec'd
+Integriq building block needed to close this gap already exists and is already spec'd
 (`events-cloudevents`, `dead-letter-replay`, `webhook-signing`, `consumer-management`) — the only missing
 piece is the NC-core-event → `event` entity producer and a subscription trigger that isn't "another
 CloudEvent". Building this now reuses machinery that is implemented and tested rather than forking it,
 and turns four independently-shipped specs into one coherent, sellable capability.
 
 ## Affected Projects
-- [x] Project: `openconnector` — new NC-core event listeners, `EventService` extensions, subscription
+- [x] Project: `integriq` — new NC-core event listeners, `EventService` extensions, subscription
   schema fields, self-service authorization gate, delivery-status UI additions.
 
 ## Scope
@@ -52,7 +52,7 @@ and turns four independently-shipped specs into one coherent, sellable capabilit
    (60s / ×4 / 6h cap / 5 retries) as the default when absent — today these are hardcoded, non-configurable
    constants.
 6. Non-admin self-service subscription creation for NC event types an admin has explicitly allow-listed,
-   by reusing OpenConnector's existing ADR-023 implementation at HEAD (`ActionAuthService::requireAction`,
+   by reusing Integriq's existing ADR-023 implementation at HEAD (`ActionAuthService::requireAction`,
    the `IAppConfig`-backed action matrix, `lib/actions.seed.json` seeding via `InitializeActions`, and the
    existing `ActionAuthMatrix.vue` admin editor): four new per-event-family actions
    (`event.subscribe-nextcloud-{files,calendar,tables,forms}`) seeded `["admin"]` (default-deny), layered
@@ -95,7 +95,7 @@ Tables/Forms/dav packages are added as composer/npm dependencies.
 - `lib/AppInfo/Application.php` — new `addServiceListener` registrations, feature-detected for Tables/Forms.
 - `lib/EventListener/` — 4 new listener classes.
 - `lib/Service/EventService.php` — new methods + `action`/`retryPolicy`/`jsonlogic` handling in existing methods.
-- `lib/Settings/openconnector_register.json` — `event_subscription` gains `action`, `retryPolicy`,
+- `lib/Settings/integriq_register.json` — `event_subscription` gains `action`, `retryPolicy`,
   `allowedForGroups`-style authorization fields; `event` type vocabulary extended (documentation only, no
   schema field change — `type` is already a free string).
 - `lib/Controller/EventsController.php` — `subscribe()`/`updateSubscription()` gain per-family
@@ -107,7 +107,7 @@ Tables/Forms/dav packages are added as composer/npm dependencies.
 - `src/views/EventDelivery/`, `src/modals/EventDelivery/` — filter/display additions for NC-native events.
 
 ## Cross-Project Dependencies
-None outside openconnector. Tables and Forms are Nextcloud App Store apps, not Conduction apps — treated
+None outside integriq. Tables and Forms are Nextcloud App Store apps, not Conduction apps — treated
 as optional runtime dependencies, feature-detected, never a hard `composer`/`info.xml` `<dependencies>` entry.
 
 ## Risks

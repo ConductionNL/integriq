@@ -41,7 +41,7 @@
 - **spec_ref**: `openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003`
 - **type**: functional
 - **preconditions**: an NC instance without `tables` installed
-- **steps**: boot OpenConnector
+- **steps**: boot Integriq
 - **expected result**: no `NextcloudTablesEventListener` registration occurs, no error logged
 - **test command**: `/test-functional`
 

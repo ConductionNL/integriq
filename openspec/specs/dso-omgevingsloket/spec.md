@@ -5,12 +5,12 @@ TBD - created by archiving change dso-omgevingsloket. Update Purpose after archi
 ## Requirements
 ### Requirement: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)
 
-The adapter MUST register a STAM-compliant inbound REST endpoint in OpenConnector that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), **cryptographically verifies the request signature against the configured PKIoverheid certificate chain (or HMAC shared secret in pre-production mode) via `DSOSignatureVerifierService`**, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation. A request whose signature does not verify against the configured trust chain MUST be rejected before any payload parsing occurs.
+The adapter MUST register a STAM-compliant inbound REST endpoint in Integriq that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), **cryptographically verifies the request signature against the configured PKIoverheid certificate chain (or HMAC shared secret in pre-production mode) via `DSOSignatureVerifierService`**, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation. A request whose signature does not verify against the configured trust chain MUST be rejected before any payload parsing occurs.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Valid vergunningaanvraag accepted and enqueued
-- **WHEN** the DSO adapter endpoint is registered in OpenConnector with valid PKIoverheid certificates and DSO-LV pushes a vergunningaanvraag payload to the STAM endpoint
+- **WHEN** the DSO adapter endpoint is registered in Integriq with valid PKIoverheid certificates and DSO-LV pushes a vergunningaanvraag payload to the STAM endpoint
 - **THEN** the adapter cryptographically verifies the webhook signature against the configured certificate chain, returns HTTP 202, and enqueues the verzoek for asynchronous processing
 
 #### Scenario: Invalid webhook signature rejected
@@ -83,7 +83,7 @@ The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data inc
 
 #### Scenario: Locatie validated and geometry converted
 - **WHEN** a verzoek payload contains a locatie with BAG-adresgegevens and GML-geometrie and the parser extracts locatie data
-- **THEN** the BAG-adres is validated against the BAG register (via OpenConnector source), the GML geometry is converted to GeoJSON, and both are stored on the zaak
+- **THEN** the BAG-adres is validated against the BAG register (via Integriq source), the GML geometry is converted to GeoJSON, and both are stored on the zaak
 
 #### Scenario: Activiteiten array tagged with zaaktypen
 - **WHEN** a verzoek payload contains multiple activiteiten with DSO activiteitcodes and omschrijvingen and the parser processes the activiteiten array
@@ -217,9 +217,9 @@ The adapter MUST automatically create a zaak in Procest for each received DSO-ve
 - **WHEN** the verzoek contains optional bouwkosten and the zaak is created
 - **THEN** bouwkosten are stored as a zaak-eigenschap for use in legesberekening workflows
 
-#### Scenario: Zaak creation dispatches OpenConnector event
+#### Scenario: Zaak creation dispatches Integriq event
 - **WHEN** a zaak is successfully created and creation completes
-- **THEN** an OpenConnector event is dispatched (EventService) enabling n8n workflows to trigger intake processing such as legesberekening, team-toewijzing, and automatische termijnbewaking
+- **THEN** an Integriq event is dispatched (EventService) enabling n8n workflows to trigger intake processing such as legesberekening, team-toewijzing, and automatische termijnbewaking
 
 ### Requirement: DSO-SWF Samenwerking (REQ-DSO-030)
 
@@ -269,7 +269,7 @@ The adapter MUST push zaak status updates back to DSO-LV so that the aanvrager c
 
 The adapter MUST authenticate with DSO-LV using PKIoverheid certificates for mutual TLS. It MUST validate incoming DSO-LV webhook signatures and support both pre-production and production certificate chains. Certificates are stored securely via Nextcloud's credential store.
 #### Scenario: Certificate used for outbound mTLS call
-- **WHEN** a PKIoverheid certificate and private key are uploaded via the OpenConnector admin UI and the adapter makes an outbound call to DSO-LV
+- **WHEN** a PKIoverheid certificate and private key are uploaded via the Integriq admin UI and the adapter makes an outbound call to DSO-LV
 - **THEN** the certificate is written to a temporary file by CallService.getCertificate(), used for mTLS, and cleaned up after the request
 
 #### Scenario: Expiring certificate triggers warning
@@ -280,9 +280,9 @@ The adapter MUST authenticate with DSO-LV using PKIoverheid certificates for mut
 - **WHEN** an incoming webhook from DSO-LV includes a signature header and the adapter validates the signature against the DSO-LV public certificate
 - **THEN** requests with valid signatures are processed and requests with invalid signatures are rejected with HTTP 401
 
-### Requirement: OpenConnector Source Registration (REQ-DSO-060)
+### Requirement: Integriq Source Registration (REQ-DSO-060)
 
-The adapter MUST be registered as an OpenConnector source type with DSO-LV-specific configuration fields. Connection settings include: DSO-LV API URL, PKIoverheid certificates, organisatie OIN, bevoegd-gezag code, and STAM API version. The source supports health checks validating connectivity and certificate validity.
+The adapter MUST be registered as an Integriq source type with DSO-LV-specific configuration fields. Connection settings include: DSO-LV API URL, PKIoverheid certificates, organisatie OIN, bevoegd-gezag code, and STAM API version. The source supports health checks validating connectivity and certificate validity.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 

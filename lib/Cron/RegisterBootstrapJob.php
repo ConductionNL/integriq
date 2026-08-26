@@ -29,13 +29,13 @@
  * against per-request cost.
  *
  * @category Cron
- * @package  OCA\OpenConnector\Cron
+ * @package  OCA\Integriq\Cron
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -43,9 +43,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Cron;
+namespace OCA\Integriq\Cron;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -63,7 +63,7 @@ class RegisterBootstrapJob extends TimedJob {
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openconnector';
+	private const APP_ID = 'integriq';
 
 	/**
 	 * Hourly. See the class docblock for why an hour is the right number.
@@ -130,7 +130,7 @@ class RegisterBootstrapJob extends TimedJob {
 			);
 
 			$this->logger->info(
-				'[RegisterBootstrapJob] Bootstrapped the openconnector register for version ' . $installedVersion
+				'[RegisterBootstrapJob] Bootstrapped the integriq register for version ' . $installedVersion
 			);
 		} catch (Throwable $e) {
 			// Leave the marker unset so the next pass retries. Warn rather than

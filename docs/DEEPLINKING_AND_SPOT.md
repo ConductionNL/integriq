@@ -1,6 +1,6 @@
 ## Deep Linking and SPOT (Single Point Of Truth) Architecture
 
-This document explains how deep linking works in OpenConnector and how SPOT is achieved via the URL, ensuring a consistent, reliable, and shareable application state across backend and frontend.
+This document explains how deep linking works in Integriq and how SPOT is achieved via the URL, ensuring a consistent, reliable, and shareable application state across backend and frontend.
 
 ### Goals
 - **Deep linking**: Directly navigate to any app view via URL, including first load and refresh, without backend errors.
@@ -39,7 +39,7 @@ For each page route, there must be a corresponding controller under `lib/Control
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
+            'integriq',
             'index',
             []
         );
@@ -58,7 +58,7 @@ The Vue Router runs in history mode with a base path that matches the app entry.
 // 1:999:src/router/index.js
 const router = new Router({
     mode: 'history',
-    base: '/index.php/apps/openconnector/',
+    base: '/index.php/apps/integriq/',
     routes: [
         { path: '/', components: { default: Dashboard } },
         { path: '/sources', components: { default: SourcesIndex } },
@@ -104,7 +104,7 @@ Thanks to this both the Views.vue and Sidebars.vue can be deleted as they have b
 
 ```html
 // 1:999:src/App.vue
-    <NcContent app-name="openconnector">
+    <NcContent app-name="integriq">
         <MainMenu />
         <NcAppContent>
             <template #default>
@@ -123,7 +123,7 @@ Navigation is now entirely route-driven. The main menu sets `active` based on `$
 
 ```html
 // 4:9:src/navigation/MainMenu.vue
-            <NcAppNavigationItem :active="$route.path === '/'" :name="t('openconnector', 'Dashboard')" @click="handleNavigate('/')">
+            <NcAppNavigationItem :active="$route.path === '/'" :name="t('integriq', 'Dashboard')" @click="handleNavigate('/')">
                 <template #icon>
                     <Finance :size="20" />
                 </template>
@@ -157,7 +157,7 @@ This keeps sidebar state aligned with navigation without conditional rendering c
 
 ## SPOT: URL As The Single Source of Truth
 
-In OpenConnector, log-related sidebars and contracts use SPOT. Filters are synchronized with the URL query so links are shareable and back/forward works.
+In Integriq, log-related sidebars and contracts use SPOT. Filters are synchronized with the URL query so links are shareable and back/forward works.
 
 Key principles:
 - URL query is authoritative. Component/store state is derived from it.
@@ -308,8 +308,8 @@ Possible future enhancement:
 ## Example Deep Links
 
 - Job logs filtered by job and level in a time window:
-  - `/index.php/apps/openconnector/jobs/logs?job_id=12&level=ERROR,WARNING&dateFrom=2024-01-01T00:00:00.000Z&dateTo=2024-12-31T23:59:59.999Z`
-- Contracts page: `/index.php/apps/openconnector/synchronizations/contracts`
+  - `/index.php/apps/integriq/jobs/logs?job_id=12&level=ERROR,WARNING&dateFrom=2024-01-01T00:00:00.000Z&dateTo=2024-12-31T23:59:59.999Z`
+- Contracts page: `/index.php/apps/integriq/synchronizations/contracts`
 
 ## Potential Enhancement: Dynamic Main Menu
 

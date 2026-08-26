@@ -5,7 +5,7 @@
  * service extracted from SynchronizationService in W14 Tier 2.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,10 +14,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\SynchronizationContractService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +51,7 @@ class SynchronizationContractServiceTest extends TestCase {
 
 	/**
 	 * findObject() proxies to the OR ObjectService find() against the
-	 * `openconnector` register and `synchronization_contract` schema.
+	 * `integriq` register and `synchronization_contract` schema.
 	 *
 	 * @return void
 	 */
@@ -62,7 +62,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			->method('find')
 			->with(
 				$this->equalTo('c-1'),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract')
 			)
 			->willReturn($entity);
@@ -96,7 +96,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			->method('findAll')
 			->with($this->callback(function (array $config): bool {
 				$filters = ($config['filters'] ?? []);
-				return ($filters['register'] ?? null) === 'openconnector'
+				return ($filters['register'] ?? null) === 'integriq'
 					&& ($filters['schema'] ?? null) === 'synchronization_contract'
 					&& ($filters['originId'] ?? null) === 'origin-7';
 			}))

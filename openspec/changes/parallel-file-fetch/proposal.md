@@ -8,7 +8,7 @@ depends_on: [stream-file-content]
 ## Summary
 Fetch a single synchronized object's multiple files concurrently instead of one
 at a time, to cut synchronization wall-clock time. The fetch phase fires
-per-file asynchronous HTTP requests through OpenConnector's existing Guzzle
+per-file asynchronous HTTP requests through Integriq's existing Guzzle
 async path (`CallService::callSourceObject(..., asynchronous: true)`) with a
 capped concurrency window, and each resolved download is saved via the promise's
 `then()` callback so a completed file is persisted while its siblings are still
@@ -33,7 +33,7 @@ right time because the async transport and the per-file streaming it depends on
 are both in place.
 
 ## Affected Projects
-- [ ] Project: `openconnector` — refactor the within-one-object multi-file path
+- [ ] Project: `integriq` — refactor the within-one-object multi-file path
   (`processMultipleFilesWithCleanup`, splitting `fetchFile` into a fetch phase
   and a save phase) to fire capped-concurrency async requests and pipeline the
   saves behind the fetch window.
@@ -100,7 +100,7 @@ and the existing `CallService` async path; per-file streaming comes from
 `stream-file-content`.
 
 ## Impact
-- `openconnector`: `lib/Service/SynchronizationService.php`
+- `integriq`: `lib/Service/SynchronizationService.php`
   (`processMultipleFilesWithCleanup`, and splitting `fetchFile` into fetch + save
   phases). No API endpoints, routes, DB tables, or OpenRegister schemas change.
 - No change to OpenRegister; this change consumes the `FileService` contract
@@ -150,7 +150,7 @@ already-fully-fetched object file list (no source-side paging split), it carries
 no missing/double-sync risk.
 
 ## Rollback Strategy
-Revert the single OpenConnector commit that refactors
+Revert the single Integriq commit that refactors
 `processMultipleFilesWithCleanup` / `fetchFile`. The change is self-contained
 within `SynchronizationService`; reverting restores the sequential
 one-at-a-time loop. No data migration is involved, and the `stream-file-content`

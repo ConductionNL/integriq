@@ -45,7 +45,7 @@
 		:title="pageTitle"
 		:description="
 			t(
-				'openconnector',
+				'integriq',
 				'Configure when this rule fires and what it does. Conditions are evaluated as JSON Logic against the incoming request/data.',
 			)
 		"
@@ -63,18 +63,14 @@
 				<template #icon>
 					<UndoIcon :size="20" />
 				</template>
-				{{ t('openconnector', 'Discard') }}
+				{{ t('integriq', 'Discard') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="saving || !dirty" @click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
 				</template>
-				{{
-					saving
-						? t('openconnector', 'Saving…')
-						: t('openconnector', 'Save')
-				}}
+				{{ saving ? t('integriq', 'Saving…') : t('integriq', 'Save') }}
 			</NcButton>
 		</template>
 
@@ -86,10 +82,10 @@
 		<AutomationDeprecationNotice />
 
 		<!-- Basic fields -->
-		<CnDetailCard :title="t('openconnector', 'Basics')" icon="icon-info">
+		<CnDetailCard :title="t('integriq', 'Basics')" icon="icon-info">
 			<div class="rule-detail-page__grid">
 				<NcTextField
-					:label="t('openconnector', 'Name') + ' *'"
+					:label="t('integriq', 'Name') + ' *'"
 					:modelValue="draft && draft.name ? String(draft.name) : ''"
 					@update:modelValue="(value) => updateField('name', value)" />
 				<!-- `action` is required on the rule schema, and until now this
@@ -97,15 +93,15 @@
 				     saved without the field the endpoint filters on. -->
 				<div>
 					<label class="rule-detail-page__label" for="rule-action">
-						{{ t('openconnector', 'Action') }} *
+						{{ t('integriq', 'Action') }} *
 					</label>
 					<NcSelect
 						inputId="rule-action"
-						:aria-label-combobox="t('openconnector', 'Action')"
+						:aria-label-combobox="t('integriq', 'Action')"
 						:modelValue="selectedAction"
 						:options="actionOptions"
 						:clearable="false"
-						:placeholder="t('openconnector', 'Pick a request method')"
+						:placeholder="t('integriq', 'Pick a request method')"
 						@update:modelValue="
 							(option) => updateField('action', option?.id || '')
 						" />
@@ -115,11 +111,11 @@
 				     against, so this is a closed list, not free text. -->
 				<div>
 					<label class="rule-detail-page__label" for="rule-timing">
-						{{ t('openconnector', 'Timing') }}
+						{{ t('integriq', 'Timing') }}
 					</label>
 					<NcSelect
 						inputId="rule-timing"
-						:aria-label-combobox="t('openconnector', 'Timing')"
+						:aria-label-combobox="t('integriq', 'Timing')"
 						:modelValue="selectedTiming"
 						:options="timingOptions"
 						:clearable="false"
@@ -128,7 +124,7 @@
 						" />
 				</div>
 				<NcTextField
-					:label="t('openconnector', 'Order')"
+					:label="t('integriq', 'Order')"
 					type="number"
 					:modelValue="
 						draft && draft.order != null ? String(draft.order) : ''
@@ -140,7 +136,7 @@
 					" />
 				<div class="rule-detail-page__grid-full">
 					<label class="rule-detail-page__label" for="rule-description">
-						{{ t('openconnector', 'Description') }}
+						{{ t('integriq', 'Description') }}
 					</label>
 					<textarea
 						id="rule-description"
@@ -159,15 +155,15 @@
 		<!-- Visual condition builder -->
 		<CnDetailCard
 			id="conditions-builder"
-			:title="t('openconnector', 'When (conditions)')"
+			:title="t('integriq', 'When (conditions)')"
 			icon="icon-filter">
 			<template #actions>
 				<NcButton
 					variant="tertiary"
 					:aria-label="
 						rawConditions
-							? t('openconnector', 'Switch back to visual builder')
-							: t('openconnector', 'Edit conditions as raw JSON')
+							? t('integriq', 'Switch back to visual builder')
+							: t('integriq', 'Edit conditions as raw JSON')
 					"
 					@click="rawConditions = !rawConditions">
 					<template #icon>
@@ -175,8 +171,8 @@
 					</template>
 					{{
 						rawConditions
-							? t('openconnector', 'Visual builder')
-							: t('openconnector', 'Raw JSON')
+							? t('integriq', 'Visual builder')
+							: t('integriq', 'Raw JSON')
 					}}
 				</NcButton>
 			</template>
@@ -187,7 +183,7 @@
 				@update="onConditionsUpdate" />
 			<div v-else class="rule-detail-page__raw-conditions">
 				<label class="rule-detail-page__label" for="rule-raw-conditions">
-					{{ t('openconnector', 'Conditions (JSON Logic)') }}
+					{{ t('integriq', 'Conditions (JSON Logic)') }}
 				</label>
 				<textarea
 					id="rule-raw-conditions"
@@ -204,7 +200,7 @@
 					{{
 						rawConditionsError
 						|| t(
-							'openconnector',
+							'integriq',
 							'Edit the JSON Logic directly. Saved into the rule conditions field exactly as typed.',
 						)
 					}}
@@ -215,7 +211,7 @@
 		<!-- Action picker + per-action parameter form -->
 		<CnDetailCard
 			id="action-config"
-			:title="t('openconnector', 'Then (action)')"
+			:title="t('integriq', 'Then (action)')"
 			icon="icon-play">
 			<RuleActionConfig
 				:configuration="
@@ -272,7 +268,7 @@ export default {
 		/** Route param `:id` — the rule's UUID (forwarded by CnPageRenderer). */
 		id: { type: [String, Number], default: '' },
 		/** Manifest `config.register` — passed through resolvedProps. */
-		register: { type: String, default: 'openconnector' },
+		register: { type: String, default: 'integriq' },
 		/** Manifest `config.schema` — passed through resolvedProps. */
 		schema: { type: String, default: 'rule' },
 	},
@@ -283,7 +279,7 @@ export default {
 	 * resolve against the right OpenRegister collection.
 	 *
 	 * @param {object} props Resolved component props; only `register` and `schema`
-	 *   are read here, both falling back to the OpenConnector rule defaults.
+	 *   are read here, both falling back to the Integriq rule defaults.
 	 *
 	 * @spec openspec/specs/rule-editor-ui/spec.md
 	 */
@@ -293,7 +289,7 @@ export default {
 			objectStore.registerObjectType(
 				OBJECT_TYPE,
 				props.schema || 'rule',
-				props.register || 'openconnector',
+				props.register || 'integriq',
 			)
 		}
 		return { objectStore }
@@ -317,17 +313,17 @@ export default {
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		pageTitle() {
-			if (!this.draft) return this.t('openconnector', 'Rule')
+			if (!this.draft) return this.t('integriq', 'Rule')
 			return this.draft.name
-				? `${this.t('openconnector', 'Rule')}: ${this.draft.name}`
-				: this.t('openconnector', 'Rule')
+				? `${this.t('integriq', 'Rule')}: ${this.draft.name}`
+				: this.t('integriq', 'Rule')
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		errorMessage() {
 			if (!this.error) return ''
 			if (typeof this.error === 'string') return this.error
-			return this.error.message || this.t('openconnector', 'An error occurred')
+			return this.error.message || this.t('integriq', 'An error occurred')
 		},
 
 		/**
@@ -347,7 +343,7 @@ export default {
 		actionOptions() {
 			return ACTION_OPTIONS.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -355,7 +351,7 @@ export default {
 		timingOptions() {
 			return TIMING_OPTIONS.map((entry) => ({
 				id: entry.id,
-				label: this.t('openconnector', entry.label),
+				label: this.t('integriq', entry.label),
 			}))
 		},
 
@@ -441,8 +437,7 @@ export default {
 				if (!fetched) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
 					this.error =
-						storeError
-						|| new Error(this.t('openconnector', 'Rule not found'))
+						storeError || new Error(this.t('integriq', 'Rule not found'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(fetched))
@@ -563,7 +558,7 @@ export default {
 				this.onConditionsUpdate(parsed)
 			} catch (parseErr) {
 				this.rawConditionsError = this.t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -583,8 +578,7 @@ export default {
 				if (!saved) {
 					const storeError = this.objectStore.errors?.[OBJECT_TYPE]
 					this.error =
-						storeError
-						|| new Error(this.t('openconnector', 'Saving failed'))
+						storeError || new Error(this.t('integriq', 'Saving failed'))
 					return
 				}
 				this.draft = JSON.parse(JSON.stringify(saved))

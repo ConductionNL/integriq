@@ -2,7 +2,7 @@
 
 ## Current State
 
-No `catalog_item` schema exists. `lib/Settings/openconnector_register.json` + `lib/Settings/register.d/*.json` fragments define the `openconnector` register's other 15 schemas (source, endpoint, mapping, rule, job, synchronization, consumer, event, event_subscription, event_message, call_log, job_log, synchronization_log, synchronization_contract — see `openconnector-storage-migration` spec). Fragments are merged and imported via `OCA\OpenRegister\Service\ConfigurationService::importFromApp()`, invoked both from `lib/Repair\InitializeRegister` (repeatable repair step, runs on every `occ upgrade` and app enable) and, historically, one-shot from `lib/Migration\Version2Date20260520000001` for the chain-B storage cutover. There is no `catalog_item` register/schema, and no repair step materialises catalog data from the registries described in design.md.
+No `catalog_item` schema exists. `lib/Settings/integriq_register.json` + `lib/Settings/register.d/*.json` fragments define the `openconnector` register's other 15 schemas (source, endpoint, mapping, rule, job, synchronization, consumer, event, event_subscription, event_message, call_log, job_log, synchronization_log, synchronization_contract — see `openconnector-storage-migration` spec). Fragments are merged and imported via `OCA\OpenRegister\Service\ConfigurationService::importFromApp()`, invoked both from `lib/Repair\InitializeRegister` (repeatable repair step, runs on every `occ upgrade` and app enable) and, historically, one-shot from `lib/Migration\Version2Date20260520000001` for the chain-B storage cutover. There is no `catalog_item` register/schema, and no repair step materialises catalog data from the registries described in design.md.
 
 ## Target State
 
@@ -12,7 +12,7 @@ No `catalog_item` schema exists. `lib/Settings/openconnector_register.json` + `l
 
 ## Migration Class
 
-No native-table `lib/Migration/VersionXXXXXXXXXX.php` schema migration is required — `catalog_item` is an OpenRegister-managed schema (JSON fragment + repeatable repair step), not a native Doctrine/QBMapper table, matching the pattern already used for every other OpenConnector entity (`openconnector-direct-or-usage`). If a one-shot trigger is later found necessary (e.g. to force an immediate materialisation on upgrade rather than waiting for the next repair-step pass), it would follow the `Version2Date20260520000001` pattern exactly: `preSchemaChange()` no-op, `changeSchema()` returns `null`, `postSchemaChange()` resolves `CatalogRegistryService` from the container and calls `materialize()` idempotently, guarded the same way (`class_exists` check for OpenRegister availability, try/catch around service resolution). This is deferred to the apply step's judgment — the repair step alone is expected to be sufficient since it already runs on every upgrade.
+No native-table `lib/Migration/VersionXXXXXXXXXX.php` schema migration is required — `catalog_item` is an OpenRegister-managed schema (JSON fragment + repeatable repair step), not a native Doctrine/QBMapper table, matching the pattern already used for every other Integriq entity (`openconnector-direct-or-usage`). If a one-shot trigger is later found necessary (e.g. to force an immediate materialisation on upgrade rather than waiting for the next repair-step pass), it would follow the `Version2Date20260520000001` pattern exactly: `preSchemaChange()` no-op, `changeSchema()` returns `null`, `postSchemaChange()` resolves `CatalogRegistryService` from the container and calls `materialize()` idempotently, guarded the same way (`class_exists` check for OpenRegister availability, try/catch around service resolution). This is deferred to the apply step's judgment — the repair step alone is expected to be sufficient since it already runs on every upgrade.
 
 ```
 Version: (none required — see above)
@@ -28,7 +28,7 @@ Key operations:
 
 1. Ship `lib/Settings/register.d/catalog-item-schema.json` — picked up automatically by the existing `InitializeRegister` repair step's fragment merge on the next `occ upgrade` or app enable. Verifiable: `catalog_item` appears as a schema under the `openconnector` register.
 2. Ship `lib/Repair/MaterializeCatalogItems.php`, registered as an `IRepairStep` in `Application.php`. Verifiable: repair step name appears in `occ upgrade` output.
-3. First repair-step run materialises `catalog_item` objects for every real adapter/seed source found (see design.md Seed Data — these are not fictional, they mirror already-shipped code). Verifiable: `GET /apps/openregister/api/objects/openconnector/catalog_item` returns one object per entry.
+3. First repair-step run materialises `catalog_item` objects for every real adapter/seed source found (see design.md Seed Data — these are not fictional, they mirror already-shipped code). Verifiable: `GET /apps/openregister/api/objects/integriq/catalog_item` returns one object per entry.
 4. Append `catalog.instantiate`, `configuration.export`, `configuration.import` (each `["admin"]`) to the existing `lib/actions.seed.json`; the existing `InitializeActions` repair step applies them on the next run. Verifiable: the existing admin action-matrix settings panel (`ActionMatrixController`) lists the three new actions.
 5. Re-running steps 1–4 (idempotency check) produces no duplicate `catalog_item` objects and no duplicate action-matrix entries.
 
@@ -45,7 +45,7 @@ Remove `lib/Settings/register.d/catalog-item-schema.json`, `lib/Repair/Materiali
 ## Validation
 
 - `occ upgrade` completes without error; log output shows the `MaterializeCatalogItems` repair step ran.
-- `GET /apps/openregister/api/objects/openconnector/catalog_item` returns the expected object count (~12-16) with no duplicates.
+- `GET /apps/openregister/api/objects/integriq/catalog_item` returns the expected object count (~12-16) with no duplicates.
 - Re-running `occ upgrade` a second time produces the same object count (idempotency).
 - The Catalog page (`/catalog`) renders all materialised items as cards without error.
 - The admin action-matrix settings panel shows `catalog.instantiate`, `configuration.export`, `configuration.import` all defaulted to `["admin"]`.

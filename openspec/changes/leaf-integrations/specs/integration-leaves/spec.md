@@ -1,17 +1,17 @@
 # integration-leaves Specification Delta — leaf-integrations
 
-New capability: which OpenRegister integration leaves OpenConnector declares, on which schemas and surfaces, and why the rest are OFF. This delta claims REQ-OCL-001..REQ-OCL-004.
+New capability: which OpenRegister integration leaves Integriq declares, on which schemas and surfaces, and why the rest are OFF. This delta claims REQ-OCL-001..REQ-OCL-004.
 
 ## ADDED Requirements
 
 ### Requirement: The leaf surface is declared in the register and the manifest, and is exactly four leaves on two schemas (REQ-OCL-001)
 
-OpenConnector's integration-leaf surface SHALL consist solely of `configuration.linkedTypes` declarations in `lib/Settings/openconnector_register.json` plus manifest integration widgets in `src/manifest.json`, and SHALL be exactly: `source` → `["files", "deck", "talk"]` with three widgets on SourceDetail (`src-files` "Supplier documents", `src-deck` "Incident follow-ups", `src-talk` "Incident war-room"); `synchronization` → `["calendar"]` with no manifest widget (surfaced via the shared object sidebar, because SynchronizationDetail is a `type: "custom"` page the manifest cannot reach). No other schema SHALL carry `linkedTypes`, OpenConnector SHALL NOT implement an `IntegrationProvider`, and every declared id MUST survive OpenRegister's import-time validation (`Schema::validateLinkedTypesValue()` rejects ids absent from the provider registry, failing the import loudly).
+Integriq's integration-leaf surface SHALL consist solely of `configuration.linkedTypes` declarations in `lib/Settings/integriq_register.json` plus manifest integration widgets in `src/manifest.json`, and SHALL be exactly: `source` → `["files", "deck", "talk"]` with three widgets on SourceDetail (`src-files` "Supplier documents", `src-deck` "Incident follow-ups", `src-talk` "Incident war-room"); `synchronization` → `["calendar"]` with no manifest widget (surfaced via the shared object sidebar, because SynchronizationDetail is a `type: "custom"` page the manifest cannot reach). No other schema SHALL carry `linkedTypes`, Integriq SHALL NOT implement an `IntegrationProvider`, and every declared id MUST survive OpenRegister's import-time validation (`Schema::validateLinkedTypesValue()` rejects ids absent from the provider registry, failing the import loudly).
 
 #### Scenario: the leaf surface is enumerable from two files
 
 - GIVEN the repository at this change's completion
-- WHEN `lib/Settings/openconnector_register.json` is searched for `linkedTypes` and `src/manifest.json` for `"type": "integration"`
+- WHEN `lib/Settings/integriq_register.json` is searched for `linkedTypes` and `src/manifest.json` for `"type": "integration"`
 - THEN exactly the surface above is found (2 schema declarations, 3 widgets)
 - AND `lib/` contains no `IntegrationProvider` implementation
 - @e2e exclude static repo-shape assertion — verified by the task acceptance-criteria greps, not a DOM behaviour
@@ -52,7 +52,7 @@ The `synchronization` schema SHALL declare `calendar` in `configuration.linkedTy
 - WHEN an admin links a calendar event for that window to the synchronization object
 - THEN the event is visible from the synchronization's object sidebar
 - AND the synchronization's schedule, status, and next run are unchanged
-- @e2e exclude sidebar surface on a `type: "custom"` page — the shared-sidebar render path is OpenRegister's, covered there; OpenConnector asserts the schema declaration in Task 1 and revisits a widget-level e2e when SynchronizationDetail becomes manifest-driven
+- @e2e exclude sidebar surface on a `type: "custom"` page — the shared-sidebar render path is OpenRegister's, covered there; Integriq asserts the schema declaration in Task 1 and revisits a widget-level e2e when SynchronizationDetail becomes manifest-driven
 
 ### Requirement: Every other schema and leaf type stays OFF until a spec change argues otherwise (REQ-OCL-004)
 

@@ -1,7 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Parameter \\$className of method OCP\\\\EventDispatcher\\\\IEventDispatcher\\:\\:addServiceListener\\(\\) expects class\\-string\\<OCP\\\\EventDispatcher\\\\IEventListener\\<OCP\\\\EventDispatcher\\\\Event\\>\\>, 'OCA\\\\\\\\OpenConnector\\\\\\\\Flow\\\\\\\\FlowNodeListener' given\\.$#"
+			message: "#^Parameter \\$className of method OCP\\\\EventDispatcher\\\\IEventDispatcher\\:\\:addServiceListener\\(\\) expects class\\-string\\<OCP\\\\EventDispatcher\\\\IEventListener\\<OCP\\\\EventDispatcher\\\\Event\\>\\>, 'OCA\\\\\\\\Integriq\\\\\\\\Flow\\\\\\\\FlowNodeListener' given\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php
 
@@ -11,17 +11,17 @@ parameters:
 			path: lib/Controller/UserController.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\CloudEventListener\\:\\:SELF_REGISTER is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\EventListener\\\\CloudEventListener\\:\\:SELF_REGISTER is unused\\.$#"
 			count: 1
 			path: lib/EventListener/CloudEventListener.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\CloudEventListener\\:\\:SELF_SCHEMAS is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\EventListener\\\\CloudEventListener\\:\\:SELF_SCHEMAS is unused\\.$#"
 			count: 1
 			path: lib/EventListener/CloudEventListener.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:SOFTWARE_CATALOG_REGISTER_ID is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:SOFTWARE_CATALOG_REGISTER_ID is unused\\.$#"
 			count: 1
 			path: lib/EventListener/ViewUpdatedOrCreatedEventListener.php
 
@@ -36,12 +36,12 @@ parameters:
 			path: lib/Migration/Version2Date20260520000099.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\AuthenticationService\\:\\:getHSJWK\\(\\) never returns null so it can be removed from the return type\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\AuthenticationService\\:\\:getHSJWK\\(\\) never returns null so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Service/AuthenticationService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\AuthenticationService\\:\\:getRSJWK\\(\\) never returns null so it can be removed from the return type\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\AuthenticationService\\:\\:getRSJWK\\(\\) never returns null so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Service/AuthenticationService.php
 
@@ -86,12 +86,12 @@ parameters:
 			path: lib/Service/BankfeedSyncService.php
 
 		-
-			message: "#^Call to method export\\(\\) on an unknown class OCA\\\\OpenConnector\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
+			message: "#^Call to method export\\(\\) on an unknown class OCA\\\\Integriq\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
 			count: 6
 			path: lib/Service/ConfigurationService.php
 
 		-
-			message: "#^Call to method import\\(\\) on an unknown class OCA\\\\OpenConnector\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
+			message: "#^Call to method import\\(\\) on an unknown class OCA\\\\Integriq\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
 			count: 6
 			path: lib/Service/ConfigurationService.php
 
@@ -106,7 +106,7 @@ parameters:
 			path: lib/Service/ConfigurationService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\ConfigurationService\\:\\:\\$handlers has unknown class OCA\\\\OpenConnector\\\\Service\\\\ConfigurationHandlerInterface as its type\\.$#"
+			message: "#^Property OCA\\\\Integriq\\\\Service\\\\ConfigurationService\\:\\:\\$handlers has unknown class OCA\\\\Integriq\\\\Service\\\\ConfigurationHandlerInterface as its type\\.$#"
 			count: 1
 			path: lib/Service/ConfigurationService.php
 
@@ -116,7 +116,7 @@ parameters:
 			path: lib/Service/DSOParserService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\EndpointCacheService\\:\\:createEndpointRegex\\(\\) is unused\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\EndpointCacheService\\:\\:createEndpointRegex\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Service/EndpointCacheService.php
 
@@ -141,12 +141,12 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:getObjects\\(\\) never returns OCP\\\\AppFramework\\\\Db\\\\Entity so it can be removed from the return type\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\EndpointService\\:\\:getObjects\\(\\) never returns OCP\\\\AppFramework\\\\Db\\\\Entity so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:parseContent\\(\\) is unused\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\EndpointService\\:\\:parseContent\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
@@ -236,62 +236,62 @@ parameters:
 			path: lib/Service/Migration/LegacyToRegisterMigrator.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:BRON is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:BRON is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROPERTY_DEFINITIONS is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROPERTY_DEFINITIONS is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_DATUM_EXPORT is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_DATUM_EXPORT is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_EXTERN_PAKKET is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_EXTERN_PAKKET is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_OBJECT_ID is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_OBJECT_ID is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_OMSCHRIJVING is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_OMSCHRIJVING is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_SWC_TYPE is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_SWC_TYPE is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_TITEL_VIEW is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_TITEL_VIEW is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:PROP_VERBINDINGSROL is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:PROP_VERBINDINGSROL is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Constant OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:RELATION_IDS is unused\\.$#"
+			message: "#^Constant OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:RELATION_IDS is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:processCustomConnectionsRule\\(\\) never returns array so it can be removed from the return type\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:processCustomConnectionsRule\\(\\) never returns array so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:processNodes\\(\\) is unused\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:processNodes\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
@@ -301,22 +301,22 @@ parameters:
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:\\$registerMapper is never read, only written\\.$#"
+			message: "#^Property OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:\\$registerMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:\\$registerResolver is never read, only written\\.$#"
+			message: "#^Property OCA\\\\Integriq\\\\Service\\\\RuleService\\:\\:\\$registerResolver is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\SearchService\\:\\:\\$directoryService\\.$#"
+			message: "#^Access to an undefined property OCA\\\\Integriq\\\\Service\\\\SearchService\\:\\:\\$directoryService\\.$#"
 			count: 1
 			path: lib/Service/SearchService.php
 
 		-
-			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\SearchService\\:\\:\\$elasticService\\.$#"
+			message: "#^Access to an undefined property OCA\\\\Integriq\\\\Service\\\\SearchService\\:\\:\\$elasticService\\.$#"
 			count: 1
 			path: lib/Service/SearchService.php
 
@@ -336,7 +336,7 @@ parameters:
 			path: lib/Service/SoftwareCatalogueService.php
 
 		-
-			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\StorageService\\:\\:\\$userSession\\.$#"
+			message: "#^Access to an undefined property OCA\\\\Integriq\\\\Service\\\\StorageService\\:\\:\\$userSession\\.$#"
 			count: 1
 			path: lib/Service/StorageService.php
 
@@ -356,12 +356,12 @@ parameters:
 			path: lib/Service/StorageService.php
 
 		-
-			message: "#^Parameter \\$folderContents of method OCA\\\\OpenConnector\\\\Service\\\\StorageService\\:\\:attemptCloseUpload\\(\\) expects array\\<OC\\\\Files\\\\Node\\\\Node\\>, array\\<OCP\\\\Files\\\\Node\\> given\\.$#"
+			message: "#^Parameter \\$folderContents of method OCA\\\\Integriq\\\\Service\\\\StorageService\\:\\:attemptCloseUpload\\(\\) expects array\\<OC\\\\Files\\\\Node\\\\Node\\>, array\\<OCP\\\\Files\\\\Node\\> given\\.$#"
 			count: 1
 			path: lib/Service/StorageService.php
 
 		-
-			message: "#^Parameter \\$folderContents of method OCA\\\\OpenConnector\\\\Service\\\\StorageService\\:\\:attemptCloseUpload\\(\\) has invalid type OC\\\\Files\\\\Node\\\\Node\\.$#"
+			message: "#^Parameter \\$folderContents of method OCA\\\\Integriq\\\\Service\\\\StorageService\\:\\:attemptCloseUpload\\(\\) has invalid type OC\\\\Files\\\\Node\\\\Node\\.$#"
 			count: 1
 			path: lib/Service/StorageService.php
 
@@ -381,7 +381,7 @@ parameters:
 			path: lib/Service/SynchronizationService.php
 
 		-
-			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\SynchronizationService\\:\\:getFilenameFromHeaders\\(\\) never returns null so it can be removed from the return type\\.$#"
+			message: "#^Method OCA\\\\Integriq\\\\Service\\\\SynchronizationService\\:\\:getFilenameFromHeaders\\(\\) never returns null so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Service/SynchronizationService.php
 

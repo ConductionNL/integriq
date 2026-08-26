@@ -2,7 +2,7 @@
 
 ## Build prerequisite
 
-OpenConnector imports the **built** library (`module: dist/esm/index.js`) through
+Integriq imports the **built** library (`module: dist/esm/index.js`) through
 the `node_modules/@conduction/nextcloud-vue → ../../../nextcloud-vue` symlink;
 `webpack.config.js` deliberately removed the `src` alias. So both watchers must
 run, the library first:
@@ -33,7 +33,7 @@ Specs that carry this change:
 - `tests/components/CnCellRendererFormat.spec.js` — `duration` + `milliseconds`
 - `tests/components/CnIndexPageSelfFetch.spec.js`, `CnIndexPageQuickFilters.spec.js` — regression proof that the resolver extraction was behaviour-neutral
 
-### `openconnector`
+### `integriq`
 
 | Command | Expectation |
 |---|---|
@@ -58,7 +58,7 @@ Specs that carry this change:
      FQCN wraps inside its own cell rather than overlapping `Stack trace`.
      Re-check at a narrow window and at full width.
    - Network tab: exactly **one**
-     `GET …/api/objects/openconnector/job_log?jobId=<uuid>&_limit=50&_page=1&_order={"created":"desc"}`.
+     `GET …/api/objects/integriq/job_log?jobId=<uuid>&_limit=50&_page=1&_order={"created":"desc"}`.
 2. **Change `?jobId=` in the address bar to another job's uuid** (same path).
    Exactly one new request, new row set — this exercises the `$route.query` watcher.
 3. **Click the Time header.** The ▲/▼ indicator flips, one request with the
@@ -98,7 +98,7 @@ Specs that carry this change:
 ### PHP
 
 `npm run test:unit` cannot run in a `--no-dev` checkout: the
-`OCA\OpenConnector\Tests\` namespace is missing from the autoloader and every
+`OCA\Integriq\Tests\` namespace is missing from the autoloader and every
 test in `SynchronizationServiceTest.php` errors on the `ObjectServiceMockBuilder`
 helper — the pre-existing ones included. Run it where dev dependencies are
 installed; the two new run-log FK regression tests have not executed locally.
@@ -107,7 +107,7 @@ installed; the two new run-log FK regression tests have not executed locally.
 
 ## Risk notes
 
-- Library changes reach only OpenConnector: it is the sole workspace app
+- Library changes reach only Integriq: it is the sole workspace app
   declaring `type: "logs"` pages.
 - Every new `CnLogsPage` prop defaults to the previous behaviour, so the four
   other log pages change only in the ways step 7 checks for — schema-derived

@@ -12,7 +12,7 @@
  * `synchronization_contract` reached 528,656 rows on the dev instance.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,10 +21,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\SynchronizationContractService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 
@@ -117,7 +117,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
 			)
@@ -152,7 +152,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->equalTo('openconnector'),
+				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
 			)

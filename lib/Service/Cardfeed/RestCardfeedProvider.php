@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector REST Corporate Card-Feed Provider.
+ * Integriq REST Corporate Card-Feed Provider.
  *
  * Generic REST binding for {@see CardfeedProviderInterface}, shaped after a
  * typical corporate-card program API (`/cards` → `/cards/{id}/transactions`)
@@ -13,7 +13,7 @@
  * fails closed with an actionable {@see CardfeedProviderException}.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Cardfeed
+ * @package  OCA\Integriq\Service\Cardfeed
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,18 +22,18 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Cardfeed;
+namespace OCA\Integriq\Service\Cardfeed;
 
-use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
-use OCA\OpenConnector\Exception\CardfeedProviderException;
-use OCA\OpenConnector\Service\BrokeredCallService;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;

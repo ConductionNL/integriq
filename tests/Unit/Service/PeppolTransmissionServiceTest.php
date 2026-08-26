@@ -4,7 +4,7 @@
  * Unit tests for PeppolTransmissionService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\PeppolProviderException;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\Peppol\LogPeppolAccessPointProvider;
-use OCA\OpenConnector\Service\Peppol\RestPeppolAccessPointProvider;
-use OCA\OpenConnector\Service\PeppolTransmissionService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
+use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
+use OCA\Integriq\Service\PeppolTransmissionService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;

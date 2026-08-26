@@ -12,7 +12,7 @@ system SHALL NOT store environment connectivity as a new credential format,
 a new HTTP client configuration, or an `IAppConfig` value: `sourceRef`
 SHALL reference an existing `source`-schema object (`type: "api"`) whose
 `location` and `configuration.authentication.credentialRef` describe how to
-reach that environment's OpenConnector API, so that dispatching a call to an
+reach that environment's Integriq API, so that dispatching a call to an
 environment reuses `CallService::call()` and, when the referenced Source
 carries a `credentialRef`, `BrokeredCallService`'s existing broker
 resolution — unchanged and unforked.
@@ -151,7 +151,7 @@ the existing `call_log`/`job_log` schemas.
 - AND the object contains no credential values or full entity payloads
 
 #### Scenario: A failed promotion is still audited
-- GIVEN a confirmed promotion whose dispatch to the target fails (e.g. the target returns 404 because it runs an older OpenConnector without the import routes)
+- GIVEN a confirmed promotion whose dispatch to the target fails (e.g. the target returns 404 because it runs an older Integriq without the import routes)
 - WHEN the promotion attempt completes
 - THEN a `promotion_audit` object is created with `outcome: "failed"` and a message identifying the failure
 - AND no partial `written` summary is fabricated — only what the target actually confirmed, if anything, is recorded

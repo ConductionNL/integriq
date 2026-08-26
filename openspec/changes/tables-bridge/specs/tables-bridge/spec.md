@@ -1,13 +1,13 @@
 # tables-bridge Specification
 
 **Status**: planned
-**Scope**: openconnector
+**Scope**: integriq
 **OpenSpec changes**:
 - tables-bridge (this change)
 
 ## Purpose
 
-Lets OpenConnector read from and write to a Nextcloud Tables table as a
+Lets Integriq read from and write to a Nextcloud Tables table as a
 synchronization source or target, through Tables' own public REST API only
 (never by reaching into Tables' internal PHP classes), reusing the existing
 Source → Synchronization → SynchronizationContract triad, `CallService`
@@ -203,7 +203,7 @@ fetch itself failed or returned a partial page set).
 The system MUST treat a 401/403 response from the Tables API on the first
 row write attempted in a run as a run-level failure (abort remaining writes
 for that run) rather than a per-row skip, and MUST log a clear, actionable
-message identifying the table and the identity used. OpenConnector MUST NOT
+message identifying the table and the identity used. Integriq MUST NOT
 pre-check or re-implement Tables' authorization — the Tables API's own
 response is the sole authority.
 

@@ -6,10 +6,10 @@
  *
  * CI guard for chain A (openconnector-register-schema-declaration) — REQ-A-002.
  *
- * Asserts structural integrity of lib/Settings/openconnector_register.json.
+ * Asserts structural integrity of lib/Settings/integriq_register.json.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,12 +22,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
 use PHPUnit\Framework\TestCase;
 
 /**
- * Validates the openconnector_register.json descriptor structure.
+ * Validates the integriq_register.json descriptor structure.
  *
  * Checks:
  * - All schema slugs in SCHEMA_SLUGS are declared in the register
@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
  * - FK relations carry $ref and x-openregister-onDelete
  * - sourceId/targetId on synchronization are plain string (no $ref)
  *
- * NOTE: The original REQ-A-002 test used Reflection on OCA\OpenConnector\Db\*
+ * NOTE: The original REQ-A-002 test used Reflection on OCA\Integriq\Db\*
  * entity classes to verify schema completeness. Those entity classes were
  * deleted in chain C (all state now lives in OpenRegister). The Reflection
  * assertions have been removed; the structural JSON checks below remain.
@@ -52,7 +52,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * `components.schemas` since, but never to this list, a pre-existing
 	 * drift bug fixed alongside lti-13-platform, see
 	 * openspec/changes/lti-13-platform/proposal.md's "Impact" section and
-	 * lib/Settings/openconnector_register.json's `x-openregister.description`).
+	 * lib/Settings/integriq_register.json's `x-openregister.description`).
 	 *
 	 * Was 20 — `lti_identity_link` added by
 	 * openspec/changes/lti-tool-provider-role (REQ-LTI-012); count
@@ -150,7 +150,7 @@ class RegisterDescriptorTest extends TestCase {
 		// change (#170). It was declared in components.schemas but never listed
 		// here nor in register.openconnector.schemas[], so the schema existed on
 		// the instance while every read and write through
-		// /api/objects/openconnector/sync_item_dead_letter answered
+		// /api/objects/integriq/sync_item_dead_letter answered
 		// "Schema not found" — declaring a schema is not attaching it.
 		// SyncItemDeadLetterService and SyncDeadLetterController both address it
 		// by that slug, so the capture path was inert in production.
@@ -165,27 +165,27 @@ class RegisterDescriptorTest extends TestCase {
 	private array $descriptor;
 
 	/**
-	 * Loads and validates the openconnector_register.json before each test.
+	 * Loads and validates the integriq_register.json before each test.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$path = dirname(path: __DIR__, levels: 3) . '/lib/Settings/openconnector_register.json';
+		$path = dirname(path: __DIR__, levels: 3) . '/lib/Settings/integriq_register.json';
 		$this->assertFileExists(
 			filename: $path,
-			message:  'openconnector_register.json MUST exist at lib/Settings/'
+			message:  'integriq_register.json MUST exist at lib/Settings/'
 		);
 
 		$raw = file_get_contents(filename: $path);
 		$this->assertNotFalse(
 			condition: $raw,
-			message:   'openconnector_register.json MUST be readable'
+			message:   'integriq_register.json MUST be readable'
 		);
 
 		$parsed = json_decode(json: $raw, associative: true);
 		$this->assertIsArray(
 			actual:  $parsed,
-			message: 'openconnector_register.json MUST parse as valid JSON'
+			message: 'integriq_register.json MUST parse as valid JSON'
 		);
 		$this->assertSame(
 			expected: JSON_ERROR_NONE,
@@ -204,7 +204,7 @@ class RegisterDescriptorTest extends TestCase {
 	 */
 	public function testRegisterDeclaresAllSchemaSlugs(): void {
 		$expected = array_values(self::SCHEMA_SLUGS);
-		$actual = $this->descriptor['components']['registers']['openconnector']['schemas'] ?? [];
+		$actual = $this->descriptor['components']['registers']['integriq']['schemas'] ?? [];
 
 		sort(array: $expected);
 		sort(array: $actual);
@@ -247,7 +247,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * to it, and it is then equally invisible to testRegisterDeclaresAllSchemaSlugs()
 	 * for as long as it is ALSO missing from register.openconnector.schemas[]. Both
 	 * guards stay green while the schema is unreachable through
-	 * /api/objects/openconnector/{slug}. That is not hypothetical: sync_item_dead_letter
+	 * /api/objects/integriq/{slug}. That is not hypothetical: sync_item_dead_letter
 	 * shipped in that state and the dead-letter capture path was inert. This closes
 	 * the direction the other two do not cover.
 	 *

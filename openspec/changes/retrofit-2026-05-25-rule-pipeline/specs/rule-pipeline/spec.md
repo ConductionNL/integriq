@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector endpoints can carry an ordered list of rules that run before and
+Integriq endpoints can carry an ordered list of rules that run before and
 after the request reaches its target (a register/schema or an external source).
 Rules implement endpoint-level business logic — authentication enforcement,
 data mapping, object persistence, file handling, synchronisation triggers,
@@ -15,7 +15,7 @@ This capability describes the **observed behaviour** of the rule-processing
 engine (`EndpointService` rule methods + `RuleService` custom rules) as it
 exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
-openconnector-local concept with no OpenRegister equivalent.
+integriq-local concept with no OpenRegister equivalent.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ endpoint name, rule name, rule type, and error message.
    immediately and subsequent rules are not processed.
 
 **Notes:**
-- `getRuleById()` resolves rules via OpenRegister `find(register: 'openconnector', schema: 'rule')` and returns `null` on lookup failure (logged), so an unresolvable rule id is silently dropped from the chain rather than failing the request. Documented as observed behaviour; flagged for future tightening.
+- `getRuleById()` resolves rules via OpenRegister `find(register: 'integriq', schema: 'rule')` and returns `null` on lookup failure (logged), so an unresolvable rule id is silently dropped from the chain rather than failing the request. Documented as observed behaviour; flagged for future tightening.
 - Rule entities are re-fetched and re-sorted on every request; there is no caching of the resolved rule chain.
 
 ### REQ-RULE-002: Data-Mutation Rules

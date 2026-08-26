@@ -9,21 +9,21 @@
  * preserved.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\AuthenticationException;
-use OCA\OpenConnector\Service\AuthorizationService;
+use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\AuthorizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\ICache;
@@ -128,7 +128,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 			->with('svc-partner-a')
 			->willReturn($user);
 		$this->userSession->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$service = $this->makeService();
@@ -174,7 +174,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 		);
 		$this->orObjectService->method('findAll')->willReturn(['results' => [$consumer]]);
 
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 
@@ -226,7 +226,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 			->with('admin')
 			->willReturn($user);
 		$this->userSession->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$service = $this->makeService();
@@ -253,7 +253,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 
 		$user = $this->createMock(IUser::class);
 		$this->userManager->expects($this->once())->method('get')->with('alice')->willReturn($user);
-		$this->userSession->expects($this->once())->method('setUser')->with($user);
+		$this->userSession->expects($this->once())->method('setVolatileActiveUser')->with($user);
 
 		$service = $this->makeService();
 		$service->authorizeApiKey(header: 'SUPER-SECRET-INBOUND-KEY-1', keys: $rawRuleKeys);
@@ -274,7 +274,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 	public function testStrippedRuleKeysRefuseInboundApiKey(): void {
 		// A stripped rule yields an empty keys map; no consumer matches the presented key.
 		$this->orObjectService->method('findAll')->willReturn(['results' => []]);
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 
@@ -299,7 +299,7 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 
 		// No userId on the consumer → no NC user is set, but auth still passes.
 		$this->userManager->expects($this->never())->method('get');
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$service = $this->makeService();
 		$service->authorizeApiKey(header: 'sk_live_secret', keys: []);

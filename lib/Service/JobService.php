@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector JobService.
+ * Integriq JobService.
  *
- * Service class for handling job execution logic in the OpenConnector application.
+ * Service class for handling job execution logic in the Integriq application.
  * This service manages job retrieval, validation, execution, and logging.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
@@ -112,9 +112,9 @@ class JobService {
 	) {
 		$this->errorRetention = 2592000000;
 		$this->successRetention = 3600000;
-		if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
 			$retentionPayload = json_decode(
-				$appConfig->getValueString(app: 'openconnector', key: 'retention'),
+				$appConfig->getValueString(app: 'integriq', key: 'retention'),
 				true
 			);
 			$this->errorRetention = ($retentionPayload['jobLogRetention'] ?? 2592000000);
@@ -198,6 +198,16 @@ class JobService {
 	 * @phpstan-return ObjectEntity
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
+	 *
+	 * @orphaned-write-capability exclude Deferred, NOT dismissed — tracked in
+	 * ConductionNL/integriq#1534. This method genuinely has zero production
+	 * callers, verified on both `origin/development` and the app-id rename
+	 * branch, so the finding is pre-existing and real rather than rename damage.
+	 * If it is what it looks like, jobs never get their `jobListId` stamped and
+	 * so never reach Nextcloud's scheduler — failing silently, the same family
+	 * as the stored-jobClass defect. Wiring or removing it is unrelated
+	 * behaviour change that does not belong in an app-id rename; #1534 carries
+	 * the symptoms to check.
 	 */
 	public function scheduleJob(ObjectEntity $job): ObjectEntity {
 		$jobData = $job->getObject();
@@ -209,7 +219,7 @@ class JobService {
 		// jobs had their jobListId cleared on every call). Surfaced by the
 		// JobServiceTest::testScheduleJobSkipsAlreadyScheduledJob suite once
 		// #1015 unblocked it from running.
-		if (isset($jobData['jobListId']) === true && $jobData['jobListId'] !== null
+		if (isset($jobData['jobListId']) === true
 			&& ($jobData['isEnabled'] ?? true) !== false
 		) {
 			return $job;
@@ -222,7 +232,7 @@ class JobService {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'job',
 				uuid: $job->getUuid()
 			);
@@ -236,19 +246,19 @@ class JobService {
 		$scheduleAfter = ($jobData['scheduleAfter'] ?? null);
 		if ($scheduleAfter !== null) {
 			$runAfter = (new DateTime($scheduleAfter))->getTimestamp();
-			$this->jobList->scheduleAfter(\OCA\OpenConnector\Cron\JobTask::class, $runAfter, $arguments);
+			$this->jobList->scheduleAfter(\OCA\Integriq\Cron\JobTask::class, $runAfter, $arguments);
 		}
 
 		if ($scheduleAfter === null) {
-			$this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
+			$this->jobList->add(\OCA\Integriq\Cron\JobTask::class, $arguments);
 		}
 
 		// Set the job list id.
-		$jobData['jobListId'] = $this->getJobListId(job: \OCA\OpenConnector\Cron\JobTask::class);
+		$jobData['jobListId'] = $this->getJobListId(job: \OCA\Integriq\Cron\JobTask::class);
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid()
 		);
@@ -413,7 +423,12 @@ class JobService {
 				);
 			}
 
-			$this->userSession->setUser($user);
+			// Volatile: a job's acting identity belongs to the job, not to any
+			// session. `setUser()` would also write `user_id` into the PHP
+			// session, and the `finally` below does not run on a fatal — so a
+			// crashed job could leave its identity behind for whatever ran next
+			// in the same process. See ADR-099.
+			$this->userSession->setVolatileActiveUser($user);
 			$sessionUserOverridden = true;
 		}//end if
 
@@ -473,7 +488,7 @@ class JobService {
 			// Always restore the prior session user so identity does not bleed
 			// across jobs in the same cron pass (#1006).
 			if ($sessionUserOverridden === true) {
-				$this->userSession->setUser($priorSessionUser);
+				$this->userSession->setVolatileActiveUser($priorSessionUser);
 			}
 		}
 
@@ -489,7 +504,11 @@ class JobService {
 		$jobData['lastRun'] = (new DateTime())->format('c');
 		if ($forceRun === false) {
 			if ($executionThrew === false) {
-				$nextRunDt = new DateTime('now + ' . ($jobData['interval'] ?? 0) . ' seconds');
+				// Read from $jobConfig, the job AS LOADED: $jobData has been
+				// mutated above (lastRun) and static analysis narrows it to the
+				// keys this method assigns, so `interval` reads as non-existent.
+				// Same remedy the comment at the top of this method describes.
+				$nextRunDt = new DateTime('now + ' . ($jobConfig['interval'] ?? 0) . ' seconds');
 
 				// Handle rate limiting if specified in result.
 				if (isset($result['nextRun']) === true) {
@@ -508,7 +527,7 @@ class JobService {
 			} else {
 				// On failure advance by the job's interval so it doesn't block
 				// the next cron tick (same logic as run()'s catch block).
-				$nextRunDt = new DateTime('now + ' . ((int)($jobData['interval'] ?? 0)) . ' seconds');
+				$nextRunDt = new DateTime('now + ' . ((int)($jobConfig['interval'] ?? 0)) . ' seconds');
 			}//end if
 
 			// Set time to the current hour and minute (remove seconds).
@@ -608,7 +627,7 @@ class JobService {
 		// M1: Advance the job's timeline only AFTER the log entry is safely written.
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid()
 		);
@@ -708,7 +727,7 @@ class JobService {
 
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'job_log'
 		);
 	}//end saveJobLog()
@@ -728,7 +747,7 @@ class JobService {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'job',
 					'isEnabled' => true,
 				],

@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "boamp-france"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "boamp-france-to-tender"
         },
@@ -55,7 +55,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "boamp-france-to-spectr-tender"
         },
@@ -82,13 +82,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "boamp-france-weekly-sync"
         },
         "name": "BOAMP France Weekly Sync",
         "description": "Runs the boamp-france-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "boamp-france-to-spectr-tender"
         },

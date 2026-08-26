@@ -4,7 +4,7 @@
  * Unit tests for NextcloudFormsEventListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Forms\Db\Form;
 use OCA\Forms\Db\Submission;
 use OCA\Forms\Events\FormSubmittedEvent;
-use OCA\OpenConnector\EventListener\NextcloudFormsEventListener;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\EventListener\NextcloudFormsEventListener;
+use OCA\Integriq\Service\EventService;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

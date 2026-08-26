@@ -5,7 +5,7 @@
  * and JWT private-key temp-file hygiene (secret-hygiene).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,7 +28,7 @@ declare(strict_types=1);
 // its temp file in a `finally` block before control returns to the caller,
 // making the live file otherwise unobservable from a black-box test.
 
-namespace OCA\OpenConnector\Service {
+namespace OCA\Integriq\Service {
 	if (function_exists(__NAMESPACE__ . '\\tempnam') === false) {
 		$GLOBALS['__oc_tempnam_spy_calls'] = [];
 
@@ -70,9 +70,9 @@ namespace OCA\OpenConnector\Service {
 	}//end if
 }//end namespace
 
-namespace OCA\OpenConnector\Tests\Unit\Service {
+namespace OCA\Integriq\Tests\Unit\Service {
 
-	use OCA\OpenConnector\Service\AuthenticationService;
+	use OCA\Integriq\Service\AuthenticationService;
 	use PHPUnit\Framework\TestCase;
 	use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 	use Twig\Loader\ArrayLoader;

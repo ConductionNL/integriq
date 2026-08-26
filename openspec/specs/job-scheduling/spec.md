@@ -5,14 +5,14 @@ status: done
 # job-scheduling Specification
 
 ## Purpose
-Schedules, runs, and logs OpenConnector background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.
+Schedules, runs, and logs Integriq background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.
 
 @e2e exclude backend job log API + cron scheduling internals (no browser UI) — covered by PHPUnit/Newman
 ## Requirements
 ### Requirement: Job log listing with pagination and filter parameters (REQ-001)
 
 `JobsController::logs(SearchService $searchService): JSONResponse` MUST
-return job-log records from OR (`register: 'openconnector', schema:
+return job-log records from OR (`register: 'integriq', schema:
 'job_log'`) under `@NoAdminRequired` / `@NoCSRFRequired`.
 
 The endpoint MUST accept pagination via `_page` (default 1) and `_limit`
@@ -308,7 +308,7 @@ return `new DateTime('now +' . max($retentions) . 'milliseconds')`.
 #### Notes
 
 - **HIGH (disable doesn't actually disable):** `scheduleJob`'s disable
-  path clears the openconnector-side `jobListId` but leaves the
+  path clears the integriq-side `jobListId` but leaves the
   underlying NC `oc_jobs` row in place (the commented-out
   `removeById` call). The next `JobTask::run` sweep walks OR for
   `isEnabled = true`, so the disabled job will be skipped — but a
@@ -387,7 +387,7 @@ permanently-`running` row is indistinguishable from a genuinely live one, so the
 UI built to answer *"is my sync still going?"* answers it wrongly.
 
 `StaleRunSweepJob` (registered in `appinfo/info.xml` as
-`OCA\OpenConnector\Cron\StaleRunSweepJob`) MUST close such records.
+`OCA\Integriq\Cron\StaleRunSweepJob`) MUST close such records.
 
 **Trigger.** An `OCP\BackgroundJob\TimedJob` with `setInterval(seconds: 300)` —
 every five minutes. It sets neither `setTimeSensitivity()` nor
@@ -395,7 +395,7 @@ every five minutes. It sets neither `setTimeSensitivity()` nor
 `LogCleanUpTask`, which sets both).
 
 **Selection.** `run()` MUST query OR with
-`findAll(config: ['filters' => ['register' => 'openconnector', 'schema' =>
+`findAll(config: ['filters' => ['register' => 'integriq', 'schema' =>
 'synchronization_run', 'status' => 'running']], _rbac: false, _multitenancy:
 false)` and read `$result['results'] ?? $result`. Because the filter names
 `status: running`, records already in a terminal state (`success` or `failed`)
@@ -430,7 +430,7 @@ The counter properties (`found`, `processed`, `created`, `updated`, `deleted`,
 they keep their last-observed values, which is what the `message` warns about.
 
 The write MUST be
-`saveObject(object: …, register: 'openconnector', schema: 'synchronization_run',
+`saveObject(object: …, register: 'integriq', schema: 'synchronization_run',
 uuid: $entity->getUuid(), _rbac: false, _multitenancy: false, silent: true,
 _validation: false)`.
 

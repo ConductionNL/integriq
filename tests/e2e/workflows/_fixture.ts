@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Seeded-fixture helper for the DEEP, DATA-DEPENDENT openconnector e2e layer
+ * Seeded-fixture helper for the DEEP, DATA-DEPENDENT integriq e2e layer
  * (tests/e2e/workflows/).
  *
  * WHY THIS EXISTS
  * ---------------
- * The high-value openconnector checks are not "does the page render" but
+ * The high-value integriq checks are not "does the page render" but
  * "does the integration actually MOVE DATA end-to-end": create a Source +
  * Mapping, link them in a Synchronization, RUN it, and assert the target
  * register gains the synced objects with the mapped values, and that a
@@ -15,19 +15,19 @@
  *
  * To drive that deterministically we need to create/clean up Sources,
  * Mappings, Synchronizations and seed source data through the REST API.
- * openconnector resolves all of its core entities through OpenRegister
+ * integriq resolves all of its core entities through OpenRegister
  * (register `openconnector`, schema {source,mapping,synchronization,...}):
  *
- *     /index.php/apps/openregister/api/objects/openconnector/<schema>
+ *     /index.php/apps/openregister/api/objects/integriq/<schema>
  *
- * The real OpenRegister/openconnector verbs are find / findAll /
+ * The real OpenRegister/integriq verbs are find / findAll /
  * searchObjects / saveObject / createObject / updateObject / deleteObject.
  * The REST surface maps to:
- *   - createObject  -> POST   .../objects/openconnector/<schema>
- *   - find          -> GET    .../objects/openconnector/<schema>/<id>
- *   - findAll       -> GET    .../objects/openconnector/<schema>?...
- *   - updateObject  -> PUT    .../objects/openconnector/<schema>/<id>
- *   - deleteObject  -> DELETE .../objects/openconnector/<schema>/<id>
+ *   - createObject  -> POST   .../objects/integriq/<schema>
+ *   - find          -> GET    .../objects/integriq/<schema>/<id>
+ *   - findAll       -> GET    .../objects/integriq/<schema>?...
+ *   - updateObject  -> PUT    .../objects/integriq/<schema>/<id>
+ *   - deleteObject  -> DELETE .../objects/integriq/<schema>/<id>
  *
  * CSRF: Nextcloud rejects state-changing requests (POST/PUT/DELETE) that
  * lack a valid `requesttoken`. The Playwright storageState carries the
@@ -47,8 +47,8 @@ import {
 } from '@playwright/test'
 import * as path from 'path'
 
-export const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-export const OC_API = '/index.php/apps/openconnector/api'
+export const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
+export const OC_API = '/index.php/apps/integriq/api'
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 
 /** Unique per-run prefix so cleanup only touches this run's rows. */

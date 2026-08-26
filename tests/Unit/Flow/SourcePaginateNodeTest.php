@@ -16,7 +16,7 @@
  * that never carried the verdict at all.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,13 +28,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Flow\FlowNodeSupport;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SourcePaginateNode;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Flow\FlowNodeSupport;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SourcePaginateNode;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCP\IL10N;
@@ -100,7 +100,7 @@ class SourcePaginateNodeTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/flow-synchronization-run.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/flow-synchronization-run.svg');
 
 		$this->node = new SourcePaginateNode(
 			synchronizationService: $this->synchronizationService,
@@ -687,7 +687,6 @@ class SourcePaginateNodeTest extends TestCase {
 	 */
 	private function serviceDouble(): SynchronizationService {
 		return new class extends SynchronizationService {
-
 			/**
 			 * The calls this double received, keyed by method.
 			 *

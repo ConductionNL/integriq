@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-php-cycles-mapping"
         },
@@ -31,7 +31,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-php-cycles"
         },
@@ -46,19 +46,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-php-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-php-cycles-sync"
         },
         "name": "endoflife.date — PHP cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-php-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-php-cycles"
         },
@@ -68,7 +68,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-nodejs-cycles-mapping"
         },
@@ -95,7 +95,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-nodejs-cycles"
         },
@@ -110,19 +110,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-nodejs-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-nodejs-cycles-sync"
         },
         "name": "endoflife.date — Node.js cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-nodejs-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nodejs-cycles"
         },
@@ -132,7 +132,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-python-cycles-mapping"
         },
@@ -159,7 +159,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-python-cycles"
         },
@@ -174,19 +174,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-python-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-python-cycles-sync"
         },
         "name": "endoflife.date — Python cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-python-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-python-cycles"
         },
@@ -196,7 +196,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-postgresql-cycles-mapping"
         },
@@ -223,7 +223,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-postgresql-cycles"
         },
@@ -238,19 +238,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-postgresql-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-postgresql-cycles-sync"
         },
         "name": "endoflife.date — PostgreSQL cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-postgresql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-postgresql-cycles"
         },
@@ -260,7 +260,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-mysql-cycles-mapping"
         },
@@ -287,7 +287,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-mysql-cycles"
         },
@@ -302,19 +302,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-mysql-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-mysql-cycles-sync"
         },
         "name": "endoflife.date — MySQL cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-mysql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-mysql-cycles"
         },
@@ -324,7 +324,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-nextcloud-cycles-mapping"
         },
@@ -351,7 +351,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-nextcloud-cycles"
         },
@@ -366,19 +366,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-nextcloud-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-nextcloud-cycles-sync"
         },
         "name": "endoflife.date — Nextcloud cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-nextcloud-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nextcloud-cycles"
         },
@@ -388,7 +388,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-wordpress-cycles-mapping"
         },
@@ -415,7 +415,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-wordpress-cycles"
         },
@@ -430,19 +430,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-wordpress-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-wordpress-cycles-sync"
         },
         "name": "endoflife.date — WordPress cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-wordpress-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-wordpress-cycles"
         },
@@ -452,7 +452,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "endoflife-date-laravel-cycles-mapping"
         },
@@ -479,7 +479,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "endoflife-date-laravel-cycles"
         },
@@ -494,19 +494,19 @@
           "deletionRatioThreshold": 0.5
         },
         "targetType": "register/schema",
-        "targetId": "openconnector/eolCycle",
+        "targetId": "integriq/eolCycle",
         "sourceTargetMapping": "endoflife-date-laravel-cycles-mapping",
         "version": "1.0.0"
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "endoflife-date-laravel-cycles-sync"
         },
         "name": "endoflife.date — Laravel cycles sync",
         "description": "Daily cron dispatch of the endoflife-date-laravel-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-laravel-cycles"
         },

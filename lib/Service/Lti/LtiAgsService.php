@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiAgsService.
+ * Integriq LtiAgsService.
  *
  * Assignment & Grade Services (AGS): RFC 7523 JWT-bearer service-token
  * issuance (Platform role), inbound score/line-item scope enforcement fanning
@@ -9,7 +9,7 @@
  * / result read reusing the existing OAuth + HTTP call machinery unmodified.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,12 +22,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
-use OCA\OpenConnector\Exception\LtiValidationException;
-use OCA\OpenConnector\Service\AuthenticationService;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\AuthenticationService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -110,7 +110,7 @@ class LtiAgsService {
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->tokenCache = $cacheFactory->createDistributed('openconnector.lti.token');
+		$this->tokenCache = $cacheFactory->createDistributed('integriq.lti.token');
 
 	}//end __construct()
 
@@ -429,7 +429,7 @@ class LtiAgsService {
 	 * Generic Tool-role outbound GET pull against a Platform-hosted resource,
 	 * reusing the RFC 7523 JWT-bearer client-credentials grant scoped to the
 	 * given AGS/NRPS scope. Shared by {@see readResult()} (AGS) and
-	 * {@see \OCA\OpenConnector\Service\Lti\LtiNrpsService::pullRoster()}
+	 * {@see \OCA\Integriq\Service\Lti\LtiNrpsService::pullRoster()}
 	 * (NRPS) so the token-exchange + dispatch shape is not duplicated
 	 * (REQ-LTI-008/REQ-LTI-009 both reuse the same outbound mechanism).
 	 *

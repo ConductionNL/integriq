@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector SynchronizationContractsController.
+ * Integriq SynchronizationContractsController.
  *
  * Controller for managing synchronization contracts. Handles action operations
  * (activate/deactivate/execute/statistics/performance/export); CRUD operations
  * are served by OR's generic routes.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,15 +16,15 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -132,7 +132,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -170,7 +170,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -208,7 +208,7 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_contract',
 				_rbac: false,
 				_multitenancy: false
@@ -231,11 +231,11 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function statistics(): JSONResponse {
 		try {
 			// Get basic counts by status via OR ObjectService.
-			$baseFilters = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
+			$baseFilters = ['register' => 'integriq', 'schema' => 'synchronization_contract'];
 			$allMatches = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
 			$activeMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'active'])]);
 			$inactiveMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'inactive'])]);
@@ -267,7 +267,7 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function performance(): JSONResponse {
 		try {
 			// Get performance data for different time periods.
@@ -312,7 +312,7 @@ class SynchronizationContractsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function export(
 		?string $synchronizationId = null,
 		?string $status = null,
@@ -350,7 +350,7 @@ class SynchronizationContractsController extends Controller {
 			}
 
 			// Get all contracts matching filters (no pagination for export) via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_contract'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$contracts = ($matches['results'] ?? $matches);
 

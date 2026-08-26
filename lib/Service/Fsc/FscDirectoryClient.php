@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector FSC Directory Client.
+ * Integriq FSC Directory Client.
  *
  * The ONE class housing every HTTP and credential operation this change
  * performs — both the FSC Directory lookup (`resolveService()`) and the
@@ -11,8 +11,8 @@
  * assumed FSC (Federatieve Service Connectiviteit) Directory endpoint.
  * Deliberately a hand-rolled HTTP client (Guzzle, already an app
  * dependency) rather than any FSC-specific SDK — mirrors
- * {@see \OCA\OpenConnector\Service\IwmoIjw\IStandardsClient} and
- * {@see \OCA\OpenConnector\Service\Kiss\KlantinteractiesClient}.
+ * {@see \OCA\Integriq\Service\IwmoIjw\IStandardsClient} and
+ * {@see \OCA\Integriq\Service\Kiss\KlantinteractiesClient}.
  *
  * ASSUMED WIRE SHAPE — no live FSC Directory/Outway/Inway was available to
  * verify against in this environment; every endpoint/header below is an
@@ -54,13 +54,13 @@
  * certificate/key/optional passphrase/optional CA bundle, same at-rest
  * pattern as the token above) to dispatch the downstream `call()` over a
  * real mutual-TLS connection via {@see
- * \OCA\OpenConnector\Service\Mtls\MtlsTransportService}, standing in for a
+ * \OCA\Integriq\Service\Mtls\MtlsTransportService}, standing in for a
  * real Outway process. Directory `resolveService()` lookups stay
  * unauthenticated/plain (mirrors a real FSC Directory, which is not itself
  * behind the Outway/Inway mTLS boundary). Token mode is unchanged.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Fsc
+ * @package  OCA\Integriq\Service\Fsc
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -69,22 +69,22 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Fsc;
+namespace OCA\Integriq\Service\Fsc;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Exception\FscConnectivityException;
-use OCA\OpenConnector\Exception\FscDirectoryException;
-use OCA\OpenConnector\Exception\MtlsTransportException;
-use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
-use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Exception\FscConnectivityException;
+use OCA\Integriq\Exception\FscDirectoryException;
+use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;

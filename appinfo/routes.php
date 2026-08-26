@@ -2,7 +2,7 @@
 
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
-// lives at OR's `/api/objects/openconnector/{schema}/*`. Re-adding a
+// lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
 return [
@@ -157,7 +157,7 @@ return [
 		// Every route above is the PLATFORM role (inbound). Without this one the
 		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
 		// publishScore() was implemented and spec'd done but structurally
-		// unreachable (openconnector#1192).
+		// unreachable (integriq#1192).
 		['name' => 'lti#agsPublishScore', 'url' => '/api/lti/{deployment}/ags/publish-score', 'verb' => 'POST'],
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
@@ -378,7 +378,7 @@ return [
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
 
 		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
-		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// `flow` CRUD goes through OR's generic /api/objects/integriq/flow/*
 		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
 		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
 		// API Products gateway (openspec/changes/api-product-gateway). api_product/
@@ -394,7 +394,7 @@ return [
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
-		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
+		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.
 		// See openspec/changes/connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
@@ -449,8 +449,8 @@ return [
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is
-		// bound under the standard `OCA\OpenConnector\Controller\GenericPreferencesController` service key
-		// in lib/AppInfo/Application.php (appName=openconnector, so the `pref_` user-value namespace stays
+		// bound under the standard `OCA\Integriq\Controller\GenericPreferencesController` service key
+		// in lib/AppInfo/Application.php (appName=integriq, so the `pref_` user-value namespace stays
 		// scoped to this app). The route name MUST resolve to that key: NC's App::main only prepends the
 		// `OCA\<App>\Controller\` namespace when the built controller name does NOT already contain
 		// `\Controller\`, so a namespaced route name like `AppHost\Controller\GenericPreferences` is looked
@@ -493,7 +493,7 @@ return [
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.
 		// MUST exclude /api/* so deleted API routes return 404, not the SPA shell.
-		// Regex is `.*` (not `.+`) so the empty-path case (`/apps/openconnector/`) also
+		// Regex is `.*` (not `.+`) so the empty-path case (`/apps/integriq/`) also
 		// resolves to the Dashboard — the duplicate `ui#dashboard` controller#method name
 		// with the line-112 `/` route triggers NC's last-wins binding, which means the
 		// catch-all is the one that actually serves `/` at runtime.

@@ -2,11 +2,11 @@
 
 ## Overview
 
-OpenConnector's configuration management features allow administrators to bundle related entities into named groups, import and export configurations as structured JSON, and reference entities with stable slug-based identifiers. This enables environment migration (dev → test → production), configuration sharing between organisations, and backup/restore workflows.
+Integriq's configuration management features allow administrators to bundle related entities into named groups, import and export configurations as structured JSON, and reference entities with stable slug-based identifiers. This enables environment migration (dev → test → production), configuration sharing between organisations, and backup/restore workflows.
 
 ## Configuration Groups
 
-A **Configuration** (also called a configuration group) bundles related Sources, Endpoints, Mappings, Rules, Jobs, and Synchronizations under a single name. Configurations can be exported as a single JSON file and re-imported on another OpenConnector instance.
+A **Configuration** (also called a configuration group) bundles related Sources, Endpoints, Mappings, Rules, Jobs, and Synchronizations under a single name. Configurations can be exported as a single JSON file and re-imported on another Integriq instance.
 
 | Field | Description |
 |-------|-------------|
@@ -25,7 +25,7 @@ A **Configuration** (also called a configuration group) bundles related Sources,
 Configurations are imported as JSON via:
 
 ```
-POST /index.php/apps/openconnector/api/import
+POST /index.php/apps/integriq/api/import
 Content-Type: application/json
 ```
 
@@ -43,8 +43,8 @@ Import is idempotent: re-importing the same configuration updates existing entit
 Export a configuration group or individual entity types via:
 
 ```
-GET /index.php/apps/openconnector/api/export
-GET /index.php/apps/openconnector/api/export?configurationId={id}
+GET /index.php/apps/integriq/api/export
+GET /index.php/apps/integriq/api/export?configurationId={id}
 ```
 
 The export format is an OpenAPI-structured JSON document:
@@ -53,7 +53,7 @@ The export format is an OpenAPI-structured JSON document:
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "OpenConnector Configuration Export",
+    "title": "Integriq Configuration Export",
     "version": "1.0.0"
   },
   "components": {
@@ -69,7 +69,7 @@ The export format is an OpenAPI-structured JSON document:
 
 ## Slug-Based References
 
-All OpenConnector entities have a `slug` field — a URL-friendly, human-readable identifier that is unique per entity type. Slugs are used in:
+All Integriq entities have a `slug` field — a URL-friendly, human-readable identifier that is unique per entity type. Slugs are used in:
 
 - Export/import for stable cross-environment references
 - API paths for human-readable entity access
@@ -92,11 +92,11 @@ Each entity type has a dedicated configuration handler that manages import/expor
 
 ## Settings
 
-Global application settings (retention periods, default behaviours) are managed via the Settings section in the OpenConnector UI and stored in Nextcloud's `IAppConfig`.
+Global application settings (retention periods, default behaviours) are managed via the Settings section in the Integriq UI and stored in Nextcloud's `IAppConfig`.
 
 ```
-GET  /index.php/apps/openconnector/api/settings
-PUT  /index.php/apps/openconnector/api/settings
+GET  /index.php/apps/integriq/api/settings
+PUT  /index.php/apps/integriq/api/settings
 ```
 
 ## Implementation

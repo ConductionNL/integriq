@@ -1,26 +1,26 @@
 <?php
 
 /**
- * Contributes OpenConnector's mapping functions to OpenRegister's engine.
+ * Contributes Integriq's mapping functions to OpenRegister's engine.
  *
  * Mapping evaluation is OpenRegister's, and every pure transformation function
  * moved there with it. Three cannot move, because they need services only
- * OpenConnector has:
+ * Integriq has:
  *
  * - `callSource` — CallService, the governed outbound HTTP client
  * - `getTargetIdByOriginId` / `getOriginIdByTargetId` — the synchronisation
  *   contract store, which maps an id in a source system to its counterpart here
  *
  * Importing those into OpenRegister would invert the dependency: OpenRegister is
- * the foundation app and must load on an instance where OpenConnector is absent.
+ * the foundation app and must load on an instance where Integriq is absent.
  * So the engine stays there and these three are contributed, exactly as
- * OpenConnector already contributes flow nodes through RegisterFlowNodesEvent.
+ * Integriq already contributes flow nodes through RegisterFlowNodesEvent.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Listener
- * @package  OCA\OpenConnector\Listener
+ * @package  OCA\Integriq\Listener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,15 +31,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Listener;
+namespace OCA\Integriq\Listener;
 
-use OCA\OpenConnector\Twig\MappingRuntime;
+use OCA\Integriq\Twig\MappingRuntime;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Twig\TwigFunction;
 
 /**
- * Registers the mapping functions that need OpenConnector's own services.
+ * Registers the mapping functions that need Integriq's own services.
  *
  * @template-implements IEventListener<Event>
  */

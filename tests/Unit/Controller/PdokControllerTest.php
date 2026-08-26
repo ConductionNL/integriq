@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector PDOK Controller Test
+ * Integriq PDOK Controller Test
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Connectors\PdokConnector;
-use OCA\OpenConnector\Controller\PdokController;
-use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\Integriq\Connectors\PdokConnector;
+use OCA\Integriq\Controller\PdokController;
+use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -242,7 +242,7 @@ class PdokControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new PdokController(
-			'openconnector',
+			'integriq',
 			$this->createMock(IRequest::class),
 			$connector,
 			$userSession,

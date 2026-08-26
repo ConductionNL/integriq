@@ -4,7 +4,7 @@
  * Unit tests for PromotionService (environments-and-promotion).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\ConfigurationService;
-use OCA\OpenConnector\Service\EnvironmentService;
-use OCA\OpenConnector\Service\PromotionService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\EnvironmentService;
+use OCA\Integriq\Service\PromotionService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -335,7 +335,7 @@ class PromotionServiceTest extends TestCase {
 			->method('call')
 			->with(
 				source: $source,
-				endpoint: '/index.php/apps/openconnector/api/configurations/import/preview',
+				endpoint: '/index.php/apps/integriq/api/configurations/import/preview',
 				method: 'POST',
 				config: $this->anything()
 			)
@@ -384,7 +384,7 @@ class PromotionServiceTest extends TestCase {
 							&& !array_key_exists('entities', $payload['previewSummary']);
 					}
 				),
-				'openconnector',
+				'integriq',
 				'promotion_audit'
 			)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-1'));
@@ -397,7 +397,7 @@ class PromotionServiceTest extends TestCase {
 
 	/**
 	 * REQ-006 — a failed promotion (target returns 404, e.g. an older
-	 * OpenConnector without the import routes) still writes exactly one
+	 * Integriq without the import routes) still writes exactly one
 	 * promotion_audit object, with outcome failed and no fabricated
 	 * written summary, and the failure propagates to the caller.
 	 *
@@ -422,7 +422,7 @@ class PromotionServiceTest extends TestCase {
 							&& ($payload['callLogId'] ?? null) === 'calllog-404';
 					}
 				),
-				'openconnector',
+				'integriq',
 				'promotion_audit'
 			)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-2'));

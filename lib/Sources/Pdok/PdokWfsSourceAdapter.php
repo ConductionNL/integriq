@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector PDOK WFS Source Adapter (dormant).
+ * Integriq PDOK WFS Source Adapter (dormant).
  *
  * Source-pattern facade over the lower-level `PdokWfsClient` family
  * (`lib/Adapters/Pdok/`). Ships dormant: every call logs the intent and
@@ -10,14 +10,14 @@
  * mandaat) can develop and test against a stable surface without
  * hitting the live PDOK WFS endpoint.
  *
- * Lives under `lib/Sources/Pdok/` so it can be discovered by the openconnector
+ * Lives under `lib/Sources/Pdok/` so it can be discovered by the integriq
  * Source registry (Source row `pdok-wfs`, category=`geo`). The active HTTP
- * implementation is `\OCA\OpenConnector\Adapters\Pdok\PdokWfsClientHttp` —
- * see {@see \OCA\OpenConnector\Adapters\Pdok\PdokSourceAdapter} for the
+ * implementation is `\OCA\Integriq\Adapters\Pdok\PdokWfsClientHttp` —
+ * see {@see \OCA\Integriq\Adapters\Pdok\PdokSourceAdapter} for the
  * `pdok.feature_flag` activation steps.
  *
  * @category Source
- * @package  OCA\OpenConnector\Sources\Pdok
+ * @package  OCA\Integriq\Sources\Pdok
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,21 +26,21 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Sources\Pdok;
+namespace OCA\Integriq\Sources\Pdok;
 
-use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClient;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Dormant source adapter for the PDOK WFS (Web Feature Service).
  *
- * Registered as openconnector Source row id `pdok-wfs`, category `geo`.
+ * Registered as integriq Source row id `pdok-wfs`, category `geo`.
  * Until the `pdok.feature_flag` app-config key is flipped to `1`, every
  * method returns the canned response below and logs a single debug entry
  * so operators can verify the wiring without burning quota on the real
@@ -52,7 +52,7 @@ final class PdokWfsSourceAdapter {
 	/**
 	 * App id used for IAppConfig look-ups.
 	 */
-	public const APP_ID = 'openconnector';
+	public const APP_ID = 'integriq';
 
 	/**
 	 * App-config key for the dormant-flag toggle (shared with WMS + geocoding).
@@ -161,7 +161,7 @@ final class PdokWfsSourceAdapter {
 	}//end describeService()
 
 	/**
-	 * Source-registry descriptor for the openconnector Source row.
+	 * Source-registry descriptor for the integriq Source row.
 	 *
 	 * @return array<string,mixed>
 	 */

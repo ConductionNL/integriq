@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "sweden-avropa"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "sweden-avropa-to-tender"
         },
@@ -55,7 +55,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "sweden-avropa-to-spectr-tender"
         },
@@ -76,13 +76,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "sweden-avropa-weekly-sync"
         },
         "name": "Avropa Sweden Weekly Sync",
         "description": "Runs the sweden-avropa-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "sweden-avropa-to-spectr-tender"
         },

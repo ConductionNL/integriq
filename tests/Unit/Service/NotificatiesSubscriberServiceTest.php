@@ -4,7 +4,7 @@
  * Unit tests for NotificatiesSubscriberService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\NotificatiesSubscriberService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -93,7 +93,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		$this->eventService = $this->createMock(EventService::class);
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/openconnector/api/notificaties/callback/abon-1');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://cloud.example/apps/integriq/api/notificaties/callback/abon-1');
 
 		$this->service = new NotificatiesSubscriberService(
 			$this->objectService,

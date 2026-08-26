@@ -104,7 +104,7 @@
 
 ### Task 10: Document the new `sourceConfig.deletionRatioThreshold` key
 - **spec_ref**: `openspec/changes/sync-safety-guardrails/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010`
-- **files**: `lib/Settings/openconnector_register.json` (`components.schemas.synchronization.properties.sourceConfig.description`)
+- **files**: `lib/Settings/integriq_register.json` (`components.schemas.synchronization.properties.sourceConfig.description`)
 - **acceptance_criteria**:
   - GIVEN the existing free-form `sourceConfig` property description (which already documents `resultsPosition`, `format`, `paginationQuery`, `paginationIn` as "notable recognised keys") WHEN this task is done THEN it also documents `deletionRatioThreshold` (float 0.0-1.0, default 0.10) with a one-sentence description and a reference to this change/spec requirement
   - This is a documentation-only JSON string edit — `sourceConfig` remains `"type": "object"` (free-form); no schema version bump, no OpenRegister migration (confirmed in `migration.md`)
@@ -177,9 +177,9 @@
 ## Tests (company-wide ADR-009)
 
 - [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/Service/SynchronizationService*Test.php` — Tasks 11-15)
-- [ ] Newman/Postman tests for new/changed API endpoints — add an assertion to the existing `tests/integration/openconnector.postman_collection.json` "6. Synchronization" folder's `synchronizations#run` request confirming a `forceDeletion` param in the request body does not cause a 500 (schema/plumbing smoke check only; the deep data-loss scenarios in Tasks 11-14 are covered by PHPUnit against mocked `CallService`/OR responses, which can simulate 429/500/partial-page conditions precisely — a live Newman run against a real external source cannot reliably reproduce those without a purpose-built stub source, which is out of scope for this change's smoke-test collection)
+- [ ] Newman/Postman tests for new/changed API endpoints — add an assertion to the existing `tests/integration/integriq.postman_collection.json` "6. Synchronization" folder's `synchronizations#run` request confirming a `forceDeletion` param in the request body does not cause a 500 (schema/plumbing smoke check only; the deep data-loss scenarios in Tasks 11-14 are covered by PHPUnit against mocked `CallService`/OR responses, which can simulate 429/500/partial-page conditions precisely — a live Newman run against a real external source cannot reliably reproduce those without a purpose-built stub source, which is out of scope for this change's smoke-test collection)
 - [ ] Browser tests (Playwright MCP) for UI changes — **N/A**: this change is backend-only (`SynchronizationService`/`SynchronizationsController`); no new UI surface. The existing "Test (dry run)" button in the Synchronizations UI (`sync-editor-ui` spec) continues to call the same `test` endpoint with no frontend changes required — its behaviour becoming safe is a backend fix, not a UI change.
-- [ ] All tests pass (`composer test`, `newman run tests/integration/openconnector.postman_collection.json`)
+- [ ] All tests pass (`composer test`, `newman run tests/integration/integriq.postman_collection.json`)
 
 ## Documentation (company-wide ADR-010)
 

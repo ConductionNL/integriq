@@ -5,11 +5,11 @@
  *
  * Mirrors the deployed registry's collision behaviour: a duplicate node type
  * id is REFUSED (the first registration wins and the second is rejected),
- * never silently displaced by load order. Only the surface the openconnector
+ * never silently displaced by load order. Only the surface the integriq
  * listener test exercises is declared.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
  */
 

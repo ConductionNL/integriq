@@ -1,16 +1,16 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Documentation screenshot capture suite — openconnector.
+ * Documentation screenshot capture suite — integriq.
  *
- * This spec is *not* a regression test — it drives the OpenConnector UI
+ * This spec is *not* a regression test — it drives the Integriq UI
  * through the flows documented under `docs/tutorials/{user,admin}/*.md`
  * and writes a fresh PNG into
  * `docusaurus/static/screenshots/tutorials/<track>/` for each step the
  * markdown references.
  *
- * Path quirk: openconnector's Docusaurus site lives in `docusaurus/`
+ * Path quirk: integriq's Docusaurus site lives in `docusaurus/`
  * (sibling of `docs/`), not in `docs/` like decidesk / launchpad. The
  * Docusaurus config reads markdown from `../docs` but its static dir
  * is `docusaurus/static/`. Markdown image refs are root-absolute
@@ -30,15 +30,15 @@
  * Nextcloud login → storage state) and `use.storageState`, so the
  * `page` fixture here arrives already signed in.
  *
- * Navigation strategy: OpenConnector's left-nav anchors all carry
+ * Navigation strategy: Integriq's left-nav anchors all carry
  * `href="#"` and bind navigation through a click handler. Rather than
  * fighting click handlers across collapsed parents (multiple "Logs"
  * sub-entries share the same label), the spec navigates by direct URL
- * — `/apps/openconnector/sources`, `/apps/openconnector/mappings`,
- * `/apps/openconnector/synchronizations/contracts`, etc. — which the
+ * — `/apps/integriq/sources`, `/apps/integriq/mappings`,
+ * `/apps/integriq/synchronizations/contracts`, etc. — which the
  * app's router resolves the same way as a click.
  *
- * Data dependency: OpenConnector list views render even with zero data
+ * Data dependency: Integriq list views render even with zero data
  * (Sources / Endpoints / Mappings / etc. show an empty state). The
  * structural screenshots below capture cleanly on a fresh instance. The
  * flow-detail screenshots (a configured source, a populated sync, a
@@ -64,11 +64,11 @@ const SHOT_ROOT = path.resolve(
 	'screenshots',
 	'tutorials',
 )
-// Note the explicit `/index.php/...` prefix. OpenConnector's Vue
-// router is configured with `base: '/index.php/apps/openconnector/'`
+// Note the explicit `/index.php/...` prefix. Integriq's Vue
+// router is configured with `base: '/index.php/apps/integriq/'`
 // (see `src/router/index.js`), so dropping `/index.php/` makes
 // vue-router fall back to the dashboard route on every navigation.
-const APP = '/index.php/apps/openconnector'
+const APP = '/index.php/apps/integriq'
 
 /**
  * Save a viewport screenshot under
@@ -104,7 +104,7 @@ async function shoot(
 // context and browser in the run — strictly better than re-clicking it on
 // each navigation.
 
-/** Navigate to an OpenConnector (or absolute) route and settle. */
+/** Navigate to an Integriq (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
 	const url =
 		route.startsWith('/index.php/')
@@ -185,7 +185,7 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '01-first-launch-03.png')
 		await go(page, '/sources')
 		await shoot(page, 'user', '01-first-launch-04.png')
-		expect(page.url()).toContain('/apps/openconnector')
+		expect(page.url()).toContain('/apps/integriq')
 	})
 
 	test('U2 add-source', async ({ page }) => {

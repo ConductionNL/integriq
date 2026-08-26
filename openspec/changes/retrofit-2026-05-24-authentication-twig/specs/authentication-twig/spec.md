@@ -107,7 +107,7 @@ are NOT supported.
   error. Observed; flagged as a functional bug.
 - `getJWTPayload` Twig-renders the payload before JSON-decoding. If the payload
   template comes from caller-controlled data (e.g., per-source configuration
-  managed via the openconnector UI), template injection lets the operator extract
+  managed via the integriq UI), template injection lets the operator extract
   any Twig-accessible context. Observed.
 
 ### REQ-003: Decos non-standard OAuth token fetch

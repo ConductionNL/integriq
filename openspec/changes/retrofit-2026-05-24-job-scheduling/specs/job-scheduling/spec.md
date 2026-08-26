@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-Openconnector's job-scheduling subsystem: an HTTP controller for listing
+Integriq's job-scheduling subsystem: an HTTP controller for listing
 job logs and triggering one-shot job runs, a NC `TimedJob` cron that
 dispatches the configured jobs every 5 minutes, a separate cleanup cron
 that removes expired log objects across four log schemas, and a service
@@ -23,7 +23,7 @@ are documented in REQ Notes and design.md without being silently fixed.
 ### REQ-001: Job log listing with pagination and filter parameters
 
 `JobsController::logs(SearchService $searchService): JSONResponse` MUST
-return job-log records from OR (`register: 'openconnector', schema:
+return job-log records from OR (`register: 'integriq', schema:
 'job_log'`) under `@NoAdminRequired` / `@NoCSRFRequired`.
 
 The endpoint MUST accept pagination via `_page` (default 1) and `_limit`
@@ -254,7 +254,7 @@ return `new DateTime('now +' . max($retentions) . 'milliseconds')`.
 #### Notes
 
 - **HIGH (disable doesn't actually disable):** `scheduleJob`'s disable
-  path clears the openconnector-side `jobListId` but leaves the
+  path clears the integriq-side `jobListId` but leaves the
   underlying NC `oc_jobs` row in place (the commented-out
   `removeById` call). The next `JobTask::run` sweep walks OR for
   `isEnabled = true`, so the disabled job will be skipped — but a

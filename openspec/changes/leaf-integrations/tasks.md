@@ -4,11 +4,11 @@
 
 ### Task 1: Declare `configuration.linkedTypes` on `source` and `synchronization`
 - **spec_ref**: `openspec/changes/leaf-integrations/specs/integration-leaves/spec.md#requirement-the-leaf-surface-is-declared-in-the-register-and-the-manifest-and-is-exactly-four-leaves-on-two-schemas-req-ocl-001`
-- **files**: `lib/Settings/openconnector_register.json`
+- **files**: `lib/Settings/integriq_register.json`
 - **acceptance_criteria**:
   - GIVEN the register JSON WHEN edited THEN `source.configuration` carries `linkedTypes: ["files", "deck", "talk"]` and `synchronization.configuration` carries `linkedTypes: ["calendar"]`, added without touching any other key of either schema
   - GIVEN the file WHEN grepped for `linkedTypes` THEN exactly 2 schemas carry it and none of the other 37 does (assert absence on `endpoint`, `mapping`, `job`, `rule`, `consumer`, `sync_item_dead_letter`, and every `*_log` schema explicitly)
-  - GIVEN each edit WHEN `python3 -m json.tool lib/Settings/openconnector_register.json` runs THEN it exits 0 and no pre-existing key is dropped; the `register.d/99-*` lockdown overlays are untouched
+  - GIVEN each edit WHEN `python3 -m json.tool lib/Settings/integriq_register.json` runs THEN it exits 0 and no pre-existing key is dropped; the `register.d/99-*` lockdown overlays are untouched
   - GIVEN the register is re-imported WHEN `Schema::validateLinkedTypesValue()` runs THEN no invalid-linked-type error is raised
 - [ ] Implement
 - [ ] Test
@@ -38,7 +38,7 @@
 - **files**: `docs/`, `CHANGELOG.md`
 - **acceptance_criteria**:
   - GIVEN `docs/` WHEN read THEN it records the incident workflow (documents/cards/war-room anchored on the source), the planning-only calendar leaf and where to find it (object sidebar — SynchronizationDetail is a custom page), and the OFF list with reasons including the deferred dead-letter files leaf
-  - GIVEN `CHANGELOG.md` WHEN read THEN it records OpenConnector's first leaf adoption
+  - GIVEN `CHANGELOG.md` WHEN read THEN it records Integriq's first leaf adoption
 - [ ] Implement
 - [ ] Test
 

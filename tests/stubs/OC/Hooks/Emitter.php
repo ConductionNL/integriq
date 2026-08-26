@@ -5,7 +5,7 @@
  * environments where Nextcloud core is not fully bootstrapped.
  *
  * @category Stub
- * @package  OCA\OpenConnector\Tests\Stubs
+ * @package  OCA\Integriq\Tests\Stubs
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.

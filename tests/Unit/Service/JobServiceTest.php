@@ -4,7 +4,7 @@
  * Unit tests for JobService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\JobService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -241,7 +241,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\ThrowingAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\ThrowingAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -252,7 +252,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -292,7 +292,7 @@ class JobServiceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			static function (string $class) use ($throwingAction, $healthyAction) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingAction') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingAction') {
 					return $throwingAction;
 				}
 				return $healthyAction;
@@ -361,7 +361,7 @@ class JobServiceTest extends TestCase {
 		// Arrange — a job configured with userId=alice.
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			'userId' => 'alice',
 			'arguments' => [],
@@ -373,11 +373,11 @@ class JobServiceTest extends TestCase {
 		$this->session->method('getUser')->willReturn(null);
 		$this->userMgr->method('get')->with('alice')->willReturn($alice);
 
-		// Capture setUser calls in order.
-		$setUserCalls = [];
-		$this->session->method('setUser')->willReturnCallback(
-			static function ($user) use (&$setUserCalls) {
-				$setUserCalls[] = $user;
+		// Capture the acting-identity swaps in order.
+		$identitySwaps = [];
+		$this->session->method('setVolatileActiveUser')->willReturnCallback(
+			static function ($user) use (&$identitySwaps) {
+				$identitySwaps[] = $user;
 			}
 		);
 
@@ -391,15 +391,15 @@ class JobServiceTest extends TestCase {
 		// Act
 		$this->service->executeJob($jobEntity);
 
-		// Assert — setUser was called twice: first with alice, then with the
+		// Assert — the identity was swapped twice: first to alice, then back to the
 		// prior user (null) to restore the session.
 		$this->assertCount(
 			2,
-			$setUserCalls,
-			'setUser must be called twice (set + restore) for a user-scoped job'
+			$identitySwaps,
+			'the acting identity must be set and then restored for a user-scoped job'
 		);
-		$this->assertSame($alice, $setUserCalls[0], 'First setUser must apply the configured user');
-		$this->assertNull($setUserCalls[1], 'Second setUser must restore the prior (null) session user');
+		$this->assertSame($alice, $identitySwaps[0], 'the first swap must apply the configured user');
+		$this->assertNull($identitySwaps[1], 'the second swap must restore the prior (null) session user');
 	}//end testExecuteJobRestoresPriorSessionUser()
 
 	/**
@@ -416,7 +416,7 @@ class JobServiceTest extends TestCase {
 	public function testSingleRunJobIsDisabledAfterRunning(): void {
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			// The spelling the SCHEMA declares.
 			'singleRun' => true,
@@ -458,7 +458,8 @@ class JobServiceTest extends TestCase {
 	}//end testSingleRunJobIsDisabledAfterRunning()
 	/**
 	 * #1006 regression test — a job whose configured userId no longer exists
-	 * MUST be skipped with a WARNING log, NOT crash via setUser(null).
+	 * MUST be skipped with a WARNING log, NOT crash by swapping the acting
+	 * identity to null.
 	 *
 	 * @return void
 	 */
@@ -466,7 +467,7 @@ class JobServiceTest extends TestCase {
 		// Arrange — job references a deleted user.
 		$jobBody = [
 			'isEnabled' => true,
-			'jobClass' => 'OCA\\OpenConnector\\Action\\HealthyAction',
+			'jobClass' => 'OCA\\Integriq\\Action\\HealthyAction',
 			'interval' => 300,
 			'userId' => 'deleted-user',
 			'arguments' => [],
@@ -476,8 +477,13 @@ class JobServiceTest extends TestCase {
 		$this->session->method('getUser')->willReturn(null);
 		$this->userMgr->method('get')->with('deleted-user')->willReturn(null);
 
-		// setUser must NEVER be called when the user resolves to null.
-		$this->session->expects($this->never())->method('setUser');
+		// The acting identity must NEVER be swapped when the user resolves to
+		// null. Asserted against `setVolatileActiveUser` — the method the service
+		// actually calls — because asserting `setUser` here would pass whether or
+		// not the guard works: nothing calls `setUser` any more, so that
+		// expectation is satisfied by a service that swapped the identity to null
+		// on every job.
+		$this->session->expects($this->never())->method('setVolatileActiveUser');
 
 		// container->get must NEVER be invoked because the job was skipped early.
 		$this->container->expects($this->never())->method('get');
@@ -528,7 +534,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\ThrowingUserAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\ThrowingUserAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'userId' => 'alice',
@@ -540,7 +546,7 @@ class JobServiceTest extends TestCase {
 			$this,
 			[
 				'isEnabled' => true,
-				'jobClass' => 'OCA\\OpenConnector\\Action\\NoUserAction',
+				'jobClass' => 'OCA\\Integriq\\Action\\NoUserAction',
 				'interval' => 300,
 				'nextRun' => $now,
 				'arguments' => [],
@@ -562,16 +568,16 @@ class JobServiceTest extends TestCase {
 		$this->userMgr->method('get')->with('alice')->willReturn($alice);
 
 		$sessionUserDuringJobB = 'not-observed';
-		$setUserCalls = [];
-		$this->session->method('setUser')->willReturnCallback(
-			static function ($user) use (&$setUserCalls) {
-				$setUserCalls[] = $user;
+		$identitySwaps = [];
+		$this->session->method('setVolatileActiveUser')->willReturnCallback(
+			static function ($user) use (&$identitySwaps) {
+				$identitySwaps[] = $user;
 			}
 		);
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $class) use (&$sessionUserDuringJobB) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingUserAction') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingUserAction') {
 					return new class {
 						public function run(array $args): array {
 							throw new \RuntimeException('boom from user-scoped job A');
@@ -598,11 +604,11 @@ class JobServiceTest extends TestCase {
 		// finally-restore)] and job B, having no userId, never triggers a
 		// THIRD setUser call — so the session identity in effect for job B is
 		// whatever the last recorded call restored it to (null), never alice.
-		$this->assertSame($alice, $setUserCalls[0], 'Job A must apply its configured user');
-		$this->assertNull($setUserCalls[1], "Job A's finally-block MUST restore the prior (null) session user before job B runs");
+		$this->assertSame($alice, $identitySwaps[0], 'Job A must apply its configured user');
+		$this->assertNull($identitySwaps[1], "Job A's finally-block MUST restore the prior (null) session user before job B runs");
 		$this->assertCount(
 			2,
-			$setUserCalls,
+			$identitySwaps,
 			'Job B has no userId configured, so it must not trigger any further setUser() call — '
 				. 'the session stays at whatever job A restored it to, never alice'
 		);
@@ -635,9 +641,9 @@ class JobServiceTest extends TestCase {
 			);
 		};
 
-		$jobA = $makeJob('job-a', 'OCA\\OpenConnector\\Action\\ThrowingActionABC');
-		$jobB = $makeJob('job-b', 'OCA\\OpenConnector\\Action\\HealthyActionB');
-		$jobC = $makeJob('job-c', 'OCA\\OpenConnector\\Action\\HealthyActionC');
+		$jobA = $makeJob('job-a', 'OCA\\Integriq\\Action\\ThrowingActionABC');
+		$jobB = $makeJob('job-b', 'OCA\\Integriq\\Action\\HealthyActionB');
+		$jobC = $makeJob('job-c', 'OCA\\Integriq\\Action\\HealthyActionC');
 
 		$this->objectService->method('findAll')->willReturnCallback(
 			static fn () => ['results' => [$jobA, $jobB, $jobC], 'total' => 3]
@@ -647,7 +653,7 @@ class JobServiceTest extends TestCase {
 		$cCalled = false;
 		$this->container->method('get')->willReturnCallback(
 			function (string $class) use (&$bCalled, &$cCalled) {
-				if ($class === 'OCA\\OpenConnector\\Action\\ThrowingActionABC') {
+				if ($class === 'OCA\\Integriq\\Action\\ThrowingActionABC') {
 					return new class {
 						public function run(array $args): array {
 							throw new \RuntimeException('boom from A');
@@ -655,7 +661,7 @@ class JobServiceTest extends TestCase {
 					};
 				}
 
-				if ($class === 'OCA\\OpenConnector\\Action\\HealthyActionB') {
+				if ($class === 'OCA\\Integriq\\Action\\HealthyActionB') {
 					return new class($bCalled) {
 						private bool $called;
 						public function __construct(bool &$called) {

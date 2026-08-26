@@ -4,7 +4,7 @@
  * Unit tests for S3Adapter.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Adapter
+ * @package  OCA\Integriq\Tests\Unit\Service\Adapter
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,9 +15,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Adapter;
+namespace OCA\Integriq\Tests\Unit\Service\Adapter;
 
-use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -250,7 +250,7 @@ XML;
 	}//end testListRequiresBucketFilter()
 
 	// ---------------------------------------------------------------------
-	// The write seam (openconnector#1191).
+	// The write seam (integriq#1191).
 	//
 	// `object-write` has been advertised by getCapabilities() and implemented
 	// by writeObject() since this adapter was scaffolded, but create()/update()

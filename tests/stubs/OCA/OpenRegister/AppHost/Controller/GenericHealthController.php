@@ -4,7 +4,7 @@
  * Test stub for OpenRegister's AppHost GenericHealthController.
  *
  * The real class lives in the peer OpenRegister app (not in vendor). Unit tests
- * mock or subclass this stub to exercise openconnector's HealthController
+ * mock or subclass this stub to exercise integriq's HealthController
  * delegation path without a full Nextcloud + OpenRegister install.
  *
  * @category Test
@@ -14,7 +14,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);

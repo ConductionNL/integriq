@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "nextcloud-appstore"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "nextcloud-appstore-to-marketplaceapp"
         },
@@ -59,7 +59,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "nextcloud-appstore-to-spectr-marketplaceapp"
         },
@@ -80,13 +80,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "nextcloud-appstore-weekly-sync"
         },
         "name": "Nextcloud App Store Weekly Sync",
         "description": "Runs the nextcloud-appstore-to-spectr-marketplaceapp synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "nextcloud-appstore-to-spectr-marketplaceapp"
         },

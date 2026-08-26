@@ -579,7 +579,7 @@
         "Configure where data comes from.": "Конфигурирајте од каде доаѓаат податоците.",
         "Configure where data is written to.": "Конфигурирајте каде се запишуваат податоците.",
         "Content path (optional)": "Патека на содржина (опционално)",
-        "Decide which Nextcloud groups may invoke each OpenConnector action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Одлучете кои Nextcloud групи можат да повикуваат секое OpenConnector дејство (ADR-023). Администраторите секогаш минуваат. Секое дејство стандардно е само за администратори — означете група за да го проширите.",
+        "Decide which Nextcloud groups may invoke each Integriq action (ADR-023). Admins always pass. Every action defaults to admin-only — tick a group to broaden it.": "Одлучете кои Nextcloud групи можат да повикуваат секое Integriq дејство (ADR-023). Администраторите секогаш минуваат. Секое дејство стандардно е само за администратори — означете група за да го проширите.",
         "Discard": "Отфрли",
         "Dot-path to the id field in each record": "Точкаста патека до полето id во секој запис",
         "Dot-path to the id field in the API response": "Точкаста патека до полето id во API одговорот",

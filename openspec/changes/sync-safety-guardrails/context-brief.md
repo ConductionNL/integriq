@@ -2,7 +2,7 @@
 Source: Specter deep-research 2026-07-14 (insights #1244). VERIFY every code claim against HEAD before writing artifacts.
 
 ## Problem (CRITICAL — data loss)
-The synchronization engine mass-deletes previously synced objects when a source misbehaves. Open issues (ConductionNL/openconnector GitHub, all 2026-05-27):
+The synchronization engine mass-deletes previously synced objects when a source misbehaves. Open issues (ConductionNL/integriq GitHub, all 2026-05-27):
 - #1000: source error during fetch → deleteInvalidObjects removes ALL synced objects
 - #1001: mid-pagination failure → partial result set treated as authoritative → mass deletion
 - #1002: HTTP 429 rate-limit → same mass deletion

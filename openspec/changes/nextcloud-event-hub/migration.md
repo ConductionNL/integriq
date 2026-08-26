@@ -1,7 +1,7 @@
 # Migration: nextcloud-event-hub
 
 ## Current State
-`lib/Settings/openconnector_register.json`'s `event_subscription` schema has no `action` or `retryPolicy`
+`lib/Settings/integriq_register.json`'s `event_subscription` schema has no `action` or `retryPolicy`
 properties; every subscription delivers via `sink` (implicit webhook) with the hardcoded backoff constants
 in `EventService` (`RETRY_BASE_SECONDS=60`, `RETRY_FACTOR=4`, `RETRY_CAP_SECONDS=21600`, `maxRetries` default
 parameter `5`). No Nextcloud SQL table or column exists for these fields — OR-managed schemas are stored as
@@ -21,14 +21,14 @@ not a Nextcloud database schema migration.
 
 ```
 No PHP migration class — schema-less OR storage.
-File changed: lib/Settings/openconnector_register.json (event_subscription.properties.action,
+File changed: lib/Settings/integriq_register.json (event_subscription.properties.action,
 event_subscription.properties.retryPolicy added; register descriptor `version` bumped per existing
 convention — see `openconnector-register-schema` spec REQ-A-001 for the versioning rule this change follows).
 ```
 
 ## Migration Steps
 1. Add `action` and `retryPolicy` property definitions to the `event_subscription` schema in
-   `lib/Settings/openconnector_register.json` (additive, no `required` entries added — both stay optional).
+   `lib/Settings/integriq_register.json` (additive, no `required` entries added — both stay optional).
 2. Bump the descriptor's schema `version` field per the existing per-schema semver convention (already used
    elsewhere in this file, e.g. `event_subscription.version: "1.0.0"` → `"1.1.0"` for an additive,
    backward-compatible change).
@@ -46,7 +46,7 @@ possible — NC core does not retain a queryable history of past file/calendar/t
 to replay).
 
 ## Rollback Procedure
-Revert `lib/Settings/openconnector_register.json` to drop the two new properties (or simply stop reading
+Revert `lib/Settings/integriq_register.json` to drop the two new properties (or simply stop reading
 them — since they are optional and additively handled, leaving stale `action`/`retryPolicy` values on
 already-created subscriptions after a code rollback is harmless: the reverted `EventService` code simply
 ignores fields it doesn't know about). Remove the 4 `addServiceListener` calls in `Application.php` to stop

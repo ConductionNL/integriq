@@ -1,6 +1,6 @@
 # Optimized Page Fetching
 
-The OpenConnector SynchronizationService now includes an optimized page fetching implementation that dramatically improves performance when synchronizing paginated data sources by eliminating recursive overhead.
+The Integriq SynchronizationService now includes an optimized page fetching implementation that dramatically improves performance when synchronizing paginated data sources by eliminating recursive overhead.
 
 ## Overview
 

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector AuthorizationService.
+ * Integriq AuthorizationService.
  *
  * Service class for handling authorization on incoming calls — JWT, basic auth,
  * OAuth bearer tokens and API keys.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Checker\AlgorithmChecker;
@@ -42,8 +42,8 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
+use OCA\Integriq\Exception\AuthenticationException;
 use OCA\OAuth2\Db\Client;
-use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
@@ -114,7 +114,7 @@ class AuthorizationService {
 		ICacheFactory $cacheFactory,
 		private readonly IRequest $request,
 	) {
-		$this->jtiCache = $cacheFactory->createDistributed('openconnector.jti');
+		$this->jtiCache = $cacheFactory->createDistributed('integriq.jti');
 
 	}//end __construct()
 
@@ -133,7 +133,7 @@ class AuthorizationService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'consumer',
 					'name' => $issuer,
 				],
@@ -435,7 +435,25 @@ class AuthorizationService {
 
 		$this->validatePayload(payload: $payload);
 
-		$this->userSession->setUser($this->userManager->get($issuerData['userId'] ?? ''));
+		// 🔴 `setVolatileActiveUser()`, NOT `setUser()`.
+		//
+		// The two differ in one way that decides a security property here:
+		// `setUser()` also writes `user_id` into the PHP session, and
+		// `lib/base.php` starts a real session on every request but `status.php`.
+		// This runs on a `#[PublicPage]` endpoint dispatch route, and unlike a
+		// scoped `runAs()` there is NOTHING here that restores the previous
+		// identity afterwards — the request simply ends.
+		//
+		// So with `setUser()`, an inbound call authenticated by credential wrote
+		// that identity into whatever session the caller carried, and the response
+		// returned a cookie for it. A browser already signed in as somebody else
+		// had its session silently reassigned to the credential's backing user.
+		//
+		// `setVolatileActiveUser()` (Nextcloud 29.0+; this app declares
+		// `min-version="32"`) sets the acting user for THIS REQUEST and persists
+		// nothing, which is exactly the lifetime an authenticated API call should
+		// have. See ADR-099.
+		$this->userSession->setVolatileActiveUser($this->userManager->get($issuerData['userId'] ?? ''));
 	}//end authorizeJwt()
 
 	/**
@@ -483,7 +501,25 @@ class AuthorizationService {
 			}
 		}
 
-		$this->userSession->setUser($user);
+		// 🔴 `setVolatileActiveUser()`, NOT `setUser()`.
+		//
+		// The two differ in one way that decides a security property here:
+		// `setUser()` also writes `user_id` into the PHP session, and
+		// `lib/base.php` starts a real session on every request but `status.php`.
+		// This runs on a `#[PublicPage]` endpoint dispatch route, and unlike a
+		// scoped `runAs()` there is NOTHING here that restores the previous
+		// identity afterwards — the request simply ends.
+		//
+		// So with `setUser()`, an inbound call authenticated by credential wrote
+		// that identity into whatever session the caller carried, and the response
+		// returned a cookie for it. A browser already signed in as somebody else
+		// had its session silently reassigned to the credential's backing user.
+		//
+		// `setVolatileActiveUser()` (Nextcloud 29.0+; this app declares
+		// `min-version="32"`) sets the acting user for THIS REQUEST and persists
+		// nothing, which is exactly the lifetime an authenticated API call should
+		// have. See ADR-099.
+		$this->userSession->setVolatileActiveUser($user);
 
 	}//end authorizeBasic()
 
@@ -596,7 +632,7 @@ class AuthorizationService {
 	 *
 	 * WHY THIS TYPE EXISTS
 	 * --------------------
-	 * The endpoint dispatch route (`/apps/openconnector/api/endpoint/{_path}`)
+	 * The endpoint dispatch route (`/apps/integriq/api/endpoint/{_path}`)
 	 * is `#[PublicPage] #[NoCSRFRequired]`, so NC's own middleware never
 	 * consults the session. Every other authentication type this app supports
 	 * reads an `Authorization` header, and {@see authorizeOAuth()} explicitly
@@ -626,7 +662,7 @@ class AuthorizationService {
 	 *  2. Then, a request carrying an `OCS-APIRequest` header is accepted
 	 *     WITHOUT a request token at all — NC treats the header as proof of a
 	 *     same-origin XHR, since setting it cross-origin forces a preflight.
-	 *     This app's own preflight ({@see \OCA\OpenConnector\Controller\EndpointsController::preflightedCors()})
+	 *     This app's own preflight ({@see \OCA\Integriq\Controller\EndpointsController::preflightedCors()})
 	 *     answers `Access-Control-Allow-Credentials: false`, so a cross-origin
 	 *     caller cannot attach the victim's session cookie and lands on the
 	 *     no-session refusal above.
@@ -783,7 +819,9 @@ class AuthorizationService {
 					throw new AuthenticationException(message: 'Invalid API key', details: []);
 				}
 
-				$this->userSession->setUser(user: $user);
+				// Same reason as authorizeJwt()/authorizeBasic(): scoped to this
+				// request, never written into the caller's session.
+				$this->userSession->setVolatileActiveUser(user: $user);
 				return;
 			}
 		}
@@ -809,7 +847,8 @@ class AuthorizationService {
 		if ($userId !== '') {
 			$user = $this->userManager->get(uid: $userId);
 			if ($user !== null) {
-				$this->userSession->setUser(user: $user);
+				// Scoped to this request. See authorizeJwt().
+				$this->userSession->setVolatileActiveUser(user: $user);
 			}
 		}
 
@@ -838,7 +877,7 @@ class AuthorizationService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'consumer',
 				],
 			],

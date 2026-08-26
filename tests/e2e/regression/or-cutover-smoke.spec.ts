@@ -6,12 +6,12 @@
  * against a running Nextcloud container. That is the Playwright anti-pattern:
  * Playwright e2e is UI-only; HTTP/contract assertions belong in Newman.
  *
- * All assertions previously here (OR source list, openconnector register
+ * All assertions previously here (OR source list, integriq register
  * schema count, graceful 4xx on a non-existent source uuid, deleted legacy
  * routes 404, preserved settings/rebase route) now live in the Newman
  * collection:
  *
- *   tests/postman/openconnector.postman_collection.json
+ *   tests/postman/integriq.postman_collection.json
  *     - folder "02 — OR-backed CRUD (post-cutover smoke)"  (source list)
  *     - folder "11 — Settings"                              (settings/rebase)
  *     - folder "12 — OR cutover smoke (migrated from Playwright …)"
@@ -24,7 +24,18 @@
 import { test } from '@playwright/test'
 
 test.describe('OR cutover — end-to-end smoke (migrated to Newman)', () => {
-	test.skip('migrated to tests/postman/openconnector.postman_collection.json (folders 02/11/12)', async () => {
-		// Assertions live in the Newman collection — see file header.
+	// `test.skip(true, reason)` inside the test, not `test.skip(title, fn)`.
+	// The modifier form records NO description in the report, so this deliberate
+	// migration placeholder appeared there as an unexplained skip — the same
+	// shape as a spec someone disabled and forgot. The title said why; the
+	// artifact did not. See ConductionNL/.github#559.
+	test('migrated to the Newman collection', async () => {
+		test.skip(
+			true,
+			'assertions moved to tests/postman/integriq.postman_collection.json '
+				+ 'folders 02 (OR-backed CRUD), 11 (Settings) and 12 (OR cutover '
+				+ 'smoke). This placeholder keeps the migration discoverable in git '
+				+ 'history rather than silently dropping the spec name.',
+		)
 	})
 })

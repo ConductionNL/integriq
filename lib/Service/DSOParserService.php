@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector DSO Parser Service
+ * Integriq DSO Parser Service
  *
  * Parses DSO-verzoek XML/JSON payloads into structured data.
  * Validates payloads against the STAM schema definition.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Psr\Log\LoggerInterface;
 
@@ -214,7 +214,7 @@ class DSOParserService {
 	 * and checks that the sum is divisible by 11.
 	 *
 	 * NOTE: This is intentionally duplicated from OpenRegister's BsnFormat.
-	 * OpenConnector cannot depend on OpenRegister being installed since it
+	 * Integriq cannot depend on OpenRegister being installed since it
 	 * connects to external systems independently. If the canonical implementation
 	 * changes, this method must be updated to match.
 	 *

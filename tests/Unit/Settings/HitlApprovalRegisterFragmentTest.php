@@ -5,7 +5,7 @@
  * ADR-023 action-matrix seed entries.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,9 +19,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -133,7 +133,7 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 
 	/**
 	 * Task 1: the fragment attaches `approval_request` onto the
-	 * `openconnector` register's schema list AND `components.schemas` when
+	 * `integriq` register's schema list AND `components.schemas` when
 	 * deep-merged onto a representative base descriptor — the two things
 	 * OpenRegister's ImportHandler requires (per EudiRegisterFragmentTest's
 	 * established precedent) — and does not disturb a disjoint pre-existing
@@ -147,8 +147,8 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 		$base = [
 			'components' => [
 				'registers' => [
-					'openconnector' => [
-						'slug' => 'openconnector',
+					'integriq' => [
+						'slug' => 'integriq',
 						'schemas' => ['source', 'consumer', 'endpoint', 'rule', 'synchronization'],
 					],
 				],
@@ -160,7 +160,7 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 
 		$merged = $this->merge($base, $fragment);
 
-		$registerSchemas = $merged['components']['registers']['openconnector']['schemas'];
+		$registerSchemas = $merged['components']['registers']['integriq']['schemas'];
 		$this->assertSame(
 			['source', 'consumer', 'endpoint', 'rule', 'synchronization', 'approval_request'],
 			$registerSchemas,
@@ -174,12 +174,12 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 	}//end testMergingFragmentAttachesApprovalRequestWithoutRedeclaringExistingSlugs()
 
 	/**
-	 * The fragment does not touch `openconnector_register.json` itself.
+	 * The fragment does not touch `integriq_register.json` itself.
 	 *
 	 * @return void
 	 */
 	public function testFragmentDoesNotModifyTheDescriptorFile(): void {
-		$descriptorPath = __DIR__ . '/../../../lib/Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../../../lib/Settings/integriq_register.json';
 		$descriptor = json_decode((string)file_get_contents($descriptorPath), true);
 
 		$this->assertArrayNotHasKey(

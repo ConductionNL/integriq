@@ -6,7 +6,7 @@
 // vitest suite asserts (REQ-001 search/category narrowing).
 //
 // The Catalog GRID itself is fetched and paginated by CnIndexPage's own
-// self-fetch against OR's `/api/objects/openconnector/catalog_item`
+// self-fetch against OR's `/api/objects/integriq/catalog_item`
 // endpoint (ADR-022) — this store deliberately does NOT duplicate that
 // list state. What lives here:
 //   - fetchItems(): a lightweight one-shot list read used by the export
@@ -86,7 +86,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 			this.loading = true
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/catalog_item',
+					'/apps/openregister/api/objects/integriq/catalog_item',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 500 } })
 				this.items = data?.results || []
@@ -106,9 +106,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		async fetchStatus(id) {
-			const url = generateUrl(
-				`/apps/openconnector/api/catalog/items/${id}/status`,
-			)
+			const url = generateUrl(`/apps/integriq/api/catalog/items/${id}/status`)
 			const { data } = await axios.get(url)
 			this.statusById = { ...this.statusById, [id]: data }
 			return data
@@ -126,7 +124,7 @@ export const useCatalogStore = defineStore('openconnector-catalog', {
 		 */
 		async instantiate(id) {
 			const url = generateUrl(
-				`/apps/openconnector/api/catalog/items/${id}/instantiate`,
+				`/apps/integriq/api/catalog/items/${id}/instantiate`,
 			)
 			const { data } = await axios.post(url, {})
 			// The action changed the item's live state — refresh its status.

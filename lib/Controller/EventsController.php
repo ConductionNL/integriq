@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector EventsController.
+ * Integriq EventsController.
  *
  * Controller for managing events and their subscriptions.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,18 +14,18 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\EventService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -117,7 +117,7 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, register: 'openconnector', schema: 'event', _rbac: false, _multitenancy: false);
+			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -125,7 +125,7 @@ class EventsController extends Controller {
 		// Get all messages for this event.
 		$matches = $this->orObjectService->findAll(
 			config: [
-				'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'event' => $event->getUuid()],
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'event' => $event->getUuid()],
 				'limit' => (int)$this->request->getParam('limit', 50),
 				'offset' => (int)$this->request->getParam('offset', 0),
 			]
@@ -182,7 +182,7 @@ class EventsController extends Controller {
 
 		try {
 			// Create subscription.
-			$subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
+			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
 			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
 		} catch (Exception $e) {
@@ -231,7 +231,7 @@ class EventsController extends Controller {
 			// Update subscription.
 			$subscription = $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				uuid: (string)$subscriptionId
 			);
@@ -268,7 +268,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -310,7 +310,7 @@ class EventsController extends Controller {
 			}
 		}
 
-		$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'event_subscription'], $filters);
+		$orFilters = array_merge(['register' => 'integriq', 'schema' => 'event_subscription'], $filters);
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => $orFilters,
@@ -354,7 +354,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -366,7 +366,7 @@ class EventsController extends Controller {
 		// Get messages for this subscription.
 		$matches = $this->orObjectService->findAll(
 			config: [
-				'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
 				'limit' => (int)$this->request->getParam('limit', 50),
 				'offset' => (int)$this->request->getParam('offset', 0),
 			]
@@ -407,7 +407,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -442,12 +442,12 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function generateSigningSecret(string $subscriptionId): JSONResponse {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -467,7 +467,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid()
 		);
@@ -494,12 +494,12 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function rotateSigningSecret(string $subscriptionId): JSONResponse {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -524,7 +524,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid()
 		);
@@ -631,7 +631,7 @@ class EventsController extends Controller {
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterIndex(): JSONResponse {
 		$statusParam = (string)$this->request->getParam('status', '');
 		if ($statusParam !== '') {
@@ -641,7 +641,7 @@ class EventsController extends Controller {
 		}
 
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'event_message',
 			'status' => $statuses,
 		];
@@ -738,7 +738,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false
@@ -802,10 +802,10 @@ class EventsController extends Controller {
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'event_message', _rbac: false, _multitenancy: false);
+			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}
@@ -817,7 +817,7 @@ class EventsController extends Controller {
 			try {
 				$subscription = $this->orObjectService->find(
 					id: (string)$subscriptionId,
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'event_subscription',
 					_rbac: false,
 					_multitenancy: false
@@ -854,7 +854,7 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function replay(string $id): JSONResponse {
 		$actor = $this->currentUid();
 
@@ -878,7 +878,7 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function discard(string $id): JSONResponse {
 		$actor = $this->currentUid();
 
@@ -900,7 +900,7 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function bulkReplay(): JSONResponse {
 		return $this->bulkApply(verb: 'replay');
 	}//end bulkReplay()
@@ -912,7 +912,7 @@ class EventsController extends Controller {
 	 *
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function bulkDiscard(): JSONResponse {
 		return $this->bulkApply(verb: 'discard');
 	}//end bulkDiscard()

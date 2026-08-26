@@ -4,7 +4,7 @@
  * Unit tests for MappingService (chain-C, OR-direct).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,12 +13,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationContractService;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -32,7 +32,7 @@ use Twig\Loader\ArrayLoader;
  * Tests for the mapping execution service after chain-C cutover.
  *
  * MappingService now consumes OpenRegister's ObjectService directly; the legacy
- * `OCA\OpenConnector\Db\Mapping*` types are no longer referenced.
+ * `OCA\Integriq\Db\Mapping*` types are no longer referenced.
  */
 class MappingServiceTest extends TestCase {
 
@@ -126,7 +126,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'map-uuid-42', register: 'openconnector', schema: 'mapping')
+			->with(id: 'map-uuid-42', register: 'integriq', schema: 'mapping')
 			->willReturn($object);
 
 		$result = $this->service->getMapping('map-uuid-42');
@@ -251,7 +251,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-uuid', register: 'openconnector', schema: 'mapping')
+			->with(id: 'lookup-uuid', register: 'integriq', schema: 'mapping')
 			->willReturn($object);
 
 		$result = $this->service->executeMapping('lookup-uuid', ['in' => 'value']);
@@ -276,7 +276,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-slug', register: 'openconnector', schema: 'mapping')
+			->with(id: 'lookup-slug', register: 'integriq', schema: 'mapping')
 			->willReturn(null);
 
 		$this->orObjectService->expects($this->once())
@@ -284,7 +284,7 @@ class MappingServiceTest extends TestCase {
 			->with(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'mapping',
 						'slug' => 'lookup-slug',
 					],

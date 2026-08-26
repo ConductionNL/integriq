@@ -8,7 +8,7 @@
  * than silently displacing the node already registered under it.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Flow
+ * @package  OCA\Integriq\Tests\Unit\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,21 +17,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Flow;
+namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\OpenConnector\Flow\ApplyMappingNode;
-use OCA\OpenConnector\Flow\ContractCommitNode;
-use OCA\OpenConnector\Flow\ContractMatchNode;
-use OCA\OpenConnector\Flow\ContractSweepNode;
-use OCA\OpenConnector\Flow\FlowNodeListener;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SourceCallNode;
-use OCA\OpenConnector\Flow\SourcePaginateNode;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SynchronizationContractService;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\ContractCommitNode;
+use OCA\Integriq\Flow\ContractMatchNode;
+use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\FetchFileNode;
+use OCA\Integriq\Flow\FlowNodeListener;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SourceCallNode;
+use OCA\Integriq\Flow\SourcePaginateNode;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -83,7 +84,7 @@ class FlowNodeListenerTest extends TestCase {
 		);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
-		$urlGenerator->method('imagePath')->willReturn('/apps/openconnector/img/icon.svg');
+		$urlGenerator->method('imagePath')->willReturn('/apps/integriq/img/icon.svg');
 
 		$flowOwner = new FlowOwner(
 			userManager: $this->createMock(IUserManager::class),
@@ -144,6 +145,13 @@ class FlowNodeListenerTest extends TestCase {
 				l10n: $l10n,
 				urlGenerator: $urlGenerator,
 				logger: $this->createMock(LoggerInterface::class)
+			),
+			fetchFileNode: new FetchFileNode(
+				synchronizations: $this->createMock(SynchronizationService::class),
+				flowOwner: $flowOwner,
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
 			)
 		);
 
@@ -168,7 +176,8 @@ class FlowNodeListenerTest extends TestCase {
 		$this->assertArrayHasKey('openconnector.contract', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-commit', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-sweep', $nodes);
-		$this->assertCount(7, $nodes);
+		$this->assertArrayHasKey('openconnector.fetch-file', $nodes);
+		$this->assertCount(8, $nodes);
 
 		foreach ($nodes as $node) {
 			$this->assertNotSame('', $node->getDisplayName());

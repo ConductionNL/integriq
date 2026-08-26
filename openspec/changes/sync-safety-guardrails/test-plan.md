@@ -154,7 +154,7 @@
 - **preconditions**: an authenticated Newman environment against a running dev instance, an existing synchronization id (reusing the collection's existing `{{syncId}}` setup/teardown flow)
 - **steps**: `POST .../synchronizations/{{syncId}}/run` with `forceDeletion: true` in the request body (source-less sync, mirroring the existing "graceful 4xx, NOT 500" request in the collection's "6. Synchronization" folder)
 - **expected result**: a graceful 4xx (missing source), never a 500 — confirms the new parameter doesn't break request parsing/routing
-- **test command**: `/test-api` — `newman run tests/integration/openconnector.postman_collection.json`
+- **test command**: `/test-api` — `newman run tests/integration/integriq.postman_collection.json`
 
 ## Coverage Summary
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiRegistrationResolverService.
+ * Integriq LtiRegistrationResolverService.
  *
  * Shared lookups for `lti_platform`/`lti_tool`/`lti_deployment` registrations
  * used by every LTI service (launch, AGS, NRPS) — a single owner of "find the
@@ -11,7 +11,7 @@
  * services.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
-use OCA\OpenConnector\Exception\LtiValidationException;
+use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -107,7 +107,7 @@ class LtiRegistrationResolverService {
 	 */
 	public function findPlatformByIssuer(string $issuer, ?string $clientId = null): ?ObjectEntity {
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'lti_platform',
 			'issuer' => $issuer,
 		];
@@ -141,7 +141,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_tool',
 					'clientId' => $clientId,
 				],
@@ -178,7 +178,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_deployment',
 					'deploymentId' => $deploymentIdClaim,
 					$relationField => $registrationUuid,
@@ -205,7 +205,7 @@ class LtiRegistrationResolverService {
 		try {
 			$deployment = $this->orObjectService->find(
 				id: $deploymentUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_deployment',
 				_rbac: false,
 				_multitenancy: false
@@ -241,7 +241,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
 				_multitenancy: false
@@ -263,7 +263,7 @@ class LtiRegistrationResolverService {
 	 * `ltiPlatformId`/`ltiToolId` (REQ-LTI-001 scenario 2).
 	 *
 	 * Defensive, in-code re-check of the OR schema-level `oneOf` constraint
-	 * (`lib/Settings/openconnector_register.json` — `lti_deployment.oneOf`).
+	 * (`lib/Settings/integriq_register.json` — `lti_deployment.oneOf`).
 	 * A row that predates the schema constraint (or reached storage through
 	 * any path that bypasses OR validation) must not silently resolve to an
 	 * ambiguous registration at launch/AGS/NRPS dispatch time.

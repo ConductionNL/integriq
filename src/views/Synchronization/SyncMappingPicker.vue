@@ -10,11 +10,11 @@
 
   Each row is the same Mapping picker, populated once and shared via the
   parent's `mappingOptions`. Reuses the #847 sync-picker pattern
-  (NcSelect populated from OR's `/api/objects/openconnector/mapping`).
+  (NcSelect populated from OR's `/api/objects/integriq/mapping`).
 
   Persisted shape: Mapping is referenced by `slug` per the
   `synchronization.sourceTargetMapping` field description in
-  `lib/Settings/openconnector_register.json` ("Mapping slug for
+  `lib/Settings/integriq_register.json` ("Mapping slug for
   source-to-target field transformation"). We render the human label
   but emit the slug back up.
 
@@ -28,22 +28,22 @@
 	<div class="sync-mapping">
 		<div class="sync-mapping__field">
 			<label :for="primaryId" class="sync-mapping__label">
-				{{ t('openconnector', 'Source → Target mapping *') }}
+				{{ t('integriq', 'Source → Target mapping *') }}
 			</label>
 			<NcSelect
 				:inputId="primaryId"
-				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
+				:aria-label-combobox="t('integriq', 'Source → Target mapping')"
 				:modelValue="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
-				:placeholder="t('openconnector', 'Pick a mapping')"
+				:placeholder="t('integriq', 'Pick a mapping')"
 				@update:modelValue="
 					(option) => $emit('update:value', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Transforms each source record into the target shape.',
 					)
 				}}
@@ -53,25 +53,23 @@
 
 		<div class="sync-mapping__field">
 			<label :for="reverseId" class="sync-mapping__label">
-				{{ t('openconnector', 'Target → Source mapping') }}
+				{{ t('integriq', 'Target → Source mapping') }}
 			</label>
 			<NcSelect
 				:inputId="reverseId"
-				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
+				:aria-label-combobox="t('integriq', 'Target → Source mapping')"
 				:modelValue="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
-				:placeholder="
-					t('openconnector', 'Optional — for bidirectional sync')
-				"
+				:placeholder="t('integriq', 'Optional — for bidirectional sync')"
 				@update:modelValue="
 					(option) => $emit('update:targetSourceValue', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Only needed when changes flow back from target to source.',
 					)
 				}}
@@ -80,23 +78,23 @@
 
 		<div class="sync-mapping__field">
 			<label :for="hashId" class="sync-mapping__label">
-				{{ t('openconnector', 'Hash mapping') }}
+				{{ t('integriq', 'Hash mapping') }}
 			</label>
 			<NcSelect
 				:inputId="hashId"
-				:aria-label-combobox="t('openconnector', 'Hash mapping')"
+				:aria-label-combobox="t('integriq', 'Hash mapping')"
 				:modelValue="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
-				:placeholder="t('openconnector', 'Optional — change detection')"
+				:placeholder="t('integriq', 'Optional — change detection')"
 				@update:modelValue="
 					(option) => $emit('update:hashValue', option?.id || '')
 				" />
 			<span class="sync-mapping__helper">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Mapping used to compute the source-side hash for change detection.',
 					)
 				}}
@@ -202,9 +200,7 @@ export default {
 			this.loading = true
 			try {
 				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/openconnector/mapping',
-					),
+					generateUrl('/apps/openregister/api/objects/integriq/mapping'),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().

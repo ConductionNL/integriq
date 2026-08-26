@@ -4,7 +4,7 @@
  * Unit tests for the ADR-037 modular register fragment deep-merge.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,9 +17,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 

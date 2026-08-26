@@ -10,7 +10,7 @@ mapping, contracting, writing, logging — is invisible and untunable from the
 flow. That defeats the point of flows: the process IS the product, and the
 process is hidden.
 
-At the same time OpenConnector still carries four standalone surfaces — Jobs,
+At the same time Integriq still carries four standalone surfaces — Jobs,
 Rules, Mappings, Synchronizations — that predate the flow engine and duplicate
 what flows now express: a Job is a schedule trigger, a Rule is an
 object-trigger plus a switch, a Mapping is a step's configuration, and a
@@ -46,7 +46,7 @@ Synchronization is a flow that has not been drawn yet.
 
 ## Impact
 
-- Affected: openconnector (nodes, pages, migration generator), openregister
+- Affected: integriq (nodes, pages, migration generator), openregister
   (bulk mode on `object-write`, `configFields` catalogue evolution),
   nextcloud-vue (node-editor registry, reference pickers).
 - The CKAN 2000-dataset benchmark flow is the performance yardstick: the

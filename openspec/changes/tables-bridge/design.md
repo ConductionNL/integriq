@@ -260,7 +260,7 @@ a MUST that both changes are expected to satisfy jointly.
 
 ### Decision 8: Permission-denied on a Table write fails the run, no partial writes, via the Table's own ACL — not a re-implemented one
 
-**Choice:** OpenConnector does **not** pre-check whether the configured
+**Choice:** Integriq does **not** pre-check whether the configured
 identity can write to the target table. It attempts the write; Tables'
 existing OCS/REST-layer ACL check does the enforcement server-side (Tables
 already 403s a caller lacking table access — verified: this is core Tables
@@ -319,6 +319,6 @@ revert (see proposal.md Rollback Strategy).
   segment (`.../synchronizations/tables-bridge/tables` vs a more generic
   `.../tables-bridge/...` namespace) during implementation.
 - Whether `usergroup` columns should get *read*-side support (Tables →
-  OpenConnector) even though write-side is out of scope — leaning yes since
+  Integriq) even though write-side is out of scope — leaning yes since
   reading a usergroup value as a plain string/array is safe and requires no
   coercion-authorization concerns; deferred to tasks.md scoping.

@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Helper;
+namespace OCA\Integriq\Tests\Unit\Service\Helper;
 
-use OCA\OpenConnector\Service\Helper\SyncRefResolver;
+use OCA\Integriq\Service\Helper\SyncRefResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -27,7 +27,7 @@ final class SyncRefResolverTest extends TestCase {
 			->with(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'source',
 						'id' => 42,
 					],
@@ -58,10 +58,10 @@ final class SyncRefResolverTest extends TestCase {
 	public function testRegisterSchemaSlugPair(): void {
 		$resolver = $this->makeResolver();
 
-		$result = $resolver->resolve('openconnector/source');
+		$result = $resolver->resolve('integriq/source');
 
 		$this->assertSame('register-schema', $result['variant']);
-		$this->assertSame('openconnector/source', $result['value']);
+		$this->assertSame('integriq/source', $result['value']);
 	}
 
 	public function testUuidIsPassedThroughUnchanged(): void {

@@ -2,7 +2,7 @@
   "$comment": "connector-catalog-ui (ADR-037 register fragment). Adds the catalog_item schema — a browsable, register/schema-backed metadata record describing a real, already-shipped connector adapter, seeded source template, or importable configuration template. Materialised by lib/Repair/MaterializeCatalogItems.php from CatalogRegistryService::collect(), which reads (a) OpenRegister's IntegrationRegistry, (b) a small static descriptor list for adapters not yet registered there (PDOK/Digikoppeling/Berichtenbox/DSO), and (c) the register.d/*-source.json seed fragments. catalog_item objects carry NO credentials — only display metadata — so, unlike `source` (99-source-lockdown.json), this schema is left at the default authorization (readable by any authenticated user), matching the Catalog page's browse-for-everyone intent; writes happen only via the repair step and the admin-gated CatalogController#instantiate/enable actions (ADR-023 catalog.instantiate). See openspec/changes/connector-catalog-ui/design.md.",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": [
           "catalog_item"
         ]

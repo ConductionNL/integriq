@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Controller.
+ * Integriq iWMO/iJW Controller.
  *
  * REST controller for the iwmo-ijw-adapter: the push endpoint sibling apps
  * (e.g. procest's social-domain case module) call directly over an
@@ -10,7 +10,7 @@
  * receiver — mirrors `PeppolController::inbound()`.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,20 +19,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\IwmoIjwProviderException;
-use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\IwmoIjwSyncService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\IwmoIjwProviderException;
+use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,7 +57,7 @@ class IwmoIjwController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param IwmoIjwSyncService $syncService Send/retour orchestration logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.

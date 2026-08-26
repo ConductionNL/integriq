@@ -1,6 +1,6 @@
 # Connector Catalog
 
-The Catalog page (`/catalog` in the OpenConnector app) is a browsable card grid of every integration capability the app ships — connector adapters, seeded source templates, and importable configuration templates. It is the onboarding surface for operators: instead of reading code or calling the API, you can discover what exists, see whether it is active, and enable or instantiate it in one click.
+The Catalog page (`/catalog` in the Integriq app) is a browsable card grid of every integration capability the app ships — connector adapters, seeded source templates, and importable configuration templates. It is the onboarding surface for operators: instead of reading code or calling the API, you can discover what exists, see whether it is active, and enable or instantiate it in one click.
 
 ## What the catalog lists
 
@@ -32,7 +32,7 @@ The detail dialog re-checks the live status when it opens (`GET /api/catalog/ite
 
 Enable/Instantiate is gated twice, per ADR-023:
 
-1. **Action layer** — the `catalog.instantiate` action in the admin-configurable action matrix (Settings → OpenConnector → Action authorization), seeded admin-only.
+1. **Action layer** — the `catalog.instantiate` action in the admin-configurable action matrix (Settings → Integriq → Action authorization), seeded admin-only.
 2. **Data layer** — the underlying Source write still passes through OpenRegister's admin-only lock on the `source` schema, independent of the action matrix.
 
 ## Configuration export and import
@@ -56,4 +56,4 @@ Both actions are gated by the `configuration.export` / `configuration.import` ac
 | `POST /api/configurations/import/preview` | Non-mutating import preview |
 | `POST /api/configurations/import` | Confirmed import (`confirmed: true` required, HTTP 400 otherwise) |
 
-Catalog listing itself uses OpenRegister's generic object API (`GET /apps/openregister/api/objects/openconnector/catalog_item`) — there is no bespoke list endpoint.
+Catalog listing itself uses OpenRegister's generic object API (`GET /apps/openregister/api/objects/integriq/catalog_item`) — there is no bespoke list endpoint.

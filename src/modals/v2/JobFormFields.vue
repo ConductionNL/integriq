@@ -249,21 +249,21 @@
 				<label
 					for="cn-job-form-synchronization"
 					class="cn-job-form-fields__label">
-					{{ t('openconnector', 'Synchronization') }} *
+					{{ t('integriq', 'Synchronization') }} *
 				</label>
 				<NcSelect
 					inputId="cn-job-form-synchronization"
-					:aria-label-combobox="t('openconnector', 'Synchronization')"
+					:aria-label-combobox="t('integriq', 'Synchronization')"
 					:modelValue="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
-					:placeholder="t('openconnector', 'Select a synchronization')"
+					:placeholder="t('integriq', 'Select a synchronization')"
 					@update:modelValue="onSynchronizationPick" />
 				<CnFieldHelper
 					:text="
 						t(
-							'openconnector',
+							'integriq',
 							'The synchronization this job will run. Written back as arguments.synchronizationId.',
 						)
 					" />
@@ -314,19 +314,13 @@ import {
  */
 function jobClassLabel(fqn) {
 	const labels = {
-		'OCA\\OpenConnector\\Action\\SynchronizationAction': t(
-			'openconnector',
+		'OCA\\Integriq\\Action\\SynchronizationAction': t(
+			'integriq',
 			'Run a synchronization',
 		),
-		'OCA\\OpenConnector\\Action\\FlowAction': t('openconnector', 'Run a flow'),
-		'OCA\\OpenConnector\\Action\\EventAction': t(
-			'openconnector',
-			'Dispatch an event',
-		),
-		'OCA\\OpenConnector\\Action\\PingAction': t(
-			'openconnector',
-			'Ping a source',
-		),
+		'OCA\\Integriq\\Action\\FlowAction': t('integriq', 'Run a flow'),
+		'OCA\\Integriq\\Action\\EventAction': t('integriq', 'Dispatch an event'),
+		'OCA\\Integriq\\Action\\PingAction': t('integriq', 'Ping a source'),
 	}
 	return labels[fqn] || fqn
 }
@@ -608,7 +602,7 @@ export default {
 			try {
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/synchronization',
+						'/apps/openregister/api/objects/integriq/synchronization',
 					),
 					// `_limit`, not `limit` — an unprefixed param is a PROPERTY
 					// FILTER in OpenRegister and silently returns `total: 0`
@@ -686,7 +680,7 @@ export default {
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
 				this.jsonErrors[field.key] = t(
-					'openconnector',
+					'integriq',
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)

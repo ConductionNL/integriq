@@ -7,7 +7,7 @@ retrofit: true
 
 ## Purpose
 
-OpenConnector provides a Sources section in its SPA where administrators can
+Integriq provides a Sources section in its SPA where administrators can
 browse, create, edit, and test external source connections (APIs, databases,
 registers). A Source is the foundational entity that describes how to connect to
 an external system — its URL, authentication type, headers, and rate-limit
@@ -18,13 +18,13 @@ and Newman). It is a retrofit spec: the code already exists.
 
 ### REQ-SRC-UI-001: Source Management UI
 
-OpenConnector MUST provide a Sources section in its SPA where administrators can
+Integriq MUST provide a Sources section in its SPA where administrators can
 browse, create, edit, delete, and test source connections.
 
 #### Scenario: sources list page mounts and shows content
 
-- GIVEN an authenticated admin visits the openconnector app
-- WHEN they navigate to the Sources section via the sidebar nav or direct URL `/apps/openconnector/sources`
+- GIVEN an authenticated admin visits the integriq app
+- WHEN they navigate to the Sources section via the sidebar nav or direct URL `/apps/integriq/sources`
 - THEN the Sources index page renders inside the main content area with content visible
 
 #### Scenario: add source button opens the creation modal
@@ -36,7 +36,7 @@ browse, create, edit, delete, and test source connections.
 #### Scenario: source logs sub-page mounts
 
 - GIVEN an authenticated admin
-- WHEN they navigate to the Source logs page at `/apps/openconnector/sources/logs`
+- WHEN they navigate to the Source logs page at `/apps/integriq/sources/logs`
 - THEN the page mounts and renders the main content area
 
 ### REQ-SRC-001: External HTTP source call
@@ -137,10 +137,10 @@ company lookup, person lookup, and SMS/WhatsApp dispatch out of the box.
 
 ### Requirement: Pre-built BRP HaalCentraal source seed
 
-OpenConnector SHALL seed a pre-built `source` object with
+Integriq SHALL seed a pre-built `source` object with
 `@self.slug = "brp-haalcentraal"` (register `openconnector`, schema `source`)
 on app install/upgrade, so the OpenRegister BRP person-lookup integration leaf
-— which routes through `OCA\OpenConnector\Db\SourceMapper::find('brp-haalcentraal')`
+— which routes through `OCA\Integriq\Db\SourceMapper::find('brp-haalcentraal')`
 — resolves a base URL out of the box. The seed SHALL ship dormant
 (`isEnabled: false`) with the production HaalCentraal Personen v2.0 base URL
 (`https://api.haalcentraal.nl/brp/v2.0`) as `location` and `auth: "oauth"`, and
@@ -162,7 +162,7 @@ materialised idempotently by `@self.slug` via OpenRegister's `ImportHandler`.
 #### Scenario: brp-haalcentraal source materialises on install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs `InitializeRegister`
+- WHEN `occ app:enable integriq` (or an upgrade) runs `InitializeRegister`
 - THEN a `source` object with `@self.slug = "brp-haalcentraal"` (location
   `https://api.haalcentraal.nl/brp/v2.0`) exists in register `openconnector`,
   schema `source`, with `auth = "oauth"` and `isEnabled = false`
@@ -196,11 +196,11 @@ materialised idempotently by `@self.slug` via OpenRegister's `ImportHandler`.
 
 ### Requirement: Pre-built KvK and OpenCorporates source seeds
 
-OpenConnector SHALL seed a pre-built `source` object with `@self.slug = "kvk"`
+Integriq SHALL seed a pre-built `source` object with `@self.slug = "kvk"`
 and a pre-built `source` object with `@self.slug = "opencorporates"` (register
 `openconnector`, schema `source`) on app install/upgrade, so the OpenRegister
 company-lookup integration leaves — which route through
-`OCA\OpenConnector\Db\SourceMapper::find('kvk')` /
+`OCA\Integriq\Db\SourceMapper::find('kvk')` /
 `::find('opencorporates')` — resolve a base URL out of the box. Each seed SHALL
 ship dormant (`isEnabled: false`) with the production REST base URL as
 `location` and `auth: "apikey"` **without** a key, so a fresh install never
@@ -217,7 +217,7 @@ OpenRegister's `ImportHandler`.
 #### Scenario: kvk and opencorporates sources materialise on install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs `InitializeRegister`
+- WHEN `occ app:enable integriq` (or an upgrade) runs `InitializeRegister`
 - THEN a `source` object with `@self.slug = "kvk"` (location
   `https://api.kvk.nl/api/v2`) and a `source` object with
   `@self.slug = "opencorporates"` (location
@@ -244,11 +244,11 @@ OpenRegister's `ImportHandler`.
 
 ### Requirement: Pre-built outbound-messaging source seeds
 
-OpenConnector SHALL seed five pre-built `source` objects (register
+Integriq SHALL seed five pre-built `source` objects (register
 `openconnector`, schema `source`) on app install/upgrade — `cmcom-sms`,
 `messagebird-sms`, `twilio-sms`, `whatsapp-cloud-api`, and `whatsapp-bsp` — so
 the OpenRegister outbound-messaging dispatch leaf (which routes through
-`OCA\OpenConnector\Db\SourceMapper::find(<slug>)` →
+`OCA\Integriq\Db\SourceMapper::find(<slug>)` →
 `ExternalIntegrationRouter` → `CallService::call`) and pipelinq's per-provider
 SMS/WhatsApp transport clients resolve a base URL out of the box. Each seed
 SHALL ship dormant (`isEnabled: false`) with the production REST base URL as
@@ -270,7 +270,7 @@ body/recipient travels in the POST body — so there is no SSRF surface.
 #### Scenario: messaging sources materialise on install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs `InitializeRegister`
+- WHEN `occ app:enable integriq` (or an upgrade) runs `InitializeRegister`
 - THEN `source` objects with `@self.slug` of `cmcom-sms`, `messagebird-sms`,
   `twilio-sms`, `whatsapp-cloud-api`, and `whatsapp-bsp` exist in register
   `openconnector`, schema `source`, each with `auth = "apikey"` and
@@ -296,10 +296,10 @@ body/recipient travels in the POST body — so there is no SSRF surface.
 
 ### Requirement: Pre-built xWiki source seed
 
-OpenConnector SHALL seed a pre-built `source` object with `@self.slug = "xwiki"`
+Integriq SHALL seed a pre-built `source` object with `@self.slug = "xwiki"`
 (register `openconnector`, schema `source`) on app install/upgrade, so the
 OpenRegister xWiki integration leaf — which routes through
-`OCA\OpenConnector\Db\SourceMapper::find('xwiki')` — resolves a base URL out of
+`OCA\Integriq\Db\SourceMapper::find('xwiki')` — resolves a base URL out of
 the box. The seed SHALL ship dormant (`isEnabled: false`) with a placeholder
 `location` and `auth: none`, so a fresh install never points at an unintended
 host and the OR provider degrades gracefully until an operator configures it.
@@ -312,7 +312,7 @@ idempotently by `@self.slug` via OpenRegister's `ImportHandler`.
 #### Scenario: xwiki source materialises on install
 
 - GIVEN OpenRegister is installed and enabled
-- WHEN `occ app:enable openconnector` (or an upgrade) runs `InitializeRegister`
+- WHEN `occ app:enable integriq` (or an upgrade) runs `InitializeRegister`
 - THEN a `source` object with `@self.slug = "xwiki"` exists in register
   `openconnector`, schema `source`, with `auth = "none"`, `isEnabled = false`,
   and a non-empty `location`

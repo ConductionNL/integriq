@@ -7,7 +7,7 @@
  * configuration structures that reference other entities by id or slug.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\ConfigurationHandlers
+ * @package  OCA\Integriq\Service\ConfigurationHandlers
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service\ConfigurationHandlers;
+namespace OCA\Integriq\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -53,7 +53,9 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 *
 	 * @param Entity $entity The rule entity to export.
 	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
-	 * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
+	 * @param array<int, mixed> $mappingIds Collected mapping ids (out param). The
+	 *                                      values come straight out of the caller-supplied $config, so they are
+	 *                                      only int|string by convention — nothing here narrows them.
 	 *
 	 * @return array The serialised rule configuration.
 	 *
@@ -97,7 +99,9 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 *
 	 * @param array $config The configuration array to process.
 	 * @param array $mappings The mappings array containing idToSlug mappings.
-	 * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
+	 * @param array<int, mixed> $mappingIds Collected mapping ids (out param). The
+	 *                                      values come straight out of the caller-supplied $config, so they are
+	 *                                      only int|string by convention — nothing here narrows them.
 	 *
 	 * @return array The processed configuration with IDs converted to slugs.
 	 *
@@ -173,14 +177,14 @@ class RuleHandler implements ConfigurationHandlerInterface {
 			// Update existing rule.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'rule',
 				uuid: $mappings['rule']['slugToId'][$slug]
 			);
 		}
 
 		// Create new rule.
-		return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'rule');
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'rule');
 	}//end import()
 
 	/**

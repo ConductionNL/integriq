@@ -4,7 +4,7 @@
  * Unit tests for the MaterializeCatalogItems repair step (connector-catalog-ui).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Repair
+ * @package  OCA\Integriq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,11 +15,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Repair;
+namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\OpenConnector\Repair\MaterializeCatalogItems;
-use OCA\OpenConnector\Service\CatalogRegistryService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Repair\MaterializeCatalogItems;
+use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -101,7 +101,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
-					$this->assertSame('openconnector', $register);
+					$this->assertSame('integriq', $register);
 					$this->assertSame('catalog_item', $schema);
 					$this->assertNull($uuid, 'first run must CREATE (no uuid)');
 					$this->assertSame('dormant', $object['status']);

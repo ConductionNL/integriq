@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector SynchronizationsController.
+ * Integriq SynchronizationsController.
  *
  * Controller for the synchronization detail page, test/run actions, statistics,
  * log listings and exports.
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,17 +15,17 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Settings\OpenConnectorAdmin;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -94,12 +94,12 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function contracts(int $id): JSONResponse {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'synchronization_contract',
 					'synchronizationId' => (string)$id,
 				],
@@ -130,7 +130,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchService $searchService): JSONResponse {
 		try {
 			// Get filters from request.
@@ -199,7 +199,7 @@ class SynchronizationsController extends Controller {
 			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
 			// Get synchronization logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
 			$syncLogs = ($matches['results'] ?? $matches);
 			$total = ($matches['total'] ?? count($syncLogs));
@@ -274,7 +274,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization',
 				_rbac: false,
 				_multitenancy: false
@@ -365,7 +365,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization',
 				_rbac: false,
 				_multitenancy: false
@@ -448,7 +448,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization',
 				_rbac: false,
 				_multitenancy: false
@@ -477,11 +477,11 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function statistics(): JSONResponse {
 		try {
 			// Get basic counts via OR ObjectService.
-			$baseFilters = ['register' => 'openconnector', 'schema' => 'synchronization'];
+			$baseFilters = ['register' => 'integriq', 'schema' => 'synchronization'];
 			$allMatches = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
 			$enabledMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['isEnabled' => true])]);
 			$totalCount = ($allMatches['total'] ?? count($allMatches['results'] ?? $allMatches));
@@ -542,11 +542,11 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logsStatistics(): JSONResponse {
 		try {
 			// Get basic counts by status/level via OR ObjectService.
-			$baseFilters = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
+			$baseFilters = ['register' => 'integriq', 'schema' => 'synchronization_log'];
 			$allMatches = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
 			$successMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'success'])]);
 			$errorMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'error'])]);
@@ -628,7 +628,7 @@ class SynchronizationsController extends Controller {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logsExport(): JSONResponse {
 		try {
 			// Get filters from request parameters.
@@ -638,7 +638,7 @@ class SynchronizationsController extends Controller {
 			unset($filters['_limit'], $filters['_page'], $filters['_sort'], $filters['_order']);
 
 			// Get all logs matching filters (no pagination for export) via OR ObjectService.
-			$orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$logs = ($matches['results'] ?? $matches);
 
@@ -720,7 +720,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: (string)$id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization_log',
 				_rbac: false,
 				_multitenancy: false

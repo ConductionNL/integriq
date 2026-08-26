@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 ## Context
 
-`lib/Service/OrganisationBridgeService.php` is openconnector's adapter to
+`lib/Service/OrganisationBridgeService.php` is integriq's adapter to
 OpenRegister's `OrganisationService`. It avoids a hard dependency on
 openregister by reflecting on `IAppManager` + the DI container and returning
 `null` / empty shapes when OR is not installed or fails to resolve.
@@ -51,7 +51,7 @@ explicitly switch on it; it is not just sugar over `getOrganisationService()
 - Constructor wiring (`__construct(IAppManager, ContainerInterface, LoggerInterface)`)
   — DI plumbing.
 - OR's `OrganisationService` contract — that lives in openregister's spec; this
-  retrofit pins only the openconnector-side adapter shape.
+  retrofit pins only the integriq-side adapter shape.
 - The HTTP controllers that consume these methods — covered by
   `user-management-and-login`.
 

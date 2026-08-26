@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Synchronization Contract Service.
+ * Integriq Synchronization Contract Service.
  *
  * Encapsulates the read/write lifecycle of synchronization contracts so the
  * SynchronizationService engine does not have to interleave OpenRegister
@@ -14,7 +14,7 @@
  * owns object identity (it keys on the `uuid` parameter).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -22,10 +22,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -49,7 +49,9 @@ class SynchronizationContractService {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = 'openconnector';
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
+	private const REGISTER = 'integriq';
 
 	/**
 	 * The OpenRegister schema for contract objects.
@@ -299,26 +301,26 @@ class SynchronizationContractService {
 		// nothing subscribes to.
 		$saved = \OCA\OpenRegister\Service\SystemOperationContext::run(
 			fn (): mixed => $this->orObjectService->saveObject(
-			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuidParam,
-			// A contract is the engine's own bookkeeping: its shape is generated
-			// here, not authored, and nothing subscribes to its lifecycle. So it
-			// pays for neither.
-			//
-			// `silent` drops the audit row and the lifecycle event. Auditing
-			// contract WRITES is the same argument already applied to contract
-			// READS, which were 91% of this instance's audit table — a mapping
-			// row the engine wrote for itself is not the thing an audit trail
-			// exists to record.
-			//
-			// `_validation: false` skips re-validating that shape against the
-			// contract schema on every record. Unlike a target object, whose
-			// content comes from an external source and is exactly what
-			// validation is for, this payload never leaves the engine's hands.
-			silent: true,
-			_validation: false
+				object: $object,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				uuid: $uuidParam,
+				// A contract is the engine's own bookkeeping: its shape is generated
+				// here, not authored, and nothing subscribes to its lifecycle. So it
+				// pays for neither.
+				//
+				// `silent` drops the audit row and the lifecycle event. Auditing
+				// contract WRITES is the same argument already applied to contract
+				// READS, which were 91% of this instance's audit table — a mapping
+				// row the engine wrote for itself is not the thing an audit trail
+				// exists to record.
+				//
+				// `_validation: false` skips re-validating that shape against the
+				// contract schema on every record. Unlike a target object, whose
+				// content comes from an external source and is exactly what
+				// validation is for, this payload never leaves the engine's hands.
+				silent: true,
+				_validation: false
 			)
 		);
 

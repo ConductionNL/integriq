@@ -17,7 +17,7 @@
  * native flow store (nodes[]/edges[]), not this app's own `flow`/`steps[]`
  * schema the old editor was built on. See
  * openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note and
- * openconnector#1255 for the full backend-state writeup.
+ * integriq#1255 for the full backend-state writeup.
  *
  * The shared canvas's own editor behaviour (dirty tracking, node palette,
  * keyboard operability) is `@conduction/nextcloud-vue`'s to test — duplicating
@@ -32,7 +32,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * The index list's exact columns (Name / Trigger / Status, measured
  * 2026-08-16 — a different shape than the old Name/Enabled/Description table
- * openconnector#1214 was filed against) are not pinned here. `CnFlowIndexPage`
+ * integriq#1214 was filed against) are not pinned here. `CnFlowIndexPage`
  * owns that presentation; pinning its column set from a consumer app couples
  * this file to a shared-library layout choice it doesn't control.
  *
@@ -134,8 +134,8 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  * router-less `php -S` server).
  *
  * Measured 2026-08-16: on this Apache-based dev container, a DEEP path
- * under `/index.php/apps/openconnector/<route>` (e.g. `/traces/<id>`)
- * redirects to the bare `/apps/openconnector/` app root, discarding the
+ * under `/index.php/apps/integriq/<route>` (e.g. `/traces/<id>`)
+ * redirects to the bare `/apps/integriq/` app root, discarding the
  * route — a real, pre-existing Nextcloud redirect that path-mode routing
  * now exposes (hash-mode was accidentally immune: a fragment with no
  * `#` of its own in the redirect's Location header is re-appended by the
@@ -148,7 +148,7 @@ async function deleteFlow(api: ApiClient, id: string): Promise<void> {
  *
  * 🔴 The probe it originally used (try each candidate, take the first that
  * serves the SPA shell) could not do that job: BOTH prefixes serve the
- * identical shell, so it always returned `/apps/openconnector` — right for
+ * identical shell, so it always returned `/apps/integriq` — right for
  * this dev container by luck, wrong for CI, where the router base is the
  * `/index.php/` form. The two tests in this file that used it failed in CI
  * while the two that use `APP_BASE` passed, in the same run — a controlled
@@ -177,14 +177,31 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 			enabled: true,
 			trigger: 'manual',
 			nodes: [
+				// `name` is what makes these nodes ASSERTABLE, and it has to be here
+				// rather than in the assertion below.
+				//
+				// @conduction/nextcloud-vue 2.15.0 rewrote the canvas on Vue Flow and
+				// fills each node's accessible name from `nodeLabel()`, which returns
+				// `node.name` first and otherwise DERIVES one from config:
+				//
+				//     no config keys        -> t('nextcloud-vue', 'not configured')
+				//     one key               -> `${key}: ${value}`
+				//
+				// Without a name, neither seeded node can be asserted on. `trigger1`
+				// has no config, so it would announce the TRANSLATED string "not
+				// configured" — green in CI's locale, red on a Dutch instance. `step1`
+				// would announce `synchronization: <runId>`, which is regenerated every
+				// run. Naming them fixes the cause instead of chasing the derived text.
 				{
 					id: 'trigger1',
+					name: 'Seeded manual trigger',
 					type: 'openregister.trigger-manual',
 					config: [],
 					position: { x: 80, y: 160 },
 				},
 				{
 					id: 'step1',
+					name: 'Seeded synchronization run',
 					type: 'openconnector.synchronization-run',
 					// A syntactically valid config (validateConfig() only requires a
 					// non-empty string) — this test proves the CANVAS renders the
@@ -253,16 +270,23 @@ test.describe('Flows — the shared canvas, scoped to app=openconnector', () => 
 			'the canvas must mount and load the seeded flow, not an empty shell',
 		).toBeVisible({ timeout: 25_000 })
 
-		// The two seeded nodes render as placed canvas nodes. Nodes' accessible
-		// name IS their node id ("trigger1"/"step1") — the Steps palette's own
-		// list items are never named this way, so this can't accidentally match
-		// the palette instead of the canvas.
+		// The two seeded nodes render as placed canvas nodes, asserted by the
+		// `name` the seed gives them (see the nodes[] block above for why the
+		// name has to be seeded rather than derived).
+		//
+		// This used to assert the node IDs, because up to 2.11.1 the canvas
+		// passed nodes straight through and an unnamed node's accessible name
+		// fell back to its id. That was an accident of the pass-through, not a
+		// deliberate contract, and 2.15.0's Vue Flow rewrite ended it. The old
+		// comment here also argued the ids could not collide with the Steps
+		// palette; that reasoning is void now, so these names are chosen to be
+		// distinct from any palette entry instead.
 		await expect(
-			page.getByRole('button', { name: 'trigger1' }),
+			page.getByRole('button', { name: 'Seeded manual trigger' }),
 			'the seeded trigger node must render on the canvas',
 		).toBeVisible()
 		await expect(
-			page.getByRole('button', { name: 'step1' }),
+			page.getByRole('button', { name: 'Seeded synchronization run' }),
 			'the seeded synchronization-run node must render on the canvas',
 		).toBeVisible()
 

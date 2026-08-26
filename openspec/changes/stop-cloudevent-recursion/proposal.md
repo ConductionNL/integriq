@@ -16,7 +16,7 @@ no guard on which register or schema the object belongs to
 
 1. A user creates object **X** → `ObjectCreatedEvent`.
 2. `EventService::handleObjectCreated(X)` calls
-   `objectService->saveObject(register: 'openconnector', schema: 'event')`
+   `objectService->saveObject(register: 'integriq', schema: 'event')`
    (`lib/Service/EventService.php:784`) — i.e. it **creates another
    OpenRegister object**, the CloudEvent **E**.
 3. Creating **E** fires `ObjectCreatedEvent` again → step 2 → **E2, E3, …**
@@ -46,7 +46,7 @@ latter — they were generated *from other events*.
 
 Related defects already fixed while diagnosing this (they amplified the cost
 but were not the loop): a docudesk array-to-string flood on the same write
-path (6,240 warnings/create), openconnector writing a UUID into the legacy
+path (6,240 warnings/create), integriq writing a UUID into the legacy
 integer `eventId` column (~697 validation failures/create), `debug=true`
 forcing hot-path debug logging to disk, and a stale exclusive
 `openregister/audit-seal` lock costing 150 ms per audit row.

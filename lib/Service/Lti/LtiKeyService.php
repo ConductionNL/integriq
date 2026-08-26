@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector LtiKeyService.
+ * Integriq LtiKeyService.
  *
  * Owns the per-registration signing-key lifecycle for LTI 1.3 / LTI
  * Advantage: generation, rotation (active -> previous -> retired) with a
  * grace window, and the publishable (active + previous) JWKS document.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,11 +21,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use Jose\Component\KeyManagement\JWKFactory;
-use OCA\OpenConnector\Exception\LtiValidationException;
+use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -133,7 +133,7 @@ class LtiKeyService {
 		try {
 			return $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
 				_multitenancy: false
@@ -286,7 +286,7 @@ class LtiKeyService {
 		$data['signingKeys'] = $signingKeys;
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -347,7 +347,7 @@ class LtiKeyService {
 		$data['signingKeys'] = $signingKeys;
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -399,7 +399,7 @@ class LtiKeyService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: $registrationType,
 			uuid: $registration->getUuid()
 		);
@@ -537,7 +537,7 @@ class LtiKeyService {
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => $registrationType,
 					],
 				],
@@ -571,7 +571,7 @@ class LtiKeyService {
 					$data['signingKeys'] = $signingKeys;
 					$this->orObjectService->saveObject(
 						object: $data,
-						register: 'openconnector',
+						register: 'integriq',
 						schema: $registrationType,
 						uuid: $registration->getUuid()
 					);

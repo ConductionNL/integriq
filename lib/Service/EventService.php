@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenConnector EventService.
+ * Integriq EventService.
  *
  * Service class for managing events and their delivery.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -14,20 +14,20 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
-use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
-use OCA\OpenConnector\Exception\InvalidMessageStateException;
-use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
-use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Forms\FormsAnswerResolver;
+use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -170,7 +170,7 @@ class EventService {
 	 * Cheap existence check: is there at least one active `event_subscription`
 	 * anywhere on this instance?
 	 *
-	 * Used as a firehose gate by {@see \OCA\OpenConnector\EventListener\CloudEventListener}
+	 * Used as a firehose gate by {@see \OCA\Integriq\EventListener\CloudEventListener}
 	 * so that an install with zero configured subscriptions (the common case —
 	 * outbound webhooks are opt-in) pays no persistence cost at all for OR
 	 * object mutations fleet-wide: no `event` record is written, no matching
@@ -187,7 +187,7 @@ class EventService {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'event_subscription',
 					'status' => 'active',
 				],
@@ -203,7 +203,7 @@ class EventService {
 	 * Resolve the numeric schema ids of this app's own CloudEvent storage
 	 * (`event`, `event_message`) within the `openconnector` register.
 	 *
-	 * {@see \OCA\OpenConnector\EventListener\CloudEventListener} needs these
+	 * {@see \OCA\Integriq\EventListener\CloudEventListener} needs these
 	 * to recognise its own writes and not re-forward them. It cannot compare
 	 * slugs, because `ObjectEntity::getSchema()` returns a numeric id.
 	 *
@@ -225,7 +225,7 @@ class EventService {
 				$matches = $this->objectService->findAll(
 					config: [
 						'filters' => [
-							'register' => 'openconnector',
+							'register' => 'integriq',
 							'schema' => $slug,
 						],
 						'limit' => 1,
@@ -265,7 +265,7 @@ class EventService {
 			$matches = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openconnector',
+						'register' => 'integriq',
 						'schema' => 'event_subscription',
 						'status' => 'active',
 					],
@@ -461,7 +461,7 @@ class EventService {
 				'created' => (new DateTime())->format('c'),
 				'updated' => (new DateTime())->format('c'),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message'
 		);
 
@@ -512,7 +512,7 @@ class EventService {
 			// `(string)` cast is defensive (find() signs for a string $id).
 			$subscription = $this->objectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false,
@@ -625,7 +625,7 @@ class EventService {
 				);
 				$this->objectService->saveObject(
 					object: $messageData,
-					register: 'openconnector',
+					register: 'integriq',
 					schema: 'event_message',
 					uuid: $message->getUuid()
 				);
@@ -782,7 +782,7 @@ class EventService {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
@@ -974,7 +974,7 @@ class EventService {
 			// `(string)` cast below is defensive (find() signs for a string $id).
 			$subscription = $this->objectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false,
@@ -1092,7 +1092,7 @@ class EventService {
 		try {
 			$synchronization = $this->objectService->find(
 				id: $synchronizationId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'synchronization'
 			);
 		} catch (\Throwable $e) {
@@ -1173,7 +1173,7 @@ class EventService {
 		}
 
 		try {
-			$job = $this->objectService->find(id: $jobId, register: 'openconnector', schema: 'job');
+			$job = $this->objectService->find(id: $jobId, register: 'integriq', schema: 'job');
 		} catch (\Throwable $e) {
 			$job = null;
 		}
@@ -1479,7 +1479,7 @@ class EventService {
 			// notificaties API with NO credentials at all.
 			return $this->objectService->find(
 				id: $sourceId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'source',
 				_rbac: false,
 				_multitenancy: false
@@ -1506,7 +1506,7 @@ class EventService {
 		}
 
 		try {
-			return $this->objectService->find(id: $eventId, register: 'openconnector', schema: 'event');
+			return $this->objectService->find(id: $eventId, register: 'integriq', schema: 'event');
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -1698,7 +1698,7 @@ class EventService {
 	 * @return array<string, mixed> `{"<id>": value, "<text>": value, ...}`, the `$input`
 	 *                              passed to `MappingService::executeMapping()`.
 	 *
-	 * @throws \OCA\OpenConnector\Exception\FormsConfigException When a question text is ambiguous.
+	 * @throws \OCA\Integriq\Exception\FormsConfigException When a question text is ambiguous.
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
@@ -1772,7 +1772,7 @@ class EventService {
 			// unauthenticated.
 			return $this->objectService->find(
 				id: $id,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
@@ -1814,7 +1814,7 @@ class EventService {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
@@ -1855,7 +1855,7 @@ class EventService {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
@@ -1887,7 +1887,7 @@ class EventService {
 	public function replayMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message'
 		);
 		$messageData = $message->getObject();
@@ -1909,7 +1909,7 @@ class EventService {
 		// Attempts[] is deliberately preserved across the replay campaign.
 		$saved = $this->objectService->saveObject(
 			object: $messageData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
@@ -1922,7 +1922,7 @@ class EventService {
 
 		return $this->objectService->find(
 			id: $message->getUuid(),
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message'
 		);
 
@@ -1951,7 +1951,7 @@ class EventService {
 		if ($subscriptionId !== null) {
 			$subscription = $this->objectService->find(
 				id: $subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription'
 			);
 
@@ -2005,7 +2005,7 @@ class EventService {
 	public function discardMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message'
 		);
 		$messageData = $message->getObject();
@@ -2026,7 +2026,7 @@ class EventService {
 
 		return $this->objectService->saveObject(
 			object: $messageData,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
@@ -2059,7 +2059,7 @@ class EventService {
 			// `(string)` cast is defensive (find() signs for a string $id).
 			$subscription = $this->objectService->find(
 				id: (string)$subscriptionId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
 				_multitenancy: false,
@@ -2101,7 +2101,7 @@ class EventService {
 			$message->setObject($messageData);
 			$this->objectService->saveObject(
 				object: $messageData,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'event_message',
 				uuid: $message->getUuid()
 			);
@@ -2152,7 +2152,7 @@ class EventService {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'event_message',
 					'status' => ['pending', 'failed'],
 				],
@@ -2220,7 +2220,7 @@ class EventService {
 	 */
 	public function pullEvents(ObjectEntity $subscription, ?int $limit = 100, ?string $cursor = null): array {
 		$filters = [
-			'register' => 'openconnector',
+			'register' => 'integriq',
 			'schema' => 'event_message',
 			'subscription' => $subscription->getUuid(),
 			'status' => 'pending',
@@ -2282,7 +2282,7 @@ class EventService {
 				'data' => $data,
 				'userId' => $userId,
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event'
 		);
 
@@ -2324,7 +2324,7 @@ class EventService {
 				'data' => ($payload['data'] ?? []),
 				'userId' => ($payload['userId'] ?? null),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event'
 		);
 
@@ -2358,7 +2358,7 @@ class EventService {
 				],
 				'userId' => ($objectData['userId'] ?? null),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event'
 		);
 
@@ -2398,7 +2398,7 @@ class EventService {
 				],
 				'userId' => ($newData['userId'] ?? null),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event'
 		);
 
@@ -2432,7 +2432,7 @@ class EventService {
 				],
 				'userId' => ($objectData['userId'] ?? null),
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'event'
 		);
 

@@ -12,7 +12,7 @@
  * manual `configurations/import` call every time the environment resets.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -139,7 +139,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	 * Mapping, one Synchronization wired sourceId -> targetId, and one
 	 * enabled Job with a real (non-zero) interval whose
 	 * `arguments.synchronizationId` matches the Synchronization's own slug
-	 * — i.e. it genuinely self-schedules via OpenConnector's Job/cron path
+	 * — i.e. it genuinely self-schedules via Integriq's Job/cron path
 	 * rather than requiring a manual trigger.
 	 *
 	 * @dataProvider fragmentProvider
@@ -166,7 +166,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 		$this->assertCount(1, $bySchema['source'], $filename . ' must declare exactly one source');
 		$source = array_values($bySchema['source'])[0];
 		$this->assertTrue($source['isEnabled'] ?? false, $filename . ' source must ship isEnabled:true (Wave 0 = fully live)');
-		$this->assertSame('openconnector', $source['@self']['register'], $filename . ' source must live in the openconnector register');
+		$this->assertSame('integriq', $source['@self']['register'], $filename . ' source must live in the integriq register');
 
 		// At least one Mapping.
 		$this->assertArrayHasKey('mapping', $bySchema, $filename . ' must declare at least one mapping');

@@ -4,7 +4,7 @@
  * Unit tests for the eudi-wallet-credential-issuance register fragment.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Settings
+ * @package  OCA\Integriq\Tests\Unit\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,16 +15,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Settings;
+namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\OpenConnector\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
  * Resolves design.md's DEFERRED_QUESTION with evidence: confirms
  * `InitializeRegister::deepMergeConfig()` merges the fragment's
- * `components.schemas` AND `components.registers.openconnector.schemas`
+ * `components.schemas` AND `components.registers.integriq.schemas`
  * cleanly onto a representative base descriptor, and that the fragment file
  * itself is well-formed and declares exactly the three schemas REQ-EUDI-001
  * names.
@@ -86,7 +86,7 @@ class EudiRegisterFragmentTest extends TestCase {
 	/**
 	 * DEFERRED_QUESTION resolution: merging the fragment onto a
 	 * representative base descriptor attaches all three new schemas to
-	 * `components.registers.openconnector.schemas[]` (concatenated, base
+	 * `components.registers.integriq.schemas[]` (concatenated, base
 	 * entries preserved) AND makes them resolvable under
 	 * `components.schemas` — the two things OpenRegister's ImportHandler
 	 * requires (traced in ImportHandler.php:1602-1803) for a schema to
@@ -101,8 +101,8 @@ class EudiRegisterFragmentTest extends TestCase {
 		$base = [
 			'components' => [
 				'registers' => [
-					'openconnector' => [
-						'slug' => 'openconnector',
+					'integriq' => [
+						'slug' => 'integriq',
 						'schemas' => ['source', 'consumer', 'endpoint'],
 					],
 				],
@@ -114,7 +114,7 @@ class EudiRegisterFragmentTest extends TestCase {
 
 		$merged = $this->merge($base, $fragment);
 
-		$registerSchemas = $merged['components']['registers']['openconnector']['schemas'];
+		$registerSchemas = $merged['components']['registers']['integriq']['schemas'];
 		$this->assertSame(
 			['source', 'consumer', 'endpoint', 'eudi_credential_offer', 'eudi_issuance_session', 'eudi_status_list'],
 			$registerSchemas,
@@ -131,7 +131,7 @@ class EudiRegisterFragmentTest extends TestCase {
 	}//end testMergingFragmentAttachesSchemasToTheRegistersList()
 
 	/**
-	 * The fragment does not touch `openconnector_register.json` itself —
+	 * The fragment does not touch `integriq_register.json` itself —
 	 * that file's own schema declarations are unaffected (verified
 	 * independently by RegisterDescriptorTest, which parses ONLY that
 	 * file and never this fragment).
@@ -139,7 +139,7 @@ class EudiRegisterFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testFragmentDoesNotModifyTheDescriptorFile(): void {
-		$descriptorPath = __DIR__ . '/../../../lib/Settings/openconnector_register.json';
+		$descriptorPath = __DIR__ . '/../../../lib/Settings/integriq_register.json';
 		$descriptor = json_decode((string)file_get_contents($descriptorPath), true);
 
 		$this->assertArrayNotHasKey(

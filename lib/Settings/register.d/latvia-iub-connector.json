@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "latvia-iub"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "latvia-iub-to-tender"
         },
@@ -58,7 +58,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "latvia-iub-to-spectr-tender"
         },
@@ -79,13 +79,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "latvia-iub-daily-sync"
         },
         "name": "Latvia IUB Daily Sync",
         "description": "Runs the latvia-iub-to-spectr-tender synchronization daily (86400s) - matches the source's own daily-bulk-file cadence, not the wave-1 default weekly interval used by the other sources in this directory. Genuinely unattended (unlike dutch_laws_bwb.json's disabled lawArticle Job): the endpoint needs no per-call `data`, it computes 'yesterday' itself on every tick.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "latvia-iub-to-spectr-tender"
         },

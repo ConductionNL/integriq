@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Approval Service.
+ * Integriq Approval Service.
  *
  * Core of the human-in-the-loop (HITL) approval workflow: persists/reads
  * `approval_request` OpenRegister objects, enforces the state machine
@@ -17,7 +17,7 @@
  * public resume method, not by this service.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,20 +26,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenConnector\Exception\ApprovalStateException;
-use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
-use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\Integriq\Exception\ApprovalStateException;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -67,7 +67,9 @@ class ApprovalService {
 	 *
 	 * @var string
 	 */
-	public const REGISTER = 'openconnector';
+	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
+	// OpenRegister matches registers by slug; renaming it orphans every stored object.
+	public const REGISTER = 'integriq';
 
 	/**
 	 * OR schema slug for an approval_request record.
@@ -479,7 +481,9 @@ class ApprovalService {
 	public function find(string $id): ObjectEntity {
 		try {
 			return $this->objectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
-		} catch (DoesNotExistException|Throwable $e) {
+			// Throwable alone: DoesNotExistException is a Throwable, so naming it
+			// separately caught nothing extra.
+		} catch (Throwable $e) {
 			throw new ApprovalStateException(message: 'No such approval request', httpStatus: 404, previous: $e);
 		}
 
@@ -754,12 +758,12 @@ class ApprovalService {
 			return;
 		}
 
-		$link = $this->urlGenerator->linkToRouteAbsolute('openconnector.ui.dashboard') . '#/approvals/' . $approvalRequest->getUuid();
+		$link = $this->urlGenerator->linkToRouteAbsolute('integriq.ui.dashboard') . '#/approvals/' . $approvalRequest->getUuid();
 
 		foreach ($group->getUsers() as $groupUser) {
 			try {
 				$notification = $this->notificationManager->createNotification();
-				$notification->setApp('openconnector')
+				$notification->setApp('integriq')
 					->setUser($groupUser->getUID())
 					->setDateTime(new DateTime())
 					->setObject('approval_request', (string)$approvalRequest->getUuid())

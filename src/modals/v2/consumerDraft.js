@@ -58,7 +58,7 @@
  *
  * NOT because of the three seeded consumers, which an earlier version of this
  * comment claimed: they declare no `authorizationType` at all
- * (`openconnector_seed_data.json`), and `SaveObjects` validates the submitted
+ * (`integriq_seed_data.json`), and `SaveObjects` validates the submitted
  * row before `SaveObject::fillMissingSchemaPropertiesWithNull()` materialises
  * the absent property, so an enum never sees them. The casing argument carries
  * this on its own.
@@ -129,7 +129,7 @@ export function carriesCredential(authorizationType) {
 
 /**
  * Quota reset periods. Mirrors the `enum` on `consumer.quota.period` in
- * `lib/Settings/openconnector_register.json` — asserted equal in
+ * `lib/Settings/integriq_register.json` — asserted equal in
  * `tests/vitest/consumerDraft.spec.js` so the two cannot drift.
  */
 export const QUOTA_PERIODS = ['hour', 'day', 'month']
@@ -305,7 +305,7 @@ export function buildQuota(limit, period) {
  *  2. **A blank `authorizationConfiguration` is omitted.** The field always
  *     opens blank on edit (write-only, never returned), so sending its blank
  *     value would wipe the stored credential on every unrelated edit — the
- *     openconnector#245 bug that put the preserve rule in OpenRegister in the
+ *     integriq#245 bug that put the preserve rule in OpenRegister in the
  *     first place. Omitting means an untouched credential survives, and the
  *     operator clears one by sending an explicit `null`, which is what the
  *     "Clear credential" control does.

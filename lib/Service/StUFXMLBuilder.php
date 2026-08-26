@@ -7,7 +7,7 @@
  * inbound responses (npsLa01, adrLa01, zakLa01, Bv03) and outbound queries (npsLv01).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DOMDocument;
 use DOMElement;
@@ -123,6 +123,10 @@ class StUFXMLBuilder {
 		$orgZ->nodeValue = (string)($stuurgegevens['zenderOrganisatie'] ?? '');
 		$zender->appendChild($orgZ);
 		$appZ = $doc->createElementNS(self::NS_STUF, 'StUF:applicatie');
+		// Deliberately still 'OpenConnector': StUF zender/applicatie is this app's
+		// identity as the municipal zaaksysteem has it provisioned. Renaming it here
+		// does not rename it there — messages are rejected until the municipality
+		// re-provisions. Moves in a separate coordinated pass.
 		$appZ->nodeValue = (string)($stuurgegevens['zenderApplicatie'] ?? 'OpenConnector');
 		$zender->appendChild($appZ);
 		$sg->appendChild($zender);

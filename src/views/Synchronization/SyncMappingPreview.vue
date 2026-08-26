@@ -10,7 +10,7 @@
   Wiring contract:
     - prop `mappingId` is the slug (or id) stored in
       `synchronization.sourceTargetMapping`. The component looks the full
-      mapping record up via `/api/objects/openconnector/mapping/{id}` so
+      mapping record up via `/api/objects/integriq/mapping/{id}` so
       it can POST the object (not just the slug) to the test endpoint —
       that endpoint expects the full mapping payload, not a reference.
     - The sample input defaults to `{}` but can be edited freely. Changes
@@ -20,7 +20,7 @@
 
   Closes #878 part 2. Open follow-ups (intentional non-goals):
     - Pulling a real sample record from the source side. The brief
-      mentioned auto-populating from `/api/objects/openconnector/{schema}/{uuid}`
+      mentioned auto-populating from `/api/objects/integriq/{schema}/{uuid}`
       when sourceType=register; punted because the picker only owns the
       mapping slug, not the source identity. The user can paste a sample
       object directly into the input field — same UX as the test modal.
@@ -34,20 +34,20 @@
 				variant="tertiary-no-background"
 				:aria-label="
 					expanded
-						? t('openconnector', 'Hide mapping preview')
-						: t('openconnector', 'Show mapping preview')
+						? t('integriq', 'Hide mapping preview')
+						: t('integriq', 'Show mapping preview')
 				"
 				@click="expanded = !expanded">
 				<template #icon>
 					<ChevronDown v-if="expanded" :size="18" />
 					<ChevronRight v-else :size="18" />
 				</template>
-				{{ t('openconnector', 'Preview') }}
+				{{ t('integriq', 'Preview') }}
 			</NcButton>
 			<span class="sync-mapping-preview__hint">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Run the picked mapping against a sample object to see the transformed output.',
 					)
 				}}
@@ -60,7 +60,7 @@
 			<div v-if="!mappingId" class="sync-mapping-preview__empty">
 				{{
 					t(
-						'openconnector',
+						'integriq',
 						'Pick a Source → Target mapping above to enable the preview.',
 					)
 				}}
@@ -69,7 +69,7 @@
 				<div class="sync-mapping-preview__panes">
 					<section class="sync-mapping-preview__pane">
 						<label :for="inputId" class="sync-mapping-preview__label">
-							{{ t('openconnector', 'Sample input (JSON)') }}
+							{{ t('integriq', 'Sample input (JSON)') }}
 						</label>
 						<textarea
 							:id="inputId"
@@ -85,7 +85,7 @@
 
 					<section class="sync-mapping-preview__pane">
 						<label class="sync-mapping-preview__label">
-							{{ t('openconnector', 'Mapping output') }}
+							{{ t('integriq', 'Mapping output') }}
 						</label>
 						<div v-if="loadError" class="sync-mapping-preview__error">
 							{{ loadError }}
@@ -102,7 +102,7 @@
 						<div v-else class="sync-mapping-preview__placeholder">
 							{{
 								t(
-									'openconnector',
+									'integriq',
 									'Type in the input pane to see the transformed output here.',
 								)
 							}}
@@ -271,7 +271,7 @@ export default {
 				// key — so the same URL works for legacy id-keyed rows too.
 				const response = await axios.get(
 					generateUrl(
-						'/apps/openregister/api/objects/openconnector/mapping/{id}',
+						'/apps/openregister/api/objects/integriq/mapping/{id}',
 						{
 							id: this.mappingId,
 						},
@@ -279,7 +279,7 @@ export default {
 				)
 				this.mapping = response.data?.object || response.data || null
 				if (!this.mapping) {
-					this.loadError = t('openconnector', 'Mapping not found.')
+					this.loadError = t('integriq', 'Mapping not found.')
 					return
 				}
 				this.runPreview()
@@ -289,7 +289,7 @@ export default {
 				this.loadError =
 					err?.response?.data?.message
 					|| err?.message
-					|| t('openconnector', 'Failed to load mapping.')
+					|| t('integriq', 'Failed to load mapping.')
 			}
 		},
 
@@ -309,7 +309,7 @@ export default {
 				parsedInput = raw.length > 0 ? JSON.parse(raw) : {}
 			} catch (parseErr) {
 				this.inputError = t(
-					'openconnector',
+					'integriq',
 					'Input is not valid JSON: {message}',
 					{ message: parseErr.message },
 				)
@@ -319,7 +319,7 @@ export default {
 			this.running = true
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openconnector/api/mappings/test'),
+					generateUrl('/apps/integriq/api/mappings/test'),
 					{
 						inputObject: parsedInput,
 						mapping: this.mapping,
@@ -330,7 +330,7 @@ export default {
 				this.runError =
 					err?.response?.data?.message
 					|| err?.message
-					|| t('openconnector', 'Mapping preview failed.')
+					|| t('integriq', 'Mapping preview failed.')
 				this.result = null
 			} finally {
 				this.running = false

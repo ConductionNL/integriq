@@ -16,7 +16,7 @@
  * that feature do NOT fire it.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,19 +25,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Exception\SynchronizationNotMigratableException;
-use OCA\OpenConnector\Flow\ApplyMappingNode;
-use OCA\OpenConnector\Flow\ContractCommitNode;
-use OCA\OpenConnector\Flow\ContractMatchNode;
-use OCA\OpenConnector\Flow\ContractSweepNode;
-use OCA\OpenConnector\Flow\FlowOwner;
-use OCA\OpenConnector\Flow\SourcePaginateNode;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\SynchronizationContractService;
-use OCA\OpenConnector\Service\SynchronizationFlowGenerator;
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Exception\SynchronizationNotMigratableException;
+use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\ContractCommitNode;
+use OCA\Integriq\Flow\ContractMatchNode;
+use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\FetchFileNode;
+use OCA\Integriq\Flow\FlowOwner;
+use OCA\Integriq\Flow\SourcePaginateNode;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\SynchronizationActionRules;
+use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Service\SynchronizationSemanticRefusals;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
@@ -101,7 +104,15 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 	}//end setUp()
@@ -124,7 +135,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		);
 
 		return $l10n;
-
 	}//end translations()
 
 	/**
@@ -161,7 +171,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		);
 
 		return $mapping;
-
 	}//end mappingDouble()
 
 	/**
@@ -260,6 +269,102 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 	}//end testPipelineIsTheDecomposedChain()
 
 	/**
+	 * A `fetch_file` / `after` rule becomes a STEP, not a refusal.
+	 *
+	 * This is the case that unblocks the migration. Measured on the dev
+	 * instance, every one of the 74 synchronizations refused for `actions`
+	 * references exactly one rule and all 74 are fetch_file/after.
+	 *
+	 * @return void
+	 */
+	public function testAFetchFileRuleBecomesAStepInsteadOfARefusal(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'grab-docs', 'type' => 'fetch_file', 'timing' => 'after', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['grab-docs']]);
+
+		$this->assertSame(
+			[],
+			$this->generator->refusalsFor(synchronization: $synchronization),
+			'A fetch-file rule has an equivalent step, so it is no longer a reason to refuse.'
+		);
+
+		$flow = $this->generator->generateFrom(synchronization: $synchronization);
+		$types = array_column($flow['nodes'], 'type');
+
+		$this->assertContains(FetchFileNode::NODE_ID, $types);
+
+		// AFTER the synced-id step and BEFORE the commit. The rule attaches
+		// files to the object that was just written, so it needs that id —
+		// which the set-fields step immediately before it puts on the record.
+		$position = array_search(FetchFileNode::NODE_ID, $types, true);
+		$this->assertSame('openregister.set-fields', $types[($position - 1)]);
+		$this->assertSame(ContractCommitNode::NODE_ID, $types[($position + 1)]);
+
+		$config = $flow['nodes'][$position]['config'];
+		$this->assertSame('grab-docs', $config['rule']);
+		$this->assertSame('syncedId', $config['objectIdPath']);
+
+		// The chain must still close over the inserted step rather than
+		// leaving an edge pointing at what used to follow.
+		$this->assertCount((count($flow['nodes']) - 1), $flow['edges']);
+		foreach ($flow['edges'] as $index => $edge) {
+			$this->assertSame($flow['nodes'][$index]['id'], $edge['from']);
+			$this->assertSame($flow['nodes'][($index + 1)]['id'], $edge['to']);
+		}
+
+	}//end testAFetchFileRuleBecomesAStepInsteadOfARefusal()
+
+	/**
+	 * Any OTHER rule type is still refused, by name.
+	 *
+	 * The negative control for the test above. Dropping an unsupported rule
+	 * silently would leave the generated flow doing less than the
+	 * synchronization it replaced, while reporting success.
+	 *
+	 * @return void
+	 */
+	public function testAnUnsupportedRuleTypeIsStillRefusedByName(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'sign-it', 'type' => 'authentication', 'timing' => 'before', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['sign-it']]);
+
+		$reasons = $this->generator->refusalsFor(synchronization: $synchronization);
+
+		$this->assertCount(1, $reasons);
+		$this->assertStringContainsString('sign-it', $reasons[0]);
+		$this->assertStringContainsString('authentication', $reasons[0]);
+
+	}//end testAnUnsupportedRuleTypeIsStillRefusedByName()
+
+	/**
+	 * A `before`-timed fetch-file rule is refused, and the reason says why.
+	 *
+	 * Not a placement detail: a `before` rule runs ahead of the write, and the
+	 * object its files attach to does not exist yet. There is nothing to
+	 * attach them to, so there is no step that would be equivalent.
+	 *
+	 * @return void
+	 */
+	public function testAFetchFileRuleTimedBeforeTheWriteIsRefused(): void {
+		$this->synchronizationService->method('findRule')->willReturn(
+			['id' => 'too-early', 'type' => 'fetch_file', 'timing' => 'before', 'order' => 0]
+		);
+
+		$synchronization = $this->synchronization(overrides: ['actions' => ['too-early']]);
+
+		$reasons = $this->generator->refusalsFor(synchronization: $synchronization);
+
+		$this->assertCount(1, $reasons);
+		$this->assertStringContainsString('too-early', $reasons[0]);
+		$this->assertStringContainsString('before', $reasons[0]);
+
+	}//end testAFetchFileRuleTimedBeforeTheWriteIsRefused()
+
+	/**
 	 * Every generated config is accepted by the node that will run it.
 	 *
 	 * The assertion the whole generator rests on: a golden document would not
@@ -285,7 +390,7 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 	}//end testGeneratedConfigPassesEveryNodesOwnValidateConfig()
 
 	/**
-	 * The OpenConnector page nodes, constructed over doubles.
+	 * The Integriq page nodes, constructed over doubles.
 	 *
 	 * @return array<string, object> Node id => node.
 	 */
@@ -530,7 +635,12 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				['conditions' => [['==' => ['status', 'open']]]],
 				'conditions',
 			],
-			'rules applied during the sync' => [
+			// `actions` is no longer refused wholesale — a fetch_file/after
+			// rule is a step now. What is still refused is a rule whose
+			// meaning cannot be established, which is what this fixture's
+			// unresolvable id exercises. The cases where a rule DOES resolve
+			// have their own tests below.
+			'a rule that cannot be resolved' => [
 				['actions' => ['enrich-tender']],
 				'actions',
 			],
@@ -554,10 +664,10 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				['sourceConfig' => ['idsToReplaceWithTargetIdsBeforeRules' => ['a' => 'b']]],
 				'sourceConfig.idsToReplaceWithTargetIdsBeforeRules',
 			],
-			'no mapping to enumerate' => [
-				['sourceTargetMapping' => ''],
-				'sourceTargetMapping is not set',
-			],
+			// 'no mapping to enumerate' is DELIBERATELY GONE: object-write gained
+			// `payloadFrom`, so an unmapped synchronization now generates rather than
+			// refusing. Covered positively by the unmapped tests below, which assert
+			// the shape it generates instead.
 		];
 
 	}//end refusalProvider()
@@ -610,7 +720,15 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -632,7 +750,15 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -654,7 +780,15 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->generator = new SynchronizationFlowGenerator(
 			synchronizationService: $this->synchronizationService,
 			mappingService: $this->mappingService,
-			l10n: $this->l10n
+			l10n: $this->l10n,
+			// The REAL collaborator, not a double: these tests assert the refusal
+			// sentences themselves, and a stub would only test the stub. It
+			// fronts the semantic refusals, which are real for the same reason.
+			actionRules: new SynchronizationActionRules(
+				synchronizations: $this->synchronizationService,
+				l10n: $this->l10n,
+				semantic: new SynchronizationSemanticRefusals(l10n: $this->l10n)
+			)
 		);
 
 		$reasons = $this->generator->refusalsFor(synchronization: $this->synchronization());
@@ -824,4 +958,101 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 		$this->assertStringContainsString(SynchronizationFlowGenerator::KEY_TARGET_UUID, $encoded);
 	}
 
+	/**
+	 * AN UNMAPPED SYNCHRONIZATION NOW GENERATES. This one refusal accounted for 98
+	 * of the 99 refusals measured across 119 synchronizations on the dev instance,
+	 * so it is the difference between the generator covering a sixth of the estate
+	 * and covering most of it.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedSynchronizationIsNoLongerRefused(): void {
+		$reasons = $this->generator->refusalsFor(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$this->assertSame([], $reasons, 'a missing mapping is no longer a blocker');
+	}//end testAnUnmappedSynchronizationIsNoLongerRefused()
+
+	/**
+	 * With no mapping there is no `map` step, and `edgesFor()` chains in array
+	 * order, so explode must hand straight to contract.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowHasNoMapStepAndChainsAroundIt(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$ids = array_column($flow['nodes'], 'id');
+		$this->assertNotContains('map', $ids, 'nothing to map without a mapping');
+
+		$edge = array_values(
+			array_filter($flow['edges'], static fn (array $e): bool => ($e['from'] ?? null) === 'explode')
+		);
+		$this->assertSame('contract', $edge[0]['to'], 'explode chains straight to contract');
+	}//end testAnUnmappedFlowHasNoMapStepAndChainsAroundIt()
+
+	/**
+	 * The write step writes the SOURCE object whole, and carries no `fields` — the
+	 * two are alternatives and object-write refuses both together.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowWritesTheSourceObjectWhole(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$write = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'write')
+		)[0];
+
+		$this->assertSame('source', $write['config']['payloadFrom']);
+		$this->assertArrayNotHasKey('fields', $write['config'], 'fields and payloadFrom are alternatives');
+	}//end testAnUnmappedFlowWritesTheSourceObjectWhole()
+
+	/**
+	 * The commit hashes what was WRITTEN. Hashing a `target` that never existed
+	 * would leave targetHash empty and make the skip test unreachable — the exact
+	 * defect task 2.3 had to fix once already.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmappedFlowHashesTheSourceNotAMissingTarget(): void {
+		$flow = $this->generator->generateFrom(
+			synchronization: $this->synchronization(overrides: ['sourceTargetMapping' => ''])
+		);
+
+		$commit = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'commit')
+		)[0];
+
+		$this->assertSame('source', $commit['config']['targetHashPosition']);
+	}//end testAnUnmappedFlowHashesTheSourceNotAMissingTarget()
+
+	/**
+	 * A MAPPED synchronization is unchanged: it still maps, still enumerates
+	 * fields, and still hashes the mapped target.
+	 *
+	 * @return void
+	 */
+	public function testAMappedSynchronizationIsUnchanged(): void {
+		$flow = $this->generator->generateFrom(synchronization: $this->synchronization());
+
+		$ids = array_column($flow['nodes'], 'id');
+		$this->assertContains('map', $ids);
+
+		$write = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'write')
+		)[0];
+		$commit = array_values(
+			array_filter($flow['nodes'], static fn (array $n): bool => ($n['id'] ?? null) === 'commit')
+		)[0];
+
+		$this->assertArrayHasKey('fields', $write['config']);
+		$this->assertArrayNotHasKey('payloadFrom', $write['config']);
+		$this->assertSame('target', $commit['config']['targetHashPosition']);
+	}//end testAMappedSynchronizationIsUnchanged()
 }//end class

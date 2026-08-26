@@ -32,7 +32,7 @@ $missing = [];
 // Controllers that exist only as a DI service alias, not as a physical file.
 //
 // `Application::registerAppHostBoilerplate()` registers OpenRegister AppHost
-// generics under the STANDARD `OCA\OpenConnector\Controller\…Controller` key,
+// generics under the STANDARD `OCA\Integriq\Controller\…Controller` key,
 // because that is the class name NC's App::main synthesises from a plain
 // `genericPreferences#…` route name. Such a route resolves fine at runtime via
 // the container, but has no file under lib/Controller/ — so a filesystem-only
@@ -45,7 +45,7 @@ $diRegistered = [];
 $appFile = __DIR__ . '/../../lib/AppInfo/Application.php';
 if (file_exists($appFile)) {
 	preg_match_all(
-		'/registerService\(\s*[\'"]OCA\\\\+OpenConnector\\\\+Controller\\\\+([A-Za-z0-9_]+)Controller[\'"]/',
+		'/registerService\(\s*[\'"]OCA\\\\+Integriq\\\\+Controller\\\\+([A-Za-z0-9_]+)Controller[\'"]/',
 		file_get_contents($appFile),
 		$m
 	);

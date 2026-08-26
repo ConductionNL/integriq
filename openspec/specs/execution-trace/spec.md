@@ -249,7 +249,7 @@ the original trace's id.
 
 The app's manifest MUST expose a `Traces` page (`"type": "logs"`, following
 the `SourceLogs`/`EndpointLogs`/`CloudEventLogs` precedent, config
-`{register: 'openconnector', schema: 'execution_trace'}`) listing traces
+`{register: 'integriq', schema: 'execution_trace'}`) listing traces
 with filters for `entryPoint`, `status`, and time range, and a `TraceDetail`
 view rendering the ordered step timeline (type, duration, status per step,
 with redacted input/output expandable per step) plus a "Replay" action
@@ -278,7 +278,7 @@ replay). Every `NcSelect` filter control MUST carry an `inputLabel` prop
 
 - **GIVEN** the Traces list page
 - **WHEN** the entryPoint filter renders
-- **THEN** the `NcSelect` carries `:input-label="t('openconnector',
+- **THEN** the `NcSelect` carries `:input-label="t('integriq',
   'Entry point')"`, matching the pattern already used in
   `EventDeliveriesPage.vue`
 
@@ -297,10 +297,10 @@ no bespoke `MetricsController` code.
 
 - **GIVEN** 10 `execution_trace` objects with `status` values 7 `success`,
   2 `failed`, 1 `running`
-- **WHEN** `GET /apps/openconnector/api/metrics` is called by an admin
-- **THEN** the output includes `openconnector_traces_total{status="success"}
-  7`, `openconnector_traces_total{status="failed"} 2`, and
-  `openconnector_traces_total{status="running"} 1`
+- **WHEN** `GET /apps/integriq/api/metrics` is called by an admin
+- **THEN** the output includes `integriq_traces_total{status="success"}
+  7`, `integriq_traces_total{status="failed"} 2`, and
+  `integriq_traces_total{status="running"} 1`
 
 ### Requirement: Retention-bounded trace persistence (REQ-009)
 

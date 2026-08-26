@@ -2,7 +2,7 @@
   "$comment": "ADR-037 register fragment (visual-flow-orchestration). Declares the `flow` schema (an ordered, declarative multi-step pipeline of existing Source/Mapping/Synchronization/Endpoint/Approval references) plus its `flow_run`/`flow_run_log` execution-trace schemas, and additively extends `approval_request` (declared by hitl-approval-rule-action.json) with `flowRunId`/`resumeStepOrder` so an `approval` flow step can suspend/resume through the same approval_request state machine. See openspec/changes/archive/2026-07-15-visual-flow-orchestration/design.md Decisions 1/4/6. Deep-merge note: this fragment only adds the two new `approval_request` properties (InitializeRegister::deepMergeConfig unions `components.schemas.approval_request.properties` by key with hitl-approval-rule-action.json's — glob sort places this file after the `h...` fragment alphabetically, so the union always sees the base schema first); it does not repeat approval_request's existing properties/required/seed data.",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": ["flow", "flow_run", "flow_run_log"]
       }
     },

@@ -1,12 +1,16 @@
 name: Documentation
 
 on:
+  # `development` is where the work lands. This used to trigger on a
+  # `documentation` branch that exists but nobody updates — so the workflow
+  # was green and idle while the live site aged. Measured today:
+  # openconnector.conduction.nl and integriq.conduction.nl both still serve
+  # the pre-rename "OpenConnector" title while docs/docusaurus.config.js
+  # says 'Integriq'.
   push:
-    branches:
-      - documentation
+    branches: [development]
   pull_request:
-    branches:
-      - documentation
+    branches: [development]
 
 jobs:
   deploy:
@@ -19,7 +23,7 @@ jobs:
     #
     # ⚠️ `packages: write` is load-bearing at RUNTIME, not merely statically:
     # the callee's `build-image` input DEFAULTS TO TRUE, so the `image` job
-    # really does run on a push to `documentation` and really does push to
+    # really does run on a push to `development` and really does push to
     # GHCR. Dropping it 403s that push.
     #
     # It would be required even if that job were disabled, because GitHub
@@ -30,6 +34,46 @@ jobs:
       contents: write
       packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    # A reusable workflow receives NO secrets by default, and the
+    # `permissions:` block above governs the TOKEN, not the secrets. Without
+    # this block `secrets.CF_API_TOKEN` is empty inside the callee, its
+    # "Publish to the Cloudflare Worker" step skips itself on its own guard,
+    # and the run finishes GREEN having written only gh-pages — which nothing
+    # serves. The live site never changes and no check goes red to say so.
+    #
+    # Mapped explicitly rather than `secrets: inherit`, because `inherit`
+    # hands the callee EVERY secret this repo holds — signing cert and key,
+    # appstore token, deploy keys — for the sake of two Cloudflare values.
+    # This way only those two cross the boundary.
+    #
+    # The exposure above is the ONLY reason for the explicit mapping. The
+    # names are the same on both sides: the org secrets really are
+    # `CF_API_TOKEN` / `CF_ACCOUNT_ID` — the names ConductionNL/.github's own
+    # deploy-docs.yml reads directly, and the names the callee declares under
+    # `workflow_call.secrets`.
+    #
+    # This block used to read `secrets.CLOUDFLARE_API_TOKEN` /
+    # `secrets.CLOUDFLARE_ACCOUNT_ID`, which are not secrets anywhere in this
+    # org. Mapping from a name that does not exist is NOT an error — it
+    # yields an empty string — so the callee's publish step skipped itself on
+    # its own guard and the run still finished green. Measured on planninq
+    # run 32760529026: "Publish to the Cloudflare Worker" SKIPPED, the log
+    # showing `CF_API_TOKEN:` with no value.
+    secrets:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
     with:
-      cname: openconnector.conduction.nl
-      source-folder: docusaurus
+      # `integriq.conduction.nl` resolves as of 2026-08-23 — attached as a
+      # second custom domain on the SAME `openconnector-docs` worker that
+      # serves `openconnector.conduction.nl`. Both hosts answer 200.
+      cname: integriq.conduction.nl
+
+      docs-hosts: openconnector.conduction.nl,integriq.conduction.nl
+
+      # The worker that ALREADY holds both custom domains. Without this the
+      # callee derives the name from `cname` — `integriq-docs` — which does
+      # not exist. Deploying that would create a SECOND worker while both
+      # custom domains keep routing to `openconnector-docs`: every deploy
+      # green, reaching nobody. Renaming the worker is a Cloudflare-side move,
+      # not something this file can perform.
+      worker-name: openconnector-docs

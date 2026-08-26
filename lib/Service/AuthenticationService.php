@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector authentication service.
+ * Integriq authentication service.
  *
  * Service class for handling authentication on other services. Builds
  * OAuth/JWT/Decos call options and signs JWT tokens used by outbound calls.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector LtiIdentityLinkService.
+ * Integriq LtiIdentityLinkService.
  *
  * Resolves (or, under an explicit per-platform opt-in, provisions) the
  * Nextcloud user a validated LTI launch's `sub` claim maps to. Runs strictly
@@ -10,7 +10,7 @@
  * decision, only what happens after it (REQ-LTI-012).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Lti
+ * @package  OCA\Integriq\Service\Lti
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service\Lti;
+namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
-use OCA\OpenConnector\Exception\LtiValidationException;
+use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -156,7 +156,7 @@ class LtiIdentityLinkService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'lti_identity_link',
 					'ltiPlatformId' => $ltiPlatformId,
 					'subject' => $subject,
@@ -188,7 +188,7 @@ class LtiIdentityLinkService {
 		try {
 			$platform = $this->orObjectService->find(
 				id: $ltiPlatformId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_platform',
 				_rbac: false,
 				_multitenancy: false
@@ -285,7 +285,7 @@ class LtiIdentityLinkService {
 		try {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'lti_identity_link',
 				_rbac: false,
 				_multitenancy: false

@@ -4,7 +4,7 @@
  * Unit tests for SynchronizationService.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -13,15 +13,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SynchronizationLogService;
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -83,7 +83,7 @@ class SynchronizationServiceTest extends TestCase {
 		$synchronizationLogService = $this->createMock(SynchronizationLogService::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
-		$approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
+		$approvalService = $this->createMock(\OCA\Integriq\Service\ApprovalService::class);
 		$this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
 
 		$this->service = new SynchronizationService(
@@ -164,7 +164,7 @@ class SynchronizationServiceTest extends TestCase {
 			->willReturn(['results' => [$syncEntity], 'total' => 1]);
 
 		// Act
-		$result = $this->service->findAllBySourceId('openconnector', 'source');
+		$result = $this->service->findAllBySourceId('integriq', 'source');
 
 		// Assert
 		$this->assertIsArray($result);
@@ -189,7 +189,7 @@ class SynchronizationServiceTest extends TestCase {
 			'obj-uuid-1'
 		);
 		// Positional args only — Entity::__call's setter uses $args[0].
-		$objectEntity->setRegister('openconnector');
+		$objectEntity->setRegister('integriq');
 		$objectEntity->setSchema('source');
 
 		// OR findAll must not be called for invalid mutation type
@@ -463,7 +463,7 @@ class SynchronizationServiceTest extends TestCase {
 			[],
 			'obj-1'
 		);
-		$objectEntity->setRegister('openconnector');
+		$objectEntity->setRegister('integriq');
 		$objectEntity->setSchema('source');
 
 		// OR findAll is invoked at least once on the direct-sync lookup. The
@@ -623,7 +623,7 @@ class SynchronizationServiceTest extends TestCase {
 					function (array $config): bool {
 						$filters = ($config['filters'] ?? []);
 						return ($filters['sourceId'] ?? null) === 'reg-1/schema-1'
-						&& ($filters['register'] ?? null) === 'openconnector'
+						&& ($filters['register'] ?? null) === 'integriq'
 						&& ($filters['schema'] ?? null) === 'synchronization';
 					}
 				)

@@ -8,7 +8,7 @@
  * ConfigurationHandler's export-time configuration redaction.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service\Security
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,10 +16,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Service\Security;
+namespace OCA\Integriq\Service\Security;
 
 /**
  * Detects secret-shaped field/header names and redacts matching values from

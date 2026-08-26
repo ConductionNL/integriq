@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector mTLS test certificate fixtures.
+ * Integriq mTLS test certificate fixtures.
  *
  * Generates small, throwaway self-signed certificates/keys at test-runtime
  * via PHP's `openssl_*` functions — never committed binary certs, per the
  * change's design.md "Testing strategy".
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Mtls
+ * @package  OCA\Integriq\Tests\Unit\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Mtls;
+namespace OCA\Integriq\Tests\Unit\Service\Mtls;
 
 /**
  * Trait providing self-signed certificate/key fixtures for mTLS tests.

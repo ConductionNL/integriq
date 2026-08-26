@@ -45,7 +45,7 @@ MUST NOT be embedded in any sibling app (launchpad, etc.).
   `Microsoft\\Graph\\DeviceManagement\\*`, `Jamf\\*`, or any
   vendor-specific endpoint-management client
 - **THEN** no such imports SHALL exist; the capability MUST be
-  consumed from openconnector by integration slot slug.
+  consumed from integriq by integration slot slug.
 
 ### Requirement: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)
 
@@ -96,13 +96,13 @@ User mapping MUST go through a single declarative `UserMapping` shape.
 Mapping a Nextcloud user to the upstream identity (e.g. an
 Active Directory UPN, an Azure AD object id, an Intune managed
 identity, a Jamf username) MUST be declared as a `UserMapping`
-record on the openconnector source per the existing openconnector
+record on the integriq source per the existing integriq
 `Mapping` abstraction (extended for EWC purposes) and per
 ADR-031. The mapping MUST declare:
 
 | Field | Type | Required | Purpose |
 |---|---|---|---|
-| `sourceSlug` | string | Yes | The openconnector source the mapping applies to |
+| `sourceSlug` | string | Yes | The integriq source the mapping applies to |
 | `ncUserAttribute` | enum | Yes | One of `uid`, `email`, `displayName`, `customClaim:<name>` — the NC-side key |
 | `remoteUserAttribute` | enum | Yes | One of `upn`, `objectGuid`, `samAccountName`, `email`, `username`, `custom:<name>` — the remote key |
 | `transformChain` | string[] | No | Optional list of named transforms (e.g. `lowercase`, `domain-substitute`, `regex-strip`) |
@@ -110,7 +110,7 @@ ADR-031. The mapping MUST declare:
 
 Sibling apps MUST NOT author per-app user-mapping PHP services.
 Per ADR-031, the mapping IS the logic — `MappingService::resolve()`
-in openconnector is the single PHP entry point and it consumes
+in integriq is the single PHP entry point and it consumes
 the declarative `UserMapping` records.
 
 #### Scenario: Reviewer confirms no per-app user-mapping PHP
@@ -119,7 +119,7 @@ the declarative `UserMapping` records.
 - **WHEN** scanned for classes whose name matches
   `*UserMapping*Service*` / `*IdentityResolve*` / `*UpnResolver*`
 - **THEN** no such classes SHALL exist; user mapping MUST go
-  through openconnector's `MappingService::resolve()` via the
+  through integriq's `MappingService::resolve()` via the
   EWC integration provider.
 
 #### Scenario: A configured mapping resolves an NC user to an Intune device record
@@ -133,7 +133,7 @@ the declarative `UserMapping` records.
   `jan.de.vries@municipality.nl` (lowercase transform applied)
   and return that user's device entitlements.
 
-### Requirement: Audit-event ingestion SHALL deposit events as CloudEvents per ADR-022, not as openconnector-local event tables (REQ-EWC-004)
+### Requirement: Audit-event ingestion SHALL deposit events as CloudEvents per ADR-022, not as integriq-local event tables (REQ-EWC-004)
 
 Audit-event ingestion MUST deposit events as CloudEvents per ADR-022.
 When an EWC adapter declares `audit-event-pull` or
@@ -145,7 +145,7 @@ and dispatched through NC's existing event dispatcher.
 
 Sibling apps that need to react (e.g. launchpad audit widget,
 decidesk security board) MUST subscribe through the standard
-CloudEvent contract. Openconnector MUST NOT author a new
+CloudEvent contract. Integriq MUST NOT author a new
 event table specific to EWC events — every event lands in
 the existing `CallLog` (for raw transport audit) and in the
 CloudEvent dispatcher (for sibling-app reaction). Persistence
@@ -157,11 +157,11 @@ or docudesk per ADR-022.
 
 - **GIVEN** a Citrix source declaring `audit-event-stream`
 - **WHEN** Citrix POSTs a session-started webhook
-- **THEN** openconnector MUST normalise it to a CloudEvent of
+- **THEN** integriq MUST normalise it to a CloudEvent of
   type `com.conduction.endpoint-workspace.virtual-desktop.session-started`,
   enrich with the resolved NC user via REQ-EWC-003, and dispatch;
   launchpad (subscribed by event type) MUST receive it and render
-  on its security widget — no openconnector-local event table
+  on its security widget — no integriq-local event table
   created.
 
 ### Requirement: Destructive operations (session-disconnect, device-wipe, force-logout) SHALL be opt-in per source AND gated by an admin-configured action authorisation per ADR-023 (REQ-EWC-005)
@@ -178,7 +178,7 @@ device-wipe, force-logout, app-uninstall — MUST be:
    omitting the action name MUST cause the adapter to throw
    `DestructiveActionDisabledException` on invocation.
 2. Gated by an admin-configured action-to-group mapping per
-   ADR-023 — the openconnector admin settings MUST list the
+   ADR-023 — the integriq admin settings MUST list the
    destructive action and let the operator bind it to a
    Nextcloud group; the adapter MUST verify membership at
    invocation time.
@@ -208,19 +208,19 @@ device-wipe, force-logout, app-uninstall — MUST be:
   **AND** the audit row MUST capture the rejected invocation;
   **AND** no remote-side state SHALL change.
 
-### Requirement: Scheduled audit-event pulls SHALL run as OpenRegister `ScheduledWorkflow` records — no openconnector `TimedJob` per adapter (REQ-EWC-006)
+### Requirement: Scheduled audit-event pulls SHALL run as OpenRegister `ScheduledWorkflow` records — no integriq `TimedJob` per adapter (REQ-EWC-006)
 
 Scheduled audit-event pulls MUST run as OpenRegister `ScheduledWorkflow` records.
 Per REQ-DIC-005 (inherited shape across the category) and
 ADR-031 §"Background jobs" path 2, every polling-mode
 audit-event pull MUST be a `ScheduledWorkflow` record
-referencing the adapter slug. Openconnector MUST NOT author a
+referencing the adapter slug. Integriq MUST NOT author a
 per-adapter `TimedJob`. The workflow normalises the pulled
 events into CloudEvents per REQ-EWC-004.
 
 #### Scenario: Reviewer confirms no per-adapter TimedJob for audit pulls
 
-- **GIVEN** the openconnector codebase
+- **GIVEN** the integriq codebase
 - **WHEN** scanned for classes extending `OCP\BackgroundJob\TimedJob`
   in `lib/BackgroundJob/` whose name matches
   `*Workspace*` / `*Endpoint*` / `*Intune*` / `*Jamf*` /
@@ -243,7 +243,7 @@ re-derive the category-level contract.
   `openspec/changes/add-openconnector-intune-adapter/`
 - **WHEN** its proposal.md is inspected
 - **THEN** the `Depends on` line MUST include
-  `endpoint-workspace-connectors (openconnector)`; the proposal
+  `endpoint-workspace-connectors (integriq)`; the proposal
   MUST cite REQ-EWC-002 (capabilities), REQ-EWC-003 (user
   mapping), REQ-EWC-005 (destructive-action authorisation),
   and REQ-EWC-006 (no per-app TimedJob) by REQ id.

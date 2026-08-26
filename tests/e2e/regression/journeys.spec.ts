@@ -5,12 +5,12 @@
  * Chain E regression: end-to-end user journeys (UI-driven).
  *
  * Counterpart to the Newman API suite (folder 13 of
- * `tests/postman/openconnector.postman_collection.json`). Where Newman
- * exercises the HTTP surface, this spec drives the openconnector Vue
+ * `tests/postman/integriq.postman_collection.json`). Where Newman
+ * exercises the HTTP surface, this spec drives the integriq Vue
  * frontend — the nc-vue manifest-renderer (`CnIndexPage` /
  * `CnFormDialog`) — so a visual click-through is what creates the
  * objects. The dialog's Save handler posts to OR's
- * `/api/objects/openconnector/{schema}/*` under the hood, so a green
+ * `/api/objects/integriq/{schema}/*` under the hood, so a green
  * run guarantees the full UI → nc-vue → OR backend → list-refresh loop
  * is intact.
  *
@@ -41,24 +41,24 @@ const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
-const OR = '/index.php/apps/openregister/api/objects/openconnector'
+const OR = '/index.php/apps/openregister/api/objects/integriq'
 
 /**
- * Compute the openconnector URL base for the current Nextcloud install.
+ * Compute the integriq URL base for the current Nextcloud install.
  *
  * Apache + mod_rewrite (local dev container): NC's `generateUrl` returns
- * `/apps/openconnector` — htaccess maps that to `/index.php/apps/openconnector`
+ * `/apps/integriq` — htaccess maps that to `/index.php/apps/integriq`
  * server-side, but the SPA sees the unprefixed form, so Vue Router's
- * `base` is `/apps/openconnector`. Any URL starting with `/index.php/...`
+ * `base` is `/apps/integriq`. Any URL starting with `/index.php/...`
  * is then outside the router base and no route matches.
  *
  * PHP built-in server (CI): no `.htaccess` processing, so `generateUrl`
- * returns `/index.php/apps/openconnector` and routes must include the
+ * returns `/index.php/apps/integriq` and routes must include the
  * `/index.php/` prefix.
  *
  * 🔴 The probe that used to live here requested each candidate and took the
  * first that served the SPA shell. Nextcloud serves the IDENTICAL shell under
- * both, so it always returned `/apps/openconnector` — the wrong one on CI —
+ * both, so it always returned `/apps/integriq` — the wrong one on CI —
  * and every `gotoRoute()` below landed on the Dashboard. That is why journeys
  * J1–J6 all failed with "Add <X> button must be visible on the index page":
  * the button is genuinely absent, from the dashboard. Resolution now comes
@@ -73,7 +73,7 @@ async function resolveAppBase(page: Page): Promise<string> {
  *
  * ⚠️ The router is path-mode (`createWebHistory()`, src/main.js). A HASH-form
  * deep-link such as `<base>/#/sources` would now be served by the SPA shell —
- * status 200, `openconnector` in the HTML, everything a smoke check looks
+ * status 200, `integriq` in the HTML, everything a smoke check looks
  * at — and then ignored by the router, which reads `location.pathname`, not
  * `location.hash`, and renders the dashboard instead. The plain path form
  * used below is correct for this router mode; do not add a `#` back in.
@@ -129,7 +129,7 @@ async function createViaUi(
 	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
-	// Fill `name` first; every openconnector schema exposes a top-level
+	// Fill `name` first; every integriq schema exposes a top-level
 	// `name` field as the title.
 	//
 	// ⚠️ KEYS HERE ARE RENDERED LABELS, NOT PROPERTY NAMES. CnFormDialog
@@ -245,7 +245,7 @@ async function createViaUi(
 	// field mapping is broken). The GET response is reliable ground-truth.
 	const listResponsePromise = page.waitForResponse(
 		(r) =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+			r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 			&& r.request().method() === 'GET'
 			&& r.status() < 400,
 		{ timeout: 25_000 },
@@ -255,9 +255,7 @@ async function createViaUi(
 		page.waitForResponse(
 			(r) => {
 				const u = r.url()
-				const isObjects = u.includes(
-					`/api/objects/openconnector/${schemaSlug}`,
-				)
+				const isObjects = u.includes(`/api/objects/integriq/${schemaSlug}`)
 				return (
 					isObjects && r.request().method() === 'POST' && r.status() < 400
 				)
@@ -393,7 +391,7 @@ async function deleteViaApi(
 	if (!targetId) {
 		// Fallback: look up by name.
 		const listResp = await page.request.get(
-			`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+			`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 			{ failOnStatusCode: false },
 		)
 		if (listResp.ok()) {
@@ -408,7 +406,7 @@ async function deleteViaApi(
 	}
 	if (targetId) {
 		await page.request.delete(
-			`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}/${targetId}`,
+			`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}/${targetId}`,
 			{ failOnStatusCode: false },
 		)
 	}
@@ -540,7 +538,7 @@ async function deleteViaUi(
 	const [response] = await Promise.all([
 		page.waitForResponse(
 			(r) =>
-				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		),
@@ -559,7 +557,7 @@ async function deleteViaUi(
 	// known fragility of the mass-delete flow with stale checkbox state),
 	// fall back to API cleanup and skip the assertion.
 	const verifyResp = await page.request.get(
-		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+		`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 		{ failOnStatusCode: false },
 	)
 	if (verifyResp.ok()) {
@@ -654,7 +652,7 @@ async function editViaUi(
 			(r) => {
 				const u = r.url()
 				return (
-					u.includes(`/api/objects/openconnector/${schemaSlug}`)
+					u.includes(`/api/objects/integriq/${schemaSlug}`)
 					&& r.request().method() === 'PUT'
 					&& r.status() < 400
 				)
@@ -672,7 +670,7 @@ async function editViaUi(
 
 	// Verify the description via the OR API directly (SPA may not refresh list).
 	const verifyResp = await page.request.get(
-		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
+		`/index.php/apps/openregister/api/objects/integriq/${schemaSlug}?name=${encodeURIComponent(name)}&_limit=5`,
 		{ failOnStatusCode: false },
 	)
 	if (verifyResp.ok()) {
@@ -738,7 +736,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	const [response] = await Promise.all([
 		page.waitForResponse(
 			(r) =>
-				r.url().includes(`/api/objects/openconnector/${schemaSlug}`)
+				r.url().includes(`/api/objects/integriq/${schemaSlug}`)
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		),
@@ -764,7 +762,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
  * "Add {Title}" → CnFormDialog opens → fill `name` → click Create →
  * the dialog's `$emit('confirm')` arrives at CnIndexPage.onFormConfirm
  * which calls `selfObjectStore.saveObject(selfObjectType, formData)`
- * — that POSTs to `/api/objects/openconnector/{schema}` on OR and
+ * — that POSTs to `/api/objects/integriq/{schema}` on OR and
  * triggers a `list.refresh()` on success → assert the new row appears
  * → tick its checkbox → CnActionsBar Actions menu → "Delete selected"
  * → CnMassDeleteDialog confirm → DELETE round-trip + list.refresh().
@@ -931,7 +929,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => {
 	// '/' is the SPA dashboard route. The server-side URL for it is the
 	// app base WITHOUT a trailing slash — Nextcloud's PageController only
-	// matches `apps/openconnector`, not `apps/openconnector/` (the latter
+	// matches `apps/integriq`, not `apps/integriq/` (the latter
 	// 404s through .htaccess rewriting). Use '' here, not '/'.
 	for (const route of [
 		'',
@@ -950,7 +948,7 @@ test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => 
 			})
 			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
-			expect(html.toLowerCase()).toContain('openconnector')
+			expect(html.toLowerCase()).toContain('integriq')
 		})
 	}
 })

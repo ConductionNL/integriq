@@ -1,8 +1,8 @@
-.icon-openconnector-widget {
+.icon-integriq-widget {
 	background-image: url('../img/app-dark.svg');
 	filter: var(--background-invert-if-dark);
 }
 
-body.theme--dark .icon-openconnector-widget {
+body.theme--dark .icon-integriq-widget {
 	background-image: url('../img/app.svg');
 }

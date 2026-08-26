@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector iWMO/iJW Provider Exception.
+ * Integriq iWMO/iJW Provider Exception.
  *
  * Raised when an iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
  * transport operation cannot proceed: no active iWMO/iJW source configured,
@@ -11,7 +11,7 @@
  * KissProviderException / PeppolProviderException / SmsProviderException).
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

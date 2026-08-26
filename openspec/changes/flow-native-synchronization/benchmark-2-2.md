@@ -52,7 +52,7 @@ defects below.
 
 ## The decomposed side is blocked, and by what exactly
 
-1. `occ openconnector:synchronization-to-flow b1e14f05…` generates the full
+1. `occ integriq:synchronization-to-flow b1e14f05…` generates the full
    11-node chain (`trigger → fetch → explode → map → contract → target-uuid →
    write → synced-id → commit → sweep → end`).
 2. `POST /api/flow/validate` **refuses it** on this instance:
@@ -237,3 +237,163 @@ by contention, not by the engine.
 legacy, mapped legacy, decomposed flow), confirming `docker stats` and
 `/proc/loadavg` first. Only the correctness result above — a count, not a timing —
 is safe to carry forward from this session.
+
+---
+
+# MEASURED 2026-08-21 — the decomposed flow MEETS AND BEATS legacy
+
+All three figures re-taken back to back on a quiet box, after D1 and D2 were
+fixed. **These supersede every wall-clock number above.**
+
+## Quiet gate
+
+The box was polled every 20 minutes for ~4 hours before it qualified. The gate:
+1-min loadavg < 2.0 **and** nextcloud container CPU < 5%, on **three** samples
+~20 s apart. Ticks that failed included loadavg 24.91 and nextcloud at 282%. One
+tick had two of three samples pass (loadavg 1.85, nextcloud 0.00%) — sampling
+once would have read as a clean pass and produced numbers worth discarding.
+
+Qualifying reading: loadavg **1.95 / 1.86 / 1.59**, nextcloud
+**0.00% / 0.00% / 1.80%**.
+
+## Results
+
+| configuration | steady state | per-run | objects |
+|---|---|---|---|
+| legacy, unmapped | **7.84 s** | 7.71 / 7.97 | 2000 found, 2000 skipped |
+| legacy, **mapped** | **23.87 s** | 22.38 / 25.08 / 24.15 | 2000 found, 2000 skipped |
+| **decomposed flow** | **20.38 s** | 21.56 / 19.20 | 2000 through every step |
+
+Legacy unmapped run 1 (10.54 s, 33 created / 167 updated) is excluded as cold —
+the source drifted overnight. Contract delta was **0 on all three** mapped runs.
+
+### Verdict — 2.2 is MET
+
+The fair comparison is **mapped**: the flow is generated *from* the mapped
+synchronization and performs the same mapping. Against that bar:
+
+- **20.38 s vs 23.87 s — the decomposed flow is 14.6% FASTER.**
+- Including the caveated third run (below): 21.03 s, **11.9% faster**.
+
+It does not beat the *unmapped* legacy figure (7.84 s), but that is not the
+comparison — an unmapped sync does no mapping at all.
+
+### The third flow run is caveated, and does not change the verdict
+
+External load returned as the third flow run was taken (nextcloud 19.1%, then
+13–116% with nothing of ours running). Eight of the nine runs carry a
+nextcloud-idle reading taken immediately after them; the third flow run does not.
+
+The protocol written for this measurement says to discard the whole set when the
+box gets busy mid-measurement. That is departed from here **deliberately and
+visibly**: the evidence is per-run rather than set-level, and the verdict holds
+on the clean runs alone (20.38 s) as well as with the suspect one included
+(21.03 s). Re-taking a third clean flow run would tighten the figure; it cannot
+change the direction.
+
+## Where the time actually goes — mapping dominates BOTH engines
+
+Decomposed flow, per-step (ms), from the flow-run record rather than the enqueue
+wall clock (enqueue returns in under a second and measures nothing):
+
+| step | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| fetch (20 CKAN pages) | 3520 | 4274 | 4591 |
+| **map** | **13657** | **10791** | **12214** |
+| contract | 4307 | 4049 | 5393 |
+| write | 11 | 11 | 18 |
+| sweep | 11 | 12 | 12 |
+
+`map` is ~60% of the flow's total. `write` at 11–18 ms confirms `skipWhen` is
+skipping all 2000 — the decomposition itself is nearly free.
+
+The legacy engine shows the same shape from the other side: **mapped 23.87 s
+against unmapped 7.84 s — a 16 s penalty for a run that skips all 2000 objects
+and writes nothing.** The mapping is *resolved per item* before the skip decision
+is taken, so a skipped item still pays for it. That is ~2000 avoidable lookups
+per run and is the single largest remaining cost in the legacy path.
+
+**The optimisation worth having is in the mapping, not in the decomposition.**
+That conclusion now holds for both engines and is the useful output of this task.
+
+## What this does NOT settle
+
+3.4 (page removal) stays gated on a human decision. 2.2 asked whether the
+decomposed flow can meet or beat `synchronization-run`; it can, on this corpus,
+on a quiet box. It does not follow that the legacy pages should be removed —
+that is a product call, and the deprecation path, migration coverage and the
+528,656 pre-existing duplicate contract rows are separate questions.
+
+---
+
+# CORRECTION 2026-08-21 — "14.6% faster" was noise. It is a TIE.
+
+The verdict recorded immediately above is **wrong on the margin** and is
+corrected here. 2.2 is still MET, but the flow does not beat legacy — it
+**matches** it.
+
+## What happened
+
+The box qualified again, and far more quietly than for the previous set:
+
+| | loadavg samples | nextcloud samples |
+|---|---|---|
+| previous set | 1.95 / 1.86 / 1.59 | 0.00% / 0.00% / 1.80% |
+| **this set** | **0.44 / 0.72 / 0.51** | **0.01% / 0.00% / 0.00%** |
+
+That is essentially the original 0.36 baseline. All three figures were re-taken,
+and the third flow run — the one previously caveated — was taken clean.
+
+## Corrected results
+
+| configuration | mean | runs | spread |
+|---|---|---|---|
+| legacy, unmapped | **7.48 s** | 6.98 / 7.32 / 8.15 | 1.17 |
+| legacy, **mapped** | **18.91 s** | 17.93 / 19.24 / 19.56 | 1.63 |
+| **decomposed flow** | **18.90 s** | 16.42 / 20.82 / 19.45 | 4.40 |
+
+Contract delta **0** on all three mapped runs, again.
+
+### Verdict — 2.2 is MET on parity, NOT on a margin
+
+**18.90 s against 18.91 s: a difference of 0.006 s, which is 688x smaller than
+the flow's own run-to-run spread of 4.40 s.** These are indistinguishable. The
+honest statement is that the decomposed flow *matches* `synchronization-run`;
+2.2 asked for "meet or beat" and meeting is satisfied.
+
+The previously recorded **14.6% faster** came from comparing a 20.38 s flow
+figure against a 23.87 s legacy figure, both taken at loadavg 1.6-2.5. Both were
+inflated by contention, and unequally so. **The margin was an artefact of the
+noise floor, not a property of the engines.**
+
+## The lesson, which is the same one twice
+
+A quiet-enough gate is not a quiet gate. The previous set passed a bar of
+loadavg < 2.0 and was still contended enough to manufacture a 14.6% difference
+out of two engines that are actually tied. **When the difference between two
+measurements is smaller than the spread within either one, there is no
+difference — report the tie.** The spread column is not decoration; it is the
+thing that decides whether a margin exists at all.
+
+## What does NOT change
+
+Everything that rests on counts rather than wall clocks stands unchanged:
+
+- contract delta **0** — D1/D2 remain fixed
+- `write` at **3-11 ms** — `skipWhen` still skips all 2000; the decomposition is
+  still nearly free
+- **mapping still dominates both engines**: `map` is 8.9-9.7 s of the flow's
+  ~19 s, and legacy still pays **11.4 s** more mapped than unmapped
+  (18.91 vs 7.48) on a run that skips all 2000 objects and writes nothing,
+  because the mapping is resolved per item before the skip decision
+
+That last point is the actionable output of this task and it is now measured on
+a genuinely quiet box, on both engines, twice.
+
+## Operational note for anyone re-running this
+
+`FlowRunWorker` declares `setInterval(seconds: 60)` — a floor, not a schedule.
+Driving `cron.php` repeatedly inside 60 s does nothing: the worker is skipped and
+the run stays `queued`, which looks exactly like a stalled engine. Space cron
+ticks more than 60 s apart, or you will conclude the flow is broken when it is
+merely not yet eligible.

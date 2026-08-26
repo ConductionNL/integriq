@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Source Call flow node.
+ * Integriq Source Call flow node.
  *
  * `openconnector.source-call` — one governed outbound HTTP request per flow
  * item, made through a CONFIGURED SOURCE and the existing `CallService`.
@@ -40,7 +40,7 @@
  * burying it in a downstream conditional.
  *
  * @category Flow
- * @package  OCA\OpenConnector\Flow
+ * @package  OCA\Integriq\Flow
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -51,18 +51,18 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Flow;
+namespace OCA\Integriq\Flow;
 
 use GuzzleHttp\Promise\PromiseInterface;
-use OCA\OpenConnector\Exception\FlowNodeException;
-use OCA\OpenConnector\Service\CallService;
+use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -80,12 +80,17 @@ use UnexpectedValueException;
 /**
  * Calls a configured Source once per flow item.
  *
- * @spec openspec/changes/openconnector-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
+ * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
 class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
 
 	/**
 	 * The step type this node answers to.
+	 *
+	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
+	 * rename: this value is written into stored flow documents (OpenRegister
+	 * objects). Renaming it makes every existing flow reference a node type
+	 * nothing answers to.
 	 *
 	 * @var string
 	 */
@@ -94,9 +99,14 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * The OpenRegister register Sources live in.
 	 *
+	 * FROZEN: this is the OpenRegister register SLUG, not this app's id. It
+	 * stays `openconnector` across the app-id rename — OpenRegister matches
+	 * registers by slug, so renaming it would resolve to a fresh, empty
+	 * register and orphan every stored Source.
+	 *
 	 * @var string
 	 */
-	private const SOURCE_REGISTER = 'openconnector';
+	private const SOURCE_REGISTER = 'integriq';
 
 	/**
 	 * The OpenRegister schema Sources live in.
@@ -143,7 +153,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return string The type identifier.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string {
 		return self::NODE_ID;
@@ -154,7 +164,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Call a source');
@@ -165,7 +175,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -179,17 +189,17 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('openconnector', 'flow-source-call.svg');
+		return $this->urlGenerator->imagePath('integriq', 'flow-source-call.svg');
 	}//end getIcon()
 
 	/**
 	 * The links a call this node made earns in the run log.
 	 *
 	 * An operator reading a failed call wants the Source it went to and the
-	 * call log it wrote — both of which openconnector owns and OpenRegister
+	 * call log it wrote — both of which Integriq owns and OpenRegister
 	 * could not know about.
 	 *
 	 * Read from the step's recorded OUTPUT, which is where `outcomeOf()` puts
@@ -221,7 +231,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// no route entry at all, and `linkToRoute()` on a name that does not
 		// exist throws, which would take out the whole log rather than one
 		// link.
-		$root = $this->urlGenerator->linkToRoute('openconnector.ui.dashboard', ['path' => '']);
+		$root = $this->urlGenerator->linkToRoute('integriq.ui.dashboard', ['path' => '']);
 
 		$actions = [];
 		$sourceId = trim((string)($json['sourceId'] ?? ''));
@@ -254,7 +264,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return boolean Whether it is available.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -270,7 +280,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array<int, string> The accepted top-level config keys.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configKeys(): array {
 		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'];
@@ -288,7 +298,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configForm(): array {
 		return [
@@ -298,7 +308,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'type' => 'select',
 				'help' => $this->l10n->t('The configured source this step calls. The call inherits its base URL, authentication and rate limits.'),
 				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/openconnector/source',
+				'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
 			],
 			[
 				'key' => 'endpoint',
@@ -342,7 +352,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws UnexpectedValueException When the configuration is unusable.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		FlowConfigGuard::assertNoForbiddenFields(config: $config, l10n: $this->l10n);
@@ -387,7 +397,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws FlowNodeException On any failure the author has not opted into.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		// An empty branch makes no call and produces no items. That is the
@@ -423,7 +433,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws FlowNodeException On any failure the author has not opted into.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function callForEachItem(array $items, array $config, array $context, ObjectEntity $source): array {
 		$reference = trim((string)$config['source']);
@@ -540,7 +550,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws FlowNodeException When any rendered endpoint escapes its source.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function renderAndGuardEndpoints(array $indexed, array $config): array {
 		$endpoints = [];
@@ -726,7 +736,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws FlowNodeException When the reference resolves to no Source.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function resolveSource(string $reference): ObjectEntity {
 		$source = null;
@@ -777,7 +787,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array The request configuration.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function buildRequestConfig(array $config, array $json): array {
 		$requestConfig = [];
@@ -809,7 +819,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return mixed The decoded payload, or the raw string.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function decodeBody(array $response): mixed {
 		$body = ($response['body'] ?? null);
@@ -844,7 +854,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array The record, with the mapped values written.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function applyResponseMapping(array $config, array $json, mixed $payload): array {
 		$mapping = ($config['responseMapping'] ?? null);
@@ -884,7 +894,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array The output item carrying explicit error state.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function errorItem(
 		array $item,
@@ -926,7 +936,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return boolean Whether the call succeeded.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function isSuccess(?int $statusCode, array $accepted): bool {
 		if ($statusCode === null) {
@@ -947,7 +957,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return array<int, int> The accepted statuses.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function acceptedStatuses(array $config): array {
 		$accepted = ($config['acceptStatuses'] ?? []);
@@ -967,7 +977,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws UnexpectedValueException When a key is reserved.
 	 *
-	 * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function assertOutput(array $config): void {
 		if (array_key_exists('output', $config) === true) {

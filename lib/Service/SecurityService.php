@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector security service.
+ * Integriq security service.
  *
  * Service for handling security measures including rate limiting and
  * XSS protection. Provides login-attempt tracking, IP-based blocking,
@@ -9,7 +9,7 @@
  * the SoftwareCatalog public-form endpoints.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,12 +17,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCP\AppFramework\Http\JSONResponse;
@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * - Login attempt logging and monitoring
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
@@ -101,35 +101,35 @@ class SecurityService {
 	 *
 	 * @var string
 	 */
-	private const CACHE_PREFIX_LOGIN_ATTEMPTS = 'openconnector_login_attempts_';
+	private const CACHE_PREFIX_LOGIN_ATTEMPTS = 'integriq_login_attempts_';
 
 	/**
 	 * Cache-key prefix for per-IP login attempts.
 	 *
 	 * @var string
 	 */
-	private const CACHE_PREFIX_IP_ATTEMPTS = 'openconnector_ip_attempts_';
+	private const CACHE_PREFIX_IP_ATTEMPTS = 'integriq_ip_attempts_';
 
 	/**
 	 * Cache-key prefix for per-username lockout markers.
 	 *
 	 * @var string
 	 */
-	private const CACHE_PREFIX_USER_LOCKOUT = 'openconnector_user_lockout_';
+	private const CACHE_PREFIX_USER_LOCKOUT = 'integriq_user_lockout_';
 
 	/**
 	 * Cache-key prefix for per-IP lockout markers.
 	 *
 	 * @var string
 	 */
-	private const CACHE_PREFIX_IP_LOCKOUT = 'openconnector_ip_lockout_';
+	private const CACHE_PREFIX_IP_LOCKOUT = 'integriq_ip_lockout_';
 
 	/**
 	 * Cache-key prefix for per-username progressive-delay counters.
 	 *
 	 * @var string
 	 */
-	private const CACHE_PREFIX_PROGRESSIVE_DELAY = 'openconnector_progressive_delay_';
+	private const CACHE_PREFIX_PROGRESSIVE_DELAY = 'integriq_progressive_delay_';
 
 	/**
 	 * Constructor for SecurityService.
@@ -147,7 +147,7 @@ class SecurityService {
 		LoggerInterface $logger,
 	) {
 		// Create distributed cache for rate limiting data.
-		$this->cache = $cacheFactory->createDistributed('openconnector_security');
+		$this->cache = $cacheFactory->createDistributed('integriq_security');
 		$this->logger = $logger;
 	}//end __construct()
 

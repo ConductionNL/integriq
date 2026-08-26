@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright globalSetup — logs into Nextcloud once and persists the
@@ -29,19 +29,19 @@ import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/pl
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
 const APP_ROOT = path.resolve(__dirname, '..', '..')
-const BUNDLE_PATH = path.join(APP_ROOT, 'js', 'openconnector-main.js')
+const BUNDLE_PATH = path.join(APP_ROOT, 'js', 'integriq-main.js')
 
 /**
- * Ensure the webpack bundle exists before specs hit `/apps/openconnector/`.
+ * Ensure the webpack bundle exists before specs hit `/apps/integriq/`.
  *
  * The shared `ConductionNL/.github/quality.yml` Playwright job runs
  * `npm ci` + `npx playwright install` before the spec run, but never
- * `npm run build`. On a fresh CI VM the `js/openconnector-main.js`
+ * `npm run build`. On a fresh CI VM the `js/integriq-main.js`
  * artefact doesn't exist, so the rendered page loads a 404 script tag
  * and the Vue app never mounts — every selector wait then times out.
  *
  * Locally, the dev container typically mounts a *separate* checkout
- * into `custom_apps/openconnector` and serves that build, so this
+ * into `custom_apps/integriq` and serves that build, so this
  * step is a no-op when the bundle is already present.
  */
 function ensureBundleBuilt(): void {
@@ -131,8 +131,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// hand-rolled localStorage write.
 	//
 	// `useSupportDialog` (mode `'server'`, wired by CnAppRoot with
-	// `app-id="openconnector"`) treats
-	// `localStorage['cn-support-dialog-shown:openconnector'] === '1'` as the
+	// `app-id="integriq"`) treats
+	// `localStorage['cn-support-dialog-shown:integriq'] === '1'` as the
 	// authoritative "already seen" signal and never opens the dialog when it is
 	// set. Seeding means the support-dialog `modal-mask` never mounts, so it can
 	// never intercept the pointer events that `expandNavGroups` / `navTo` rely
@@ -144,7 +144,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// The app id MUST be named explicitly here. `seedSupportDialogSeen(page,
 	// '*')` installs a `Storage.prototype.getItem` shim but deliberately skips
 	// writing concrete keys, and a shim lives on the page — it does NOT survive
-	// into the `storageState` file this setup persists. Passing 'openconnector'
+	// into the `storageState` file this setup persists. Passing 'integriq'
 	// takes the write-through branch, so the flag rides in storageState and is
 	// durable for every spec, context and browser in the run.
 	//
@@ -153,15 +153,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// harness correct if one is ever added.
 	// ⚠️ The `/index.php/` prefix is load-bearing, and this is the worst place
 	// to get it wrong. CI serves Nextcloud with `php -S` and no router script,
-	// where `/apps/openconnector/` is a real directory with no index.php inside
+	// where `/apps/integriq/` is a real directory with no index.php inside
 	// and therefore 404s (measured; the pretty form only works behind Apache +
 	// `.htaccess`). A 404 page still shares the origin, so the localStorage
 	// seed below would appear to succeed — but the page carries no
 	// `OC.requestToken`, so the first-run-wizard dismissal a few lines down
 	// silently fails, and the wizard then intercepts pointer events in every
 	// spec without hiding anything a visibility assertion looks at.
-	await page.goto('/index.php/apps/openconnector/')
-	await seedFirstVisitOverlaysSeen(page, 'openconnector')
+	await page.goto('/index.php/apps/integriq/')
+	await seedFirstVisitOverlaysSeen(page, 'integriq')
 
 	// Retire Nextcloud's own first-run wizard for this user.
 	//

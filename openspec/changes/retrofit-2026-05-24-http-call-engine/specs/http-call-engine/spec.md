@@ -7,7 +7,7 @@ status: draft
 
 ## Purpose
 
-`CallService` is openconnector's outbound-request engine: every Source-targeted REST
+`CallService` is integriq's outbound-request engine: every Source-targeted REST
 call across the app routes through `CallService::call()`. It renders Twig templates
 into the request configuration, materialises certificates to disk, dispatches via
 Guzzle (or hands off to the SOAP service for `type=soap` sources), parses rate-limit
@@ -161,7 +161,7 @@ compute `rateLimitReset = time() + rateLimitWindow` and persist it. When
 `X-RateLimit-Remaining` is absent AND a `rateLimitLimit` is configured, the method
 MUST decrement the cached remaining counter by 1 (initialising from `rateLimitLimit`
 on the first call). On any change the method MUST persist the source via OR
-`saveObject(register='openconnector', schema='source', uuid=source.uuid)`. Finally,
+`saveObject(register='integriq', schema='source', uuid=source.uuid)`. Finally,
 when `rateLimitLimit OR rateLimitWindow` is set, the method MUST inject five
 synthesised `X-RateLimit-*` headers into the response header array so downstream
 consumers see a consistent rate-limit shape even when upstream did not emit one. Also,

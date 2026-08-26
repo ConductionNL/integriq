@@ -1,6 +1,6 @@
-# OpenConnector Features
+# Integriq Features
 
-OpenConnector is an API gateway and integration hub for Nextcloud. It brings enterprise service bus (ESB) capabilities natively into Nextcloud — define external API connections, expose your own endpoints, transform data with flexible mappings, and keep systems synchronized through scheduled or event-driven flows.
+Integriq is an API gateway and integration hub for Nextcloud. It brings enterprise service bus (ESB) capabilities natively into Nextcloud — define external API connections, expose your own endpoints, transform data with flexible mappings, and keep systems synchronized through scheduled or event-driven flows.
 
 ## Feature Index
 
@@ -24,7 +24,7 @@ OpenConnector is an API gateway and integration hub for Nextcloud. It brings ent
 ## Architecture Overview
 
 ```
-External Systems                OpenConnector                     Targets
+External Systems                  Integriq                        Targets
 ─────────────────    ───────────────────────────────────    ──────────────────
 REST APIs         →  Sources → CallService → Mappings   →  OpenRegister
 SOAP Services     →  Endpoints (reverse proxy)           →  External REST APIs
@@ -38,7 +38,7 @@ Cron              →  Jobs → SynchronizationService       →  Register/Schem
 A **Source** is a configured connection to an external system. It stores the base URL, authentication method, headers, certificates, and request defaults. Sources are reused across endpoints, synchronizations, and jobs.
 
 ### Endpoints
-An **Endpoint** is a path exposed by OpenConnector that acts as a reverse proxy, OpenRegister gateway, or rule-execution surface. Endpoints have HTTP methods, target configuration, and an ordered list of Rules.
+An **Endpoint** is a path exposed by Integriq that acts as a reverse proxy, OpenRegister gateway, or rule-execution surface. Endpoints have HTTP methods, target configuration, and an ordered list of Rules.
 
 ### Mappings
 A **Mapping** defines a field-level transformation between source and target schemas. It uses direct assignments, Twig template expressions, dot-notation paths, and JSON Logic conditions to reshape data structures.
@@ -53,7 +53,7 @@ A **Rule** adds logic to an endpoint. Rules enforce authentication, trigger sync
 A **Job** schedules a synchronization or other task on a cron expression. Execution history is stored in job logs.
 
 ### Events and Consumers
-OpenConnector emits and consumes **CloudEvents**. **Consumers** are configured handlers that process incoming webhook payloads. **EventSubscriptions** subscribe to specific event types and route them to handlers.
+Integriq emits and consumes **CloudEvents**. **Consumers** are configured handlers that process incoming webhook payloads. **EventSubscriptions** subscribe to specific event types and route them to handlers.
 
 ## Standards Compliance
 

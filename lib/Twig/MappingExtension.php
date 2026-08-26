@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Mapping Twig Extension.
+ * Integriq Mapping Twig Extension.
  *
  * Registers Twig filters and functions for executing mappings, encoding
  * helpers and source/file lookups exposed to template authors.
  *
  * @category Twig
- * @package  OCA\OpenConnector\Twig
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,16 +15,16 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @deprecated Mapping evaluation consolidated into OpenRegister (2026-08-03).
  * Every pure transformation function moved to
- * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need OpenConnector's
+ * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need Integriq's
  * own services — callSource, getTargetIdByOriginId, getOriginIdByTargetId — are
  * contributed to that engine via `RegisterMappingFunctionsEvent`
  * (see Listener\MappingFunctionRegistrationListener).
  *
- * This copy is retained only while OpenConnector's own MappingService still
+ * This copy is retained only while Integriq's own MappingService still
  * exists. Do NOT add functions here: a function registered on this environment
  * is invisible to every mapping evaluated through OpenRegister, which is now
  * the engine everything else uses.
@@ -33,7 +33,7 @@
  * request authentication in CallService and is genuinely this app's concern.
  */
 
-namespace OCA\OpenConnector\Twig;
+namespace OCA\Integriq\Twig;
 
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;

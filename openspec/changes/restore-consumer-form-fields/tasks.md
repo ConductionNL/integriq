@@ -55,7 +55,7 @@ all turning on OpenRegister's PUT contract (an omitted schema property is nulled
    unrestricted.
 2. **A blank `authorizationConfiguration` is omitted.** The field always opens blank
    (write-only), so sending its value would wipe the stored credential on every unrelated
-   edit — openconnector#245's shape. An explicit `null` clears it, from the Clear control.
+   edit — integriq#245's shape. An explicit `null` clears it, from the Clear control.
 3. **An unset `rateLimit`/`quota` is sent as an explicit `null`.** No ambiguity to protect
    here — absent and null both mean unlimited — and null is what actually removes a
    previously configured limiter on PUT.

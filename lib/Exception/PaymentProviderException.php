@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Payment Provider Exception.
+ * Integriq Payment Provider Exception.
  *
  * Raised when a payment-provider operation cannot proceed: a malformed
  * create-payment request, an unreachable/erroring PSP, a `mollie` provider
@@ -11,7 +11,7 @@
  * and references, never key material.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

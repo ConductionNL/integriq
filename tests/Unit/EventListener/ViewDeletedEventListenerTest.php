@@ -4,7 +4,7 @@
  * Unit tests for ViewDeletedEventListener (ADR-078 / gate-61).
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\OpenConnector\Cron\DeferredViewCascadeJob;
-use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
+use OCA\Integriq\Cron\DeferredViewCascadeJob;
+use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -39,7 +39,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 	/**
 	 * A tiny id+slug value object standing in for a Register/Schema row.
 	 *
-	 * @param int    $id   The row id.
+	 * @param int $id The row id.
 	 * @param string $slug The slug to return.
 	 *
 	 * @return object
@@ -106,8 +106,8 @@ class ViewDeletedEventListenerTest extends TestCase {
 				DeferredViewCascadeJob::class,
 				[
 					'identifier' => 'gemma-view-1',
-					'register'   => 7,
-					'schema'     => 42,
+					'register' => 7,
+					'schema' => 42,
 				],
 				ListenerDeferralService::DEFAULT_CHUNK_SIZE,
 				'7|42|gemma-view-1'

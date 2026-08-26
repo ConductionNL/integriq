@@ -5,7 +5,7 @@ status: done
 # storage-uploads Specification
 
 ## Purpose
-Provides multi-part file upload storage for OpenConnector: initialising an upload splits a file into cache-tracked parts against a configurable part size, individual parts are appended into a sibling parts folder, and once all parts are present they are reconciled in order into the target file. It also offers a single-shot file write under the active user, surfacing storage, locking, path, and permission errors as the appropriate Nextcloud file exceptions.
+Provides multi-part file upload storage for Integriq: initialising an upload splits a file into cache-tracked parts against a configurable part size, individual parts are appended into a sibling parts folder, and once all parts are present they are reconciled in order into the target file. It also offers a single-shot file write under the active user, surfacing storage, locking, path, and permission errors as the appropriate Nextcloud file exceptions.
 
 @e2e exclude backend multipart upload storage service (no browser UI) — covered by PHPUnit/Newman
 

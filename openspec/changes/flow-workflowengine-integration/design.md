@@ -2,7 +2,7 @@
 
 ## Context
 NC's Flow (`workflowengine` app, bundled with core, disable-able like `tables`/`forms`) lets admins build
-`WHEN <entity event> AND <checks> THEN <operation>` rules through a settings UI. OpenConnector already owns
+`WHEN <entity event> AND <checks> THEN <operation>` rules through a settings UI. Integriq already owns
 three services that do useful work in response to events: `SynchronizationService::synchronize()`,
 `EndpointService::handleRequest()` (endpoint runtime), and `EventService::emitCloudEvent()` (CloudEvents
 producer). None of them are reachable from NC's Flow UI today. This change adds three thin
@@ -34,7 +34,7 @@ operation classes do not construct or touch `FlowToken`.
 - Degrade cleanly (no crash, no registration) when `workflowengine` is disabled.
 
 **Non-Goals**
-- A visual flow builder inside OpenConnector (`visual-flow-orchestration`).
+- A visual flow builder inside Integriq (`visual-flow-orchestration`).
 - Windmill integration.
 - Generic (non-file) entity support.
 - Asynchronous/queued dispatch (see Risks).
@@ -46,9 +46,9 @@ operation classes do not construct or touch `FlowToken`.
 All three operations implement `ISpecificOperation` (extends `IOperation`) with
 `getEntityId(): string { return \OCA\WorkflowEngine\Entity\File::class; }`. This is the only `IEntity` NC
 core ships (verified in discovery.md finding 6), and it directly matches every in-scope example. Registering
-a custom `IEntity` for, say, "OpenConnector domain events" was considered and rejected for v1: it would
+a custom `IEntity` for, say, "Integriq domain events" was considered and rejected for v1: it would
 require also implementing `IEntity::prepareRuleMatcher()`/`getEvents()`/`isLegitimatedForUserId()` against
-OpenConnector's own event vocabulary, which is new engine surface the brief explicitly scopes out ("no new
+Integriq's own event vocabulary, which is new engine surface the brief explicitly scopes out ("no new
 engine logic"). File-triggered automation covers the brief's stated use case fully.
 
 ### Decision 2: Registration via `RegisterOperationsEvent` listener, not direct `IManager::registerOperation()`
@@ -62,7 +62,7 @@ try {
     if ($appManager->isEnabledForAnyUser('workflowengine') === true) {
         $dispatcher->addServiceListener(
             eventName: \OCP\WorkflowEngine\Events\RegisterOperationsEvent::class,
-            className: \OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener::class
+            className: \OCA\Integriq\WorkflowEngine\RegisterOperationsListener::class
         );
     }
 } catch (\Throwable $e) {
@@ -143,10 +143,10 @@ before it can even be saved, so a missing endpoint at `onEvent()` time means it 
 was configured).
 
 Alternative considered and rejected: writing a minimal hand-rolled `IRequest` implementation inside
-OpenConnector implementing only the handful of methods `doHandleRequest()` currently calls. Rejected because
+Integriq implementing only the handful of methods `doHandleRequest()` currently calls. Rejected because
 `IRequest` is a large interface (dozens of methods covering headers, cookies, server vars, CSRF token,
 overloaded array access); a partial implementation would throw `\Error` the moment `doHandleRequest()`'s
-internals touch any unimplemented method in a future NC or OpenConnector version, whereas NC's own concrete
+internals touch any unimplemented method in a future NC or Integriq version, whereas NC's own concrete
 `Request` class is guaranteed complete and is exercised by NC core on every real request.
 
 ### Decision 6: `FireCloudEventOperation` settings shape and dispatch
@@ -194,7 +194,7 @@ Nothing new is registered for `RegisterChecksEvent`/`RegisterEntitiesEvent`.
 
 ## Migration Plan
 No schema changes (see migration.md skip rationale — Flow rule settings persist in NC's own
-`flow_operations.operation` column, which OpenConnector does not own or migrate). Deploy: ship the new
+`flow_operations.operation` column, which Integriq does not own or migrate). Deploy: ship the new
 `lib/WorkflowEngine/` classes and the `Application.php` registration change; no data backfill, no feature
 flag needed beyond the existing `IAppManager::isEnabledForAnyUser('workflowengine')` runtime check. Rollback:
 see proposal.md Rollback Strategy.
@@ -228,7 +228,7 @@ None outstanding.
   beyond what the endpoint's own configured auth (source credentials, etc.) already provides. This mirrors
   how `EndpointService` already treats system/cron-triggered calls elsewhere in this codebase.
 - No new user-supplied input surface: operation settings are configured by an admin through NC's own Flow UI
-  (a trusted actor per Decision 7), not through any request OpenConnector parses from an untrusted caller.
+  (a trusted actor per Decision 7), not through any request Integriq parses from an untrusted caller.
 
 ## File Structure
 ```

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector EudiStatusListService.
+ * Integriq EudiStatusListService.
  *
  * Owns the OAuth Status List Token (draft-ietf-oauth-status-list) lifecycle
  * for the EUDI wallet credential issuance adapter: bit assignment, bit
@@ -9,7 +9,7 @@
  * (`bits: 1`, `purpose: revocation`) only — see design.md D-REVOKE.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -88,7 +88,7 @@ class EudiStatusListService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_status_list',
 					'organisationId' => $scope,
 				],
@@ -114,7 +114,7 @@ class EudiStatusListService {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $uuid
 		);
@@ -162,7 +162,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -188,7 +188,7 @@ class EudiStatusListService {
 	public function revokeIndex(string $statusListId, int $index): bool {
 		$entity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
 			_multitenancy: false
@@ -206,7 +206,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -216,7 +216,7 @@ class EudiStatusListService {
 		// background refresh window.
 		$refreshedEntity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
 			_multitenancy: false
@@ -338,7 +338,7 @@ class EudiStatusListService {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'eudi_status_list',
 			uuid: $entity->getUuid()
 		);
@@ -360,7 +360,7 @@ class EudiStatusListService {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $statusListId,
-				register: 'openconnector',
+				register: 'integriq',
 				schema: 'eudi_status_list',
 				_rbac: false,
 				_multitenancy: false
@@ -379,7 +379,7 @@ class EudiStatusListService {
 
 	/**
 	 * Sweep every status list row and re-sign any token nearing its own
-	 * expiry (REQ-EUDI-008b). Called by {@see \OCA\OpenConnector\Cron\EudiStatusListRefreshJob}.
+	 * expiry (REQ-EUDI-008b). Called by {@see \OCA\Integriq\Cron\EudiStatusListRefreshJob}.
 	 *
 	 * @return integer Number of tokens refreshed.
 	 *
@@ -389,7 +389,7 @@ class EudiStatusListService {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openconnector',
+					'register' => 'integriq',
 					'schema' => 'eudi_status_list',
 				],
 			],

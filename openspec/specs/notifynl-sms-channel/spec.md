@@ -6,9 +6,9 @@ status: done
 
 ## Purpose
 
-OpenConnector gains a generic SMS channel so sibling apps (e.g. procest) can
+Integriq gains a generic SMS channel so sibling apps (e.g. procest) can
 send citizen notifications by SMS without embedding a gateway client of their
-own. Per ADR-022 integrations live in openconnector, not as nc-vue leaves and
+own. Per ADR-022 integrations live in integriq, not as nc-vue leaves and
 not per-app. A narrow `SmsProviderInterface` (send + delivery-status lookup)
 lets multiple gateway vendors implement the same contract; this change ships a
 `log`/sandbox binding and a `notifynl` binding (NotifyNL — the NL government
@@ -30,7 +30,7 @@ follow later without touching the dispatch service or the REST surface.
 
 ### Requirement: Generic SMS provider contract (REQ-001)
 
-OpenConnector MUST define an `SmsProviderInterface`
+Integriq MUST define an `SmsProviderInterface`
 (`lib/Service/Sms/SmsProviderInterface.php`) with `getProviderId()`,
 `getProviderName()`, `getConfigSchema()`, `send(sourceConfiguration, to, body,
 options): DeliveryResult`, and `fetchStatus(sourceConfiguration,
@@ -161,7 +161,7 @@ fail before any provider call or persistence.
 
 ### Requirement: Send endpoint consumable by sibling apps (REQ-006)
 
-OpenConnector MUST expose `POST /api/notifynl/messages` as an authenticated
+Integriq MUST expose `POST /api/notifynl/messages` as an authenticated
 NC-session endpoint that sibling apps (e.g. procest) call directly — mirroring
 `PeppolController::participants()`'s consumption pattern for shillinq. The
 endpoint accepts `{to, body, templateId, personalisation, sourceApp,
@@ -182,7 +182,7 @@ envelope, never a 500.
 
 ### Requirement: Delivery-status polling and callback (REQ-007)
 
-OpenConnector MUST expose `GET /api/notifynl/messages/{id}` (authenticated,
+Integriq MUST expose `GET /api/notifynl/messages/{id}` (authenticated,
 `sms.status` action) which polls the provider's `fetchStatus()` and persists
 any status change, and `POST /api/notifynl/inbound`, a signed webhook (same
 HMAC scheme as `webhook_signature`, mirroring `PeppolController::inbound()`)

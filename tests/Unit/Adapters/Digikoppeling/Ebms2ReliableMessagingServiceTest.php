@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector — ebMS2 reliable-messaging state-machine tests.
+ * Integriq — ebMS2 reliable-messaging state-machine tests.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Digikoppeling
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,14 +15,14 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Adapters\Digikoppeling;
+namespace OCA\Integriq\Tests\Unit\Adapters\Digikoppeling;
 
-use OCA\OpenConnector\Adapters\Digikoppeling\Ebms2ReliableMessagingService;
+use OCA\Integriq\Adapters\Digikoppeling\Ebms2ReliableMessagingService;
 use PHPUnit\Framework\TestCase;
 
 /**

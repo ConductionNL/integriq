@@ -8,7 +8,7 @@ TBD - created by archiving change eudi-wallet-credential-issuance. Update Purpos
 The system MUST declare three new OpenRegister schemas in the
 `openconnector` register via an ADR-037 register fragment
 (`lib/Settings/register.d/eudi-wallet-credential-issuance.json`,
-`components.schemas`) — NOT by editing `openconnector_register.json`
+`components.schemas`) — NOT by editing `integriq_register.json`
 directly: `eudi_credential_offer` (one row per created offer: payload
 reference, format, subjectId, consumerId, pre-authorized_code hash,
 status, expiry), `eudi_issuance_session` (token/credential-endpoint
@@ -35,7 +35,7 @@ per-adapter settings page.
 #### Scenario: the register fragment does not modify the coverage-gated descriptor file
 
 - **GIVEN** the register fragment merge runs at load
-- **WHEN** `lib/Settings/openconnector_register.json`'s own entry count is
+- **WHEN** `lib/Settings/integriq_register.json`'s own entry count is
   checked (`openconnector-register-schema` REQ-A-002)
 - **THEN** it SHALL remain unchanged at exactly 15 entries
 - **AND** the three new schemas SHALL only be reachable through the merged

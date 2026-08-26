@@ -4,7 +4,7 @@
     "objects": [
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "source",
           "slug": "australia-austender"
         },
@@ -25,7 +25,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "mapping",
           "slug": "australia-austender-to-tender"
         },
@@ -59,7 +59,7 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "synchronization",
           "slug": "australia-austender-to-spectr-tender"
         },
@@ -80,13 +80,13 @@
       },
       {
         "@self": {
-          "register": "openconnector",
+          "register": "integriq",
           "schema": "job",
           "slug": "australia-austender-weekly-sync"
         },
         "name": "AusTender Weekly Sync",
         "description": "Runs the australia-austender-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence. Each run fetches the last 7 days of released notices; the synchronization-contract-keyed upsert (same mechanism tenderned.json relies on) dedups overlap on re-run.",
-        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "australia-austender-to-spectr-tender"
         },

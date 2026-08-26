@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector NotificatiesSubscriberService.
+ * Integriq NotificatiesSubscriberService.
  *
  * ZGW Notificaties API (Logius/VNG "API Notificatiestandaard voor ZGW APIs")
  * subscriber-side abonnement lifecycle + inbound notification normalization.
@@ -12,7 +12,7 @@
  * dependency would be circular).
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,14 +21,14 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use InvalidArgumentException;
@@ -124,7 +124,7 @@ class NotificatiesSubscriberService {
 		$abonnement = $this->persistPendingAbonnement(config: $config);
 		$abonnementId = $abonnement->getUuid();
 		$callbackUrl = $this->urlGenerator->linkToRouteAbsolute(
-			'openconnector.notificatiesSubscriber.callback',
+			'integriq.notificatiesSubscriber.callback',
 			['abonnementId' => $abonnementId]
 		);
 
@@ -177,7 +177,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 	 */
 	public function updateAbonnement(string $id, array $config): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'openconnector', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
 		$source = $this->resolveSource(sourceId: (string)($data['sourceId'] ?? ''));
@@ -245,7 +245,7 @@ class NotificatiesSubscriberService {
 				'authScheme' => (string)($config['authScheme'] ?? ''),
 				'status' => self::STATUS_PENDING,
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'notificaties_abonnement'
 		);
 
@@ -262,7 +262,7 @@ class NotificatiesSubscriberService {
 	private function persistAbonnement(array $data, string $id): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'notificaties_abonnement',
 			uuid: $id
 		);
@@ -295,7 +295,7 @@ class NotificatiesSubscriberService {
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
-			register: 'openconnector',
+			register: 'integriq',
 			schema: 'consumer'
 		);
 
@@ -410,7 +410,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 	 */
 	public function deleteAbonnement(string $id): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'openconnector', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
 		$data = $abonnement->getObject();
 
 		if (($data['status'] ?? '') === self::STATUS_DELETED) {
@@ -485,7 +485,7 @@ class NotificatiesSubscriberService {
 	 */
 	public function findAbonnement(string $abonnementId): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $abonnementId, register: 'openconnector', schema: 'notificaties_abonnement');
+			return $this->objectService->find(id: $abonnementId, register: 'integriq', schema: 'notificaties_abonnement');
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -668,7 +668,7 @@ class NotificatiesSubscriberService {
 		}
 
 		try {
-			return $this->objectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+			return $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source');
 		} catch (Throwable $e) {
 			return null;
 		}

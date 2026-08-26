@@ -108,7 +108,7 @@ export const UNDISPATCHED_ACTION_TYPES = ['upload']
  * `EndpointService::handleRuleProcessing()` compares
  * `($ruleData['timing'] ?? 'before') === $timing` against a `$timing` that is
  * only ever called with one of those two literals. The `rule` schema's
- * description in `lib/Settings/openconnector_register.json` claims
+ * description in `lib/Settings/integriq_register.json` claims
  * "pre-request, post-request, pre-response, post-response" — that is stale
  * prose, not a vocabulary the engine understands.
  */

@@ -3,22 +3,22 @@
 # SPDX-FileCopyrightText: 2026 Conduction B.V.
 # SPDX-License-Identifier: EUPL-1.2
 #
-# Provision OpenConnector's OpenRegister register + schemas on a freshly
+# Provision Integriq's OpenRegister register + schemas on a freshly
 # installed Nextcloud, for the shared `E2E Tests (Playwright)` CI job.
 #
 # Wired up as the workflow's `playwright-seed-command`. That step runs AFTER
 # `php -S` is up and with cwd set to the Nextcloud server root, so it is
 # invoked as:
 #
-#     playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
+#     playwright-seed-command: 'bash apps/integriq/tests/e2e/ci-seed.sh'
 #
 # The `Integration Tests (Newman)` job needs the SAME register provisioning —
-# its collection drives /apps/openregister/api/objects/openconnector/<schema>
+# its collection drives /apps/openregister/api/objects/integriq/<schema>
 # directly — but must NOT run the SPA warm-up or the bundle gate, because that
 # job never builds the frontend. It therefore invokes this same script with
 # the register-only scope:
 #
-#     newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
+#     newman-seed-command: 'SEED_SCOPE=register bash apps/integriq/tests/e2e/ci-seed.sh'
 #
 # SEED_SCOPE=register  -> steps 1-3 only (build descriptor, import, verify).
 # SEED_SCOPE unset/full -> steps 1-5 (adds SPA warm-up + bundle gate).
@@ -30,23 +30,23 @@
 #
 # WHY THIS IS NEEDED
 # ------------------
-# Since the chain-C OR-cutover, openconnector's Sources, Mappings,
+# Since the chain-C OR-cutover, integriq's Sources, Mappings,
 # Synchronizations, Jobs, Rules, Endpoints and Consumers are OpenRegister
 # OBJECTS. There is no `oc_openconnector_sources` table any more — they live in
-# `oc_openregister_table_<register>_<schema>` under register `openconnector`.
+# `oc_openregister_table_<register>_<schema>` under register `integriq`.
 # With no register there is nothing for the SPA to resolve, nothing for the
 # fixtures to create, and nothing for the specs to assert.
 #
 # Nothing in a fresh CI install reliably creates it:
 #
 #   * The `InitializeRegister` post-migration repair step is the correct home
-#     for the import, but `occ app:enable openconnector` does not run it — a
-#     run on a clean NC 31 checkout produced `openconnector 0.3.4 enabled` and
+#     for the import, but `occ app:enable integriq` does not run it — a
+#     run on a clean NC 31 checkout produced `integriq 0.3.4 enabled` and
 #     no register at all, and `occ maintenance:repair` (which does iterate
 #     enabled apps' `repair-steps.post-migration`) also came back with the
 #     register absent. Both commands exit 0 either way. Measured, not assumed:
 #     `GET /apps/openregister/api/registers` returned 14 register slugs after
-#     both, none of them `openconnector`. (14, not 0 — the query was capable of
+#     both, none of them `integriq`. (14, not 0 — the query was capable of
 #     matching; the register genuinely was not there.)
 #
 #   * Even when it does run, `InitializeRegister::run()` catches `\Throwable`
@@ -109,7 +109,7 @@ echo "[ci-seed] target:  ${BASE}"
 echo "[ci-seed] app dir: ${APP_DIR}"
 
 # ── 1. Build the register descriptor exactly as the repair step would ────────
-# ADR-037: the shipped descriptor is `lib/Settings/openconnector_register.json`
+# ADR-037: the shipped descriptor is `lib/Settings/integriq_register.json`
 # with every `lib/Settings/register.d/*.json` fragment deep-merged over it in
 # sorted filename order. Each OpenSpec change drops its own fragment instead of
 # editing the monolith, and the fragments carry real content the suite depends
@@ -152,7 +152,7 @@ def deep_merge(base, overlay):
     return base
 
 
-descriptor_path = os.path.join(settings, 'openconnector_register.json')
+descriptor_path = os.path.join(settings, 'integriq_register.json')
 if not os.path.isfile(descriptor_path):
     print(f'::error::register descriptor missing at {descriptor_path}')
     sys.exit(1)
@@ -218,13 +218,13 @@ register_slugs = {
     for value in registers.values()
     if isinstance(value, dict)
 }
-if 'openconnector' not in register_slugs:
-    print('::error::the merged descriptor declares no `openconnector` register '
+if 'integriq' not in register_slugs:
+    print('::error::the merged descriptor declares no `integriq` register '
           f'(found: {sorted(s for s in register_slugs if s)}). Nothing worth POSTing.')
     sys.exit(1)
 
 # The slugs tests/e2e/workflows/_fixture.ts and the spec-coverage specs resolve
-# objects by, via /apps/openregister/api/objects/openconnector/<schema>.
+# objects by, via /apps/openregister/api/objects/integriq/<schema>.
 required = ['source', 'mapping', 'synchronization', 'job', 'rule', 'endpoint', 'consumer', 'event']
 missing = [slug for slug in required if slug not in schemas]
 if missing:
@@ -244,7 +244,7 @@ with open(out_path, 'w', encoding='utf-8') as handle:
             # silently give us the version-guarded no-op this script exists to
             # bypass.
             'force': True,
-            'appId': 'openconnector',
+            'appId': 'integriq',
             'version': version,
         },
         handle,
@@ -281,7 +281,7 @@ echo "[ci-seed] import HTTP ${IMPORT_CODE}"
 head -c 1500 "$IMPORT_BODY"; echo
 
 if [ "$IMPORT_CODE" != "200" ]; then
-	echo "::error::OpenConnector register import failed (HTTP ${IMPORT_CODE}). Every openconnector entity is an OpenRegister object; without the register the e2e suite has nothing to read or create."
+	echo "::error::Integriq register import failed (HTTP ${IMPORT_CODE}). Every integriq entity is an OpenRegister object; without the register the e2e suite has nothing to read or create."
 	exit 1
 fi
 
@@ -299,11 +299,11 @@ import sys
 path, kind, app_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # The hand-maintained floor: what the fixtures and workflow specs create and
-# read through /objects/openconnector/<schema>.
+# read through /objects/integriq/<schema>.
 required = {
-    'registers': ['openconnector'],
+    'registers': ['integriq'],
     # tests/e2e/workflows/_fixture.ts creates Sources / Mappings /
-    # Synchronizations through /objects/openconnector/<schema>; the
+    # Synchronizations through /objects/integriq/<schema>; the
     # spec-coverage index-page specs read jobs, rules, endpoints, consumers
     # and events the same way.
     'schemas': ['source', 'mapping', 'synchronization', 'job', 'rule',
@@ -321,7 +321,7 @@ def manifest_schemas():
     the CI instance, the seed said `schemas OK` and the failure surfaced two
     jobs later as a console assertion reading
 
-        Error fetching openconnector-synchronization_run collection: Proxy(Object)
+        Error fetching integriq-synchronization_run collection: Proxy(Object)
 
     — which names neither the schema nor the seed. A page whose route is
     declared but whose collection cannot be fetched is a seeding failure, and
@@ -350,7 +350,7 @@ def manifest_schemas():
             continue
         # Only pages bound to THIS register — a page pointing at another app's
         # register is that app's to provision.
-        if config.get('register') != 'openconnector':
+        if config.get('register') != 'integriq':
             continue
         schema = config.get('schema')
         if isinstance(schema, str) and schema:
@@ -400,17 +400,17 @@ if advisory:
         print(f'::warning::{len(unbound)} manifest page(s) bind a route to a schema '
               f'that is NOT on this instance: {unbound}')
         print('::warning::Each one\'s index page will fail to fetch its collection, '
-              'and the spec failure reads "Error fetching openconnector-<schema> '
+              'and the spec failure reads "Error fetching integriq-<schema> '
               'collection: Proxy(Object)" — which names neither the schema nor the '
               'seed. That is what this warning is for.')
         print('::warning::Check that the register.d fragment declaring it is merged '
               'into the descriptor AND that the import attached it to the '
-              'openconnector register.')
+              'integriq register.')
     else:
         print(f'[ci-seed] all {len(advisory)} manifest-bound schema(s) resolve.')
 
 if missing:
-    print(f'::error::OpenConnector {kind} missing after import: {missing}')
+    print(f'::error::Integriq {kind} missing after import: {missing}')
     sys.exit(1)
 print(f'[ci-seed] {kind} OK ({len(required)} required slug(s) present)')
 PY
@@ -432,7 +432,7 @@ verify "$SCH_BODY" schemas
 # was in the 71 slugs the check above enumerates — so it printed
 # `all 11 manifest-bound schema(s) resolve` — while
 #
-#     GET /apps/openregister/api/objects/openconnector/synchronization_run
+#     GET /apps/openregister/api/objects/integriq/synchronization_run
 #
 # returned 404 `{"message":"Schema not found: 'synchronization_run'"}`, because
 # declaring a schema in `components.schemas` does NOT attach it to the register:
@@ -463,7 +463,7 @@ for page in pages:
     if not isinstance(page, dict):
         continue
     config = page.get('config')
-    if not isinstance(config, dict) or config.get('register') != 'openconnector':
+    if not isinstance(config, dict) or config.get('register') != 'integriq':
         continue
     schema = config.get('schema')
     if isinstance(schema, str) and schema and schema not in slugs:
@@ -479,25 +479,25 @@ for SLUG in $PROBE_SCHEMAS; do
 	PROBE_CODE="$(
 		curl -sS -o /dev/null -w '%{http_code}' \
 			-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-			"${BASE}/index.php/apps/openregister/api/objects/openconnector/${SLUG}?_limit=1" \
+			"${BASE}/index.php/apps/openregister/api/objects/integriq/${SLUG}?_limit=1" \
 			|| echo 000
 	)"
 	if [ "$PROBE_CODE" = "200" ]; then
 		echo "[ci-seed]   ${SLUG}: ${PROBE_CODE}"
 	else
 		PROBE_BAD=$((PROBE_BAD + 1))
-		echo "::warning::objects/openconnector/${SLUG} returned HTTP ${PROBE_CODE} — its index page will log 'Error fetching openconnector-${SLUG} collection' and the spec will fail on the console gate. Attach the schema to the openconnector register (components.registers.openconnector.schemas), not just components.schemas."
+		echo "::warning::objects/integriq/${SLUG} returned HTTP ${PROBE_CODE} — its index page will log 'Error fetching integriq-${SLUG} collection' and the spec will fail on the console gate. Attach the schema to the integriq register (components.registers.integriq.schemas), not just components.schemas."
 	fi
 done
 
 # ⚠️ A ZERO-PROBE RUN MUST NOT READ AS A CLEAN ONE.
 if [ "$PROBE_TOTAL" -eq 0 ]; then
-	echo "::warning::NOT ONE collection endpoint was probed — src/manifest.json yielded no openconnector-bound page. This says nothing about the instance."
+	echo "::warning::NOT ONE collection endpoint was probed — src/manifest.json yielded no integriq-bound page. This says nothing about the instance."
 else
 	echo "[ci-seed] probed ${PROBE_TOTAL} collection endpoint(s); ${PROBE_BAD} not fetchable."
 fi
 
-echo "[ci-seed] OpenConnector register + schemas provisioned."
+echo "[ci-seed] Integriq register + schemas provisioned."
 
 # ── 3b. Stop here for API-only consumers (SEED_SCOPE=register) ───────────────
 # The `Integration Tests (Newman)` job needs EXACTLY steps 1-3 and nothing
@@ -506,7 +506,7 @@ echo "[ci-seed] OpenConnector register + schemas provisioned."
 # the bundle gate would hard-fail the seed on a bundle the job is not supposed
 # to have. Splitting on scope keeps ONE definition of "provision the register"
 # for both jobs — the Newman failure this exists to fix was 51 assertions all
-# 404ing on /apps/openregister/api/objects/openconnector/<schema> because that
+# 404ing on /apps/openregister/api/objects/integriq/<schema> because that
 # job had no seed step at all.
 if [ "${SEED_SCOPE:-full}" = "register" ]; then
 	echo "[ci-seed] SEED_SCOPE=register — skipping SPA warm-up and bundle gate (API-only consumer)."
@@ -521,10 +521,10 @@ fi
 # spec happens to sort first. Failures are ignored on purpose: this is a
 # warm-up, not a gate — the real checks are above and below.
 for path in \
-	"/index.php/apps/openconnector/" \
+	"/index.php/apps/integriq/" \
 	"/index.php/apps/openregister/api/registers?_limit=1" \
-	"/index.php/apps/openregister/api/objects/openconnector/source?_limit=1" \
-	"/index.php/apps/openregister/api/objects/openconnector/mapping?_limit=1"
+	"/index.php/apps/openregister/api/objects/integriq/source?_limit=1" \
+	"/index.php/apps/openregister/api/objects/integriq/mapping?_limit=1"
 do
 	code="$(curl -sS -o /dev/null -w '%{http_code}' -u "${USER_NAME}:${USER_PASS}" \
 		-H 'OCS-APIRequest: true' "${BASE}${path}" || echo 000)"
@@ -545,13 +545,13 @@ done
 # response Content-Type.
 APP_HTML="$(mktemp)"
 curl -sS -u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openconnector/" -o "$APP_HTML" || true
+	"${BASE}/index.php/apps/integriq/" -o "$APP_HTML" || true
 
 # `|| true` is load-bearing: grep exits 1 when it matches nothing, and under
 # `set -euo pipefail` that aborts the script right here — so the case the gate
 # below exists to explain (no bundle) would die with a bare non-zero exit and
 # none of the diagnosis. Let it fall through to the gate instead.
-BUNDLE_SRC="$(grep -oE 'src="[^"]*openconnector-main[^"]*"' "$APP_HTML" \
+BUNDLE_SRC="$(grep -oE 'src="[^"]*integriq-main[^"]*"' "$APP_HTML" \
 	| head -1 | sed 's/^src="//; s/"$//' || true)"
 
 if [ -n "$BUNDLE_SRC" ]; then
@@ -580,7 +580,7 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 			echo "[ci-seed] bundle verified as JavaScript."
 			;;
 		*)
-			echo "::error::The OpenConnector frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
+			echo "::error::The Integriq frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
 			echo "::error::The SPA cannot mount, so every UI spec would fail on a selector timeout with a misleading cause."
 			echo "::error::Check the 'Build app frontend' step — a missing bundle returns HTTP 200 text/html, not 404."
 			exit 1

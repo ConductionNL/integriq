@@ -14,7 +14,7 @@
  * a null uuid falls through to the next name instead of being labelled "".
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,14 +25,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
 /**
  * Reads the identity of an entity a migration generator was handed.
@@ -72,7 +72,6 @@ final class MigrationSubject {
 		}
 
 		return $identifiers;
-
 	}//end identifiersOf()
 
 	/**
@@ -86,7 +85,6 @@ final class MigrationSubject {
 	 */
 	public function referenceOf(array $entity): string {
 		return ($this->identifiersOf(entity: $entity)[0] ?? '');
-
 	}//end referenceOf()
 
 	/**
@@ -105,6 +103,5 @@ final class MigrationSubject {
 		}
 
 		return $this->referenceOf(entity: $entity);
-
 	}//end labelOf()
 }//end class

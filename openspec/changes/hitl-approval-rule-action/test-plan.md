@@ -35,7 +35,7 @@
 - **persona**: Noor (Municipal CISO / Functional Admin) — verifies the notification and its deep link are trustworthy and actionable
 - **preconditions**: an `approval_request` created with `approverGroup: "woo-approvers"`; a test user is a member of that group
 - **steps**: log in as the approver-group member, check NC notifications
-- **expected result**: a notification with Approve/Reject actions deep-linking to `/apps/openconnector/approvals/{id}` is present
+- **expected result**: a notification with Approve/Reject actions deep-linking to `/apps/integriq/approvals/{id}` is present
 - **test command**: /test-functional
 
 ### TC-5: ops group receives a passive visibility notification

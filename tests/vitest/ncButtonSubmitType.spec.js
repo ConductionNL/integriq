@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Regression guard for the @nextcloud/vue 8 -> 9 NcButton prop rename.

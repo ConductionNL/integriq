@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector StUF-ZKN Controller.
+ * Integriq StUF-ZKN Controller.
  *
  * REST/SOAP controller for the stuf-zkn-bridge: the inbound SOAP endpoint
  * accepts a `zakLk01`/`edcLk01` kennisgeving from a municipality's legacy
@@ -22,7 +22,7 @@
  * environment — see design.md "Inbound authentication".
  *
  * @category Controller
- * @package  OCA\OpenConnector\Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,20 +31,20 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Controller;
+namespace OCA\Integriq\Controller;
 
-use OCA\OpenConnector\Exception\StufZknProviderException;
-use OCA\OpenConnector\Exception\StufZknTranslationException;
-use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\StufZknSyncService;
-use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -77,7 +77,7 @@ class StufZknController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier ("openconnector").
+	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param StufZknSyncService $syncService Inbound/outbound orchestration logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound endpoint.

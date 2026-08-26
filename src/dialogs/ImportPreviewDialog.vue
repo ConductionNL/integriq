@@ -19,7 +19,7 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openconnector', 'Import configuration')"
+		:name="t('integriq', 'Import configuration')"
 		size="large"
 		data-testid="import-preview-dialog"
 		@update:open="onOpenChanged">
@@ -29,7 +29,7 @@
 				<p>
 					{{
 						t(
-							'openconnector',
+							'integriq',
 							'Select an exported configuration document (JSON). The import is previewed first — nothing is written until you confirm.',
 						)
 					}}
@@ -38,7 +38,7 @@
 					ref="fileInput"
 					type="file"
 					accept="application/json,.json"
-					:aria-label="t('openconnector', 'Configuration document')"
+					:aria-label="t('integriq', 'Configuration document')"
 					data-testid="import-file-input"
 					@change="onFileChosen" />
 				<NcNoteCard v-if="errorMessage" type="error">
@@ -48,14 +48,14 @@
 
 			<!-- Step 2: preview -->
 			<div v-else-if="step === 'preview'" class="oc-import-dialog__step">
-				<h4>{{ t('openconnector', 'Import preview') }}</h4>
+				<h4>{{ t('integriq', 'Import preview') }}</h4>
 
 				<div class="oc-import-dialog__buckets">
 					<div
 						class="oc-import-dialog__bucket"
 						data-testid="preview-creates">
 						<h5>
-							{{ t('openconnector', 'Will be created') }} ({{
+							{{ t('integriq', 'Will be created') }} ({{
 								preview.creates.length
 							}})
 						</h5>
@@ -71,7 +71,7 @@
 						class="oc-import-dialog__bucket"
 						data-testid="preview-updates">
 						<h5>
-							{{ t('openconnector', 'Will be updated') }} ({{
+							{{ t('integriq', 'Will be updated') }} ({{
 								preview.updates.length
 							}})
 						</h5>
@@ -89,7 +89,7 @@
 					v-if="preview.collisions.length > 0"
 					type="warning"
 					data-testid="preview-collisions">
-					<strong>{{ t('openconnector', 'Slug collisions') }}</strong>
+					<strong>{{ t('integriq', 'Slug collisions') }}</strong>
 					<ul>
 						<li
 							v-for="entry in preview.collisions"
@@ -104,13 +104,11 @@
 					v-if="preview.unresolvedReferences.length > 0"
 					type="error"
 					data-testid="preview-unresolved">
-					<strong>{{
-						t('openconnector', 'Unresolved references')
-					}}</strong>
+					<strong>{{ t('integriq', 'Unresolved references') }}</strong>
 					<p>
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'These slug references do not resolve in this environment and will be imported verbatim — the referencing entity will be broken until fixed manually.',
 							)
 						}}
@@ -128,7 +126,7 @@
 						data-testid="unresolved-ack">
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'I understand these references will stay dangling and want to import anyway',
 							)
 						}}
@@ -140,7 +138,7 @@
 					type="info"
 					data-testid="preview-credentials">
 					<strong>{{
-						t('openconnector', 'Credentials need re-entry after import')
+						t('integriq', 'Credentials need re-entry after import')
 					}}</strong>
 					<ul>
 						<li
@@ -159,19 +157,19 @@
 			<!-- Step 3: post-import summary -->
 			<div v-else-if="step === 'done'" class="oc-import-dialog__step">
 				<NcNoteCard type="success" data-testid="import-success">
-					{{ t('openconnector', 'Import completed') }}
+					{{ t('integriq', 'Import completed') }}
 				</NcNoteCard>
 				<NcNoteCard
 					v-if="preview.credentialsNeedingReentry.length > 0"
 					type="warning"
 					data-testid="import-credentials-summary">
 					<strong>{{
-						t('openconnector', 'Re-enter credentials for these sources')
+						t('integriq', 'Re-enter credentials for these sources')
 					}}</strong>
 					<p>
 						{{
 							t(
-								'openconnector',
+								'integriq',
 								'Exports always strip credentials — open each imported source and re-enter them.',
 							)
 						}}
@@ -184,7 +182,7 @@
 						</li>
 					</ul>
 					<NcButton variant="secondary" @click="goToSources">
-						{{ t('openconnector', 'Open Sources') }}
+						{{ t('integriq', 'Open Sources') }}
 					</NcButton>
 				</NcNoteCard>
 			</div>
@@ -193,8 +191,8 @@
 				<NcButton variant="tertiary" @click="close">
 					{{
 						step === 'done'
-							? t('openconnector', 'Close')
-							: t('openconnector', 'Cancel')
+							? t('integriq', 'Close')
+							: t('integriq', 'Cancel')
 					}}
 				</NcButton>
 				<NcButton
@@ -203,7 +201,7 @@
 					:disabled="importRunning || confirmBlocked"
 					data-testid="confirm-import"
 					@click="confirmImport">
-					{{ t('openconnector', 'Confirm import') }}
+					{{ t('integriq', 'Confirm import') }}
 				</NcButton>
 			</div>
 		</div>
@@ -325,7 +323,7 @@ export default {
 				parsed = JSON.parse(await file.text())
 			} catch (err) {
 				this.errorMessage = t(
-					'openconnector',
+					'integriq',
 					'The selected file is not valid JSON',
 				)
 				return
@@ -333,7 +331,7 @@ export default {
 			this.document = parsed
 			try {
 				const url = generateUrl(
-					'/apps/openconnector/api/configurations/import/preview',
+					'/apps/integriq/api/configurations/import/preview',
 				)
 				const { data } = await axios.post(url, { document: parsed })
 				this.preview = { ...EMPTY_PREVIEW, ...data }
@@ -342,8 +340,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Preview failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Preview failed') + (detail ? `: ${detail}` : '')
 			}
 		},
 
@@ -361,9 +358,7 @@ export default {
 			this.importRunning = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(
-					'/apps/openconnector/api/configurations/import',
-				)
+				const url = generateUrl('/apps/integriq/api/configurations/import')
 				const { data } = await axios.post(url, {
 					document: this.document,
 					confirmed: true,
@@ -373,8 +368,7 @@ export default {
 			} catch (err) {
 				const detail = err?.response?.data?.error || err?.message || ''
 				this.errorMessage =
-					t('openconnector', 'Import failed')
-					+ (detail ? `: ${detail}` : '')
+					t('integriq', 'Import failed') + (detail ? `: ${detail}` : '')
 			} finally {
 				this.importRunning = false
 			}

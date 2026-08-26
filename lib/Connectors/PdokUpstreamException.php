@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenConnector PDOK Upstream Exception
+ * Integriq PDOK Upstream Exception
  *
  * Thrown by PdokConnector when the upstream PDOK Locatieserver returns a
  * non-success status that cannot be recovered locally (5xx, decode failure,
  * or exhausted 429 retries).
  *
  * @category Connector
- * @package  OCA\OpenConnector\Connectors
+ * @package  OCA\Integriq\Connectors
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -19,12 +19,12 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Connectors;
+namespace OCA\Integriq\Connectors;
 
 use RuntimeException;
 

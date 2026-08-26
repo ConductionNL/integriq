@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 Conduction / OpenConnector Contributors
+ * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Unit tests for the Jobs form helpers (src/modals/v2/jobDraft.js) and for the
@@ -291,10 +291,7 @@ describe('Jobs form configuration consistency', () => {
 		const onDisk = fs
 			.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
 			.filter((file) => file.endsWith('.php'))
-			.map(
-				(file) =>
-					`OCA\\OpenConnector\\Action\\${file.replace(/\.php$/, '')}`,
-			)
+			.map((file) => `OCA\\Integriq\\Action\\${file.replace(/\.php$/, '')}`)
 		expect([...overrides.jobClass.enum].sort()).toEqual([...onDisk].sort())
 	})
 

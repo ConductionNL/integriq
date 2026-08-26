@@ -85,7 +85,7 @@
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004`
 - **files**: `lib/Service/ExecutionTraceService.php`
 - **acceptance_criteria**:
-  - GIVEN an `ExecutionTraceContext` at the end of a traced execution WHEN `persist()` is called THEN exactly one `execution_trace` object is created (or, for the approval-resume continuation only, updated) via OpenRegister `saveObject(register: 'openconnector', schema: 'execution_trace', uuid: $context->traceId)`
+  - GIVEN an `ExecutionTraceContext` at the end of a traced execution WHEN `persist()` is called THEN exactly one `execution_trace` object is created (or, for the approval-resume continuation only, updated) via OpenRegister `saveObject(register: 'integriq', schema: 'execution_trace', uuid: $context->traceId)`
   - GIVEN `replay(traceId, actorUid, force)` WHEN `force` is omitted or `false` THEN it dispatches per `execution-trace` REQ-005's per-entryPoint dry-run branching and creates a new linked preview trace
   - GIVEN `replay(traceId, actorUid, force: true)` WHEN invoked THEN it dispatches per REQ-006's real-write branching, resolving credentials live (never from the stored redacted snapshot) and creates a new linked trace
   - GIVEN a missing `traceId` WHEN `replay()` is called THEN it returns 404
@@ -96,9 +96,9 @@
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007`
 - **files**: `lib/Controller/ExecutionTracesController.php`, `appinfo/routes.php`
 - **acceptance_criteria**:
-  - GIVEN `GET /apps/openconnector/api/execution-traces` WHEN called THEN it lists `execution_trace` objects with `entryPoint`/`status`/time-range filters and pagination, matching the `LogsController::index` pattern (`logs-and-statistics` REQ-001)
-  - GIVEN `GET /apps/openconnector/api/execution-traces/{id}` WHEN called THEN it returns the full trace including the ordered `steps` array
-  - GIVEN `POST /apps/openconnector/api/execution-traces/{id}/replay` WHEN called with no body or `{force: false}` THEN it performs a dry-run replay (REQ-005); WHEN called with `{force: true}` THEN it performs a forced replay (REQ-006)
+  - GIVEN `GET /apps/integriq/api/execution-traces` WHEN called THEN it lists `execution_trace` objects with `entryPoint`/`status`/time-range filters and pagination, matching the `LogsController::index` pattern (`logs-and-statistics` REQ-001)
+  - GIVEN `GET /apps/integriq/api/execution-traces/{id}` WHEN called THEN it returns the full trace including the ordered `steps` array
+  - GIVEN `POST /apps/integriq/api/execution-traces/{id}/replay` WHEN called with no body or `{force: false}` THEN it performs a dry-run replay (REQ-005); WHEN called with `{force: true}` THEN it performs a forced replay (REQ-006)
   - All three endpoints carry `@NoAdminRequired` + `@NoCSRFRequired`, consistent with the existing `LogsController`/`SourcesController` posture in this codebase (documented as observed convention, not re-litigated by this change)
 - [ ] Implement
 - [ ] Test
@@ -116,7 +116,7 @@
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007`
 - **files**: `src/manifest.json`, `src/views/ExecutionTrace/TracesPage.vue`, `src/views/ExecutionTrace/TraceDetailPage.vue`, `src/views/ExecutionTrace/TraceTimelineWidget.vue`
 - **acceptance_criteria**:
-  - GIVEN `src/manifest.json` WHEN a `Traces` page entry is added THEN it follows the `SourceLogs`/`EndpointLogs`/`CloudEventLogs` `"type": "logs"` precedent with `config: {register: 'openconnector', schema: 'execution_trace'}`
+  - GIVEN `src/manifest.json` WHEN a `Traces` page entry is added THEN it follows the `SourceLogs`/`EndpointLogs`/`CloudEventLogs` `"type": "logs"` precedent with `config: {register: 'integriq', schema: 'execution_trace'}`
   - GIVEN the detail view WHEN a trace is opened THEN the ordered step timeline renders (type/duration/status per step, expandable redacted input/output) via a body-slot widget registered per the existing kind-agnostic slot resolver (ADR-036) — confirm the exact current slot-registration key against `src/manifest.d/` at implementation time (not fully pinned by this task; see design.md's UI note)
   - GIVEN the entryPoint/status filters WHEN rendered THEN every `NcSelect` carries `:input-label`, matching `EventDeliveriesPage.vue:28-31`
   - GIVEN the detail view WHEN "Replay" is clicked THEN a dry-run preview is shown first, with a separate confirmation step required before a forced replay request is sent
@@ -128,7 +128,7 @@
 - **files**: `src/manifest.json`
 - **acceptance_criteria**:
   - GIVEN `observability.metrics` WHEN a `traces_total` descriptor is added THEN it follows the exact `source.kind: 'tableCount'`/`groupBy`/`labelMap`/`labelDefaults` shape of the existing `calls_total`/`synchronization_runs_total` descriptors (lines 40-59/69-86), grouped by `status`
-  - GIVEN a seeded instance with mixed-status `execution_trace` rows WHEN `GET /apps/openconnector/api/metrics` is called THEN `openconnector_traces_total{status="..."}` values match direct table counts
+  - GIVEN a seeded instance with mixed-status `execution_trace` rows WHEN `GET /apps/integriq/api/metrics` is called THEN `integriq_traces_total{status="..."}` values match direct table counts
 - [ ] Implement
 - [ ] Test
 
@@ -142,7 +142,7 @@
 
 ### Task 15: Integration test — one endpoint call spans rule → mapping → call
 - **spec_ref**: `openspec/changes/execution-trace-observability/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002`
-- **files**: `tests/Integration/ExecutionTraceIntegrationTest.php`, `tests/postman/openconnector.postman_collection.json` (new "Execution traces" folder)
+- **files**: `tests/Integration/ExecutionTraceIntegrationTest.php`, `tests/postman/integriq.postman_collection.json` (new "Execution traces" folder)
 - **acceptance_criteria**:
   - GIVEN an endpoint configured with a `mapping` rule and a `save_object` rule that triggers one outbound `CallService` call WHEN the endpoint is called THEN exactly one `execution_trace` is persisted with steps for the rule, the mapping, and the call, all sharing one `traceId`, and the call step's snapshot matches the persisted `call_log`'s redacted data (per `http-call-engine` REQ-011)
 - [ ] Implement

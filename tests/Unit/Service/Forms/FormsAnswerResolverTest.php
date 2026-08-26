@@ -4,7 +4,7 @@
  * Unit tests for FormsAnswerResolver.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Forms
+ * @package  OCA\Integriq\Tests\Unit\Service\Forms
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Forms;
+namespace OCA\Integriq\Tests\Unit\Service\Forms;
 
-use OCA\OpenConnector\Exception\FormsConfigException;
-use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
+use OCA\Integriq\Exception\FormsConfigException;
+use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use PHPUnit\Framework\TestCase;
 
 /**

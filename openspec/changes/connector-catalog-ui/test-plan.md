@@ -66,7 +66,7 @@
 - **spec_ref**: `openspec/changes/connector-catalog-ui/specs/connector-catalog/spec.md#requirement-a-single-php-side-adapter-metadata-registry-is-the-source-of-truth-for-catalog-entries-req-003`
 - **type**: api
 - **preconditions**: a 5th `IntegrationProvider` registered into `IntegrationRegistry`
-- **steps**: run the `MaterializeCatalogItems` repair step; call `GET /apps/openregister/api/objects/openconnector/catalog_item`
+- **steps**: run the `MaterializeCatalogItems` repair step; call `GET /apps/openregister/api/objects/integriq/catalog_item`
 - **expected result**: a 5th `catalog_item` object exists
 - **test command**: `/test-api`
 

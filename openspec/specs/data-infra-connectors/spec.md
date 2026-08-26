@@ -39,7 +39,7 @@ slot slug. Adapter classes MUST live under
 `lib/Service/Adapter/DataInfra/` and MUST NOT be embedded in any
 sibling app (decidesk, opencatalogi, launchpad, etc.). Per ADR-022,
 sibling apps consume these adapters by slot slug, not by
-importing openconnector PHP.
+importing integriq PHP.
 
 #### Scenario: Reviewer confirms no per-app data-infra HTTP client
 
@@ -49,7 +49,7 @@ importing openconnector PHP.
   `Snowflake\\*`, `RdKafka\Producer`, `PhpAmqpLib\\*`, or
   any other infrastructure client library
 - **THEN** no such imports SHALL exist in sibling apps; the
-  capability MUST be consumed from openconnector by integration
+  capability MUST be consumed from integriq by integration
   slot slug.
 
 #### Scenario: Adapter registers via DI tag, not via runtime hack
@@ -65,7 +65,7 @@ importing openconnector PHP.
 
 ### Requirement: Each registered adapter SHALL declare its connector manifest entry per ADR-024 with a fixed minimum field set (REQ-DIC-002)
 
-Openconnector MUST publish a `connectors[]` block in
+Integriq MUST publish a `connectors[]` block in
 `src/manifest.json` per ADR-024. Each entry MUST carry the
 following manifest shape so consuming-app authors can discover
 the adapter without reading PHP:
@@ -106,13 +106,13 @@ field.
 - **THEN** it MUST exit non-zero, naming the offending entry's
   `id` and the missing field.
 
-### Requirement: Adapter credentials SHALL live in openconnector `Source` records — never on consuming-app records (REQ-DIC-003)
+### Requirement: Adapter credentials SHALL live in integriq `Source` records — never on consuming-app records (REQ-DIC-003)
 
-Adapter credentials MUST live in openconnector `Source` records.
-Per ADR-019 §"External integrations route through OpenConnector",
+Adapter credentials MUST live in integriq `Source` records.
+Per ADR-019 §"External integrations route through Integriq",
 all adapter credentials (API keys, OAuth tokens, service-account
 JWTs, TLS client certs, AWS/GCP/Azure cloud identities) MUST be
-stored in openconnector's existing `Source` registry. Consuming
+stored in integriq's existing `Source` registry. Consuming
 apps reference the source by slug only and MUST NOT mirror the
 credential anywhere — not in `IAppConfig`, not in an OR object,
 not in an environment variable owned by the sibling app.
@@ -121,7 +121,7 @@ The adapter MUST resolve credentials by calling
 `SourceService::getCredentials(string $sourceSlug)` at runtime;
 credentials MUST NOT be passed in via constructor injection,
 PHP `__construct` parameters, or DI configuration. This keeps
-credentials in one place (openconnector) and lets operators
+credentials in one place (integriq) and lets operators
 rotate them without redeploying any sibling app.
 
 #### Scenario: Reviewer confirms no consuming-app credential mirror
@@ -131,7 +131,7 @@ rotate them without redeploying any sibling app.
   `*ApiKey*` / `*Secret*` / `*Token*` / `*ServiceAccountJson*`
   in contexts that reference a data-infra integration
 - **THEN** no such fields SHALL exist; the sibling MUST hold only
-  the openconnector source slug.
+  the integriq source slug.
 
 ### Requirement: Each adapter SHALL declare its polling-vs-push posture and its schema-discovery contract (REQ-DIC-004)
 
@@ -141,7 +141,7 @@ Adapter `pollingMode` MUST be one of:
   `ScheduledWorkflow` and returns data on demand. The adapter
   MUST NOT open long-lived background sockets.
 - `push` — the adapter exposes a webhook endpoint via
-  openconnector's existing webhook layer; the upstream system
+  integriq's existing webhook layer; the upstream system
   POSTs change events; the adapter normalises them into
   CloudEvents per ADR-022.
 - `hybrid` — both modes supported; the manifest entry MUST
@@ -160,7 +160,7 @@ Adapter `schemaDiscovery` MUST be one of:
 #### Scenario: A `pull` adapter does not open a background socket
 
 - **GIVEN** a `pull`-mode adapter
-- **WHEN** the openconnector container starts
+- **WHEN** the integriq container starts
 - **THEN** no persistent connection to the upstream system
   SHALL be opened until a sibling app explicitly invokes
   the adapter; the adapter's idle resource footprint MUST be
@@ -171,28 +171,28 @@ Adapter `schemaDiscovery` MUST be one of:
 - **GIVEN** a Kafka adapter declaring
   `pollingMode: hybrid`, `capabilities: [read, subscribe-cdc]`
 - **WHEN** a sibling app subscribes via the registry
-- **THEN** openconnector MUST register a webhook receiver
+- **THEN** integriq MUST register a webhook receiver
   endpoint, normalise inbound payloads to CloudEvents per
   ADR-022, and dispatch to the sibling via the standard
   CloudEvent dispatcher — no per-app Kafka consumer.
 
-### Requirement: Scheduled pulls SHALL run as OpenRegister `ScheduledWorkflow` records, not as openconnector `TimedJob` classes (REQ-DIC-005)
+### Requirement: Scheduled pulls SHALL run as OpenRegister `ScheduledWorkflow` records, not as integriq `TimedJob` classes (REQ-DIC-005)
 
 Scheduled pulls MUST run as OpenRegister `ScheduledWorkflow` records.
 Per ADR-031 §"Background jobs" path 2, every periodic pull
 configured by an operator MUST be a `ScheduledWorkflow` record
-referencing the adapter slug. Openconnector MUST NOT author a
+referencing the adapter slug. Integriq MUST NOT author a
 `BackgroundJob` / `TimedJob` PHP class for any scheduled
 data-infra pull. The workflow MUST call the adapter by slug
 through the standard `IntegrationProvider::invoke()` contract
 and persist results either into an OR object (when the consuming
 app has declared a target schema) or into the existing
-openconnector `Synchronization` row (when the operator is using
+integriq `Synchronization` row (when the operator is using
 the legacy sync UI).
 
 #### Scenario: Reviewer confirms no `TimedJob` for scheduled adapter pulls
 
-- **GIVEN** the openconnector codebase
+- **GIVEN** the integriq codebase
 - **WHEN** scanned for classes extending `OCP\BackgroundJob\TimedJob`
   in `lib/BackgroundJob/` whose name matches
   `*Adapter*` / `*Connector*` / `*Pull*` / `*Sync*Schedul*`
@@ -206,10 +206,10 @@ prometheus-metrics endpoint. Per the existing `prometheus-metrics` spec
 (REQ-PROM-001 .. REQ-PROM-004), the metrics endpoint already exposes counters
 on sources by type. This spec extends that contract: every
 data-infra adapter invocation MUST increment
-`openconnector_adapter_invocations_total{category="data-infra",
+`integriq_adapter_invocations_total{category="data-infra",
 sub_category=<sub>, adapter_id=<id>, outcome=<success|failure|throttled>}`
 and observe latency as
-`openconnector_adapter_latency_seconds{category="data-infra",
+`integriq_adapter_latency_seconds{category="data-infra",
 adapter_id=<id>}`. No new endpoint, no separate metrics surface
 — the existing `/api/metrics` is extended additively.
 
@@ -218,7 +218,7 @@ adapter_id=<id>}`. No new endpoint, no separate metrics surface
 - **GIVEN** a configured Snowflake adapter
 - **WHEN** a sibling app invokes `read` and the call succeeds
 - **THEN** `/api/metrics` MUST report
-  `openconnector_adapter_invocations_total{category="data-infra",
+  `integriq_adapter_invocations_total{category="data-infra",
   sub_category="warehouse",adapter_id="snowflake",outcome="success"}`
   incremented by exactly 1.
 
@@ -233,7 +233,7 @@ by REQ reference. Per-adapter changes MUST cite REQ-DIC-001
 through REQ-DIC-006 in their proposal and MUST NOT re-derive the
 category-level contract.
 
-This mirrors the existing openconnector convention
+This mirrors the existing integriq convention
 (`add-pdok-adapter`, `stuf-adapter`, `dso-omgevingsloket`,
 `ibabs-notubiz-connector`) — each per-system change owns its
 adapter slice; the category spec owns the shared contract.
@@ -244,7 +244,7 @@ adapter slice; the category spec owns the shared contract.
   `openspec/changes/add-openconnector-snowflake-adapter/`
 - **WHEN** its proposal.md is inspected
 - **THEN** the `Depends on` line MUST include
-  `data-infra-connectors (openconnector)`; the proposal MUST
+  `data-infra-connectors (integriq)`; the proposal MUST
   cite REQ-DIC-001 (registration) and REQ-DIC-002 (manifest
   entry) by REQ id; the proposal MUST NOT redefine the
   category-level shape.

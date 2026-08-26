@@ -29,7 +29,7 @@
  * `containerInterface->get($jobClass)`.
  */
 export const SYNCHRONIZATION_ACTION_CLASS =
-	'OCA\\OpenConnector\\Action\\SynchronizationAction'
+	'OCA\\Integriq\\Action\\SynchronizationAction'
 
 /**
  * The nested key inside a job's `arguments` object that

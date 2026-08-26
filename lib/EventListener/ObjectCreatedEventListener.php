@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector ObjectCreated EventListener.
+ * Integriq ObjectCreated EventListener.
  *
  * Listens for OpenRegister ObjectCreatedEvent and triggers downstream
  * synchronization for the affected object.
  *
  * @category EventListener
- * @package  OCA\OpenConnector\EventListener
+ * @package  OCA\Integriq\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,12 +15,12 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\EventListener;
+namespace OCA\Integriq\EventListener;
 
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;

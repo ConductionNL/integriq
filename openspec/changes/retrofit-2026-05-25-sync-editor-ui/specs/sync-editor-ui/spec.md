@@ -4,7 +4,7 @@ retrofit: true
 
 # sync-editor-ui
 
-The Vue surface for authoring, configuring, previewing, and running OpenConnector
+The Vue surface for authoring, configuring, previewing, and running Integriq
 synchronizations: the synchronization detail page, the source/target config widget,
 the mapping picker + live preview, the reference list, the edit modal, and the
 run/test modals. This spec describes the observed behaviour of the already-shipping

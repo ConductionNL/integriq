@@ -1,9 +1,9 @@
-# Open Connector — Overheidsfunctionaliteiten
+# Integriq — Overheidsfunctionaliteiten
 
 > Functiepagina voor Nederlandse overheidsorganisaties.
 > Gebruik deze checklist om te toetsen aan uw Programma van Eisen.
 
-**Product:** Open Connector
+**Product:** Integriq
 **Categorie:** Enterprise Service Bus (ESB) & API Gateway
 **Licentie:** EUPL-1.2 (vrije open source)
 **Leverancier:** Conduction B.V.

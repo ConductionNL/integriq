@@ -1,7 +1,7 @@
 # Proposal: flow-workflowengine-integration
 
 ## Summary
-Register three OpenConnector actions — "Run synchronization", "Call endpoint", and "Fire CloudEvent" — as
+Register three Integriq actions — "Run synchronization", "Call endpoint", and "Fire CloudEvent" — as
 Nextcloud `OCP\WorkflowEngine` operations, so admins can trigger them from NC's built-in Flow UI (Settings >
 Flow) using the same file/tag conditions they already use for core Flow rules (e.g. "file tagged X → run
 synchronization Y"). Each operation is a thin adapter: its `onEvent()` decodes the operation's stored
@@ -11,15 +11,15 @@ duplicated. This also replaces the "webhook URL as the only way to react to a fi
 admins currently use.
 
 ## Motivation
-NC's Flow is file-centric and cannot call external services or run an OpenConnector integration. Today, an
+NC's Flow is file-centric and cannot call external services or run an Integriq integration. Today, an
 admin who wants "when a file is tagged, push it to system X" must either build a webhook receiver and point
 a synthetic upload at it, or write a cron-polling synchronization that has no relation to the triggering
-file event. Registering OpenConnector's existing services as WorkflowEngine operations puts the integration
+file event. Registering Integriq's existing services as WorkflowEngine operations puts the integration
 engine directly inside the automation UI file admins already know, without introducing a second, competing
 automation surface (that is `visual-flow-orchestration`, explicitly out of scope here).
 
 ## Affected Projects
-- [x] Project: `openconnector` — new `OCP\WorkflowEngine\IOperation`/`ISpecificOperation` implementations,
+- [x] Project: `integriq` — new `OCP\WorkflowEngine\IOperation`/`ISpecificOperation` implementations,
   one new thin `EndpointService` entrypoint, `Application.php` boot registration, admin-facing operation UI
   metadata (name/description/icon), unit tests.
 
@@ -48,7 +48,7 @@ automation surface (that is `visual-flow-orchestration`, explicitly out of scope
    no-op when it is not.
 
 ### Out of Scope
-- A visual flow builder inside OpenConnector — that is `visual-flow-orchestration`.
+- A visual flow builder inside Integriq — that is `visual-flow-orchestration`.
 - Windmill integration.
 - A generic (non-`ISpecificOperation`) operation usable against arbitrary third-party `IEntity`
   implementations — deferred; every in-scope use case is file-triggered.
@@ -75,12 +75,12 @@ on every supported NC version (28-34).
 - `lib/Service/EndpointService.php`: one new thin public method (`triggerFromFlow()`) plus a private
   synthetic-`IRequest` builder.
 - No database schema changes — operation settings persist inside NC's own `flow_operations` table
-  (`operation` column), which OpenConnector does not own.
+  (`operation` column), which Integriq does not own.
 - No new REST endpoints, so no cross-project API contract.
 
 ## Cross-Project Dependencies
-None — this is self-contained within OpenConnector. It consumes NC core's `OCP\WorkflowEngine` API and
-OpenConnector's own `SynchronizationService`/`EndpointService`/`EventService`; no other `apps-extra` project
+None — this is self-contained within Integriq. It consumes NC core's `OCP\WorkflowEngine` API and
+Integriq's own `SynchronizationService`/`EndpointService`/`EventService`; no other `apps-extra` project
 calls into or is called by this change.
 
 ## Risks

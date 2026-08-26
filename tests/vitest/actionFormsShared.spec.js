@@ -61,7 +61,7 @@ describe('fetchOpenRegisterCollection', () => {
 		})
 		const opts = await fetchOpenRegisterCollection('synchronization')
 		expect(get).toHaveBeenCalledWith(
-			'/index.php/apps/openregister/api/objects/openconnector/synchronization',
+			'/index.php/apps/openregister/api/objects/integriq/synchronization',
 			// `_limit`, NOT `limit`. This assertion used to read `limit: 500`
 			// and was GREEN — it pinned the defect in #1215 rather than the
 			// requirement: OpenRegister treats an unprefixed parameter as a
@@ -80,12 +80,16 @@ describe('fetchOpenRegisterCollection', () => {
 	it('tolerates a bare-array response shape', async () => {
 		get.mockResolvedValueOnce({ data: [{ id: 5, name: 'X' }] })
 		const opts = await fetchOpenRegisterCollection(
+			// The OpenRegister REGISTER SLUG, which does not move with the app
+			// id — OR matches registers by slug, so `integriq` here would
+			// address a fresh EMPTY register while every existing object stayed
+			// behind, orphaned and silently invisible.
 			'mapping',
-			'openconnector',
+			'integriq',
 			10,
 		)
 		expect(get).toHaveBeenCalledWith(
-			'/index.php/apps/openregister/api/objects/openconnector/mapping',
+			'/index.php/apps/openregister/api/objects/integriq/mapping',
 			// Same as above — the caller-supplied limit must reach the wire as
 			// `_limit` or it is silently reinterpreted as a property filter.
 			{ params: { _limit: 10 } },

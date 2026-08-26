@@ -10,7 +10,7 @@ object's sidebar. Built-in leaves cover audit-trail / tags / files / notes;
 external leaves attach NC-native entities (Talk, XWiki, Polls, Photos,
 Collectives, …). See `openregister/lib/Service/Integration/IntegrationProvider.php`.
 
-OpenConnector was absent from that registry. It stores `SynchronizationContract`
+Integriq was absent from that registry. It stores `SynchronizationContract`
 objects that point at OR objects (via `targetId`) but nothing surfaced the link
 *back* to the data object — a user opening a synced record anywhere in the fleet
 had no way to see *"this came from External API X via sync Y, last pulled 2 days
@@ -19,8 +19,8 @@ of consumption.
 
 Per the fleet leaf rule (integration-provider implementations live in the owning
 app and plug into OR's core registry — see `hydra` ADR-019), the provider belongs
-in **openconnector**, not in OR core and not in each leaf app. This change is the
-canonical spec for that capability (GitHub issue openconnector#824). The
+in **integriq**, not in OR core and not in each leaf app. This change is the
+canonical spec for that capability (GitHub issue integriq#824). The
 implementation is already shipped on `development`
 (`lib/Service/Integration/SynchronizationContractProvider.php`, registered in
 `lib/AppInfo/Application.php::boot()`); this spec formalises the contract it
@@ -28,19 +28,19 @@ fulfils.
 
 ## What Changes
 
-- Add the `or-integration-provider` capability: openconnector registers a
+- Add the `or-integration-provider` capability: integriq registers a
   `SynchronizationContractProvider` implementing OR's
   `\OCA\OpenRegister\Service\Integration\IntegrationProvider` contract (via the
   `AbstractIntegrationProvider` base) with OR's `IntegrationRegistry` at app
   boot.
 - The provider declares stable metadata — id `sync-contract`, label
   *"Synced from"*, icon `SyncOutline`, group `workflow`, required app
-  `openconnector`, storage strategy `query-time` — so OR's three-stage filter
+  `integriq`, storage strategy `query-time` — so OR's three-stage filter
   can discover, route, and render it.
 - On `list(register, schema, objectId, filters)` the provider queries OR
   storage for `synchronization_contract` objects whose `targetId === objectId`
   and returns lightweight sidebar summaries (sync display-name, last-synced
-  subtitle, deep-link into the OpenConnector synchronization detail page, plus
+  subtitle, deep-link into the Integriq synchronization detail page, plus
   raw provenance fields).
 - The provider is **read-only** (`query-time`): `get`/`create`/`update`/`delete`
   inherit the `AbstractIntegrationProvider` default that throws
@@ -50,7 +50,7 @@ fulfils.
   read the `openconnector.storage_migrated` app-config flag so the leaf only
   appears once SyncContract objects actually live in OR storage.
 - Registration soft-fails: if OR's `IntegrationRegistry` class is unavailable
-  the boot hook is a no-op, so openconnector still boots on an instance without
+  the boot hook is a no-op, so integriq still boots on an instance without
   a compatible OpenRegister.
 
 Spec-only change documenting shipped code; no code changes ship with this
@@ -59,10 +59,10 @@ proposal.
 ## Capabilities
 
 ### New Capabilities
-- `or-integration-provider`: openconnector implements OpenRegister's pluggable
+- `or-integration-provider`: integriq implements OpenRegister's pluggable
   `IntegrationProvider` contract and registers a read-only, query-time
   `SynchronizationContractProvider` with OR's `IntegrationRegistry`, so that
-  every OR object synced by openconnector surfaces a *"Synced from"* provenance
+  every OR object synced by integriq surfaces a *"Synced from"* provenance
   leaf in its sidebar across the fleet.
 
 ## Impact
@@ -76,8 +76,8 @@ proposal.
   `IntegrationProvider` contract. Registration is guarded by `class_exists()` so
   an older OR degrades gracefully (no leaf, no fatal).
 - **Cross-app UX:** the leaf renders in *any* app's OR object sidebar
-  (opencatalogi, decidesk, openconnector itself, …) with no per-app coupling.
-- **No new tables, routes, or Vue changes in openconnector** — the leaf is
+  (opencatalogi, decidesk, integriq itself, …) with no per-app coupling.
+- **No new tables, routes, or Vue changes in integriq** — the leaf is
   rendered by OR / nc-vue from the registry metadata; the provider is
   query-time, so it adds no persistence.
 

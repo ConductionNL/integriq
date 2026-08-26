@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Job → Flow migration generator.
+ * Integriq Job → Flow migration generator.
  *
  * Task 3.3 of `flow-native-synchronization` ("Jobs → trigger-schedule flows"):
  * renders an existing Job entity into a GENERATED FLOW DOCUMENT whose start node
@@ -61,7 +61,7 @@
  *    only configured the node would validate, save, and never fire.
  *
  * @category Service
- * @package  OCA\OpenConnector\Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -72,18 +72,21 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Service;
+namespace OCA\Integriq\Service;
 
-use OCA\OpenConnector\Exception\EntityNotMigratableException;
-use OCA\OpenConnector\Flow\SynchronizationRunNode;
+use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCP\IAppConfig;
 use OCP\IL10N;
+use OCP\IUserManager;
 
 /**
  * Renders a Job into a disabled, reviewable trigger-schedule flow document.
@@ -104,28 +107,28 @@ class JobToFlowGenerator {
 	 *
 	 * @var string
 	 */
-	private const ACTION_SYNCHRONIZATION = 'OCA\OpenConnector\Action\SynchronizationAction';
+	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Action\SynchronizationAction';
 
 	/**
 	 * The job action that runs a flow.
 	 *
 	 * @var string
 	 */
-	private const ACTION_FLOW = 'OCA\OpenConnector\Action\FlowAction';
+	private const ACTION_FLOW = 'OCA\Integriq\Action\FlowAction';
 
 	/**
 	 * The job action that pings a source.
 	 *
 	 * @var string
 	 */
-	private const ACTION_PING = 'OCA\OpenConnector\Action\PingAction';
+	private const ACTION_PING = 'OCA\Integriq\Action\PingAction';
 
 	/**
 	 * The job action that emits a CloudEvent.
 	 *
 	 * @var string
 	 */
-	private const ACTION_EVENT = 'OCA\OpenConnector\Action\EventAction';
+	private const ACTION_EVENT = 'OCA\Integriq\Action\EventAction';
 
 	/**
 	 * The job arguments each supported action's node actually consumes.
@@ -142,21 +145,54 @@ class JobToFlowGenerator {
 	];
 
 	/**
+	 * The app-config key naming the account converted jobs run as.
+	 *
+	 * A background job has no session and no owner worth inheriting, so the
+	 * identity its converted flow acts as is an administrative decision rather
+	 * than something derivable from the job. It is configured once per instance
+	 * and read here; there is deliberately no default, because every candidate
+	 * default is a guess about consent (see `actingIdentityRefusals()`).
+	 *
+	 * @var string
+	 */
+	public const RUN_AS_CONFIG_KEY = 'job_flow_run_as';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MigrationEntityReader $reader Reads the Job entity out of OpenRegister.
 	 * @param JobIntervalCron $cadence Translates the job's interval into a cron expression.
 	 * @param MigrationSubject $subject Reads the job's identity for names and traceability.
 	 * @param IL10N $l10n Translations.
+	 * @param IAppConfig $appConfig Reads the configured acting account.
+	 * @param IUserManager $userManager Proves that account exists before a flow claims it.
 	 */
 	public function __construct(
 		private readonly MigrationEntityReader $reader,
 		private readonly JobIntervalCron $cadence,
 		private readonly MigrationSubject $subject,
 		private readonly IL10N $l10n,
+		private readonly IAppConfig $appConfig,
+		private readonly IUserManager $userManager,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The account converted jobs act as, or an empty string when unconfigured.
+	 *
+	 * @return string The uid.
+	 */
+	private function runAsUid(): string {
+		return trim(
+			$this->appConfig->getValueString(
+				app: Application::APP_ID,
+				key: self::RUN_AS_CONFIG_KEY,
+				default: ''
+			)
+		);
+
+	}//end runAsUid()
 
 	/**
 	 * Generate the flow document for a job named by reference.
@@ -236,11 +272,62 @@ class JobToFlowGenerator {
 	public function refusalsFor(array $job): array {
 		return array_merge(
 			$this->identityRefusals(job: $job),
+			$this->actingIdentityRefusals(),
 			$this->scheduleRefusals(job: $job),
 			$this->actionRefusals(job: $job)
 		);
 
 	}//end refusalsFor()
+
+	/**
+	 * Refusals about WHO the generated flow runs as.
+	 *
+	 * OpenRegister's `trigger-schedule` requires a `runAs` naming an existing
+	 * account and refuses to fall back to the flow's owner: nobody is present
+	 * when a schedule fires, and authoring a flow is not consent to unattended
+	 * execution as its author.
+	 *
+	 * A background job carries no such identity either — it has no session, and
+	 * the user it happens to be associated with (when it has one at all) never
+	 * agreed to a converted flow running indefinitely under their name. So the
+	 * account is configured per instance rather than derived, and generation is
+	 * REFUSED when it is missing.
+	 *
+	 * Refusing is the point. The alternative — generating a flow without a
+	 * `runAs` — produces a document openregister rejects on save, so the
+	 * failure would surface later, further away, and as somebody else's error.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function actingIdentityRefusals(): array {
+		$runAs = $this->runAsUid();
+
+		if ($runAs === '') {
+			return [
+				$this->l10n->t(
+					'No acting account is configured, so a converted job would have no identity to run as. '
+					. 'A schedule fires with nobody present, and the job\'s own owner is not used as a '
+					. 'fallback. Set the "%1$s" setting to an existing account first.',
+					[self::RUN_AS_CONFIG_KEY]
+				),
+			];
+		}
+
+		if ($this->userManager->get($runAs) === null) {
+			return [
+				$this->l10n->t(
+					'The configured acting account "%1$s" is not an existing user, so every flow generated '
+					. 'from a job would be refused when saved. Point "%2$s" at an account that exists.',
+					[$runAs, self::RUN_AS_CONFIG_KEY]
+				),
+			];
+		}
+
+		return [];
+
+	}//end actingIdentityRefusals()
 
 	/**
 	 * Refusals about naming the job at all.
@@ -322,7 +409,6 @@ class JobToFlowGenerator {
 		}
 
 		return $reasons;
-
 	}//end scheduleRefusals()
 
 	/**
@@ -414,7 +500,6 @@ class JobToFlowGenerator {
 		}
 
 		return [];
-
 	}//end targetRefusals()
 
 	/**
@@ -461,7 +546,14 @@ class JobToFlowGenerator {
 			[
 				'id' => 'trigger',
 				'type' => 'openregister.trigger-schedule',
-				'config' => ['cron' => $cron],
+				// `runAs` is required by openregister and is never derived from
+				// the job — see actingIdentityRefusals(), which has already
+				// refused generation if it is unset or names nobody, so by here
+				// it resolves to an existing account.
+				'config' => [
+					'cron' => $cron,
+					'runAs' => $this->runAsUid(),
+				],
 			],
 			$this->actionNodeFor(job: $job),
 			['id' => 'end', 'type' => 'openregister.end', 'config' => []],
@@ -540,7 +632,6 @@ class JobToFlowGenerator {
 		}
 
 		return $edges;
-
 	}//end edgesFor()
 
 	/**
@@ -579,7 +670,6 @@ class JobToFlowGenerator {
 	 */
 	private function intervalOf(array $job): int {
 		return $this->cadence->secondsOf(interval: ($job['interval'] ?? null));
-
 	}//end intervalOf()
 
 	/**
@@ -605,7 +695,6 @@ class JobToFlowGenerator {
 		}
 
 		return false;
-
 	}//end isSingleRun()
 
 	/**
@@ -619,7 +708,6 @@ class JobToFlowGenerator {
 	 */
 	private function jobClassOf(array $job): string {
 		return ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
-
 	}//end jobClassOf()
 
 	/**
@@ -638,6 +726,5 @@ class JobToFlowGenerator {
 		}
 
 		return $arguments;
-
 	}//end argumentsOf()
 }//end class

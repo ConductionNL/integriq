@@ -4,7 +4,7 @@
  * Unit tests for NextcloudFileEventListener.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\OpenConnector\EventListener\NextcloudFileEventListener;
-use OCA\OpenConnector\Service\EventService;
+use OCA\Integriq\EventListener\NextcloudFileEventListener;
+use OCA\Integriq\Service\EventService;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;

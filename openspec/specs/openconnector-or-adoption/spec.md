@@ -1,7 +1,7 @@
 # openconnector-or-adoption Specification
 
 ## Purpose
-Defines how openconnector adopts OpenRegister abstractions per the OR-abstraction
+Defines how integriq adopts OpenRegister abstractions per the OR-abstraction
 audit (Tier 2): renaming the connector-specific `ObjectService` to
 `SourceMappingService`, replacing hardcoded schema-property GUIDs with slug-based
 lookup, declaring log retention/lifecycle/notification via OR annotations rather
@@ -13,7 +13,7 @@ duplication audits. Aligns with ADR-001, ADR-022, ADR-031. Status: implemented.
 
 `lib/Service/ObjectService.php` SHALL be renamed to
 `lib/Service/SourceMappingService.php`. A deprecated PHP class alias
-`OCA\OpenConnector\Service\ObjectService` SHALL extend the new class for one minor version
+`OCA\Integriq\Service\ObjectService` SHALL extend the new class for one minor version
 to preserve external compatibility.
 
 #### Scenario: Class rename is the canonical name
@@ -25,7 +25,7 @@ to preserve external compatibility.
 
 #### Scenario: Deprecated alias triggers E_USER_DEPRECATED
 
-- **GIVEN** an external app instantiates `OCA\OpenConnector\Service\ObjectService`
+- **GIVEN** an external app instantiates `OCA\Integriq\Service\ObjectService`
 - **WHEN** the constructor runs
 - **THEN** a `E_USER_DEPRECATED` notice SHALL fire pointing to `SourceMappingService`.
 
@@ -160,13 +160,13 @@ nc-vue for tenant scope.
 #### Scenario: Stores read tenant from shared composable
 
 - **GIVEN** the nc-vue `multi-tenancy-context` composable is available
-- **WHEN** any of the 20+ openconnector stores reads tenant scope
+- **WHEN** any of the 20+ integriq stores reads tenant scope
 - **THEN** it SHALL read from `useTenantContext()` rather than computing locally.
 
 #### Scenario: Stores are not flagged as duplication in future audits
 
 - **GIVEN** this Requirement exists in the capability spec
-- **WHEN** a future OR-abstraction audit reviews openconnector
+- **WHEN** a future OR-abstraction audit reviews integriq
 - **THEN** the auditor SHALL cite this Requirement and SKIP a re-investigation of the
   20+ Pinia stores as duplication.
 
@@ -174,7 +174,7 @@ nc-vue for tenant scope.
 
 The mapping/rule engine SHALL stay app-local. The mapping engine and rule rewrite engine in
 `lib/Service/MappingService.php` and `lib/Service/RuleService.php` are by-design
-schema-to-schema transforms specific to openconnector. They SHALL remain app-local. They
+schema-to-schema transforms specific to integriq. They SHALL remain app-local. They
 SHALL NOT be migrated to OR.
 
 #### Scenario: Mapping engine not flagged as duplication
@@ -183,9 +183,9 @@ SHALL NOT be migrated to OR.
 - **WHEN** a future audit reviews the mapping/rule engine
 - **THEN** the auditor SHALL cite this Requirement and SKIP a migration recommendation.
 
-### Requirement: openconnector declares its manifest
+### Requirement: integriq declares its manifest
 
-openconnector SHALL ship `openspec/manifest.yaml` declaring `tier: 2`,
+integriq SHALL ship `openspec/manifest.yaml` declaring `tier: 2`,
 `dependencies: ["openregister"]`, the consumed shared specs, and the minimum OR version.
 
 #### Scenario: Manifest declares all consumed specs
@@ -196,15 +196,15 @@ openconnector SHALL ship `openspec/manifest.yaml` declaring `tier: 2`,
   `pluggable-integration-registry`, `i18n-source-of-truth`,
   `i18n-api-language-negotiation`, `multi-tenancy-context`.
 
-### Requirement: openconnector consumes shared multi-tenancy + i18n specs
+### Requirement: integriq consumes shared multi-tenancy + i18n specs
 
-openconnector SHALL consume `multi-tenancy-context`, `i18n-source-of-truth`, and
+integriq SHALL consume `multi-tenancy-context`, `i18n-source-of-truth`, and
 `i18n-api-language-negotiation`. Tenant scoping and translation infrastructure SHALL NOT
 be re-implemented.
 
 #### Scenario: API respects Accept-Language
 
-- **GIVEN** a client sends `Accept-Language: nl-NL` to openconnector
+- **GIVEN** a client sends `Accept-Language: nl-NL` to integriq
 - **WHEN** the response includes a translatable label or description
 - **THEN** the field SHALL return the Dutch translation per OR's negotiation spec.
 

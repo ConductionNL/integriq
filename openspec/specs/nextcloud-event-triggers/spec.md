@@ -5,10 +5,10 @@ TBD - created by archiving change nextcloud-event-hub. Update Purpose after arch
 ## Requirements
 ### Requirement: File events MUST be normalized to CloudEvents (REQ-001)
 
-`OCA\OpenConnector\EventListener\NextcloudFileEventListener` (`implements IEventListener`) MUST be
+`OCA\Integriq\EventListener\NextcloudFileEventListener` (`implements IEventListener`) MUST be
 registered via `IEventDispatcher::addServiceListener` in `Application.php::register()` against
 `OCP\Files\Events\Node\NodeCreatedEvent`, `NodeWrittenEvent`, and `NodeDeletedEvent`, and
-`OCA\OpenConnector\EventListener\NextcloudFileTagEventListener` against `OCP\SystemTag\MapperEvent`
+`OCA\Integriq\EventListener\NextcloudFileTagEventListener` against `OCP\SystemTag\MapperEvent`
 (filtered to file-object tag assignment/removal). On each fired event the listener MUST call
 `EventService::handleNextcloudEvent(string $type, array $data)` with `type` one of
 `com.nextcloud.files.node.created`, `com.nextcloud.files.node.updated`,
@@ -40,7 +40,7 @@ supported Nextcloud version this app targets (NC 28–34; `NodeCreatedEvent` has
 
 ### Requirement: Calendar events MUST be normalized to CloudEvents, with an OCA stability caveat (REQ-002)
 
-`OCA\OpenConnector\EventListener\NextcloudCalendarEventListener` MUST be registered against
+`OCA\Integriq\EventListener\NextcloudCalendarEventListener` MUST be registered against
 `OCA\DAV\Events\CachedCalendarObjectCreatedEvent`, `CachedCalendarObjectUpdatedEvent`, and
 `CachedCalendarObjectDeletedEvent`, emitting `com.nextcloud.calendar.object.created`,
 `.updated`, `.deleted` respectively, `source = '/nextcloud/calendar'`, `subject` = the calendar object's
@@ -69,7 +69,7 @@ DAV event signature change degrades this one listener rather than breaking event
 
 ### Requirement: Tables row events MUST be normalized to CloudEvents when the Tables app is installed (REQ-003)
 
-`OCA\OpenConnector\EventListener\NextcloudTablesEventListener` MUST be registered against the Tables app's
+`OCA\Integriq\EventListener\NextcloudTablesEventListener` MUST be registered against the Tables app's
 row create/update/delete events ONLY when `IAppManager::isEnabledForAnyUser('tables')` returns true at
 `Application.php::register()` time, emitting `com.nextcloud.tables.row.created`, `.updated`, `.deleted`,
 `source = '/nextcloud/tables'`, `subject` = the row id, and `data` carrying `tableId`, `rowId`, and the
@@ -81,7 +81,7 @@ feature-detection gate are normative regardless of the exact upstream class name
 #### Scenario: Tables listeners are not registered when the app is absent
 
 - **GIVEN** a Nextcloud instance without the `tables` app installed
-- **WHEN** OpenConnector boots
+- **WHEN** Integriq boots
 - **THEN** no `NextcloudTablesEventListener` registration SHALL occur
 - **AND** no error SHALL be logged (absence is a normal, expected state, not a fault)
 
@@ -95,7 +95,7 @@ feature-detection gate are normative regardless of the exact upstream class name
 
 ### Requirement: Forms submission events MUST be normalized to CloudEvents when the Forms app is installed (REQ-004)
 
-`OCA\OpenConnector\EventListener\NextcloudFormsEventListener` MUST be registered against the Forms app's
+`OCA\Integriq\EventListener\NextcloudFormsEventListener` MUST be registered against the Forms app's
 submission-created event ONLY when `IAppManager::isEnabledForAnyUser('forms')` returns true, emitting
 `com.nextcloud.forms.submission.created`, `source = '/nextcloud/forms'`, `subject` = the submission id,
 and `data` carrying `formId` and the submitted answers. As with REQ-003, the exact Forms event class name
@@ -105,7 +105,7 @@ normative.
 #### Scenario: Forms listeners are not registered when the app is absent
 
 - **GIVEN** a Nextcloud instance without the `forms` app installed
-- **WHEN** OpenConnector boots
+- **WHEN** Integriq boots
 - **THEN** no `NextcloudFormsEventListener` registration SHALL occur
 
 #### Scenario: a form submission produces a matching event when Forms is installed

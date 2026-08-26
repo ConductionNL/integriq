@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenConnector Logius Berichtenbox client (abstract base).
+ * Integriq Logius Berichtenbox client (abstract base).
  *
  * Low-level abstract base for the BBK (Berichtenbox-koppelvlak) 1.7
  * REST API exposed by Logius. Concrete subclasses:
@@ -18,13 +18,13 @@
  *     HMAC signatures and signs outbound message envelopes.
  *
  * @category Adapter
- * @package  OCA\OpenConnector\Adapters\Berichtenbox
+ * @package  OCA\Integriq\Adapters\Berichtenbox
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  * @link https://www.logius.nl/diensten/berichtenbox
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -33,7 +33,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Adapters\Berichtenbox;
+namespace OCA\Integriq\Adapters\Berichtenbox;
 
 /**
  * Abstract Berichtenbox client.

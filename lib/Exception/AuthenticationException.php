@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenConnector Authentication Exception.
+ * Integriq Authentication Exception.
  *
  * Exception type that carries additional details describing why an
  * authentication attempt failed.
  *
  * @category Exception
- * @package  OCA\OpenConnector\Exception
+ * @package  OCA\Integriq\Exception
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -15,10 +15,10 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://www.OpenConnector.nl
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Exception;
+namespace OCA\Integriq\Exception;
 
 use Exception;
 

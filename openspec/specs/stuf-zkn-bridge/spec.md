@@ -2,10 +2,10 @@
 
 ## Purpose
 
-OpenConnector gains a StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge — the
+Integriq gains a StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge — the
 legacy Dutch municipal SOAP/XML case-management message standard a large
 share of municipalities still run in their surrounding systems (midoffice,
-DMS, belastingen, KCC). Per ADR-022, openconnector translates the default
+DMS, belastingen, KCC). Per ADR-022, integriq translates the default
 OpenRegister/ZGW object APIs into other standards' shapes; this bridge lets
 a municipality adopt procest without first ripping out its StUF estate —
 industry research shows StUF-to-ZGW migration commonly costs 25-50% of a
@@ -294,7 +294,7 @@ background job MUST be wired AND covered by a test proving actual
 invocation, not merely declared.
 
 #### Scenario: the register descriptor declares stuf_message consistently
-- GIVEN `lib/Settings/openconnector_register.json`
+- GIVEN `lib/Settings/integriq_register.json`
 - WHEN `RegisterDescriptorTest` runs
 - THEN `stuf_message` SHALL appear in both the register's `schemas[]` list and `components.schemas`, with a non-empty `properties` block
 - @e2e exclude backend descriptor integrity — covered by PHPUnit

@@ -4,7 +4,7 @@
  * Unit tests for DsoRequestTranslator.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Service\Dso
+ * @package  OCA\Integriq\Tests\Unit\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Tests\Unit\Service\Dso;
+namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
-use OCA\OpenConnector\Exception\DsoTranslationException;
-use OCA\OpenConnector\Service\Dso\DsoRequestTranslator;
+use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**

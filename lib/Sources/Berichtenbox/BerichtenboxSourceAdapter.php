@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenConnector Logius Berichtenbox Source Adapter (dormant).
+ * Integriq Logius Berichtenbox Source Adapter (dormant).
  *
  * Source-pattern facade over the lower-level abstract
- * {@see \OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient}
+ * {@see \OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient}
  * family. Ships dormant: every call routes through the mock
  * subclass and is logged at DEBUG so downstream consumers
  * (pipelinq burgerportaal-mijnoverheid-bridge, procest
@@ -12,10 +12,10 @@
  * stable surface without contacting Logius.
  *
  * Lives under `lib/Sources/Berichtenbox/` so it can be discovered
- * by the openconnector Source registry (Source row
+ * by the integriq Source registry (Source row
  * `logius-berichtenbox`, category=`overheid-messaging`). The
  * active HTTPS implementation lives next to
- * {@see \OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient}
+ * {@see \OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient}
  * and is loaded once `logius.berichtenbox.feature_flag` is set to
  * `1` AND the per-tenant PKIoverheid Services-server cert + BBK 1.7
  * client-credentials token issuer have been provisioned.
@@ -26,7 +26,7 @@
  * mock implementation ignores them.
  *
  * @category Source
- * @package  OCA\OpenConnector\Sources\Berichtenbox
+ * @package  OCA\Integriq\Sources\Berichtenbox
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,22 +35,22 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://www.openconnector.nl
+ * @link https://www.integriq.nl
  * @link https://www.logius.nl/diensten/berichtenbox
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenConnector\Sources\Berichtenbox;
+namespace OCA\Integriq\Sources\Berichtenbox;
 
-use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Dormant source adapter for the Logius Berichtenbox (BBK 1.7).
  *
- * Registered as openconnector Source row id `logius-berichtenbox`,
+ * Registered as integriq Source row id `logius-berichtenbox`,
  * category `overheid-messaging`. Until
  * `logius.berichtenbox.feature_flag` is flipped to `1`, every
  * method routes to the canned mock response below and logs a
@@ -63,7 +63,7 @@ final class BerichtenboxSourceAdapter {
 	/**
 	 * App id used for IAppConfig look-ups.
 	 */
-	public const APP_ID = 'openconnector';
+	public const APP_ID = 'integriq';
 
 	/**
 	 * App-config key for the dormant-flag toggle.

@@ -2,7 +2,7 @@
   "$comment": "ADR-037 register fragment (api-product-gateway). Declares the api_product and api_product_subscription schemas backing the API Products gateway layer (a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier), and deep-merges the fields needed to support them onto three pre-existing schemas: call_log (product/endpoint/responseTime — general-but-scoped inbound observability, endpoint-runtime REQ-EP-009) and approval_request (subscriptionId — the subscription-approval creation seam, api-product-gateway REQ-APG-004 / design.md Decision 4). See openspec/changes/archive/2026-07-15-api-product-gateway/design.md#database-changes and specs/api-product-gateway/spec.md.",
   "components": {
     "registers": {
-      "openconnector": {
+      "integriq": {
         "schemas": ["api_product", "api_product_subscription"]
       }
     },
@@ -152,7 +152,7 @@
         "x-openregister-seed": [
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product",
               "slug": "api-product-woo-publications-v1"
             },
@@ -172,7 +172,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product",
               "slug": "api-product-woo-publications-v2"
             },
@@ -191,7 +191,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product",
               "slug": "api-product-kvk-lookup-v1"
             },
@@ -301,7 +301,7 @@
         "x-openregister-seed": [
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product_subscription",
               "slug": "sub-acme-woo-v2-free"
             },
@@ -315,7 +315,7 @@
           },
           {
             "@self": {
-              "register": "openconnector",
+              "register": "integriq",
               "schema": "api_product_subscription",
               "slug": "sub-acme-kvk-gold-pending"
             },
