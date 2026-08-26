@@ -460,7 +460,7 @@
           },
           {
             "id": "calls-daily",
-            "title": "Outgoing calls per day",
+            "title": "Outgoing calls — daily",
             "type": "chart",
             "props": {
               "chartKind": "area"
@@ -478,7 +478,7 @@
           },
           {
             "id": "calls-hourly",
-            "title": "Outgoing calls per hour",
+            "title": "Outgoing calls — by hour",
             "type": "chart",
             "props": {
               "chartKind": "bar"
@@ -496,7 +496,7 @@
           },
           {
             "id": "jobs-daily",
-            "title": "Job executions per day",
+            "title": "Job executions — daily",
             "type": "chart",
             "props": {
               "chartKind": "area"
@@ -514,7 +514,7 @@
           },
           {
             "id": "jobs-hourly",
-            "title": "Job executions per hour",
+            "title": "Job executions — by hour",
             "type": "chart",
             "props": {
               "chartKind": "bar"
@@ -532,7 +532,7 @@
           },
           {
             "id": "sync-daily",
-            "title": "Synchronization runs per day",
+            "title": "Synchronization runs — daily",
             "type": "chart",
             "props": {
               "chartKind": "area"
@@ -550,7 +550,7 @@
           },
           {
             "id": "sync-hourly",
-            "title": "Synchronization runs per hour",
+            "title": "Synchronization runs — by hour",
             "type": "chart",
             "props": {
               "chartKind": "bar"
