@@ -146,12 +146,19 @@ class CallService
 	 */
 	private function renderConfiguration(array $configuration, Source $source): array
 	{
-		return array_map(function($value) use ($source) {
+		return array_map(function($value, $key) use ($source) {
+            // Multipart parts carry raw file bytes, not admin-authored template strings.
+            // Binary/base64 content can coincidentally contain "{{" and "}}" and must never
+            // be handed to Twig - it will try to parse the file as a template and throw a
+            // SyntaxError deep into the binary data.
+            if ($key === 'multipart') {
+                return $value;
+            }
             if (is_string($value) === true || is_array($value) === true) {
                 return $this->renderValue($value, $source);
             }
             return $value;
-        }, $configuration);
+        }, $configuration, array_keys($configuration));
 	}
 
     /**
