@@ -33,6 +33,12 @@ permissions:
   # none.
   pull-requests: write
 
+# `previous-app-id` is the App Store id this app shipped under before the
+# rename. The store keys everything on the id, so `integriq` is a brand new
+# entry starting from nothing -- without this the version line restarts
+# BELOW what the app already published as `openconnector`, and the store accepts
+# that with a 200 and then never offers it to anyone. Drop the input once
+# the `openconnector` entry is retired.
 jobs:
   unstable:
     # Enabled 2026-08-21 to complete the convergence. It was `if: false` while
@@ -51,6 +57,7 @@ jobs:
     with:
       release-type: unstable
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -61,6 +68,7 @@ jobs:
     with:
       release-type: beta
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -71,6 +79,7 @@ jobs:
     with:
       release-type: stable
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
