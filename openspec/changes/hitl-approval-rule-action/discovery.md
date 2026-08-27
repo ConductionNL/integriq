@@ -39,7 +39,7 @@ notification dispatch, a second authorization system)?
 - Grepped `lib/Settings/register.d/*.json` (eudi-wallet-credential-issuance,
   source fragments) to confirm the ADR-037 register-fragment pattern for
   adding new schemas without editing the 2000+ line base register file.
-- Grepped `lib/Cron/*.php` — all five existing cron jobs `extends TimedJob`
+- Grepped `lib/BackgroundJob/*.php` — all five existing cron jobs `extends TimedJob`
   (NC's `OCP\BackgroundJob\TimedJob`), confirming the periodic-sweep idiom
   already used for `EventRetryJob`.
 

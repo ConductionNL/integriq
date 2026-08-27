@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Integriq iWMO/iJW Retry Job.
+ * Integriq StUF-ZKN Retry Job.
  *
- * Background job that re-drives outbound iWMO/iJW (StUF iStandaarden Wmo
- * 3.0 / Jeugdwet 3.0) sends that previously failed transport: for every
- * `iwmo_ijw_message` row with `status: failed` or `pending`, re-attempts
- * dispatch via the currently configured provider. Runs hourly by default,
- * mirroring `KissPullJob`'s `TimedJob` registration pattern. A bridge with
- * no eligible rows is a clean no-op (`IwmoIjwSyncService::retryFailed()`
+ * Background job that re-drives outbound StUF-ZKN kennisgeving sends that
+ * previously failed transport: for every `stuf_message` row with
+ * `status: failed` (direction=outbound), re-attempts dispatch via the
+ * currently configured provider. Runs hourly by default, mirrors
+ * `IwmoIjwRetryJob`'s `TimedJob` registration pattern. A bridge with no
+ * eligible rows is a clean no-op (`StufZknSyncService::retryFailed()`
  * never throws out of the sweep loop).
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
  */
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\StufZknSyncService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -38,13 +38,13 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Background job that periodically retries failed iWMO/iJW outbound sends.
+ * Background job that periodically retries failed StUF-ZKN outbound sends.
  *
  * @psalm-api
  *
- * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
  */
-class IwmoIjwRetryJob extends TimedJob {
+class StufZknRetryJob extends TimedJob {
 
 	/**
 	 * Default sweep interval in seconds (1 hour).
@@ -54,17 +54,17 @@ class IwmoIjwRetryJob extends TimedJob {
 	private const DEFAULT_INTERVAL = 3600;
 
 	/**
-	 * IwmoIjwRetryJob constructor.
+	 * StufZknRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param IwmoIjwSyncService $syncService The iWMO/iJW sync service.
+	 * @param StufZknSyncService $syncService The StUF-ZKN sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
-	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IwmoIjwSyncService $syncService,
+		private readonly StufZknSyncService $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -80,7 +80,7 @@ class IwmoIjwRetryJob extends TimedJob {
 	}//end __construct()
 
 	/**
-	 * Execute the iWMO/iJW retry sweep.
+	 * Execute the StUF-ZKN retry sweep.
 	 *
 	 * A single failing message must never wedge the cron pipeline — the
 	 * service already contains per-message failures, and any sweep-level
@@ -95,18 +95,18 @@ class IwmoIjwRetryJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
 	 */
 	public function run(mixed $argument): void {
 		try {
 			$retried = $this->syncService->retryFailed();
 			$this->logger->info(
-				'IwmoIjwRetryJob: retry sweep complete',
+				'StufZknRetryJob: retry sweep complete',
 				['retried' => $retried]
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'IwmoIjwRetryJob: retry sweep failed: ' . $e->getMessage(),
+				'StufZknRetryJob: retry sweep failed: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 		}

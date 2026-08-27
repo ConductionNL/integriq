@@ -35,8 +35,8 @@
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/TablesBridgeController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/UserController.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/UserController.php" method="login"/>
-  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Cron/LogCleanUpTask.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Cron/RegisterBootstrapJob.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/BackgroundJob/LogCleanUpTask.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/RegisterBootstrapJob.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/EventListener/CloudEventListener.php" method="handle"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/EventListener/CloudEventListener.php" method="handle"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Flow/ApplyMappingNode.php"/>

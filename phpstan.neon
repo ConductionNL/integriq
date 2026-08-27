@@ -82,7 +82,7 @@ parameters:
         # the ADR-078 actor-forwarding deferral base, which exists only at runtime.
         # "extends unknown class" is a *general* error PHPStan refuses to baseline —
         # same limitation, same remedy, as SynchronizationContractProvider above.
-        - lib/Cron/DeferredViewCascadeJob.php
+        - lib/BackgroundJob/DeferredViewCascadeJob.php
 
     ignoreErrors:
         # flow-workflowengine-integration: NC's concrete IRequest implementation

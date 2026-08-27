@@ -23,7 +23,7 @@
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Cron\DeferredViewCascadeJob;
+use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;

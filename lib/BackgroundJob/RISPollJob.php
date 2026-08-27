@@ -8,7 +8,7 @@
  * for all outstanding sync records and updates zaak statuses accordingly.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\IBabsConnectorService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\Integriq\Cron\DeferredViewCascadeJob;
+use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;

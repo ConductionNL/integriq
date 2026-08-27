@@ -204,6 +204,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		)
 	}
 
+	// NOTE: the walkthrough this PR adds needs no suppression here. The
+	// `seedFirstVisitOverlaysSeen(page, 'integriq')` call above already covers
+	// it — that helper calls `seedWalkthroughSeen`, which writes the same
+	// `cn-walkthrough-seen:integriq` key with the same `999.0.0` sentinel this
+	// file would otherwise hand-roll. The comment there anticipated exactly
+	// this ("inert here and keeps the harness correct if one is ever added");
+	// adding the tour is what makes it live.
+
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
 }

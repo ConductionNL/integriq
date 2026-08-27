@@ -8,7 +8,7 @@ UI, HMAC signing) the context brief assumes, or would those need to be built fre
 
 ## Approach Taken
 - Read `lib/Settings/integriq_register.json`, `lib/Service/EventService.php`,
-  `lib/Cron/EventRetryJob.php`, `lib/Controller/EventsController.php`,
+  `lib/BackgroundJob/EventRetryJob.php`, `lib/Controller/EventsController.php`,
   `lib/Service/WebhookSignatureService.php`, `lib/EventListener/*.php`, `lib/AppInfo/Application.php`,
   `appinfo/routes.php`, `appinfo/info.xml` in this checkout at HEAD.
 - Read the four target specs in full: `openspec/specs/events-cloudevents/spec.md`,

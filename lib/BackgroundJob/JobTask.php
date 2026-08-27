@@ -7,7 +7,7 @@
  * This task runs scheduled jobs by delegating execution to the JobService.
  *
  * @category Cron
- * @package  OCA\Integriq\Cron
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Cron;
+namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\JobService;
 use OCP\AppFramework\Utility\ITimeFactory;

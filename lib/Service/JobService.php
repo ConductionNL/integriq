@@ -246,15 +246,15 @@ class JobService {
 		$scheduleAfter = ($jobData['scheduleAfter'] ?? null);
 		if ($scheduleAfter !== null) {
 			$runAfter = (new DateTime($scheduleAfter))->getTimestamp();
-			$this->jobList->scheduleAfter(\OCA\Integriq\Cron\JobTask::class, $runAfter, $arguments);
+			$this->jobList->scheduleAfter(\OCA\Integriq\BackgroundJob\JobTask::class, $runAfter, $arguments);
 		}
 
 		if ($scheduleAfter === null) {
-			$this->jobList->add(\OCA\Integriq\Cron\JobTask::class, $arguments);
+			$this->jobList->add(\OCA\Integriq\BackgroundJob\JobTask::class, $arguments);
 		}
 
 		// Set the job list id.
-		$jobData['jobListId'] = $this->getJobListId(job: \OCA\Integriq\Cron\JobTask::class);
+		$jobData['jobListId'] = $this->getJobListId(job: \OCA\Integriq\BackgroundJob\JobTask::class);
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,

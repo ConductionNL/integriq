@@ -73,23 +73,23 @@
 		     Application::boot() as a fallback for the InitializeRegister repair
 		     step possibly not having run. Gated, but one unset config key away
 		     from a repair step on every request. Hourly cron instead. -->
-		<job>OCA\Integriq\Cron\RegisterBootstrapJob</job>
-		<job>OCA\Integriq\Cron\JobTask</job>
-		<job>OCA\Integriq\Cron\LogCleanUpTask</job>
+		<job>OCA\Integriq\BackgroundJob\RegisterBootstrapJob</job>
+		<job>OCA\Integriq\BackgroundJob\JobTask</job>
+		<job>OCA\Integriq\BackgroundJob\LogCleanUpTask</job>
 		<!-- Closes synchronization_run records whose process died: a
 		     permanently-`running` row is indistinguishable from a live
 		     one, so the page built to answer "is my sync still going?"
 		     would answer it wrongly. -->
-		<job>OCA\Integriq\Cron\StaleRunSweepJob</job>
-		<job>OCA\Integriq\Cron\EventRetryJob</job>
-		<job>OCA\Integriq\Cron\LtiKeyRetirementJob</job>
-		<job>OCA\Integriq\Cron\BankfeedSyncJob</job>
-		<job>OCA\Integriq\Cron\CardfeedSyncJob</job>
-		<job>OCA\Integriq\Cron\EudiStatusListRefreshJob</job>
-		<job>OCA\Integriq\Cron\KissPullJob</job>
-		<job>OCA\Integriq\Cron\ApprovalTimeoutSweepJob</job>
-		<job>OCA\Integriq\Cron\IwmoIjwRetryJob</job>
-		<job>OCA\Integriq\Cron\StufZknRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\StaleRunSweepJob</job>
+		<job>OCA\Integriq\BackgroundJob\EventRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\LtiKeyRetirementJob</job>
+		<job>OCA\Integriq\BackgroundJob\BankfeedSyncJob</job>
+		<job>OCA\Integriq\BackgroundJob\CardfeedSyncJob</job>
+		<job>OCA\Integriq\BackgroundJob\EudiStatusListRefreshJob</job>
+		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
+		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
+		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
@@ -188,6 +188,26 @@
 			     keeps all five fields on purpose (see the step's docblock). -->
 			<step>OCA\Integriq\Repair\RemoveMigratedSourceSecretFields</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- The background jobs moved from OCA\Integriq\Cron to
+			     OCA\Integriq\BackgroundJob in #1579. The <job> entries above are
+			     a REGISTRATION instruction, not a description of state: on
+			     upgrade Nextcloud ADDS a job it does not have, but never removes
+			     one whose class disappeared — it cannot tell a renamed class
+			     from one merely unavailable this boot.
+
+			     THIS APP HAS THE MOST TO CLEAN UP: 13 of the 16 moved classes
+			     are registered, so an instance that carried the old build ends
+			     up with 13 rows naming classes that no longer exist. Each fails
+			     to build on every cron tick and logs rather than raises.
+
+			     Measured on a live instance after the equivalent opencatalogi
+			     move: oc_jobs still held OCA\OpenCatalogi\Cron\DirectorySync
+			     beside its replacement.
+
+			     Last in the block, and post-migration only: it removes rows and
+			     creates nothing, so no step depends on it, and a fresh install
+			     has nothing to remove. -->
+			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes

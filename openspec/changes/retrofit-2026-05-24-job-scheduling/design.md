@@ -10,9 +10,9 @@ Integriq exposes a job-scheduling subsystem with three layers:
    `scheduleJob` registers an OR `job` object with NC's `IJobList`,
    `executeJob` runs one job and persists a `job_log` entry, `run()` is the
    batch dispatcher that walks all enabled, due jobs.
-2. **`JobTask`** (`lib/Cron/JobTask.php`) — a NC `TimedJob` that runs every
+2. **`JobTask`** (`lib/BackgroundJob/JobTask.php`) — a NC `TimedJob` that runs every
    5 minutes and delegates to `JobService::run()`. Wired by `JobService::scheduleJob`.
-3. **`LogCleanUpTask`** (`lib/Cron/LogCleanUpTask.php`) — a NC `TimedJob`
+3. **`LogCleanUpTask`** (`lib/BackgroundJob/LogCleanUpTask.php`) — a NC `TimedJob`
    that runs every minute (sic, see notes) and deletes expired log objects
    across four log schemas.
 4. **`JobsController`** (`lib/Controller/JobsController.php`) — HTTP entry
