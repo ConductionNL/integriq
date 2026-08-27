@@ -1,9 +1,0 @@
-
-> integriq@1.0.0 stylelint
-> stylelint "{src,css}/**/*.{vue,scss,css}"
-
-
-Deprecation warnings:
- - The "string-quotes" rule is deprecated.
- - The "indentation" rule is deprecated.
-
