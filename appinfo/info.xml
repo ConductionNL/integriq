@@ -188,6 +188,28 @@
 			     keeps all five fields on purpose (see the step's docblock). -->
 			<step>OCA\Integriq\Repair\RemoveMigratedSourceSecretFields</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- WRITTEN BUT NEVER REGISTERED until now, which meant it never
+			     ran anywhere. gate-98 (repair-step-registration) found it.
+
+			     What that costs is money reading as null. OpenRegister stores
+			     each schema property as a real snake_cased COLUMN in the
+			     per-schema shard table, and MagicMapper ADDS a column when the
+			     name is absent but NEVER renames — there is not a single
+			     RENAME COLUMN in openregister. So renaming `bedrag` to
+			     `amount` in the register leaves the money in `bedrag` while
+			     every read looks at `amount` and finds null. No error, no data
+			     loss, and invisible to a suite that asserts against fixtures
+			     rather than migrated rows. For this app those columns carry
+			     invoice, subsidy, payroll and tax amounts.
+
+			     Placed HERE, after InitializeRegister has synced the register
+			     and MagicMapper has added the English columns: the step renames
+			     only when the old column exists and the new one does not, and
+			     copies across where the new column already exists. It is
+			     non-destructive and idempotent by its own contract — nothing is
+			     deleted, two sources targeting one destination are REFUSED
+			     rather than merged, and a re-run is a no-op. -->
+			<step>OCA\Integriq\Repair\RenameDutchColumns</step>
 			<!-- The background jobs moved from OCA\Integriq\Cron to
 			     OCA\Integriq\BackgroundJob in #1579. The <job> entries above are
 			     a REGISTRATION instruction, not a description of state: on
