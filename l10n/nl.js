@@ -1508,7 +1508,10 @@ OC.L10N.register(
         "Records that could not be processed land in Dead Letters rather than disappearing. An empty run plus a full dead-letter queue is a mapping problem, not a connection problem.": "Records die niet verwerkt konden worden belanden in Dead Letters in plaats van te verdwijnen. Een lege run met een volle dead-letterwachtrij wijst op een mappingprobleem, niet op een koppelingsprobleem.",
         "That is the loop": "Dat is de cyclus",
         "Source, synchronization, run, trace. Everything else in Integriq, from API products and consumers to flows and webhooks, is built on those four. The gateway side turns the same registers back into APIs other people can consume.": "Bron, synchronisatie, run, trace. Al het andere in Integriq, van API-producten en afnemers tot flows en webhooks, bouwt op die vier. De gatewaykant maakt van diezelfde registers weer API's die anderen kunnen afnemen.",
-        "Open the documentation to keep going": "Open de documentatie om verder te gaan"
+        "Open the documentation to keep going": "Open de documentatie om verder te gaan",
+        "Where the automation lives": "Waar de automatisering zit",
+        "Flows are what happens without anyone clicking: a synchronization that starts on a schedule, a webhook that fires when a record changes. This is where you read and edit them. Nothing to build now.": "Flows zijn wat er gebeurt zonder dat iemand klikt: een synchronisatie die op een schema start, een webhook die afgaat wanneer een record verandert. Hier leest en bewerkt u ze. U hoeft nu niets te bouwen.",
+        "Open Flows in the menu": "Open Flows in het menu"
     },
     "nplurals=2; plural=(n != 1);"
 )
