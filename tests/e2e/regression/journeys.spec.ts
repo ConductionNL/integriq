@@ -628,8 +628,41 @@ async function editViaUi(
 	await expect(editItem, 'Edit menu item visible').toBeVisible({ timeout: 5_000 })
 	await editItem.click()
 
+	// WHERE EDIT LANDS DEPENDS ON THE SCHEMA, since nextcloud-vue 2.21.
+	//
+	// `CnPageRenderer` sets `editOpensDetail` when a same-schema DETAIL page
+	// exists: such a record is edited on its detail page, not in a modal
+	// launched from the table, because the modal renders only the schema's flat
+	// scalars and cannot express a record whose related rows live elsewhere
+	// (nextcloud-vue#806). Sources have `SourceDetail`; not every schema this
+	// helper is called for does.
+	//
+	// So both routes are legitimate and which one applies is a property of the
+	// schema, not of the test. Branch on it rather than assuming — and still
+	// require a real edit dialog at the end either way.
 	const dialog = appDialog(page)
-	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible()
+	const openedDirectly = await dialog
+		.waitFor({ state: 'visible', timeout: 5_000 })
+		.then(() => true)
+		.catch(() => false)
+
+	if (!openedDirectly) {
+		await expect(
+			page,
+			'Edit on a record WITH a detail page must navigate to that page',
+		).toHaveURL(/\/[^/]+\/[0-9a-f-]{8,}/i, { timeout: 15_000 })
+
+		const headerEdit = page.getByRole('button', { name: /^Edit$/ }).first()
+		await expect(
+			headerEdit,
+			'detail page header Edit button visible',
+		).toBeVisible({ timeout: 15_000 })
+		await headerEdit.click()
+	}
+
+	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible({
+		timeout: 15_000,
+	})
 	const descField = dialog.getByLabel(/^\s*description\s*\*?\s*$/i)
 	await expect(descField, 'description field present').toBeVisible({
 		timeout: 10_000,
