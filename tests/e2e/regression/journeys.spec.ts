@@ -608,6 +608,11 @@ async function editViaUi(
 		timeout: 10_000,
 	})
 
+	// The URL to come BACK to. When Edit navigates to a detail page (see below)
+	// this helper would otherwise leave the caller on that page, and every J5
+	// step after it — the mass-delete cleanup — looks for rows on the index.
+	const indexUrl = page.url()
+
 	// Find the card/row container and its Actions button.
 	// CnRowActions/CnCardItem renders an overflow-actions NcActions button.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
@@ -720,6 +725,14 @@ async function editViaUi(
 		).toBe(true)
 	}
 	// If API call fails, the PUT response already confirmed success above.
+
+	// Restore the caller's context. A helper that silently changes which page
+	// the test is on is a trap for everything after it: J5's mass-delete
+	// cleanup runs straight after this and searches the INDEX for its row.
+	if (!openedDirectly) {
+		await page.goto(indexUrl, { waitUntil: 'domcontentloaded' })
+		await switchToCardsView(page)
+	}
 }
 
 /**
