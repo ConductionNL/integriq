@@ -224,8 +224,28 @@ async function crudCycle(
 	await gotoIndex(page, route)
 	await openRowMenu(page, name)
 	await page.getByRole('menuitem', { name: /^Edit$/ }).click()
+
+	// Since nextcloud-vue 2.21, a record whose schema HAS a detail page is
+	// edited on that page rather than in a modal launched from the table
+	// (nextcloud-vue#806) — the modal shows only flat scalars and cannot
+	// express a record whose related rows live elsewhere. Sources and mappings
+	// both have detail pages, so Edit navigates and the dialog opens from the
+	// detail header. Branch rather than assume: which route applies is a
+	// property of the schema.
 	const editDlg = appDialog(page)
-	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 10_000 })
+	const openedDirectly = await editDlg
+		.waitFor({ state: 'visible', timeout: 5_000 })
+		.then(() => true)
+		.catch(() => false)
+	if (!openedDirectly) {
+		const headerEdit = page.getByRole('button', { name: /^Edit$/ }).first()
+		await expect(
+			headerEdit,
+			'detail page header Edit button visible',
+		).toBeVisible({ timeout: 15_000 })
+		await headerEdit.click()
+	}
+	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 15_000 })
 	const newDesc = `${RUN}-EDITED`
 	await editDlg
 		.getByLabel(/description/i)

@@ -2509,19 +2509,24 @@
     {
       "id": "Flows",
       "route": "/flows",
-      "type": "custom",
-      "component": "FlowsIndex",
+      "type": "index",
       "title": "Flows",
-      "_note": "Custom page rather than type:index (flow-engine-unification task 6.2): a flow lives in the shared native flow store, not a register/schema, so the object-backed index cannot address it. The body is CnFlowIndexPage scoped app=\"openconnector\" — same component OpenRegister and hermiq use, so list/status semantics stay identical fleet-wide. Mirrors openregister/src/manifest.json:flows."
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this was type:custom over FlowsIndex.vue. config.entitySource names the collection and the index loads it. No columns are stated: the source's defaults are exactly the five this app rendered, and they arrive already translated. config.app stays \"openconnector\" — see FlowDetail.",
+      "config": {
+        "entitySource": "flows",
+        "app": "openconnector"
+      }
     },
     {
       "id": "FlowDetail",
       "route": "/flows/:id",
-      "type": "custom",
+      "type": "flow",
       "title": "Flow",
-      "component": "FlowDetailPage",
-      "_note": "Custom page (flow-engine-unification task 6.2): the shared CnFlowDetail node/edge canvas, over the same native flow store OpenRegister and hermiq use — not an app-owned editor. Controls live in the NcAppSidebar (sidebarComponent) so the canvas gets full width; canvas and sidebar share useFlowStore. Mirrors openregister/src/manifest.json:flowDetail.",
-      "sidebarComponent": "FlowDetailSidebar"
+      "_note": "The shared `flow` page type, replacing a hand-written wrapper around the same CnFlowDetail canvas. config.app is LOAD-BEARING and deliberately still \"openconnector\", not \"integriq\": CnFlowEditorPage stamps it on a flow created here, and the Flows index filters on it. Every flow already stored carries the old literal, so renaming it to match the app id would orphan them all — the list would go empty and new flows would be invisible to it. The id moves only with a migration of the stored rows.",
+      "sidebarComponent": "FlowDetailSidebar",
+      "config": {
+        "app": "openconnector"
+      }
     },
     {
       "id": "ApprovalDetail",
