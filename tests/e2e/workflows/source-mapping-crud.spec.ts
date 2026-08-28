@@ -179,9 +179,12 @@ async function crudCycle(
 	await page.getByRole('button', { name: addBtn }).first().click()
 	const dialog = appDialog(page)
 	await expect(dialog, 'create modal must open').toBeVisible({ timeout: 10_000 })
-	await dialog.getByLabel(/name/i).first().fill(name)
+	await dialog.getByRole('textbox', { name: /name/i }).first().fill(name)
+	// Same hazard as the edit dialog below, and worse here: this fill is
+	// wrapped in `.catch()`, so when the helper button won the locator the
+	// description was silently never typed and the test carried on.
 	await dialog
-		.getByLabel(/description/i)
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(desc)
 		.catch(() => {
@@ -247,8 +250,15 @@ async function crudCycle(
 	}
 	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 15_000 })
 	const newDesc = `${RUN}-EDITED`
+	// `getByLabel` matches ANY element whose accessible name matches, and the
+	// field helper introduced alongside the named-source migration renders a
+	// <button aria-label="Show the full description"> next to the input. It
+	// sorts first in the DOM, so `.first()` picked the BUTTON and `fill()`
+	// failed with "Element is not an <input>, <textarea>, <select>".
+	// `getByRole('textbox')` cannot match a button, so it names the field
+	// rather than anything merely labelled after it.
 	await editDlg
-		.getByLabel(/description/i)
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(newDesc)
 	await editDlg
