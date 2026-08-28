@@ -181,7 +181,12 @@ async function crudCycle(
 	await expect(dialog, 'create modal must open').toBeVisible({ timeout: 10_000 })
 	await dialog.getByLabel(/name/i).first().fill(name)
 	await dialog
-		.getByLabel(/description/i)
+		// ROLE, not label. CnFieldHelper renders a "Show the full
+		// description" button beside the field, and its aria-label matches
+		// /description/i too — getByLabel resolved to that button and fill()
+		// died with "Element is not an <input>, <textarea>, <select>". Only
+		// the field itself has role=textbox.
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(desc)
 		.catch(() => {
@@ -248,7 +253,9 @@ async function crudCycle(
 	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 15_000 })
 	const newDesc = `${RUN}-EDITED`
 	await editDlg
-		.getByLabel(/description/i)
+		// See the create path above: getByLabel also matches CnFieldHelper's
+		// "Show the full description" button.
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(newDesc)
 	await editDlg
