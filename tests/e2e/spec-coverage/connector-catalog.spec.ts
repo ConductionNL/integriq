@@ -106,7 +106,15 @@ test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-
 // TRACKED IN #1187. (The original comment said this was "tracked outside this
 // Vue-3 de-compat PR" — no issue existed; #1187 is now that tracker and carries
 // the full re-enable checklist.)
-test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
+test.describe('Catalog page — browse, filter, badges (REQ-001)', () => {
+	// `describe.skip` records NO reason in the Playwright report, and the
+	// report is the only place the skip-discipline gate can read one — a
+	// source comment, however thorough, is invisible to it. Same skip, same
+	// tracker, now attributable.
+	test.skip(
+		true,
+		'connector-catalog UI specs assume a non-paginated card grid with an inline searchbox; the live CnIndexPage paginates at 20 and puts search behind the sidebar. Re-enabling needs feature-flag seeding plus a locator strategy for the real UI — tracked in #1187.',
+	)
 	// @e2e connector-catalog::catalog-lists-built-in-adapters-and-seeded-source-templates-by-category
 	test('catalog renders cards and the kind quick-filter narrows the grid', async ({
 		page,
@@ -228,7 +236,13 @@ test.describe.skip('Catalog page — browse, filter, badges (REQ-001)', () => {
 // renders live; re-enabling needs feature seeding + a paginated locator.
 //
 // TRACKED IN #1187.
-test.describe.skip('Catalog detail dialog — Enable / Instantiate (REQ-002)', () => {
+test.describe('Catalog detail dialog — Enable / Instantiate (REQ-002)', () => {
+	// See the note on REQ-001 above: a reason must reach the report, not just
+	// the source.
+	test.skip(
+		true,
+		'catalog detail Enable/Instantiate specs depend on feature-flag and mock-mode seeding that CI does not provide, so the expected status badges never materialise — tracked in #1187.',
+	)
 	// @e2e connector-catalog::enable-action-flips-a-feature-flag-for-a-flag-gated-item
 	test('opening a dormant flag-gated item offers Enable and enabling updates the badge', async ({
 		page,
