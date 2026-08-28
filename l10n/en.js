@@ -1494,7 +1494,10 @@ OC.L10N.register(
         "View Logs": "View Logs",
         "Warning Logs": "Warning Logs",
         "When the run fails": "When the run fails",
-        "Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.": "Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged."
+        "Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.": "Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.",
+        "Where the automation lives": "Where the automation lives",
+        "Flows are what happens without anyone clicking: a synchronization that starts on a schedule, a webhook that fires when a record changes. This is where you read and edit them. Nothing to build now.": "Flows are what happens without anyone clicking: a synchronization that starts on a schedule, a webhook that fires when a record changes. This is where you read and edit them. Nothing to build now.",
+        "Open Flows in the menu": "Open Flows in the menu"
     },
     "nplurals=2; plural=(n != 1);"
 )
