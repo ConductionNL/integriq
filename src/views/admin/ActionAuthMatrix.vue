@@ -275,7 +275,7 @@ export default {
 .integriq-admin__matrix td {
 	border: 1px solid var(--color-border);
 	padding: 6px 10px;
-	text-align: left;
+	text-align: start;
 }
 
 .integriq-admin__matrix-group {

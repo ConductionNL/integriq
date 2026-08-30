@@ -183,7 +183,7 @@ export default {
 
 .approvals__table th,
 .approvals__table td {
-	text-align: left;
+	text-align: start;
 	padding: 6px 10px;
 	border-bottom: 1px solid var(--color-border);
 }

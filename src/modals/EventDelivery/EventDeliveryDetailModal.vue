@@ -324,7 +324,7 @@ export default {
 
 .deliveryDetail__timeline {
 	margin: 0 0 16px;
-	padding-left: 18px;
+	padding-inline-start: 18px;
 }
 
 .deliveryDetail__timeline li {
@@ -355,6 +355,6 @@ export default {
 }
 
 .deliveryDetail__confirm {
-	margin-right: auto;
+	margin-inline-end: auto;
 }
 </style>

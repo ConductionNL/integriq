@@ -429,7 +429,7 @@ export default {
 	font-family: var(--font-face-monospace, monospace);
 	font-size: 12px;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .cn-test-source-modal__actions {
