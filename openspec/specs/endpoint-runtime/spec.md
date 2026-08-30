@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 retrofit: true
 ---
 
@@ -22,6 +22,8 @@ itself is specified separately under the `rule-pipeline` capability.
 
 **OpenSpec changes**
 - [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added two dialect-agnostic dispatch behaviours: an absolute self-URL / HAL `_links` output helper (REQ-EP-006) and PUT-all-mandatory vs PATCH-partial enforcement (REQ-EP-007), consumed by the VNG Klantinteracties adapter and reusable by future VNG dialects.
+- [`ori-public-serving`](../../changes/ori-public-serving/) _(in progress)_ — adds a declarative id-fetch guard (REQ-EP-010): a single-object GET can now re-check the fetched object against an Endpoint's declared fixed filter set and return 404 on a mismatch, closing the gap where `getObjects()`'s id-branch previously bypassed every filter. Generic (any Endpoint may opt in); first consumer is the ORI 1.4 public-serving Endpoints reproducing decidesk's discriminator/lifecycle gates.
+
 ## Requirements
 
 ### REQ-EP-UI-001: Endpoint Management UI

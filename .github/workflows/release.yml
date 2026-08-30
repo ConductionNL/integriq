@@ -3,6 +3,13 @@ name: Release
 on:
   push:
     branches: [main, beta, development]
+  # Lets a human force a release without pushing — the shared workflow already
+  # expects this: its skip guard is written `github.event_name != 'push' || …`
+  # precisely so a dispatch is "deliberately never skipped … including of a
+  # commit this guard would refuse". 18 of the 21 fleet apps already declare it;
+  # this repo was one of the three that did not, so the only way to trigger a
+  # release here was to push.
+  workflow_dispatch:
 
 # Permission CEILING for the called release workflow, not a grant. All three
 # jobs below call the same `ConductionNL/.github/.github/workflows/release.yml@main`,
@@ -33,6 +40,12 @@ permissions:
   # none.
   pull-requests: write
 
+# `previous-app-id` is the App Store id this app shipped under before the
+# rename. The store keys everything on the id, so `integriq` is a brand new
+# entry starting from nothing -- without this the version line restarts
+# BELOW what the app already published as `openconnector`, and the store accepts
+# that with a 200 and then never offers it to anyone. Drop the input once
+# the `openconnector` entry is retired.
 jobs:
   unstable:
     # Enabled 2026-08-21 to complete the convergence. It was `if: false` while
@@ -51,6 +64,7 @@ jobs:
     with:
       release-type: unstable
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -61,6 +75,7 @@ jobs:
     with:
       release-type: beta
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -71,6 +86,7 @@ jobs:
     with:
       release-type: stable
       app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
