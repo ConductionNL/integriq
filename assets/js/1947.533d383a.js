@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkintegriq_docs=globalThis.webpackChunkintegriq_docs||[]).push([[1947],{1947(e,i,s){s.d(i,{createWardleyServices:()=>a.J});var a=s(22295);s(72519)}}]);
