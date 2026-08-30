@@ -385,7 +385,7 @@ export default {
 
 .eventDeliveries__table th,
 .eventDeliveries__table td {
-	text-align: left;
+	text-align: start;
 	padding: 6px 10px;
 	border-bottom: 1px solid var(--color-border);
 }

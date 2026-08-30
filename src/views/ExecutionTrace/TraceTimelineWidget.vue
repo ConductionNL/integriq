@@ -134,7 +134,7 @@ export default {
 	background: none;
 	color: inherit;
 	font: inherit;
-	text-align: left;
+	text-align: start;
 	cursor: pointer;
 }
 
@@ -183,7 +183,7 @@ export default {
 .traceTimeline__duration {
 	color: var(--color-text-maxcontrast);
 	min-width: 64px;
-	text-align: right;
+	text-align: end;
 }
 
 .traceTimeline__detail {
@@ -205,7 +205,7 @@ export default {
 
 .traceTimeline__detailCol pre {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	background: var(--color-main-background);
 	padding: 8px;
 	border-radius: var(--border-radius);

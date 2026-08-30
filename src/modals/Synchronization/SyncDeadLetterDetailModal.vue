@@ -292,7 +292,7 @@ export default {
 
 .deadLetterDetail__timeline {
 	margin: 0 0 16px;
-	padding-left: 18px;
+	padding-inline-start: 18px;
 }
 
 .deadLetterDetail__timeline li {
@@ -323,6 +323,6 @@ export default {
 }
 
 .deadLetterDetail__confirm {
-	margin-right: auto;
+	margin-inline-end: auto;
 }
 </style>

@@ -2159,7 +2159,7 @@ import openLink from '../../services/openLink.js'
 .close-button {
 	position: absolute;
 	top: 5px;
-	right: 5px;
+	inset-inline-end: 5px;
 }
 
 .close-button .button-vue--vue-tertiary:hover:not(:disabled) {
@@ -2169,7 +2169,7 @@ import openLink from '../../services/openLink.js'
 .json-editor .error-message {
 	position: absolute;
 	bottom: 0;
-	right: 50%;
+	inset-inline-end: 50%;
 	transform: translateY(100%) translateX(50%);
 
 	color: var(--color-error);
@@ -2181,7 +2181,7 @@ import openLink from '../../services/openLink.js'
 .json-editor .format-json-button {
 	position: absolute;
 	bottom: 0;
-	right: 0;
+	inset-inline-end: 0;
 	transform: translateY(100%);
 }
 
@@ -2242,7 +2242,7 @@ import openLink from '../../services/openLink.js'
 /* CodeMirror */
 .codeMirrorContainer {
 	margin-block-start: 6px;
-	text-align: left;
+	text-align: start;
 }
 
 .codeMirrorContainer :deep(.cm-content) {
@@ -2352,7 +2352,6 @@ import openLink from '../../services/openLink.js'
 
 .apiKeyUserSelect {
 	width: 45%;
-	margin-left: 10px;
-	margin-right: 8px;
+	margin-inline: 10px 8px;
 }
 </style>
