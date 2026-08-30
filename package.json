@@ -54,7 +54,7 @@
     "@nextcloud/dialogs": "^7.4.1",
     "@nextcloud/initial-state": "^2.2.0",
     "@nextcloud/l10n": "^3.4.1",
-    "@nextcloud/router": "^2.0.1",
+    "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.9.0",
     "@vueuse/core": "^14.3.0",
     "css-loader": "~7.1.1",
