@@ -12,10 +12,11 @@
  * This file used to cover REQ-009 (the typed step-list editor: FlowStepRow,
  * keyboard reorder, config-ref picker scoped by step type) and REQ-010/011
  * (the draft/dirty Save-Discard contract on that same editor). That UI no
- * longer exists: FlowDetailPage.vue now renders only the shared
- * `CnFlowDetail` canvas from @conduction/nextcloud-vue over OpenRegister's
- * native flow store (nodes[]/edges[]), not this app's own `flow`/`steps[]`
- * schema the old editor was built on. See
+ * longer exists: the `/flows/:id` page is now the shared `flow` page type,
+ * which mounts `CnFlowEditorPage` -> `CnFlowDetail` from
+ * @conduction/nextcloud-vue over OpenRegister's native flow store
+ * (nodes[]/edges[]), not this app's own `flow`/`steps[]` schema the old editor
+ * was built on. The app-side wrapper FlowDetailPage.vue is gone with it. See
  * openspec/specs/flow-orchestration/spec.md's 2026-08-16 scope note and
  * integriq#1255 for the full backend-state writeup.
  *

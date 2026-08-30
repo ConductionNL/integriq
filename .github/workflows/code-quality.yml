@@ -2,32 +2,46 @@ name: Code Quality
 
 on:
   push:
-    # An ALLOW-LIST of prefixes is a gate with a hole in it, and the hole is
-    # silent: a branch whose name matches nothing simply gets no CI, and its last
-    # visible status is whatever it inherited. On 2026-08-14 a merge with
-    # unresolved conflict markers and 84 failing tests was pushed to
-    # `perf/predicted-page-fanout` — `perf/**` was not on this list, so nothing
-    # ran and nothing said so.
+    # DEFAULT BRANCHES ONLY. `pull_request` below carries every other branch.
     #
-    # Prefixes added rather than replaced with `**` because this workflow is not
-    # cheap (PHPUnit matrix, Newman, Playwright); running it on every scratch
-    # branch would be a real bill. The fast structural checks DO run on `**` —
-    # see merge-hygiene.yml, which exists because of that same incident.
+    # This was an allow-list of branch prefixes, and that was a gate with a
+    # SILENT hole: a branch matching nothing got no CI at all, and its last
+    # visible status was whatever it inherited — indistinguishable, on every
+    # dashboard, from a branch that passed. Two live examples, both found
+    # 2026-08-14: `perf/**` was uncovered in openconnector, where a merge
+    # carrying unresolved conflict markers and 84 failing tests was pushed and
+    # nothing ran; and `feat/**` was uncovered in openregister, because the
+    # list said `feature/**`.
     #
-    # ⚠️ Adding a prefix here is not the durable fix. Anyone inventing a new one
-    # is uncovered again until someone remembers this file. The durable fix is
-    # branch protection requiring a PR into development, which is where the
-    # pull_request trigger below already gates properly.
+    # The comment that stood here said adding prefixes was not the durable fix,
+    # and that the durable fix was to let the pull_request trigger gate it.
+    # THIS IS THAT CHANGE.
+    #
+    # What forced it now: a push to a branch with an open PR ran the SAME 34
+    # jobs TWICE on the same commit. `concurrency` cannot dedupe them — the
+    # group is suffixed by event name deliberately (.github#540: a
+    # default-branch push carries jobs a PR run does not, and a dispatch must
+    # not be cancellable by a standing release PR), so the two events sit in
+    # different lanes BY DESIGN and both run to completion. Measured fleet-wide
+    # 2026-08-25..27, 659 of 2,106 Code Quality runs were that duplicate — 31%
+    # of the fleet's most expensive workflow, re-deciding a commit another run
+    # was already deciding. The account ceiling is 60 concurrent jobs (Team
+    # plan); the fleet was measured at 53 running with 1,528 jobs queued behind
+    # them, the oldest run 7 hours old and not yet started.
+    #
+    # NO BRANCH LOSES ITS FLOOR. merge-hygiene.yml runs on `'**'` — every
+    # branch anyone pushes, no prefix list to forget — and it is the check
+    # `development` actually requires. That is the smoke alarm; this workflow
+    # is the fire brigade and belongs on the PR. Of 668 feature-branch push
+    # runs in that window, only NINE were on a branch with no PR run beside
+    # them.
+    #
+    # The default branches STAY: their push runs are not duplicates, they are
+    # the only carrier of Coverage Baseline Check, SBOM and Features Extract,
+    # none of which run on a pull_request event.
     branches:
       - main
       - development
-      - feature/**
-      - bugfix/**
-      - hotfix/**
-      - perf/**
-      - refactor/**
-      - chore/**
-      - fix/**
   pull_request:
     # Spelled out rather than left to the default so the set is reviewable.
     # `synchronize` — a push to an open PR — is the load-bearing one: without
@@ -104,7 +118,20 @@ concurrency:
   # A branch name is not a unique lane when two event types can each produce a
   # run for it, so the event is now always part of the key.
   group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
-  cancel-in-progress: true
+
+  # PUSH RUNS ARE NOT CANCELLED — and this has to be said HERE, not only in the
+  # shared workflow. .github#597 set `cancel-in-progress` on quality.yml itself,
+  # but a caller's own concurrency cancels the whole run before the called
+  # workflow's setting can apply, so that fix reached only the apps that declare
+  # no concurrency of their own. Measured 2026-08-28 over push runs on
+  # `development` since #597: 0 of 11 cancelled where the caller was silent, 7 of
+  # 13 (54%) cancelled where the caller still said `true`.
+  #
+  # An integration branch needs a verdict per commit: the run being cancelled is
+  # the only thing that would have said whether what just landed is sound, and
+  # its replacement is cancelled too. `pull_request` keeps cancelling, where
+  # superseding really is correct.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 # Permission CEILING for the called quality pipeline. GitHub statically
 # validates the called workflow's declared job permissions against this
@@ -395,7 +422,7 @@ jobs:
       # renders the English source inside an otherwise translated form, silently.
       # The fleet had 30,459 such strings, so this records the current count and
       # fails only when it GROWS — burning it down stays an ordinary PR.
-      frontend-checks: '["build", "check:specs", "test:l10n", "format", "check:schema-l10n"]'
+      frontend-checks: '["build", "check:specs", "test:l10n", "format", "check:schema-l10n", "check:l10n-js"]'
 
       # ── Hydra mechanical gates ───────────────────────────────────────────
       # `enable-hydra-gates` defaults to FALSE, so this tier has never executed

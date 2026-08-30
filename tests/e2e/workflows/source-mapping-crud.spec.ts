@@ -181,7 +181,12 @@ async function crudCycle(
 	await expect(dialog, 'create modal must open').toBeVisible({ timeout: 10_000 })
 	await dialog.getByLabel(/name/i).first().fill(name)
 	await dialog
-		.getByLabel(/description/i)
+		// ROLE, not label. CnFieldHelper renders a "Show the full
+		// description" button beside the field, and its aria-label matches
+		// /description/i too — getByLabel resolved to that button and fill()
+		// died with "Element is not an <input>, <textarea>, <select>". Only
+		// the field itself has role=textbox.
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(desc)
 		.catch(() => {
@@ -224,11 +229,33 @@ async function crudCycle(
 	await gotoIndex(page, route)
 	await openRowMenu(page, name)
 	await page.getByRole('menuitem', { name: /^Edit$/ }).click()
+
+	// Since nextcloud-vue 2.21, a record whose schema HAS a detail page is
+	// edited on that page rather than in a modal launched from the table
+	// (nextcloud-vue#806) — the modal shows only flat scalars and cannot
+	// express a record whose related rows live elsewhere. Sources and mappings
+	// both have detail pages, so Edit navigates and the dialog opens from the
+	// detail header. Branch rather than assume: which route applies is a
+	// property of the schema.
 	const editDlg = appDialog(page)
-	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 10_000 })
+	const openedDirectly = await editDlg
+		.waitFor({ state: 'visible', timeout: 5_000 })
+		.then(() => true)
+		.catch(() => false)
+	if (!openedDirectly) {
+		const headerEdit = page.getByRole('button', { name: /^Edit$/ }).first()
+		await expect(
+			headerEdit,
+			'detail page header Edit button visible',
+		).toBeVisible({ timeout: 15_000 })
+		await headerEdit.click()
+	}
+	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 15_000 })
 	const newDesc = `${RUN}-EDITED`
 	await editDlg
-		.getByLabel(/description/i)
+		// See the create path above: getByLabel also matches CnFieldHelper's
+		// "Show the full description" button.
+		.getByRole('textbox', { name: /description/i })
 		.first()
 		.fill(newDesc)
 	await editDlg

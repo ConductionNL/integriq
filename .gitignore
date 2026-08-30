@@ -72,3 +72,11 @@ bom-npm.cdx.json
 .stale/
 /.e2e-state/
 .phpunit.cache
+
+# Build and test transcripts written at the repo ROOT by local tooling. These
+# were tracked, so every local build produced a commit-shaped diff, and every
+# such commit triggered the full Code Quality suite — 34 jobs deciding a
+# changed log file. Root-anchored on purpose: .claude/skills/*/examples/*.log
+# are gate FIXTURES, not artefacts, and must stay tracked.
+/*.log
+/changed.tsv

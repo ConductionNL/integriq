@@ -213,18 +213,8 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'ApprovalsIndex',
 	},
-	{
-		id: 'Flows',
-		route: '/flows',
-		type: 'custom',
-		component: 'FlowsIndex',
-	},
-	{
-		id: 'FlowDetail',
-		route: '/flows/:id',
-		type: 'custom',
-		component: 'FlowDetailPage',
-	},
+	{ id: 'Flows', route: '/flows', type: 'index' },
+	{ id: 'FlowDetail', route: '/flows/:id', type: 'flow' },
 	{
 		id: 'ApprovalDetail',
 		route: '/approvals/:id',
@@ -503,6 +493,11 @@ test.describe('manifest schema validation', () => {
 			'wiki',
 			'map',
 			'roadmap',
+			// The flow EDITOR. A flow lives in OpenRegister's native flow table
+			// rather than a register/schema pair, so one flow is not expressible
+			// as `detail` — but the LIST is an ordinary `index` over a named
+			// source, which is why there is no matching `flows` type here.
+			'flow',
 		])
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
@@ -519,19 +514,36 @@ test.describe('manifest schema validation', () => {
 		}
 	})
 
-	test('every index/detail/logs page has config.register and config.schema', async () => {
+	test('every index/detail/logs page names a source: register+schema, or entitySource', async () => {
 		const m = readManifest()
 		for (const p of m.pages) {
-			if (['index', 'detail', 'logs'].includes(p.type)) {
+			if (!['index', 'detail', 'logs'].includes(p.type)) continue
+
+			// An index may bind to an OBJECT source (register+schema) or to a
+			// NAMED source (config.entitySource), which is how a collection that
+			// is not an OpenRegister object — a flow — becomes an ordinary index
+			// instead of a bespoke page.
+			//
+			// Deliberately still an assertion rather than a skip: a page with
+			// NEITHER is the real defect this test exists to catch, and it fails
+			// silently at runtime as an empty list rather than an error. Only the
+			// entitySource branch is new; the register branch is unchanged.
+			if (p.config?.entitySource) {
 				expect(
-					p.config?.register,
-					`${p.id} (type:${p.type}) is missing config.register`,
-				).toBe('integriq')
-				expect(
-					p.config?.schema,
-					`${p.id} (type:${p.type}) is missing config.schema`,
-				).toBeTruthy()
+					typeof p.config.entitySource,
+					`${p.id} (type:${p.type}) has a non-string config.entitySource`,
+				).toBe('string')
+				continue
 			}
+
+			expect(
+				p.config?.register,
+				`${p.id} (type:${p.type}) names neither config.register nor config.entitySource`,
+			).toBe('integriq')
+			expect(
+				p.config?.schema,
+				`${p.id} (type:${p.type}) is missing config.schema`,
+			).toBeTruthy()
 		}
 	})
 })
