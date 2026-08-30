@@ -88,7 +88,7 @@
         "symfony/var-exporter": "^7.2.5",
         "symfony/yaml": "^6.4.40",
         "twig/twig": "^3.27.0",
-        "web-token/jwt-library": "^3.4.10"
+        "web-token/jwt-library": "^4.1.9"
     },
     "require-dev": {
         "conduction/coding-standard": "^1.0",
