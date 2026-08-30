@@ -559,7 +559,7 @@ export default {
 	max-height: 180px;
 	overflow: auto;
 	margin: 0;
-	padding-left: 16px;
+	padding-inline-start: 16px;
 }
 
 .oc-promote-modal__rebind {

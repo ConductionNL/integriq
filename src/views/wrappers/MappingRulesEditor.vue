@@ -950,7 +950,7 @@ export default {
 
 .cn-rules-editor__table th,
 .cn-rules-editor__table td {
-	text-align: left;
+	text-align: start;
 	padding: 8px 12px;
 	border-bottom: 1px solid var(--color-border);
 	vertical-align: top;
@@ -997,8 +997,7 @@ export default {
 
 .cn-rules-editor__col-handle {
 	width: 32px;
-	padding-right: 0;
-	padding-left: 8px;
+	padding-inline: 8px 0;
 	vertical-align: middle;
 }
 
@@ -1030,7 +1029,7 @@ export default {
 
 .cn-rules-editor__cell-key {
 	font-weight: 500;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .cn-rules-editor__cell-value code {
@@ -1043,13 +1042,13 @@ export default {
 
 .cn-rules-editor__col-actions {
 	width: 96px;
-	text-align: right;
+	text-align: end;
 	white-space: nowrap;
 }
 
 .cn-rules-editor__col-actions .button-vue,
 .cn-rules-editor__col-actions button {
-	margin-left: 4px;
+	margin-inline-start: 4px;
 }
 
 .cn-rules-editor__empty {
