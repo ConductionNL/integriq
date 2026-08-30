@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.3.7-unstable.20260829132230</version>
+	<version>0.3.8-unstable.20260830081732</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
