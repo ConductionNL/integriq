@@ -1,0 +1,21 @@
+{
+    "name": "iBabs raadsinformatiesysteem",
+    "description": "iBabs RIS REST API. Reads vergaderingen, agendapunten and besluiten for import into decidesk's OpenRegister objects. Fill in the API key and organisation id per municipality before enabling (ADR-003 zero-knowledge — no credentials committed).",
+    "version": "0.0.1",
+    "location": "https://api.ibabs.eu",
+    "isEnabled": false,
+    "type": "api",
+    "auth": "apikey",
+    "authorizationHeader": "Authorization",
+    "authorizationPassthroughMethod": "header",
+    "configuration": {
+        "headers.Authorization": "",
+        "headers.Accept": "application/json",
+        "organisatieId": ""
+    },
+    "endpointsConfig": [],
+    "logRetention": 3600,
+    "errorRetention": 86400,
+    "objectCount": 0,
+    "test": false
+}

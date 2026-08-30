@@ -1,0 +1,14 @@
+{"name":"GovData.de tenders — decomposed synchronization (reference)",
+ "description":"Reference flow for flow-native-synchronization task 2.1, mirroring synchronization cad5d34c-21e8-403e-9ddd-2b0df22bb609 as explicit steps. Key names follow SynchronizationFlowGenerator exactly: the source record at \"source\", the mapped object at \"target\", the written object at \"written\".",
+ "nodes":[
+  {"id":"start","type":"openregister.trigger-manual","config":{},"start":true},
+  {"id":"pages","type":"openconnector.source-paginate","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","output":"page"}},
+  {"id":"each","type":"openregister.explode","config":{"path":"page.results","as":"source","keepRecord":true}},
+  {"id":"map","type":"openconnector.apply-mapping","config":{"mapping":"germany-bund-to-tender","input":"source","output":"target"}},
+  {"id":"decide","type":"openconnector.contract","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","idPosition":"source.id","hashPosition":"source","output":"contract"}},
+  {"id":"target-uuid","type":"openregister.set-fields","config":{"compute":{"targetUuid":{"var":["json.contract.targetId",""]}}}},
+  {"id":"write","type":"openregister.object-write","config":{"register":"spectr","schema":"tender","operation":"upsert","replace":true,"match":[{"property":"@self.uuid","value":"{{targetUuid}}"}],"fields":{"title":"{{target.title}}"},"output":"written"}},
+  {"id":"commit","type":"openconnector.contract-commit","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","contractPosition":"contract","targetIdPosition":"written.uuid","targetHashPosition":"target"}},
+  {"id":"sweep","type":"openconnector.contract-sweep","config":{"synchronization":"cad5d34c-21e8-403e-9ddd-2b0df22bb609","targetIdsPosition":"written.uuid","fetchComplete":"page.fetchInfo.complete"}},
+  {"id":"end","type":"openregister.end","config":{}}],
+ "edges":[{"from":"start","to":"pages"},{"from":"pages","to":"each"},{"from":"each","to":"map"},{"from":"map","to":"decide"},{"from":"decide","to":"target-uuid"},{"from":"target-uuid","to":"write"},{"from":"write","to":"commit"},{"from":"commit","to":"sweep"},{"from":"sweep","to":"end"}]}

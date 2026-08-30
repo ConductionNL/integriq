@@ -1,76 +1,108 @@
 <?php
 
-namespace OCA\OpenConnector\Twig;
+/**
+ * Integriq Authentication Twig Runtime.
+ *
+ * Runtime class invoked by the AuthenticationExtension Twig functions to
+ * fetch authentication tokens for outbound calls.
+ *
+ * @category Twig
+ * @package  OCA\Integriq\Twig
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
+ */
+
+namespace OCA\Integriq\Twig;
 
 use Adbar\Dot;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Service\AuthenticationService;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
-use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
+use OCA\Integriq\Service\AuthenticationService;
 use Twig\Extension\RuntimeExtensionInterface;
 
-class AuthenticationRuntime implements RuntimeExtensionInterface
-{
+/**
+ * Authentication runtime that fetches tokens for a given source configuration.
+ */
+class AuthenticationRuntime implements RuntimeExtensionInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param AuthenticationService $authService Service that performs the token fetches.
+	 */
 	public function __construct(
 		private readonly AuthenticationService $authService,
 	) {
 
-	}
+	}//end __construct()
 
 	/**
 	 * Add an oauth token to the configuration.
 	 *
-	 * @param Source $source
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
 	 * @return string
 	 *
 	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
-	public function oauthToken(Source $source): string
-	{
-		$configuration = new Dot($source->getConfiguration(), true);
+	public function oauthToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
 		$authConfig = $configuration->get('authentication');
 
 		return $this->authService->fetchOAuthTokens(
 			configuration: $authConfig
 		);
-	}
+
+	}//end oauthToken()
 
 	/**
 	 * Add a decos non-oauth token to the configuration.
 	 *
-	 * @param Source $source
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
 	 * @return string
 	 *
 	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
-	public function decosToken(Source $source): string
-	{
-		$configuration = new Dot($source->getConfiguration(), true);
+	public function decosToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
 		$authConfig = $configuration->get('authentication');
 
 		return $this->authService->fetchDecosToken(
 			configuration: $authConfig
 		);
-	}
+
+	}//end decosToken()
 
 	/**
 	 * Add a jwt token to the configuration.
 	 *
-	 * @param Source $source The source to run.
+	 * @param array $source The source data array (from ObjectEntity::getObject()).
+	 *
 	 * @return string
+	 *
 	 * @throws GuzzleException
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
-	public function jwtToken(Source $source): string
-	{
-		$configuration = new Dot($source->getConfiguration(), true);
+	public function jwtToken(array $source): string {
+		$configuration = new Dot($source['configuration'] ?? [], true);
 
 		$authConfig = $configuration->get('authentication');
 
 		return $this->authService->fetchJWTToken(
 			configuration: $authConfig
 		);
-	}
-}
+
+	}//end jwtToken()
+}//end class

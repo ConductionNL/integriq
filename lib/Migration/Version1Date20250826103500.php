@@ -1,22 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * JobLogMessageColumnMigration
+ * Job-logs message column migration.
  *
- * Migration step to increase the message column size in the openconnector_job_logs table
- * to handle longer job execution messages and prevent truncation errors.
+ * Migration step to increase the message column size in the openconnector_job_logs
+ * table to handle longer job execution messages and prevent truncation errors.
  *
  * @category Migration
- * @package  OCA\OpenConnector\Migration
- * @author   OpenConnector Development Team
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openconnector
- * @version  1.0.0
+ * @package  OCA\Integriq\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Migration;
+declare(strict_types=1);
+
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -32,103 +36,108 @@ use OCP\Migration\SimpleMigrationStep;
  * is changed from VARCHAR(255) to TEXT to accommodate longer messages.
  *
  * @psalm-api
- * @package OCA\OpenConnector\Migration
- * @category Migration
- * @author OpenConnector Team
- * @copyright 2025 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @package   OCA\Integriq\Migration
+ * @category  Migration
+ * @author    Integriq Team
+ * @copyright 2025 Integriq
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   1.0.0
+ * @link      https://github.com/ConductionNL/integriq
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class Version1Date20250826103500 extends SimpleMigrationStep
-{
-    /**
-     * Pre-schema change callback
-     *
-     * @param IOutput $output Migration output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array<string, mixed> $options Migration options
-     *
-     * @return void
-     *
-     * @psalm-param IOutput $output
-     * @psalm-param Closure(): ISchemaWrapper $schemaClosure
-     * @psalm-param array<string, mixed> $options
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // No pre-schema changes needed
-    }
+class Version1Date20250826103500 extends SimpleMigrationStep {
+	/**
+	 * Pre-schema change callback
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array<string, mixed> $options Migration options
+	 *
+	 * @return void
+	 *
+	 * @psalm-param IOutput $output
+	 * @psalm-param Closure(): ISchemaWrapper $schemaClosure
+	 * @psalm-param array<string, mixed> $options
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// No pre-schema changes needed.
+	}//end preSchemaChange()
 
-    /**
-     * Main schema change callback
-     *
-     * This method modifies the message column in the openconnector_job_logs table
-     * to use the TEXT type instead of VARCHAR(255), allowing for much longer
-     * job execution messages without truncation.
-     *
-     * @param IOutput $output Migration output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array<string, mixed> $options Migration options
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper
-     *
-     * @psalm-param IOutput $output
-     * @psalm-param Closure(): ISchemaWrapper $schemaClosure
-     * @psalm-param array<string, mixed> $options
-     * @psalm-return ISchemaWrapper|null
-     * @phpstan-param IOutput $output
-     * @phpstan-param Closure(): ISchemaWrapper $schemaClosure
-     * @phpstan-param array<string, mixed> $options
-     * @phpstan-return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /**
-         * @var ISchemaWrapper $schema
-         */
-        $schema = $schemaClosure();
+	/**
+	 * Main schema change callback
+	 *
+	 * This method modifies the message column in the openconnector_job_logs table
+	 * to use the TEXT type instead of VARCHAR(255), allowing for much longer
+	 * job execution messages without truncation.
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array<string, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper
+	 *
+	 * @psalm-param    IOutput $output
+	 * @psalm-param    Closure(): ISchemaWrapper $schemaClosure
+	 * @psalm-param    array<string, mixed> $options
+	 * @psalm-return   ISchemaWrapper|null
+	 * @phpstan-param  IOutput $output
+	 * @phpstan-param  Closure(): ISchemaWrapper $schemaClosure
+	 * @phpstan-param  array<string, mixed> $options
+	 * @phpstan-return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        // Check if the job_logs table exists
-        if ($schema->hasTable('openconnector_job_logs')) {
-            $table = $schema->getTable('openconnector_job_logs');
+		$schema = $schemaClosure();
 
-            // Check if the message column exists
-            if ($table->hasColumn('message')) {
-                // Change the column to TEXT type to allow longer messages
-                // In Nextcloud migrations, we use changeColumn to modify existing columns
-                $table->changeColumn('message', [
-                    'type' => \Doctrine\DBAL\Types\Type::getType(Types::TEXT),
-                    'notnull' => true,
-                ]);
+		// Check if the job_logs table exists.
+		if ($schema->hasTable('openconnector_job_logs') === false) {
+			$output->warning('openconnector_job_logs table not found');
+			return $schema;
+		}
 
-                $output->info('Updated message column in openconnector_job_logs table to TEXT type');
-            } else {
-                $output->warning('Message column not found in openconnector_job_logs table');
-            }
-        } else {
-            $output->warning('openconnector_job_logs table not found');
-        }
+		$table = $schema->getTable('openconnector_job_logs');
 
-        return $schema;
-    }
+		// Check if the message column exists.
+		if ($table->hasColumn('message') === false) {
+			$output->warning('Message column not found in openconnector_job_logs table');
+			return $schema;
+		}
 
-    /**
-     * Post-schema change callback
-     *
-     * @param IOutput $output Migration output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array<string, mixed> $options Migration options
-     *
-     * @return void
-     *
-     * @psalm-param IOutput $output
-     * @psalm-param Closure(): ISchemaWrapper $schemaClosure
-     * @psalm-param array<string, mixed> $options
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // No post-schema changes needed
-        $output->info('Job logs message column migration completed successfully');
-    }
-}
+		// Drop the existing column and recreate it with TEXT type.
+		// Nextcloud migrations work better with drop/add pattern for type changes — Doctrine's
+		// changeColumn silently no-ops the type change in some DB backends, leaving the column
+		// stuck at VARCHAR(255) and causing job-log truncation errors at runtime.
+		$table->dropColumn('message');
+		$table->addColumn('message', Types::TEXT)
+			->setNotnull(true)
+			->setDefault('success');
+
+		$output->info('Updated message column in openconnector_job_logs table to TEXT type');
+
+		return $schema;
+	}//end changeSchema()
+
+	/**
+	 * Post-schema change callback
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array<string, mixed> $options Migration options
+	 *
+	 * @return void
+	 *
+	 * @psalm-param IOutput $output
+	 * @psalm-param Closure(): ISchemaWrapper $schemaClosure
+	 * @psalm-param array<string, mixed> $options
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// No post-schema changes needed.
+		$output->info('Job logs message column migration completed successfully');
+	}//end postSchemaChange()
+}//end class

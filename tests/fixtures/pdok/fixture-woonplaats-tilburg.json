@@ -1,0 +1,21 @@
+{
+    "response": {
+        "numFound": 1,
+        "start": 0,
+        "maxScore": 18.0,
+        "docs": [
+            {
+                "id": "wpl-855",
+                "type": "woonplaats",
+                "weergavenaam": "Tilburg",
+                "score": 18.0,
+                "woonplaatsnaam": "Tilburg",
+                "gemeentenaam": "Tilburg",
+                "provincienaam": "Noord-Brabant",
+                "woonplaatscode": "1900",
+                "centroide_ll": "POINT(5.0913 51.5555)",
+                "centroide_rd": "POINT(133421.5 397612.3)"
+            }
+        ]
+    }
+}

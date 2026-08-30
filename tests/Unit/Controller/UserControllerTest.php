@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 /**
  * UserControllerTest
- * 
+ *
  * Unit tests for the UserController
  *
  * @category   Test
- * @package    OCA\OpenConnector\Tests\Unit\Controller
+ * @package    OCA\Integriq\Tests\Unit\Controller
  * @author     Conduction.nl <info@conduction.nl>
  * @copyright  Conduction.nl 2024
  * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -16,520 +16,519 @@ declare(strict_types=1);
  * @link       https://github.com/ConductionNL/openconnector
  */
 
-namespace OCA\OpenConnector\Tests\Unit\Controller;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\OpenConnector\Controller\UserController;
-use OCA\OpenConnector\Service\AuthorizationService;
+use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\UserService;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\ICache;
+use OCP\ICacheFactory;
+use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use OCP\IUser;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for the UserController
- *
- * This test class covers all functionality of the UserController
- * including authentication, user data retrieval, and user updates.
+ * Unit tests for the UserController.
  *
  * @category Test
- * @package  OCA\OpenConnector\Tests\Unit\Controller
+ * @package  OCA\Integriq\Tests\Unit\Controller
  */
-class UserControllerTest extends TestCase
-{
-    /**
-     * The UserController instance being tested
-     *
-     * @var UserController
-     */
-    private UserController $controller;
+class UserControllerTest extends TestCase {
+	/** @var UserController */
+	private UserController $controller;
 
-    /**
-     * Mock request object
-     *
-     * @var MockObject|IRequest
-     */
-    private MockObject $request;
+	/** @var MockObject&IRequest */
+	private MockObject $request;
 
-    /**
-     * Mock user manager
-     *
-     * @var MockObject|IUserManager
-     */
-    private MockObject $userManager;
+	/** @var MockObject&IUserManager */
+	private MockObject $userManager;
 
-    /**
-     * Mock user session
-     *
-     * @var MockObject|IUserSession
-     */
-    private MockObject $userSession;
+	/** @var MockObject&IUserSession */
+	private MockObject $userSession;
 
-    /**
-     * Mock authorization service
-     *
-     * @var MockObject|AuthorizationService
-     */
-    private MockObject $authorizationService;
+	/** @var MockObject&ICacheFactory */
+	private MockObject $cacheFactory;
 
-    /**
-     * Mock user object
-     *
-     * @var MockObject|IUser
-     */
-    private MockObject $user;
+	/** @var MockObject&LoggerInterface */
+	private MockObject $logger;
 
-    /**
-     * Set up test environment before each test
-     *
-     * This method initializes all mocks and the controller instance
-     * for testing purposes.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/** @var MockObject&UserService */
+	private MockObject $userService;
 
-        // Create mock objects for all dependencies
-        $this->request = $this->createMock(IRequest::class);
-        $this->userManager = $this->createMock(IUserManager::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->authorizationService = $this->createMock(AuthorizationService::class);
-        $this->user = $this->createMock(IUser::class);
+	/** @var MockObject&IL10N */
+	private MockObject $l10n;
 
-        // Initialize the controller with mocked dependencies
-        $this->controller = new UserController(
-            'openconnector',
-            $this->request,
-            $this->userManager,
-            $this->userSession,
-            $this->authorizationService
-        );
-    }
+	/** @var MockObject&IUser */
+	private MockObject $user;
 
-    /**
-     * Test successful retrieval of current user information
-     *
-     * This test verifies that the me() method returns correct user data
-     * when a user is authenticated.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testMeSuccessful(): void
-    {
-        // Setup mock user data
-        $this->setupMockUserData();
+	/**
+	 * Set up test environment before each test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        // Mock user session to return the authenticated user
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($this->user);
+		$this->request = $this->createMock(IRequest::class);
+		$this->userManager = $this->createMock(IUserManager::class);
+		// IUserSession does not declare createSessionToken() in its interface,
+		// but UserController calls it at runtime (it exists on the concrete NC
+		// implementation). Use getMockBuilder + addMethods so PHPUnit allows
+		// ->method('createSessionToken') without raising
+		// MethodCannotBeConfiguredException.
+		$this->userSession = $this->getMockBuilder(IUserSession::class)
+			->addMethods(['createSessionToken'])
+			->getMockForAbstractClass();
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userService = $this->createMock(UserService::class);
+		$this->l10n = $this->createMock(IL10N::class);
+		$this->user = $this->createMock(IUser::class);
 
-        // Execute the method
-        $response = $this->controller->me();
+		// SecurityService is instantiated inside UserController's constructor
+		// via `new SecurityService($cacheFactory, $logger)`. It calls
+		// $cacheFactory->createDistributed() so we must stub that to return
+		// a usable ICache mock.
+		$cache = $this->createMock(ICache::class);
+		$this->cacheFactory = $this->createMock(ICacheFactory::class);
+		$this->cacheFactory->method('createDistributed')->willReturn($cache);
 
-        // Assert response is successful
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(200, $response->getStatus());
+		// IL10N::t() must return the string so error messages are populated.
+		$this->l10n->method('t')->willReturnArgument(0);
 
-        // Assert response contains expected user data
-        $data = $response->getData();
-        $this->assertEquals('testuser', $data['uid']);
-        $this->assertEquals('Test User', $data['displayName']);
-        $this->assertEquals('test@example.com', $data['email']);
-        $this->assertTrue($data['enabled']);
-    }
+		$this->controller = new UserController(
+			'integriq',
+			$this->request,
+			$this->userManager,
+			$this->userSession,
+			$this->cacheFactory,
+			$this->logger,
+			$this->userService,
+			$this->l10n
+		);
+	}
 
-    /**
-     * Test me() method when user is not authenticated
-     *
-     * This test verifies that the me() method returns proper error
-     * when no user is logged in.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testMeUnauthenticated(): void
-    {
-        // Mock user session to return null (no authenticated user)
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
+	// -----------------------------------------------------------------------
+	// me() tests
+	// -----------------------------------------------------------------------
 
-        // Execute the method
-        $response = $this->controller->me();
+	/**
+	 * Test successful retrieval of current user information via me().
+	 *
+	 * @return void
+	 */
+	public function testMeSuccessful(): void {
+		$userData = [
+			'uid' => 'testuser',
+			'displayName' => 'Test User',
+			'email' => 'test@example.com',
+			'enabled' => true,
+		];
 
-        // Assert response shows authentication error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(401, $response->getStatus());
-        $this->assertEquals(['error' => 'User not authenticated'], $response->getData());
-    }
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willReturn($this->user);
 
-    /**
-     * Test successful user information update
-     *
-     * This test verifies that the updateMe() method correctly updates
-     * user information when valid data is provided.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testUpdateMeSuccessful(): void
-    {
-        // Setup mock user data
-        $this->setupMockUserData();
+		$this->userService->expects($this->once())
+			->method('buildUserDataArray')
+			->with($this->user)
+			->willReturn($userData);
 
-        // Mock user session to return the authenticated user
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn($this->user);
+		$response = $this->controller->me();
 
-        // Mock request parameters with update data
-        $updateData = [
-            'displayName' => 'Updated User Name',
-            'email' => 'updated@example.com',
-            'language' => 'en'
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($updateData);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(200, $response->getStatus());
 
-        // Mock user update methods
-        $this->user->expects($this->once())
-            ->method('canChangeDisplayName')
-            ->willReturn(true);
-        $this->user->expects($this->once())
-            ->method('setDisplayName')
-            ->with('Updated User Name');
+		$data = $response->getData();
+		$this->assertEquals('testuser', $data['uid']);
+		$this->assertEquals('Test User', $data['displayName']);
+		$this->assertEquals('test@example.com', $data['email']);
+		$this->assertTrue($data['enabled']);
+	}
 
-        $this->user->expects($this->once())
-            ->method('canChangeMailAddress')
-            ->willReturn(true);
-        $this->user->expects($this->once())
-            ->method('setEMailAddress')
-            ->with('updated@example.com');
+	/**
+	 * Test me() returns 401 when no user is authenticated.
+	 *
+	 * The controller returns `['message' => ...]` (not `['error' => ...]`) for
+	 * the unauthenticated case in me().
+	 *
+	 * @return void
+	 */
+	public function testMeUnauthenticated(): void {
+		// No Authorization header, getCurrentUser returns null.
+		$this->request->method('getHeader')->willReturn('');
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willReturn(null);
 
-        $this->user->expects($this->once())
-            ->method('setLanguage')
-            ->with('en');
+		$response = $this->controller->me();
 
-        // Execute the method
-        $response = $this->controller->updateMe();
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        // Assert response is successful
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(200, $response->getStatus());
-    }
+		$data = $response->getData();
+		$this->assertArrayHasKey('message', $data);
+	}
 
-    /**
-     * Test updateMe() method when user is not authenticated
-     *
-     * This test verifies that the updateMe() method returns proper error
-     * when no user is logged in.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testUpdateMeUnauthenticated(): void
-    {
-        // Mock user session to return null (no authenticated user)
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willReturn(null);
+	/**
+	 * Test me() returns 500 when an unexpected exception is thrown.
+	 *
+	 * @return void
+	 */
+	public function testMeException(): void {
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willThrowException(new \Exception('Unexpected error'));
 
-        // Execute the method
-        $response = $this->controller->updateMe();
+		$response = $this->controller->me();
 
-        // Assert response shows authentication error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(401, $response->getStatus());
-        $this->assertEquals(['error' => 'User not authenticated'], $response->getData());
-    }
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(500, $response->getStatus());
+		$this->assertStringContainsString('Failed to retrieve user information', $response->getData()['error']);
+	}
 
-    /**
-     * Test successful user login
-     *
-     * This test verifies that the login() method successfully authenticates
-     * a user with valid credentials.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testLoginSuccessful(): void
-    {
-        // Setup mock user data
-        $this->setupMockUserData();
+	// -----------------------------------------------------------------------
+	// updateMe() tests
+	// -----------------------------------------------------------------------
 
-        // Mock request parameters with login credentials
-        $loginData = [
-            'username' => 'testuser',
-            'password' => 'testpassword'
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($loginData);
+	/**
+	 * Test successful user information update via updateMe().
+	 *
+	 * @return void
+	 */
+	public function testUpdateMeSuccessful(): void {
+		$updateData = ['displayName' => 'Updated User'];
 
-        // Mock user manager to return authenticated user
-        $this->userManager->expects($this->once())
-            ->method('checkPassword')
-            ->with('testuser', 'testpassword')
-            ->willReturn($this->user);
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willReturn($this->user);
 
-        // Mock user session to set the authenticated user
-        $this->userSession->expects($this->once())
-            ->method('setUser')
-            ->with($this->user);
+		$this->request->method('getParams')->willReturn($updateData);
 
-        // Execute the method
-        $response = $this->controller->login();
+		$this->userService->expects($this->once())
+			->method('updateUserProperties')
+			->with($this->user, $updateData)
+			->willReturn(['organisation_updated' => false, 'organisation_message' => '']);
 
-        // Assert response is successful
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(200, $response->getStatus());
+		$this->userService->expects($this->once())
+			->method('buildUserDataArray')
+			->with($this->user)
+			->willReturn(['uid' => 'testuser', 'displayName' => 'Updated User']);
 
-        // Assert response contains success message and user data
-        $data = $response->getData();
-        $this->assertEquals('Login successful', $data['message']);
-        $this->assertArrayHasKey('user', $data);
-        $this->assertEquals('testuser', $data['user']['uid']);
-    }
+		$response = $this->controller->updateMe();
 
-    /**
-     * Test login with invalid credentials
-     *
-     * This test verifies that the login() method returns proper error
-     * when invalid credentials are provided.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testLoginInvalidCredentials(): void
-    {
-        // Mock request parameters with invalid credentials
-        $loginData = [
-            'username' => 'testuser',
-            'password' => 'wrongpassword'
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($loginData);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(200, $response->getStatus());
+	}
 
-        // Mock user manager to return false for invalid credentials
-        $this->userManager->expects($this->once())
-            ->method('checkPassword')
-            ->with('testuser', 'wrongpassword')
-            ->willReturn(false);
+	/**
+	 * Test updateMe() returns 401 when no user is authenticated.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMeUnauthenticated(): void {
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willReturn(null);
 
-        // Execute the method
-        $response = $this->controller->login();
+		$response = $this->controller->updateMe();
 
-        // Assert response shows authentication error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(401, $response->getStatus());
-        $this->assertEquals(['error' => 'Invalid username or password'], $response->getData());
-    }
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    /**
-     * Test login with missing credentials
-     *
-     * This test verifies that the login() method returns proper error
-     * when required credentials are missing.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testLoginMissingCredentials(): void
-    {
-        // Mock request parameters with missing credentials
-        $loginData = [
-            'username' => 'testuser'
-            // password is missing
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($loginData);
+		$data = $response->getData();
+		$this->assertArrayHasKey('error', $data);
+	}
 
-        // Execute the method
-        $response = $this->controller->login();
+	/**
+	 * Test updateMe() returns 500 when an unexpected exception is thrown.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMeException(): void {
+		$this->userService->expects($this->once())
+			->method('getCurrentUser')
+			->willThrowException(new \Exception('Unexpected error'));
 
-        // Assert response shows validation error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(400, $response->getStatus());
-        $this->assertEquals(['error' => 'Username and password are required'], $response->getData());
-    }
+		$response = $this->controller->updateMe();
 
-    /**
-     * Test login with empty credentials
-     *
-     * This test verifies that the login() method returns proper error
-     * when credentials are empty strings.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testLoginEmptyCredentials(): void
-    {
-        // Mock request parameters with empty credentials
-        $loginData = [
-            'username' => '',
-            'password' => ''
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($loginData);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(500, $response->getStatus());
+		$this->assertStringContainsString('Failed to update user information', $response->getData()['error']);
+	}
 
-        // Execute the method
-        $response = $this->controller->login();
+	// -----------------------------------------------------------------------
+	// login() tests
+	// -----------------------------------------------------------------------
 
-        // Assert response shows validation error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(400, $response->getStatus());
-        $this->assertEquals(['error' => 'Username and password are required'], $response->getData());
-    }
+	/**
+	 * Test successful user login.
+	 *
+	 * SecurityService::validateLoginCredentials() runs inside login(). We
+	 * supply valid credentials in the request so it passes, then stub
+	 * checkLoginRateLimit via ICache::get() returning null (no lockout).
+	 *
+	 * @return void
+	 */
+	public function testLoginSuccessful(): void {
+		$this->user->method('getUID')->willReturn('testuser');
+		$this->user->method('isEnabled')->willReturn(true);
 
-    /**
-     * Test exception handling in me() method
-     *
-     * This test verifies that the me() method properly handles exceptions
-     * and returns appropriate error responses.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testMeException(): void
-    {
-        // Mock user session to throw exception
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willThrowException(new \Exception('Test exception'));
+		$loginData = ['username' => 'testuser', 'password' => 'ValidPass1!'];
+		$this->request->method('getParams')->willReturn($loginData);
+		$this->request->method('getHeader')->willReturn('');
 
-        // Execute the method
-        $response = $this->controller->me();
+		$this->userManager->expects($this->once())
+			->method('checkPassword')
+			->with('testuser', 'ValidPass1!')
+			->willReturn($this->user);
 
-        // Assert response shows error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertStringContains('Failed to retrieve user information', $response->getData()['error']);
-    }
+		// After successful auth the controller calls createSessionToken() + getUser()
+		// to verify the session was established.
+		$this->userSession->method('createSessionToken')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn($this->user);
 
-    /**
-     * Test exception handling in updateMe() method
-     *
-     * This test verifies that the updateMe() method properly handles exceptions
-     * and returns appropriate error responses.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testUpdateMeException(): void
-    {
-        // Mock user session to throw exception
-        $this->userSession->expects($this->once())
-            ->method('getUser')
-            ->willThrowException(new \Exception('Test exception'));
+		$this->userService->method('buildUserDataArray')
+			->willReturn(['uid' => 'testuser']);
 
-        // Execute the method
-        $response = $this->controller->updateMe();
+		$response = $this->controller->login();
 
-        // Assert response shows error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertStringContains('Failed to update user information', $response->getData()['error']);
-    }
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(200, $response->getStatus());
 
-    /**
-     * Test exception handling in login() method
-     *
-     * This test verifies that the login() method properly handles exceptions
-     * and returns appropriate error responses.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    public function testLoginException(): void
-    {
-        // Mock request parameters
-        $loginData = [
-            'username' => 'testuser',
-            'password' => 'testpassword'
-        ];
-        $this->request->expects($this->once())
-            ->method('getParams')
-            ->willReturn($loginData);
+		$data = $response->getData();
+		$this->assertArrayHasKey('message', $data);
+	}
 
-        // Mock user manager to throw exception
-        $this->userManager->expects($this->once())
-            ->method('checkPassword')
-            ->willThrowException(new \Exception('Test exception'));
+	/**
+	 * Test login with invalid credentials returns 401.
+	 *
+	 * The request is well formed; it is the *authentication* that failed, so the
+	 * status is HTTP 401 Unauthorized. 400 Bad Request is reserved for
+	 * `validateLoginCredentials()` — a missing, too-short or illegal username, or
+	 * an over-long password — see testLoginMissingCredentials() below.
+	 *
+	 * Anti-enumeration is carried by the *message* ("Invalid username or
+	 * password", identical for an unknown user and a wrong password), not by the
+	 * status code; this test's previous docblock conflated the two and asserted
+	 * 400 even after UserController::login() was corrected to 401 in 8da2b46c.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md#scenario-failed-login-is-rate-limited-and-anti-enumeration
+	 *
+	 * @return void
+	 */
+	public function testLoginInvalidCredentials(): void {
+		$loginData = ['username' => 'testuser', 'password' => 'WrongPass1!'];
+		$this->request->method('getParams')->willReturn($loginData);
+		$this->request->method('getHeader')->willReturn('');
 
-        // Execute the method
-        $response = $this->controller->login();
+		$this->userManager->expects($this->once())
+			->method('checkPassword')
+			->with('testuser', 'WrongPass1!')
+			->willReturn(false);
 
-        // Assert response shows error
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertStringContains('Login failed', $response->getData()['error']);
-    }
+		$response = $this->controller->login();
 
-    /**
-     * Set up mock user data for testing
-     *
-     * This helper method configures the mock user object with realistic
-     * test data for use in various test scenarios.
-     *
-     * @return void
-     * 
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    private function setupMockUserData(): void
-    {
-        // Configure mock user with test data
-        $this->user->method('getUID')->willReturn('testuser');
-        $this->user->method('getDisplayName')->willReturn('Test User');
-        $this->user->method('getEMailAddress')->willReturn('test@example.com');
-        $this->user->method('isEnabled')->willReturn(true);
-        $this->user->method('getQuota')->willReturn('1 GB');
-        $this->user->method('getUsedSpace')->willReturn(524288000); // 500 MB in bytes
-        $this->user->method('getAvatarScope')->willReturn('contacts');
-        $this->user->method('getLastLogin')->willReturn(1640995200); // Unix timestamp
-        $this->user->method('getBackendClassName')->willReturn('Database');
-        $this->user->method('getLanguage')->willReturn('en');
-        $this->user->method('getLocale')->willReturn('en_US');
-        
-        // Configure capability methods
-        $this->user->method('canChangeDisplayName')->willReturn(true);
-        $this->user->method('canChangeMailAddress')->willReturn(true);
-        $this->user->method('canChangePassword')->willReturn(true);
-        $this->user->method('canChangeAvatar')->willReturn(true);
-    }
-} 
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+		// The message must not reveal whether the username exists.
+		$this->assertSame(
+			'Invalid username or password',
+			$response->getData()['error']
+		);
+	}
+
+	/**
+	 * Test login with missing credentials returns 400.
+	 *
+	 * @return void
+	 */
+	public function testLoginMissingCredentials(): void {
+		$loginData = ['username' => 'testuser'];
+		$this->request->method('getParams')->willReturn($loginData);
+		$this->request->method('getHeader')->willReturn('');
+
+		$response = $this->controller->login();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}
+
+	/**
+	 * Test login with empty credentials returns 400.
+	 *
+	 * @return void
+	 */
+	public function testLoginEmptyCredentials(): void {
+		$loginData = ['username' => '', 'password' => ''];
+		$this->request->method('getParams')->willReturn($loginData);
+		$this->request->method('getHeader')->willReturn('');
+
+		$response = $this->controller->login();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}
+
+	/**
+	 * Test login exception handling returns 500.
+	 *
+	 * @return void
+	 */
+	public function testLoginException(): void {
+		$loginData = ['username' => 'testuser', 'password' => 'ValidPass1!'];
+		$this->request->method('getParams')->willReturn($loginData);
+		$this->request->method('getHeader')->willReturn('');
+
+		$this->userManager->expects($this->once())
+			->method('checkPassword')
+			->willThrowException(new \Exception('DB error'));
+
+		$response = $this->controller->login();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertEquals(500, $response->getStatus());
+		$this->assertArrayHasKey('error', $response->getData());
+	}
+
+	// -----------------------------------------------------------------------
+	// logout() tests
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Test that logout ends the session and reports success.
+	 *
+	 * The assertion that matters is that the session is actually terminated:
+	 * a handler that returned `['logout' => true]` without calling
+	 * IUserSession::logout() would leave the caller authenticated while telling
+	 * it that it is not. `expects($this->once())` is what makes that a test
+	 * rather than a shape check on the body.
+	 *
+	 * @return void
+	 */
+	public function testLogoutTerminatesTheSessionAndReportsSuccess(): void {
+		$this->userSession->expects($this->once())->method('logout');
+
+		$response = $this->controller->logout();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['logout' => true], $response->getData());
+	}
+
+	// -----------------------------------------------------------------------
+	// CORS preflight tests — preflightedCorsMe() / preflightedCorsLogin()
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Build a controller whose request reports the given Origin header.
+	 *
+	 * @param string $origin The Origin header value ('' = header absent).
+	 *
+	 * @return UserController
+	 */
+	private function controllerWithOrigin(string $origin): UserController {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getHeader')->willReturnCallback(
+			static function (string $name) use ($origin): string {
+				return $name === 'Origin' ? $origin : '';
+			}
+		);
+
+		return new UserController(
+			'integriq',
+			$request,
+			$this->userManager,
+			$this->userSession,
+			$this->cacheFactory,
+			$this->logger,
+			$this->userService,
+			$this->l10n
+		);
+	}
+
+	/**
+	 * Read a Response's raw, handler-set `headers` property via reflection.
+	 *
+	 * {@see \OCP\AppFramework\Http\Response::getHeaders()} merges in a live
+	 * `\OC::$server`-resolved IRequest, which does not exist in this standalone
+	 * unit-test environment. The same helper is used by
+	 * EndpointServiceTierPolicyTest for the same reason.
+	 *
+	 * @param \OCP\AppFramework\Http\Response $response The response to inspect.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function rawHeaders(\OCP\AppFramework\Http\Response $response): array {
+		$property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+		$property->setAccessible(true);
+
+		return $property->getValue($response);
+	}
+
+	/**
+	 * The wire contract of an OPTIONS preflight on /api/user/me.
+	 *
+	 * @return void
+	 */
+	public function testPreflightedCorsMeReturnsTheCorsContract(): void {
+		$response = $this->controllerWithOrigin('https://client.example.org')->preflightedCorsMe();
+		$headers = $this->rawHeaders($response);
+
+		$this->assertSame('https://client.example.org', $headers['Access-Control-Allow-Origin']);
+		$this->assertSame('true', $headers['Access-Control-Allow-Credentials']);
+		$this->assertSame('PUT, POST, GET, DELETE, PATCH', $headers['Access-Control-Allow-Methods']);
+		$this->assertSame('Authorization, Content-Type, Accept', $headers['Access-Control-Allow-Headers']);
+		$this->assertSame('1728000', $headers['Access-Control-Max-Age']);
+	}
+
+	/**
+	 * The wire contract of an OPTIONS preflight on /api/user/login.
+	 *
+	 * @return void
+	 */
+	public function testPreflightedCorsLoginReturnsTheCorsContract(): void {
+		$response = $this->controllerWithOrigin('https://client.example.org')->preflightedCorsLogin();
+		$headers = $this->rawHeaders($response);
+
+		$this->assertSame('https://client.example.org', $headers['Access-Control-Allow-Origin']);
+		$this->assertSame('true', $headers['Access-Control-Allow-Credentials']);
+		$this->assertSame('PUT, POST, GET, DELETE, PATCH', $headers['Access-Control-Allow-Methods']);
+		$this->assertSame('Authorization, Content-Type, Accept', $headers['Access-Control-Allow-Headers']);
+		$this->assertSame('1728000', $headers['Access-Control-Max-Age']);
+	}
+
+	/**
+	 * `Allow-Credentials: true` and `Allow-Origin: *` are mutually exclusive.
+	 *
+	 * A browser rejects the pair outright, so a preflight that emitted both
+	 * would break every credentialed cross-origin client while every "returns
+	 * a Response with CORS headers" assertion still passed. The interesting
+	 * case is the one with no Origin header at all, which is where the
+	 * wildcard could leak in — the handler must resolve a concrete origin.
+	 *
+	 * @return void
+	 */
+	public function testPreflightWithNoOriginNeverPairsWildcardWithCredentials(): void {
+		// Both entry points share buildCorsPreflightResponse() today; each is
+		// still driven literally so a future divergence is caught.
+		$me = $this->controllerWithOrigin('')->preflightedCorsMe();
+		$login = $this->controllerWithOrigin('')->preflightedCorsLogin();
+
+		foreach (['me' => $me, 'login' => $login] as $label => $response) {
+			$headers = $this->rawHeaders($response);
+			$this->assertSame('true', $headers['Access-Control-Allow-Credentials'], $label);
+			$this->assertNotSame(
+				'*',
+				$headers['Access-Control-Allow-Origin'],
+				$label . ': a wildcard origin with Allow-Credentials:true is rejected by every browser'
+			);
+		}
+	}
+}

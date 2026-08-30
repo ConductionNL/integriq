@@ -1,0 +1,20 @@
+{
+    "name": "Notubiz votes to decidesk Votes",
+    "description": "Reads individual votes for a decision from the Notubiz public RIS source and writes them into decidesk's Vote OpenRegister objects. {{decision_id}} is supplied per run; targetId is decidesk's register/schema id pair (fill in per instance: <decideskRegisterId>/<voteSchemaId>).",
+    "version": "0.0.1",
+    "sourceId": "notubiz-ris-v1",
+    "sourceType": "api",
+    "sourceTargetMapping": "Notubiz Vote to decidesk Vote",
+    "sourceConfig": {
+        "idPosition": "id",
+        "resultsPosition": "votes",
+        "endpoint": "/decisions/{{decision_id}}",
+        "deleteInvalidObjects": "false",
+        "headers": [],
+        "query": {"format": "json", "version": "1.21.1"}
+    },
+    "currentPage": 1,
+    "targetId": "decidesk/vote",
+    "targetType": "register/schema",
+    "conditions": {"!!":{"var":"id"}}
+}

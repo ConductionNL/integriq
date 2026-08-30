@@ -1,62 +1,109 @@
 <?php
 
-namespace OCA\OpenConnector\Action;
+/**
+ * Integriq Ping Action.
+ *
+ * Cron action that executes a simple GET / ping call against a configured
+ * source and records the call log entry.
+ *
+ * @category Action
+ * @package  OCA\Integriq\Action
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
+ */
 
-use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Db\SourceMapper;
+namespace OCA\Integriq\Action;
+
+use OCA\Integriq\Service\CallService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
- * This class is used to run the action tasks for the OpenConnector app. It hooks into the cron job list and runs the classes that are set as the job class in the job.
- *
- * @package OCA\OpenConnector\Cron
+ * Runs ping actions wired into the Integriq cron job list.
  */
-class PingAction
-{
-    private CallService $callService;
-    private SourceMapper $sourceMapper;
+class PingAction {
 
-    public function __construct(
-        CallService $callService,
-        SourceMapper $sourceMapper,
-    ) {
-        $this->callService = $callService;
-		$this->sourceMapper = $sourceMapper;
-    }
+	/**
+	 * Service used to execute outbound calls.
+	 *
+	 * @var CallService
+	 */
+	private CallService $callService;
+
+	/**
+	 * OpenRegister object service used to resolve sources.
+	 *
+	 * @var OrObjectService
+	 */
+	private OrObjectService $orObjectService;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param CallService $callService Service used to execute outbound calls.
+	 * @param OrObjectService $orObjectService Service used to resolve sources.
+	 */
+	public function __construct(
+		CallService $callService,
+		OrObjectService $orObjectService,
+	) {
+		$this->callService = $callService;
+		$this->orObjectService = $orObjectService;
+
+	}//end __construct()
 
 	/**
 	 * Executes a simple API-call (ping / GET) on a source by using the callService.
-	 * The method logs actions performed during execution and returns a stack trace of the operations.
 	 *
-	 * @todo Make this method more generic to support additional actions.
-	 * @todo Add logging or better handling for cases when 'sourceId' is not provided.
+	 * The method logs actions performed during execution and returns a stack trace of the operations.
 	 *
 	 * @param array $arguments An array of arguments including optional 'sourceId' to define the source for the call.
 	 *
 	 * @return array An array containing the execution stack trace of the actions performed.
+	 *
+	 * @todo Make this method more generic to support additional actions.
+	 * @todo Add logging or better handling for cases when 'sourceId' is not provided.
 	 */
-    public function run(array $arguments = []): array
-	{
+	public function run(array $arguments = []): array {
 		$response = [];
 		$response['stackTrace'][] = 'Running PingAction';
 
-        // For now we only have one action, so this is a bit overkill, but it's a good starting point
-        if (isset($arguments['sourceId']) && is_int((int) $arguments['sourceId'])) {
-			$response['stackTrace'][] = "Found sourceId {$arguments['sourceId']} in arguments";
-            $source = $this->sourceMapper->find((int) $arguments['sourceId']);
-		}
-        else {
-			// @todo log and / or not default to just using the first source
-			$response['stackTrace'][] = "No sourceId in arguments, default to sourceId = 1";
-            $source = $this->sourceMapper->find(1);
+		// For now we only have one action, so this is a bit overkill, but it is a good starting point.
+		$sourceId = null;
+		if (isset($arguments['sourceId']) === false || empty($arguments['sourceId']) === true) {
+			// @todo Log and / or not default to just using the first source.
+			$response['stackTrace'][] = 'No sourceId in arguments, skipping ping';
+			return $response;
 		}
 
-		$response['stackTrace'][] = "Calling callService...";
+		$sourceId = (string)$arguments['sourceId'];
+		$response['stackTrace'][] = "Found sourceId {$sourceId} in arguments";
+
+		// System context (ocon#147): this runs as a scheduled action, where there is no
+		// session at all — and the `source` schema is admin-only now.
+		$source = $this->orObjectService->find(
+			id: $sourceId,
+			register: 'integriq',
+			schema: 'source',
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($source === null) {
+			$response['stackTrace'][] = "Source not found for id: {$sourceId}";
+			return $response;
+		}
+
+		$response['stackTrace'][] = 'Calling callService...';
 		$callLog = $this->callService->call($source);
 
-		$response['stackTrace'][] = "Created callLog with id: ".$callLog->getId();
+		$response['stackTrace'][] = 'Created callLog with uuid: ' . $callLog->getUuid();
 
-		// Let's report back about what we have just done
-        return $response;
-    }
-
-}
+		// Let's report back about what we have just done.
+		return $response;
+	}//end run()
+}//end class

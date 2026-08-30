@@ -1,194 +1,245 @@
 <?php
 
-namespace OCA\OpenConnector\Service\ConfigurationHandlers;
+/**
+ * Endpoint configuration handler.
+ *
+ * Handler for exporting and importing endpoint configurations, translating
+ * targetId, mapping references and attached rules between ids and slugs.
+ *
+ * @category Service
+ * @package  OCA\Integriq\Service\ConfigurationHandlers
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
+ */
 
-use OCA\OpenConnector\Db\Endpoint;
-use OCA\OpenConnector\Db\EndpointMapper;
+namespace OCA\Integriq\Service\ConfigurationHandlers;
+
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
- * Class EndpointHandler
- *
  * Handler for exporting and importing endpoint configurations.
  *
- * @package OCA\OpenConnector\Service\ConfigurationHandlers
- * @category Service
- * @author OpenConnector Team
- * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class EndpointHandler implements ConfigurationHandlerInterface
-{
-    /**
-     * @param EndpointMapper $endpointMapper The endpoint mapper
-     */
-    public function __construct(
-        private readonly EndpointMapper $endpointMapper
-    ) {
-    }
+class EndpointHandler implements ConfigurationHandlerInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
+	 */
+	public function __construct(
+		private readonly OrObjectService $orObjectService,
+		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+	) {
 
-    /**
-     * {@inheritDoc}
-     */
-    public function export(Entity $entity, array $mappings, array &$mappingIds = []): array
-    {
-        if (!$entity instanceof Endpoint) {
-            throw new \InvalidArgumentException('Entity must be an instance of Endpoint');
-        }
+	}//end __construct()
 
-        $endpointArray = $entity->jsonSerialize();
-        unset($endpointArray['id'], $endpointArray['uuid']);
-        
-        // Ensure slug is set
-        if (empty($endpointArray['slug'])) {
-            $endpointArray['slug'] = $entity->getSlug();
-        }
+	/**
+	 * Export an endpoint entity to its serialised configuration form.
+	 *
+	 * @param Entity $entity The endpoint entity to export.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
+	 *
+	 * @return array The serialised endpoint configuration.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
+		if ($entity instanceof ObjectEntity) {
+			$endpointArray = $entity->getObject();
+		} else {
+			$endpointArray = $entity->jsonSerialize();
+		}
 
-        // Handle targetId based on targetType.
-        if (isset($endpointArray['targetId']) && isset($endpointArray['targetType'])) {
-            switch ($endpointArray['targetType']) {
-                case 'api':
-                case 'database':
-                    // For api/database targets, use source mapping.
-                    if (isset($mappings['source']['idToSlug'][$endpointArray['targetId']])) {
-                        $endpointArray['targetId'] = $mappings['source']['idToSlug'][$endpointArray['targetId']];
-                    }
-                    break;
+		unset($endpointArray['id'], $endpointArray['uuid']);
 
-                case 'register/schema':
-                    // For register/schema targets, split the ID and map both parts.
-                    if (str_contains($endpointArray['targetId'], '/')) {
-                        [$registerId, $schemaId] = explode('/', $endpointArray['targetId']);
+		// Redact secret-shaped values from the nested configuration array
+		// (secret-hygiene) — e.g. an inline per-endpoint auth-override header.
+		if (isset($endpointArray['configuration']) === true && is_array($endpointArray['configuration']) === true) {
+			$endpointArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $endpointArray['configuration']);
+		}
 
-                        // Map register ID to slug
-                        if (isset($mappings['register']['idToSlug'][$registerId])) {
-                            $registerSlug = $mappings['register']['idToSlug'][$registerId];
-                        } else {
-                            $registerSlug = $registerId; // Fallback to original ID if no mapping found.
-                        }
+		// Ensure slug is set.
+		if (empty($endpointArray['slug']) === true && $entity instanceof ObjectEntity) {
+			$endpointArray['slug'] = $entity->getUuid();
+		}
 
-                        // Map schema ID to slug
-                        if (isset($mappings['schema']['idToSlug'][$schemaId])) {
-                            $schemaSlug = $mappings['schema']['idToSlug'][$schemaId];
-                        } else {
-                            $schemaSlug = $schemaId; // Fallback to original ID if no mapping found.
-                        }
+		// Handle targetId based on targetType.
+		if (isset($endpointArray['targetId']) === true && isset($endpointArray['targetType']) === true) {
+			switch ($endpointArray['targetType']) {
+				case 'api':
+				case 'database':
+					// For api/database targets, use source mapping.
+					if (isset($mappings['source']['idToSlug'][$endpointArray['targetId']]) === true) {
+						$endpointArray['targetId'] = $mappings['source']['idToSlug'][$endpointArray['targetId']];
+					}
+					break;
 
-                        // Combine the slugs
-                        $endpointArray['targetId'] = $registerSlug . '/' . $schemaSlug;
-                    }
-                    break;
-            }
-        }
+				case 'register/schema':
+					// For register/schema targets, split the ID and map both parts.
+					if (str_contains($endpointArray['targetId'], '/') === true) {
+						[$registerId, $schemaId] = explode('/', $endpointArray['targetId']);
 
-        // Handle mapping IDs
-        if (isset($endpointArray['inputMapping']) && isset($mappings['mapping']['idToSlug'][$endpointArray['inputMapping']])) {
-            $endpointArray['inputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['inputMapping']];
-        }
-        if (isset($endpointArray['outputMapping']) && isset($mappings['mapping']['idToSlug'][$endpointArray['outputMapping']])) {
-            $endpointArray['outputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['outputMapping']];
-        }
+						// Map register ID to slug (fallback to original ID if no mapping found).
+						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
 
-        if (isset($endpointArray['rules']) === true) {
-		    $endpointArray['rules'] = array_filter(array_map(function(int|string $rule) use ($mappings) {
-                if(is_numeric($rule)) {
-                    $rule = (int)$rule;
-                }
-                if(isset($mappings['rule']['idToSlug'][$rule]) === true) {
+						// Map schema ID to slug (fallback to original ID if no mapping found).
+						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
 
-                    return $mappings['rule']['idToSlug'][$rule];
-                }
-                return null;
-            }, $endpointArray['rules']));
-        }
+						// Combine the slugs.
+						$endpointArray['targetId'] = $registerSlug . '/' . $schemaSlug;
+					}
+					break;
+			}//end switch
+		}//end if
 
+		// Handle mapping IDs.
+		if (isset($endpointArray['inputMapping']) === true
+			&& isset($mappings['mapping']['idToSlug'][$endpointArray['inputMapping']]) === true
+		) {
+			$endpointArray['inputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['inputMapping']];
+		}
 
+		if (isset($endpointArray['outputMapping']) === true
+			&& isset($mappings['mapping']['idToSlug'][$endpointArray['outputMapping']]) === true
+		) {
+			$endpointArray['outputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['outputMapping']];
+		}
 
+		if (isset($endpointArray['rules']) === true) {
+			$endpointArray['rules'] = array_filter(
+				array_map(
+					function (int|string $rule) use ($mappings) {
+						if (is_numeric($rule) === true) {
+							$rule = (int)$rule;
+						}
 
-        return $endpointArray;
-    }
+						if (isset($mappings['rule']['idToSlug'][$rule]) === true) {
+							return $mappings['rule']['idToSlug'][$rule];
+						}
 
-    /**
-     * {@inheritDoc}
-     */
-    public function import(array $data, array $mappings): Entity
-    {
-        // Convert slugs back to IDs.
-        if (isset($data['targetId']) && isset($data['targetType'])) {
-            switch ($data['targetType']) {
-                case 'api':
-                case 'database':
-                    // For api/database targets, use source mapping.
-                    if (isset($mappings['source']['slugToId'][$data['targetId']])) {
-                        $data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
-                    }
-                    break;
+						return null;
+					},
+					$endpointArray['rules']
+				)
+			);
+		}
 
-                case 'register/schema':
-                    // For register/schema targets, split the ID and map both parts.
-                    if (str_contains($data['targetId'], '/')) {
-                        [$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
+		return $endpointArray;
+	}//end export()
 
-                        // Map register slug to ID
-                        if (isset($mappings['register']['slugToId'][$registerSlug])) {
-                            $registerId = $mappings['register']['slugToId'][$registerSlug];
-                        } else {
-                            $registerId = $registerSlug; // Fallback to original slug if no mapping found.
-                        }
+	/**
+	 * Import an endpoint configuration into an endpoint entity.
+	 *
+	 * @param array $data The serialised endpoint configuration.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return Entity The imported endpoint entity.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	public function import(array $data, array $mappings): Entity {
+		// Convert slugs back to IDs.
+		if (isset($data['targetId']) === true && isset($data['targetType']) === true) {
+			switch ($data['targetType']) {
+				case 'api':
+				case 'database':
+					// For api/database targets, use source mapping.
+					if (isset($mappings['source']['slugToId'][$data['targetId']]) === true) {
+						$data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
+					}
+					break;
 
-                        // Map schema slug to ID
-                        if (isset($mappings['schema']['slugToId'][$schemaSlug])) {
-                            $schemaId = $mappings['schema']['slugToId'][$schemaSlug];
-                        } else {
-                            $schemaId = $schemaSlug; // Fallback to original slug if no mapping found.
-                        }
+				case 'register/schema':
+					// For register/schema targets, split the ID and map both parts.
+					if (str_contains($data['targetId'], '/') === true) {
+						[$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
 
-                        // Combine the IDs.
-                        $data['targetId'] = $registerId . '/' . $schemaId;
-                    }
-                    break;
-            }
-        }
+						// Map register slug to ID (fallback to original slug if no mapping found).
+						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
 
-        // Handle mapping IDs.
-        if (isset($data['inputMapping']) && isset($mappings['mapping']['slugToId'][$data['inputMapping']])) {
-            $data['inputMapping'] = $mappings['mapping']['slugToId'][$data['inputMapping']];
-        }
-        if (isset($data['outputMapping']) && isset($mappings['mapping']['slugToId'][$data['outputMapping']])) {
-            $data['outputMapping'] = $mappings['mapping']['slugToId'][$data['outputMapping']];
-        }
+						// Map schema slug to ID (fallback to original slug if no mapping found).
+						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
 
-		// Ensure rules is always an array before processing
-		if (!isset($data['rules']) || !is_array($data['rules'])) {
+						// Combine the IDs.
+						$data['targetId'] = $registerId . '/' . $schemaId;
+					}
+					break;
+			}//end switch
+		}//end if
+
+		// Handle mapping IDs.
+		if (isset($data['inputMapping']) === true
+			&& isset($mappings['mapping']['slugToId'][$data['inputMapping']]) === true
+		) {
+			$data['inputMapping'] = $mappings['mapping']['slugToId'][$data['inputMapping']];
+		}
+
+		if (isset($data['outputMapping']) === true
+			&& isset($mappings['mapping']['slugToId'][$data['outputMapping']]) === true
+		) {
+			$data['outputMapping'] = $mappings['mapping']['slugToId'][$data['outputMapping']];
+		}
+
+		// Ensure rules is always an array before processing.
+		if (isset($data['rules']) === false || is_array($data['rules']) === false) {
 			$data['rules'] = [];
 		}
-		
-		$data['rules'] = array_filter(array_map(function(int|string $rule) use ($mappings) {
-			if(isset($mappings['rule']['slugToId'][$rule]) === true) {
 
-				return $mappings['rule']['slugToId'][$rule];
-			}
-			return null;
-		}, $data['rules']));
+		$data['rules'] = array_filter(
+			array_map(
+				function (int|string $rule) use ($mappings) {
+					if (isset($mappings['rule']['slugToId'][$rule]) === true) {
+						return $mappings['rule']['slugToId'][$rule];
+					}
 
+					return null;
+				},
+				$data['rules']
+			)
+		);
 
 		// Check if endpoint with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['endpoint']['slugToId'][$data['slug']])) {
-            // Update existing endpoint.
-            return $this->endpointMapper->updateFromArray($mappings['endpoint']['slugToId'][$data['slug']], $data);
-        }
+		$slug = $data['slug'] ?? null;
+		if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug]) === true) {
+			// Update existing endpoint.
+			return $this->orObjectService->saveObject(
+				object: $data,
+				register: 'integriq',
+				schema: 'endpoint',
+				uuid: $mappings['endpoint']['slugToId'][$slug]
+			);
+		}
 
-        // Create new endpoint.
-        return $this->endpointMapper->createFromArray($data);
-    }
+		// Create new endpoint.
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'endpoint');
+	}//end import()
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getEntityType(): string
-    {
-        return 'endpoint';
-    }
-}
+	/**
+	 * Get the entity type this handler is responsible for.
+	 *
+	 * @return string The entity type identifier.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
+	 */
+	public function getEntityType(): string {
+		return 'endpoint';
+	}//end getEntityType()
+}//end class

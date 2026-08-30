@@ -1,13 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Rename source retention columns to snake_case.
+ *
+ * Drops the camelCase logRetention and errorRetention columns from the sources
+ * table and recreates them as log_retention and error_retention.
+ *
+ * @category Migration
+ * @package  OCA\Integriq\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Migration;
+declare(strict_types=1);
+
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,28 +29,35 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * FIXME Auto-generated migration step: Please modify to your needs!
+ * Renames the source retention columns from camelCase to snake_case.
  */
 class Version1Date20241206095007 extends SimpleMigrationStep {
-
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+	}//end preSchemaChange()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
+	 * Drops the camelCase columns and recreates them in snake_case.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
+		/*
 		 * @var ISchemaWrapper $schema
 		 */
+
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openconnector_sources') === true) {
@@ -47,6 +67,7 @@ class Version1Date20241206095007 extends SimpleMigrationStep {
 				$table->dropColumn('logRetention');
 				$table->addColumn('log_retention', Types::INTEGER)->setNotnull(false)->setDefault(3600);
 			}
+
 			if ($table->hasColumn('errorRetention') === true) {
 				$table->dropColumn('errorRetention');
 				$table->addColumn('error_retention', Types::INTEGER)->setNotnull(false)->setDefault(86400);
@@ -54,13 +75,17 @@ class Version1Date20241206095007 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}
+	}//end changeSchema()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+	}//end postSchemaChange()
+}//end class

@@ -1,19 +1,20 @@
 <?php
 
-declare(strict_types=1);
+// SPDX-FileCopyrightText: 2026 Conduction
+// SPDX-License-Identifier: EUPL-1.2
 
-require_once './vendor-bin/cs-fixer/vendor/autoload.php';
+// The require_once is NOT optional. php-cs-fixer includes this file before the
+// app's autoloader runs, so without it the run dies with "Class not found" —
+// and in --format=json that fatal is reported as ZERO FILES NEEDING CHANGES,
+// which reads exactly like a clean tree.
+require_once __DIR__ . '/vendor/autoload.php';
 
-use Nextcloud\CodingStandard\Config;
-
-$config = new Config();
-$config
-	->getFinder()
-	->notPath('build')
-	->notPath('l10n')
-	->notPath('node_modules')
-	->notPath('src')
-	->notPath('vendor')
-	->in(__DIR__);
+$config = new Conduction\CodingStandard\Config();
+$config->getFinder()
+    ->notPath('vendor')
+    ->notPath('node_modules')
+    ->notPath('build')
+    ->in(__DIR__ . '/lib')
+    ->in(__DIR__ . '/tests');
 
 return $config;

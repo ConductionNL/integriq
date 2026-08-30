@@ -1,13 +1,27 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Add conditions and follow_ups columns to Synchronizations.
+ *
+ * Adds two columns to the Synchronizations table:
+ * - conditions for json logic.
+ * - follow_ups for follow up synchronizations.
+ *
+ * @category Migration
+ * @package  OCA\Integriq\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Migration;
+declare(strict_types=1);
+
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCA\OpenRegister\Db\Schema;
@@ -17,30 +31,35 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Adds two columns to the Synchronizations table:
- * - conditions for json logic
- * - follow_ups for follow up synchronizations
+ * Adds conditions and follow_ups JSON columns to the Synchronizations table.
  */
 class Version1Date20241126074122 extends SimpleMigrationStep {
-
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+	}//end preSchemaChange()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
+	 * Adds the conditions and follow_ups columns to the synchronizations table.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
+		/*
 		 * @var ISchemaWrapper $schema
 		 */
+
 		$schema = $schemaClosure();
 		if ($schema->hasTable(tableName: 'openconnector_synchronizations') === true) {
 			$table = $schema->getTable(tableName: 'openconnector_synchronizations');
@@ -49,8 +68,8 @@ class Version1Date20241126074122 extends SimpleMigrationStep {
 					->setDefault(default: '{}')
 					->setNotnull(notnull:false);
 			}
-			if ($table->hasColumn(name: 'follow_ups') === false) {
 
+			if ($table->hasColumn(name: 'follow_ups') === false) {
 				$table->addColumn(name: 'follow_ups', typeName: Types::JSON)
 					->setDefault(default: '{}')
 					->setNotnull(notnull:false);
@@ -58,13 +77,17 @@ class Version1Date20241126074122 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}
+	}//end changeSchema()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+	}//end postSchemaChange()
+}//end class

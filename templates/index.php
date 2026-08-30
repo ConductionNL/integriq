@@ -2,10 +2,10 @@
 
 use OCP\Util;
 
-$appId = OCA\OpenConnector\AppInfo\Application::APP_ID;
+$appId = OCA\Integriq\AppInfo\Application::APP_ID;
 Util::addScript($appId, $appId . '-main');
 Util::addStyle($appId, 'main');
 ?>
-<div id="openconnector"></div>
+<div id="integriq"></div>
 
 

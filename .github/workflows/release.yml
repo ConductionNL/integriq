@@ -3,14 +3,68 @@ name: Release
 on:
   push:
     branches: [main, beta, development]
+  # Lets a human force a release without pushing — the shared workflow already
+  # expects this: its skip guard is written `github.event_name != 'push' || …`
+  # precisely so a dispatch is "deliberately never skipped … including of a
+  # commit this guard would refuse". 18 of the 21 fleet apps already declare it;
+  # this repo was one of the three that did not, so the only way to trigger a
+  # release here was to push.
+  workflow_dispatch:
 
+# Permission CEILING for the called release workflow, not a grant. All three
+# jobs below call the same `ConductionNL/.github/.github/workflows/release.yml@main`,
+# whose `release` job already declares `contents: write` for itself — so this
+# block RESTATES the grant the token already has today and changes nothing about
+# what runs. It is stated here only because CodeQL (actions/missing-workflow-permissions)
+# reads the caller, not the callee, and an unstated block means "whatever the
+# repo default happens to be".
+#
+# ⚠️ Do not "tighten" this to `contents: read`. A caller block caps the callee:
+# GitHub validates the called workflow's declared job permissions against this
+# grant, so a lower ceiling makes the call fail to START (zero jobs) rather than
+# run with less. `contents: write` is what cuts the tag and uploads the release
+# asset — ncipollo/release-action and svenstaro/upload-release-action.
+permissions:
+  contents: write
+  # REQUIRED, not optional. The called workflow's `release` job declares
+  # `pull-requests: write` because it routes the version bump through a PR
+  # rather than pushing at a protected branch. A caller block is a CEILING, so
+  # omitting this here caps the callee BELOW what it declares and the call
+  # fails to START — a `startup_failure` with zero jobs and no log to read.
+  #
+  # MEASURED 2026-08-20: every run of this workflow in this repo has ended in
+  # startup_failure, while apps whose callers declare NO permissions block at
+  # all (decidesk, procest) release normally — because with no block there is
+  # no ceiling to fall short of. integriq was the only app in the fleet
+  # that stated one, and stating an incomplete ceiling is worse than stating
+  # none.
+  pull-requests: write
+
+# `previous-app-id` is the App Store id this app shipped under before the
+# rename. The store keys everything on the id, so `integriq` is a brand new
+# entry starting from nothing -- without this the version line restarts
+# BELOW what the app already published as `openconnector`, and the store accepts
+# that with a 200 and then never offers it to anyone. Drop the input once
+# the `openconnector` entry is retired.
 jobs:
   unstable:
-    if: false # unstable builds are disabled
+    # Enabled 2026-08-21 to complete the convergence. It was `if: false` while
+    # the legacy `release-development.yml` carried this channel, so the two
+    # never overlapped — that file is deleted in the same commit, and without
+    # this guard integriq would simply stop publishing from development.
+    #
+    # ⚠️ THE TAG SHAPE CHANGES. The legacy workflow called a DIFFERENT shared
+    # workflow — `release-beta.yml@main` with `channel: dev` — which is why
+    # this app's development tags read `-dev.` (v0.3.4-dev.20260821092435)
+    # while the rest of the fleet reads `-unstable.`. Routing the channel
+    # through `release.yml`'s `unstable` job is what makes integriq match
+    # the fleet, and it is a visible rename, not a silent one.
+    if: github.ref == 'refs/heads/development'
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable
-      app-name: openconnector
+      app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -20,7 +74,8 @@ jobs:
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: beta
-      app-name: openconnector
+      app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
@@ -30,7 +85,8 @@ jobs:
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: stable
-      app-name: openconnector
+      app-name: integriq
+      previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
     secrets: inherit
