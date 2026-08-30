@@ -1,10 +1,10 @@
 # Configurations
 
-Configurations in OpenConnector allow you to group related entities together for easier management and export. This document explains how configurations work and how to use them effectively.
+Configurations in Integriq allow you to group related entities together for easier management and export. This document explains how configurations work and how to use them effectively.
 
 ## Configuration Structure
 
-Each entity in OpenConnector can belong to multiple configurations. This is stored in a JSON array field called 'configurations' that contains the IDs of the configurations the entity belongs to.
+Each entity in Integriq can belong to multiple configurations. This is stored in a JSON array field called 'configurations' that contains the IDs of the configurations the entity belongs to.
 
 Additionally, each entity has a 'slug' property, which is a URL-friendly identifier that can be used for referencing the entity in URLs and API calls.
 

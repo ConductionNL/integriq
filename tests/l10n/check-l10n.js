@@ -1,0 +1,187 @@
+#!/usr/bin/env node
+/* eslint-disable n/no-process-exit */
+/* eslint-disable no-console */
+/* eslint-disable n/shebang */
+/**
+ * l10n extraction / drift check — FRONTEND catalogue.
+ *
+ * Scans the frontend source for translation calls — t('<app>', '...'),
+ * n('<app>', '...', '...', n) and the $t/$n template variants — and asserts
+ * every literal source string is present as a key in l10n/en.js.
+ *
+ * ## Why en.js and not en.json
+ *
+ * The two translation sets are separate catalogues with separate consumers:
+ *
+ *   l10n/*.js    FRONTEND   OC.L10N.register -> t() / n()   (loaded by the browser)
+ *   l10n/*.json  BACKEND    PHP IL10N -> $l->t()
+ *
+ * They are not two renderings of one source. This check previously asserted
+ * frontend t() literals against l10n/en.json, which no frontend code path ever
+ * reads — so it demanded bookkeeping in a backend file while the catalogue the
+ * browser actually loads went unaudited (en.js was ~700 keys behind src/, and
+ * nothing noticed because a missing key makes OC.L10N fall back to the English
+ * source string, which renders correctly).
+ *
+ * The backend .json set is a separate concern. There is no scanner for it yet:
+ * it would need to walk lib/ for PHP $l->t() calls, not src/.
+ *
+ * ## Plurals
+ *
+ * An n() call has TWO source strings but only ONE catalogue key — the singular.
+ * The plural lives in that key's value as an array of the locale's nplurals
+ * forms. So the plural source is never itself a required key, and --write emits
+ * `[singular, plural]` for an n() key rather than a bare string (a string value
+ * on a plural key renders blank at runtime).
+ *
+ * Extraction is delegated to scripts/lib/l10n.js (vendored from openregister),
+ * which reads real string literals — decoding \u/\x escapes and rejecting
+ * concatenations and template interpolations — instead of pattern-matching.
+ * The same lib backs scripts/check-l10n.js, clean-l10n.js and l10n-ai.js, so
+ * every tool agrees on what "used" means.
+ *
+ * Division of labour with scripts/check-l10n.js: that one is the richer
+ * developer audit (missing + unused + unwrapped, no write mode); this one is the
+ * CI gate (missing only, plus --write extraction).
+ *
+ * Modes:
+ *   (default)  check only — exit non-zero if any used key is missing.
+ *   --write    extraction — merge every missing used key into l10n/en.js
+ *              (value === the English source, which is correct for `en`:
+ *              en IS the source language) and re-serialize in the on-disk
+ *              Nextcloud/Transifex layout.
+ *   --parity   after a clean check, also run the all-locales parity gate.
+ *
+ * Exit codes:
+ *   0  every used key is present in en.js (or --write made it so)
+ *   1  one or more used keys are missing from en.js (hard failure)
+ *
+ * Env:
+ *   L10N_APP_ID   override the app id (default: the id en.js registers)
+ *   L10N_SRC_DIR  override the source dir to scan (default: src)
+ *   L10N_FILE     override the en.js path (default: l10n/en.js)
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ */
+
+'use strict'
+
+const fs = require('fs')
+const path = require('path')
+
+const {
+	loadJsTranslations,
+	serializeJs,
+	walk,
+	extractTranslationCalls,
+	makeLineResolver,
+	SRC_EXTS,
+} = require('../../scripts/lib/l10n.js')
+
+const ROOT = process.cwd()
+const WRITE = process.argv.includes('--write')
+
+const srcDir = path.join(ROOT, process.env.L10N_SRC_DIR || 'src')
+const enFile = path.join(ROOT, process.env.L10N_FILE || 'l10n/en.js')
+
+if (!fs.existsSync(srcDir)) {
+	console.error(`l10n-check: source dir not found: ${srcDir}`)
+	process.exit(2)
+}
+if (!fs.existsSync(enFile)) {
+	console.error(`l10n-check: en.js not found: ${enFile} — every t() call would be a miss`)
+	process.exit(1)
+}
+
+const { app: registeredApp, translations, pluralForm } = loadJsTranslations(enFile)
+// The id en.js registers is the source of truth: it is what OC.L10N keys the
+// catalogue under at runtime, so a mismatch with package.json "name" would make
+// every t() call in src/ invisible to this scan.
+const appId = process.env.L10N_APP_ID || registeredApp
+
+// Extensions worth scanning, from the shared lib so this gate and
+// clean-l10n.js --apply cannot disagree about which files count as source — a
+// file type only the gate scanned would have its keys deleted from all 37
+// locales while CI stayed green. See SRC_EXTS there.
+const files = walk(srcDir, SRC_EXTS)
+
+// key -> Set of "file:line". Only REAL catalogue keys land here: a t() key, or
+// an n() singular. An n() plural source is recorded in pluralOf instead.
+const used = new Map()
+// n() singular -> its plural source string, for --write's forms array.
+const pluralOf = new Map()
+
+for (const file of files) {
+	const text = fs.readFileSync(file, 'utf8')
+	const posToLine = makeLineResolver(text)
+	const { calls } = extractTranslationCalls(text, appId)
+	for (const c of calls) {
+		const where = `${path.relative(ROOT, file)}:${posToLine(c.index)}`
+		// c.keys is [key] for t(), [singular, plural] for n().
+		const key = c.keys[0]
+		if (c.fn === 'n' && c.keys.length === 2) {
+			pluralOf.set(key, c.keys[1])
+		}
+		if (!used.has(key)) {
+			used.set(key, new Set())
+		}
+		used.get(key).add(where)
+	}
+}
+
+const missing = []
+for (const [key, locations] of used) {
+	if (!Object.prototype.hasOwnProperty.call(translations, key)) {
+		missing.push({ key, locations: [...locations] })
+	}
+}
+
+console.log(`l10n-check [${appId}]: scanned ${files.length} files, `
+	+ `${used.size} distinct literal keys used, `
+	+ `${Object.keys(translations).length} keys in en.js`)
+
+if (missing.length === 0) {
+	console.log('l10n-check: OK — every used translation key is present in l10n/en.js')
+	// English source is complete. Full multi-locale parity (every required locale
+	// complete) is an OPT-IN check, run via `npm run test:l10n:parity` (--parity),
+	// so the coverage gate stays green while the stale locales are a separately
+	// tracked backlog and don't block every PR.
+	if (process.argv.includes('--parity')) {
+		require('./check-l10n-parity.js')
+	}
+	process.exit(0)
+}
+
+if (WRITE) {
+	// Extraction mode. Value === the English source: for `en` that is correct,
+	// because en IS the source language (for any OTHER locale a value equal to
+	// its key is the one thing never to write — it is indistinguishable from a
+	// finished translation and so never gets revisited).
+	const merged = { ...translations }
+	for (const { key } of missing) {
+		// A plural key's value must be an array of this locale's nplurals forms;
+		// a bare string there renders blank at runtime.
+		merged[key] = pluralOf.has(key) ? [key, pluralOf.get(key)] : key
+	}
+	fs.writeFileSync(enFile, serializeJs({ app: appId, translations: merged, pluralForm }))
+	console.log(`l10n-check: WROTE ${missing.length} missing key(s) into `
+		+ `${path.relative(ROOT, enFile)} (value === English source). `
+		+ 'Review the diff, then translate the other locales via l10n tooling.')
+	process.exit(0)
+}
+
+console.error(`\nl10n-check: FAIL — ${missing.length} translation key(s) used in source `
+	+ 'but MISSING from l10n/en.js:')
+for (const { key, locations } of missing.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))) {
+	console.error(`  • ${JSON.stringify(key)}`)
+	for (const loc of locations.slice(0, 5)) {
+		console.error(`      ${loc}`)
+	}
+	if (locations.length > 5) {
+		console.error(`      … +${locations.length - 5} more`)
+	}
+}
+console.error('\nAdd the missing source strings to l10n/en.js, '
+	+ 'or run `node tests/l10n/check-l10n.js --write` to extract them automatically.')
+process.exit(1)

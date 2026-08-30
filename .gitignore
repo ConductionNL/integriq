@@ -1,18 +1,82 @@
+# IDE
 /.idea/
 /*.iml
 *.Identifier
 
+# Dependencies
 /vendor/
 /vendor-bin/*/vendor/
+/node_modules
 
+# Build artifacts
+/js/
+
+# Documentation
+/docs/node_modules/
+/docs/build/
+/docs/.docusaurus/
+/website/node_modules/
+/website/.docusaurus/
+
+# Testing & Quality
 /.php-cs-fixer.cache
 /tests/.phpunit.cache
+/.phpunit.cache/
+.phpunit.cache/
+.phpunit.result.cache
+/coverage/
+/coverage-frontend/
+/phpmetrics/
+/quality-reports/
+/phpqa/
 
-/node_modules/
+# Nextcloud
+/node_modules
 /js/
+/docs/node_modules/
+/docs/.docusaurus/
 /custom_apps/
 /custom-apps/
 /config/
 
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/worktrees/
+
+# Test/build artifacts
+.docusaurus
+.phpunit.result.cache
+
+# SBOM is published as release asset (see SECURITY.md), not stored in repo
+sbom.cdx.json
+bom-php.cdx.json
+bom-npm.cdx.json
+
+# Playwright (journeydoc / ADR-030)
+/tests/e2e/.auth/
+/tests/e2e/playwright-report/
+/tests/e2e/test-results/
+/test-results/
+/playwright-report/
+
+# Newman run artifacts
+/tests/postman/newman-report.json
+/coverage-vitest/
 /coverage/
-/coverage-frontend/
+
+# Agent/test scratch and tool caches — generated, never source.
+# Added by the 2026-08-25 fleet hygiene sweep (ADR-100 Decision 2).
+.stale/
+/.e2e-state/
+.phpunit.cache
+
+# Build and test transcripts written at the repo ROOT by local tooling. These
+# were tracked, so every local build produced a commit-shaped diff, and every
+# such commit triggered the full Code Quality suite — 34 jobs deciding a
+# changed log file. Root-anchored on purpose: .claude/skills/*/examples/*.log
+# are gate FIXTURES, not artefacts, and must stay tracked.
+/*.log
+/changed.tsv

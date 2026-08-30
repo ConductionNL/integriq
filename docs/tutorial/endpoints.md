@@ -1,6 +1,6 @@
-# Endpoints in OpenConnector
+# Endpoints in Integriq
 
-Endpoints in OpenConnector allow you to retrieve data from a source, such as an API or an OpenRegister instance. You can apply **mappings** and **rules** to process and manipulate the retrieved data as needed.
+Endpoints in Integriq allow you to retrieve data from a source, such as an API or an OpenRegister instance. You can apply **mappings** and **rules** to process and manipulate the retrieved data as needed.
 
 ---
 
@@ -54,7 +54,7 @@ By default, endpoints are publicly accessible unless authentication is explicitl
 
 ### JWT Authentication
 To enable **JWT-based authentication**, follow these steps:
-1. **Create a consumer** in OpenConnector.
+1. **Create a consumer** in Integriq.
 2. **Use the consumer name as `clientId`**.
 3. **Set the public key as the secret** in the authorization configuration.
 4. **Specify the admin username** as the `userId` in the authorization settings.
@@ -71,4 +71,4 @@ To enable **JWT-based authentication**, follow these steps:
 
 ## Conclusion
 
-Endpoints in OpenConnector provide **flexible API integration**, allowing data retrieval from various sources. With **mapping**, **rules**, and **JWT authentication**, you can structure and secure API access as needed. 🚀
+Endpoints in Integriq provide **flexible API integration**, allowing data retrieval from various sources. With **mapping**, **rules**, and **JWT authentication**, you can structure and secure API access as needed. 🚀

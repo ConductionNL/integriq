@@ -1,163 +1,438 @@
 <?php
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+/**
+ * Unit tests for ConfigurationService.
+ *
+ * @category Test
+ * @package  OCA\Integriq\Tests\Unit\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2
+ */
 
-use OCA\OpenConnector\Service\ConfigurationService;
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\Endpoint;
-use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\Rule;
-use OCA\OpenConnector\Db\Job;
-use OCA\OpenConnector\Db\Synchronization;
-use OCA\OpenConnector\Db\SourceMapper;
-use OCA\OpenConnector\Db\EndpointMapper;
-use OCA\OpenConnector\Db\MappingMapper;
-use OCA\OpenConnector\Db\RuleMapper;
-use OCA\OpenConnector\Db\JobMapper;
-use OCA\OpenConnector\Db\SynchronizationMapper;
+declare(strict_types=1);
+
+namespace OCA\Integriq\Tests\Unit\Service;
+
+use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\MappingHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\RuleHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Class ConfigurationServiceTest
+ * Tests for the configuration export/import service (rewritten for OR cutover).
  *
- * Unit tests for the ConfigurationService class.
- *
- * @package OCA\OpenConnector\Tests\Unit\Service
- * @category Test
- * @author OpenConnector Team
- * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * The original ConfigurationServiceTest imported 12 deleted Db types
+ * (Source, Endpoint, Mapping, Rule, Job, Synchronization + their Mappers).
+ * This replacement uses ObjectServiceMockBuilder and the new handler-based
+ * constructor that takes ORObjectService + RegisterMapper + SchemaMapper.
  */
-class ConfigurationServiceTest extends TestCase
-{
-    private ConfigurationService $configurationService;
-    private SourceMapper $sourceMapper;
-    private EndpointMapper $endpointMapper;
-    private MappingMapper $mappingMapper;
-    private RuleMapper $ruleMapper;
-    private JobMapper $jobMapper;
-    private SynchronizationMapper $synchronizationMapper;
+class ConfigurationServiceTest extends TestCase {
 
-    protected function setUp(): void
-    {
-        $this->sourceMapper = $this->createMock(SourceMapper::class);
-        $this->endpointMapper = $this->createMock(EndpointMapper::class);
-        $this->mappingMapper = $this->createMock(MappingMapper::class);
-        $this->ruleMapper = $this->createMock(RuleMapper::class);
-        $this->jobMapper = $this->createMock(JobMapper::class);
-        $this->synchronizationMapper = $this->createMock(SynchronizationMapper::class);
+	/**
+	 * @var ConfigurationService
+	 */
+	private ConfigurationService $service;
 
-        $this->configurationService = new ConfigurationService(
-            $this->sourceMapper,
-            $this->endpointMapper,
-            $this->mappingMapper,
-            $this->ruleMapper,
-            $this->jobMapper,
-            $this->synchronizationMapper
-        );
-    }
+	/**
+	 * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $orObjectService;
 
-    public function testGetEntitiesByConfiguration(): void
-    {
-        $configurationId = 'test-config-1';
-        $expectedSources = [new Source()];
-        $expectedEndpoints = [new Endpoint()];
-        $expectedMappings = [new Mapping()];
-        $expectedRules = [new Rule()];
-        $expectedJobs = [new Job()];
-        $expectedSynchronizations = [new Synchronization()];
+	/**
+	 * @var RegisterMapper|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $registerMapper;
 
-        $this->sourceMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedSources);
+	/**
+	 * @var SchemaMapper|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $schemaMapper;
 
-        $this->endpointMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedEndpoints);
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->mappingMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedMappings);
+		$this->orObjectService = ObjectServiceMockBuilder::make($this);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-        $this->ruleMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedRules);
+		$this->service = $this->buildService();
 
-        $this->jobMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedJobs);
+		// Default: findAll returns empty results.
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => [], 'total' => 0]);
 
-        $this->synchronizationMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedSynchronizations);
+		// Default: registerMapper + schemaMapper return empty lists.
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+	}//end setUp()
 
-        $result = $this->configurationService->getEntitiesByConfiguration($configurationId);
+	/**
+	 * Build a ConfigurationService wired against the current $this->orObjectService
+	 * mock, with real handlers (each taking ORObjectService + the shared
+	 * SensitiveFieldRegistry in its constructor since secret-hygiene).
+	 *
+	 * @return ConfigurationService
+	 */
+	private function buildService(): ConfigurationService {
+		$registry = new SensitiveFieldRegistry();
+		$endpointHandler = new EndpointHandler($this->orObjectService, $registry);
+		$synchronizationHandler = new SynchronizationHandler($this->orObjectService, $registry);
+		$mappingHandler = new MappingHandler($this->orObjectService, $registry);
+		$jobHandler = new JobHandler($this->orObjectService, $registry);
+		$sourceHandler = new SourceHandler($this->orObjectService, $registry);
+		$ruleHandler = new RuleHandler($this->orObjectService, $registry);
 
-        $this->assertEquals($expectedSources, $result['sources']);
-        $this->assertEquals($expectedEndpoints, $result['endpoints']);
-        $this->assertEquals($expectedMappings, $result['mappings']);
-        $this->assertEquals($expectedRules, $result['rules']);
-        $this->assertEquals($expectedJobs, $result['jobs']);
-        $this->assertEquals($expectedSynchronizations, $result['synchronizations']);
-    }
+		return new ConfigurationService(
+			$this->orObjectService,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$endpointHandler,
+			$synchronizationHandler,
+			$mappingHandler,
+			$jobHandler,
+			$sourceHandler,
+			$ruleHandler,
+		);
+	}//end buildService()
 
-    public function testExportConfiguration(): void
-    {
-        $configurationId = 'test-config-1';
-        $expectedSources = [new Source()];
-        $expectedEndpoints = [new Endpoint()];
-        $expectedMappings = [new Mapping()];
-        $expectedRules = [new Rule()];
-        $expectedJobs = [new Job()];
-        $expectedSynchronizations = [new Synchronization()];
+	/**
+	 * Test that the constructor instantiates ConfigurationService without errors.
+	 *
+	 * @return void
+	 */
+	public function testConstructorWiresDependencies(): void {
+		$this->assertInstanceOf(ConfigurationService::class, $this->service);
+	}//end testConstructorWiresDependencies()
 
-        $this->sourceMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedSources);
+	/**
+	 * Test that getEntitiesByConfiguration returns an array keyed by entity type.
+	 *
+	 * When no objects match the configurationId, each key must be an empty array.
+	 *
+	 * @return void
+	 */
+	public function testGetEntitiesByConfigurationReturnsKeyedArray(): void {
+		// Arrange — OR returns no matching objects
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => [], 'total' => 0]);
 
-        $this->endpointMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedEndpoints);
+		// Act
+		$result = $this->service->getEntitiesByConfiguration('config-id-1');
 
-        $this->mappingMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedMappings);
+		// Assert
+		$this->assertArrayHasKey('sources', $result);
+		$this->assertArrayHasKey('endpoints', $result);
+		$this->assertArrayHasKey('mappings', $result);
+		$this->assertArrayHasKey('rules', $result);
+		$this->assertArrayHasKey('jobs', $result);
+		$this->assertArrayHasKey('synchronizations', $result);
+	}//end testGetEntitiesByConfigurationReturnsKeyedArray()
 
-        $this->ruleMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedRules);
+	/**
+	 * Test that getEntitiesByConfiguration filters by configurationId.
+	 *
+	 * An entity whose 'configurations' array does NOT contain the requested ID
+	 * must be excluded from the result.
+	 *
+	 * @return void
+	 */
+	public function testGetEntitiesByConfigurationFiltersOutUnrelatedEntities(): void {
+		// Arrange — one source with a different configuration ID
+		$sourceEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['slug' => 'my-source', 'configurations' => ['other-config-id']],
+			'source-uuid-1'
+		);
 
-        $this->jobMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedJobs);
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => [$sourceEntity], 'total' => 1]);
 
-        $this->synchronizationMapper->expects($this->once())
-            ->method('findByConfiguration')
-            ->with($configurationId)
-            ->willReturn($expectedSynchronizations);
+		// Act
+		$result = $this->service->getEntitiesByConfiguration('config-id-2');
 
-        $result = $this->configurationService->exportConfiguration($configurationId);
+		// Assert — 'my-source' must not appear because it belongs to 'other-config-id'
+		$this->assertArrayNotHasKey('my-source', $result['sources']);
+	}//end testGetEntitiesByConfigurationFiltersOutUnrelatedEntities()
 
-        $this->assertEquals($configurationId, $result['configurationId']);
-        $this->assertArrayHasKey('exportDate', $result);
-        $this->assertEquals($expectedSources, $result['entities']['sources']);
-        $this->assertEquals($expectedEndpoints, $result['entities']['endpoints']);
-        $this->assertEquals($expectedMappings, $result['entities']['mappings']);
-        $this->assertEquals($expectedRules, $result['entities']['rules']);
-        $this->assertEquals($expectedJobs, $result['entities']['jobs']);
-        $this->assertEquals($expectedSynchronizations, $result['entities']['synchronizations']);
-    }
-} 
+	/**
+	 * Test that exportConfiguration returns a JSON-serialisable array with the
+	 * OAS-style 'components' envelope.
+	 *
+	 * Since `retrofit-2026-05-25-configuration-export-import` the export wraps
+	 * the entity-type buckets under a top-level `components` key (so the export
+	 * matches the OAS Components Object shape consumers expect). The previous
+	 * test asserted the legacy flat shape; this asserts the current contract.
+	 *
+	 * @return void
+	 */
+	public function testExportConfigurationReturnsStructuredArray(): void {
+		// Arrange — no objects, so export is essentially empty.
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => [], 'total' => 0]);
+
+		// Act.
+		$result = $this->service->exportConfiguration('export-config-id');
+
+		// Assert — top-level OAS-style envelope.
+		$this->assertIsArray($result);
+		$this->assertArrayHasKey('components', $result);
+		$this->assertIsArray($result['components']);
+
+		// Each entity type bucket lives inside `components` and is an array
+		// (empty here because no matching objects, but the keys must exist).
+		foreach (['sources', 'endpoints', 'mappings', 'rules', 'jobs', 'synchronizations'] as $bucket) {
+			$this->assertArrayHasKey($bucket, $result['components'], "missing bucket: $bucket");
+			$this->assertIsArray($result['components'][$bucket], "bucket not array: $bucket");
+		}
+	}//end testExportConfigurationReturnsStructuredArray()
+
+	/**
+	 * Test that getEntitiesByConfiguration indexes matching entities by slug.
+	 *
+	 * Uses `willReturnCallback` keyed on the schema filter — `getEntitiesByConfiguration`
+	 * issues six separate `findAll()` calls (one per schema). PHPUnit's
+	 * `->method()->willReturn()` queues a fresh return per invocation, so a
+	 * naive `willReturn([$source])` would have the source land in whichever
+	 * bucket happens to be the second call (see ObjectServiceMockBuilder's
+	 * matcher-queueing note — that was the original test drift).
+	 *
+	 * @return void
+	 */
+	public function testGetEntitiesByConfigurationIndexesBySlug(): void {
+		// Arrange — a source whose 'configurations' array contains our config ID.
+		$targetConfigId = 'config-id-3';
+		$sourceEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'source-a',
+				'configurations' => [$targetConfigId],
+				'name' => 'Source A',
+			],
+			'source-uuid-2'
+		);
+
+		// Rebuild the OR mock so we can install a callback-based findAll
+		// without colliding with the empty-default queued in setUp().
+		$this->orObjectService = ObjectServiceMockBuilder::make($this);
+		$this->orObjectService->method('findAll')
+			->willReturnCallback(static function (array $config) use ($sourceEntity): array {
+				$schema = ($config['filters']['schema'] ?? '');
+				if ($schema === 'source') {
+					return ['results' => [$sourceEntity], 'total' => 1];
+				}
+
+				return ['results' => [], 'total' => 0];
+			});
+
+		// Rewire the service with the fresh mock.
+		$this->service = $this->buildService();
+
+		// Act.
+		$result = $this->service->getEntitiesByConfiguration($targetConfigId);
+
+		// Assert — entity indexed under its slug in the sources bucket only.
+		$this->assertArrayHasKey('source-a', $result['sources']);
+		$this->assertSame('Source A', $result['sources']['source-a']['name']);
+
+		// Sanity: it must NOT have been mis-bucketed elsewhere.
+		foreach (['endpoints', 'mappings', 'rules', 'jobs', 'synchronizations'] as $otherBucket) {
+			$this->assertArrayNotHasKey('source-a', $result[$otherBucket], "source-a leaked into $otherBucket");
+		}
+	}//end testGetEntitiesByConfigurationIndexesBySlug()
+
+	/**
+	 * TC-8 / secret-hygiene Task 7 — cross-entity export-leak regression.
+	 *
+	 * One instance of every one of the six entity types is tagged with the
+	 * same configuration id and seeded with a distinct secret-shaped value
+	 * under a differently-named `configuration` field (`password`, `token`,
+	 * `client_secret`, `apikey`, `Authorization` header, `Cookie` header).
+	 * The JSON-serialised `exportConfiguration()` output must not contain any
+	 * of the six seeded plaintext values as a substring.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function testExportConfigurationLeaksNoSecretShapedValueForAnyEntityType(): void {
+		$configId = 'secret-hygiene-config-1';
+
+		$plaintextSecrets = [
+			'source' => 'live-source-password-111',
+			'endpoint' => 'live-endpoint-token-222',
+			'mapping' => 'live-mapping-client-secret-333',
+			'rule' => 'live-rule-apikey-444',
+			'job' => 'Bearer live-job-authorization-555',
+			'synchronization' => 'session=live-sync-cookie-666',
+		];
+
+		$entitiesBySchema = [
+			'source' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-source',
+					'configurations' => [$configId],
+					'configuration' => ['password' => $plaintextSecrets['source']],
+				],
+				'sec-source-uuid'
+			),
+			'endpoint' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-endpoint',
+					'configurations' => [$configId],
+					'configuration' => ['token' => $plaintextSecrets['endpoint']],
+				],
+				'sec-endpoint-uuid'
+			),
+			'mapping' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-mapping',
+					'configurations' => [$configId],
+					'configuration' => ['client_secret' => $plaintextSecrets['mapping']],
+				],
+				'sec-mapping-uuid'
+			),
+			'rule' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-rule',
+					'configurations' => [$configId],
+					'configuration' => ['action' => ['apikey' => $plaintextSecrets['rule']]],
+				],
+				'sec-rule-uuid'
+			),
+			'job' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-job',
+					'configurations' => [$configId],
+					'configuration' => ['headers' => ['Authorization' => $plaintextSecrets['job']]],
+				],
+				'sec-job-uuid'
+			),
+			'synchronization' => ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'slug' => 'sec-sync',
+					'configurations' => [$configId],
+					'configuration' => ['headers' => ['Cookie' => $plaintextSecrets['synchronization']]],
+				],
+				'sec-sync-uuid'
+			),
+		];
+
+		// Rebuild the OR mock with a schema-keyed findAll (see the
+		// matcher-queueing note on testGetEntitiesByConfigurationIndexesBySlug).
+		$this->orObjectService = ObjectServiceMockBuilder::make($this);
+		$this->orObjectService->method('findAll')
+			->willReturnCallback(static function (array $config) use ($entitiesBySchema): array {
+				$schema = ($config['filters']['schema'] ?? '');
+				if (isset($entitiesBySchema[$schema]) === true) {
+					return ['results' => [$entitiesBySchema[$schema]], 'total' => 1];
+				}
+
+				return ['results' => [], 'total' => 0];
+			});
+
+		$this->service = $this->buildService();
+
+		// Act.
+		$export = $this->service->exportConfiguration($configId);
+		$exportJson = json_encode($export);
+
+		// Assert: every entity type made it INTO the export (the redaction
+		// must not work by simply dropping the entities).
+		foreach (['sources', 'endpoints', 'mappings', 'rules', 'jobs', 'synchronizations'] as $bucket) {
+			$this->assertNotEmpty($export['components'][$bucket], "expected bucket '$bucket' to contain the seeded entity");
+		}
+
+		// Assert: none of the six seeded plaintext secrets survive anywhere
+		// in the JSON-serialised export.
+		foreach ($plaintextSecrets as $entityType => $plaintext) {
+			$this->assertStringNotContainsString(
+				$plaintext,
+				$exportJson,
+				"plaintext secret for entity type '$entityType' leaked into the export"
+			);
+		}
+
+		// Assert: the redaction placeholder is present (masking, not omission).
+		$this->assertStringContainsString('***REDACTED***', $exportJson);
+	}//end testExportConfigurationLeaksNoSecretShapedValueForAnyEntityType()
+
+	/**
+	 * environments-and-promotion REQ-010 regression — importing an OAS
+	 * document whose Source carries a `credentialRef` that does not
+	 * correspond to any credential broker entry on the importing
+	 * environment does NOT block the write: the Source is created exactly
+	 * as REQ-003 describes, with the reference stored verbatim (no
+	 * exception at import time — the dangling reference only surfaces later
+	 * when that Source is actually dispatched).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-credentialref-authentication-placeholders-pass-through-export-and-import-unresolved-and-untranslated-req-010
+	 */
+	public function testImportConfigurationDoesNotBlockOnNonResolvingCredentialRef(): void {
+		$this->orObjectService = ObjectServiceMockBuilder::make($this);
+		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+		$savedCapture = null;
+		$this->orObjectService->method('saveObject')
+			->willReturnCallback(
+				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedCapture) {
+					$savedCapture = $object;
+					return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'imported-source-uuid');
+				}
+			);
+
+		$this->service = $this->buildService();
+
+		$oas = [
+			'components' => [
+				'sources' => [
+					'my-api-source' => [
+						'slug' => 'my-api-source',
+						'name' => 'My API Source',
+						'configuration' => [
+							'authentication' => [
+								'credentialRef' => ['credentialId' => 'non-resolving-uuid-on-this-environment'],
+							],
+						],
+					],
+				],
+			],
+		];
+
+		// Act — must not throw.
+		$result = $this->service->importConfiguration($oas);
+
+		// Assert: the Source was written (REQ-003), and the credentialRef
+		// survives the write verbatim — REQ-004's translation vocabulary
+		// does not include `authentication`, so it is untouched.
+		$this->assertArrayHasKey('my-api-source', $result['sources']);
+		$this->assertSame(
+			'non-resolving-uuid-on-this-environment',
+			$savedCapture['configuration']['authentication']['credentialRef']['credentialId']
+		);
+	}//end testImportConfigurationDoesNotBlockOnNonResolvingCredentialRef()
+
+}//end class

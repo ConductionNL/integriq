@@ -9,9 +9,18 @@ Sources can be of different types:
 In order to authenticate on other sources there are possibilities based upon the way the source expects autentication parameters.
 These parameters can be set in the source configuration. For example, if the source expects an API key in the headers, we can set the parameter `headers.Authorization` with the API key as value.
 
+> [!TIP]
+> **Prefer brokered credentials.** Instead of embedding a key or secret in the source, set
+> `configuration.authentication` to `{"credentialRef": {"credentialId": "<uuid>"}}` (or
+> `{"credentialName": "<name>"}`) and let the OpenRegister credential broker hold the secret and
+> perform the call — Integriq never sees the secret. When `credentialRef` is present, any
+> sibling authentication field is a hard 409 config error, and there is no fallback to embedded
+> secrets. See [Sources — Brokered Credentials](features/sources.md#brokered-credentials-credentialref--recommended)
+> for the full contract and operator recipe.
+
 Usually, sources tend to use dynamic authorization parameters in order to prevent the same authentication parameter from being used by adversaries that catch a call and deduce the parameter.
 
-At the moment, OpenConnector supports two dynamic authentication methods, OAuth and JWT Bearers.
+At the moment, Integriq supports two dynamic authentication methods, OAuth and JWT Bearers.
 
 ### OAuth
 
@@ -19,13 +28,24 @@ To use OAuth we put in our Authorization header the following value:
 ```twig 
 Bearer {{ oauthToken(source) }}
 ```
-This will impose an OAuth 2.0 access token after `Bearer` if the field `authenticationConfig` contains correct values.
-OpenConnector supports the OAuth 2.0 protocol with client credentials and password credentials as grant_types.
+This will impose an OAuth 2.0 access token after `Bearer` if the source's
+`configuration.authentication` object contains correct values.
+Integriq supports the OAuth 2.0 protocol with client credentials and password credentials as grant_types.
 
->[!NOTE]
-> TODO: How to add authenticationConfig parameters in frontend
+>[!WARNING]
+> **These parameters go in `configuration.authentication`, NOT in the top-level
+> `authenticationConfig` field.** `oauthToken(source)` reads
+> `source.configuration.authentication` — it has done so since November 2024, when
+> `AuthenticationRuntime` stopped reading `authenticationConfig`. This page previously
+> said otherwise. **Nothing reads `authenticationConfig`**, so a credential placed
+> there is inert and the call goes out unauthenticated.
+>
+> Audit any leftover data (key names only, never values) with
+> `occ integriq:authentication-config`, then remove it with
+> `occ integriq:authentication-config --remove-authentication-config`.
+> See [ocon#232](https://github.com/ConductionNL/integriq/issues/232).
 
-When using OAuth, OpenConnector supports the following parameters:
+When using OAuth, Integriq supports the following parameters:
 
 #### Standard parameters
 * `grant_type`: The type of grant we have to use at the source. Supported are `client_credentials` and `password`
@@ -58,7 +78,7 @@ This results in the following example:
 > [!WARNING] 
 > Custom parameters are currently in beta, it is not recommended to use them in production environments.
 
-At the moment, OpenConnector is tested with the following custom parameters:
+At the moment, Integriq is tested with the following custom parameters:
 
 * `client_assertion_type`, only meaningful at the moment when value is set to `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. When this is set (for Microsoft authentications) the following fields are needed to generate the `client-assertion`-field
   - `private_key`: The base64 encoded private key of the certificate uploaded to Microsoft.
@@ -79,12 +99,14 @@ This can for example be used by setting an Authorization header with the followi
 Bearer {{ jwtToken(source) }}
 ```
 
-This will impose a JWT token after the bearer. For this, the `authenticationConfig` field of the source needs to contain the following fields:
+This will impose a JWT token after the bearer. For this, the source's `configuration.authentication`
+object (NOT the vestigial top-level `authenticationConfig` field — nothing reads that; see the warning
+above) needs to contain the following fields:
 * `algorithm`: The algorithm that should be used to generate the JWT. Supported are `HS256`, `HS384` and `HS512` for HMAC algorithms, `RS256`, `RS384`, `RS512` and `PS256` for RSA algorithms.
 * `secret`: The secret used for the JWT. This can either be a HMAC shared secret, or a RSA private key in base64 encoding.
 * `payload`: The payload of your JWT, json_encoded.
 
-This results in the following example for the `authenticationConfig` parameter in i.e. an OpenZaak source.
+This results in the following example for the `configuration.authentication` object in i.e. an OpenZaak source.
 ```json
 {
 	"algorithm": "HS256",

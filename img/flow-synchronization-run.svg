@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" role="img" aria-label="Run a synchronization">
+  <title>Run a synchronization</title>
+  <path fill="currentColor" d="M12 4a8 8 0 0 1 7.5 5.2l-1.9.7A6 6 0 0 0 12 6V4Z"/>
+  <path fill="currentColor" d="M12 2.5 16 5l-4 2.5v-5Z"/>
+  <path fill="currentColor" d="M12 20a8 8 0 0 1-7.5-5.2l1.9-.7A6 6 0 0 0 12 18v2Z"/>
+  <path fill="currentColor" d="M12 21.5 8 19l4-2.5v5Z"/>
+</svg>

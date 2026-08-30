@@ -1,0 +1,20 @@
+{
+    "name": "iBabs stemmen to decidesk Votes",
+    "description": "Reads individual stemmen for a besluit from the iBabs RIS source and writes them into decidesk's Vote OpenRegister objects. {{vergaderingId}} and {{besluitId}} are supplied per run; targetId is decidesk's register/schema id pair (fill in per instance: <decideskRegisterId>/<voteSchemaId>).",
+    "version": "0.0.1",
+    "sourceId": "ibabs-ris-v1",
+    "sourceType": "api",
+    "sourceTargetMapping": "iBabs Stem to decidesk Vote",
+    "sourceConfig": {
+        "idPosition": "id",
+        "resultsPosition": "items",
+        "endpoint": "/api/v1/organisations/{{organisatieId}}/vergaderingen/{{vergaderingId}}/besluiten/{{besluitId}}/stemmingen",
+        "deleteInvalidObjects": "false",
+        "headers": [],
+        "query": []
+    },
+    "currentPage": 1,
+    "targetId": "decidesk/vote",
+    "targetType": "register/schema",
+    "conditions": {"!!":{"var":"id"}}
+}

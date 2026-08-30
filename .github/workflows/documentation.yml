@@ -1,53 +1,44 @@
 name: Documentation
 
+# Publishes the docs site to the Cloudflare Worker that serves it.
+#
+# TRIGGERS ON `development`, NOT ON A `documentation` BRANCH. This file used to
+# listen on a branch called `documentation`; nobody has pushed to one since
+# 2026-05-25, so the site simply stopped being rebuilt while every docs change
+# merged to development satisfied its review and published nothing.
 on:
   push:
-    branches:
-      - development
+    branches: [development]
   pull_request:
-    branches:
-      - development
+    branches: [development]
 
 jobs:
   deploy:
-    name: Deploy Documentation
-    runs-on: ubuntu-latest
-    steps:
-      # https://github.com/marketplace/actions/checkout
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    # A reusable workflow receives NO secrets by default. Without this block the
+    # callee's publish step finds CF_API_TOKEN empty, skips itself on its own
+    # `if:` guard, and the run finishes GREEN having changed nothing -- the
+    # failure that left the fleet's docs sites on May builds. The names are the
+    # same on both sides; the org secrets really are CF_API_TOKEN/CF_ACCOUNT_ID.
+    secrets:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+    with:
+      cname: integriq.conduction.nl
 
-      # Verify directory structure
-      - name: List directory structure
-        run: |
-          ls -la
-          ls -la docusaurus/
-
-      # Generate SVG files using PlantUML
-      - name: plantuml
-        id: plantuml
-        uses: grassedge/generate-plantuml-action@v1.5
-        with:
-          message: "Render PlantUML files"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # https://github.com/marketplace/actions/docusaurus-builddeploy-action
-      - name: Deploy Docusaurus
-        id: deploy
-        uses: redkubes/docusaurus-deploy-action@v1.2
-        with:
-          source-folder: docusaurus
-          git-user: ${{ github.actor }}
-          git-password: ${{ secrets.GITHUB_TOKEN }}
-          deployment-branch: gh-pages
-
-      # https://github.com/marketplace/actions/create-an-issue
-      - name: Create issue on failure
-        if: failure()
-        uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          filename: .github/DOCUMENTATION_ISSUE_TEMPLATE.md
+      # openconnector.conduction.nl is the retired hostname. It stays in docs-hosts so
+      # existing links keep resolving, and canonical-host below turns it into a
+      # 301 rather than a second live copy of every page.
+      # EVERY host this worker answers on, in FULL: wrangler reconciles the
+      # worker's triggers against this list, so a host left out is REMOVED and
+      # goes dark.
+      docs-hosts: openconnector.conduction.nl,integriq.conduction.nl
+      # The ONE hostname this site is reached on. Every other host in
+      # docs-hosts answers 301 to the same path here. Before this, both hostnames
+      # served identical content and the retired name stayed as discoverable
+      # as the current one.
+      canonical-host: integriq.conduction.nl
+      # PINNED. Deriving the name is how a deploy goes green and reaches
+      # nobody: wrangler creates the derived worker and publishes there while
+      # the custom domains keep routing to the real one.
+      worker-name: openconnector-docs

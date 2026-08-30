@@ -1,385 +1,982 @@
 <?php
 
-namespace OCA\OpenConnector\Controller;
+/**
+ * Integriq EventsController.
+ *
+ * Controller for managing events and their subscriptions.
+ *
+ * @category Controller
+ * @package  OCA\Integriq\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
+ */
 
+namespace OCA\Integriq\Controller;
+
+use DateTime;
 use Exception;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Db\EventMapper;
-use OCA\OpenConnector\Db\EventMessageMapper;
-use OCA\OpenConnector\Db\EventSubscriptionMapper;
+use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
-use OCP\IRequest;
-use OCA\OpenConnector\Service\EventService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 
 /**
- * Controller for managing events and their subscriptions
+ * Controller for managing events and their subscriptions.
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) -- nextcloud-event-hub added the
+ * per-family `requireAction` gate, action-kind badge/provenance surfacing, and
+ * action-aware replay dispatch to this single owner of the event-subscription
+ * HTTP surface; keeping them here is the deliberate reuse constraint
+ * (design.md), not sprawl.
+ *
+ * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+ * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+ * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
  */
-class EventsController extends Controller
-{
-    /**
-     * Constructor for the EventsController
-     *
-     * @param string $appName The name of the app
-     * @param IRequest $request The request object
-     * @param IAppConfig $config The app configuration object
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-        private readonly IAppConfig $config,
-        private readonly EventMapper $eventMapper,
-//        private readonly EventLogMapper $eventLogMapper, // @todo
-        private readonly EventService $eventService,
-        private readonly EventMessageMapper $messageMapper,
-        private readonly EventSubscriptionMapper $subscriptionMapper
-    )
-    {
-        parent::__construct($appName, $request);
-    }
+class EventsController extends Controller {
+	/**
+	 * NC-native domains gated by a per-family `event.subscribe-nextcloud-<domain>`
+	 * action (REQ-005), each mapping to a `com.nextcloud.<domain>.*` type prefix.
+	 *
+	 * @var array<int, string>
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+	 */
+	private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
 
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-    }
+	/**
+	 * Constructor for the EventsController.
+	 *
+	 * @param string $appName The name of the app.
+	 * @param IRequest $request The request object.
+	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param EventService $eventService The event service.
+	 * @param IL10N $l The localization service.
+	 * @param IUserSession $userSession The user session.
+	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param WebhookSignatureService $signatureService Generates signing secrets.
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+		private readonly OrObjectService $orObjectService,
+		private readonly EventService $eventService,
+		private readonly IL10N $l,
+		private readonly IUserSession $userSession,
+		private readonly ActionAuthService $actionAuth,
+		private readonly WebhookSignatureService $signatureService,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    /**
-     * Retrieves a list of all events
-     *
-     * This method returns a JSON response containing an array of all events in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of events
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
+	}//end __construct()
 
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch: $fieldsToSearch);
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+	/**
+	 * Get all messages generated by an event.
+	 *
+	 * @param integer $id Event ID.
+	 *
+	 * @return JSONResponse List of messages.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function messages(int $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        return new JSONResponse(['results' => $this->eventMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }
+		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
-    /**
-     * Retrieves a single event by its ID
-     *
-     * This method returns a JSON response containing the details of a specific event.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the event to retrieve
-     * @return JSONResponse A JSON response containing the event details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->eventMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-        }
-    }
+		try {
+			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
+		}
 
-    /**
-     * Creates a new event
-     *
-     * This method creates a new event based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created event
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
+		// Get all messages for this event.
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'event' => $event->getUuid()],
+				'limit' => (int)$this->request->getParam('limit', 50),
+				'offset' => (int)$this->request->getParam('offset', 0),
+			]
+		);
+		$messages = ($matches['results'] ?? $matches);
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
+		return new JSONResponse(
+			[
+				'event' => $event->getObject(),
+				'messages' => $messages,
+			]
+		);
 
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
+	}//end messages()
 
-        // Create the event
-        $event = $this->eventMapper->createFromArray(object: $data);
+	/**
+	 * Create a new subscription for events.
+	 *
+	 * @return JSONResponse The created subscription.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function subscribe(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-        return new JSONResponse($event);
-    }
+		$this->actionAuth->requireAction(user: $user, action: 'event.subscribe');
 
-    /**
-     * Updates an existing event
-     *
-     * This method updates an existing event based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the event to update
-     * @return JSONResponse A JSON response containing the updated event details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
+		$data = $this->request->getParams();
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
+		// Remove internal fields.
+		foreach ($data as $key => $value) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
 
-        // Update the event
-        $event = $this->eventMapper->updateFromArray(id: (int) $id, object: $data);
+		// Layered per-family gate (REQ-005): the coarse `event.subscribe`
+		// check above stays untouched; this ADDS one
+		// `event.subscribe-nextcloud-<domain>` check per distinct NC-native
+		// domain present in `types[]`. Deliberately OUTSIDE the try/catch
+		// below (matching the coarse check's placement) so the thrown
+		// OCSForbiddenException propagates as HTTP 403 rather than being
+		// caught and downgraded to a 400 by the generic Exception handler.
+		$this->requireNextcloudEventFamilyActions(user: $user, data: $data);
 
-        return new JSONResponse($event);
-    }
+		try {
+			// Create subscription.
+			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
-    /**
-     * Deletes an event
-     *
-     * This method deletes an event based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the event to delete
-     * @return JSONResponse An empty JSON response
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->eventMapper->delete($this->eventMapper->find((int) $id));
+			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}
 
-        return new JSONResponse([]);
-    }
+	}//end subscribe()
 
-    /**
-     * Get all messages generated by an event
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $id Event ID
-     * @return JSONResponse List of messages
-     */
-    public function messages(int $id): JSONResponse
-    {
-        try {
-            // Verify event exists
-            $event = $this->eventMapper->find($id);
+	/**
+	 * Update an existing subscription.
+	 *
+	 * @param string $subscriptionId Subscription ID.
+	 *
+	 * @return JSONResponse The updated subscription.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function updateSubscription(string $subscriptionId): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-            // Get all messages for this event
-            $messages = $this->messageMapper->findAll(
-                filters: ['eventId' => $id],
-                limit: $this->request->getParam('limit', 50),
-                offset: $this->request->getParam('offset', 0)
-            );
+		$this->actionAuth->requireAction(user: $user, action: 'event.update-subscription');
 
-            return new JSONResponse([
-                'event' => $event,
-                'messages' => $messages
-            ]);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Event not found'], 404);
-        }
-    }
+		$data = $this->request->getParams();
 
-    /**
-     * Create a new subscription for events
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse The created subscription
-     */
-    public function subscribe(): JSONResponse
-    {
-        try {
-            $data = $this->request->getParams();
+		// Remove internal fields.
+		foreach ($data as $key => $value) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
 
-            // Remove internal fields
-            foreach ($data as $key => $value) {
-                if (str_starts_with($key, '_')) {
-                    unset($data[$key]);
-                }
-            }
+		// Layered per-family gate (REQ-005) — see subscribe() for the full
+		// rationale; deliberately outside the try/catch below.
+		$this->requireNextcloudEventFamilyActions(user: $user, data: $data);
 
-            // Create subscription
-            $subscription = $this->subscriptionMapper->createFromArray($data);
+		try {
+			// Update subscription.
+			$subscription = $this->orObjectService->saveObject(
+				object: $data,
+				register: 'integriq',
+				schema: 'event_subscription',
+				uuid: (string)$subscriptionId
+			);
 
-            return new JSONResponse($subscription);
-        } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }
+			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}//end try
 
-    /**
-     * Update an existing subscription
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $subscriptionId Subscription ID
-     * @return JSONResponse The updated subscription
-     */
-    public function updateSubscription(int $subscriptionId): JSONResponse
-    {
-        try {
-            $data = $this->request->getParams();
+	}//end updateSubscription()
 
-            // Remove internal fields
-            foreach ($data as $key => $value) {
-                if (str_starts_with($key, '_')) {
-                    unset($data[$key]);
-                }
-            }
+	/**
+	 * Delete a subscription.
+	 *
+	 * @param string $subscriptionId Subscription ID.
+	 *
+	 * @return JSONResponse Empty response.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function unsubscribe(string $subscriptionId): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-            // Update subscription
-            $subscription = $this->subscriptionMapper->updateFromArray($subscriptionId, $data);
+		$this->actionAuth->requireAction(user: $user, action: 'event.unsubscribe');
 
-            return new JSONResponse($subscription);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Subscription not found'], 404);
-        } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }
+		try {
+			$subscription = $this->orObjectService->find(
+				id: (string)$subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+		}
 
-    /**
-     * Delete a subscription
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $subscriptionId Subscription ID
-     * @return JSONResponse Empty response
-     */
-    public function unsubscribe(int $subscriptionId): JSONResponse
-    {
-        try {
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
-            $this->subscriptionMapper->delete($subscription);
+		$this->orObjectService->deleteObject(uuid: $subscription->getUuid());
+		return new JSONResponse([]);
+	}//end unsubscribe()
 
-            return new JSONResponse([]);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Subscription not found'], 404);
-        }
-    }
+	/**
+	 * List all subscriptions.
+	 *
+	 * @return JSONResponse List of subscriptions.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function subscriptions(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-    /**
-     * List all subscriptions
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse List of subscriptions
-     */
-    public function subscriptions(): JSONResponse
-    {
-        $filters = $this->request->getParams();
+		$this->actionAuth->requireAction(user: $user, action: 'event.subscriptions');
 
-        // Remove internal fields
-        foreach ($filters as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($filters[$key]);
-            }
-        }
+		$filters = $this->request->getParams();
 
-        $subscriptions = $this->subscriptionMapper->findAll(
-            limit: $this->request->getParam('limit', 50),
-            offset: $this->request->getParam('offset', 0),
-            filters: $filters
-        );
+		// Remove internal fields.
+		foreach ($filters as $key => $value) {
+			if (str_starts_with($key, '_') === true) {
+				unset($filters[$key]);
+			}
+		}
 
-        return new JSONResponse(['results' => $subscriptions]);
-    }
+		$orFilters = array_merge(['register' => 'integriq', 'schema' => 'event_subscription'], $filters);
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => $orFilters,
+				'limit' => (int)$this->request->getParam('limit', 50),
+				'offset' => (int)$this->request->getParam('offset', 0),
+			]
+		);
+		$subscriptions = ($matches['results'] ?? $matches);
 
-    /**
-     * Get messages for a specific subscription
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $subscriptionId Subscription ID
-     * @return JSONResponse List of messages
-     */
-    public function subscriptionMessages(int $subscriptionId): JSONResponse
-    {
-        try {
-            // Verify subscription exists
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
+		// Redact signing secrets on every list read.
+		$redacted = array_map(
+			fn ($subscription) => $this->redactSubscription(subscription: $subscription->getObject()),
+			$subscriptions
+		);
 
-            // Get messages for this subscription
-            $messages = $this->messageMapper->findAll(
-                limit: $this->request->getParam('limit', 50),
-				offset: $this->request->getParam('offset', 0),
-				filters: ['subscriptionId' => $subscriptionId]
-            );
+		return new JSONResponse(['results' => $redacted]);
+	}//end subscriptions()
 
-            return new JSONResponse([
-                'subscription' => $subscription,
-                'messages' => $messages
-            ]);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Subscription not found'], 404);
-        }
-    }
+	/**
+	 * Get messages for a specific subscription.
+	 *
+	 * @param string $subscriptionId Subscription ID.
+	 *
+	 * @return JSONResponse List of messages.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function subscriptionMessages(string $subscriptionId): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
 
-    /**
-     * Pull events for a subscription (for pull-based subscriptions)
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $subscriptionId Subscription ID
-     * @return JSONResponse List of pending messages
-     */
-    public function pull(int $subscriptionId): JSONResponse
-    {
-        try {
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
+		$this->actionAuth->requireAction(user: $user, action: 'event.subscription-messages');
 
-            if ($subscription->getStyle() !== 'pull') {
-                return new JSONResponse(['error' => 'Subscription is not pull-based'], 400);
-            }
+		try {
+			$subscription = $this->orObjectService->find(
+				id: (string)$subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+		}
 
-            $result = $this->eventService->pullEvents(
-                subscription: $subscription,
-                limit: $this->request->getParam('limit', 100),
-                cursor: $this->request->getParam('cursor')
-            );
+		// Get messages for this subscription.
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => ['register' => 'integriq', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
+				'limit' => (int)$this->request->getParam('limit', 50),
+				'offset' => (int)$this->request->getParam('offset', 0),
+			]
+		);
+		$messages = ($matches['results'] ?? $matches);
 
-            return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Subscription not found'], 404);
-        }
-    }
-}
+		return new JSONResponse(
+			[
+				'subscription' => $this->redactSubscription(subscription: $subscription->getObject()),
+				'messages' => $messages,
+			]
+		);
+
+	}//end subscriptionMessages()
+
+	/**
+	 * Pull events for a subscription (for pull-based subscriptions).
+	 *
+	 * @param string $subscriptionId Subscription ID.
+	 *
+	 * @return JSONResponse List of pending messages.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function pull(string $subscriptionId): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'event.pull');
+
+		try {
+			$subscription = $this->orObjectService->find(
+				id: (string)$subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+		}
+
+		$subscriptionData = $subscription->getObject();
+		if (($subscriptionData['style'] ?? '') !== 'pull') {
+			return new JSONResponse(['error' => $this->l->t('Subscription is not pull-based')], 400);
+		}
+
+		$result = $this->eventService->pullEvents(
+			subscription: $subscription,
+			limit: $this->request->getParam('limit', 100),
+			cursor: $this->request->getParam('cursor')
+		);
+
+		return new JSONResponse($result);
+	}//end pull()
+
+	/**
+	 * Generate a fresh signing secret for a push subscription.
+	 *
+	 * Admin-gated, CSRF-protected. The full `whsec_...` secret is returned in
+	 * THIS response only; every subsequent read surface redacts it.
+	 *
+	 * @param string $subscriptionId The subscription UUID.
+	 *
+	 * @return JSONResponse The full secret (once) plus the redacted subscription.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function generateSigningSecret(string $subscriptionId): JSONResponse {
+		try {
+			$subscription = $this->orObjectService->find(
+				id: $subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+		}
+
+		$data = $subscription->getObject();
+		$protocolSettings = ($data['protocolSettings'] ?? []);
+
+		$secret = $this->signatureService->generateSecret();
+		$protocolSettings['signingSecret'] = $secret;
+		// A first generate clears any rotation remnants.
+		unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt']);
+		$data['protocolSettings'] = $protocolSettings;
+
+		$saved = $this->orObjectService->saveObject(
+			object: $data,
+			register: 'integriq',
+			schema: 'event_subscription',
+			uuid: $subscription->getUuid()
+		);
+
+		return new JSONResponse(
+			[
+				'signingSecret' => $secret,
+				'subscription' => $this->redactSubscription(subscription: $saved->getObject()),
+			]
+		);
+
+	}//end generateSigningSecret()
+
+	/**
+	 * Rotate a subscription's signing secret.
+	 *
+	 * Moves the current secret to `previousSigningSecret`, stamps
+	 * `secretRotatedAt`, and returns the new secret once. Outbound deliveries
+	 * dual-sign until 24h after rotation.
+	 *
+	 * @param string $subscriptionId The subscription UUID.
+	 *
+	 * @return JSONResponse The new secret (once) plus the redacted subscription.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function rotateSigningSecret(string $subscriptionId): JSONResponse {
+		try {
+			$subscription = $this->orObjectService->find(
+				id: $subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+		}
+
+		$data = $subscription->getObject();
+		$protocolSettings = ($data['protocolSettings'] ?? []);
+
+		$current = ($protocolSettings['signingSecret'] ?? null);
+		if ($current === null || $current === '') {
+			return new JSONResponse(['error' => $this->l->t('No signing secret to rotate; generate one first')], 400);
+		}
+
+		$newSecret = $this->signatureService->generateSecret();
+		$protocolSettings['previousSigningSecret'] = $current;
+		$protocolSettings['signingSecret'] = $newSecret;
+		$protocolSettings['secretRotatedAt'] = (new DateTime())->format('c');
+		$data['protocolSettings'] = $protocolSettings;
+
+		$saved = $this->orObjectService->saveObject(
+			object: $data,
+			register: 'integriq',
+			schema: 'event_subscription',
+			uuid: $subscription->getUuid()
+		);
+
+		return new JSONResponse(
+			[
+				'signingSecret' => $newSecret,
+				'subscription' => $this->redactSubscription(subscription: $saved->getObject()),
+			]
+		);
+
+	}//end rotateSigningSecret()
+
+	/**
+	 * Layer per-family `event.subscribe-nextcloud-<domain>` action checks on
+	 * top of the coarse `event.subscribe`/`event.update-subscription`
+	 * actions `subscribe()`/`updateSubscription()` already enforce.
+	 *
+	 * A `types[]` entry maps to a domain when it matches
+	 * `com.nextcloud.<domain>.*` for `<domain>` in {files, calendar, tables,
+	 * forms} — explicitly EXCLUDING entries beginning with
+	 * `com.nextcloud.openregister.` (the pre-existing OR-object producer
+	 * namespace, which shares the same `com.nextcloud.` top-level
+	 * reverse-DNS root; a bare prefix check would incorrectly also gate
+	 * OR-object subscription requests). Requests whose `types[]` are
+	 * exclusively non-NC-native trigger no per-family check — unchanged from
+	 * today. `ActionAuthService::requireAction`'s admin bypass means admins
+	 * are never gated here.
+	 *
+	 * @param IUser $user The authenticated caller.
+	 * @param array $data The (already-cleaned) request body, read for `types[]`.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\AppFramework\OCS\OCSForbiddenException When the caller's groups lack a required family grant.
+	 *
+	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+	 */
+	private function requireNextcloudEventFamilyActions(IUser $user, array $data): void {
+		$types = ($data['types'] ?? []);
+		if (is_array($types) === false) {
+			return;
+		}
+
+		$domains = [];
+		foreach ($types as $type) {
+			if (is_string($type) === false || str_starts_with($type, 'com.nextcloud.openregister.') === true) {
+				continue;
+			}
+
+			if (preg_match('/^com\.nextcloud\.([a-z]+)\./', $type, $matches) === 1
+				&& in_array($matches[1], self::NC_NATIVE_DOMAINS, true) === true
+			) {
+				$domains[$matches[1]] = true;
+			}
+		}
+
+		foreach (array_keys($domains) as $domain) {
+			$this->actionAuth->requireAction(user: $user, action: 'event.subscribe-nextcloud-' . $domain);
+		}
+
+	}//end requireNextcloudEventFamilyActions()
+
+	/**
+	 * Redact signing secret material from a subscription object for any read.
+	 *
+	 * @param array $subscription The subscription object array.
+	 *
+	 * @return array The same array with secret fields replaced by a marker.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 */
+	private function redactSubscription(array $subscription): array {
+		if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
+			return $subscription;
+		}
+
+		foreach (['signingSecret', 'previousSigningSecret'] as $key) {
+			if (isset($subscription['protocolSettings'][$key]) === true
+				&& $subscription['protocolSettings'][$key] !== ''
+			) {
+				$subscription['protocolSettings'][$key] = '**********';
+			}
+		}
+
+		return $subscription;
+	}//end redactSubscription()
+
+	/**
+	 * List dead-lettered event messages (failed/abandoned by default).
+	 *
+	 * Admin-only via #[AuthorizedAdminSetting]; CSRF protection is intact
+	 * (no #[NoCSRFRequired]). The DLQ can re-fire deliveries to arbitrary
+	 * sinks, so it deliberately does NOT inherit the EventsController's
+	 *
+	 * @NoAdminRequired posture.
+	 *
+	 * @return JSONResponse Filtered list of dead-letter messages.
+	 *
+	 * @no-admin-idor-exempt Admin-only via #[AuthorizedAdminSetting]; not a
+	 * #[NoAdminRequired] endpoint. The IDOR gate misattributes the preceding
+	 * pull() method's @NoAdminRequired across the method boundary.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function deadLetterIndex(): JSONResponse {
+		$statusParam = (string)$this->request->getParam('status', '');
+		if ($statusParam !== '') {
+			$statuses = array_values(array_filter(array_map('trim', explode(',', $statusParam))));
+		} else {
+			$statuses = ['failed', 'abandoned'];
+		}
+
+		$filters = [
+			'register' => 'integriq',
+			'schema' => 'event_message',
+			'status' => $statuses,
+		];
+
+		$subscriptionId = $this->request->getParam('subscriptionId');
+		if ($subscriptionId !== null && $subscriptionId !== '') {
+			// Filter event_message by its `subscription` uuid FK (the request
+			// param keeps its historical `subscriptionId` name).
+			$filters['subscription'] = (string)$subscriptionId;
+		}
+
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => $filters,
+				'limit' => (int)$this->request->getParam('limit', 50),
+				'offset' => (int)$this->request->getParam('offset', 0),
+			]
+		);
+		$messages = ($matches['results'] ?? $matches);
+
+		// Defensive in-PHP narrowing: enforce the requested status set and the
+		// lastAttempt window regardless of how OR interprets the filters.
+		$from = $this->request->getParam('from');
+		$to = $this->request->getParam('to');
+		$rows = [];
+		$actionKindCache = [];
+		foreach ($messages as $message) {
+			$data = $message->getObject();
+			if (in_array(($data['status'] ?? ''), $statuses, true) === false) {
+				continue;
+			}
+
+			if ($this->withinWindow(lastAttempt: ($data['lastAttempt'] ?? null), from: $from, to: $to) === false) {
+				continue;
+			}
+
+			$rows[] = $this->withDeadLetterProvenance(messageData: $data, actionKindCache: $actionKindCache);
+		}
+
+		return new JSONResponse(['results' => $rows, 'total' => count($rows)]);
+	}//end deadLetterIndex()
+
+	/**
+	 * Add the resolved `action.kind` (default `webhook`) and a Nextcloud-event
+	 * provenance marker to a dead-letter message row for the listing/detail
+	 * responses.
+	 *
+	 * `event.source` (not `event.type`) is the correct provenance
+	 * discriminator: the pre-existing OR-object producer already uses a
+	 * `com.nextcloud.openregister.object.*` TYPE prefix, so a type-prefix
+	 * check would incorrectly also match OR-object events — `source` values
+	 * never collide (`/objects/<type>` for OR events vs `/nextcloud/<domain>`
+	 * for the `nextcloud-event-triggers` producers).
+	 *
+	 * @param array $messageData The `event_message` object array.
+	 * @param array $actionKindCache Per-request `subscriptionId => action.kind` memoization cache, by reference.
+	 *
+	 * @return array The message data with `actionKind` and `nextcloudEvent` added.
+	 *
+	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+	 */
+	private function withDeadLetterProvenance(array $messageData, array &$actionKindCache): array {
+		$subscriptionId = ($messageData['subscription'] ?? null);
+
+		// Default: a message with no resolvable subscription is a webhook
+		// (REQ-008's default kind).
+		$messageData['actionKind'] = 'webhook';
+		if ($subscriptionId !== null && $subscriptionId !== '') {
+			if (array_key_exists($subscriptionId, $actionKindCache) === false) {
+				$actionKindCache[$subscriptionId] = $this->resolveSubscriptionActionKind(subscriptionId: (string)$subscriptionId);
+			}
+
+			$messageData['actionKind'] = $actionKindCache[$subscriptionId];
+		}
+
+		$source = (string)($messageData['payload']['source'] ?? '');
+		$messageData['nextcloudEvent'] = str_starts_with($source, EventService::NEXTCLOUD_SOURCE_PREFIX);
+
+		return $messageData;
+	}//end withDeadLetterProvenance()
+
+	/**
+	 * Resolve a subscription's effective `action.kind` (default `webhook`
+	 * when `action` is absent — events-cloudevents REQ-008), tolerating a
+	 * since-deleted subscription.
+	 *
+	 * @param string $subscriptionId The subscription UUID.
+	 *
+	 * @return string The resolved action kind.
+	 *
+	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+	 */
+	private function resolveSubscriptionActionKind(string $subscriptionId): string {
+		try {
+			$subscription = $this->orObjectService->find(
+				id: $subscriptionId,
+				register: 'integriq',
+				schema: 'event_subscription',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return 'webhook';
+		}
+
+		$subscriptionData = $subscription->getObject();
+		$action = ($subscriptionData['action'] ?? null);
+		if (is_array($action) === true && empty($action['kind'] ?? '') === false) {
+			return (string)$action['kind'];
+		}
+
+		return 'webhook';
+	}//end resolveSubscriptionActionKind()
+
+	/**
+	 * Whether a lastAttempt timestamp falls within an optional [from, to] window.
+	 *
+	 * @param string|null $lastAttempt The message's lastAttempt timestamp.
+	 * @param string|null $from Lower bound (ISO 8601), or null.
+	 * @param string|null $to Upper bound (ISO 8601), or null.
+	 *
+	 * @return boolean
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	private function withinWindow(?string $lastAttempt, ?string $from, ?string $to): bool {
+		if (($from === null || $from === '') && ($to === null || $to === '')) {
+			return true;
+		}
+
+		if ($lastAttempt === null || $lastAttempt === '') {
+			return false;
+		}
+
+		$ts = strtotime($lastAttempt);
+		if ($ts === false) {
+			return false;
+		}
+
+		if ($from !== null && $from !== '' && $ts < strtotime($from)) {
+			return false;
+		}
+
+		if ($to !== null && $to !== '' && $ts > strtotime($to)) {
+			return false;
+		}
+
+		return true;
+	}//end withinWindow()
+
+	/**
+	 * Show full detail for one dead-lettered message including attempt history.
+	 *
+	 * @param string $id The message UUID.
+	 *
+	 * @return JSONResponse The message detail with resolved subscription context.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function deadLetterShow(string $id): JSONResponse {
+		try {
+			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false, _multitenancy: false);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+		}
+
+		$data = $message->getObject();
+		$subscriptionCtx = null;
+		$subscriptionId = ($data['subscription'] ?? null);
+		if ($subscriptionId !== null && $subscriptionId !== '') {
+			try {
+				$subscription = $this->orObjectService->find(
+					id: (string)$subscriptionId,
+					register: 'integriq',
+					schema: 'event_subscription',
+					_rbac: false,
+					_multitenancy: false
+				);
+				$subData = $subscription->getObject();
+				$subscriptionCtx = [
+					'sink' => ($subData['sink'] ?? null),
+					'protocol' => ($subData['protocol'] ?? null),
+					'status' => ($subData['status'] ?? null),
+				];
+			} catch (DoesNotExistException $e) {
+				$subscriptionCtx = null;
+			}
+		}//end if
+
+		$actionKindCache = [];
+		$data = $this->withDeadLetterProvenance(messageData: $data, actionKindCache: $actionKindCache);
+
+		return new JSONResponse(
+			[
+				'message' => $data,
+				'subscription' => $subscriptionCtx,
+			]
+		);
+
+	}//end deadLetterShow()
+
+	/**
+	 * Replay a single dead-lettered message back into the delivery machine.
+	 *
+	 * @param string $id The message UUID.
+	 *
+	 * @return JSONResponse The updated message, or 409 on an invalid state.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function replay(string $id): JSONResponse {
+		$actor = $this->currentUid();
+
+		try {
+			$updated = $this->eventService->replayMessage(id: $id, actorUid: $actor);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+		} catch (InvalidMessageStateException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($updated->getObject());
+	}//end replay()
+
+	/**
+	 * Discard a single dead-lettered message (terminal, audited, no delete).
+	 *
+	 * @param string $id The message UUID.
+	 *
+	 * @return JSONResponse The updated message, or 409 on an invalid state.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function discard(string $id): JSONResponse {
+		$actor = $this->currentUid();
+
+		try {
+			$updated = $this->eventService->discardMessage(id: $id, actorUid: $actor);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+		} catch (InvalidMessageStateException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($updated->getObject());
+	}//end discard()
+
+	/**
+	 * Bulk replay up to 100 dead-lettered messages, reporting per-id outcomes.
+	 *
+	 * @return JSONResponse A per-id result map, or 400 when the id cap is exceeded.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function bulkReplay(): JSONResponse {
+		return $this->bulkApply(verb: 'replay');
+	}//end bulkReplay()
+
+	/**
+	 * Bulk discard up to 100 dead-lettered messages, reporting per-id outcomes.
+	 *
+	 * @return JSONResponse A per-id result map, or 400 when the id cap is exceeded.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function bulkDiscard(): JSONResponse {
+		return $this->bulkApply(verb: 'discard');
+	}//end bulkDiscard()
+
+	/**
+	 * Apply a dead-letter verb to an explicit, capped set of message UUIDs.
+	 *
+	 * Partial failures never abort the batch; each id reports its own outcome
+	 * (`ok`, `not-found`, `invalid-state`, or `error`). A filter-predicate form
+	 * is deliberately NOT accepted — only an explicit `ids[]` array.
+	 *
+	 * @param string $verb Either `replay` or `discard`.
+	 *
+	 * @return JSONResponse Per-id result map, or 400 on cap/shape violations.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	private function bulkApply(string $verb): JSONResponse {
+		$ids = $this->request->getParam('ids');
+		if (is_array($ids) === false) {
+			return new JSONResponse(['error' => $this->l->t('ids must be an array of message UUIDs')], 400);
+		}
+
+		if (count($ids) > 100) {
+			return new JSONResponse(['error' => $this->l->t('A maximum of 100 ids may be processed per call')], 400);
+		}
+
+		$actor = $this->currentUid();
+		$results = [];
+		foreach ($ids as $id) {
+			$id = (string)$id;
+			try {
+				if ($verb === 'replay') {
+					$this->eventService->replayMessage(id: $id, actorUid: $actor);
+				} else {
+					$this->eventService->discardMessage(id: $id, actorUid: $actor);
+				}
+
+				$results[$id] = 'ok';
+			} catch (DoesNotExistException $e) {
+				$results[$id] = 'not-found';
+			} catch (InvalidMessageStateException $e) {
+				$results[$id] = 'invalid-state';
+			} catch (Exception $e) {
+				$results[$id] = 'error';
+			}//end try
+		}//end foreach
+
+		return new JSONResponse(['results' => $results]);
+	}//end bulkApply()
+
+	/**
+	 * Resolve the acting operator's user id for audit stamping.
+	 *
+	 * @return string The current user's uid, or 'unknown' when unavailable.
+	 *
+	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+	 */
+	private function currentUid(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return 'unknown';
+		}
+
+		return $user->getUID();
+	}//end currentUid()
+}//end class

@@ -1,13 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Add synchronization_logs table and related columns.
+ *
+ * Adds the synchronization_logs table, the contracts.target_last_action column,
+ * and the contract_logs.synchronization_log_id / target_result / test / force columns.
+ *
+ * @category Migration
+ * @package  OCA\Integriq\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2025 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
  */
 
-namespace OCA\OpenConnector\Migration;
+declare(strict_types=1);
+
+namespace OCA\Integriq\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,31 +29,38 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * FIXME Auto-generated migration step: Please modify to your needs!
+ * Adds the synchronization logs table and supporting columns on related tables.
  */
 class Version1Date20250118124025 extends SimpleMigrationStep {
-
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Pre-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+	}//end preSchemaChange()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
+	 * Creates the synchronization_logs table and related columns.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper.
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
+		/*
 		 * @var ISchemaWrapper $schema
 		 */
+
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('openconnector_synchronization_logs')) {
+		if ($schema->hasTable('openconnector_synchronization_logs') === false) {
 			$table = $schema->createTable('openconnector_synchronization_logs');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -60,32 +80,38 @@ class Version1Date20250118124025 extends SimpleMigrationStep {
 			$table->addIndex(['synchronization_id'], 'openconnector_sync_logs_sync_id_index');
 			$table->addIndex(['user_id'], 'openconnector_sync_logs_user_id_index');
 			$table->addIndex(['created'], 'openconnector_sync_logs_created_index');
-		}
+		}//end if
 
 		if ($schema->hasTable(tableName: 'openconnector_synchronization_contracts') === true) {
 			$table = $schema->getTable(tableName: 'openconnector_synchronization_contracts');
-			$table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]); // 6 chars is enough for 'create', 'update', 'delete'
+			$table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]);
+			// 6 chars is enough for 'create', 'update', 'delete'.
 		}
 
 		if ($schema->hasTable(tableName: 'openconnector_synchronization_contract_logs') === true) {
-			$table = $schema->getTable(tableName: 'openconnector_synchronization_contract_logs'); 
-			$table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]); // synchronization_log_id
-			$table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]); // target_result
+			$table = $schema->getTable(tableName: 'openconnector_synchronization_contract_logs');
+			$table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+			// The synchronization_log_id column.
+			$table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]);
+			// The target_result column.
 			$table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
 			$table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
 
 			$table->addIndex(['synchronization_log_id'], 'openconnector_sync_logs_sync_index');
 		}
 
-
 		return $schema;
-	}
+	}//end changeSchema()
 
 	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
+	 * Post-schema change callback.
+	 *
+	 * @param IOutput $output Migration output interface.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+	}//end postSchemaChange()
+}//end class

@@ -1,99 +1,148 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Synchronization",
-    "type": "object",
-    "properties": {
-        "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The UUID identifier of the synchronization."
-        },
-        "entity": {
-            "type": "object",
-            "description": "The entity of this resource."
-        },
-        "object": {
-            "type": ["object", "null"],
-            "description": "The object of this resource."
-        },
-        "action": {
-            "type": ["object", "null"],
-            "description": "The action of this resource."
-        },
-        "gateway": {
-            "type": ["object", "null"],
-            "description": "The source of this synchronization (external source/gateway)."
-        },
-        "sourceObject": {
-            "type": ["object", "null"],
-            "description": "The source of this synchronization (internal object)."
-        },
-        "endpoint": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The endpoint for this synchronization."
-        },
-        "sourceId": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The id of object in the related source."
-        },
-        "hash": {
-            "type": ["string", "null"],
-            "description": "The hash of this resource."
-        },
-        "sha": {
-            "type": ["string", "null"],
-            "description": "The sha(256) used to check if a Sync should be triggered cause the object has changed."
-        },
-        "blocked": {
-            "type": "boolean",
-            "default": false,
-            "description": "Whether the synchronization is blocked."
-        },
-        "sourceLastChanged": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment the source of this resource was last changed."
-        },
-        "lastChecked": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was last checked."
-        },
-        "lastSynced": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was last synced."
-        },
-        "dateCreated": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was created."
-        },
-        "dateModified": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was last modified."
-        },
-        "tryCounter": {
-            "type": "integer",
-            "default": 0,
-            "description": "The amount of times that we have tried to sync this item."
-        },
-        "dontSyncBefore": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "An updated timer that tells the sync service to wait a specific increment before trying again."
-        },
-        "mapping": {
-            "type": ["object", "null"],
-            "description": "The mapping associated with this synchronization."
-        }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Synchronization",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The UUID identifier of the synchronization."
     },
-    "required": [
-        "id",
-        "entity"
-    ],
-    "additionalProperties": false
+    "entity": {
+      "type": "object",
+      "description": "The entity of this resource."
+    },
+    "object": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The object of this resource."
+    },
+    "action": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The action of this resource."
+    },
+    "gateway": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The source of this synchronization (external source/gateway)."
+    },
+    "sourceObject": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The source of this synchronization (internal object)."
+    },
+    "endpoint": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The endpoint for this synchronization."
+    },
+    "sourceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The id of object in the related source."
+    },
+    "hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The hash of this resource."
+    },
+    "sha": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The sha(256) used to check if a Sync should be triggered cause the object has changed."
+    },
+    "blocked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the synchronization is blocked."
+    },
+    "sourceLastChanged": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment the source of this resource was last changed."
+    },
+    "lastChecked": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was last checked."
+    },
+    "lastSynced": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was last synced."
+    },
+    "dateCreated": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was created."
+    },
+    "dateModified": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was last modified."
+    },
+    "tryCounter": {
+      "type": "integer",
+      "default": 0,
+      "description": "The amount of times that we have tried to sync this item."
+    },
+    "dontSyncBefore": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "An updated timer that tells the sync service to wait a specific increment before trying again."
+    },
+    "mapping": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The mapping associated with this synchronization."
+    },
+    "retryPolicyOverride": {
+      "type": "object",
+      "description": "Optional per-synchronization override of the dispatching source's retryPolicy (all keys optional, same shape). Applied only to calls made in this synchronization's context."
+    }
+  },
+  "required": [
+    "id",
+    "entity"
+  ],
+  "additionalProperties": false
 }

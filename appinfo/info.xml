@@ -1,31 +1,49 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-	<id>openconnector</id>
-	<name>Open Connector</name>
-	<summary>Gateway and Service bus functionality</summary>
-	<description><![CDATA[> ⚠️ **Active development — not for production use yet.** This app is under active development. Although it may carry a stable release status, **please do not use it in production environments before 17 June 2026.** See the [app page on conduction.nl](https://conduction.nl/apps/openconnector) for release planning and what this app does.
+	<id>integriq</id>
+	<name>Integriq</name>
+	<summary lang="en">API gateway and data-synchronization layer for Nextcloud</summary>
+	<summary lang="nl">API-gateway en data-synchronisatielaag voor Nextcloud</summary>
+	<description lang="en"><![CDATA[Integriq is the integration layer for Nextcloud. It connects REST and SOAP sources — including Dutch government standards such as PDOK, StUF-ZKN/BG, DSO/Omgevingsloket, and Berichtenbox — to typed OpenRegister stores.
 
-📰 Bringing Gateway and Service bus functionality to nextcloud
-
-The OpenConnector Nextcloud app provides a ESB-framework to work together in an (open) data ecosystem
-
-- 📲 Synchronize your data sources
-- 📰 Send cloud events
-- 🆓 Map and translate API calls
+- 🔌 Configure sources, endpoints and consumers with shared authentication (API key, OAuth, JWT)
+- 🗺️ Map and transform payloads with the built-in mapping engine
+- ⏱️ Schedule synchronization jobs with webhook, cron, or manual triggers
+- ☁️ Dispatch and receive CloudEvents with dead-letter capture and one-click replay
+- 📋 Apply business rules to endpoint traffic and keep a per-object audit trail
 
     ]]></description>
-	<version>0.2.14</version>
-	<licence>agpl</licence>
-	<category>integration</category>
+	<description lang="nl"><![CDATA[Integriq is de integratielaag voor Nextcloud. De app koppelt REST- en SOAP-bronnen — waaronder Nederlandse overheidsstandaarden zoals PDOK, StUF-ZKN/BG, DSO/Omgevingsloket en Berichtenbox — aan getypeerde OpenRegister-registers.
+
+- 🔌 Configureer bronnen, endpoints en consumenten met gedeelde authenticatie (API-key, OAuth, JWT)
+- 🗺️ Transformeer gegevens met de ingebouwde mapping-engine
+- ⏱️ Plan synchronisatietaken met webhook-, cron- of handmatige triggers
+- ☁️ Verstuur en ontvang CloudEvents met dead-letter-opvang en replay met één klik
+- 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
+
+    ]]></description>
+	<version>0.3.8-unstable.20260830081730</version>
+	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-	<namespace>OpenConnector</namespace>
-    <website>https://github.com/ConductionNL/OpenConnector</website>
-	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenConnector</repository>
+	<namespace>Integriq</namespace>
+	<category>integration</category>
+    <website>https://github.com/ConductionNL/integriq</website>
+	<bugs>https://github.com/ConductionNL/integriq/issues</bugs>
+    <repository>https://github.com/ConductionNL/integriq</repository>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-sources.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/integriq/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
-        <nextcloud min-version="28" max-version="32"/>
-        <php min-version="8.0" min-int-size="64"/>
+        <!--
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time.
+        -->
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -33,24 +51,342 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
         <lib>curl</lib>
 
         <owncloud max-version="0" min-version="0"/>
+        <!--
+        min-version is 32, NOT 28, because the openregister app dependency noted
+        above is a HARD dependency and openregister declares min-version="32". On NC 28-31 openregister
+        refuses to install ("cannot be installed because it is not compatible with this
+        version of the server"), and every integriq entity is an OpenRegister
+        object — so the app cannot function there. Declaring 28 advertised a range
+        this app cannot deliver. See issue #1172.
+
+        max-version is 34, NOT 35, for the same "do not advertise a range you
+        cannot deliver" reason in the other direction: NC 35 does not exist —
+        there is no tag, no branch, and this app's own CI matrix has no leg past
+        stable33. The rest of the fleet declares 34; integriq was the only
+        repo claiming 35, so the claim was untested everywhere it mattered.
+        -->
+        <nextcloud min-version="32" max-version="34"/>
 	</dependencies>
 
 	<background-jobs>
-		<job>OCA\OpenConnector\Cron\JobTask</job>
-		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
+		<!-- ADR-076 rule 4: the register bootstrap used to run from
+		     Application::boot() as a fallback for the InitializeRegister repair
+		     step possibly not having run. Gated, but one unset config key away
+		     from a repair step on every request. Hourly cron instead. -->
+		<job>OCA\Integriq\BackgroundJob\RegisterBootstrapJob</job>
+		<job>OCA\Integriq\BackgroundJob\JobTask</job>
+		<job>OCA\Integriq\BackgroundJob\LogCleanUpTask</job>
+		<!-- Closes synchronization_run records whose process died: a
+		     permanently-`running` row is indistinguishable from a live
+		     one, so the page built to answer "is my sync still going?"
+		     would answer it wrongly. -->
+		<job>OCA\Integriq\BackgroundJob\StaleRunSweepJob</job>
+		<job>OCA\Integriq\BackgroundJob\EventRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\LtiKeyRetirementJob</job>
+		<job>OCA\Integriq\BackgroundJob\BankfeedSyncJob</job>
+		<job>OCA\Integriq\BackgroundJob\CardfeedSyncJob</job>
+		<job>OCA\Integriq\BackgroundJob\EudiStatusListRefreshJob</job>
+		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
+		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
+		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 	</background-jobs>
+
+	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
+	     these hooks run in. info.xsd declares repair-steps as an xs:sequence of
+	     pre-migration, post-migration, live-migration, install, uninstall — so
+	     `<install>` goes LAST of the two used here even though it is the hook a
+	     fresh instance reaches FIRST. Written the intuitive way round, xmllint
+	     rejects the manifest with
+	       Element 'post-migration': This element is not expected.
+	       Expected is ( uninstall ).
+	     and the App Store refuses the release AFTER it has been tagged. -->
+	<repair-steps>
+		<post-migration>
+			<!-- openconnector -> integriq app-id rename (phase 3). These two MUST
+			     stay FIRST in both hooks. Nextcloud namespaces oc_appconfig and
+			     oc_preferences by app id, so the rename cuts this app off from
+			     every value it stored; InitializeRegister/InitializeActions below
+			     write fresh defaults, and a never-overwrite copy that ran after
+			     them would find those defaults already present and silently
+			     discard the admin's real settings. -->
+			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
+			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
+			<!-- Fourth leg of the rename, and the one that lives on the register
+			     ROW. The register slug moves too (`openconnector` -> `integriq`),
+			     together with `x-openregister.app`, which for a
+			     `type: application` configuration IS a register slug rather than
+			     an attribution label. It MUST run before InitializeRegister,
+			     because OpenRegister resolves a register by slug and its
+			     not-found branch CREATES a second, empty register rather than
+			     failing — so an import that runs first would fork the register
+			     and leave every stored object behind on the old row, silently.
+
+			     It moves no data. An object is bound to its register by NUMERIC
+			     id (`_register` in every shard table, and the tables themselves
+			     are named `oc_openregister_table_<registerId>_<schemaId>`), so
+			     the rename is one column on one row. Idempotent and
+			     non-destructive; declared in both hooks for the same reason the
+			     two steps above it are. -->
+			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
+			<!-- SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+			     OpenRegister resolves the two halves of a configuration by
+			     DIFFERENT keys: a REGISTER by slug alone
+			     (RegisterMapper::find), a SCHEMA by the PAIR
+			     (SchemaMapper::findByApplicationAndSlug(slug, application)).
+			     This app now passes `appId: Application::APP_ID` = `integriq`,
+			     while every schema it already owns still carries
+			     `application = openconnector` — so the pair matches nothing,
+			     and ImportHandler's not-found branch is not an error path, it
+			     is the "create a new one" path. The import would build a
+			     SECOND, EMPTY schema set under the new application id while
+			     every stored object stayed bound to the old rows. Nothing
+			     errors; the app renders empty collections.
+
+			     Measured on a live install: 200 schemas still under
+			     `openconnector`, and ALL 200 already have a twin under
+			     `integriq` — the fork has already happened here. This step
+			     therefore REFUSES all 200 and logs them, because re-pointing
+			     would leave two rows sharing (application, slug) and
+			     findByApplicationAndSlug() caps at one row: one would silently
+			     win every lookup and the other's objects would become
+			     unreachable. Choosing between them is a decision about data,
+			     not a migration.
+
+			     Never deletes a schema, and never throws — it runs under
+			     <install>, where an escaping exception aborts the install and
+			     the app never enables. -->
+			<step>OCA\Integriq\Repair\MigrateSchemaApplicationId</step>
+			<step>OCA\Integriq\Repair\InitializeRegister</step>
+			<!-- Third leg of the app-id rename, and the one that lives in
+			     OpenRegister rather than in oc_appconfig. A job object stores its
+			     action as a PHP class NAME, which JobService resolves through the
+			     container at run time, so the rename leaves every stored job asking
+			     for `OCA\OpenConnector\Action\*` — a class that no longer exists.
+			     It fails SILENTLY: the container throw happens outside the try that
+			     writes a job_log, and JobService::run()'s per-job catch does
+			     `unset($e); continue;`, so every synchronization stops running while
+			     cron reports success and leaves no evidence. Placed AFTER
+			     InitializeRegister so the register and its schemas exist; a first
+			     install has no stored jobs and it is a no-op there. -->
+			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
+			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
+			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
+			<step>OCA\Integriq\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\Integriq\Repair\RemoveMigratedSourceSecretFields</step>
+			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- WRITTEN BUT NEVER REGISTERED until now, which meant it never
+			     ran anywhere. gate-98 (repair-step-registration) found it.
+
+			     What that costs is money reading as null. OpenRegister stores
+			     each schema property as a real snake_cased COLUMN in the
+			     per-schema shard table, and MagicMapper ADDS a column when the
+			     name is absent but NEVER renames — there is not a single
+			     RENAME COLUMN in openregister. So renaming `bedrag` to
+			     `amount` in the register leaves the money in `bedrag` while
+			     every read looks at `amount` and finds null. No error, no data
+			     loss, and invisible to a suite that asserts against fixtures
+			     rather than migrated rows. For this app those columns carry
+			     invoice, subsidy, payroll and tax amounts.
+
+			     Placed HERE, after InitializeRegister has synced the register
+			     and MagicMapper has added the English columns: the step renames
+			     only when the old column exists and the new one does not, and
+			     copies across where the new column already exists. It is
+			     non-destructive and idempotent by its own contract — nothing is
+			     deleted, two sources targeting one destination are REFUSED
+			     rather than merged, and a re-run is a no-op. -->
+			<step>OCA\Integriq\Repair\RenameDutchColumns</step>
+			<!-- The background jobs moved from OCA\Integriq\Cron to
+			     OCA\Integriq\BackgroundJob in #1579. The <job> entries above are
+			     a REGISTRATION instruction, not a description of state: on
+			     upgrade Nextcloud ADDS a job it does not have, but never removes
+			     one whose class disappeared — it cannot tell a renamed class
+			     from one merely unavailable this boot.
+
+			     THIS APP HAS THE MOST TO CLEAN UP: 13 of the 16 moved classes
+			     are registered, so an instance that carried the old build ends
+			     up with 13 rows naming classes that no longer exist. Each fails
+			     to build on every cron tick and logs rather than raises.
+
+			     Measured on a live instance after the equivalent opencatalogi
+			     move: oc_jobs still held OCA\OpenCatalogi\Cron\DirectorySync
+			     beside its replacement.
+
+			     Last in the block, and post-migration only: it removes rows and
+			     creates nothing, so no step depends on it, and a fresh install
+			     has nothing to remove. -->
+			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
+			<!-- Written but never registered, so it had never run once: a class
+			     that exists is not a class that runs. It moves openconnector
+			     data out of the Dutch columns into the English ones, so every
+			     instance that predates the column rename still holds its data
+			     where nothing reads it.
+
+			     post-migration only: a fresh install has no Dutch columns to
+			     move, and the step is idempotent either way. -->
+			<step>OCA\Integriq\Repair\RenameDutchColumns</step>
+		</post-migration>
+		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
+		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
+		     `$schemaOnly = true` when there is no previous version, which routes
+		     `MigrationService::migrate()` to `migrateSchemaOnly()` (changeSchema
+		     only, then every version marked executed), and it guards the
+		     post-migration steps behind the same `$previousVersion !== ''`.
+		     `<install>` is the only hook that runs unconditionally on a first
+		     install, so the steps a fresh instance cannot work without are
+		     declared here as well. All four are idempotent, so an instance that
+		     reaches them by both routes does the work once. -->
+		<install>
+			<!-- See the ordering comment in <post-migration>. `<install>` is the
+			     hook a real deployment actually takes for this rename: Nextcloud
+			     discovers `integriq` as a NEW app, so it runs neither
+			     `postSchemaChange` nor the post-migration steps. Without these two
+			     here the carry-over would never happen on the machines that need
+			     it most. Both are idempotent, so an instance that reaches them by
+			     both routes does the work once. -->
+			<step>OCA\Integriq\Repair\MigrateAppConfigKeys</step>
+			<step>OCA\Integriq\Repair\MigrateUserPreferences</step>
+			<!-- Fourth leg of the rename, and the one that lives on the register
+			     ROW. The register slug moves too (`openconnector` -> `integriq`),
+			     together with `x-openregister.app`, which for a
+			     `type: application` configuration IS a register slug rather than
+			     an attribution label. It MUST run before InitializeRegister,
+			     because OpenRegister resolves a register by slug and its
+			     not-found branch CREATES a second, empty register rather than
+			     failing — so an import that runs first would fork the register
+			     and leave every stored object behind on the old row, silently.
+
+			     It moves no data. An object is bound to its register by NUMERIC
+			     id (`_register` in every shard table, and the tables themselves
+			     are named `oc_openregister_table_<registerId>_<schemaId>`), so
+			     the rename is one column on one row. Idempotent and
+			     non-destructive; declared in both hooks for the same reason the
+			     two steps above it are. -->
+			<step>OCA\Integriq\Repair\MigrateRegisterSlug</step>
+			<!-- SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+			     OpenRegister resolves the two halves of a configuration by
+			     DIFFERENT keys: a REGISTER by slug alone
+			     (RegisterMapper::find), a SCHEMA by the PAIR
+			     (SchemaMapper::findByApplicationAndSlug(slug, application)).
+			     This app now passes `appId: Application::APP_ID` = `integriq`,
+			     while every schema it already owns still carries
+			     `application = openconnector` — so the pair matches nothing,
+			     and ImportHandler's not-found branch is not an error path, it
+			     is the "create a new one" path. The import would build a
+			     SECOND, EMPTY schema set under the new application id while
+			     every stored object stayed bound to the old rows. Nothing
+			     errors; the app renders empty collections.
+
+			     Measured on a live install: 200 schemas still under
+			     `openconnector`, and ALL 200 already have a twin under
+			     `integriq` — the fork has already happened here. This step
+			     therefore REFUSES all 200 and logs them, because re-pointing
+			     would leave two rows sharing (application, slug) and
+			     findByApplicationAndSlug() caps at one row: one would silently
+			     win every lookup and the other's objects would become
+			     unreachable. Choosing between them is a decision about data,
+			     not a migration.
+
+			     Never deletes a schema, and never throws — it runs under
+			     <install>, where an escaping exception aborts the install and
+			     the app never enables. -->
+			<step>OCA\Integriq\Repair\MigrateSchemaApplicationId</step>
+			<step>OCA\Integriq\Repair\InitializeRegister</step>
+			<!-- See the note on this step in <post-migration>. Idempotent, and a
+			     no-op on a first install (no stored jobs yet), but declared here
+			     too because <install> is the only hook a real deployment of this
+			     rename actually takes — Nextcloud discovers `integriq` as a NEW
+			     app and runs neither postSchemaChange nor the post-migration
+			     steps. -->
+			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
+			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
+			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- The three inline-secret steps are deliberately NOT here. A first
+			     install has no sources, so they would have nothing to migrate,
+			     and RemoveMigratedSourceSecretFields is IRREVERSIBLE: it would
+			     find the empty instance trivially clean and strip the four
+			     secret fields from the live source schema before any source
+			     exists. Whether a brand-new instance should ship without those
+			     fields is a product decision, tracked separately, not one this
+			     fix should take by side effect. -->
+		</install>
+	</repair-steps>
+
+	<commands>
+		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
+		     row migration (dry-run, per-entity retry, verify). -->
+		<command>OCA\Integriq\Command\MigrateToOpenRegister</command>
+		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
+		     secret and what each would become in the credential broker. The dry-run
+		     mode writes nothing and emits the "clean" gate phase D must check before
+		     it may remove the schema properties. A real run migrates inline secrets.
+		     (XML comments must not contain a double hyphen, so the dry-run flag is
+		     not written with its leading dashes here.) -->
+		<command>OCA\Integriq\Command\MigrateInlineSecrets</command>
+		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
+		     authenticationConfig field. No code authenticates from it, so removal
+		     (not a credentialRef migration) is the correct treatment. The default
+		     action is a READ ONLY audit reporting key NAMES only, never values.
+		     Removal DELETES credential data and therefore happens only when a human
+		     passes the explicit opt in flag; it is registered here as a command and
+		     never as a repair step, so an upgrade or maintenance:repair can never
+		     reach the deleting path.
+		     (XML comments must not contain a double hyphen, so the flags are not
+		     written with their leading dashes here.) -->
+		<command>OCA\Integriq\Command\AuthenticationConfig</command>
+		<!-- flow-native-synchronization task 3.1: renders one synchronization as a
+		     generated flow document, or names the features the decomposed flow
+		     cannot express yet. The command WRITES NOTHING: it creates no flow,
+		     enables nothing and touches no synchronization contract, because a
+		     generated flow ships disabled until a human has reviewed it. -->
+		<command>OCA\Integriq\Command\SynchronizationToFlow</command>
+		<!-- Remediation for the contract-identity defect fixed in #1311: until then
+		     synchronizeContract() minted a fresh uuid every rerun, so each run created
+		     a contract instead of updating one. This collapses the leftovers to one per
+		     (synchronization, origin), keeping the newest by sourceLastChecked. It is a
+		     COMMAND and not engine behaviour on purpose: REQ-013 says duplicates are
+		     surfaced, never silently removed, so this is human-invoked and dry-run by
+		     default. -->
+		<command>OCA\Integriq\Command\DedupeContracts</command>
+		<!-- flow-native-synchronization task 3.3: renders one job as a generated
+		     trigger schedule flow document, or names the features no flow node can
+		     express. Same contract as the synchronization renderer above: the
+		     command WRITES NOTHING, and what it emits ships disabled. -->
+		<command>OCA\Integriq\Command\JobToFlow</command>
+		<!-- flow-native-synchronization task 3.3: renders one rule, as it runs on
+		     one named endpoint, as a generated trigger object plus switch flow
+		     document. The endpoint is required because a rule carries no register,
+		     schema or method of its own and an object trigger refuses a partial
+		     scope. WRITES NOTHING; the emitted document ships disabled. -->
+		<command>OCA\Integriq\Command\RuleToFlow</command>
+	</commands>
+
+	<settings>
+		<admin>OCA\Integriq\Settings\IntegriqAdmin</admin>
+		<admin-section>OCA\Integriq\Sections\IntegriqAdmin</admin-section>
+	</settings>
 
 	<navigations>
 		<navigation>
-			<id>openconnector</id>
-			<name>Connector</name>
-			<route>openconnector.dashboard.page</route>
+			<id>integriq</id>
+			<name>Integriq</name>
+			<route>integriq.ui.dashboard</route>
 			<icon>app.svg</icon>
 		</navigation>
 	</navigations>
-
-	<settings>
-		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
-		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
-	</settings>
 </info>

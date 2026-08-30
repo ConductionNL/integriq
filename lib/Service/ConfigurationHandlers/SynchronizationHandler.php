@@ -1,288 +1,347 @@
 <?php
 
-namespace OCA\OpenConnector\Service\ConfigurationHandlers;
+/**
+ * Synchronization configuration handler.
+ *
+ * Handler for exporting and importing synchronization configurations,
+ * translating source/target ids, mappings, actions, followUps and conditions
+ * between numeric ids and stable slugs for portability.
+ *
+ * @category Service
+ * @package  OCA\Integriq\Service\ConfigurationHandlers
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.Integriq.nl
+ */
 
-use OCA\OpenConnector\Db\Synchronization;
-use OCA\OpenConnector\Db\SynchronizationMapper;
+namespace OCA\Integriq\Service\ConfigurationHandlers;
+
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Class SynchronizationHandler
- *
  * Handler for exporting and importing synchronization configurations.
  *
- * @package OCA\OpenConnector\Service\ConfigurationHandlers
- * @category Service
- * @author OpenConnector Team
- * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SynchronizationHandler implements ConfigurationHandlerInterface
-{
-    /**
-     * @param SynchronizationMapper $synchronizationMapper The synchronization mapper
-     */
-    public function __construct(
-        private readonly SynchronizationMapper $synchronizationMapper
-    ) {
-    }
+class SynchronizationHandler implements ConfigurationHandlerInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
+	 */
+	public function __construct(
+		private readonly OrObjectService $orObjectService,
+		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+	) {
 
-    /**
-     * {@inheritDoc}
-     */
-    public function export(Entity $entity, array $mappings, array &$mappingIds = []): array
-    {
-        if (!$entity instanceof Synchronization) {
-            throw new \InvalidArgumentException('Entity must be an instance of Synchronization');
-        }
+	}//end __construct()
 
-        $syncArray = $entity->jsonSerialize();
-        unset($syncArray['id'], $syncArray['uuid']);
+	/**
+	 * Export a synchronization entity to its serialised configuration form.
+	 *
+	 * @param Entity $entity The synchronization entity to export.
+	 * @param array<string,mixed> $mappings The global mappings for ID/slug conversion.
+	 *                                      Shape: `[$type => ['idToSlug' => array, 'slugToId' => array]]` where `$type`
+	 *                                      is one of `register|schema|source|mapping|action|followUp|condition`. The
+	 *                                      inner idToSlug/slugToId arrays are looked up by both int and string keys
+	 *                                      at runtime, so the value type is intentionally relaxed to `mixed` for
+	 *                                      static-analysis purposes.
+	 * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
+	 *
+	 * @return array The serialised synchronization configuration.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
+		if ($entity instanceof ObjectEntity) {
+			$syncArray = $entity->getObject();
+		} else {
+			$syncArray = $entity->jsonSerialize();
+		}
 
-        // Ensure slug is set
-        if (empty($syncArray['slug'])) {
-            $syncArray['slug'] = $entity->getSlug();
-        }
+		unset($syncArray['id'], $syncArray['uuid']);
 
-        // Handle sourceId based on sourceType.
-        if (isset($syncArray['sourceId']) && isset($syncArray['sourceType'])) {
-            switch ($syncArray['sourceType']) {
-                case 'api':
-                case 'database':
-                    // For api/database sources, use source mapping.
-                    if (isset($mappings['source']['idToSlug'][$syncArray['sourceId']])) {
-                        $syncArray['sourceId'] = $mappings['source']['idToSlug'][$syncArray['sourceId']];
-                    }
-                    break;
+		// Ensure slug is set.
+		if (empty($syncArray['slug']) === true && $entity instanceof ObjectEntity) {
+			$syncArray['slug'] = $entity->getUuid();
+		}
 
-                case 'register/schema':
-                    // For register/schema sources, split the ID and map both parts.
-                    if (str_contains($syncArray['sourceId'], '/')) {
-                        [$registerId, $schemaId] = explode('/', $syncArray['sourceId']);
+		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
+		if (isset($syncArray['configuration']) === true && is_array($syncArray['configuration']) === true) {
+			$syncArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $syncArray['configuration']);
+		}
 
-                        // Map register ID to slug
-                        if (isset($mappings['register']['idToSlug'][$registerId])) {
-                            $registerSlug = $mappings['register']['idToSlug'][$registerId];
-                        } else {
-                            $registerSlug = $registerId; // Fallback to original ID if no mapping found.
-                        }
+		// Handle sourceId based on sourceType.
+		if (isset($syncArray['sourceId']) === true && isset($syncArray['sourceType']) === true) {
+			switch ($syncArray['sourceType']) {
+				case 'api':
+				case 'database':
+					// For api/database sources, use source mapping.
+					if (isset($mappings['source']['idToSlug'][$syncArray['sourceId']]) === true) {
+						$syncArray['sourceId'] = $mappings['source']['idToSlug'][$syncArray['sourceId']];
+					}
+					break;
 
-                        // Map schema ID to slug
-                        if (isset($mappings['schema']['idToSlug'][$schemaId])) {
-                            $schemaSlug = $mappings['schema']['idToSlug'][$schemaId];
-                        } else {
-                            $schemaSlug = $schemaId; // Fallback to original ID if no mapping found.
-                        }
+				case 'register/schema':
+					// For register/schema sources, split the ID and map both parts.
+					if (str_contains($syncArray['sourceId'], '/') === true) {
+						[$registerId, $schemaId] = explode('/', $syncArray['sourceId']);
 
-                        // Combine the slugs
-                        $syncArray['sourceId'] = $registerSlug . '/' . $schemaSlug;
-                    }
-                    break;
-            }
-        }
+						// Map register ID to slug (fallback to original ID if no mapping found).
+						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
 
-        // Handle targetId based on targetType
-        if (isset($syncArray['targetId']) && isset($syncArray['targetType'])) {
-            switch ($syncArray['targetType']) {
-                case 'api':
-                case 'database':
-                    // For api/database targets, use source mapping.
-                    if (isset($mappings['source']['idToSlug'][$syncArray['targetId']])) {
-                        $syncArray['targetId'] = $mappings['source']['idToSlug'][$syncArray['targetId']];
-                    }
-                    break;
+						// Map schema ID to slug (fallback to original ID if no mapping found).
+						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
 
-                case 'register/schema':
-                    // For register/schema targets, split the ID and map both parts.
-                    if (str_contains($syncArray['targetId'], '/')) {
-                        [$registerId, $schemaId] = explode('/', $syncArray['targetId']);
+						// Combine the slugs.
+						$syncArray['sourceId'] = $registerSlug . '/' . $schemaSlug;
+					}
+					break;
+			}//end switch
+		}//end if
 
-                        // Map register ID to slug
-                        if (isset($mappings['register']['idToSlug'][$registerId])) {
-                            $registerSlug = $mappings['register']['idToSlug'][$registerId];
-                        } else {
-                            $registerSlug = $registerId; // Fallback to original ID if no mapping found.
-                        }
+		// Handle targetId based on targetType.
+		if (isset($syncArray['targetId']) === true && isset($syncArray['targetType']) === true) {
+			switch ($syncArray['targetType']) {
+				case 'api':
+				case 'database':
+					// For api/database targets, use source mapping.
+					if (isset($mappings['source']['idToSlug'][$syncArray['targetId']]) === true) {
+						$syncArray['targetId'] = $mappings['source']['idToSlug'][$syncArray['targetId']];
+					}
+					break;
 
-                        // Map schema ID to slug
-                        if (isset($mappings['schema']['idToSlug'][$schemaId])) {
-                            $schemaSlug = $mappings['schema']['idToSlug'][$schemaId];
-                        } else {
-                            $schemaSlug = $schemaId; // Fallback to original ID if no mapping found.
-                        }
+				case 'register/schema':
+					// For register/schema targets, split the ID and map both parts.
+					if (str_contains($syncArray['targetId'], '/') === true) {
+						[$registerId, $schemaId] = explode('/', $syncArray['targetId']);
 
-                        // Combine the slugs
-                        $syncArray['targetId'] = $registerSlug . '/' . $schemaSlug;
-                    }
-                    break;
-            }
-        }
+						// Map register ID to slug (fallback to original ID if no mapping found).
+						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
 
-        // Handle mapping IDs
-        if (isset($syncArray['sourceTargetMapping']) && isset($mappings['mapping']['idToSlug'][(int) $syncArray['sourceTargetMapping']])) {
-            $syncArray['sourceTargetMapping'] = $mappings['mapping']['idToSlug'][(int) $syncArray['sourceTargetMapping']];
-        }
-        if (isset($syncArray['targetSourceMapping']) && isset($mappings['mapping']['idToSlug'][(int) $syncArray['targetSourceMapping']])) {
-            $syncArray['targetSourceMapping'] = $mappings['mapping']['idToSlug'][(int) $syncArray['targetSourceMapping']];
-        }
+						// Map schema ID to slug (fallback to original ID if no mapping found).
+						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
 
-        // Handle arrays of IDs that need to be converted to slugs
-        $idArrays = ['actions', 'followUps', 'conditions'];
-        foreach ($idArrays as $arrayKey) {
-            if (isset($syncArray[$arrayKey]) && is_array($syncArray[$arrayKey])) {
-                $syncArray[$arrayKey] = array_map(function($id) use ($mappings, $arrayKey) {
-                    // Check for valid id, must be numeric or uuid
-                    if (is_scalar($id) === false || (is_numeric($id) === false && Uuid::isValid($id) === false)) {
-                        return $id;
-                    }
+						// Combine the slugs.
+						$syncArray['targetId'] = $registerSlug . '/' . $schemaSlug;
+					}
+					break;
+			}//end switch
+		}//end if
 
-                    // For actions, use rule mapping
-                    if ($arrayKey === 'actions' && isset($mappings['rule']['idToSlug'][$id])) {
-                        return $mappings['rule']['idToSlug'][$id];
-                    }
-                    // For followUps, use synchronization mapping
-                    if ($arrayKey === 'followUps' && isset($mappings['synchronization']['idToSlug'][$id])) {
-                        return $mappings['synchronization']['idToSlug'][$id];
-                    }
-                    // For conditions, use rule mapping
-                    if ($arrayKey === 'conditions' && isset($mappings['rule']['idToSlug'][$id])) {
-                        return $mappings['rule']['idToSlug'][$id];
-                    }
-                    return $id;
-                }, $syncArray[$arrayKey]);
-            }
-        }
+		// Handle mapping IDs.
+		if (isset($syncArray['sourceTargetMapping']) === true
+			&& isset($mappings['mapping']['idToSlug'][(int)$syncArray['sourceTargetMapping']]) === true
+		) {
+			$syncArray['sourceTargetMapping'] = $mappings['mapping']['idToSlug'][(int)$syncArray['sourceTargetMapping']];
+		}
 
-        return $syncArray;
-    }
+		if (isset($syncArray['targetSourceMapping']) === true
+			&& isset($mappings['mapping']['idToSlug'][(int)$syncArray['targetSourceMapping']]) === true
+		) {
+			$syncArray['targetSourceMapping'] = $mappings['mapping']['idToSlug'][(int)$syncArray['targetSourceMapping']];
+		}
 
-    /**
-     * {@inheritDoc}
-     */
-    public function import(array $data, array $mappings): Entity
-    {
-        // Convert source slugs back to IDs.
-        if (isset($data['sourceId']) && isset($data['sourceType'])) {
-            switch ($data['sourceType']) {
-                case 'api':
-                case 'database':
-                    // For api/database sources, use source mapping.
-                    if (isset($mappings['source']['slugToId'][$data['sourceId']])) {
-                        $data['sourceId'] = $mappings['source']['slugToId'][$data['sourceId']];
-                    }
-                    break;
+		// Handle arrays of IDs that need to be converted to slugs.
+		$idArrays = ['actions', 'followUps', 'conditions'];
+		foreach ($idArrays as $arrayKey) {
+			if (isset($syncArray[$arrayKey]) === true && is_array($syncArray[$arrayKey]) === true) {
+				$syncArray[$arrayKey] = array_map(
+					function ($id) use ($mappings, $arrayKey) {
+						// Check for valid id, must be numeric or uuid.
+						if (is_scalar($id) === false
+							|| (is_numeric($id) === false && Uuid::isValid($id) === false)
+						) {
+							return $id;
+						}
 
-                case 'register/schema':
-                    // For register/schema sources, split the ID and map both parts.
-                    if (str_contains($data['sourceId'], '/')) {
-                        [$registerSlug, $schemaSlug] = explode('/', $data['sourceId']);
+						// For actions, use rule mapping.
+						if ($arrayKey === 'actions' && isset($mappings['rule']['idToSlug'][$id]) === true) {
+							return $mappings['rule']['idToSlug'][$id];
+						}
 
-                        // Map register slug to ID
-                        if (isset($mappings['register']['slugToId'][$registerSlug])) {
-                            $registerId = $mappings['register']['slugToId'][$registerSlug];
-                        } else {
-                            $registerId = $registerSlug; // Fallback to original slug if no mapping found.
-                        }
+						// For followUps, use synchronization mapping.
+						if ($arrayKey === 'followUps' && isset($mappings['synchronization']['idToSlug'][$id]) === true) {
+							return $mappings['synchronization']['idToSlug'][$id];
+						}
 
-                        // Map schema slug to ID
-                        if (isset($mappings['schema']['slugToId'][$schemaSlug])) {
-                            $schemaId = $mappings['schema']['slugToId'][$schemaSlug];
-                        } else {
-                            $schemaId = $schemaSlug; // Fallback to original slug if no mapping found.
-                        }
+						// For conditions, use rule mapping.
+						if ($arrayKey === 'conditions' && isset($mappings['rule']['idToSlug'][$id]) === true) {
+							return $mappings['rule']['idToSlug'][$id];
+						}
 
-                        // Combine the IDs
-                        $data['sourceId'] = $registerId . '/' . $schemaId;
-                    }
-                    break;
-            }
-        }
+						return $id;
+					},
+					$syncArray[$arrayKey]
+				);
+			}//end if
+		}//end foreach
 
-        // Convert target slugs back to IDs.
-        if (isset($data['targetId']) && isset($data['targetType'])) {
-            switch ($data['targetType']) {
-                case 'api':
-                case 'database':
-                    // For api/database targets, use source mapping.
-                    if (isset($mappings['source']['slugToId'][$data['targetId']])) {
-                        $data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
-                    }
-                    break;
+		return $syncArray;
+	}//end export()
 
-                case 'register/schema':
-                    // For register/schema targets, split the ID and map both parts.
-                    if (str_contains($data['targetId'], '/')) {
-                        [$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
+	/**
+	 * Import a synchronization configuration into a synchronization entity.
+	 *
+	 * @param array $data The serialised synchronization configuration.
+	 * @param array<string,mixed> $mappings The global mappings for ID/slug conversion.
+	 *                                      See {@see self::export()} for the runtime shape.
+	 *
+	 * @return Entity The imported synchronization entity.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	public function import(array $data, array $mappings): Entity {
+		// Convert source slugs back to IDs.
+		if (isset($data['sourceId']) === true && isset($data['sourceType']) === true) {
+			switch ($data['sourceType']) {
+				case 'api':
+				case 'database':
+					// For api/database sources, use source mapping.
+					if (isset($mappings['source']['slugToId'][$data['sourceId']]) === true) {
+						$data['sourceId'] = $mappings['source']['slugToId'][$data['sourceId']];
+					}
+					break;
 
-                        // Map register slug to ID
-                        if (isset($mappings['register']['slugToId'][$registerSlug])) {
-                            $registerId = $mappings['register']['slugToId'][$registerSlug];
-                        } else {
-                            $registerId = $registerSlug; // Fallback to original slug if no mapping found.
-                        }
+				case 'register/schema':
+					// For register/schema sources, split the ID and map both parts.
+					if (str_contains($data['sourceId'], '/') === true) {
+						[$registerSlug, $schemaSlug] = explode('/', $data['sourceId']);
 
-                        // Map schema slug to ID
-                        if (isset($mappings['schema']['slugToId'][$schemaSlug])) {
-                            $schemaId = $mappings['schema']['slugToId'][$schemaSlug];
-                        } else {
-                            $schemaId = $schemaSlug; // Fallback to original slug if no mapping found.
-                        }
+						// Map register slug to ID (fallback to original slug if no mapping found).
+						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
 
-                        // Combine the IDs
-                        $data['targetId'] = $registerId . '/' . $schemaId;
-                    }
-                    break;
-            }
-        }
+						// Map schema slug to ID (fallback to original slug if no mapping found).
+						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
 
-        // Convert mapping slugs back to IDs.
-        if (isset($data['sourceTargetMapping']) && isset($mappings['mapping']['slugToId'][$data['sourceTargetMapping']])) {
-            $data['sourceTargetMapping'] = $mappings['mapping']['slugToId'][$data['sourceTargetMapping']];
-        }
-        if (isset($data['targetSourceMapping']) && isset($mappings['mapping']['slugToId'][$data['targetSourceMapping']])) {
-            $data['targetSourceMapping'] = $mappings['mapping']['slugToId'][$data['targetSourceMapping']];
-        }
+						// Combine the IDs.
+						$data['sourceId'] = $registerId . '/' . $schemaId;
+					}
+					break;
+			}//end switch
+		}//end if
 
-        // Convert arrays of slugs back to IDs
-        $idArrays = ['actions', 'followUps'];
-        foreach ($idArrays as $arrayKey) {
-            if (isset($data[$arrayKey]) && is_array($data[$arrayKey])) {
-                $data[$arrayKey] = array_map(function($slug) use ($mappings, $arrayKey) {
-                    // For actions, use rule mapping
-                    if ($arrayKey === 'actions' && isset($mappings['rule']['slugToId'][$slug])) {
-                        return $mappings['rule']['slugToId'][$slug];
-                    }
-                    // For followUps, use synchronization mapping
-                    if ($arrayKey === 'followUps' && isset($mappings['synchronization']['slugToId'][$slug])) {
-                        return $mappings['synchronization']['slugToId'][$slug];
-                    }
-                    // For conditions, use rule mapping
-                    if ($arrayKey === 'conditions' && isset($mappings['rule']['slugToId'][$slug])) {
-                        return $mappings['rule']['slugToId'][$slug];
-                    }
-                    return $slug;
-                }, $data[$arrayKey]);
-            }
-        }
+		// Convert target slugs back to IDs.
+		if (isset($data['targetId']) === true && isset($data['targetType']) === true) {
+			switch ($data['targetType']) {
+				case 'api':
+				case 'database':
+					// For api/database targets, use source mapping.
+					if (isset($mappings['source']['slugToId'][$data['targetId']]) === true) {
+						$data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
+					}
+					break;
 
-        // Check if synchronization with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['synchronization']['slugToId'][$data['slug']])) {
-            // Update existing synchronization.
-            return $this->synchronizationMapper->updateFromArray($mappings['synchronization']['slugToId'][$data['slug']], $data);
-        }
+				case 'register/schema':
+					// For register/schema targets, split the ID and map both parts.
+					if (str_contains($data['targetId'], '/') === true) {
+						[$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
 
-        // Create new synchronization.
-        return $this->synchronizationMapper->createFromArray($data);
-    }
+						// Map register slug to ID (fallback to original slug if no mapping found).
+						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getEntityType(): string
-    {
-        return 'synchronization';
-    }
-}
+						// Map schema slug to ID (fallback to original slug if no mapping found).
+						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
+
+						// Combine the IDs.
+						$data['targetId'] = $registerId . '/' . $schemaId;
+					}
+					break;
+			}//end switch
+		}//end if
+
+		// Convert mapping slugs back to IDs.
+		if (isset($data['sourceTargetMapping']) === true
+			&& isset($mappings['mapping']['slugToId'][$data['sourceTargetMapping']]) === true
+		) {
+			$data['sourceTargetMapping'] = $mappings['mapping']['slugToId'][$data['sourceTargetMapping']];
+		}
+
+		if (isset($data['targetSourceMapping']) === true
+			&& isset($mappings['mapping']['slugToId'][$data['targetSourceMapping']]) === true
+		) {
+			$data['targetSourceMapping'] = $mappings['mapping']['slugToId'][$data['targetSourceMapping']];
+		}
+
+		// Convert arrays of slugs back to IDs (mirrors $idArrays in export()).
+		$idArrays = ['actions', 'followUps', 'conditions'];
+		foreach ($idArrays as $arrayKey) {
+			if (isset($data[$arrayKey]) === true && is_array($data[$arrayKey]) === true) {
+				$data[$arrayKey] = array_map(
+					function ($slug) use ($mappings, $arrayKey) {
+						// Skip non-scalar entries (nested arrays, objects) — can't be slugs.
+						if (is_scalar($slug) === false) {
+							return $slug;
+						}
+
+						// For actions, use rule mapping.
+						if ($arrayKey === 'actions' && isset($mappings['rule']['slugToId'][$slug]) === true) {
+							return $mappings['rule']['slugToId'][$slug];
+						}
+
+						// For followUps, use synchronization mapping.
+						if ($arrayKey === 'followUps'
+							&& isset($mappings['synchronization']['slugToId'][$slug]) === true
+						) {
+							return $mappings['synchronization']['slugToId'][$slug];
+						}
+
+						// For conditions, use rule mapping.
+						if ($arrayKey === 'conditions' && isset($mappings['rule']['slugToId'][$slug]) === true) {
+							return $mappings['rule']['slugToId'][$slug];
+						}
+
+						return $slug;
+					},
+					$data[$arrayKey]
+				);
+			}//end if
+		}//end foreach
+
+		// Check if synchronization with this slug already exists.
+		$slug = $data['slug'] ?? null;
+		if ($slug !== null && isset($mappings['synchronization']['slugToId'][$slug]) === true) {
+			// Update existing synchronization.
+			return $this->orObjectService->saveObject(
+				object: $data,
+				register: 'integriq',
+				schema: 'synchronization',
+				uuid: $mappings['synchronization']['slugToId'][$slug]
+			);
+		}
+
+		// Create new synchronization.
+		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'synchronization');
+	}//end import()
+
+	/**
+	 * Get the entity type this handler is responsible for.
+	 *
+	 * @return string The entity type identifier.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
+	 */
+	public function getEntityType(): string {
+		return 'synchronization';
+	}//end getEntityType()
+}//end class

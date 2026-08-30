@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Configuring Sources
 
-Sources are the entry points for data in OpenConnector. This guide will help you set up and manage your data sources.
+Sources are the entry points for data in Integriq. This guide will help you set up and manage your data sources.
 
 ## Understanding Sources
 

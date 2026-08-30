@@ -1,0 +1,38 @@
+{
+    "@context": {
+        "schema": "http:\/\/schema.org",
+        "register": "decidesk"
+    },
+    "@type": "mapping",
+    "@id": "https:\/\/openconnector.app\/mappings\/notubiz-decision-to-decidesk-decision",
+    "reference": "https:\/\/openconnector.app\/mappings\/notubiz-decision-to-decidesk-decision",
+    "name": "Notubiz Decision to decidesk Decision",
+    "description": "Maps a Notubiz besluit/motie (RIS decision on a motion) onto decidesk's unified Decision schema with decisionType=motion. Notubiz status aangenomen/verworpen maps to outcome adopted/rejected. lifecycle is set to decided.",
+    "version": "0.0.1",
+    "mapping": {
+        "decisionType": "motion",
+        "motionType": "motion",
+        "title": "{{ values.title ?? values.name ?? values.subject }}",
+        "text": "{{ values.body ?? values.text ?? values.description ?? values.title }}",
+        "decisionDate": "{{ values.decision_date ?? values.date ?? values.plannedstart }}",
+        "outcome": "{% set s = (values.result ?? values.status ?? '')|lower %}{% if s == 'aangenomen' or s == 'adopted' or s == 'accepted' %}adopted{% elseif s == 'verworpen' or s == 'rejected' %}rejected{% else %}{% endif %}",
+        "lifecycle": "decided",
+        "isPublished": "public",
+        "subjectRegister": "notubiz",
+        "subjectSchema": "decision",
+        "subjectId": "{{ values.id ?? values.decision_id }}",
+        "subjectLabel": "{{ values.title ?? values.name }}",
+        "externalReference": "{{ 'notubiz-decision-' ~ (values.id ?? values.decision_id) }}"
+    },
+    "unset": [
+        ""
+    ],
+    "cast": {
+        "title": "unsetIfValue==",
+        "text": "unsetIfValue==",
+        "decisionDate": "unsetIfValue==",
+        "outcome": "unsetIfValue==",
+        "subjectId": "unsetIfValue=="
+    },
+    "passThrough": false
+}
