@@ -124,7 +124,7 @@
     "@vue/test-utils": {
       "vue": "$vue"
     },
-    "@nextcloud/axios": "~2.5.2",
+    "@nextcloud/axios": "$@nextcloud/axios",
     "postcss": "^8.4.49",
     "vue3-apexcharts": "<1.9.0",
     "vue-apexcharts": "<1.9.0"
