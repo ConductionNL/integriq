@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "integriq",
-        "version": "0.3.13-unstable.20260831053109",
+        "version": "0.3.14",
         "description": "open connector",
         "license": {
             "name": "EUPL-1.2"
