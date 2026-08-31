@@ -102,7 +102,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-transform-stub": "^2.0.0",
     "node-polyfill-webpack-plugin": "4.0.0",
-    "postcss-html": "^1.0.0",
+    "postcss-html": "^2.0.0",
     "prettier": "^3.9.6",
     "sass": "^1.77.0",
     "sass-loader": "^16.0.2",
