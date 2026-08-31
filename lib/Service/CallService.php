@@ -146,19 +146,27 @@ class CallService
 	 */
 	private function renderConfiguration(array $configuration, Source $source): array
 	{
-		return array_map(function($value, $key) use ($source) {
+        // array_map() with multiple array arguments does not preserve the original string
+        // keys of $configuration - it silently reindexes the result numerically. That would
+        // drop keys like 'headers'/'endpoint' entirely for every caller that reads them by
+        // name, so this loop is written to keep the original keys intact.
+        $rendered = [];
+        foreach ($configuration as $key => $value) {
             // Multipart parts carry raw file bytes, not admin-authored template strings.
             // Binary/base64 content can coincidentally contain "{{" and "}}" and must never
             // be handed to Twig - it will try to parse the file as a template and throw a
             // SyntaxError deep into the binary data.
             if ($key === 'multipart') {
-                return $value;
+                $rendered[$key] = $value;
+                continue;
             }
             if (is_string($value) === true || is_array($value) === true) {
-                return $this->renderValue($value, $source);
+                $rendered[$key] = $this->renderValue($value, $source);
+            } else {
+                $rendered[$key] = $value;
             }
-            return $value;
-        }, $configuration, array_keys($configuration));
+        }
+        return $rendered;
 	}
 
     /**
