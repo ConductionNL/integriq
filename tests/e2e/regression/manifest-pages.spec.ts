@@ -43,7 +43,6 @@
  * - src/manifest.json
  */
 
-import type { Page } from '@playwright/test'
 import type { ConsoleMessage, Page } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
