@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * @vitest-environment jsdom
  *
@@ -21,8 +22,7 @@
  *
  * @spec openspec/specs/realtime-updates/spec.md
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
 const unsubscribe = vi.fn()

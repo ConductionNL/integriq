@@ -15,8 +15,8 @@
  * "Add EventSubscription"). The Webhooks index now lists webhook subscriptions —
  * a distinct surface from Consumers — and its create button reads "Add Webhook".
  */
-import { test, expect } from '@playwright/test'
-import { navTo, trackErrors, assertNoAppErrors } from './_helpers'
+import { expect, test } from '@playwright/test'
+import { assertNoAppErrors, navTo, trackErrors } from './_helpers.ts'
 
 test.describe('Webhooks — index surface', () => {
 	// @e2e openconnector-comprehensive-tests::webhooks-page-mounts

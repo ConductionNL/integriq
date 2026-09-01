@@ -80,8 +80,7 @@
 
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
-
-import { BASE_URL } from './support/baseUrl'
+import { BASE_URL } from './support/baseUrl.ts'
 
 const APP_ROOT = path.resolve(__dirname, '..', '..')
 

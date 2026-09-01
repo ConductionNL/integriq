@@ -42,12 +42,12 @@
  * unchanged below.
  */
 import type { Browser, Page } from '@playwright/test'
-import type { ApiClient } from '../workflows/_fixture'
+import type { ApiClient } from '../workflows/_fixture.ts'
 
 import { expect, test } from '@playwright/test'
-import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture'
-import { APP_BASE } from './_helpers'
-import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
+import { expectRouteMatched, resolveAppRoot } from '../support/appRoot.ts'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture.ts'
+import { APP_BASE } from './_helpers.ts'
 
 /** OpenRegister's native flow store — a different backend than OR_BASE/OC_API in _fixture.ts, which target openconnector's legacy `flow` schema. */
 const FLOWS_API = '/index.php/apps/openregister/api/flows'

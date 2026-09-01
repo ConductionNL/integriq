@@ -54,8 +54,10 @@
  * - lib/Service/EventService.php
  */
 
-import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
-import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
+import type { ConsoleMessage, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { expectRouteMatched, gotoAppRoute } from '../support/appRoot.ts'
 
 /**
  * The route that actually mounts `EventDeliveriesPage` (ADR-080 merge).

@@ -25,9 +25,9 @@
  * the negative controls fail loudly rather than silently passing.
  */
 
-import { describe, it, expect } from 'vitest'
-import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 import NcButton from '@nextcloud/vue/components/NcButton'
 
 /**

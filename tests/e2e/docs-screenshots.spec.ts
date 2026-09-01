@@ -50,10 +50,12 @@
  * Pattern reference: ADR-030 (hydra/openspec/architecture/).
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
 import { dismissFirstVisitOverlays } from '@conduction/nextcloud-vue/testing/playwright'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const SHOT_ROOT = path.resolve(
 	__dirname,

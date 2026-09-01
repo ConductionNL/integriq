@@ -19,12 +19,14 @@
  * from decidesk's journeydoc setup.
  */
 
-import { chromium, request, type FullConfig } from '@playwright/test'
-import { execSync } from 'child_process'
-import * as path from 'path'
-import * as fs from 'fs'
-import { BASE_URL } from './support/baseUrl'
+import type { FullConfig } from '@playwright/test'
+
 import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
+import { chromium, request } from '@playwright/test'
+import { execSync } from 'child_process'
+import * as fs from 'fs'
+import * as path from 'path'
+import { BASE_URL } from './support/baseUrl.ts'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -48,7 +50,7 @@ function ensureBundleBuilt(): void {
 	if (fs.existsSync(BUNDLE_PATH)) {
 		return
 	}
-	// eslint-disable-next-line no-console
+
 	console.log(
 		`[playwright globalSetup] bundle missing at ${BUNDLE_PATH}; running 'npm run build' once…`,
 	)
@@ -192,12 +194,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 				headers: { requesttoken: token },
 			})
 			return res.status
-		} catch (e) {
+		} catch {
 			return -1
 		}
 	})
 	if (wizardStatus !== 200 && wizardStatus !== 404) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			`[playwright globalSetup] first-run wizard dismissal returned ${wizardStatus}; `
 				+ 'specs may hit an overlay that blocks clicks without hiding anything.',

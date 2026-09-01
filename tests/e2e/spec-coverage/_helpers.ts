@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -11,8 +13,8 @@
  *    so console-error / 500 assertions only fail on integriq-origin
  *    problems.
  */
-import { type Page, expect } from '@playwright/test'
-import { appDialog } from '../support/dialogs'
+import { expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs.ts'
 
 // The one integriq URL base for the whole spec-coverage suite. Two
 // separate things are encoded here, and both were learned from a failing run.

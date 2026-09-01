@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * l10n extraction / drift check — FRONTEND catalogue.
  *
@@ -69,7 +67,6 @@
 
 const fs = require('fs')
 const path = require('path')
-
 const {
 	loadJsTranslations,
 	serializeJs,
@@ -132,7 +129,7 @@ for (const file of files) {
 
 const missing = []
 for (const [key, locations] of used) {
-	if (!Object.prototype.hasOwnProperty.call(translations, key)) {
+	if (!Object.hasOwn(translations, key)) {
 		missing.push({ key, locations: [...locations] })
 	}
 }

@@ -7,8 +7,8 @@
  * getRouter() (they run without Vue component context, so no this.$router).
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { setRouter, getRouter } from '../../src/handlers/routerRef.js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { getRouter, setRouter } from '../../src/handlers/routerRef.js'
 
 describe('routerRef', () => {
 	beforeEach(() => {

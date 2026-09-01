@@ -1,3 +1,6 @@
+import type { Page } from '@playwright/test'
+import type { ApiClient } from './_fixture.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -43,18 +46,16 @@
  * sort, so these specs no longer encode an assumption about how many rows the
  * rest of the suite happens to leave behind.
  */
-import { test, expect, type Page } from '@playwright/test'
-import { appDialog } from '../support/dialogs'
+import { expect, test } from '@playwright/test'
+import { appDialog } from '../support/dialogs.ts'
 import {
-	makeApiClient,
-	makeRunId,
+	cleanupByPrefix,
 	find,
 	findAll,
-	deleteObject,
-	cleanupByPrefix,
 	idOf,
-	type ApiClient,
-} from './_fixture'
+	makeApiClient,
+	makeRunId,
+} from './_fixture.ts'
 
 let api: ApiClient
 const RUN = makeRunId()

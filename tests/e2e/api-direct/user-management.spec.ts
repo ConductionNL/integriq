@@ -12,9 +12,9 @@
  * storageState.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as http from 'http'
-import { BASE_URL, baseUrlParts } from '../support/baseUrl'
+import { BASE_URL, baseUrlParts } from '../support/baseUrl.ts'
 
 const BASE = BASE_URL
 const ME_URL = '/index.php/apps/integriq/api/user/me'

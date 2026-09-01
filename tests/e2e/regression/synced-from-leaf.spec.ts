@@ -29,13 +29,10 @@
  * suite skips (not fails) when that flag isn't set on the instance.
  */
 
-import {
-	test,
-	expect,
-	request as pwRequest,
-	type APIRequestContext,
-} from '@playwright/test'
-import { BASE_URL } from '../support/baseUrl'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect, request as pwRequest, test } from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl.ts'
 
 const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
@@ -178,7 +175,6 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		}
 
 		if (!storageMigrated) {
-			// eslint-disable-next-line no-console
 			console.warn(`[synced-from-leaf] skipping: ${disabledReason}`)
 			skipReason = disabledReason
 			return

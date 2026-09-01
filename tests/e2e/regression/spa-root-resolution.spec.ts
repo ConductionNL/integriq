@@ -28,8 +28,12 @@
  *      would be worthless in exactly the environment it was written for.
  */
 
-import { test, expect } from '@playwright/test'
-import { resolveAppRoot, gotoAppRoute, expectRouteMatched } from '../support/appRoot'
+import { expect, test } from '@playwright/test'
+import {
+	expectRouteMatched,
+	gotoAppRoute,
+	resolveAppRoot,
+} from '../support/appRoot.ts'
 
 /** A route that exists in `src/manifest.json` and needs no fixture data. */
 const ROUTE = '/sources'
