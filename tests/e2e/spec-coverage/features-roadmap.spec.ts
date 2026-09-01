@@ -6,8 +6,8 @@
  * page (manifest type "roadmap"). Reached from the footer nav entry; shows
  * a "Features" surface with "Show roadmap" / "Suggest a feature" actions.
  */
-import { test, expect } from '@playwright/test'
-import { navTo, trackErrors, assertNoAppErrors, APP_BASE } from './_helpers'
+import { expect, test } from '@playwright/test'
+import { APP_BASE, assertNoAppErrors, navTo, trackErrors } from './_helpers.ts'
 
 test.describe('Features & roadmap — index surface', () => {
 	// @e2e openconnector-comprehensive-tests::features-roadmap-page-mounts

@@ -19,12 +19,12 @@
  * @nextcloud/l10n is aliased to a deterministic stub in vitest.config.js.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
+	countUuids,
 	getRunDescriptor,
 	initialOptionValues,
 	visibleOptions,
-	countUuids,
 } from '../../src/modals/v2/runTargets.js'
 
 describe('getRunDescriptor', () => {

@@ -23,17 +23,17 @@
  *      unknown type. A typo here is a rule that cannot run.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
 	ACTION_OPTIONS,
 	ACTION_TYPES,
 	DEFAULT_ERROR_CONFIG,
 	EMPTY_ROOT_GROUP,
-	TIMING_OPTIONS,
-	UNDISPATCHED_ACTION_TYPES,
 	emptyRuleDraft,
 	normaliseConditions,
 	serializeRuleConditions,
+	TIMING_OPTIONS,
+	UNDISPATCHED_ACTION_TYPES,
 } from '../../src/views/Rule/ruleDraft.js'
 
 describe('normaliseConditions', () => {

@@ -1,3 +1,6 @@
+import type { Page } from '@playwright/test'
+import type { ApiClient } from '../workflows/_fixture.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -41,14 +44,9 @@
  * must offer it and the target selector must not — in the same DOM, at the
  * same moment.
  */
-import { test, expect, type Page } from '@playwright/test'
-import { APP_BASE, trackErrors, assertNoAppErrors } from './_helpers'
-import {
-	makeApiClient,
-	createObject,
-	deleteObject,
-	type ApiClient,
-} from '../workflows/_fixture'
+import { expect, test } from '@playwright/test'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture.ts'
+import { APP_BASE, assertNoAppErrors, trackErrors } from './_helpers.ts'
 
 const runId = `sedt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 

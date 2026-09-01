@@ -26,19 +26,19 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
 	AUTHORIZATION_TYPES,
-	CREDENTIALLESS_AUTHORIZATION_TYPES,
-	QUOTA_PERIODS,
 	buildConsumerPayload,
 	buildQuota,
 	buildRateLimit,
 	carriesCredential,
 	consumerDraftFromItem,
+	CREDENTIALLESS_AUTHORIZATION_TYPES,
 	emptyConsumerDraft,
 	normaliseList,
 	positiveIntOrNull,
+	QUOTA_PERIODS,
 } from '../../src/modals/v2/consumerDraft.js'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')

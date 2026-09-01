@@ -24,7 +24,9 @@
  * about, for the opposite reason.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const APP_BASE = '/index.php/apps/integriq'
 

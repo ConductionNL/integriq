@@ -68,14 +68,14 @@
  * file genuinely covers rather than inventing anchors that resolve to nothing.
  */
 import type { Browser, Page } from '@playwright/test'
-import type { ApiClient } from '../workflows/_fixture'
+import type { ApiClient } from '../workflows/_fixture.ts'
 
+import { expect, test } from '@playwright/test'
 import { execFileSync } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
-import { expect, test } from '@playwright/test'
-import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture'
-import { expectRouteMatched, resolveAppRoot } from '../support/appRoot'
+import { expectRouteMatched, resolveAppRoot } from '../support/appRoot.ts'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture.ts'
 
 /** OpenRegister's API root — registers, schemas, objects, flows and preflight. */
 const OR = '/index.php/apps/openregister/api'
@@ -223,7 +223,7 @@ function occ(): OccRunner {
 
 	// 3. A running container — the dev-container layout.
 	const container = process.env.NC_CONTAINER ?? 'nextcloud'
-	let running = ''
+	let running
 	try {
 		running = execFileSync(
 			'docker',
@@ -1189,7 +1189,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 	 * 4. Resumability after a mid-run suspension
 	 * ---------------------------------------------------------------- */
 
-	// eslint-disable-next-line playwright/no-skipped-test
 	test.skip('a run suspended mid-page resumes at the page cursor rather than refetching', async () => {
 		// NOT WRITTEN, and named rather than silently dropped.
 		//

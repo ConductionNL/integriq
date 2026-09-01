@@ -57,8 +57,10 @@
  * - lib/Controller/EventsController.php
  */
 
-import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
-import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
+import type { ConsoleMessage, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { expectRouteMatched, gotoAppRoute } from '../support/appRoot.ts'
 
 // The candidate-probe that used to live here always returned the FIRST prefix,
 // because Nextcloud serves the identical SPA shell under both — so on CI these

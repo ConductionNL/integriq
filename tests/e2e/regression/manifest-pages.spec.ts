@@ -43,8 +43,10 @@
  * - src/manifest.json
  */
 
-import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import type { ConsoleMessage, Page } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
 /*
  * SCENARIOS THIS FILE PROVES.
  *
@@ -103,7 +105,6 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
  *     — the manifest type and the mount are proven; that widget counts resolve
  *     via dataSource blocks against OR's aggregate endpoint is not.
  */
-
 // In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
 // default for the apache-served dev container) `generateUrl` returns
 // `/apps/integriq` and the Vue Router's `base` is set to that —
@@ -124,9 +125,9 @@ import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 // Resolution now comes from `OC.generateUrl` — the function src/main.js itself
 // calls to build the router base — and each test asserts the router MATCHED
 // before looking at anything.
-import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
+import { expectRouteMatched, resolveAppRoot } from '../support/appRoot.ts'
 
-async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
+async function rootUrl(page: Page): Promise<string> {
 	return await resolveAppRoot(page)
 }
 
@@ -364,11 +365,16 @@ test.describe('manifest pages — schema-driven render', () => {
 })
 
 test.describe('manifest schema validation', () => {
+	// This suite compiles as CommonJS, so `import.meta` is a syntax error and
+	// `require` is how it reaches the filesystem. The directives below say so
+	// at each site; the reason is here.
 	function readManifest(): Record<string, any> {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const manifestPath = require('path').resolve(
 			__dirname,
 			'../../../src/manifest.json',
 		)
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		return JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
 	}
 
@@ -378,19 +384,23 @@ test.describe('manifest schema validation', () => {
 		// fails it as an error with no statement of intent — and a reader
 		// checking whether "the manifest exists and parses" is covered cannot
 		// see an assertion that isn't written down.
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const manifestPath = require('path').resolve(
 			__dirname,
 			'../../../src/manifest.json',
 		)
 		expect(
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
 			require('fs').existsSync(manifestPath),
 			`manifest.json must exist at ${manifestPath}`,
 		).toBe(true)
 		expect(
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
 			require('fs').statSync(manifestPath).isFile(),
 			'manifest.json must be a regular file',
 		).toBe(true)
 		expect(
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
 			() => JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8')),
 			'manifest.json must parse as valid JSON with no syntax errors',
 		).not.toThrow()

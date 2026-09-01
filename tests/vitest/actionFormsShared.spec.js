@@ -12,14 +12,14 @@
  * @nextcloud/axios is mocked; @nextcloud/router is the stub from the config.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const get = vi.fn()
 vi.mock('@nextcloud/axios', () => ({ default: { get: (...a) => get(...a) } }))
 
 import {
-	patchMethod,
 	fetchOpenRegisterCollection,
+	patchMethod,
 	valueProp,
 } from '../../src/views/Rule/actionForms/shared.js'
 

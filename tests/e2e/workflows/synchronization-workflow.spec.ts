@@ -1,3 +1,5 @@
+import type { ApiClient } from './_fixture.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,19 +44,16 @@
  * fixme bodies are written to PASS the moment the bugs are fixed, so they
  * double as regression guards.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
+	cleanupByPrefix,
+	createObject,
+	findAll,
+	idOf,
 	makeApiClient,
 	makeRunId,
-	createObject,
-	idOf,
-	findAll,
-	deleteObject,
-	cleanupByPrefix,
-	OR_BASE,
 	OC_API,
-	type ApiClient,
-} from './_fixture'
+} from './_fixture.ts'
 
 const RUN = makeRunId()
 
