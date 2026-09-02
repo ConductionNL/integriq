@@ -284,8 +284,7 @@
           },
           "engineRunUuid": {
             "type": "string",
-            "format": "uuid",
-            "description": "Uuid of the suspended OpenRegister ENGINE flow run this request gates (openconnector.approval-request node case); set instead of endpointId/ruleId/synchronizationId/flowRunId. The decision is delivered through FlowRunSignalService::signalAs(), and the node's heartbeat re-reads this record when that delivery is lost (retire-integriq-flow-schema Task 1).",
+            "description": "Opaque handle naming the suspended OpenRegister ENGINE flow run this request gates (openconnector.approval-request node case); set instead of endpointId/ruleId/synchronizationId/flowRunId. Deliberately NOT a $ref: engine runs live in OpenRegister's own oc_openregister_flow_runs table, not as objects of any schema this register could reference, so there is nothing to relate to (ADR-062 rule 7 does not apply). The decision is delivered through FlowRunSignalService::signalAs(), and the node's heartbeat re-reads this record when that delivery is lost (retire-integriq-flow-schema Task 1).",
             "title": "Engine Run Uuid"
           },
           "signalNodeId": {

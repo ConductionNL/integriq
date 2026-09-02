@@ -26,7 +26,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
  */
 
 declare(strict_types=1);
@@ -55,7 +54,6 @@ final class FlowNodeResumeState {
 	 * @param FlowResumeState $parent The state holding every node's slot.
 	 * @param string $nodeId The node this view is scoped to.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(
 		private readonly FlowResumeState $parent,
@@ -77,7 +75,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return string This node's id within the flow graph.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function nodeId(): string {
 		return $this->nodeId;
@@ -93,7 +90,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return boolean True when a slot is held.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function isResuming(): bool {
 		return ($this->parent->read(nodeId: $this->nodeId) !== []);
@@ -107,7 +103,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return mixed The held value, or the default.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function get(string $key, mixed $default = null): mixed {
 		$values = $this->parent->read(nodeId: $this->nodeId);
@@ -122,7 +117,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return boolean Whether the key is held.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function has(string $key): bool {
 		return array_key_exists($key, $this->parent->read(nodeId: $this->nodeId));
@@ -138,7 +132,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function set(string $key, mixed $value): void {
 		$values = $this->parent->read(nodeId: $this->nodeId);
@@ -154,7 +147,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function merge(array $values): void {
 		$this->parent->write(
@@ -169,7 +161,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return array<string, mixed> The stored values.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function all(): array {
 		return $this->parent->read(nodeId: $this->nodeId);
@@ -185,7 +176,6 @@ final class FlowNodeResumeState {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function clear(): void {
 		$this->parent->forget(nodeId: $this->nodeId);

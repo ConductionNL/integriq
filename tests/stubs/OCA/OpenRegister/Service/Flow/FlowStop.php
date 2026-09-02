@@ -32,7 +32,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +70,6 @@ class FlowStop extends RuntimeException {
 	 *
 	 * @return string|null The check id, or null for an author-requested stop.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
 	public function checkId(): ?string {
 		return $this->checkId;
@@ -82,7 +80,6 @@ class FlowStop extends RuntimeException {
 	 *
 	 * @return boolean True for an error stop.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
 	 */
 	public function isError(): bool {
 		return $this->isError;
