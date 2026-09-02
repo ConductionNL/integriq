@@ -22,6 +22,8 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Event\DeliveryConcludedEvent;
+use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
@@ -30,6 +32,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -117,6 +120,17 @@ class EventService {
 	public const NEXTCLOUD_SOURCE_PREFIX = '/nextcloud/';
 
 	/**
+	 * CloudEvents `type` for cross-app delivery requests ingested through the
+	 * ADR-041 typed-event seam ({@see DeliveryRequestedEvent}). Subscriptions
+	 * route on this type plus `data.delivery.*` provenance filters.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
+	 */
+	public const DELIVERY_REQUESTED_TYPE = 'nl.conduction.delivery.requested';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService The OR ObjectService for data access.
@@ -143,6 +157,10 @@ class EventService {
 	 *                                                          so pre-existing positional test
 	 *                                                          instantiations keep working
 	 *                                                          unmodified.
+	 * @param IEventDispatcher|null $eventDispatcher Dispatches {@see DeliveryConcludedEvent} when a
+	 *                                               provenance-carrying delivery reaches a terminal
+	 *                                               state (ADR-041 seam). Nullable + defaulted for
+	 *                                               the same test-compatibility reason as above.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
@@ -162,6 +180,7 @@ class EventService {
 		private readonly ?FormsAnswerResolver $formsAnswerResolver = null,
 		private readonly ?FormsSyncAdapter $formsSyncAdapter = null,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
+		private readonly ?IEventDispatcher $eventDispatcher = null,
 	) {
 
 	}//end __construct()
@@ -786,6 +805,15 @@ class EventService {
 			schema: 'event_message',
 			uuid: $message->getUuid()
 		);
+
+		if ($messageData['status'] === 'abandoned') {
+			$this->dispatchDeliveryConcluded(
+				message: $message,
+				messageData: $messageData,
+				status: DeliveryConcludedEvent::STATUS_ABANDONED,
+				concludedAt: $nowIso
+			);
+		}
 
 	}//end recordFailure()
 
@@ -1819,7 +1847,87 @@ class EventService {
 			uuid: $message->getUuid()
 		);
 
+		$this->dispatchDeliveryConcluded(
+			message: $message,
+			messageData: $messageData,
+			status: DeliveryConcludedEvent::STATUS_DELIVERED,
+			concludedAt: $now
+		);
+
 	}//end recordDeliverySuccess()
+
+	/**
+	 * Dispatch the terminal {@see DeliveryConcludedEvent} for a
+	 * provenance-carrying delivery message (ADR-041 seam).
+	 *
+	 * Gated to messages whose originating event was ingested through
+	 * {@see ingestDeliveryRequest} — the `data.delivery.sourceApp` +
+	 * `correlationId` provenance block is the gate, so ordinary CloudEvent
+	 * traffic never produces a concluded event. Dispatch failures are logged
+	 * and swallowed: the message's own status record is the source of truth
+	 * and must not be rolled back by a consumer-side listener error.
+	 *
+	 * @param ObjectEntity $message The event_message row that reached a terminal state.
+	 * @param array<string, mixed> $messageData The message's persisted data (post-transition).
+	 * @param string $status Terminal status: {@see DeliveryConcludedEvent::STATUS_DELIVERED}
+	 *                       or {@see DeliveryConcludedEvent::STATUS_ABANDONED}.
+	 * @param string $concludedAt ISO 8601 timestamp of the terminal transition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
+	 */
+	private function dispatchDeliveryConcluded(
+		ObjectEntity $message,
+		array $messageData,
+		string $status,
+		string $concludedAt,
+	): void {
+		if ($this->eventDispatcher === null) {
+			return;
+		}
+
+		$payload = (array)($messageData['payload'] ?? []);
+		$data = (array)($payload['data'] ?? []);
+		$delivery = (array)($data['delivery'] ?? []);
+		$sourceApp = (string)($delivery['sourceApp'] ?? '');
+		$correlationId = (string)($delivery['correlationId'] ?? '');
+		if ($sourceApp === '' || $correlationId === '') {
+			// Not an ADR-041 delivery request — nothing to conclude.
+			return;
+		}
+
+		$error = null;
+		if (isset($messageData['error']) === true && (string)$messageData['error'] !== '') {
+			$error = (string)$messageData['error'];
+		}
+
+		try {
+			$this->eventDispatcher->dispatchTyped(
+				new DeliveryConcludedEvent(
+					sourceApp: $sourceApp,
+					correlationId: $correlationId,
+					subjectId: (string)($delivery['subjectId'] ?? ''),
+					channel: (string)($delivery['channel'] ?? ''),
+					status: $status,
+					eventId: (string)($messageData['event'] ?? ''),
+					messageId: (string)$message->getUuid(),
+					attempts: count((array)($messageData['attempts'] ?? [])),
+					error: $error,
+					concludedAt: $concludedAt,
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'DeliveryConcludedEvent dispatch failed: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'messageId' => $message->getUuid(),
+					'sourceApp' => $sourceApp,
+				]
+			);
+		}//end try
+	}//end dispatchDeliveryConcluded()
 
 	/**
 	 * Persist a configuration-error failure (e.g. an unrecognised
@@ -2288,6 +2396,67 @@ class EventService {
 
 		return $this->processEvent(event: $event);
 	}//end emitCloudEvent()
+
+	/**
+	 * Ingest an ADR-041 cross-app delivery request into the CloudEvents
+	 * pipeline.
+	 *
+	 * Persists a {@see self::DELIVERY_REQUESTED_TYPE} `event` OR object whose
+	 * `data.delivery` block carries the request's provenance (sourceApp,
+	 * subject, channel, correlationId) and whose `data.payload` carries the
+	 * caller-composed delivery payload, then fans it out via
+	 * {@see processEvent} so admin-configured `event_subscription`s route it
+	 * to a webhook / flow / synchronization / notificaties action with the
+	 * pipeline's retry, dead-letter and replay semantics.
+	 *
+	 * The provenance block is what later gates the terminal
+	 * {@see DeliveryConcludedEvent} dispatch in
+	 * {@see dispatchDeliveryConcluded} — ordinary CloudEvent traffic carries
+	 * no `data.delivery` and never produces one.
+	 *
+	 * @param DeliveryRequestedEvent $request The typed cross-app delivery request.
+	 *
+	 * @return array{event: ObjectEntity, messages: ObjectEntity[]} The persisted event and its created delivery messages.
+	 *
+	 * @throws Exception On event processing failure.
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
+	 */
+	public function ingestDeliveryRequest(DeliveryRequestedEvent $request): array {
+		$event = $this->objectService->saveObject(
+			object: [
+				'source' => ('/apps/' . $request->getSourceApp() . '/delivery'),
+				'type' => self::DELIVERY_REQUESTED_TYPE,
+				'time' => (new DateTime())->format('c'),
+				'subject' => $request->getSubjectId(),
+				'data' => [
+					'delivery' => [
+						'sourceApp' => $request->getSourceApp(),
+						'subjectRegister' => $request->getSubjectRegister(),
+						'subjectSchema' => $request->getSubjectSchema(),
+						'subjectId' => $request->getSubjectId(),
+						'subjectLabel' => $request->getSubjectLabel(),
+						'deliveryKind' => $request->getDeliveryKind(),
+						'channel' => $request->getChannel(),
+						'correlationId' => $request->getCorrelationId(),
+						'externalReference' => $request->getExternalReference(),
+					],
+					'payload' => $request->getPayload(),
+				],
+				'userId' => $request->getUserId(),
+			],
+			register: 'integriq',
+			schema: 'event'
+		);
+
+		$messages = $this->processEvent(event: $event);
+
+		return [
+			'event' => $event,
+			'messages' => $messages,
+		];
+	}//end ingestDeliveryRequest()
 
 	/**
 	 * Normalize a Nextcloud-native core event (files/calendar/Tables/Forms)
