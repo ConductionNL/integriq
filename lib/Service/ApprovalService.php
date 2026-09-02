@@ -312,6 +312,80 @@ class ApprovalService {
 	}//end suspendForFlow()
 
 	/**
+	 * Suspend an OpenRegister ENGINE flow run on an
+	 * `openconnector.approval-request` step: persist a `pending`
+	 * `approval_request` carrying `engineRunUuid`/`signalNodeId` instead of
+	 * `flowRunId`/`resumeStepOrder`, and notify the configured approver
+	 * group. The engine run resumes through
+	 * `FlowRunSignalService::signalAs()` (delivered by
+	 * `ApprovalsController`), never through a FlowToken rehydration — the
+	 * engine holds the run's own state, so `snapshot` stays empty and this
+	 * record remains purely the human-decision system of record
+	 * (hitl-on-shared-tasks D-1 unchanged: the mirror task and
+	 * notifications behave exactly as for every other suspension kind).
+	 *
+	 * @param string $engineRunUuid The suspended OpenRegister flow run's uuid.
+	 * @param string $signalNodeId The graph node id awaiting the decision, so the
+	 *                             signal addresses the right resume slot.
+	 * @param array $config The approval step's config (`question`/`approverGroup`/`ttlSeconds`/`failOnReject`).
+	 * @param string $requesterUid The run owner's uid (`context.triggeredBy`), or '' when unattributed.
+	 *
+	 * @return ObjectEntity The created, `pending` approval_request.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	public function suspendForEngineRun(
+		string $engineRunUuid,
+		string $signalNodeId,
+		array $config,
+		string $requesterUid = '',
+	): ObjectEntity {
+		$ttlSeconds = (int)($config['ttlSeconds'] ?? self::DEFAULT_TTL_SECONDS);
+
+		$now = new DateTime();
+		$expiresAt = (clone $now)->add(new DateInterval('PT' . max($ttlSeconds, 1) . 'S'));
+
+		$requesterUserId = $requesterUid;
+		if ($requesterUserId === '') {
+			$requesterUserId = ($this->userSession->getUser()?->getUID() ?? '');
+		}
+
+		// `onReject` mirrors the node's `failOnReject` into the legacy
+		// vocabulary the sweep and the UI already read: a step that fails on
+		// rejection is `error`, one that routes the rejection onward is
+		// `skip`. `onTimeout` is always `error` — the node fails closed on
+		// expiry by requirement, so the record must not promise otherwise.
+		$onReject = 'skip';
+		if (($config['failOnReject'] ?? false) === true) {
+			$onReject = 'error';
+		}
+
+		$record = $this->objectService->saveObject(
+			object: [
+				'status' => 'pending',
+				'engineRunUuid' => $engineRunUuid,
+				'signalNodeId' => $signalNodeId,
+				'question' => trim((string)($config['question'] ?? '')),
+				'timing' => 'before',
+				'snapshot' => [],
+				'requesterUserId' => $requesterUserId,
+				'approverGroup' => (string)($config['approverGroup'] ?? ''),
+				'onReject' => $onReject,
+				'onTimeout' => 'error',
+				'createdAt' => $now->format('c'),
+				'expiresAt' => $expiresAt->format('c'),
+			],
+			register: self::REGISTER,
+			schema: self::SCHEMA
+		);
+
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
+		$this->notifyApprovers(approvalRequest: $record);
+
+		return $record;
+	}//end suspendForEngineRun()
+
+	/**
 	 * Create the `approval_request` gating an `api_product_subscription`
 	 * whose chosen tier has `requiresApproval: true` (api-product-gateway
 	 * REQ-APG-004). Structurally identical to

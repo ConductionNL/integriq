@@ -26,6 +26,7 @@ use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\EngineSignalService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -72,6 +73,11 @@ class ApprovalsControllerTest extends TestCase {
 	private $flowRunnerService;
 
 	/**
+	 * @var EngineSignalService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $engineSignal;
+
+	/**
 	 * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $orObjectService;
@@ -114,6 +120,8 @@ class ApprovalsControllerTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
+		$this->engineSignal = $this->createMock(EngineSignalService::class);
+
 		$this->controller = new ApprovalsController(
 			'integriq',
 			$this->request,
@@ -126,6 +134,7 @@ class ApprovalsControllerTest extends TestCase {
 			$this->userSession,
 			$l,
 			$this->createMock(LoggerInterface::class),
+			$this->engineSignal,
 		);
 
 	}//end setUp()
@@ -276,6 +285,80 @@ class ApprovalsControllerTest extends TestCase {
 	}//end testApproveFlowHappyPathResumesAndCompletes()
 
 	/**
+	 * Approving an ENGINE-run approval_request (engineRunUuid set) finalizes
+	 * the record and delivers the approved signal to the suspended
+	 * OpenRegister run — retire-integriq-flow-schema Task 1.
+	 *
+	 * @return void
+	 */
+	public function testApproveEngineRunSignalsAndCompletes(): void {
+		$request = $this->entity(
+			['status' => 'pending', 'approverGroup' => 'woo-approvers', 'engineRunUuid' => 'run-1', 'signalNodeId' => 'approve-1']
+		);
+		$this->approvalService->method('find')->willReturn($request);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+
+		$this->engineSignal->expects($this->once())->method('deliver')
+			->willReturnCallback(
+				function (array $data, string $decision): bool {
+					$this->assertSame('run-1', $data['engineRunUuid']);
+					$this->assertSame('approved', $decision);
+
+					return true;
+				}
+			);
+
+		$this->approvalService->expects($this->once())->method('completeApproval')
+			->willReturnCallback(
+				function ($approvalRequest, $approver, string $resumeResult): ObjectEntity {
+					$this->assertSame('success', $resumeResult, 'A delivered signal reports success');
+
+					return $this->entity(['status' => 'approved', 'approvedAt' => 'now'], 'approval-1');
+				}
+			);
+
+		$response = $this->controller->approve('approval-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertTrue($data['signalled']);
+		$this->assertSame('approved', $data['_approval']['status']);
+
+	}//end testApproveEngineRunSignalsAndCompletes()
+
+	/**
+	 * A failed delivery still resolves the record — the record is the system
+	 * of record and the node's heartbeat re-reads it — but reports the
+	 * delivery as an error.
+	 *
+	 * @return void
+	 */
+	public function testApproveEngineRunUndeliveredStillCompletes(): void {
+		$request = $this->entity(
+			['status' => 'pending', 'approverGroup' => 'woo-approvers', 'engineRunUuid' => 'run-1', 'signalNodeId' => 'approve-1']
+		);
+		$this->approvalService->method('find')->willReturn($request);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+
+		$this->engineSignal->method('deliver')->willReturn(false);
+
+		$this->approvalService->expects($this->once())->method('completeApproval')
+			->willReturnCallback(
+				function ($approvalRequest, $approver, string $resumeResult): ObjectEntity {
+					$this->assertSame('error', $resumeResult, 'A lost delivery is visible on the record');
+
+					return $this->entity(['status' => 'approved', 'approvedAt' => 'now'], 'approval-1');
+				}
+			);
+
+		$response = $this->controller->approve('approval-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertFalse($response->getData()['signalled']);
+
+	}//end testApproveEngineRunUndeliveredStillCompletes()
+
+	/**
 	 * TC-11: rejecting a flow-sourced approval_request stops the flow_run
 	 * via FlowRunnerService::stopFromApprovalOutcome() — flow-orchestration
 	 * REQ-005.
@@ -297,6 +380,37 @@ class ApprovalsControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 
 	}//end testRejectFlowStopsFlowRun()
+
+	/**
+	 * Rejecting an ENGINE-run approval_request delivers the rejected signal
+	 * so the approval node routes or fails the suspended run now —
+	 * retire-integriq-flow-schema Task 1.
+	 *
+	 * @return void
+	 */
+	public function testRejectEngineRunDeliversRejectedSignal(): void {
+		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'woo-approvers', 'engineRunUuid' => 'run-1']);
+		$this->approvalService->method('find')->willReturn($request);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+		$this->request->method('getParam')->willReturn('not like this');
+		$this->approvalService->method('reject')
+			->willReturn($this->entity(['status' => 'rejected', 'engineRunUuid' => 'run-1', 'rejectedAt' => 'now'], 'approval-1'));
+
+		$this->engineSignal->expects($this->once())->method('deliver')
+			->willReturnCallback(
+				function (array $data, string $decision): bool {
+					$this->assertSame('run-1', $data['engineRunUuid']);
+					$this->assertSame('rejected', $decision);
+
+					return true;
+				}
+			);
+
+		$response = $this->controller->reject('approval-1');
+
+		$this->assertSame(200, $response->getStatus());
+
+	}//end testRejectEngineRunDeliversRejectedSignal()
 
 	/**
 	 * TC-9: reject with an empty comment returns 400 and leaves the request

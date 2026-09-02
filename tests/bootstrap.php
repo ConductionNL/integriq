@@ -402,6 +402,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowSuspension') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowSuspension.php';
 		}
+
+		// retire-integriq-flow-schema: ApprovalRequestNode rides on the
+		// engine's await-signal semantics — it throws FlowStop on a rejected
+		// or expired approval and reads/writes its FlowNodeResumeState slot
+		// (whose parent FlowResumeState must parse first). All three are
+		// verbatim copies of the real OpenRegister files.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowStop') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowStop.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowResumeState') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowResumeState.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeResumeState') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeResumeState.php';
+		}
 	}
 }
 

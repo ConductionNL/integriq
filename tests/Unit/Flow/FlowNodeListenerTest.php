@@ -20,15 +20,18 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Flow;
 
 use OCA\Integriq\Flow\ApplyMappingNode;
+use OCA\Integriq\Flow\ApprovalRequestNode;
 use OCA\Integriq\Flow\ContractCommitNode;
 use OCA\Integriq\Flow\ContractMatchNode;
 use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\EventEmitNode;
 use OCA\Integriq\Flow\FetchFileNode;
 use OCA\Integriq\Flow\FlowNodeListener;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourceCallNode;
 use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -43,6 +46,7 @@ use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -152,6 +156,18 @@ class FlowNodeListenerTest extends TestCase {
 				l10n: $l10n,
 				urlGenerator: $urlGenerator,
 				logger: $this->createMock(LoggerInterface::class)
+			),
+			approvalRequestNode: new ApprovalRequestNode(
+				approvalService: $this->createMock(ApprovalService::class),
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			eventEmitNode: new EventEmitNode(
+				container: $this->createMock(ContainerInterface::class),
+				l10n: $l10n,
+				urlGenerator: $urlGenerator,
+				logger: $this->createMock(LoggerInterface::class)
 			)
 		);
 
@@ -177,7 +193,9 @@ class FlowNodeListenerTest extends TestCase {
 		$this->assertArrayHasKey('openconnector.contract-commit', $nodes);
 		$this->assertArrayHasKey('openconnector.contract-sweep', $nodes);
 		$this->assertArrayHasKey('openconnector.fetch-file', $nodes);
-		$this->assertCount(8, $nodes);
+		$this->assertArrayHasKey('openconnector.approval-request', $nodes);
+		$this->assertArrayHasKey('openconnector.event-emit', $nodes);
+		$this->assertCount(10, $nodes);
 
 		foreach ($nodes as $node) {
 			$this->assertNotSame('', $node->getDisplayName());

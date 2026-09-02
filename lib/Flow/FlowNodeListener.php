@@ -50,6 +50,11 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<RegisterFlowNodesEvent>
  *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One constructor parameter
+ * per contributed node is the whole job of this class: it is the single
+ * registration fan-in, and hiding the nodes behind a collection would trade
+ * a visible list for an invisible one.
+ *
  * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-1-flow-node-scaffolding-guarded-registration-shared-helpers
  */
 class FlowNodeListener implements IEventListener {
@@ -64,6 +69,8 @@ class FlowNodeListener implements IEventListener {
 	 * @param ContractCommitNode $contractCommitNode The page-level contract-upsert node.
 	 * @param ContractSweepNode $contractSweepNode The guarded stale-object sweep node.
 	 * @param FetchFileNode $fetchFileNode The fetch-file rule node.
+	 * @param ApprovalRequestNode $approvalRequestNode The HITL approval step (retire-integriq-flow-schema).
+	 * @param EventEmitNode $eventEmitNode The CloudEvent emit step (retire-integriq-flow-schema).
 	 */
 	public function __construct(
 		private readonly SourceCallNode $sourceCallNode,
@@ -74,6 +81,8 @@ class FlowNodeListener implements IEventListener {
 		private readonly ContractCommitNode $contractCommitNode,
 		private readonly ContractSweepNode $contractSweepNode,
 		private readonly FetchFileNode $fetchFileNode,
+		private readonly ApprovalRequestNode $approvalRequestNode,
+		private readonly EventEmitNode $eventEmitNode,
 	) {
 
 	}//end __construct()
@@ -104,6 +113,8 @@ class FlowNodeListener implements IEventListener {
 		$event->registerNode(node: $this->contractCommitNode);
 		$event->registerNode(node: $this->contractSweepNode);
 		$event->registerNode(node: $this->fetchFileNode);
+		$event->registerNode(node: $this->approvalRequestNode);
+		$event->registerNode(node: $this->eventEmitNode);
 
 	}//end handle()
 }//end class

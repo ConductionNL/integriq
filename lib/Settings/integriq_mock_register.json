@@ -3004,7 +3004,6 @@
         "appendOnly": false,
         "immutable": false
       },
-
       "flow_run": {
         "slug": "flow_run",
         "title": "Flow Run",
@@ -10994,6 +10993,183 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "flow",
+          "slug": "flow-demo-1"
+        },
+        "name": "Demo: enrich and store",
+        "description": "Calls a source, maps the answer and stores it. Demo data, safe to delete.",
+        "isEnabled": false,
+        "steps": [
+          {
+            "order": 10,
+            "type": "call",
+            "configRef": "00000000-0000-4000-8000-000000000000",
+            "onError": "stop",
+            "config": {
+              "endpoint": "/organisations/123",
+              "method": "GET"
+            }
+          },
+          {
+            "order": 20,
+            "type": "mapping",
+            "configRef": "00000000-0000-4000-8000-000000000000",
+            "onError": "stop"
+          },
+          {
+            "order": 30,
+            "type": "synchronization",
+            "configRef": "00000000-0000-4000-8000-000000000000",
+            "onError": "dead_letter"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "flow",
+          "slug": "flow-demo-2"
+        },
+        "name": "Demo: gated publish",
+        "description": "Asks the approver group before emitting the publish event. Demo data, safe to delete.",
+        "isEnabled": false,
+        "steps": [
+          {
+            "order": 10,
+            "type": "approval",
+            "onError": "stop",
+            "config": {
+              "approverGroup": "demo-approvers",
+              "onReject": "error",
+              "ttlSeconds": 86400
+            }
+          },
+          {
+            "order": 20,
+            "type": "event",
+            "onError": "continue",
+            "config": {
+              "type": "nl.example.dataset.published",
+              "source": "https://example.org/integriq"
+            }
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "flow",
+          "slug": "flow-demo-3"
+        },
+        "name": "Demo: branched routing (migrated shape)",
+        "description": "A branch step choosing between two mappings, carrying the migrated nodes/edges graph beside its steps. Demo data, safe to delete.",
+        "isEnabled": false,
+        "steps": [
+          {
+            "order": 10,
+            "type": "branch",
+            "onError": "stop",
+            "branches": [
+              {
+                "condition": {
+                  "==": [
+                    {
+                      "var": "syncInputAmended.kind"
+                    },
+                    "a"
+                  ]
+                },
+                "nextStepOrder": 40
+              }
+            ],
+            "defaultNextStepOrder": 50
+          },
+          {
+            "order": 40,
+            "type": "mapping",
+            "configRef": "00000000-0000-4000-8000-000000000000",
+            "onError": "stop"
+          },
+          {
+            "order": 50,
+            "type": "mapping",
+            "configRef": "00000000-0000-4000-8000-000000000000",
+            "onError": "stop"
+          }
+        ],
+        "nodes": [
+          {
+            "id": "trigger",
+            "type": "openregister.trigger-manual",
+            "config": {}
+          },
+          {
+            "id": "10",
+            "type": "openregister.switch",
+            "config": {},
+            "onError": "stop"
+          },
+          {
+            "id": "40",
+            "type": "openconnector.apply-mapping",
+            "config": {
+              "mapping": "00000000-0000-4000-8000-000000000000"
+            },
+            "onError": "stop"
+          },
+          {
+            "id": "50",
+            "type": "openconnector.apply-mapping",
+            "config": {
+              "mapping": "00000000-0000-4000-8000-000000000000"
+            },
+            "onError": "stop"
+          },
+          {
+            "id": "end",
+            "type": "openregister.end",
+            "config": {}
+          }
+        ],
+        "edges": [
+          {
+            "id": "trigger-10",
+            "from": "trigger",
+            "to": "10"
+          },
+          {
+            "id": "10-40-0",
+            "from": "10",
+            "to": "40",
+            "condition": {
+              "==": [
+                {
+                  "var": "syncInputAmended.kind"
+                },
+                "a"
+              ]
+            }
+          },
+          {
+            "id": "10-50-default",
+            "from": "10",
+            "to": "50"
+          },
+          {
+            "id": "40-end",
+            "from": "40",
+            "to": "end"
+          },
+          {
+            "id": "50-end",
+            "from": "50",
+            "to": "end"
+          }
+        ]
       }
     ]
   }
