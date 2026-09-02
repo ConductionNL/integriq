@@ -145,6 +145,26 @@ class ApprovalRequestNodeTest extends TestCase {
 	}//end testPaletteMetadata()
 
 	/**
+	 * The config vocabulary and its edit form agree with each other.
+	 *
+	 * @return void
+	 */
+	public function testConfigKeysAndFormAgree(): void {
+		$keys = $this->node->configKeys();
+		$this->assertContains('question', $keys);
+		$this->assertContains('approverGroup', $keys);
+		$this->assertContains('failOnReject', $keys);
+
+		$form = $this->node->configForm();
+		$this->assertNotSame([], $form);
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys, 'Every form field must be a declared config key');
+			$this->assertNotSame('', (string)$field['label']);
+		}
+
+	}//end testConfigKeysAndFormAgree()
+
+	/**
 	 * A step without a question is rejected at save.
 	 *
 	 * @return void

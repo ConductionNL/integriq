@@ -124,6 +124,25 @@ class EventEmitNodeTest extends TestCase {
 	}//end testPaletteMetadata()
 
 	/**
+	 * The config vocabulary and its edit form agree with each other.
+	 *
+	 * @return void
+	 */
+	public function testConfigKeysAndFormAgree(): void {
+		$keys = $this->node->configKeys();
+		$this->assertContains('type', $keys);
+		$this->assertContains('source', $keys);
+
+		$form = $this->node->configForm();
+		$this->assertNotSame([], $form);
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys, 'Every form field must be a declared config key');
+			$this->assertNotSame('', (string)$field['label']);
+		}
+
+	}//end testConfigKeysAndFormAgree()
+
+	/**
 	 * A step naming no event type is rejected at save.
 	 *
 	 * @return void
