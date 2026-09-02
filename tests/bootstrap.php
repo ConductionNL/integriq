@@ -122,6 +122,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// The shared task entity + service the HITL mirror writes through
+		// (hitl-on-shared-tasks). The entity must load before the service:
+		// the service's signatures reference it.
+		if (class_exists('OCA\\OpenRegister\\Db\\Task') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Db/Task.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}

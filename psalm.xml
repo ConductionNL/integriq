@@ -77,6 +77,11 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- hitl-on-shared-tasks: the shared task service the HITL
+                     mirror writes through, resolved at runtime like
+                     ObjectService above. -->
+                <referencedClass name="OCA\OpenRegister\Service\Task\TaskService"/>
+                <referencedClass name="OCA\OpenRegister\Db\Task"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialBrokerService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialUpstreamException"/>

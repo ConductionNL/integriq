@@ -42,6 +42,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -106,6 +107,11 @@ class ApprovalService {
 	 * @param ExecutionTraceService|null $executionTraceService Persists the traced run's execution_trace at
 	 *                                                          suspension/resume (execution-trace REQ-004). Nullable + defaulted so
 	 *                                                          pre-existing positional test instantiations keep working unmodified.
+	 * @param ORTaskService|null $taskService OpenRegister's shared task service: every suspension mirrors ONE
+	 *                                        shared task through it and every decision closes that mirror
+	 *                                        (hitl-on-shared-tasks D-1). Nullable + defaulted for the same
+	 *                                        positional-test reason; absent, no mirror exists and the approval
+	 *                                        flow is unchanged.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -115,6 +121,7 @@ class ApprovalService {
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
+		private readonly ?ORTaskService $taskService = null,
 	) {
 	}//end __construct()
 
@@ -195,6 +202,7 @@ class ApprovalService {
 			}
 		}
 
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
@@ -243,6 +251,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
@@ -296,6 +305,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
@@ -349,6 +359,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
@@ -575,13 +586,16 @@ class ApprovalService {
 			$data['comment'] = $comment;
 		}
 
-		return $this->objectService->saveObject(
+		$saved = $this->objectService->saveObject(
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $approvalRequest->getUuid()
 		);
 
+		$this->closeSharedTask(data: $data, outcome: 'transition:approved', actorUid: $approver->getUID());
+
+		return $saved;
 	}//end completeApproval()
 
 	/**
@@ -618,13 +632,24 @@ class ApprovalService {
 		$data['rejectedAt'] = (new DateTime())->format('c');
 		$data['comment'] = $comment;
 
-		return $this->objectService->saveObject(
+		$saved = $this->objectService->saveObject(
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $approvalRequest->getUuid()
 		);
 
+		// The mirror ends the way the record did: dead-lettered when
+		// onReject routed the record there, plainly rejected otherwise
+		// (hitl-on-shared-tasks D-4).
+		$mirrorOutcome = 'transition:rejected';
+		if ($data['status'] === 'dead_letter') {
+			$mirrorOutcome = 'dead_letter';
+		}
+
+		$this->closeSharedTask(data: $data, outcome: $mirrorOutcome, actorUid: $approver->getUID());
+
+		return $saved;
 	}//end reject()
 
 	/**
@@ -790,6 +815,148 @@ class ApprovalService {
 		}//end foreach
 
 	}//end notifyApprovers()
+
+	/**
+	 * Mirror a just-created, pending approval_request into ONE shared
+	 * OpenRegister task (hitl-on-shared-tasks D-1/D-2): approver group as
+	 * candidate group, requester, expiry, and the record's
+	 * onTimeout/onReject when they are in the shared vocabulary, so the
+	 * shared timer sweep owns the mirror's expiry (D-3). The created task's
+	 * uuid is written back onto the record as `taskUuid`.
+	 *
+	 * A failure here is logged and swallowed: the approval flow is the
+	 * system of record and MUST NOT be gated by the mirror (D-5).
+	 *
+	 * @param ObjectEntity $approvalRequest The pending approval_request.
+	 *
+	 * @return ObjectEntity The record, carrying `taskUuid` when the mirror was created.
+	 *
+	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-every-suspension-mirrors-one-shared-task
+	 */
+	private function mirrorIntoSharedTask(ObjectEntity $approvalRequest): ObjectEntity {
+		if ($this->taskService === null) {
+			return $approvalRequest;
+		}
+
+		$data = $approvalRequest->getObject();
+		$actor = (string)($data['requesterUserId'] ?? '');
+		if ($actor === '') {
+			$actor = 'integriq';
+		}
+
+		try {
+			$task = $this->taskService->import(
+				data: $this->sharedTaskData(data: $data, approvalRequestId: (string)$approvalRequest->getUuid()),
+				actor: $actor
+			);
+
+			$data['taskUuid'] = (string)$task->getUuid();
+
+			return $this->objectService->saveObject(
+				object: $data,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				uuid: $approvalRequest->getUuid()
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'ApprovalService: could not mirror the approval into the shared task service: ' . $e->getMessage(),
+				['approvalRequest' => $approvalRequest->getUuid()]
+			);
+
+			return $approvalRequest;
+		}
+	}//end mirrorIntoSharedTask()
+
+	/**
+	 * The shared-task payload a pending approval_request mirrors to.
+	 *
+	 * `onTimeout`/`onReject` travel only when they are in the shared
+	 * vocabulary (`skip`|`error`|`dead_letter`); anything else stays an
+	 * app-local behaviour and the mirror carries none.
+	 *
+	 * @param array $data The approval_request object data.
+	 * @param string $approvalRequestId The record uuid the task links back to.
+	 *
+	 * @return array<string, mixed> The task creation payload.
+	 *
+	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-every-suspension-mirrors-one-shared-task
+	 */
+	private function sharedTaskData(array $data, string $approvalRequestId): array {
+		$payload = [
+			'state' => 'enabled',
+			'title' => 'Approval request',
+			'description' => 'Approve or reject this request in Integriq. Your decision resumes the suspended run.',
+			'performerType' => 'user',
+			'appId' => 'integriq',
+			'metadata' => [
+				'kind' => 'approval_request',
+				'approvalRequestId' => $approvalRequestId,
+			],
+		];
+
+		if ((string)($data['approverGroup'] ?? '') !== '') {
+			$payload['candidateGroups'] = [(string)$data['approverGroup']];
+		}
+
+		if ((string)($data['requesterUserId'] ?? '') !== '') {
+			$payload['requester'] = (string)$data['requesterUserId'];
+		}
+
+		if ((string)($data['expiresAt'] ?? '') !== '') {
+			$payload['expiresAt'] = (string)$data['expiresAt'];
+			$onTimeout = (string)($data['onTimeout'] ?? '');
+			if (in_array($onTimeout, ['skip', 'error', 'dead_letter'], true) === true) {
+				$payload['onTimeout'] = $onTimeout;
+			}
+		}
+
+		$onReject = (string)($data['onReject'] ?? '');
+		if (in_array($onReject, ['skip', 'error', 'dead_letter'], true) === true) {
+			$payload['onReject'] = $onReject;
+		}
+
+		return $payload;
+	}//end sharedTaskData()
+
+	/**
+	 * Close the mirrored shared task after a decision resolved the record
+	 * (hitl-on-shared-tasks D-4), through the shared outcome path: the
+	 * decision was already authorized by this service's own two-layer model,
+	 * and the mirror has no assignee for a completion check to pass.
+	 *
+	 * A missing mirror (`taskUuid` absent: pre-seam rows, or a failed
+	 * mirror) and a mirror already closed by the shared sweep are both
+	 * fine; any failure is logged and swallowed (D-5).
+	 *
+	 * @param array $data The resolved approval_request object data.
+	 * @param string $outcome The shared outcome (`transition:approved`, `transition:rejected` or `dead_letter`).
+	 * @param string $actorUid The deciding user's uid, recorded as the source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-closes-the-mirrored-task
+	 */
+	private function closeSharedTask(array $data, string $outcome, string $actorUid): void {
+		$taskUuid = (string)($data['taskUuid'] ?? '');
+		if ($this->taskService === null || $taskUuid === '') {
+			return;
+		}
+
+		try {
+			$this->taskService->applyTimerOutcome(
+				uuid: $taskUuid,
+				outcome: $outcome,
+				source: 'integriq:' . $actorUid,
+				reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'ApprovalService: could not close the mirrored shared task: ' . $e->getMessage(),
+				['taskUuid' => $taskUuid]
+			);
+		}
+	}//end closeSharedTask()
 
 	/**
 	 * Strip sensitive headers (at minimum `Authorization`) from a FlowToken
