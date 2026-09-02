@@ -38,6 +38,11 @@ use OCP\EventDispatcher\Event;
  * Terminal outcome of a cross-app delivery request.
  *
  * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) -- the ADR-041 event contract is a flat
+ * readonly provenance envelope (sourceApp, subject coordinates, kind/channel, correlation);
+ * folding fields into an array would untype the contract the consumer stubs must mirror
+ * verbatim. Mirrors the decidiq DecisionRequestedEvent precedent.
  */
 class DeliveryConcludedEvent extends Event {
 	/**
@@ -85,6 +90,8 @@ class DeliveryConcludedEvent extends Event {
 	 * The app that raised the original request.
 	 *
 	 * @return string The source app id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -94,6 +101,8 @@ class DeliveryConcludedEvent extends Event {
 	 * The caller's correlation id.
 	 *
 	 * @return string The correlation id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getCorrelationId(): string {
 		return $this->correlationId;
@@ -103,6 +112,8 @@ class DeliveryConcludedEvent extends Event {
 	 * The subject object id from the original request.
 	 *
 	 * @return string The subject id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSubjectId(): string {
 		return $this->subjectId;
@@ -112,6 +123,8 @@ class DeliveryConcludedEvent extends Event {
 	 * The delivery channel from the original request.
 	 *
 	 * @return string The channel.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getChannel(): string {
 		return $this->channel;
@@ -121,6 +134,8 @@ class DeliveryConcludedEvent extends Event {
 	 * Terminal status of the delivery.
 	 *
 	 * @return string One of the STATUS_* constants.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getStatus(): string {
 		return $this->status;
@@ -130,6 +145,8 @@ class DeliveryConcludedEvent extends Event {
 	 * Uuid of the CloudEvent `event` object.
 	 *
 	 * @return string The event uuid.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getEventId(): string {
 		return $this->eventId;
@@ -139,6 +156,8 @@ class DeliveryConcludedEvent extends Event {
 	 * Uuid of the `event_message` delivery record.
 	 *
 	 * @return string The message uuid.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getMessageId(): string {
 		return $this->messageId;
@@ -148,6 +167,8 @@ class DeliveryConcludedEvent extends Event {
 	 * How many delivery attempts were made.
 	 *
 	 * @return int The attempt count.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getAttempts(): int {
 		return $this->attempts;
@@ -157,6 +178,8 @@ class DeliveryConcludedEvent extends Event {
 	 * The last delivery error.
 	 *
 	 * @return string|null The error, or null on success.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getError(): ?string {
 		return $this->error;
@@ -166,6 +189,8 @@ class DeliveryConcludedEvent extends Event {
 	 * When the delivery reached its terminal state.
 	 *
 	 * @return string ISO 8601 timestamp.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getConcludedAt(): string {
 		return $this->concludedAt;

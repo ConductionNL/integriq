@@ -45,20 +45,31 @@ use OCP\EventDispatcher\Event;
  * which a fail-closed consumer records as a refusal, not a success).
  *
  * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) -- the ADR-041 event contract is a flat
+ * readonly provenance envelope (sourceApp, subject coordinates, kind/channel, correlation);
+ * folding fields into an array would untype the contract the consumer stubs must mirror
+ * verbatim. Mirrors the decidiq DecisionRequestedEvent precedent.
  */
 class DeliveryRequestedEvent extends Event {
 	/**
 	 * Whether an Integriq listener handled the request.
+	 *
+	 * @var bool
 	 */
 	private bool $handled = false;
 
 	/**
 	 * Uuid of the persisted CloudEvent `event` object, once handled.
+	 *
+	 * @var string|null
 	 */
 	private ?string $resultId = null;
 
 	/**
 	 * How many active event subscriptions matched the delivery request.
+	 *
+	 * @var int
 	 */
 	private int $matchedSubscriptions = 0;
 
@@ -99,6 +110,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The requesting app id.
 	 *
 	 * @return string The source app id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -108,6 +121,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The subject object's register.
 	 *
 	 * @return string The register slug/id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSubjectRegister(): string {
 		return $this->subjectRegister;
@@ -117,6 +132,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The subject object's schema.
 	 *
 	 * @return string The schema slug/id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSubjectSchema(): string {
 		return $this->subjectSchema;
@@ -126,6 +143,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The subject object id.
 	 *
 	 * @return string The object id/uuid.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSubjectId(): string {
 		return $this->subjectId;
@@ -135,6 +154,8 @@ class DeliveryRequestedEvent extends Event {
 	 * Human-readable subject label.
 	 *
 	 * @return string The label.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getSubjectLabel(): string {
 		return $this->subjectLabel;
@@ -144,6 +165,8 @@ class DeliveryRequestedEvent extends Event {
 	 * What is being delivered.
 	 *
 	 * @return string The delivery kind.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getDeliveryKind(): string {
 		return $this->deliveryKind;
@@ -153,6 +176,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The requested delivery channel.
 	 *
 	 * @return string The channel.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getChannel(): string {
 		return $this->channel;
@@ -162,6 +187,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The delivery payload reference.
 	 *
 	 * @return array<string, mixed> The payload.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getPayload(): array {
 		return $this->payload;
@@ -171,6 +198,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The caller's correlation id.
 	 *
 	 * @return string The correlation id.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getCorrelationId(): string {
 		return $this->correlationId;
@@ -180,6 +209,8 @@ class DeliveryRequestedEvent extends Event {
 	 * Optional external reference.
 	 *
 	 * @return string|null The external reference.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getExternalReference(): ?string {
 		return $this->externalReference;
@@ -189,6 +220,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The acting Nextcloud user.
 	 *
 	 * @return string|null The user id, or null for system-produced requests.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getUserId(): ?string {
 		return $this->userId;
@@ -200,6 +233,8 @@ class DeliveryRequestedEvent extends Event {
 	 * @param bool $handled Whether the request was handled.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function setHandled(bool $handled): void {
 		$this->handled = $handled;
@@ -209,6 +244,8 @@ class DeliveryRequestedEvent extends Event {
 	 * Whether an Integriq listener handled the request.
 	 *
 	 * @return bool True when handled.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function isHandled(): bool {
 		return $this->handled;
@@ -220,6 +257,8 @@ class DeliveryRequestedEvent extends Event {
 	 * @param string $resultId The event object uuid.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function setResultId(string $resultId): void {
 		$this->resultId = $resultId;
@@ -229,6 +268,8 @@ class DeliveryRequestedEvent extends Event {
 	 * The persisted CloudEvent uuid, once handled.
 	 *
 	 * @return string|null The event object uuid.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getResultId(): ?string {
 		return $this->resultId;
@@ -240,6 +281,8 @@ class DeliveryRequestedEvent extends Event {
 	 * @param int $matchedSubscriptions The matched subscription count.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function setMatchedSubscriptions(int $matchedSubscriptions): void {
 		$this->matchedSubscriptions = $matchedSubscriptions;
@@ -249,6 +292,8 @@ class DeliveryRequestedEvent extends Event {
 	 * How many active subscriptions matched the delivery request.
 	 *
 	 * @return int The matched subscription count.
+	 *
+	 * @spec openspec/changes/absorb-dossiq-deliveries/specs/delivery-intake/spec.md
 	 */
 	public function getMatchedSubscriptions(): int {
 		return $this->matchedSubscriptions;
