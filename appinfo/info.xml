@@ -229,6 +229,17 @@
 			     Last in the block, and post-migration only: it removes rows and
 			     creates nothing, so no step depends on it, and a fresh install
 			     has nothing to remove. -->
+			<!-- retire-integriq-flow-schema task 2: writes the OpenRegister
+			     nodes/edges graph onto every legacy flow object, IN PLACE and
+			     ADDITIVELY (steps stays as the rollback shape, the two engines
+			     dual-run through the migration window). Idempotent: an object
+			     already carrying nodes is skipped, never overwritten; a flow
+			     the translator refuses is logged and keeps running on
+			     FlowRunnerService. Placed after InitializeRegister so the flow
+			     schema (with its new nodes/edges properties) exists. The occ
+			     command integriq:flow:steps-to-graph re-runs or rolls back the
+			     same migration on demand. -->
+			<step>OCA\Integriq\Repair\MigrateFlowStepsToGraph</step>
 			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
 			<!-- Written but never registered, so it had never run once: a class
 			     that exists is not a class that runs. It moves openconnector
@@ -374,6 +385,13 @@
 		     schema or method of its own and an object trigger refuses a partial
 		     scope. WRITES NOTHING; the emitted document ships disabled. -->
 		<command>OCA\Integriq\Command\RuleToFlow</command>
+		<!-- retire-integriq-flow-schema task 2: drives the steps-to-graph flow
+		     migration by hand. Dry run by default; the apply flag writes the
+		     graph in place, the rollback flag removes it again (steps is kept
+		     through both directions, so rollback is always possible).
+		     (XML comments must not contain a double hyphen, so the flags are
+		     not written with their leading dashes here.) -->
+		<command>OCA\Integriq\Command\FlowStepsToGraph</command>
 	</commands>
 
 	<settings>

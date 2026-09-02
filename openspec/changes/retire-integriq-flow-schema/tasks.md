@@ -9,23 +9,26 @@ arrival.
 ## Pre-implementation Gate
 
 - [ ] PO sign-off on the editor change: users lose Integriq's step-list editor and gain OpenRegister's visual flow builder. This is a UX decision, and taking it after the migration is taking it too late.
-- [ ] Confirm whether OpenRegister has an event-EMIT node. The `event` step type has no confirmed counterpart; if none exists this change grows by one contributed node.
-- [ ] Count the live `flow` objects per instance. A migration whose blast radius is unmeasured is a migration whose rollback is unplanned.
+- [x] Confirm whether OpenRegister has an event-EMIT node. The `event` step type has no confirmed counterpart; if none exists this change grows by one contributed node.
+  > Confirmed 2026-09-02 against openregister origin/development `lib/Service/Flow/Nodes/`: no CloudEvent emitter exists (the send-* nodes address people — email, notification, Talk — not systems). The change therefore grew by `openconnector.event-emit`, contributed below.
+- [x] Count the live `flow` objects per instance. A migration whose blast radius is unmeasured is a migration whose rollback is unplanned.
+  > Measured 2026-09-02 on the dev instance (postgres, `oc_openregister_objects` + `oc_openregister_table_1_1`): ONE schema row carries slug `flow` (id 1) and it holds ZERO live objects. The migration is a no-op there; other instances measure themselves with the dry run `occ integriq:flow:steps-to-graph`, which reports one row per flow before anything is written.
 
 ## Implementation Tasks
 
 ### 1. The missing node
 
-- [ ] Contribute `openconnector.approval-request` via `RegisterFlowNodesEvent`, implementing `IFlowNode`
-- [ ] Pause/resume rides on `AwaitSignalNode`; the node emits the signal name the approval resolves to
-- [ ] Unit tests: an approved request resumes the flow, a rejected one takes the reject edge, an expired one fails closed
-- [ ] Contribute the event-emit node if the gate above found none
+- [x] Contribute `openconnector.approval-request` via `RegisterFlowNodesEvent`, implementing `IFlowNode`
+- [x] Pause/resume rides on `AwaitSignalNode`; the node emits the signal name the approval resolves to
+- [x] Unit tests: an approved request resumes the flow, a rejected one takes the reject edge, an expired one fails closed
+- [x] Contribute the event-emit node if the gate above found none
 
 ### 2. The step-to-graph migration
 
-- [ ] A pure, tested translator: `steps[]` to `nodes`/`edges`. Step `order` becomes the node id, so `branch` targets stay valid without renumbering
-- [ ] Property tests: a flow with duplicate `order` values is rejected exactly as `FlowRunnerService::run()` rejects it today, rather than silently producing a graph with a lost node
-- [ ] A repair step that rewrites live `flow` objects in place, idempotent, refusing rather than overwriting when an object already carries `nodes`
+- [x] A pure, tested translator: `steps[]` to `nodes`/`edges`. Step `order` becomes the node id, so `branch` targets stay valid without renumbering
+- [x] Property tests: a flow with duplicate `order` values is rejected exactly as `FlowRunnerService::run()` rejects it today, rather than silently producing a graph with a lost node
+- [x] A repair step that rewrites live `flow` objects in place, idempotent, refusing rather than overwriting when an object already carries `nodes`
+  > Delivered 2026-09-02 as `FlowStepsToGraphTranslator` (pure) + `FlowGraphMigrationService` (live objects) + repair step `MigrateFlowStepsToGraph` + occ command `integriq:flow:steps-to-graph` (dry run by default, `--apply` writes, `--rollback --apply` removes the graph again; `steps` is kept through both directions as the rollback shape). The engine-side wiring also landed: `ApprovalService::suspendForEngineRun()`, `EngineSignalService` (guarded `FlowRunSignalService::signalAs` delivery) and the `engineRunUuid`/`signalNodeId`/`question` approval_request schema extension. Tasks 3-5 below stay open on purpose: retiring the runner and the schema only starts once migrated flows have run in anger on the engine.
 
 ### 3. Retire the runner
 

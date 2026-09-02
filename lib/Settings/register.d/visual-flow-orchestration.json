@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (visual-flow-orchestration). Declares the `flow` schema (an ordered, declarative multi-step pipeline of existing Source/Mapping/Synchronization/Endpoint/Approval references) plus its `flow_run`/`flow_run_log` execution-trace schemas, and additively extends `approval_request` (declared by hitl-approval-rule-action.json) with `flowRunId`/`resumeStepOrder` so an `approval` flow step can suspend/resume through the same approval_request state machine. See openspec/changes/archive/2026-07-15-visual-flow-orchestration/design.md Decisions 1/4/6. Deep-merge note: this fragment only adds the two new `approval_request` properties (InitializeRegister::deepMergeConfig unions `components.schemas.approval_request.properties` by key with hitl-approval-rule-action.json's — glob sort places this file after the `h...` fragment alphabetically, so the union always sees the base schema first); it does not repeat approval_request's existing properties/required/seed data.",
+  "$comment": "ADR-037 register fragment (visual-flow-orchestration). Declares the `flow` schema (an ordered, declarative multi-step pipeline of existing Source/Mapping/Synchronization/Endpoint/Approval references) plus its `flow_run`/`flow_run_log` execution-trace schemas, and additively extends `approval_request` (declared by hitl-approval-rule-action.json) with `flowRunId`/`resumeStepOrder` so an `approval` flow step can suspend/resume through the same approval_request state machine. See openspec/changes/archive/2026-07-15-visual-flow-orchestration/design.md Decisions 1/4/6. Deep-merge note: this fragment only adds the two new `approval_request` properties (InitializeRegister::deepMergeConfig unions `components.schemas.approval_request.properties` by key with hitl-approval-rule-action.json's — glob sort places this file after the `h...` fragment alphabetically, so the union always sees the base schema first); it does not repeat approval_request's existing properties/required/seed data. retire-integriq-flow-schema additions: approval_request additionally gains engineRunUuid/signalNodeId/question (engine-run approvals via the openconnector.approval-request node), and flow gains nodes/edges (the steps-to-graph migration writes the graph IN PLACE next to steps, so the two engines dual-run until FlowRunnerService is retired; steps is kept as the rollback shape).",
   "components": {
     "registers": {
       "integriq": {
@@ -119,6 +119,18 @@
             "format": "date-time",
             "description": "OR-managed update timestamp",
             "title": "Updated"
+          },
+          "nodes": {
+            "type": "array",
+            "title": "Nodes",
+            "description": "OpenRegister flow-engine graph nodes ({id, type, config, onError}), written IN PLACE by the steps-to-graph migration (retire-integriq-flow-schema Task 2). While both shapes are present, `steps` remains what FlowRunnerService executes and `nodes`/`edges` is what OpenRegister's engine executes; the migration refuses to overwrite an object that already carries nodes, and `steps` is kept as the rollback shape.",
+            "items": {"type": "object"}
+          },
+          "edges": {
+            "type": "array",
+            "title": "Edges",
+            "description": "OpenRegister flow-engine graph edges ({id, from, to, condition?}), written by the steps-to-graph migration alongside `nodes`. Branch steps' JsonLogic conditions ride on the edges, matching the engine's edge-condition routing.",
+            "items": {"type": "object"}
           }
         },
         "appendOnly": false,
@@ -269,6 +281,22 @@
             "type": "integer",
             "description": "The `order` of the flow step to resume at once this request is approved — the step immediately after the suspending `approval` step (flow-orchestration REQ-005). Not applicable to the endpoint-rule or Synchronization batch-gate cases.",
             "title": "Resume Step Order"
+          },
+          "engineRunUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Uuid of the suspended OpenRegister ENGINE flow run this request gates (openconnector.approval-request node case); set instead of endpointId/ruleId/synchronizationId/flowRunId. The decision is delivered through FlowRunSignalService::signalAs(), and the node's heartbeat re-reads this record when that delivery is lost (retire-integriq-flow-schema Task 1).",
+            "title": "Engine Run Uuid"
+          },
+          "signalNodeId": {
+            "type": "string",
+            "description": "Graph node id of the openconnector.approval-request step awaiting the decision, so the signal addresses that node's resume slot (and the engine's assignee guard checks ITS recorded approver group).",
+            "title": "Signal Node Id"
+          },
+          "question": {
+            "type": "string",
+            "description": "What is being asked, verbatim from the approval step's config. Shown to approvers; makes a pending request explain itself.",
+            "title": "Question"
           }
         }
       }

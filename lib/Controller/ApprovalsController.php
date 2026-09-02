@@ -38,6 +38,7 @@ use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\EngineSignalService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -80,6 +81,10 @@ class ApprovalsController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param EngineSignalService|null $engineSignal Delivers approval decisions to suspended
+	 *                                              OpenRegister engine runs (retire-integriq-flow-schema
+	 *                                              Task 1). Nullable + defaulted so pre-existing
+	 *                                              positional test instantiations keep working.
 	 */
 	public function __construct(
 		string $appName,
@@ -93,6 +98,7 @@ class ApprovalsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly ?EngineSignalService $engineSignal = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -198,7 +204,26 @@ class ApprovalsController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
 		}
 
-		$comment = $this->request->getParam('comment');
+		return $this->routeApproval(
+			approvalRequest: $approvalRequest,
+			user: $user,
+			comment: $this->request->getParam('comment')
+		);
+
+	}//end approve()
+
+	/**
+	 * Dispatch an authorized approve to the resume path its FK selects.
+	 *
+	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
+	 * @param IUser $user The approving user.
+	 * @param string|null $comment Optional approve comment.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function routeApproval(ObjectEntity $approvalRequest, IUser $user, ?string $comment): JSONResponse {
 		$data = $approvalRequest->getObject();
 
 		if (empty($data['endpointId']) === false) {
@@ -213,9 +238,16 @@ class ApprovalsController extends Controller {
 			return $this->approveFlowSuspension(approvalRequest: $approvalRequest, user: $user, comment: $comment);
 		}
 
-		$this->logger->error('ApprovalsController: approval_request has neither endpointId, synchronizationId nor flowRunId', ['id' => $id]);
+		if (empty($data['engineRunUuid']) === false) {
+			return $this->approveEngineSuspension(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
+		}
+
+		$this->logger->error(
+			'ApprovalsController: approval_request has neither endpointId, synchronizationId, flowRunId nor engineRunUuid',
+			['id' => $approvalRequest->getUuid()]
+		);
 		return new JSONResponse(['error' => $this->l->t('Malformed approval request')], Http::STATUS_INTERNAL_SERVER_ERROR);
-	}//end approve()
+	}//end routeApproval()
 
 	/**
 	 * Reject a `pending`, non-expired approval_request. Self-contained in
@@ -267,13 +299,7 @@ class ApprovalsController extends Controller {
 
 		$data = $approvalRequest->getObject();
 
-		// Flow-sourced suspension (flowRunId set): stop the flow_run — no
-		// pipeline to re-invoke here (self-contained, per ApprovalService::reject()'s
-		// own docblock), but the flow_run's OWN status must still reflect the
-		// rejection (flow-orchestration REQ-005).
-		if (empty($data['flowRunId']) === false) {
-			$this->flowRunnerService->stopFromApprovalOutcome(approvalRequest: $approvalRequest);
-		}
+		$this->propagateRejection(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
 
 		return new JSONResponse(
 			[
@@ -285,6 +311,40 @@ class ApprovalsController extends Controller {
 		);
 
 	}//end reject()
+
+	/**
+	 * Let the suspended run reflect a rejection, per its FK kind.
+	 *
+	 * Flow-sourced suspension (flowRunId): stop the app-local flow_run — no
+	 * pipeline to re-invoke (self-contained, per `ApprovalService::reject()`'s
+	 * own docblock), but the flow_run's OWN status must still reflect the
+	 * rejection (flow-orchestration REQ-005).
+	 *
+	 * Engine-run suspension (engineRunUuid): wake the suspended OpenRegister
+	 * run with the rejection so the approval node routes or fails it now.
+	 * Best-effort by design — the record IS the decision, and the node's
+	 * heartbeat re-reads it, so a lost signal costs one heartbeat rather
+	 * than the flow.
+	 *
+	 * @param ObjectEntity $approvalRequest The just-rejected request.
+	 * @param array $data The approval_request's object data.
+	 * @param IUser $user The rejecting user.
+	 * @param string $comment The rejection comment.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	private function propagateRejection(ObjectEntity $approvalRequest, array $data, IUser $user, string $comment): void {
+		if (empty($data['flowRunId']) === false) {
+			$this->flowRunnerService->stopFromApprovalOutcome(approvalRequest: $approvalRequest);
+		}
+
+		if (empty($data['engineRunUuid']) === false) {
+			$this->signalEngineRun(data: $data, decision: 'rejected', user: $user, comment: $comment);
+		}
+
+	}//end propagateRejection()
 
 	/**
 	 * Resume a suspended endpoint rule-pipeline run and finalize the
@@ -453,6 +513,87 @@ class ApprovalsController extends Controller {
 
 		return new JSONResponse($flowRunData, $statusCode);
 	}//end approveFlowSuspension()
+
+	/**
+	 * Resolve an ENGINE-run approval: finalize the approval_request, then
+	 * wake the suspended OpenRegister flow run with the decision.
+	 *
+	 * The order is deliberate. The record is resolved FIRST because it is
+	 * the system of record — the approval node's heartbeat re-reads it, so
+	 * a signal that fails to deliver (OpenRegister mid-upgrade, run already
+	 * woken) only delays the resume by one heartbeat instead of losing the
+	 * decision. `resumeResult` therefore reports the DELIVERY, not the run's
+	 * eventual outcome, which the engine owns.
+	 *
+	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
+	 * @param array $data The approval_request's object data.
+	 * @param IUser $user The approving user.
+	 * @param string|null $comment Optional approve comment.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	private function approveEngineSuspension(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse {
+		$signalled = $this->signalEngineRun(data: $data, decision: 'approved', user: $user, comment: $comment);
+
+		$resumeResult = 'error';
+		if ($signalled === true) {
+			$resumeResult = 'success';
+		}
+
+		$approvalRequest = $this->approvalService->completeApproval(
+			approvalRequest: $approvalRequest,
+			approver: $user,
+			resumeResult: $resumeResult,
+			comment: $comment
+		);
+
+		$approvalRequestData = $approvalRequest->getObject();
+
+		return new JSONResponse(
+			[
+				'engineRunUuid' => (string)($data['engineRunUuid'] ?? ''),
+				'signalled' => $signalled,
+				'_approval' => [
+					'id' => $approvalRequest->getUuid(),
+					'status' => ($approvalRequestData['status'] ?? 'approved'),
+					'resumedAt' => ($approvalRequestData['approvedAt'] ?? null),
+				],
+			]
+		);
+
+	}//end approveEngineSuspension()
+
+	/**
+	 * Deliver a decision to a suspended OpenRegister engine run, guarded.
+	 *
+	 * Delegates to {@see EngineSignalService::deliver()} so the approve and
+	 * reject paths ship the identical signal. The service dependency is
+	 * defaulted (nullable) so pre-existing positional test instantiations
+	 * keep working; the container always injects it in production.
+	 *
+	 * @param array $data The approval_request's object data (`engineRunUuid`/`signalNodeId`).
+	 * @param string $decision `approved` or `rejected`.
+	 * @param IUser $user The deciding user.
+	 * @param string|null $comment Optional decision comment.
+	 *
+	 * @return boolean True when the signal was delivered.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	private function signalEngineRun(array $data, string $decision, IUser $user, ?string $comment): bool {
+		if ($this->engineSignal === null) {
+			$this->logger->warning(
+				'ApprovalsController: no EngineSignalService wired; the engine run resumes on its next heartbeat instead',
+				['engineRunUuid' => ($data['engineRunUuid'] ?? '')]
+			);
+			return false;
+		}
+
+		return $this->engineSignal->deliver(data: $data, decision: $decision, user: $user, comment: $comment);
+
+	}//end signalEngineRun()
 
 	/**
 	 * Build the `_approval`-enveloped response body for a resumed endpoint response.

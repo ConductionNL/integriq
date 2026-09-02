@@ -7,7 +7,7 @@ deployed tree before wiring anything. See `design.md`.
 
 ## Pre-implementation Gate
 
-- [ ] `contract.md` reviewed and accepted by hermiq (change `hydra-console-agent-leaves`) before Task 1 starts — it is the named first consumer, and the contract is the node interface its triage agentflow's terminal label-write step depends on
+- [x] `contract.md` reviewed and accepted by hermiq (change `hydra-console-agent-leaves`) before Task 1 starts — it is the named first consumer, and the contract is the node interface its triage agentflow's terminal label-write step depends on
 
 ## Implementation Tasks
 
@@ -27,8 +27,8 @@ for registration shape only.
   - GIVEN a colliding node id WHEN registration runs THEN it fails loudly rather than displacing a node
   - GIVEN a run context with no `triggeredBy` WHEN `FlowOwner` resolves THEN it raises; no admin, creator or anonymous fallback exists
   - GIVEN an item `{"issue":{"number":42}}` WHEN `FlowTemplate` renders `/issues/{{issue.number}}` THEN it yields `/issues/42`; a missing path resolves deterministically and never leaves literal `{{...}}`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: SourceCallNode — Source targeting, per-item execution, response mapping
 
@@ -49,8 +49,8 @@ HTTP client.
   - GIVEN a response containing `pairedItem` WHEN mapped THEN the item's provenance and other reserved `FlowItems` keys are unchanged
   - GIVEN an empty input list WHEN it executes THEN no call is made and an empty list is returned
   - GIVEN any flow-originated call WHEN it completes THEN a CallLog is written
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Explicit failure, fail-closed attribution, validation and scope
 
@@ -75,8 +75,8 @@ do NOT reproduce `HermiqAgentNode`'s `catch (Throwable) { $answer = ''; }` or it
   - GIVEN a Source with `credentialRef` WHEN it executes THEN the broker authenticates the call and no secret appears in config, logs or item; an unresolvable credential never becomes an anonymous call
   - GIVEN missing `source`, missing `endpoint`, unsupported method or malformed `acceptStatuses` WHEN the flow is saved THEN `UnexpectedValueException` names the field and the flow is not persisted
   - GIVEN `isAvailableForScope()` WHEN asked THEN it answers with `IManager::SCOPE_ADMIN`/`SCOPE_USER` and returns false for other values
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: SynchronizationRunNode with bounded fan-out, seed data, and a live end-to-end run
 
@@ -104,6 +104,18 @@ confirm a real response lands on the item.
 - [ ] Implement
 - [ ] Test
 
+> Status 2026-09-02: the node itself and its unit tests are merged
+> (`lib/Flow/SynchronizationRunNode.php`, `tests/Unit/Flow/SynchronizationRunNodeTest.php`,
+> incl. the rate-limit suspension), so the node half of this task is done. What
+> keeps the boxes open: the demo seed was never wired — `lib/sources.seed.json`
+> exists but holds the PDOK sources and has zero PHP references (no importer
+> reads it; see the environments-and-promotion fragment's `$comment` for the
+> same finding), so the three demo Sources and the demo flow from `design.md`
+> do not land on install — and the live end-to-end run against the seeded demo
+> Source has therefore never happened. Wiring the seed through the consumed
+> register.d `components.objects` mechanism (or the setup wizard's demo-data
+> path) plus the live run is what closes this task.
+
 ## Verification
 - [ ] All tasks checked off
 - [ ] `openspec validate` passes
@@ -111,14 +123,14 @@ confirm a real response lands on the item.
 - [ ] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
-- [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/Flow/`)
-- [ ] Newman/Postman tests — N/A: this change adds no HTTP API endpoint, only flow node types
+- [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/Flow/`)
+- [x] Newman/Postman tests — N/A: this change adds no HTTP API endpoint, only flow node types
 - [ ] Browser tests (Playwright MCP) — N/A for Integriq: no UI added; palette rendering belongs to OpenRegister's flow editor. Replaced by a live flow run against the seeded demo Source (Task 4)
-- [ ] All tests pass (`composer test`, `composer check:strict`)
+- [x] All tests pass (`composer test`, `composer check:strict`)
 
 ## Documentation (company-wide ADR-010)
-- [ ] Feature documentation added in `docs/` — how to call an API from a flow, why there is no raw-URL node, and why an unattributed run fails closed
+- [x] Feature documentation added in `docs/` — how to call an API from a flow, why there is no raw-URL node, and why an unattributed run fails closed
 - [ ] Screenshot of both nodes in OpenRegister's flow palette captured and committed to `docs/images/`
 
 ## i18n (company-wide hydra ADR-007)
-- [ ] Dutch (`nl_NL`) and English (`en_US`) strings added for both nodes' display names, descriptions and all validation messages
+- [x] Dutch (`nl_NL`) and English (`en_US`) strings added for both nodes' display names, descriptions and all validation messages
