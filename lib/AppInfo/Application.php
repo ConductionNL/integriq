@@ -42,7 +42,9 @@ use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
+use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
+use OCA\Integriq\EventListener\DeliveryRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
 use OCA\Integriq\EventListener\NextcloudFileEventListener;
@@ -199,6 +201,11 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: CloudEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: CloudEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: CloudEventListener::class);
+		// ADR-041 cross-app delivery seam: a sibling app (dossiq, ...) raises
+		// a typed DeliveryRequestedEvent; this listener ingests it into the
+		// same CloudEvents pipeline (subscription routing, retry, dead-letter,
+		// replay) and writes the synchronous result slot back on the event.
+		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to
