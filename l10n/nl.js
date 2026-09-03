@@ -1547,7 +1547,15 @@ OC.L10N.register(
         "Name the event \"type\": an event without a type matches no subscription.": "Noem het gebeurtenis-\"type\": een gebeurtenis zonder type matcht geen enkel abonnement.",
         "Name the event \"source\": a CloudEvent must say where it came from.": "Noem de gebeurtenis-\"source\": een CloudEvent moet zeggen waar hij vandaan komt.",
         "Step \"%1$s\" failed to emit event \"%2$s\": %3$s": "Stap \"%1$s\" kon gebeurtenis \"%2$s\" niet versturen: %3$s",
-        "The flow \"%1$s\" cannot be migrated to a graph yet: %2$s unsupported feature(s).": "De flow \"%1$s\" kan nog niet naar een graaf worden gemigreerd: %2$s niet-ondersteunde functie(s)."
+        "The flow \"%1$s\" cannot be migrated to a graph yet: %2$s unsupported feature(s).": "De flow \"%1$s\" kan nog niet naar een graaf worden gemigreerd: %2$s niet-ondersteunde functie(s).",
+        "One request end to end, across every hop it took.": "Eén verzoek van begin tot eind, langs elke stap.",
+        "What each source returned, and when it did not.": "Wat elke bron teruggaf, en wanneer niet.",
+        "Who called your endpoints, and what they got back.": "Wie je endpoints aanriep, en wat ze terugkregen.",
+        "Every scheduled run, and how it ended.": "Elke geplande run, en hoe die eindigde.",
+        "What each synchronisation moved, skipped or refused.": "Wat elke synchronisatie verplaatste, oversloeg of weigerde.",
+        "Events published and delivered, with their outcome.": "Gepubliceerde en afgeleverde events, met hun uitkomst.",
+        "Reports": "Rapporten",
+        "Pick a report to open it.": "Kies een rapport om het te openen."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Utilitza l'emmagatzematge extern (p. ex. MongoDB) en lloc de l'emmagatzematge intern de Nextcloud.",
         "View Details": "Mostra els detalls",
         "View Logs": "Mostra els registres",
-        "Warning Logs": "Registres d'advertència"
+        "Warning Logs": "Registres d'advertència",
+        "One request end to end, across every hop it took.": "Una sol·licitud de punta a punta, a cada pas.",
+        "What each source returned, and when it did not.": "Què va retornar cada font, i quan no.",
+        "Who called your endpoints, and what they got back.": "Qui va cridar els vostres punts finals, i què van rebre.",
+        "Every scheduled run, and how it ended.": "Cada execució planificada, i com va acabar.",
+        "What each synchronisation moved, skipped or refused.": "Què va moure, ometre o rebutjar cada sincronització.",
+        "Events published and delivered, with their outcome.": "Esdeveniments publicats i lliurats, amb el seu resultat.",
+        "Reports": "Informes",
+        "Pick a report to open it.": "Trieu un informe per obrir-lo."
     },
     "nplurals=2; plural=(n != 1);"
 )

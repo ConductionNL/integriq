@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Uża ħażna esterna (eż. MongoDB) minflok il-ħażna interna ta' Nextcloud.",
         "View Details": "Ara d-Dettalji",
         "View Logs": "Ara r-Reġistri",
-        "Warning Logs": "Reġistri ta' Twissija"
+        "Warning Logs": "Reġistri ta' Twissija",
+        "One request end to end, across every hop it took.": "Talba waħda mill-bidu sat-tmiem, f'kull pass.",
+        "What each source returned, and when it did not.": "X'irritorna kull sors, u meta le.",
+        "Who called your endpoints, and what they got back.": "Min sejjaħ l-endpoints tiegħek, u x'irċieva.",
+        "Every scheduled run, and how it ended.": "Kull ġirja skedata, u kif spiċċat.",
+        "What each synchronisation moved, skipped or refused.": "X'ċaqlaq, qabeż jew irrifjuta kull sinkronizzazzjoni.",
+        "Events published and delivered, with their outcome.": "Avvenimenti ppubblikati u kkunsinnati, bir-riżultat tagħhom.",
+        "Reports": "Rapporti",
+        "Pick a report to open it.": "Agħżel rapport biex tiftħu."
     },
     "plurals": {}
 }

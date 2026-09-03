@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Używaj zewnętrznego magazynu (np. MongoDB) zamiast wewnętrznego magazynu Nextcloud.",
         "View Details": "Wyświetl szczegóły",
         "View Logs": "Wyświetl dzienniki",
-        "Warning Logs": "Dzienniki ostrzeżeń"
+        "Warning Logs": "Dzienniki ostrzeżeń",
+        "One request end to end, across every hop it took.": "Jedno żądanie od początku do końca, przez każdy krok.",
+        "What each source returned, and when it did not.": "Co zwróciło każde źródło i kiedy nie.",
+        "Who called your endpoints, and what they got back.": "Kto wywołał twoje punkty końcowe i co otrzymał.",
+        "Every scheduled run, and how it ended.": "Każde zaplanowane uruchomienie i jak się zakończyło.",
+        "What each synchronisation moved, skipped or refused.": "Co każda synchronizacja przeniosła, pominęła lub odrzuciła.",
+        "Events published and delivered, with their outcome.": "Opublikowane i dostarczone zdarzenia z ich wynikiem.",
+        "Reports": "Raporty",
+        "Pick a report to open it.": "Wybierz raport, aby go otworzyć."
     },
     "plurals": {}
 }

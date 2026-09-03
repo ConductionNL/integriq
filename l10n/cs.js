@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Použít externí úložiště (např. MongoDB) místo interního úložiště Nextcloud.",
         "View Details": "Zobrazit podrobnosti",
         "View Logs": "Zobrazit protokoly",
-        "Warning Logs": "Protokoly varování"
+        "Warning Logs": "Protokoly varování",
+        "One request end to end, across every hop it took.": "Jeden požadavek od začátku do konce, přes každý krok.",
+        "What each source returned, and when it did not.": "Co každý zdroj vrátil a kdy ne.",
+        "Who called your endpoints, and what they got back.": "Kdo volal vaše koncové body a co dostal.",
+        "Every scheduled run, and how it ended.": "Každé naplánované spuštění a jak skončilo.",
+        "What each synchronisation moved, skipped or refused.": "Co každá synchronizace přesunula, přeskočila nebo odmítla.",
+        "Events published and delivered, with their outcome.": "Publikované a doručené události s výsledkem.",
+        "Reports": "Sestavy",
+        "Pick a report to open it.": "Vyberte sestavu, kterou chcete otevřít."
     },
     "nplurals=2; plural=(n != 1);"
 )

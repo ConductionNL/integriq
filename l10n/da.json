@@ -1009,7 +1009,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Brug eksternt lager (f.eks. MongoDB) i stedet for det interne Nextcloud-lager.",
         "View Details": "Vis detaljer",
         "View Logs": "Vis logfiler",
-        "Warning Logs": "Advarselslogfiler"
+        "Warning Logs": "Advarselslogfiler",
+        "One request end to end, across every hop it took.": "Én anmodning fra ende til anden, gennem hvert trin.",
+        "What each source returned, and when it did not.": "Hvad hver kilde returnerede, og hvornår ikke.",
+        "Who called your endpoints, and what they got back.": "Hvem kaldte dine endepunkter, og hvad de fik tilbage.",
+        "Every scheduled run, and how it ended.": "Hver planlagt kørsel, og hvordan den endte.",
+        "What each synchronisation moved, skipped or refused.": "Hvad hver synkronisering flyttede, sprang over eller afviste.",
+        "Events published and delivered, with their outcome.": "Udgivne og leverede hændelser, med deres resultat.",
+        "Reports": "Rapporter",
+        "Pick a report to open it.": "Vælg en rapport for at åbne den."
     },
     "plurals": {}
 }
