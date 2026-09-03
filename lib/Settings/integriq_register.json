@@ -2135,7 +2135,7 @@
         "icon": "ClockTimeFour",
         "version": "1.1.0",
         "summary": "Append-only log of job executions",
-        "description": "A JobLog records one entry per job invocation (or per significant intra-job event). Append-only and immutable per local ADR-003. Retention split by `level` per chain-A REQ-A-004.",
+        "description": "A JobLog records one entry per job invocation (or per significant intra-job event). Append-only and immutable per local ADR-003. Retention is split by `level`.",
         "required": [],
         "type": "object",
         "properties": {
@@ -2692,7 +2692,7 @@
         "icon": "SwapHorizontal",
         "version": "1.0.0",
         "summary": "Audit record for iBabs/NotuBiz synchronisation operations",
-        "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-033.",
+        "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md.",
         "required": [
           "caseId",
           "risType",
@@ -5177,7 +5177,7 @@
         "icon": "AccountNetworkOutline",
         "version": "1.0.0",
         "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
-        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
+        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId. Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
         "required": [
           "ltiPlatformId",
           "subject",
