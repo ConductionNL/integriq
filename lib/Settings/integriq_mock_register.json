@@ -77,7 +77,7 @@
               "deprecated"
             ],
             "default": "active",
-            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594, REQ-APG-006)",
+            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594)",
             "title": "Status"
           },
           "sunsetDate": {
@@ -92,12 +92,12 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Uuids of existing Endpoints grouped by this product version. Creating/updating an api_product MUST NOT create, modify, or delete the Endpoints it references (REQ-APG-001).",
+            "description": "Uuids of existing Endpoints grouped by this product version. Creating/updating an api_product MUST NOT create, modify, or delete the Endpoints it references.",
             "title": "Endpoints"
           },
           "tiers": {
             "type": "object",
-            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean} — same rateLimit/quota shape as the consumer schema (REQ-APG-005). A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription() (REQ-APG-004).",
+            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean} — same rateLimit/quota shape as the consumer schema. A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription().",
             "title": "Tiers",
             "additionalProperties": {
               "type": "object",
@@ -324,7 +324,7 @@
               "revoked"
             ],
             "default": "pending_approval",
-            "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy (REQ-APG-005).",
+            "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy.",
             "title": "Status"
           },
           "approvalRequestId": {
@@ -410,7 +410,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product_subscription",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the gated api_product_subscription (subscription-approval case; set instead of endpointId/ruleId/synchronizationId). See api-product-gateway REQ-APG-004, ApprovalService::suspendForSubscription().",
+            "description": "FK to the gated api_product_subscription (subscription-approval case; set instead of endpointId/ruleId/synchronizationId). See api-product-gateway and ApprovalService::suspendForSubscription().",
             "title": "Subscription"
           },
           "uuid": {
@@ -1015,7 +1015,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the api_product an inbound request was dispatched through (UUID; many-to-one; onDelete=SET_NULL — when the product is destroyed, its call_log rows remain for audit but lose their product pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "description": "FK to the api_product an inbound request was dispatched through (UUID, many-to-one, onDelete=SET_NULL: when the product is destroyed its call_log rows remain for audit but lose their product pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime).",
             "title": "API Product"
           },
           "endpoint": {
@@ -1023,12 +1023,12 @@
             "format": "uuid",
             "$ref": "#/components/schemas/endpoint",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the dispatched Endpoint (UUID; many-to-one; onDelete=SET_NULL — when the endpoint is destroyed, its call_log rows remain for audit but lose their endpoint pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "description": "FK to the dispatched Endpoint (UUID, many-to-one, onDelete=SET_NULL: when the endpoint is destroyed its call_log rows remain for audit but lose their endpoint pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime).",
             "title": "Endpoint"
           },
           "responseTime": {
             "type": "integer",
-            "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway REQ-APG-007, prometheus-metrics REQ-PROM-013).",
+            "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway, prometheus-metrics).",
             "title": "Response Time (ms)"
           }
         },
@@ -2069,7 +2069,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/consumer",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the consumer that created this offer (REQ-EUDI-004); only this consumer may resolve/revoke it",
+            "description": "FK to the consumer that created this offer; only this consumer may resolve/revoke it",
             "title": "Consumer"
           },
           "format": {
@@ -2150,19 +2150,19 @@
           },
           "callbackUrl": {
             "type": "string",
-            "description": "Optional consumer-configured URL that receives an HMAC-signed status callback on revocation (REQ-EUDI-009)",
+            "description": "Optional consumer-configured URL that receives an HMAC-signed status callback on revocation",
             "title": "Callback URL"
           },
           "callbackSigningSecret": {
             "type": "string",
             "writeOnly": true,
-            "description": "whsec_-prefixed HMAC secret (WebhookSignatureService, REQ-WHS-001 scheme) used to sign the revocation status callback. writeOnly (ocon#147 phase C): OpenRegister's render boundary strips it from EVERY API response — the description previously CLAIMED it was 'never returned', but the generic /apps/openregister/api/objects API and MCP tools read the row directly and did return it; writeOnly makes the claim true. EudiCredentialOfferService reads it via _rbac: false (system context), which the writeOnly stripping never touches, so callback signing is unaffected.",
+            "description": "whsec_-prefixed HMAC secret (WebhookSignatureService scheme) used to sign the revocation status callback. writeOnly: OpenRegister's render boundary strips it from every API response. The description previously claimed it was never returned, but the generic /apps/openregister/api/objects API and MCP tools read the row directly and did return it. writeOnly makes the claim true. EudiCredentialOfferService reads it via _rbac: false (system context), which the writeOnly stripping never touches, so callback signing is unaffected.",
             "title": "Callback Signing Secret"
           },
           "offerFetchedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Set atomically on the offer's first successful credential_offer_uri fetch (REQ-EUDI-005 single-use marker); a second fetch is rejected once set",
+            "description": "Set atomically on the offer's first successful credential_offer_uri fetch (single-use marker); a second fetch is rejected once set",
             "title": "Offer Fetched At"
           },
           "revokedAt": {
@@ -2254,7 +2254,7 @@
           "consumedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Set atomically once a credential has been successfully issued from this session (REQ-EUDI-007 single-use consumption); a second POST /api/eudi/credential presentation is rejected as a replay once set",
+            "description": "Set atomically once a credential has been successfully issued from this session (single-use consumption); a second POST /api/eudi/credential presentation is rejected as a replay once set",
             "title": "Consumed At"
           },
           "expiresAt": {
@@ -3670,7 +3670,7 @@
         "icon": "ClockTimeFour",
         "version": "1.1.0",
         "summary": "Append-only log of job executions",
-        "description": "A JobLog records one entry per job invocation (or per significant intra-job event). Append-only and immutable per local ADR-003. Retention split by `level` per chain-A REQ-A-004.",
+        "description": "A JobLog records one entry per job invocation (or per significant intra-job event). Append-only and immutable per local ADR-003. Retention is split by `level`.",
         "required": [],
         "type": "object",
         "properties": {
@@ -4084,7 +4084,7 @@
         "icon": "AccountNetworkOutline",
         "version": "1.0.0",
         "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
-        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
+        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId. Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
         "required": [
           "ltiPlatformId",
           "subject",
@@ -5362,7 +5362,7 @@
         "icon": "SwapHorizontal",
         "version": "1.0.0",
         "summary": "Audit record for iBabs/NotuBiz synchronisation operations",
-        "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-033.",
+        "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md.",
         "required": [
           "caseId",
           "risType",

@@ -137,7 +137,7 @@
       {
         "name": "circuit_breaker_state",
         "type": "gauge",
-        "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
+        "help": "Per-source circuit breaker state (1=open, 0=closed), a provider escape hatch (retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
         "source": {
           "kind": "provider"
         }
@@ -158,7 +158,7 @@
       {
         "name": "api_product_requests_total",
         "type": "gauge",
-        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
+        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway)",
         "source": {
           "kind": "objectCount",
           "register": "integriq",
@@ -172,7 +172,7 @@
       {
         "name": "api_product_errors_total",
         "type": "gauge",
-        "help": "Total inbound error (statusCode>=400) requests per API Product — provider escape hatch (api-product-gateway REQ-PROM-012): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by IntegriqMetricsProvider instead of a groupBy — see lib/Observability/IntegriqMetricsProvider.php::apiProductErrorsSample().",
+        "help": "Total inbound error (statusCode>=400) requests per API Product, a provider escape hatch (api-product-gateway): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by IntegriqMetricsProvider instead of a groupBy. See lib/Observability/IntegriqMetricsProvider.php::apiProductErrorsSample().",
         "source": {
           "kind": "provider"
         }
@@ -180,7 +180,7 @@
       {
         "name": "api_product_latency_seconds",
         "type": "gauge",
-        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99) — provider escape hatch (api-product-gateway REQ-PROM-013, prometheus-metrics): needs sorted per-group values, not a row count.",
+        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), a provider escape hatch (api-product-gateway, prometheus-metrics): needs sorted per-group values, not a row count.",
         "source": {
           "kind": "provider"
         }
