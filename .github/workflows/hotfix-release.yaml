@@ -6,9 +6,13 @@ name: WOO-552 Hotfix Release
 # in de release-action). Installatie op accept/productie gebeurt
 # handmatig via `occ` of de `app_versions` app.
 #
-# Naamgeving is nog placeholder (0.2.24-woo-552.<x>) — wacht op
-# Ruben's aanbeveling voor de definitieve conventie. Aanpassen kost
-# één commit + info.xml edit.
+# Naamgeving-conventie (Barry's voorstel, 2026-09-03):
+#   <base_tag>-<project>-<version>
+# Voor WOO-552 op v0.2.24 → base = `0.2.24-woo-1`. CI appent
+# `.${{ github.run_number }}` → build wordt `0.2.24-woo-1.<run>`.
+# Ruben + Remko hebben nog niet formeel gereageerd; als zij
+# uiteindelijk een andere shape voorstellen kost switch één
+# commit + info.xml bump + één nieuwe workflow-run.
 #
 # Basis: ConductionNL/integriq @ project/openpdd →
 #        .github/workflows/openpdd-release.yaml (Barry, 2026-09-03).
@@ -30,8 +34,9 @@ jobs:
 
       # Step 2: Derive this build's version from the base version tracked
       # in appinfo/info.xml. Base is bumped by hand for a new "line"
-      # (e.g. 0.2.24-woo-552.0.1 → 0.2.24-woo-552.0.2); CI only appends
-      # a per-build run number and never commits back to the repo.
+      # (e.g. 0.2.24-woo-1 → 0.2.24-woo-2 for a follow-up hotfix on the
+      # same base tag); CI only appends a per-build run number and never
+      # commits back to the repo.
       - name: Set app env
         run: |
           # Hard-coded to the Nextcloud app id, NOT ${GITHUB_REPOSITORY##*/}:
