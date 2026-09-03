@@ -295,11 +295,26 @@ class MappingsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Missing required `object` field')], 400);
 		}
 
+		// 🔴 THE MAPPING RESULT MAY NOT ADDRESS AN EXISTING OBJECT.
+		//
+		// This endpoint saves the OUTPUT OF A MAPPING TEST as a new object —
+		// the UI button is "save result as object". A mapping transforms source
+		// data, and source data very often carries an `id`. `saveObject()`
+		// resolves its target from the payload (`@self.id` first, then `id`)
+		// and the write is PUT-semantic, so a result carrying either would
+		// silently REPLACE whatever object shares that identifier, nulling
+		// every field the result omitted, and report success.
+		//
+		// Identity here belongs to the new object, not to the source record the
+		// mapping happened to read.
+		$object = (array)$data['object'];
+		unset($object['id'], $object['uuid'], $object['@self']);
+
 		// OR's ObjectService::saveObject signature is `(object, register?,
 		// schema?)`. Prior code passed the register slug as the first arg
 		// — a TypeError under the new signature, which surfaced as 500.
 		$saved = $openRegisters->saveObject(
-			object:   $data['object'],
+			object:   $object,
 			register: ($data['register'] ?? 'openconnector'),
 			schema:   ($data['schema'] ?? 'mapping')
 		);
