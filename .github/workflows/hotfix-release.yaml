@@ -8,8 +8,11 @@ name: WOO-552 Hotfix Release
 #
 # Naamgeving-conventie (Barry's voorstel, 2026-09-03):
 #   <base_tag>-<project>-<version>
-# Voor WOO-552 op v0.2.24 → base = `0.2.24-woo-1`. CI appent
-# `.${{ github.run_number }}` → build wordt `0.2.24-woo-1.<run>`.
+# Voor WOO-552 op v0.2.24 → tag = `v0.2.24-woo-1`. Geen build-
+# nummer append; elke push naar deze branch overschrijft
+# dezelfde tag/release (via `allowUpdates` + `overwrite: true`).
+# Voor een tweede WOO-hotfix op dezelfde base-tag: bump
+# `<version>` in `appinfo/info.xml` naar `0.2.24-woo-2` etc.
 # Ruben + Remko hebben nog niet formeel gereageerd; als zij
 # uiteindelijk een andere shape voorstellen kost switch één
 # commit + info.xml bump + één nieuwe workflow-run.
@@ -32,11 +35,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Step 2: Derive this build's version from the base version tracked
-      # in appinfo/info.xml. Base is bumped by hand for a new "line"
+      # Step 2: The build's version IS the base version tracked in
+      # appinfo/info.xml. No per-build run number is appended — every push
+      # to this branch overwrites the same release/tag (allowed via
+      # `allowUpdates: true` on ncipollo/release-action + `overwrite: true`
+      # on svenstaro/upload-release-action). Bump the base version by hand
+      # in appinfo/info.xml when you want a NEW hotfix line
       # (e.g. 0.2.24-woo-1 → 0.2.24-woo-2 for a follow-up hotfix on the
-      # same base tag); CI only appends a per-build run number and never
-      # commits back to the repo.
+      # same base tag).
       - name: Set app env
         run: |
           # Hard-coded to the Nextcloud app id, NOT ${GITHUB_REPOSITORY##*/}:
@@ -45,8 +51,7 @@ jobs:
           # name would give the tarball an `integriq/` root dir, which
           # `occ app:install` refuses because it does not match the app id.
           echo "APP_NAME=openconnector" >> $GITHUB_ENV
-          base_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
-          new_version="${base_version}.${{ github.run_number }}"
+          new_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
           echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
           echo "RELEASE_TAG=v${new_version}" >> $GITHUB_ENV
 
