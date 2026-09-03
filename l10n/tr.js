@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "İç Nextcloud depolaması yerine dış depolama (ör. MongoDB) kullan.",
         "View Details": "Ayrıntıları Görüntüle",
         "View Logs": "Günlükleri Görüntüle",
-        "Warning Logs": "Uyarı Günlükleri"
+        "Warning Logs": "Uyarı Günlükleri",
+        "One request end to end, across every hop it took.": "Bir isteğin uçtan uca, her adımdaki yolculuğu.",
+        "What each source returned, and when it did not.": "Her kaynağın ne döndürdüğü ve ne zaman dönmediği.",
+        "Who called your endpoints, and what they got back.": "Uç noktalarınızı kimin çağırdığı ve ne aldığı.",
+        "Every scheduled run, and how it ended.": "Her zamanlanmış çalışma ve nasıl bittiği.",
+        "What each synchronisation moved, skipped or refused.": "Her eşitlemenin ne taşıdığı, atladığı veya reddettiği.",
+        "Events published and delivered, with their outcome.": "Yayımlanan ve teslim edilen olaylar, sonuçlarıyla.",
+        "Reports": "Raporlar",
+        "Pick a report to open it.": "Açmak için bir rapor seçin."
     },
     "nplurals=2; plural=(n != 1);"
 )

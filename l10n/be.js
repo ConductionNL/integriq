@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Выкарыстоўваць знешняе сховішча (напр. MongoDB) замест унутранага сховішча Nextcloud.",
         "View Details": "Праглядзець падрабязнасці",
         "View Logs": "Праглядзець журналы",
-        "Warning Logs": "Журналы папярэджанняў"
+        "Warning Logs": "Журналы папярэджанняў",
+        "One request end to end, across every hop it took.": "Адзін запыт ад пачатку да канца, праз кожны крок.",
+        "What each source returned, and when it did not.": "Што вярнула кожная крыніца і калі не.",
+        "Who called your endpoints, and what they got back.": "Хто выклікаў вашы канчатковыя пункты і што атрымаў.",
+        "Every scheduled run, and how it ended.": "Кожны запланаваны запуск і чым ён скончыўся.",
+        "What each synchronisation moved, skipped or refused.": "Што кожная сінхранізацыя перамясціла, прапусціла ці адхіліла.",
+        "Events published and delivered, with their outcome.": "Апублікаваныя і дастаўленыя падзеі з вынікам.",
+        "Reports": "Справаздачы",
+        "Pick a report to open it.": "Выберыце справаздачу, каб адкрыць яе."
     },
     "nplurals=2; plural=(n != 1);"
 )

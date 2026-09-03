@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Izmantot ārējo krātuvi (piem., MongoDB), nevis iekšējo Nextcloud krātuvi.",
         "View Details": "Skatīt detaļas",
         "View Logs": "Skatīt žurnālus",
-        "Warning Logs": "Brīdinājumu žurnāli"
+        "Warning Logs": "Brīdinājumu žurnāli",
+        "One request end to end, across every hop it took.": "Viens pieprasījums no sākuma līdz beigām, katrā solī.",
+        "What each source returned, and when it did not.": "Ko katrs avots atgrieza un kad ne.",
+        "Who called your endpoints, and what they got back.": "Kas izsauca jūsu galapunktus un ko saņēma.",
+        "Every scheduled run, and how it ended.": "Katra plānotā izpilde un kā tā beidzās.",
+        "What each synchronisation moved, skipped or refused.": "Ko katra sinhronizācija pārvietoja, izlaida vai atteica.",
+        "Events published and delivered, with their outcome.": "Publicētie un piegādātie notikumi ar rezultātu.",
+        "Reports": "Pārskati",
+        "Pick a report to open it.": "Izvēlieties pārskatu, lai to atvērtu."
     },
     "nplurals=2; plural=(n != 1);"
 )

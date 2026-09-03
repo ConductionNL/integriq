@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Utilizați stocarea externă (de ex. MongoDB) în loc de stocarea internă Nextcloud.",
         "View Details": "Vizualizare detalii",
         "View Logs": "Vizualizare jurnale",
-        "Warning Logs": "Jurnale de avertisment"
+        "Warning Logs": "Jurnale de avertisment",
+        "One request end to end, across every hop it took.": "O cerere de la un capăt la altul, la fiecare pas.",
+        "What each source returned, and when it did not.": "Ce a returnat fiecare sursă și când nu.",
+        "Who called your endpoints, and what they got back.": "Cine v-a apelat punctele finale și ce a primit.",
+        "Every scheduled run, and how it ended.": "Fiecare rulare programată și cum s-a încheiat.",
+        "What each synchronisation moved, skipped or refused.": "Ce a mutat, a sărit sau a refuzat fiecare sincronizare.",
+        "Events published and delivered, with their outcome.": "Evenimente publicate și livrate, cu rezultatul lor.",
+        "Reports": "Rapoarte",
+        "Pick a report to open it.": "Alegeți un raport pentru a-l deschide."
     },
     "plurals": {}
 }

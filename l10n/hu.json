@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Külső tárhely (pl. MongoDB) használata a belső Nextcloud-tárhely helyett.",
         "View Details": "Részletek megtekintése",
         "View Logs": "Naplók megtekintése",
-        "Warning Logs": "Figyelmeztető naplók"
+        "Warning Logs": "Figyelmeztető naplók",
+        "One request end to end, across every hop it took.": "Egy kérés elejétől a végéig, minden lépésen át.",
+        "What each source returned, and when it did not.": "Mit adott vissza minden forrás, és mikor nem.",
+        "Who called your endpoints, and what they got back.": "Ki hívta a végpontjait, és mit kapott vissza.",
+        "Every scheduled run, and how it ended.": "Minden ütemezett futás, és hogyan ért véget.",
+        "What each synchronisation moved, skipped or refused.": "Mit mozgatott, hagyott ki vagy utasított el minden szinkronizálás.",
+        "Events published and delivered, with their outcome.": "Közzétett és kézbesített események, eredményükkel.",
+        "Reports": "Jelentések",
+        "Pick a report to open it.": "Válasszon egy jelentést a megnyitáshoz."
     },
     "plurals": {}
 }

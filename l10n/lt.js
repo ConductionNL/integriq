@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Naudoti išorinę saugyklą (pvz., MongoDB) vietoj vidinės Nextcloud saugyklos.",
         "View Details": "Peržiūrėti išsamią informaciją",
         "View Logs": "Peržiūrėti žurnalus",
-        "Warning Logs": "Įspėjimų žurnalai"
+        "Warning Logs": "Įspėjimų žurnalai",
+        "One request end to end, across every hop it took.": "Viena užklausa nuo pradžios iki pabaigos, kiekviename žingsnyje.",
+        "What each source returned, and when it did not.": "Ką grąžino kiekvienas šaltinis ir kada ne.",
+        "Who called your endpoints, and what they got back.": "Kas kvietė jūsų galinius taškus ir ką gavo.",
+        "Every scheduled run, and how it ended.": "Kiekvienas suplanuotas paleidimas ir kaip jis baigėsi.",
+        "What each synchronisation moved, skipped or refused.": "Ką kiekvienas sinchronizavimas perkėlė, praleido ar atmetė.",
+        "Events published and delivered, with their outcome.": "Paskelbti ir pristatyti įvykiai su rezultatu.",
+        "Reports": "Ataskaitos",
+        "Pick a report to open it.": "Pasirinkite ataskaitą, kad ją atidarytumėte."
     },
     "nplurals=2; plural=(n != 1);"
 )

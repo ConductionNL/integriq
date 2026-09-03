@@ -1009,7 +1009,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Nota ytri geymslu (t.d. MongoDB) í stað innri Nextcloud-geymslu.",
         "View Details": "Skoða nánar",
         "View Logs": "Skoða skrár",
-        "Warning Logs": "Aðvörunarskrár"
+        "Warning Logs": "Aðvörunarskrár",
+        "One request end to end, across every hop it took.": "Ein beiðni frá upphafi til enda, gegnum hvert skref.",
+        "What each source returned, and when it did not.": "Hvað hver uppspretta skilaði, og hvenær ekki.",
+        "Who called your endpoints, and what they got back.": "Hver kallaði á endapunkta þína, og hvað þeir fengu.",
+        "Every scheduled run, and how it ended.": "Hver áætluð keyrsla, og hvernig hún endaði.",
+        "What each synchronisation moved, skipped or refused.": "Hvað hver samstilling flutti, sleppti eða hafnaði.",
+        "Events published and delivered, with their outcome.": "Birt og afhent atvik, með niðurstöðu.",
+        "Reports": "Skýrslur",
+        "Pick a report to open it.": "Veldu skýrslu til að opna hana."
     },
     "plurals": {}
 }

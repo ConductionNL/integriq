@@ -333,13 +333,6 @@
       "order": 60,
       "children": [
         {
-          "id": "Traces",
-          "label": "Traces",
-          "icon": "Timeline",
-          "route": "Traces",
-          "order": 10
-        },
-        {
           "id": "DeadLetters",
           "label": "Dead letters",
           "icon": "EmailAlertOutline",
@@ -355,6 +348,14 @@
       "href": "https://integriq.conduction.nl",
       "section": "footer",
       "order": 90
+    },
+    {
+      "id": "ReportsMenu",
+      "label": "Reports",
+      "icon": "ChartBoxOutline",
+      "route": "Reports",
+      "section": "footer",
+      "order": 95
     },
     {
       "id": "FeaturesRoadmapMenu",
@@ -2565,6 +2566,70 @@
         "register": "integriq",
         "schema": "approval_request"
       }
+    },
+    {
+      "id": "Reports",
+      "route": "/reports",
+      "type": "reports",
+      "title": "Reports",
+      "config": {
+        "description": "Pick a report to open it.",
+        "categories": {
+          "traffic": "What moved",
+          "components": "Per component"
+        },
+        "cards": [
+          {
+            "id": "Traces",
+            "label": "Traces",
+            "description": "One request end to end, across every hop it took.",
+            "icon": "Timeline",
+            "category": "traffic",
+            "route": "Traces"
+          },
+          {
+            "id": "SourceLogs",
+            "label": "Source logs",
+            "description": "What each source returned, and when it did not.",
+            "icon": "SourceBranch",
+            "category": "components",
+            "route": "SourceLogs"
+          },
+          {
+            "id": "EndpointLogs",
+            "label": "Endpoint logs",
+            "description": "Who called your endpoints, and what they got back.",
+            "icon": "Api",
+            "category": "components",
+            "route": "EndpointLogs"
+          },
+          {
+            "id": "JobLogs",
+            "label": "Job logs",
+            "description": "Every scheduled run, and how it ended.",
+            "icon": "ClockOutline",
+            "category": "components",
+            "route": "JobLogs"
+          },
+          {
+            "id": "SynchronizationLogs",
+            "label": "Synchronization logs",
+            "description": "What each synchronisation moved, skipped or refused.",
+            "icon": "CloudSyncOutline",
+            "category": "components",
+            "route": "SynchronizationLogs"
+          },
+          {
+            "id": "CloudEventLogs",
+            "label": "Cloud event logs",
+            "description": "Events published and delivered, with their outcome.",
+            "icon": "CloudUploadOutline",
+            "category": "components",
+            "route": "CloudEventLogs"
+          }
+        ]
+      },
+      "_note": "ADR-112 / ADR-114 Decision 3. Nothing is invented: all six pages already existed. FIVE of them had no menu entry at all — SourceLogs, EndpointLogs, JobLogs, SynchronizationLogs and CloudEventLogs are standalone routes reachable only if you already knew the URL — so carding them GIVES an entry point rather than moving one. Only Traces had an entry, in the Operations group, and it moves. Dead letters deliberately stays in Operations: it is a work queue you act on, not a reading of what happened, and ADR-097 keeps a domain of the work in the main nav."
     },
     {
       "id": "Traces",

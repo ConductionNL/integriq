@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Použiť externé úložisko (napr. MongoDB) namiesto interného úložiska Nextcloud.",
         "View Details": "Zobraziť podrobnosti",
         "View Logs": "Zobraziť záznamy",
-        "Warning Logs": "Záznamy upozornení"
+        "Warning Logs": "Záznamy upozornení",
+        "One request end to end, across every hop it took.": "Jedna požiadavka od začiatku do konca, cez každý krok.",
+        "What each source returned, and when it did not.": "Čo každý zdroj vrátil a kedy nie.",
+        "Who called your endpoints, and what they got back.": "Kto volal vaše koncové body a čo dostal.",
+        "Every scheduled run, and how it ended.": "Každé naplánované spustenie a ako skončilo.",
+        "What each synchronisation moved, skipped or refused.": "Čo každá synchronizácia presunula, preskočila alebo odmietla.",
+        "Events published and delivered, with their outcome.": "Publikované a doručené udalosti s výsledkom.",
+        "Reports": "Zostavy",
+        "Pick a report to open it.": "Vyberte zostavu, ktorú chcete otvoriť."
     },
     "plurals": {}
 }

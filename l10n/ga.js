@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Úsáid stóráil sheachtrach (m.sh. MongoDB) in ionad stóráil inmheánach Nextcloud.",
         "View Details": "Féach ar na Sonraí",
         "View Logs": "Féach ar na Logaí",
-        "Warning Logs": "Logaí Rabhaidh"
+        "Warning Logs": "Logaí Rabhaidh",
+        "One request end to end, across every hop it took.": "Iarratas amháin ó thús deireadh, trí gach céim.",
+        "What each source returned, and when it did not.": "Cad a thug gach foinse ar ais, agus cathain nach ndearna.",
+        "Who called your endpoints, and what they got back.": "Cé a ghlaoigh ar do chríochphointí, agus cad a fuair siad.",
+        "Every scheduled run, and how it ended.": "Gach rith sceidealta, agus conas a chríochnaigh sé.",
+        "What each synchronisation moved, skipped or refused.": "Cad a bhog, a scipeáil nó a dhiúltaigh gach sioncrónú.",
+        "Events published and delivered, with their outcome.": "Imeachtaí foilsithe agus seachadta, lena dtoradh.",
+        "Reports": "Tuairiscí",
+        "Pick a report to open it.": "Roghnaigh tuairisc chun í a oscailt."
     },
     "nplurals=2; plural=(n != 1);"
 )
