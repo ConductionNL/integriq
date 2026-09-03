@@ -200,7 +200,8 @@
       "label": "Store",
       "icon": "StoreOutline",
       "route": "Store",
-      "order": 15
+      "order": 92,
+      "section": "footer"
     },
     {
       "id": "GatewayGroup",
@@ -361,7 +362,7 @@
       "icon": "MapMarkerPath",
       "route": "FeaturesRoadmap",
       "section": "footer",
-      "order": 95
+      "order": 100
     },
     {
       "id": "SynchronizationRuns",
