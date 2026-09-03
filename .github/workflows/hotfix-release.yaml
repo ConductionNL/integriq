@@ -34,7 +34,12 @@ jobs:
       # a per-build run number and never commits back to the repo.
       - name: Set app env
         run: |
-          echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+          # Hard-coded to the Nextcloud app id, NOT ${GITHUB_REPOSITORY##*/}:
+          # this repo was renamed to `integriq` upstream but the app id stays
+          # `openconnector` (info.xml <id>openconnector</id>). Using the repo
+          # name would give the tarball an `integriq/` root dir, which
+          # `occ app:install` refuses because it does not match the app id.
+          echo "APP_NAME=openconnector" >> $GITHUB_ENV
           base_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
           new_version="${base_version}.${{ github.run_number }}"
           echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
@@ -67,7 +72,7 @@ jobs:
       # Step 7: Copy the package files into the package directory
       - name: Copy the package files into the package
         run: |
-          mkdir -p package/${{ github.event.repository.name }}
+          mkdir -p package/${{ env.APP_NAME }}
           rsync -av --progress \
             --exclude='package' \
             --exclude='.git' \
@@ -105,19 +110,19 @@ jobs:
             --exclude='stylelint.config.js' \
             --exclude='.babelrc' \
             --exclude='.nvmrc' \
-            ./ package/${{ github.event.repository.name }}/
+            ./ package/${{ env.APP_NAME }}/
 
       # Step 8: Stamp the branch release version into the packaged info.xml
       # only (the repo's own info.xml / main version history is left
       # untouched).
       - name: Set package version
         run: |
-          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" package/${{ github.event.repository.name }}/appinfo/info.xml
+          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" package/${{ env.APP_NAME }}/appinfo/info.xml
 
       # Step 9: Create the TAR.GZ archive
       - name: Create Tarball
         run: |
-          cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ env.APP_NAME }}
 
       # Step 10: Sign the TAR.GZ file with OpenSSL
       - name: Sign the TAR.GZ file with OpenSSL
