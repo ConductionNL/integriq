@@ -13,7 +13,7 @@
         "icon": "Sitemap",
         "version": "1.0.0",
         "summary": "A declarative, ordered multi-step pipeline referencing existing Source/Mapping/Synchronization/Endpoint/Approval entities by id",
-        "description": "An ordered list of steps (call/mapping/synchronization/event/approval/branch), each a thin reference to an existing entity. Executed by FlowRunnerService, which calls the referenced entity's own existing service method — no step type reimplements that logic. See openspec/specs/flow-orchestration/spec.md REQ-001.",
+        "description": "An ordered list of steps (call/mapping/synchronization/event/approval/branch), each a thin reference to an existing entity. Executed by FlowRunnerService, which calls the referenced entity's own existing service method: no step type reimplements that logic. See openspec/specs/flow-orchestration/spec.md REQ-001.",
         "required": ["name", "steps"],
         "type": "object",
         "properties": {
@@ -41,7 +41,7 @@
           "steps": {
             "type": "array",
             "title": "Steps",
-            "description": "Ordered list of flow steps. Execution order is each item's own `order` field (a stable identifier), not array position, so `branch` targets (nextStepOrder/defaultNextStepOrder) stay valid across insert/delete/reorder edits in the step-list editor. `order` values MUST be unique within a flow — FlowRunnerService::run() rejects a flow with duplicate step `order` values as a fatal configuration error before executing any step, and the step-list editor validates the same rule client-side before save.",
+            "description": "Ordered list of flow steps. Execution order is each item's own `order` field (a stable identifier), not array position, so `branch` targets (nextStepOrder/defaultNextStepOrder) stay valid across insert/delete/reorder edits in the step-list editor. `order` values MUST be unique within a flow: FlowRunnerService::run() rejects a flow with duplicate step `order` values as a fatal configuration error before executing any step, and the step-list editor validates the same rule client-side before save.",
             "items": {
               "type": "object",
               "required": ["order", "type", "onError"],
@@ -254,7 +254,7 @@
           },
           "error": {
             "type": "string",
-            "description": "Present only when status=failed — the caught throwable's message",
+            "description": "Present only when status=failed: the caught throwable's message",
             "title": "Error"
           },
           "created": {
@@ -279,7 +279,7 @@
           },
           "resumeStepOrder": {
             "type": "integer",
-            "description": "The `order` of the flow step to resume at once this request is approved — the step immediately after the suspending `approval` step (flow-orchestration REQ-005). Not applicable to the endpoint-rule or Synchronization batch-gate cases.",
+            "description": "The `order` of the flow step to resume at once this request is approved: the step immediately after the suspending `approval` step (flow-orchestration REQ-005). Not applicable to the endpoint-rule or Synchronization batch-gate cases.",
             "title": "Resume Step Order"
           },
           "engineRunUuid": {

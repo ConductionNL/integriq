@@ -9,7 +9,7 @@
           "slug": "cmcom-sms"
         },
         "name": "CM.com SMS",
-        "description": "CM.com Business Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder — the base URL is the production CM.com messaging endpoint; set your CM.com product token on `configuration.headers.X-CM-PRODUCTTOKEN` (CM.com authenticates via this header) and enable. Send path is `message` (POST /v1.0/message).",
+        "description": "CM.com Business Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder: the base URL is the production CM.com messaging endpoint; set your CM.com product token on `configuration.headers.X-CM-PRODUCTTOKEN` (CM.com authenticates via this header) and enable. Send path is `message` (POST /v1.0/message).",
         "type": "api",
         "location": "https://gw.cmtelecom.com/v1.0",
         "auth": "apikey",

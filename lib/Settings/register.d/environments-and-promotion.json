@@ -13,7 +13,7 @@
         "icon": "ServerNetwork",
         "version": "1.0.0",
         "summary": "A named OpenConnector environment (e.g. staging, production) reachable via an existing Source",
-        "description": "Named environment metadata used by the promotion workflow (environments-and-promotion). Carries NO credential or connection material of its own — `sourceRef` points at an existing `source`-schema object (type: api) whose `location` and `configuration.authentication.credentialRef` describe how to reach that environment's OpenConnector API, so dispatching a call to an environment reuses CallService::call() and BrokeredCallService's existing broker resolution unchanged. See openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001.",
+        "description": "Named environment metadata used by the promotion workflow (environments-and-promotion). Carries NO credential or connection material of its own: `sourceRef` points at an existing `source`-schema object (type: api) whose `location` and `configuration.authentication.credentialRef` describe how to reach that environment's OpenConnector API, so dispatching a call to an environment reuses CallService::call() and BrokeredCallService's existing broker resolution unchanged. See openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001.",
         "required": ["name", "slug", "sourceRef"],
         "type": "object",
         "properties": {
@@ -36,7 +36,7 @@
             "type": "string",
             "enum": ["source", "target", "both"],
             "default": "both",
-            "description": "UI-filtering hint only (design.md Open Questions): whether this environment is typically promoted FROM, promoted TO, or both. Not enforced at promotion time — any environment may technically be used as source or target, matching how Sources aren't role-locked today either.",
+            "description": "UI-filtering hint only (design.md Open Questions): whether this environment is typically promoted FROM, promoted TO, or both. Not enforced at promotion time: any environment may technically be used as source or target, matching how Sources aren't role-locked today either.",
             "title": "Role"
           },
           "sourceRef": {
@@ -44,7 +44,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/source",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "UUID of an existing `source`-schema object (type: api) describing how to reach this environment's OpenConnector API — location + optional configuration.authentication.credentialRef. SET_NULL (not CASCADE) so a deleted Source leaves the environment row intact but unusable as a promotion target (REQ-001 scenario 2: rejected with an actionable error naming the missing sourceRef, not a cascaded delete).",
+            "description": "UUID of an existing `source`-schema object (type: api) describing how to reach this environment's OpenConnector API. Location + optional configuration.authentication.credentialRef. SET_NULL (not CASCADE) so a deleted Source leaves the environment row intact but unusable as a promotion target (REQ-001 scenario 2: rejected with an actionable error naming the missing sourceRef, not a cascaded delete).",
             "title": "Connectivity Source"
           },
           "description": {
@@ -175,7 +175,7 @@
         },
         "name": "Local Environment API",
         "slug": "environment-local-source",
-        "description": "Connectivity Source for the 'local' environment — this OpenConnector instance's own API, seeded so a fresh install has at least one usable promotion source environment.",
+        "description": "Connectivity Source for the 'local' environment: this OpenConnector instance's own API, seeded so a fresh install has at least one usable promotion source environment.",
         "type": "api",
         "isEnabled": true,
         "location": "http://localhost"
@@ -188,7 +188,7 @@
         },
         "name": "Acceptance Environment API",
         "slug": "environment-acceptance-source",
-        "description": "Connectivity Source for the 'acceptance' environment — a pre-production OpenConnector instance. Authenticates via a credentialRef placeholder (never an embedded secret); the referenced credential must be created in the OpenRegister credential broker before this Source is used for a real promotion.",
+        "description": "Connectivity Source for the 'acceptance' environment: a pre-production OpenConnector instance. Authenticates via a credentialRef placeholder (never an embedded secret); the referenced credential must be created in the OpenRegister credential broker before this Source is used for a real promotion.",
         "type": "api",
         "isEnabled": false,
         "location": "https://acceptance.example.org",

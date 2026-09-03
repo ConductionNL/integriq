@@ -13,7 +13,7 @@
         "icon": "PackageVariantClosed",
         "version": "1.0.0",
         "summary": "A named, versioned bundle of existing Endpoints a Consumer can discover and subscribe to at a rate-limit tier",
-        "description": "Groups existing Endpoint uuids into a discoverable, subscribable unit with named tiers, an optional approval gate per tier, and version-deprecation signalling (RFC 8594 Sunset/Deprecation headers). One row per (productSlug, version) pair — see design.md Decision 1. See openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001.",
+        "description": "Groups existing Endpoint uuids into a discoverable, subscribable unit with named tiers, an optional approval gate per tier, and version-deprecation signalling (RFC 8594 Sunset/Deprecation headers). One row per (productSlug, version) pair: see design.md Decision 1. See openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001.",
         "required": ["name", "productSlug"],
         "type": "object",
         "properties": {
@@ -34,7 +34,7 @@
           },
           "productSlug": {
             "type": "string",
-            "description": "Stable slug grouping every version-row of the same logical product (design.md Decision 1) — e.g. 'woo-publications'",
+            "description": "Stable slug grouping every version-row of the same logical product (design.md Decision 1): e.g. 'woo-publications'",
             "title": "Product Slug"
           },
           "version": {
@@ -60,7 +60,7 @@
           "sunsetDate": {
             "type": "string",
             "format": "date-time",
-            "description": "Required when status is 'deprecated' — rendered as the RFC 8594 Sunset header (HTTP-date format) on every response served through this product's endpoints",
+            "description": "Required when status is 'deprecated': rendered as the RFC 8594 Sunset header (HTTP-date format) on every response served through this product's endpoints",
             "title": "Sunset Date"
           },
           "endpoints": {
@@ -74,7 +74,7 @@
           },
           "tiers": {
             "type": "object",
-            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean} — same rateLimit/quota shape as the consumer schema. A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription().",
+            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean}. Same rateLimit/quota shape as the consumer schema. A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription().",
             "title": "Tiers",
             "additionalProperties": {
               "type": "object",
@@ -157,7 +157,7 @@
               "slug": "api-product-woo-publications-v1"
             },
             "name": "WOO Publications API",
-            "description": "Publish and query WOO publication records — deprecated version, migrate to v2.0.0",
+            "description": "Publish and query WOO publication records: deprecated version, migrate to v2.0.0",
             "productSlug": "woo-publications",
             "version": "1.0.0",
             "visibility": "public",
@@ -231,7 +231,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the subscribed api_product (UUID; many-to-one; onDelete=CASCADE — when the product is destroyed, its subscriptions cascade-delete with it)",
+            "description": "FK to the subscribed api_product (UUID; many-to-one; onDelete=CASCADE: when the product is destroyed, its subscriptions cascade-delete with it)",
             "title": "Product"
           },
           "consumer": {
@@ -239,7 +239,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/consumer",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the subscribing Consumer (UUID; many-to-one; onDelete=CASCADE — when the Consumer is destroyed, its subscriptions cascade-delete with it)",
+            "description": "FK to the subscribing Consumer (UUID; many-to-one; onDelete=CASCADE: when the Consumer is destroyed, its subscriptions cascade-delete with it)",
             "title": "Consumer"
           },
           "tier": {
