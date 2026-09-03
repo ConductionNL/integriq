@@ -9,7 +9,7 @@
           "slug": "opencorporates"
         },
         "name": "OpenCorporates",
-        "description": "OpenCorporates open company register API (v0.4). Consumed by the OpenRegister OpenCorporates integration leaf (company search across jurisdictions). Dormant placeholder — the base URL is the production OpenCorporates v0.4 endpoint; set your OpenCorporates API token on `configuration.query.api_token` (the OpenCorporates API authenticates via an `api_token` query parameter) and enable.",
+        "description": "OpenCorporates open company register API (v0.4). Consumed by the OpenRegister OpenCorporates integration leaf (company search across jurisdictions). Dormant placeholder: the base URL is the production OpenCorporates v0.4 endpoint; set your OpenCorporates API token on `configuration.query.api_token` (the OpenCorporates API authenticates via an `api_token` query parameter) and enable.",
         "type": "api",
         "location": "https://api.opencorporates.com/v0.4",
         "auth": "apikey",

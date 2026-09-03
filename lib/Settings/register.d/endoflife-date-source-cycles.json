@@ -9,7 +9,7 @@
           "slug": "endoflife-date-php-cycles-mapping"
         },
         "name": "endoflife.date PHP cycles mapping",
-        "description": "Maps one /api/php.json cycle entry to an eolCycle object. `product` is the literal \"php\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/php.json cycle entry to an eolCycle object. `product` is the literal \"php\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "php",
           "cycle": "cycle",
@@ -36,7 +36,7 @@
           "slug": "endoflife-date-php-cycles"
         },
         "name": "endoflife.date — PHP cycles",
-        "description": "Daily pull of PHP's release-cycle lifecycle data from https://endoflife.date/api/php.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of PHP's release-cycle lifecycle data from https://endoflife.date/api/php.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -57,7 +57,7 @@
           "slug": "endoflife-date-php-cycles-sync"
         },
         "name": "endoflife.date — PHP cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-php-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-php-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-php-cycles"
@@ -73,7 +73,7 @@
           "slug": "endoflife-date-nodejs-cycles-mapping"
         },
         "name": "endoflife.date Node.js cycles mapping",
-        "description": "Maps one /api/nodejs.json cycle entry to an eolCycle object. `product` is the literal \"nodejs\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/nodejs.json cycle entry to an eolCycle object. `product` is the literal \"nodejs\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "nodejs",
           "cycle": "cycle",
@@ -100,7 +100,7 @@
           "slug": "endoflife-date-nodejs-cycles"
         },
         "name": "endoflife.date — Node.js cycles",
-        "description": "Daily pull of Node.js's release-cycle lifecycle data from https://endoflife.date/api/nodejs.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of Node.js's release-cycle lifecycle data from https://endoflife.date/api/nodejs.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -121,7 +121,7 @@
           "slug": "endoflife-date-nodejs-cycles-sync"
         },
         "name": "endoflife.date — Node.js cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-nodejs-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-nodejs-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nodejs-cycles"
@@ -137,7 +137,7 @@
           "slug": "endoflife-date-python-cycles-mapping"
         },
         "name": "endoflife.date Python cycles mapping",
-        "description": "Maps one /api/python.json cycle entry to an eolCycle object. `product` is the literal \"python\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/python.json cycle entry to an eolCycle object. `product` is the literal \"python\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "python",
           "cycle": "cycle",
@@ -164,7 +164,7 @@
           "slug": "endoflife-date-python-cycles"
         },
         "name": "endoflife.date — Python cycles",
-        "description": "Daily pull of Python's release-cycle lifecycle data from https://endoflife.date/api/python.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of Python's release-cycle lifecycle data from https://endoflife.date/api/python.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -185,7 +185,7 @@
           "slug": "endoflife-date-python-cycles-sync"
         },
         "name": "endoflife.date — Python cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-python-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-python-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-python-cycles"
@@ -201,7 +201,7 @@
           "slug": "endoflife-date-postgresql-cycles-mapping"
         },
         "name": "endoflife.date PostgreSQL cycles mapping",
-        "description": "Maps one /api/postgresql.json cycle entry to an eolCycle object. `product` is the literal \"postgresql\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/postgresql.json cycle entry to an eolCycle object. `product` is the literal \"postgresql\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "postgresql",
           "cycle": "cycle",
@@ -228,7 +228,7 @@
           "slug": "endoflife-date-postgresql-cycles"
         },
         "name": "endoflife.date — PostgreSQL cycles",
-        "description": "Daily pull of PostgreSQL's release-cycle lifecycle data from https://endoflife.date/api/postgresql.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of PostgreSQL's release-cycle lifecycle data from https://endoflife.date/api/postgresql.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -249,7 +249,7 @@
           "slug": "endoflife-date-postgresql-cycles-sync"
         },
         "name": "endoflife.date — PostgreSQL cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-postgresql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-postgresql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-postgresql-cycles"
@@ -265,7 +265,7 @@
           "slug": "endoflife-date-mysql-cycles-mapping"
         },
         "name": "endoflife.date MySQL cycles mapping",
-        "description": "Maps one /api/mysql.json cycle entry to an eolCycle object. `product` is the literal \"mysql\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/mysql.json cycle entry to an eolCycle object. `product` is the literal \"mysql\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "mysql",
           "cycle": "cycle",
@@ -292,7 +292,7 @@
           "slug": "endoflife-date-mysql-cycles"
         },
         "name": "endoflife.date — MySQL cycles",
-        "description": "Daily pull of MySQL's release-cycle lifecycle data from https://endoflife.date/api/mysql.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of MySQL's release-cycle lifecycle data from https://endoflife.date/api/mysql.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -313,7 +313,7 @@
           "slug": "endoflife-date-mysql-cycles-sync"
         },
         "name": "endoflife.date — MySQL cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-mysql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-mysql-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-mysql-cycles"
@@ -329,7 +329,7 @@
           "slug": "endoflife-date-nextcloud-cycles-mapping"
         },
         "name": "endoflife.date Nextcloud cycles mapping",
-        "description": "Maps one /api/nextcloud.json cycle entry to an eolCycle object. `product` is the literal \"nextcloud\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/nextcloud.json cycle entry to an eolCycle object. `product` is the literal \"nextcloud\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "nextcloud",
           "cycle": "cycle",
@@ -356,7 +356,7 @@
           "slug": "endoflife-date-nextcloud-cycles"
         },
         "name": "endoflife.date — Nextcloud cycles",
-        "description": "Daily pull of Nextcloud's release-cycle lifecycle data from https://endoflife.date/api/nextcloud.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of Nextcloud's release-cycle lifecycle data from https://endoflife.date/api/nextcloud.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -377,7 +377,7 @@
           "slug": "endoflife-date-nextcloud-cycles-sync"
         },
         "name": "endoflife.date — Nextcloud cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-nextcloud-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-nextcloud-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-nextcloud-cycles"
@@ -393,7 +393,7 @@
           "slug": "endoflife-date-wordpress-cycles-mapping"
         },
         "name": "endoflife.date WordPress cycles mapping",
-        "description": "Maps one /api/wordpress.json cycle entry to an eolCycle object. `product` is the literal \"wordpress\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/wordpress.json cycle entry to an eolCycle object. `product` is the literal \"wordpress\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "wordpress",
           "cycle": "cycle",
@@ -420,7 +420,7 @@
           "slug": "endoflife-date-wordpress-cycles"
         },
         "name": "endoflife.date — WordPress cycles",
-        "description": "Daily pull of WordPress's release-cycle lifecycle data from https://endoflife.date/api/wordpress.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of WordPress's release-cycle lifecycle data from https://endoflife.date/api/wordpress.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -441,7 +441,7 @@
           "slug": "endoflife-date-wordpress-cycles-sync"
         },
         "name": "endoflife.date — WordPress cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-wordpress-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-wordpress-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-wordpress-cycles"
@@ -457,7 +457,7 @@
           "slug": "endoflife-date-laravel-cycles-mapping"
         },
         "name": "endoflife.date Laravel cycles mapping",
-        "description": "Maps one /api/laravel.json cycle entry to an eolCycle object. `product` is the literal \"laravel\" (renders verbatim through the Twig mapping engine — no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle — a bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
+        "description": "Maps one /api/laravel.json cycle entry to an eolCycle object. `product` is the literal \"laravel\" (renders verbatim through the Twig mapping engine: no {{ }} markers; design.md Decision 4). `discontinued` uses an explicit `{{ discontinued|default('') }}` Twig template (not a bare dot-path copy) because endoflife.date does not report this key for every product/cycle. A bare field-name mapping value falls through to the Twig-literal branch when the key is absent, which would wrongly write the literal word \"discontinued\" instead of an empty string.",
         "mapping": {
           "product": "laravel",
           "cycle": "cycle",
@@ -484,7 +484,7 @@
           "slug": "endoflife-date-laravel-cycles"
         },
         "name": "endoflife.date — Laravel cycles",
-        "description": "Daily pull of Laravel's release-cycle lifecycle data from https://endoflife.date/api/laravel.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array — design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
+        "description": "Daily pull of Laravel's release-cycle lifecycle data from https://endoflife.date/api/laravel.json into register openconnector, schema eolCycle. `resultsPosition: \"_root\"` is REQUIRED (the endpoint's JSON body is a bare top-level array. Design.md Decision 5); `deletionRatioThreshold` is raised to 0.5 because this product's total cycle count can be small enough that retiring one legitimately-removed cycle exceeds the engine's 0.10 default guard (design.md Decision 7).",
         "sourceId": "endoflife-date",
         "sourceType": "api",
         "sourceConfig": {
@@ -505,7 +505,7 @@
           "slug": "endoflife-date-laravel-cycles-sync"
         },
         "name": "endoflife.date — Laravel cycles sync",
-        "description": "Daily cron dispatch of the endoflife-date-laravel-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable() — identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
+        "description": "Daily cron dispatch of the endoflife-date-laravel-cycles synchronization via the existing, generic SynchronizationAction job class. `arguments.synchronizationId` addresses the synchronization by its @self.slug (verified by reading GetObject::find()/MagicMapper::findInRegisterSchemaTable(). Identifier resolution matches on _id/_uuid/_slug/_uri; see design.md Open Questions / proposal.md Risk 3).",
         "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "endoflife-date-laravel-cycles"

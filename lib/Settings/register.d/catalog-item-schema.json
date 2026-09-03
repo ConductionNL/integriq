@@ -15,7 +15,7 @@
         "icon": "ViewGridOutline",
         "version": "1.0.0",
         "summary": "A browsable catalog entry describing a real connector adapter, seeded source template, or importable configuration template",
-        "description": "One row per real, already-shipped adapter/source/template, materialised by MaterializeCatalogItems from CatalogRegistryService::collect(). No entry is invented — every catalog_item corresponds to code already in the repository. See openspec/specs/connector-catalog/spec.md#requirement-a-single-php-side-adapter-metadata-registry-is-the-source-of-truth-for-catalog-entries-req-003.",
+        "description": "One row per real, already-shipped adapter/source/template, materialised by MaterializeCatalogItems from CatalogRegistryService::collect(). No entry is invented: every catalog_item corresponds to code already in the repository. See openspec/specs/connector-catalog/spec.md#requirement-a-single-php-side-adapter-metadata-registry-is-the-source-of-truth-for-catalog-entries-req-003.",
         "required": [
           "name",
           "kind",

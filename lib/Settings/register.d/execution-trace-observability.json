@@ -19,13 +19,13 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID assigned by OpenRegister (equals traceId — the client-minted id is used as the object's own id at save time)",
+            "description": "Canonical UUID assigned by OpenRegister (equals traceId: the client-minted id is used as the object's own id at save time)",
             "title": "UUID"
           },
           "traceId": {
             "type": "string",
             "format": "uuid",
-            "description": "Client-minted UUIDv4 (design.md Decision 1), used as this object's own id — no separate correlation column needed",
+            "description": "Client-minted UUIDv4 (design.md Decision 1), used as this object's own id: no separate correlation column needed",
             "title": "Trace ID"
           },
           "entryPoint": {
@@ -117,7 +117,7 @@
           "expires": {
             "type": "string",
             "format": "date-time",
-            "description": "Computed retention horizon — when this trace becomes eligible for archival",
+            "description": "Computed retention horizon: when this trace becomes eligible for archival",
             "title": "Expires At"
           }
         },
