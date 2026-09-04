@@ -140,6 +140,15 @@ class SynchronizationServiceContentDispositionTest extends TestCase
         $this->assertSame('foo;bar.pdf', $this->invokeParser($header));
     }
 
+    public function testFilenameWithSemicolonAndSpaceInsideQuotedValuePreservesFilename(): void
+    {
+        // Barry's concrete example on PR #1840. Locks the exact string he
+        // raised so the guarantee is explicit in the test suite, not only
+        // implied by the more abstract `foo;bar.pdf` case above.
+        $header = 'attachment; filename="rapport; versie 2.pdf"';
+        $this->assertSame('rapport; versie 2.pdf', $this->invokeParser($header));
+    }
+
     public function testFilenameWithPathTraversalPayloadIsReturnedVerbatim(): void
     {
         // Contract: the parser extracts the filename as declared upstream;
