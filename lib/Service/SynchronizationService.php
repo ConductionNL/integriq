@@ -3086,12 +3086,15 @@ class SynchronizationService
      */
     private function parseContentDispositionFilename(string $headerValue): ?string
     {
-        // Split the header into parameter segments on `;`. The first segment
-        // is the disposition-type (attachment / inline), the rest are
-        // parameters. Splitting on `;` (instead of `=`) is what the naive
-        // pre-WOO-552 code got wrong: any `=` inside a value (bv. the
-        // charset''value shape of filename*) fooled the extractor.
-        $segments = array_map('trim', explode(';', $headerValue));
+        // Split the header into parameter segments on `;` while respecting
+        // RFC 6266 §4 quoted-string grammar. Splitting on `;` (instead of
+        // `=`) is what the naive pre-WOO-552 code got wrong: any `=` inside
+        // a value (bv. the charset''value shape of filename*) fooled the
+        // extractor. And a NAIVE `explode(';', $header)` in turn corrupts
+        // filenames that legitimately contain a `;` inside quotes
+        // (bv. `filename="rapport; versie 2.pdf"`) — that's why we use
+        // the quoted-string-aware splitHeaderParameters() tokenizer.
+        $segments = $this->splitHeaderParameters($headerValue);
 
         $filenameStar = null;
         $filenamePlain = null;
@@ -3100,12 +3103,12 @@ class SynchronizationService
             // Split into name/value on the FIRST `=` only — the value side
             // may legitimately contain further `=` characters (RFC 5987
             // extended values, base64-ish payloads).
-            $eq = strpos($segment, '=');
-            if ($eq === false) {
+            $eqPos = strpos($segment, '=');
+            if ($eqPos === false) {
                 continue;
             }
-            $name = strtolower(trim(substr($segment, 0, $eq)));
-            $value = trim(substr($segment, $eq + 1));
+            $name = strtolower(trim(substr($segment, 0, $eqPos)));
+            $value = trim(substr($segment, $eqPos + 1));
 
             if ($name === 'filename*') {
                 $filenameStar = $this->decodeRfc5987ExtendedValue($value);
@@ -3118,6 +3121,47 @@ class SynchronizationService
 
         // RFC 6266 §4.3: `filename*` wins when present and decodable.
         return $filenameStar ?? $filenamePlain;
+    }
+
+    /**
+     * Split a Content-Disposition header value into parameter segments,
+     * respecting RFC 6266 §4 quoted-string grammar.
+     *
+     * A naive `explode(';', $header)` also splits semicolons that are
+     * inside a quoted filename. For example,
+     * `attachment; filename="rapport; versie 2.pdf"` would corrupt to
+     * `rapport` instead of `rapport; versie 2.pdf`. This tokenizer
+     * tracks quote-open state and only splits on `;` outside quotes.
+     * The returned segments are trimmed.
+     *
+     * @param string $headerValue The raw Content-Disposition header value.
+     * @return array<int, string> Trimmed parameter segments, starting with
+     *                            the disposition-type (attachment/inline).
+     */
+    private function splitHeaderParameters(string $headerValue): array
+    {
+        $segments = [];
+        $current = '';
+        $inQuotes = false;
+        $length = strlen($headerValue);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $headerValue[$i];
+            if ($char === '"') {
+                $inQuotes = ($inQuotes === false);
+                $current .= $char;
+                continue;
+            }
+            if ($char === ';' && $inQuotes === false) {
+                $segments[] = trim($current);
+                $current = '';
+                continue;
+            }
+            $current .= $char;
+        }
+        if ($current !== '') {
+            $segments[] = trim($current);
+        }
+        return $segments;
     }
 
     /**
