@@ -140,6 +140,40 @@ class SynchronizationService
 		return $this->synchronizationMapper->findAll(limit: null, offset: null, filters: ['source_id' => $sourceId]);
 	}
 
+	/**
+	 * Check if a synchronization should trigger for the given object event type.
+	 *
+	 * Supported sourceConfig key:
+	 * - triggerOnlyOnEvents: array|string of CREATE|UPDATE|DELETE
+	 *
+	 * @param Synchronization $synchronization The synchronization to check.
+	 * @param string $eventMutationType The triggering mutation type.
+	 *
+	 * @return bool True when the synchronization should trigger for this event.
+	 */
+	private function shouldTriggerOnEvent(Synchronization $synchronization, string $eventMutationType): bool {
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization->getSourceConfig() ?? []));
+		if (array_key_exists('triggerOnlyOnEvents', $sourceConfig) === false) {
+			return true;
+		}
+
+		$allowedEvents = $sourceConfig['triggerOnlyOnEvents'];
+		if (is_string($allowedEvents) === true) {
+			$allowedEvents = [$allowedEvents];
+		}
+
+		if (is_array($allowedEvents) === false) {
+			return true;
+		}
+
+		$allowedEvents = array_map(
+			static fn ($event): string => strtoupper(trim((string)$event)),
+			$allowedEvents
+		);
+
+		return in_array(strtoupper($eventMutationType), $allowedEvents, true);
+	}
+
     /**
      * Handle synchronization for object create/update/delete events.
      *
@@ -169,6 +203,10 @@ class SynchronizationService
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
         foreach ($directSynchronizations as $synchronization) {
+            if ($this->shouldTriggerOnEvent(synchronization: $synchronization, eventMutationType: $eventMutationType) === false) {
+                continue;
+            }
+
             try {
                 if ($eventMutationType === 'delete') {
                     $this->synchronize(
@@ -204,6 +242,10 @@ class SynchronizationService
 
         foreach ($triggeredSynchronizations as $synchronization) {
             if (in_array($synchronization->getId(), $processedSynchronizationIds, true) === true) {
+                continue;
+            }
+
+            if ($this->shouldTriggerOnEvent(synchronization: $synchronization, eventMutationType: $eventMutationType) === false) {
                 continue;
             }
 
