@@ -2,7 +2,7 @@
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -22,7 +22,7 @@ use ReflectionClass;
  *   d) `filename*` Unicode pct-decode — diakriet round-trips correctly.
  *   e) `filename*` unsupported charset — falls back to plain `filename`.
  *
- * @package OCA\OpenConnector\Tests\Unit\Service
+ * @package OCA\Integriq\Tests\Unit\Service
  */
 class SynchronizationServiceContentDispositionTest extends TestCase
 {
