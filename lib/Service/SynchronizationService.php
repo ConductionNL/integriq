@@ -9053,7 +9053,7 @@ class SynchronizationService {
 		if (isset($response['headers']['Content-Disposition']) === true
 			&& str_contains($response['headers']['Content-Disposition'][0], 'filename') === true
 		) {
-			$filename = $this->parseContentDispositionFilename($response['headers']['Content-Disposition'][0]);
+			$filename = $this->parseContentDispositionFilename(headerValue: $response['headers']['Content-Disposition'][0]);
 		}
 
 		if ($filename === null) {
@@ -9103,12 +9103,13 @@ class SynchronizationService {
 	 *                            a value.
 	 */
 	private function parseContentDispositionFilename(string $headerValue): ?string {
-		// Split the header into parameter segments on `;`. The first
-		// segment is the disposition-type (attachment / inline), the rest
-		// are parameters. Splitting on `;` (instead of `=`) is what the
-		// naive pre-WOO-552 code got wrong: any `=` inside a value (bv.
-		// the charset''value shape of filename*) fooled the extractor.
-		$segments = array_map('trim', explode(';', $headerValue));
+		// Split the header into parameter segments on `;`, respecting quoted
+		// strings so a `;` inside `filename="..."` is treated as part of the
+		// value (RFC 6266 §4 quoted-string grammar). Splitting on `;`
+		// (instead of `=`) is what the naive pre-WOO-552 code got wrong:
+		// any `=` inside a value (bv. the charset''value shape of
+		// filename*) fooled the extractor.
+		$segments = $this->splitHeaderParameters(headerValue: $headerValue);
 
 		$filenameStar = null;
 		$filenamePlain = null;
@@ -9117,15 +9118,15 @@ class SynchronizationService {
 			// Split into name/value on the FIRST `=` only — the value side
 			// may legitimately contain further `=` characters (RFC 5987
 			// extended values, base64-ish payloads).
-			$eq = strpos($segment, '=');
-			if ($eq === false) {
+			$eqPos = strpos($segment, '=');
+			if ($eqPos === false) {
 				continue;
 			}
-			$name = strtolower(trim(substr($segment, 0, $eq)));
-			$value = trim(substr($segment, $eq + 1));
+			$name = strtolower(trim(substr($segment, 0, $eqPos)));
+			$value = trim(substr($segment, $eqPos + 1));
 
 			if ($name === 'filename*') {
-				$filenameStar = $this->decodeRfc5987ExtendedValue($value);
+				$filenameStar = $this->decodeRfc5987ExtendedValue(value: $value);
 			} elseif ($name === 'filename') {
 				// RFC 6266 allows quoted or unquoted `filename`; strip
 				// matching surrounding double quotes when present.
@@ -9136,6 +9137,44 @@ class SynchronizationService {
 		// RFC 6266 §4.3: `filename*` wins when present and decodable.
 		return $filenameStar ?? $filenamePlain;
 	}//end parseContentDispositionFilename()
+
+	/**
+	 * Split a Content-Disposition header on `;` while preserving semicolons
+	 * that appear INSIDE a quoted-string parameter value.
+	 *
+	 * RFC 6266 §4 uses the HTTP quoted-string grammar for `filename="..."`,
+	 * so a `;` between quotes is part of the value, not a parameter
+	 * separator. A naive `explode(';', $header)` corrupts values like
+	 * `filename="foo;bar.pdf"` to just `foo`.
+	 *
+	 * @param string $headerValue The raw Content-Disposition header value.
+	 * @return array<int, string> Trimmed parameter segments, starting with
+	 *                            the disposition-type (attachment/inline).
+	 */
+	private function splitHeaderParameters(string $headerValue): array {
+		$segments = [];
+		$current = '';
+		$inQuotes = false;
+		$length = strlen($headerValue);
+		for ($i = 0; $i < $length; $i++) {
+			$char = $headerValue[$i];
+			if ($char === '"') {
+				$inQuotes = ($inQuotes === false);
+				$current .= $char;
+				continue;
+			}
+			if ($char === ';' && $inQuotes === false) {
+				$segments[] = trim($current);
+				$current = '';
+				continue;
+			}
+			$current .= $char;
+		}
+		if ($current !== '') {
+			$segments[] = trim($current);
+		}
+		return $segments;
+	}//end splitHeaderParameters()
 
 	/**
 	 * Decode an RFC 5987 extended parameter value of shape
@@ -9168,7 +9207,7 @@ class SynchronizationService {
 			return null;
 		}
 
-		// rawurldecode() implements the RFC 3986 §2.1 pct-decode.
+		// Decode via rawurldecode() — implements the RFC 3986 §2.1 pct-decode.
 		return rawurldecode($encoded);
 	}//end decodeRfc5987ExtendedValue()
 

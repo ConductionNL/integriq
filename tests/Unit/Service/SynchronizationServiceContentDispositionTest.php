@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\OpenConnector\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\SynchronizationService;
 use PHPUnit\Framework\TestCase;
@@ -128,5 +128,35 @@ class SynchronizationServiceContentDispositionTest extends TestCase
         // to guard against future refactors of the calling contract.
         $header = 'inline';
         $this->assertNull($this->invokeParser($header));
+    }
+
+    public function testFilenameWithSemicolonInsideQuotedValuePreservesFilename(): void
+    {
+        // RFC 6266 §4 quoted-string grammar: a `;` between quotes is part
+        // of the value, not a parameter separator. A naive
+        // `explode(';', $header)` corrupts this to just `foo`; the
+        // quoted-string-aware tokenizer preserves the full filename.
+        $header = 'attachment; filename="foo;bar.pdf"';
+        $this->assertSame('foo;bar.pdf', $this->invokeParser($header));
+    }
+
+    public function testFilenameWithPathTraversalPayloadIsReturnedVerbatim(): void
+    {
+        // Contract: the parser extracts the filename as declared upstream;
+        // path-separator / `..` sanitization is the responsibility of the
+        // downstream FileService::saveFile() writer. Locking this contract
+        // guards against a future refactor silently sanitizing here (which
+        // would hide malicious input from the writer's audit surface).
+        $header = 'attachment; filename="../../etc/passwd"';
+        $this->assertSame('../../etc/passwd', $this->invokeParser($header));
+    }
+
+    public function testFilenameWithWhitespaceAroundEqualsIsAccepted(): void
+    {
+        // Well-behaved servers do not emit whitespace around `=`, but the
+        // tokenizer's `trim()` handles it gracefully. Locks the behaviour
+        // so a future refactor does not silently regress it.
+        $header = 'attachment; filename = "bestand.pdf"';
+        $this->assertSame('bestand.pdf', $this->invokeParser($header));
     }
 }
