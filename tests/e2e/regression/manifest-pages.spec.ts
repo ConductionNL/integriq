@@ -143,7 +143,7 @@ type ManifestPage = {
 }
 
 /**
- * All 35 manifest pages. Kept in manifest order so a diff against
+ * All 37 manifest pages. Kept in manifest order so a diff against
  * `src/manifest.json` reads straight down.
  *
  * Guarded by `manifest page table is complete and current` — do not edit this
@@ -221,6 +221,7 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'ApprovalDetail',
 	},
+	{ id: 'Reports', route: '/reports', type: 'reports' },
 	{ id: 'Traces', route: '/traces', type: 'logs' },
 	{
 		id: 'TraceDetail',
@@ -367,6 +368,35 @@ test.describe('manifest schema validation', () => {
 	// This suite compiles as CommonJS, so `import.meta` is a syntax error and
 	// `require` is how it reaches the filesystem. The directives below say so
 	// at each site; the reason is here.
+	/**
+	 * Every page `type` the manifest schema accepts.
+	 *
+	 * Read from the vendored schema rather than restated here, because a
+	 * restatement is what went stale. Throws rather than falling back to a
+	 * default set: a test that cannot find the schema must say so, not quietly
+	 * accept every type it is shown.
+	 *
+	 * @return The page-type enum.
+	 */
+	function readPageTypes(): string[] {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const schemaPath = require('path').resolve(
+			__dirname,
+			'../../../node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json',
+		)
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const schema = JSON.parse(require('fs').readFileSync(schemaPath, 'utf-8'))
+		const types = schema?.$defs?.page?.properties?.type?.enum
+
+		if (!Array.isArray(types) || types.length === 0) {
+			throw new Error(
+				`no page-type enum at $defs.page.properties.type.enum in ${schemaPath}`,
+			)
+		}
+
+		return types as string[]
+	}
+
 	function readManifest(): Record<string, any> {
 		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const manifestPath = require('path').resolve(
@@ -488,26 +518,13 @@ test.describe('manifest schema validation', () => {
 
 	test('every page uses a standard type or has a _note justifying custom', async () => {
 		const m = readManifest()
-		// Standard nc-vue page types (ADR-030). `roadmap` is a recognised
-		// extension type used by FeaturesRoadmap.
-		const STANDARD = new Set([
-			'index',
-			'detail',
-			'dashboard',
-			'logs',
-			'settings',
-			'chat',
-			'files',
-			'form',
-			'wiki',
-			'map',
-			'roadmap',
-			// The flow EDITOR. A flow lives in OpenRegister's native flow table
-			// rather than a register/schema pair, so one flow is not expressible
-			// as `detail` — but the LIST is an ordinary `index` over a named
-			// source, which is why there is no matching `flows` type here.
-			'flow',
-		])
+
+		// 🔴 THE SCHEMA IS THE LIST, NOT A COPY OF IT. This was twelve
+		// hand-written strings, and it fell behind: `reports` is a page type the
+		// manifest schema has accepted for a while, the manifest started using
+		// it, and this test called it unknown. A copy of an enum drifts from the
+		// enum; reading the enum cannot.
+		const STANDARD = new Set<string>(readPageTypes())
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
 				expect(
