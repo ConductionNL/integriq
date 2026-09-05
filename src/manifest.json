@@ -452,7 +452,7 @@
           },
           {
             "id": "kpi-open-breakers",
-            "title": "Sources with the breaker open",
+            "title": "Open circuit breakers",
             "type": "stats-block",
             "props": {
               "route": {

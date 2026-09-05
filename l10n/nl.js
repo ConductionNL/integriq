@@ -1559,7 +1559,6 @@ OC.L10N.register(
         "Failed sync runs": "Mislukte synchronisatieruns",
         "Dead letters waiting": "Wachtende dead letters",
         "Undelivered events": "Niet-afgeleverde events",
-        "Sources with the breaker open": "Bronnen met een open circuit breaker",
         "Operational health": "Operationele gezondheid",
         "Sync run outcomes": "Uitkomsten van synchronisatieruns",
         "Trace outcomes": "Uitkomsten van traces",
@@ -1567,7 +1566,8 @@ OC.L10N.register(
         "Failed sync runs per day": "Mislukte synchronisatieruns per dag",
         "Dead letters by phase": "Dead letters per fase",
         "Busiest entry points": "Drukste ingangen",
-        "Where runs, traces and deliveries end up, and what keeps failing.": "Waar runs, traces en afleveringen eindigen, en wat blijft mislukken."
+        "Where runs, traces and deliveries end up, and what keeps failing.": "Waar runs, traces en afleveringen eindigen, en wat blijft mislukken.",
+        "Open circuit breakers": "Openstaande circuit breakers"
     },
     "nplurals=2; plural=(n != 1);"
 )

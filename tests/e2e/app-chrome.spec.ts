@@ -234,7 +234,7 @@ test.describe('app chrome (ADR-114)', () => {
 			'Failed sync runs',
 			'Dead letters waiting',
 			'Undelivered events',
-			'Sources with the breaker open',
+			'Open circuit breakers',
 		]) {
 			await expect(page.getByText(title, { exact: false }).first()).toBeVisible(
 				{ timeout: 30_000 },
