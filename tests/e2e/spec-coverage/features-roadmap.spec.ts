@@ -22,8 +22,13 @@ test.describe('Features & roadmap — index surface', () => {
 		).toBeVisible({ timeout: 15_000 })
 
 		// Primary actions surfaced by the roadmap page.
+		// A LINK, not a button. nextcloud-vue 2.36.4 removed the in-product
+		// suggestion modal (team decision 2026-09-04: the forge is where the
+		// conversation happens), and the CTA is an anchor to the forge's
+		// feature-request issue form now. An `<a href>` has role `link`.
 		const action = page
-			.getByRole('button', { name: /Show roadmap|Suggest (a )?feature/i })
+			.getByRole('button', { name: /Show roadmap/i })
+			.or(page.getByRole('link', { name: /Suggest (a )?feature/i }))
 			.first()
 		await expect(
 			action,
@@ -39,14 +44,22 @@ test.describe('Features & roadmap — index surface', () => {
 		await page.goto(`${APP_BASE}/features-roadmap`, {
 			waitUntil: 'domcontentloaded',
 		})
+		// A LINK, not a button. nextcloud-vue 2.36.4 removed the in-product
+		// suggestion modal (team decision 2026-09-04: the forge is where the
+		// conversation happens), and the CTA is an anchor to the forge's
+		// feature-request issue form now. An `<a href>` has role `link`.
 		const suggest = page
-			.getByRole('button', { name: /Suggest (a )?feature/i })
+			.getByRole('link', { name: /Suggest (a )?feature/i })
 			.first()
 		await expect(suggest).toBeVisible({ timeout: 15_000 })
-		await suggest.click()
-		// Either opens a dialog or navigates to an external suggestion target;
-		// assert the click did not produce an app error.
-		await page.waitForTimeout(1_000)
+
+		// 🔴 READ THE TARGET, DO NOT FOLLOW IT. The CTA now leaves the app for a
+		// real issue form on a real forge, so clicking it in CI would navigate
+		// off the instance under test and out to the network.
+		const href = await suggest.getAttribute('href')
+		expect(href, 'the CTA rendered without a target').toBeTruthy()
+		expect(href, `the CTA points at ${href}`).toMatch(/issues\/new/)
+		await expect(suggest).toHaveAttribute('target', '_blank')
 		assertNoAppErrors(sink)
 	})
 })
