@@ -129,11 +129,21 @@ test.describe('app chrome (ADR-114)', () => {
 	test('the pages behind the cards are still routable at their own paths', async ({
 		page,
 	}) => {
+		test.slow()
+
 		// Retiring Traces' menu entry must not take its route with it, and the
 		// five that never had an entry must keep working for anyone holding a
 		// deep link (ADR-044 Decision 5).
 		for (const path of ['/traces', '/sources/logs', '/jobs/logs']) {
-			await page.goto(`${APP_BASE}${path}`)
+			// 🔴 `domcontentloaded`, NOT the default `load`. Nextcloud's
+			// notification poll keeps the network busy, so waiting for the load
+			// event waits for something that does not settle — the loop dies
+			// partway through and names whichever route it was on, which reads
+			// as a broken route. The SPA mounts after DOM ready, and the
+			// assertions below are what prove the mount.
+			await page.goto(`${APP_BASE}${path}`, {
+				waitUntil: 'domcontentloaded',
+			})
 			await expect(page).toHaveURL(new RegExp(`${path}(\\?|$)`), {
 				timeout: 15_000,
 			})
