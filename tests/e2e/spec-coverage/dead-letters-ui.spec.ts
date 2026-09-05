@@ -1,3 +1,7 @@
+import type { Browser } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import type { ApiClient } from '../workflows/_fixture.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,14 +30,9 @@
  *     state) does NOT assume it got one from declaration order — it asks the
  *     endpoint that feeds the view and skips if the queue is dirty.
  */
-import { test, expect, type Page } from '@playwright/test'
-import { APP_BASE, trackErrors, assertNoAppErrors } from './_helpers'
-import {
-	makeApiClient,
-	createObject,
-	deleteObject,
-	type ApiClient,
-} from '../workflows/_fixture'
+import { expect, test } from '@playwright/test'
+import { createObject, deleteObject, makeApiClient } from '../workflows/_fixture.ts'
+import { APP_BASE, assertNoAppErrors, trackErrors } from './_helpers.ts'
 
 /** Unique per-run marker so every assertion can scope to this run's rows. */
 const runId = `dlui-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
@@ -69,15 +68,12 @@ class Fixtures {
 	api!: ApiClient
 	private created: Array<{ schema: string; id: string }> = []
 
-	async open(
-		browser: import('@playwright/test').Browser,
-		baseURL: string,
-	): Promise<void> {
+	async open(browser: Browser, baseURL: string): Promise<void> {
 		this.api = await makeApiClient(browser, baseURL)
 	}
 
 	/** Create an object and register it for teardown. */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	async make(schema: string, data: Record<string, any>): Promise<any> {
 		const obj = await createObject(this.api, schema, data)
 		const id = obj.id ?? obj.uuid

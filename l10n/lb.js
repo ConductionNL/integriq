@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Externe Späicher (z.B. MongoDB) amplaz vum internen Nextcloud-Späicher benotzen.",
         "View Details": "Detailer weisen",
         "View Logs": "Logbicher weisen",
-        "Warning Logs": "Warnungs-Logbicher"
+        "Warning Logs": "Warnungs-Logbicher",
+        "One request end to end, across every hop it took.": "Eng Ufro vun Ufank bis Enn, iwwer all Schrëtt.",
+        "What each source returned, and when it did not.": "Wat all Quell zréckginn huet, a wéini net.",
+        "Who called your endpoints, and what they got back.": "Wien Är Endpunkte gerufft huet, a wat se kruten.",
+        "Every scheduled run, and how it ended.": "All geplangte Laf, a wéi en opgehalen huet.",
+        "What each synchronisation moved, skipped or refused.": "Wat all Synchronisatioun geréckelt, iwwersprongen oder refuséiert huet.",
+        "Events published and delivered, with their outcome.": "Publizéiert an zougestallt Evenementer, mat hirem Resultat.",
+        "Reports": "Berichter",
+        "Pick a report to open it.": "Wielt e Bericht fir en opzemaachen."
     },
     "nplurals=2; plural=(n != 1);"
 )

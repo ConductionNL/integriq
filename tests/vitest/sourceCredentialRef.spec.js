@@ -15,17 +15,17 @@
  *   • the OR list-envelope unwrap + NcSelect option mapping (soft-fail-safe).
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	EMBEDDED_SECRET_FIELDS,
 	CALLING_APP_ID,
-	readCredentialRef,
-	isBrokered,
-	readCredentialId,
-	writeCredentialRef,
 	clearCredentialRef,
+	EMBEDDED_SECRET_FIELDS,
 	extractCredentialResults,
+	isBrokered,
 	mapCredentialOptions,
+	readCredentialId,
+	readCredentialRef,
+	writeCredentialRef,
 } from '../../src/modals/v2/sourceCredentialRef.js'
 
 const UUID = '00000000-0000-0000-0000-000000000000'

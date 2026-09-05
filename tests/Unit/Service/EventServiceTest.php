@@ -588,7 +588,10 @@ class EventServiceTest extends TestCase {
 		$this->assertSame(200, $captured['deliveryResponse']['statusCode']);
 		$this->assertCount(1, $captured['attempts']);
 		$this->assertSame(200, $captured['attempts'][0]['statusCode']);
-		$this->assertNull($captured['attempts'][0]['error']);
+		// appendAttempt() OMITS a null error rather than writing it — the
+		// schema types attempts[].error as string and OpenRegister refuses
+		// null for a nested array-item property (see appendAttempt()).
+		$this->assertArrayNotHasKey('error', $captured['attempts'][0]);
 	}//end testDeliverMessageSuccessMarksDelivered()
 
 	/**
@@ -672,7 +675,10 @@ class EventServiceTest extends TestCase {
 		$this->assertFalse($result);
 		$this->assertSame('failed', $captured['status']);
 		$this->assertCount(1, $captured['attempts']);
-		$this->assertNull($captured['attempts'][0]['statusCode']);
+		// A transport failure has no HTTP status by definition, and
+		// appendAttempt() OMITS the key rather than writing null — writing
+		// null used to fail schema validation and abort the retry sweep.
+		$this->assertArrayNotHasKey('statusCode', $captured['attempts'][0]);
 		$this->assertNotNull($captured['attempts'][0]['error']);
 	}//end testDeliverMessageExceptionRecordsErrorAttempt()
 

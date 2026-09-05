@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Kasuta välist salvestusruumi (nt MongoDB) Nextcloudi sisemise salvestusruumi asemel.",
         "View Details": "Vaata üksikasju",
         "View Logs": "Vaata logisid",
-        "Warning Logs": "Hoiatuslogid"
+        "Warning Logs": "Hoiatuslogid",
+        "One request end to end, across every hop it took.": "Üks päring algusest lõpuni, iga sammu kaudu.",
+        "What each source returned, and when it did not.": "Mida iga allikas tagastas ja millal mitte.",
+        "Who called your endpoints, and what they got back.": "Kes kutsus teie lõpp-punkte ja mida sai.",
+        "Every scheduled run, and how it ended.": "Iga plaanitud käivitus ja kuidas see lõppes.",
+        "What each synchronisation moved, skipped or refused.": "Mida iga sünkroonimine liigutas, vahele jättis või keeldus.",
+        "Events published and delivered, with their outcome.": "Avaldatud ja kohale toimetatud sündmused tulemusega.",
+        "Reports": "Aruanded",
+        "Pick a report to open it.": "Vali aruanne, et see avada."
     },
     "plurals": {}
 }

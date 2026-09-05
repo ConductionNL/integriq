@@ -9,7 +9,7 @@
           "slug": "twilio-sms"
         },
         "name": "Twilio SMS",
-        "description": "Twilio Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder — the base URL is the production Twilio API endpoint; set `configuration.authentication.username` (AccountSID) + `configuration.authentication.password` (AuthToken) for HTTP Basic and enable. Send path is `2010-04-01/Accounts/{AccountSID}/Messages.json` (form-encoded body From/To/Body).",
+        "description": "Twilio Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder: the base URL is the production Twilio API endpoint; set `configuration.authentication.username` (AccountSID) + `configuration.authentication.password` (AuthToken) for HTTP Basic and enable. Send path is `2010-04-01/Accounts/{AccountSID}/Messages.json` (form-encoded body From/To/Body).",
         "type": "api",
         "location": "https://api.twilio.com",
         "auth": "apikey",

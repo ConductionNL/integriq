@@ -54,7 +54,7 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "When progress was last recorded \u2014 the field that tells a live run from a stalled one",
+            "description": "When progress was last recorded: the field that tells a live run from a stalled one",
             "title": "Updated At"
           },
           "finishedAt": {
@@ -70,7 +70,7 @@
           },
           "processed": {
             "type": "integer",
-            "description": "Objects processed so far \u2014 with `found`, this is the progress fraction",
+            "description": "Objects processed so far: with `found`, this is the progress fraction",
             "title": "Processed"
           },
           "created": {
@@ -121,7 +121,7 @@
           "progressWriteMillis": {
             "type": "integer",
             "title": "Progress Write Millis",
-            "description": "Total milliseconds spent inside progress writes. Divide by the run's executionTime for the exact overhead \u2014 differencing two whole runs cannot resolve a few percent on a loaded instance."
+            "description": "Total milliseconds spent inside progress writes. Divide by the run's executionTime for the exact overhead: differencing two whole runs cannot resolve a few percent on a loaded instance."
           }
         }
       }

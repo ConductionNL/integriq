@@ -12,13 +12,13 @@
  * and guards against the post-OR-cutover SynchronizationMapper dispatch
  * regression on the Synchronizations / Endpoints / Cloud events pages.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	navTo,
-	trackErrors,
 	assertNoAppErrors,
+	navTo,
 	openAndDismissCreateModal,
-} from './_helpers'
+	trackErrors,
+} from './_helpers.ts'
 
 interface IndexPage {
 	navLabel: string

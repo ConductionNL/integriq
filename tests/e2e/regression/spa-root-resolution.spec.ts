@@ -22,14 +22,37 @@
  *
  *   1. the resolver returns what the app itself would compute;
  *   2. a deep link through it MATCHES its route (address bar unchanged);
- *   3. ⚠️ POSITIVE CONTROL — the same deep link under the OTHER prefix is
- *      redirected to the app root. Without this, parts 1 and 2 could both be
- *      green on an instance where the distinction does not exist, and the guard
- *      would be worthless in exactly the environment it was written for.
+ *   3. BOTH prefixes resolve the route.
+ *
+ * ⚠️ Part 3 used to be the opposite claim — a POSITIVE CONTROL asserting the
+ * OTHER prefix was redirected to the app root — and it was right at the time.
+ * The router base came from `generateUrl('/apps/integriq')`, which returns only
+ * the form the instance is configured for, so a visitor who arrived on the other
+ * form fell outside the base and was swallowed to the Dashboard.
+ *
+ * `routerBase()` now derives the base from `window.location.pathname`, so it
+ * always matches the URL the visitor actually arrived on and both forms work.
+ * That fix is what made the old control fail, exactly as its own closing comment
+ * predicted: "if this assertion ever fails, the prefix distinction has stopped
+ * mattering".
+ *
+ * The guard was inverted rather than deleted, because it still has a job. It no
+ * longer proves the resolver picks the right prefix; it proves the swallowed
+ * deep link cannot come back. That matters beyond this suite: these URLs are
+ * pasted into tickets and mails by people who never see which form their client
+ * produced.
+ *
+ * `appRoot.ts` is therefore no longer load-bearing for correctness — either
+ * prefix would now do — but it is still correct, still used by six spec files,
+ * and simplifying it is a separate change from proving the bug is gone.
  */
 
-import { test, expect } from '@playwright/test'
-import { resolveAppRoot, gotoAppRoute, expectRouteMatched } from '../support/appRoot'
+import { expect, test } from '@playwright/test'
+import {
+	expectRouteMatched,
+	gotoAppRoute,
+	resolveAppRoot,
+} from '../support/appRoot.ts'
 
 /** A route that exists in `src/manifest.json` and needs no fixture data. */
 const ROUTE = '/sources'
@@ -85,33 +108,48 @@ test.describe('SPA root resolution (path-mode router base)', () => {
 		).toHaveCount(0)
 	})
 
-	test('POSITIVE CONTROL: the same route under the OTHER prefix falls through to the app root', async ({
+	test('BOTH prefixes resolve the route — the distinction no longer exists', async ({
 		page,
 	}) => {
-		const root = await resolveAppRoot(page)
-		const wrong = BOTH_PREFIXES.find((prefix) => prefix !== root)
-		expect(wrong, 'there must be a second prefix to test against').toBeTruthy()
+		// This was a POSITIVE CONTROL asserting the OTHER prefix fell through to
+		// the app root. It was correct when the router base came from
+		// `generateUrl('/apps/integriq')`, which returns only the form the
+		// instance is configured for, leaving the other form outside the base.
+		//
+		// `routerBase()` now derives the base from `window.location.pathname`, so
+		// it always matches the URL the visitor actually arrived on and BOTH forms
+		// resolve. The old control failed against that fix, exactly as its own
+		// closing comment predicted it would: "if this assertion ever fails, the
+		// prefix distinction has stopped mattering".
+		//
+		// So the assertion is inverted rather than deleted. The guard still has a
+		// job — it is now what proves the swallowed deep link cannot come back.
+		for (const prefix of BOTH_PREFIXES) {
+			await page.goto(`${prefix}${ROUTE}`, {
+				waitUntil: 'domcontentloaded',
+				timeout: 30_000,
+			})
 
-		await page.goto(`${wrong}${ROUTE}`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+			// The SPA must have mounted — otherwise this proves nothing about
+			// routing, only that the page failed to load.
+			await expect(
+				page
+					.locator('#app-content, [data-cy=app-content], .app-content')
+					.first(),
+				`${prefix}${ROUTE} must serve the SPA shell`,
+			).toBeVisible({ timeout: 15_000 })
 
-		// The SPA must have mounted — otherwise this proves nothing about
-		// routing, only that the page failed to load.
-		await expect(
-			page
-				.locator('#app-content, [data-cy=app-content], .app-content')
-				.first(),
-			'the wrong prefix must still SERVE the SPA shell — that is precisely why the old probe could not tell the two apart',
-		).toBeVisible({ timeout: 15_000 })
+			// …and the router must have KEPT the route. A redirect to the app
+			// root is the silent deep-link swallow this app already paid for once.
+			expect(
+				new URL(page.url()).pathname,
+				`${prefix}${ROUTE} was redirected to the app root — the deep link was swallowed`,
+			).toContain(ROUTE)
 
-		// …and the router must have thrown the route away. If this assertion
-		// ever fails, the prefix distinction has stopped mattering and
-		// appRoot.ts can be simplified — do that rather than deleting this test.
-		expect(
-			new URL(page.url()).pathname,
-			`${wrong}${ROUTE} was expected to fall through the catch-all to the app root`,
-		).not.toContain(ROUTE)
+			await expect(
+				page.getByRole('heading', { name: 'Dashboard', level: 2 }),
+				`${prefix}${ROUTE} landed on the Dashboard`,
+			).toHaveCount(0)
+		}
 	})
 })

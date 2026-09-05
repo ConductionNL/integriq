@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Koristi vanjsku pohranu (npr. MongoDB) umjesto interne Nextcloud pohrane.",
         "View Details": "Prikaži pojedinosti",
         "View Logs": "Prikaži zapisnike",
-        "Warning Logs": "Zapisnici upozorenja"
+        "Warning Logs": "Zapisnici upozorenja",
+        "One request end to end, across every hop it took.": "Jedan zahtjev od početka do kraja, kroz svaki korak.",
+        "What each source returned, and when it did not.": "Što je svaki izvor vratio i kada nije.",
+        "Who called your endpoints, and what they got back.": "Tko je pozvao vaše krajnje točke i što je dobio.",
+        "Every scheduled run, and how it ended.": "Svako zakazano izvođenje i kako je završilo.",
+        "What each synchronisation moved, skipped or refused.": "Što je svaka sinkronizacija premjestila, preskočila ili odbila.",
+        "Events published and delivered, with their outcome.": "Objavljeni i isporučeni događaji s ishodom.",
+        "Reports": "Izvješća",
+        "Pick a report to open it.": "Odaberite izvješće da ga otvorite."
     },
     "plurals": {}
 }

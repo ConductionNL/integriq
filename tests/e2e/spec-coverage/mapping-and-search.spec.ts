@@ -18,13 +18,13 @@
  * navigate directly to a detail URL rather than clicking a table row.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 // APP_BASE comes from _helpers.ts, the one place that knows both that the
 // router is hash-mode and that the URL needs the `/index.php/` prefix (without
 // it, PHP's built-in server on CI 404s the app directory and every assertion
 // below runs against a 404 page). This file used to keep a private copy of
 // that string that was missing the prefix.
-import { APP_BASE, openAndDismissCreateModal } from './_helpers'
+import { APP_BASE, openAndDismissCreateModal } from './_helpers.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'

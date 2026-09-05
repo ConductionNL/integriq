@@ -13,12 +13,12 @@
  */
 import { test } from '@playwright/test'
 import {
-	navTo,
-	trackErrors,
+	APP_BASE,
 	assertNoAppErrors,
 	expectHeading,
-	APP_BASE,
-} from './_helpers'
+	navTo,
+	trackErrors,
+} from './_helpers.ts'
 
 test.describe('Dashboard — index surface', () => {
 	// @e2e openconnector-comprehensive-tests::dashboard-page-mounts

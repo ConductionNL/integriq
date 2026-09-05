@@ -12,11 +12,21 @@
         },
         {
           "id": "demo-data",
-          "type": "run-action",
-          "action": "install-demo-data",
-          "title": "Demo data (optional)",
+          "type": "choice",
+          "display": "cards",
+          "optionsSource": "datasets",
+          "configKey": "demo_dataset",
+          "title": "Load example data?",
           "required": false,
-          "body": "Load a small example dataset so the lists, detail pages and dashboards show a working product straight away. The data is obviously sample data, it is safe to run more than once, and it can be removed afterwards. Skip this on a production install."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
+        },
+        {
+          "id": "load-demo-data",
+          "type": "run-action",
+          "action": "load-demo-data",
+          "title": "Load the example data",
+          "required": false,
+          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
         },
         {
           "id": "done",
@@ -137,7 +147,7 @@
       {
         "name": "circuit_breaker_state",
         "type": "gauge",
-        "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
+        "help": "Per-source circuit breaker state (1=open, 0=closed), a provider escape hatch (retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
         "source": {
           "kind": "provider"
         }
@@ -158,7 +168,7 @@
       {
         "name": "api_product_requests_total",
         "type": "gauge",
-        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
+        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway)",
         "source": {
           "kind": "objectCount",
           "register": "integriq",
@@ -172,7 +182,7 @@
       {
         "name": "api_product_errors_total",
         "type": "gauge",
-        "help": "Total inbound error (statusCode>=400) requests per API Product — provider escape hatch (api-product-gateway REQ-PROM-012): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by IntegriqMetricsProvider instead of a groupBy — see lib/Observability/IntegriqMetricsProvider.php::apiProductErrorsSample().",
+        "help": "Total inbound error (statusCode>=400) requests per API Product, a provider escape hatch (api-product-gateway): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by IntegriqMetricsProvider instead of a groupBy. See lib/Observability/IntegriqMetricsProvider.php::apiProductErrorsSample().",
         "source": {
           "kind": "provider"
         }
@@ -180,7 +190,7 @@
       {
         "name": "api_product_latency_seconds",
         "type": "gauge",
-        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99) — provider escape hatch (api-product-gateway REQ-PROM-013, prometheus-metrics): needs sorted per-group values, not a row count.",
+        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), a provider escape hatch (api-product-gateway, prometheus-metrics): needs sorted per-group values, not a row count.",
         "source": {
           "kind": "provider"
         }
@@ -200,7 +210,8 @@
       "label": "Store",
       "icon": "StoreOutline",
       "route": "Store",
-      "order": 15
+      "order": 92,
+      "section": "footer"
     },
     {
       "id": "GatewayGroup",
@@ -332,13 +343,6 @@
       "order": 60,
       "children": [
         {
-          "id": "Traces",
-          "label": "Traces",
-          "icon": "Timeline",
-          "route": "Traces",
-          "order": 10
-        },
-        {
           "id": "DeadLetters",
           "label": "Dead letters",
           "icon": "EmailAlertOutline",
@@ -356,12 +360,20 @@
       "order": 90
     },
     {
+      "id": "ReportsMenu",
+      "label": "Reports",
+      "icon": "ChartBoxOutline",
+      "route": "Reports",
+      "section": "footer",
+      "order": 95
+    },
+    {
       "id": "FeaturesRoadmapMenu",
       "label": "Features & roadmap",
       "icon": "MapMarkerPath",
       "route": "FeaturesRoadmap",
       "section": "footer",
-      "order": 95
+      "order": 100
     },
     {
       "id": "SynchronizationRuns",
@@ -2564,6 +2576,70 @@
         "register": "integriq",
         "schema": "approval_request"
       }
+    },
+    {
+      "id": "Reports",
+      "route": "/reports",
+      "type": "reports",
+      "title": "Reports",
+      "config": {
+        "description": "Pick a report to open it.",
+        "categories": {
+          "traffic": "What moved",
+          "components": "Per component"
+        },
+        "cards": [
+          {
+            "id": "Traces",
+            "label": "Traces",
+            "description": "One request end to end, across every hop it took.",
+            "icon": "Timeline",
+            "category": "traffic",
+            "route": "Traces"
+          },
+          {
+            "id": "SourceLogs",
+            "label": "Source logs",
+            "description": "What each source returned, and when it did not.",
+            "icon": "SourceBranch",
+            "category": "components",
+            "route": "SourceLogs"
+          },
+          {
+            "id": "EndpointLogs",
+            "label": "Endpoint logs",
+            "description": "Who called your endpoints, and what they got back.",
+            "icon": "Api",
+            "category": "components",
+            "route": "EndpointLogs"
+          },
+          {
+            "id": "JobLogs",
+            "label": "Job logs",
+            "description": "Every scheduled run, and how it ended.",
+            "icon": "ClockOutline",
+            "category": "components",
+            "route": "JobLogs"
+          },
+          {
+            "id": "SynchronizationLogs",
+            "label": "Synchronization logs",
+            "description": "What each synchronisation moved, skipped or refused.",
+            "icon": "CloudSyncOutline",
+            "category": "components",
+            "route": "SynchronizationLogs"
+          },
+          {
+            "id": "CloudEventLogs",
+            "label": "Cloud event logs",
+            "description": "Events published and delivered, with their outcome.",
+            "icon": "CloudUploadOutline",
+            "category": "components",
+            "route": "CloudEventLogs"
+          }
+        ]
+      },
+      "_note": "ADR-112 / ADR-114 Decision 3. Nothing is invented: all six pages already existed. FIVE of them had no menu entry at all — SourceLogs, EndpointLogs, JobLogs, SynchronizationLogs and CloudEventLogs are standalone routes reachable only if you already knew the URL — so carding them GIVES an entry point rather than moving one. Only Traces had an entry, in the Operations group, and it moves. Dead letters deliberately stays in Operations: it is a work queue you act on, not a reading of what happened, and ADR-097 keeps a domain of the work in the main nav."
     },
     {
       "id": "Traces",

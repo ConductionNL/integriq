@@ -30,7 +30,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -88,7 +88,6 @@ function loadSfcOptions(relPath) {
 		.join('\n')
 	const body = `${stubs}\n${script.replace('export default', 'return')}`
 
-	// eslint-disable-next-line no-new-func
 	return new Function(body)()
 }
 

@@ -49,7 +49,7 @@
             "type": "string",
             "enum": ["before"],
             "default": "before",
-            "description": "Always 'before' for v1 (design.md Decision 1) — approval only gates pre-write.",
+            "description": "Always 'before' for v1 (design.md Decision 1): approval only gates pre-write.",
             "title": "Timing"
           },
           "resumeOrder": {
@@ -131,7 +131,7 @@
           "consumedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Set when an approved Synchronization batch-gate request's write phase has completed (synchronization-engine REQ-015) — prevents an already-used approval from re-authorizing a later run.",
+            "description": "Set when an approved Synchronization batch-gate request's write phase has completed (synchronization-engine REQ-015): prevents an already-used approval from re-authorizing a later run.",
             "title": "Consumed At"
           },
           "createdAt": {

@@ -237,6 +237,87 @@ class ApprovalServiceTest extends TestCase {
 	}//end testSuspendForFlowPersistsFlowRunIdAndResumeStepOrder()
 
 	/**
+	 * suspendForEngineRun(): persists a `pending` request addressed at an
+	 * OpenRegister ENGINE run — `engineRunUuid`/`signalNodeId` instead of
+	 * `flowRunId`/`resumeStepOrder`, an empty snapshot (the engine holds the
+	 * run's state), the node's failOnReject mapped into the legacy onReject
+	 * vocabulary, and onTimeout pinned to `error` because the node fails
+	 * closed on expiry — retire-integriq-flow-schema Task 1.
+	 *
+	 * @return void
+	 */
+	public function testSuspendForEngineRunPersistsEngineAddressing(): void {
+		$this->stubNotificationChain();
+		$group = $this->createMock(\OCP\IGroup::class);
+		$group->method('getUsers')->willReturn([]);
+		$this->groupManager->method('get')->willReturn($group);
+
+		$captured = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return $this->entity($object, 'approval-created');
+			}
+		);
+
+		$result = $this->service->suspendForEngineRun(
+			engineRunUuid: 'run-uuid-1',
+			signalNodeId: 'approve-1',
+			config: [
+				'question' => 'Publish this dataset?',
+				'approverGroup' => 'ops-approvers',
+				'ttlSeconds' => 3600,
+				'failOnReject' => true,
+			],
+			requesterUid: 'alice'
+		);
+
+		$this->assertSame('approval-created', $result->getUuid());
+		$this->assertSame('pending', $captured['status']);
+		$this->assertSame('run-uuid-1', $captured['engineRunUuid']);
+		$this->assertSame('approve-1', $captured['signalNodeId']);
+		$this->assertSame('Publish this dataset?', $captured['question']);
+		$this->assertSame('alice', $captured['requesterUserId']);
+		$this->assertSame('ops-approvers', $captured['approverGroup']);
+		$this->assertSame('error', $captured['onReject'], 'failOnReject true maps to the legacy error outcome');
+		$this->assertSame('error', $captured['onTimeout'], 'Expiry always fails closed for engine runs');
+		$this->assertSame([], $captured['snapshot'], 'The engine holds the run state; no FlowToken snapshot');
+		$this->assertArrayNotHasKey('flowRunId', $captured);
+		$this->assertArrayNotHasKey('resumeStepOrder', $captured);
+
+	}//end testSuspendForEngineRunPersistsEngineAddressing()
+
+	/**
+	 * suspendForEngineRun(): without failOnReject the record's onReject is
+	 * `skip` — a rejection routes onward instead of ending the run.
+	 *
+	 * @return void
+	 */
+	public function testSuspendForEngineRunMapsRoutedRejectionToSkip(): void {
+		$this->stubNotificationChain();
+		$group = $this->createMock(\OCP\IGroup::class);
+		$group->method('getUsers')->willReturn([]);
+		$this->groupManager->method('get')->willReturn($group);
+
+		$captured = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return $this->entity($object, 'approval-created');
+			}
+		);
+
+		$this->service->suspendForEngineRun(
+			engineRunUuid: 'run-uuid-1',
+			signalNodeId: 'approve-1',
+			config: ['question' => 'Ship it?', 'approverGroup' => 'ops-approvers']
+		);
+
+		$this->assertSame('skip', $captured['onReject']);
+
+	}//end testSuspendForEngineRunMapsRoutedRejectionToSkip()
+
+	/**
 	 * notifyApprovers(): every member of the configured approver group
 	 * receives an actionable notification carrying approve/reject deep
 	 * links into the Pending Approvals UI — REQ-002 / TC-4. Unlike

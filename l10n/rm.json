@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Dovrar ina memoria externa (p.ex. MongoDB) empè da la memoria interna da Nextcloud.",
         "View Details": "Mussar ils detagls",
         "View Logs": "Mussar ils protocols",
-        "Warning Logs": "Protocols d'avis"
+        "Warning Logs": "Protocols d'avis",
+        "One request end to end, across every hop it took.": "Ina dumonda da l'entschatta a la fin, tras mintga pass.",
+        "What each source returned, and when it did not.": "Tge che mintga funtauna ha dà enavos, e cura na.",
+        "Who called your endpoints, and what they got back.": "Tgi che ha clamà voss puncts finals, e tge els han retschavì.",
+        "Every scheduled run, and how it ended.": "Mintga execuziun planisada, e co ella è finida.",
+        "What each synchronisation moved, skipped or refused.": "Tge che mintga sincronisaziun ha spustà, sursiglì u refusà.",
+        "Events published and delivered, with their outcome.": "Eveniments publitgads e furnids, cun lur resultat.",
+        "Reports": "Rapports",
+        "Pick a report to open it.": "Tscherni in rapport per l'avrir."
     },
     "plurals": {}
 }

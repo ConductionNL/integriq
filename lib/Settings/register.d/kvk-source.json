@@ -9,7 +9,7 @@
           "slug": "kvk"
         },
         "name": "KvK Handelsregister",
-        "description": "Dutch Chamber of Commerce (KvK) Handelsregister Zoeken API. Consumed by the OpenRegister KvK integration leaf (company lookup by KvK number + free-text/SBI search). Dormant placeholder — the base URL is the production KvK v2 endpoint; set your KvK API key on `configuration.headers.apikey` (the KvK API authenticates via an `apikey` request header) and enable.",
+        "description": "Dutch Chamber of Commerce (KvK) Handelsregister Zoeken API. Consumed by the OpenRegister KvK integration leaf (company lookup by KvK number + free-text/SBI search). Dormant placeholder: the base URL is the production KvK v2 endpoint; set your KvK API key on `configuration.headers.apikey` (the KvK API authenticates via an `apikey` request header) and enable.",
         "type": "api",
         "location": "https://api.kvk.nl/api/v2",
         "auth": "apikey",

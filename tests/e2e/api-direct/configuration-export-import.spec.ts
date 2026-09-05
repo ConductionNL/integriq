@@ -19,7 +19,9 @@
  *   - The /import page contains a meaningful form
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api'
 

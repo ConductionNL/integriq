@@ -313,6 +313,9 @@ function findKeyReferences(srcDir, app, key) {
 	return hits
 }
 
+/**
+ *
+ */
 function escapeRegex(s) {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

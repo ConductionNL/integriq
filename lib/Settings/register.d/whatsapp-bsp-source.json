@@ -9,7 +9,7 @@
           "slug": "whatsapp-bsp"
         },
         "name": "WhatsApp BSP relay",
-        "description": "Generic WhatsApp Business Solution Provider relay (default base: CM.com WhatsApp Business API). Consumed by the OpenRegister outbound-messaging dispatch leaf as the BSP-fallback WhatsApp leg. Dormant placeholder — repoint `location` at your BSP and set its credential header (default models CM.com `X-CM-PRODUCTTOKEN`), then enable. Send path follows the BSP's messages endpoint (Meta-shaped JSON body).",
+        "description": "Generic WhatsApp Business Solution Provider relay (default base: CM.com WhatsApp Business API). Consumed by the OpenRegister outbound-messaging dispatch leaf as the BSP-fallback WhatsApp leg. Dormant placeholder: repoint `location` at your BSP and set its credential header (default models CM.com `X-CM-PRODUCTTOKEN`), then enable. Send path follows the BSP's messages endpoint (Meta-shaped JSON body).",
         "type": "api",
         "location": "https://api.whatsapp.cm.com",
         "auth": "apikey",

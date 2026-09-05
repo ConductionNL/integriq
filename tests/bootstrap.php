@@ -122,6 +122,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// The shared task entity + service the HITL mirror writes through
+		// (hitl-on-shared-tasks). The entity must load before the service:
+		// the service's signatures reference it.
+		if (class_exists('OCA\\OpenRegister\\Db\\Task') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Db/Task.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}
@@ -390,6 +401,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowSuspension') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowSuspension.php';
+		}
+
+		// retire-integriq-flow-schema: ApprovalRequestNode rides on the
+		// engine's await-signal semantics — it throws FlowStop on a rejected
+		// or expired approval and reads/writes its FlowNodeResumeState slot
+		// (whose parent FlowResumeState must parse first). All three are
+		// verbatim copies of the real OpenRegister files.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowStop') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowStop.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowResumeState') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowResumeState.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeResumeState') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeResumeState.php';
 		}
 	}
 }

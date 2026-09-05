@@ -41,7 +41,9 @@
  * left to get in the wrong order.
  */
 
-import { expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect } from '@playwright/test'
 
 /**
  * The app id, and therefore the path `generateUrl` is asked to resolve.

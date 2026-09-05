@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Usar almacenamiento externo (p. ej. MongoDB) en lugar del almacenamiento interno de Nextcloud.",
         "View Details": "Ver detalles",
         "View Logs": "Ver registros",
-        "Warning Logs": "Registros de advertencias"
+        "Warning Logs": "Registros de advertencias",
+        "One request end to end, across every hop it took.": "Una solicitud de principio a fin, por cada salto.",
+        "What each source returned, and when it did not.": "Qué devolvió cada fuente, y cuándo no.",
+        "Who called your endpoints, and what they got back.": "Quién llamó a sus endpoints, y qué recibieron.",
+        "Every scheduled run, and how it ended.": "Cada ejecución programada, y cómo terminó.",
+        "What each synchronisation moved, skipped or refused.": "Qué movió, omitió o rechazó cada sincronización.",
+        "Events published and delivered, with their outcome.": "Eventos publicados y entregados, con su resultado.",
+        "Reports": "Informes",
+        "Pick a report to open it.": "Elija un informe para abrirlo."
     },
     "nplurals=2; plural=(n != 1);"
 )

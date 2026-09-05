@@ -30,6 +30,7 @@ import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOut
 import Broadcast from 'vue-material-design-icons/Broadcast.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
+import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
 import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
 import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline.vue'
@@ -116,6 +117,7 @@ export default {
 	Broadcast,
 	CalendarClock,
 	CardAccountDetailsOutline,
+	ChartBoxOutline,
 	CheckCircleOutline,
 	CheckDecagramOutline,
 	CheckboxMarkedCircleOutline,

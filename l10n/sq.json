@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Përdor ruajtje të jashtme (p.sh. MongoDB) në vend të ruajtjes së brendshme të Nextcloud.",
         "View Details": "Shiko detajet",
         "View Logs": "Shiko regjistrat",
-        "Warning Logs": "Regjistrat e paralajmërimeve"
+        "Warning Logs": "Regjistrat e paralajmërimeve",
+        "One request end to end, across every hop it took.": "Një kërkesë nga fillimi në fund, në çdo hap.",
+        "What each source returned, and when it did not.": "Çfarë ktheu çdo burim, dhe kur jo.",
+        "Who called your endpoints, and what they got back.": "Kush thirri pikat tuaja fundore, dhe çfarë morën.",
+        "Every scheduled run, and how it ended.": "Çdo ekzekutim i planifikuar, dhe si përfundoi.",
+        "What each synchronisation moved, skipped or refused.": "Çfarë lëvizi, anashkaloi ose refuzoi çdo sinkronizim.",
+        "Events published and delivered, with their outcome.": "Ngjarje të publikuara dhe të dorëzuara, me rezultatin.",
+        "Reports": "Raportet",
+        "Pick a report to open it.": "Zgjidhni një raport për ta hapur."
     },
     "plurals": {}
 }

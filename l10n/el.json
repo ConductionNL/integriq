@@ -1010,7 +1010,15 @@
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Χρήση εξωτερικού αποθηκευτικού χώρου (π.χ. MongoDB) αντί του εσωτερικού αποθηκευτικού χώρου του Nextcloud.",
         "View Details": "Προβολή λεπτομερειών",
         "View Logs": "Προβολή αρχείων καταγραφής",
-        "Warning Logs": "Αρχεία καταγραφής προειδοποιήσεων"
+        "Warning Logs": "Αρχεία καταγραφής προειδοποιήσεων",
+        "One request end to end, across every hop it took.": "Ένα αίτημα από άκρη σε άκρη, σε κάθε βήμα.",
+        "What each source returned, and when it did not.": "Τι επέστρεψε κάθε πηγή, και πότε όχι.",
+        "Who called your endpoints, and what they got back.": "Ποιος κάλεσε τα τελικά σας σημεία και τι έλαβε.",
+        "Every scheduled run, and how it ended.": "Κάθε προγραμματισμένη εκτέλεση και πώς τελείωσε.",
+        "What each synchronisation moved, skipped or refused.": "Τι μετακίνησε, παρέλειψε ή αρνήθηκε κάθε συγχρονισμός.",
+        "Events published and delivered, with their outcome.": "Δημοσιευμένα και παραδοθέντα συμβάντα με το αποτέλεσμά τους.",
+        "Reports": "Αναφορές",
+        "Pick a report to open it.": "Επιλέξτε μια αναφορά για να την ανοίξετε."
     },
     "plurals": {}
 }

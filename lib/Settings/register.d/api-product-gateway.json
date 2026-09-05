@@ -13,7 +13,7 @@
         "icon": "PackageVariantClosed",
         "version": "1.0.0",
         "summary": "A named, versioned bundle of existing Endpoints a Consumer can discover and subscribe to at a rate-limit tier",
-        "description": "Groups existing Endpoint uuids into a discoverable, subscribable unit with named tiers, an optional approval gate per tier, and version-deprecation signalling (RFC 8594 Sunset/Deprecation headers). One row per (productSlug, version) pair — see design.md Decision 1. See openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001.",
+        "description": "Groups existing Endpoint uuids into a discoverable, subscribable unit with named tiers, an optional approval gate per tier, and version-deprecation signalling (RFC 8594 Sunset/Deprecation headers). One row per (productSlug, version) pair: see design.md Decision 1. See openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001.",
         "required": ["name", "productSlug"],
         "type": "object",
         "properties": {
@@ -34,7 +34,7 @@
           },
           "productSlug": {
             "type": "string",
-            "description": "Stable slug grouping every version-row of the same logical product (design.md Decision 1) — e.g. 'woo-publications'",
+            "description": "Stable slug grouping every version-row of the same logical product (design.md Decision 1): e.g. 'woo-publications'",
             "title": "Product Slug"
           },
           "version": {
@@ -54,13 +54,13 @@
             "type": "string",
             "enum": ["active", "deprecated"],
             "default": "active",
-            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594, REQ-APG-006)",
+            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594)",
             "title": "Status"
           },
           "sunsetDate": {
             "type": "string",
             "format": "date-time",
-            "description": "Required when status is 'deprecated' — rendered as the RFC 8594 Sunset header (HTTP-date format) on every response served through this product's endpoints",
+            "description": "Required when status is 'deprecated': rendered as the RFC 8594 Sunset header (HTTP-date format) on every response served through this product's endpoints",
             "title": "Sunset Date"
           },
           "endpoints": {
@@ -69,12 +69,12 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Uuids of existing Endpoints grouped by this product version. Creating/updating an api_product MUST NOT create, modify, or delete the Endpoints it references (REQ-APG-001).",
+            "description": "Uuids of existing Endpoints grouped by this product version. Creating/updating an api_product MUST NOT create, modify, or delete the Endpoints it references.",
             "title": "Endpoints"
           },
           "tiers": {
             "type": "object",
-            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean} — same rateLimit/quota shape as the consumer schema (REQ-APG-005). A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription() (REQ-APG-004).",
+            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean}. Same rateLimit/quota shape as the consumer schema. A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription().",
             "title": "Tiers",
             "additionalProperties": {
               "type": "object",
@@ -157,7 +157,7 @@
               "slug": "api-product-woo-publications-v1"
             },
             "name": "WOO Publications API",
-            "description": "Publish and query WOO publication records — deprecated version, migrate to v2.0.0",
+            "description": "Publish and query WOO publication records: deprecated version, migrate to v2.0.0",
             "productSlug": "woo-publications",
             "version": "1.0.0",
             "visibility": "public",
@@ -231,7 +231,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the subscribed api_product (UUID; many-to-one; onDelete=CASCADE — when the product is destroyed, its subscriptions cascade-delete with it)",
+            "description": "FK to the subscribed api_product (UUID; many-to-one; onDelete=CASCADE: when the product is destroyed, its subscriptions cascade-delete with it)",
             "title": "Product"
           },
           "consumer": {
@@ -239,7 +239,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/consumer",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to the subscribing Consumer (UUID; many-to-one; onDelete=CASCADE — when the Consumer is destroyed, its subscriptions cascade-delete with it)",
+            "description": "FK to the subscribing Consumer (UUID; many-to-one; onDelete=CASCADE: when the Consumer is destroyed, its subscriptions cascade-delete with it)",
             "title": "Consumer"
           },
           "tier": {
@@ -251,7 +251,7 @@
             "type": "string",
             "enum": ["pending_approval", "active", "rejected", "revoked"],
             "default": "pending_approval",
-            "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy (REQ-APG-005).",
+            "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy.",
             "title": "Status"
           },
           "approvalRequestId": {
@@ -337,7 +337,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the api_product an inbound request was dispatched through (UUID; many-to-one; onDelete=SET_NULL — when the product is destroyed, its call_log rows remain for audit but lose their product pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "description": "FK to the api_product an inbound request was dispatched through (UUID, many-to-one, onDelete=SET_NULL: when the product is destroyed its call_log rows remain for audit but lose their product pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime).",
             "title": "API Product"
           },
           "endpoint": {
@@ -345,12 +345,12 @@
             "format": "uuid",
             "$ref": "#/components/schemas/endpoint",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the dispatched Endpoint (UUID; many-to-one; onDelete=SET_NULL — when the endpoint is destroyed, its call_log rows remain for audit but lose their endpoint pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "description": "FK to the dispatched Endpoint (UUID, many-to-one, onDelete=SET_NULL: when the endpoint is destroyed its call_log rows remain for audit but lose their endpoint pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime).",
             "title": "Endpoint"
           },
           "responseTime": {
             "type": "integer",
-            "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway REQ-APG-007, prometheus-metrics REQ-PROM-013).",
+            "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway, prometheus-metrics).",
             "title": "Response Time (ms)"
           }
         }
@@ -362,7 +362,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/api_product_subscription",
             "x-openregister-onDelete": "SET_NULL",
-            "description": "FK to the gated api_product_subscription (subscription-approval case; set instead of endpointId/ruleId/synchronizationId). See api-product-gateway REQ-APG-004, ApprovalService::suspendForSubscription().",
+            "description": "FK to the gated api_product_subscription (subscription-approval case; set instead of endpointId/ruleId/synchronizationId). See api-product-gateway and ApprovalService::suspendForSubscription().",
             "title": "Subscription"
           }
         }

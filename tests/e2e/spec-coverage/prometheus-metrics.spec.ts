@@ -13,9 +13,9 @@
  * numeric values (those change with data in the DB).
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as http from 'http'
-import { absoluteUrl } from '../support/baseUrl'
+import { absoluteUrl } from '../support/baseUrl.ts'
 
 const METRICS_URL = '/index.php/apps/integriq/api/metrics'
 

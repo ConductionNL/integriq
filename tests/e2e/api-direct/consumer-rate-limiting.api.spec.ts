@@ -23,7 +23,7 @@
  * prerequisite is why the live assertion is deferred rather than run here.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const API_BASE = '/index.php/apps/integriq/api'
 

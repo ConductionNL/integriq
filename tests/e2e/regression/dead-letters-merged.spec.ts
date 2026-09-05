@@ -30,8 +30,8 @@
  * - src/views/Synchronization/SyncDeadLetterPage.vue
  */
 
-import { test, expect } from '@playwright/test'
-import { gotoAppRoute, expectRouteMatched } from '../support/appRoot'
+import { expect, test } from '@playwright/test'
+import { expectRouteMatched, gotoAppRoute } from '../support/appRoot.ts'
 
 /**
  * The merged operations surface.

@@ -9,7 +9,7 @@
           "slug": "xwiki"
         },
         "name": "xWiki",
-        "description": "xWiki knowledge-base REST API. Consumed by the OpenRegister xWiki integration leaf (article links + free-text page search). Dormant placeholder — set `location` to your xWiki REST base URL (e.g. https://wiki.example.org/xwiki), configure auth if required, and enable.",
+        "description": "xWiki knowledge-base REST API. Consumed by the OpenRegister xWiki integration leaf (article links + free-text page search). Dormant placeholder: set `location` to your xWiki REST base URL (e.g. Https://wiki.example.org/xwiki), configure auth if required, and enable.",
         "type": "api",
         "location": "http://xwiki:8080/xwiki",
         "auth": "none",

@@ -1,3 +1,5 @@
+import type { APIRequestContext, Browser } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -40,11 +42,7 @@
  * `e2e-<runId>` prefix in its name/title so afterAll cleanup can find and
  * delete exactly the rows this run created and nothing else.
  */
-import {
-	type APIRequestContext,
-	type Browser,
-	request as pwRequest,
-} from '@playwright/test'
+import { request as pwRequest } from '@playwright/test'
 import * as path from 'path'
 
 export const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
@@ -72,7 +70,6 @@ async function fetchRequestToken(browser: Browser): Promise<string> {
 		})
 		// OC.requestToken is the canonical source; fall back to the <head> meta.
 		const token = await page.evaluate(() => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const oc = (window as any).OC
 			if (
 				oc
@@ -131,9 +128,9 @@ export async function makeApiClient(
 }
 
 /** Unwrap an OR object-create/get response into the bare object record. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function unwrap(body: any): any {
-	if (body == null) return body
+	if (body === null || body === undefined) return body
 	// create/update return the object directly or under a key; get returns the object.
 	if (body['@self'] && body.id) return body
 	if (body.object) return body.object
@@ -148,9 +145,8 @@ function unwrap(body: any): any {
 export async function createObject(
 	api: ApiClient,
 	schema: string,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	data: Record<string, any>,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
 	const resp = await api.request.post(`${OR_BASE}/${schema}`, {
 		data,
@@ -165,7 +161,7 @@ export async function createObject(
 }
 
 /** find — GET a single object by id/uuid. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export async function find(
 	api: ApiClient,
 	schema: string,
@@ -187,7 +183,6 @@ export async function findAll(
 	api: ApiClient,
 	schema: string,
 	query: Record<string, string | number> = {},
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any[]> {
 	const qs = new URLSearchParams({
 		_limit: '200',
@@ -214,9 +209,8 @@ export async function updateObject(
 	api: ApiClient,
 	schema: string,
 	id: string,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	data: Record<string, any>,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
 	const resp = await api.request.put(`${OR_BASE}/${schema}/${id}`, {
 		data,
@@ -241,7 +235,7 @@ export async function deleteObject(
 	})
 	if (!resp.ok() && resp.status() !== 404) {
 		// Cleanup must be best-effort; log but don't throw so afterAll keeps going.
-		// eslint-disable-next-line no-console
+
 		console.warn(
 			`deleteObject(${schema}/${id}) returned ${resp.status()}: ${await resp.text()}`,
 		)
@@ -257,7 +251,7 @@ export async function cleanupByPrefix(
 	schema: string,
 	prefix: string,
 ): Promise<void> {
-	let rows: unknown[] = []
+	let rows: unknown[]
 	try {
 		rows = await findAll(api, schema, { _search: prefix })
 	} catch {
@@ -276,7 +270,7 @@ export async function cleanupByPrefix(
 }
 
 /** Extract the stable id (uuid or id) from a persisted OR record. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export function idOf(obj: any): string {
 	return String(obj?.id ?? obj?.uuid ?? obj?.['@self']?.id ?? '')
 }

@@ -1011,7 +1011,15 @@ OC.L10N.register(
         "Use external storage (e.g. MongoDB) instead of the internal Nextcloud storage.": "Koristite vanjsku pohranu (npr. MongoDB) umjesto interne Nextcloud pohrane.",
         "View Details": "Pregledaj detalje",
         "View Logs": "Pregledaj zapise",
-        "Warning Logs": "Zapisi upozorenja"
+        "Warning Logs": "Zapisi upozorenja",
+        "One request end to end, across every hop it took.": "Jedan zahtjev od početka do kraja, kroz svaki korak.",
+        "What each source returned, and when it did not.": "Šta je svaki izvor vratio i kada nije.",
+        "Who called your endpoints, and what they got back.": "Ko je pozvao vaše krajnje tačke i šta je dobio.",
+        "Every scheduled run, and how it ended.": "Svako zakazano izvršavanje i kako se završilo.",
+        "What each synchronisation moved, skipped or refused.": "Šta je svaka sinhronizacija premjestila, preskočila ili odbila.",
+        "Events published and delivered, with their outcome.": "Objavljeni i isporučeni događaji sa ishodom.",
+        "Reports": "Izvještaji",
+        "Pick a report to open it.": "Odaberite izvještaj da biste ga otvorili."
     },
     "nplurals=2; plural=(n != 1);"
 )

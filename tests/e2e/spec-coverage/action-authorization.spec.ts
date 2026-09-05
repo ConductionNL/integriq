@@ -12,7 +12,7 @@
  * with their groups, and is served by the routes it claims.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const MATRIX_URL = '/index.php/apps/integriq/api/admin/action-matrix'
 const ADMIN_SETTINGS_URL = '/index.php/settings/admin/integriq'

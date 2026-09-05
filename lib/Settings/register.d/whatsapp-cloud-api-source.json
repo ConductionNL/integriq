@@ -9,7 +9,7 @@
           "slug": "whatsapp-cloud-api"
         },
         "name": "WhatsApp Cloud API (Meta)",
-        "description": "Meta WhatsApp Cloud API (Graph v19.0). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a template or free-form WhatsApp message). Dormant placeholder — the base URL is the production Meta Graph endpoint; set `configuration.headers.Authorization` to `Bearer {system-user-token}` and enable. Send path is `{PhoneNumberID}/messages` (JSON body `messaging_product:whatsapp`). Template approval state is read via `{WABA-ID}/message_templates`.",
+        "description": "Meta WhatsApp Cloud API (Graph v19.0). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a template or free-form WhatsApp message). Dormant placeholder: the base URL is the production Meta Graph endpoint; set `configuration.headers.Authorization` to `Bearer {system-user-token}` and enable. Send path is `{PhoneNumberID}/messages` (JSON body `messaging_product:whatsapp`). Template approval state is read via `{WABA-ID}/message_templates`.",
         "type": "api",
         "location": "https://graph.facebook.com/v19.0",
         "auth": "apikey",

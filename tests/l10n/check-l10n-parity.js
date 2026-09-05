@@ -89,7 +89,7 @@ function loadJsonSet (file) {
 
 /** True when a translation value is empty (string) or has an empty plural. */
 function isEmpty (v) {
-	if (v == null) {
+	if ((v === null || v === undefined)) {
 		return true
 	}
 	if (Array.isArray(v)) {
@@ -135,8 +135,8 @@ for (const set of sets) {
 			failures.push({ set: set.kind, loc, kind: 'UNPARSEABLE', detail: e.message })
 			continue
 		}
-		const missing = enKeys.filter((k) => !Object.prototype.hasOwnProperty.call(locObj, k))
-		const empty = enKeys.filter((k) => Object.prototype.hasOwnProperty.call(locObj, k) && isEmpty(locObj[k]))
+		const missing = enKeys.filter((k) => !Object.hasOwn(locObj, k))
+		const empty = enKeys.filter((k) => Object.hasOwn(locObj, k) && isEmpty(locObj[k]))
 		if (missing.length || empty.length) {
 			failures.push({ set: set.kind, loc, kind: 'INCOMPLETE', missing, empty, total: enKeys.length })
 		}

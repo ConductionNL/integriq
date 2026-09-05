@@ -13,7 +13,7 @@
  * harness is node-env and mounts no .vue, so the logic lives in this pure helper by design).
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { buildAuthenticationConfiguration } from '../../src/modals/Rule/buildAuthenticationConfiguration.js'
 
 describe('buildAuthenticationConfiguration', () => {
@@ -26,7 +26,7 @@ describe('buildAuthenticationConfiguration', () => {
 			apiKeys: [{ apiKey: '', user: [] }],
 		})
 
-		expect(Object.prototype.hasOwnProperty.call(auth, 'keys')).toBe(false)
+		expect(Object.hasOwn(auth, 'keys')).toBe(false)
 		expect(auth).toEqual({ type: 'api-key', users: [], groups: [] })
 	})
 
@@ -36,7 +36,7 @@ describe('buildAuthenticationConfiguration', () => {
 			users: [],
 			groups: [],
 		})
-		expect(Object.prototype.hasOwnProperty.call(auth, 'keys')).toBe(false)
+		expect(Object.hasOwn(auth, 'keys')).toBe(false)
 	})
 
 	it('OMITS keys when rows are incomplete (apiKey without a selected user, or user without a key)', () => {
@@ -49,7 +49,7 @@ describe('buildAuthenticationConfiguration', () => {
 				{ apiKey: '', user: { id: 'alice' } },
 			],
 		})
-		expect(Object.prototype.hasOwnProperty.call(auth, 'keys')).toBe(false)
+		expect(Object.hasOwn(auth, 'keys')).toBe(false)
 	})
 
 	it('EMITS keys (as apiKey => userId maps) only for complete new rows', () => {

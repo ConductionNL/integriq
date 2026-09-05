@@ -32,14 +32,12 @@
  *      OR backend, so the suite is end-to-end UI-driven.
  */
 
-import { test, expect, Page } from '@playwright/test'
-import { BASE_URL } from '../support/baseUrl'
-import { appDialog } from '../support/dialogs'
-import { resolveAppRoot, expectRouteMatched } from '../support/appRoot'
+import type { Locator } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
-const NEXTCLOUD = BASE_URL
-const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
+import { expect, test } from '@playwright/test'
+import { expectRouteMatched, resolveAppRoot } from '../support/appRoot.ts'
+import { appDialog } from '../support/dialogs.ts'
 
 const OR = '/index.php/apps/openregister/api/objects/integriq'
 
@@ -504,7 +502,7 @@ async function deleteViaUi(
 	// still uses checkboxes.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
 	const rowVisible = await row.isVisible().catch(() => false)
-	let rowCheckbox: import('@playwright/test').Locator
+	let rowCheckbox: Locator
 	if (rowVisible) {
 		rowCheckbox = row.getByRole('checkbox').first()
 	} else {
@@ -617,7 +615,7 @@ async function editViaUi(
 	// CnRowActions/CnCardItem renders an overflow-actions NcActions button.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
 	const rowVisible = await row.isVisible().catch(() => false)
-	let actionsBtn: import('@playwright/test').Locator
+	let actionsBtn: Locator
 	if (rowVisible) {
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {
@@ -755,7 +753,7 @@ async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
 	// Find and click the Actions button near the item name.
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
 	const rowVisible = await row.isVisible().catch(() => false)
-	let actionsBtn: import('@playwright/test').Locator
+	let actionsBtn: Locator
 	if (rowVisible) {
 		actionsBtn = row.getByRole('button', { name: /Actions/i }).first()
 	} else {

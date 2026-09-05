@@ -32,13 +32,10 @@
  * synced-from-leaf.spec.ts) rather than producing a false failure.
  */
 
-import {
-	test,
-	expect,
-	request as pwRequest,
-	APIRequestContext,
-} from '@playwright/test'
-import { BASE_URL } from '../support/baseUrl'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect, request as pwRequest, test } from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl.ts'
 
 const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
@@ -110,7 +107,6 @@ async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
 		.catch(() => null)
 
 	if (res === null) {
-		// eslint-disable-next-line no-console
 		console.warn('[migration-round-trip] storage_migrated probe: request threw')
 		return false
 	}
@@ -119,7 +115,6 @@ async function readStorageMigrated(ctx: APIRequestContext): Promise<boolean> {
 	const ocsStatus = body?.ocs?.meta?.statuscode
 	const value = body?.ocs?.data?.data
 
-	// eslint-disable-next-line no-console
 	console.info(
 		`[migration-round-trip] storage_migrated probe: HTTP ${res.status()},`
 			+ ` ocs.meta.statuscode=${String(ocsStatus)}, value=${JSON.stringify(value)}`,
