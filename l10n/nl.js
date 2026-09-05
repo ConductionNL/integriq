@@ -1555,7 +1555,19 @@ OC.L10N.register(
         "What each synchronisation moved, skipped or refused.": "Wat elke synchronisatie verplaatste, oversloeg of weigerde.",
         "Events published and delivered, with their outcome.": "Gepubliceerde en afgeleverde events, met hun uitkomst.",
         "Reports": "Rapporten",
-        "Pick a report to open it.": "Kies een rapport om het te openen."
+        "Pick a report to open it.": "Kies een rapport om het te openen.",
+        "Failed sync runs": "Mislukte synchronisatieruns",
+        "Dead letters waiting": "Wachtende dead letters",
+        "Undelivered events": "Niet-afgeleverde events",
+        "Sources with the breaker open": "Bronnen met een open circuit breaker",
+        "Operational health": "Operationele gezondheid",
+        "Sync run outcomes": "Uitkomsten van synchronisatieruns",
+        "Trace outcomes": "Uitkomsten van traces",
+        "Event delivery outcomes": "Uitkomsten van eventaflevering",
+        "Failed sync runs per day": "Mislukte synchronisatieruns per dag",
+        "Dead letters by phase": "Dead letters per fase",
+        "Busiest entry points": "Drukste ingangen",
+        "Where runs, traces and deliveries end up, and what keeps failing.": "Waar runs, traces en afleveringen eindigen, en wat blijft mislukken."
     },
     "nplurals=2; plural=(n != 1);"
 )

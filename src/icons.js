@@ -58,6 +58,7 @@ import Filter from 'vue-material-design-icons/Filter.vue'
 import FormatListCheckbox from 'vue-material-design-icons/FormatListCheckbox.vue'
 import FormSelect from 'vue-material-design-icons/FormSelect.vue'
 import Gauge from 'vue-material-design-icons/Gauge.vue'
+import HeartPulse from 'vue-material-design-icons/HeartPulse.vue'
 import History from 'vue-material-design-icons/History.vue'
 import HomeCityOutline from 'vue-material-design-icons/HomeCityOutline.vue'
 import HospitalBoxOutline from 'vue-material-design-icons/HospitalBoxOutline.vue'
@@ -145,6 +146,7 @@ export default {
 	FormSelect,
 	FormatListCheckbox,
 	Gauge,
+	HeartPulse,
 	History,
 	HomeCityOutline,
 	HospitalBoxOutline,

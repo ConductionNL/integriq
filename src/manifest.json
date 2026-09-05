@@ -261,7 +261,7 @@
         },
         {
           "id": "NotificatiesAbonnementen",
-          "label": "Abonnementen",
+          "label": "Subscriptions",
           "icon": "BellRingOutline",
           "route": "NotificatiesAbonnementen",
           "order": 30
@@ -333,6 +333,13 @@
       "order": 60,
       "children": [
         {
+          "id": "SynchronizationRuns",
+          "label": "Sync runs",
+          "icon": "Sync",
+          "route": "SynchronizationRuns",
+          "order": 10
+        },
+        {
           "id": "DeadLetters",
           "label": "Dead letters",
           "icon": "EmailAlertOutline",
@@ -364,13 +371,6 @@
       "route": "FeaturesRoadmap",
       "section": "footer",
       "order": 100
-    },
-    {
-      "id": "SynchronizationRuns",
-      "label": "Sync runs",
-      "icon": "Sync",
-      "route": "SynchronizationRuns",
-      "order": 96
     }
   ],
   "pages": [
@@ -395,6 +395,79 @@
           "persistKey": "openconnector-dashboard"
         },
         "widgets": [
+          {
+            "id": "kpi-failed-runs",
+            "title": "Failed sync runs",
+            "type": "stats-block",
+            "_note": "The dashboard used to open with six counts and six volume charts and say nothing about anything being wrong. These four lead it instead. Every filter value is an enum member declared on the schema, not a guess: synchronization_run.status is running|success|failed, sync_item_dead_letter.status is failed|replayed|discarded, event_message.status is pending|delivered|failed|abandoned|discarded, source.circuitBreakerState is closed|open.",
+            "props": {
+              "route": {
+                "name": "SynchronizationRuns"
+              }
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "synchronization_run",
+              "filter": {
+                "status": "failed"
+              },
+              "aggregate": "count"
+            }
+          },
+          {
+            "id": "kpi-dead-letters",
+            "title": "Dead letters waiting",
+            "type": "stats-block",
+            "props": {
+              "route": {
+                "name": "DeadLetters"
+              }
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "sync_item_dead_letter",
+              "filter": {
+                "status": "failed"
+              },
+              "aggregate": "count"
+            }
+          },
+          {
+            "id": "kpi-undelivered-events",
+            "title": "Undelivered events",
+            "type": "stats-block",
+            "props": {
+              "route": {
+                "name": "DeadLetters"
+              }
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "event_message",
+              "filter": {
+                "status": "failed"
+              },
+              "aggregate": "count"
+            }
+          },
+          {
+            "id": "kpi-open-breakers",
+            "title": "Sources with the breaker open",
+            "type": "stats-block",
+            "props": {
+              "route": {
+                "name": "Sources"
+              }
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "source",
+              "filter": {
+                "circuitBreakerState": "open"
+              },
+              "aggregate": "count"
+            }
+          },
           {
             "id": "kpi-sources",
             "title": "Sources",
@@ -596,10 +669,42 @@
         ],
         "layout": [
           {
+            "id": "L0a",
+            "widgetId": "kpi-failed-runs",
+            "gridX": 0,
+            "gridY": 0,
+            "gridWidth": 3,
+            "gridHeight": 2
+          },
+          {
+            "id": "L0b",
+            "widgetId": "kpi-dead-letters",
+            "gridX": 3,
+            "gridY": 0,
+            "gridWidth": 3,
+            "gridHeight": 2
+          },
+          {
+            "id": "L0c",
+            "widgetId": "kpi-undelivered-events",
+            "gridX": 6,
+            "gridY": 0,
+            "gridWidth": 3,
+            "gridHeight": 2
+          },
+          {
+            "id": "L0d",
+            "widgetId": "kpi-open-breakers",
+            "gridX": 9,
+            "gridY": 0,
+            "gridWidth": 3,
+            "gridHeight": 2
+          },
+          {
             "id": "L1",
             "widgetId": "kpi-sources",
             "gridX": 0,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -607,7 +712,7 @@
             "id": "L2",
             "widgetId": "kpi-mappings",
             "gridX": 2,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -615,7 +720,7 @@
             "id": "L3",
             "widgetId": "kpi-synchronizations",
             "gridX": 4,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -623,7 +728,7 @@
             "id": "L4",
             "widgetId": "kpi-contracts",
             "gridX": 6,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -631,7 +736,7 @@
             "id": "L5",
             "widgetId": "kpi-jobs",
             "gridX": 8,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -639,7 +744,7 @@
             "id": "L6",
             "widgetId": "kpi-endpoints",
             "gridX": 10,
-            "gridY": 0,
+            "gridY": 2,
             "gridWidth": 2,
             "gridHeight": 2
           },
@@ -647,7 +752,7 @@
             "id": "L7",
             "widgetId": "calls-daily",
             "gridX": 0,
-            "gridY": 2,
+            "gridY": 4,
             "gridWidth": 6,
             "gridHeight": 4
           },
@@ -655,7 +760,7 @@
             "id": "L8",
             "widgetId": "calls-hourly",
             "gridX": 6,
-            "gridY": 2,
+            "gridY": 4,
             "gridWidth": 6,
             "gridHeight": 4
           },
@@ -663,7 +768,7 @@
             "id": "L9",
             "widgetId": "jobs-daily",
             "gridX": 0,
-            "gridY": 6,
+            "gridY": 8,
             "gridWidth": 6,
             "gridHeight": 4
           },
@@ -671,7 +776,7 @@
             "id": "L10",
             "widgetId": "jobs-hourly",
             "gridX": 6,
-            "gridY": 6,
+            "gridY": 8,
             "gridWidth": 6,
             "gridHeight": 4
           },
@@ -679,7 +784,7 @@
             "id": "L11",
             "widgetId": "sync-daily",
             "gridX": 0,
-            "gridY": 10,
+            "gridY": 12,
             "gridWidth": 6,
             "gridHeight": 4
           },
@@ -687,7 +792,7 @@
             "id": "L12",
             "widgetId": "sync-hourly",
             "gridX": 6,
-            "gridY": 10,
+            "gridY": 12,
             "gridWidth": 6,
             "gridHeight": 4
           }
@@ -1759,7 +1864,7 @@
       "route": "/notificaties/abonnementen",
       "type": "custom",
       "component": "NotificatiesAbonnementenPage",
-      "title": "Abonnementen",
+      "title": "Subscriptions",
       "_note": "Custom page: abonnement CRUD backed by the dedicated NotificatiesSubscriberController endpoints (create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer) — not the generic OR object CRUD a CnIndexPage drives. See notificaties-api-subscriber REQ-008.",
       "config": {
         "register": "integriq",
@@ -2575,10 +2680,19 @@
       "config": {
         "description": "Pick a report to open it.",
         "categories": {
+          "health": "How it went",
           "traffic": "What moved",
           "components": "Per component"
         },
         "cards": [
+          {
+            "id": "OperationalHealth",
+            "label": "Operational health",
+            "description": "Where runs, traces and deliveries end up, and what keeps failing.",
+            "icon": "HeartPulse",
+            "category": "health",
+            "route": "OperationalHealth"
+          },
           {
             "id": "Traces",
             "label": "Traces",
@@ -2630,6 +2744,189 @@
         ]
       },
       "_note": "ADR-112 / ADR-114 Decision 3. Nothing is invented: all six pages already existed. FIVE of them had no menu entry at all — SourceLogs, EndpointLogs, JobLogs, SynchronizationLogs and CloudEventLogs are standalone routes reachable only if you already knew the URL — so carding them GIVES an entry point rather than moving one. Only Traces had an entry, in the Operations group, and it moves. Dead letters deliberately stays in Operations: it is a work queue you act on, not a reading of what happened, and ADR-097 keeps a domain of the work in the main nav."
+    },
+    {
+      "id": "OperationalHealth",
+      "route": "/reports/operational-health",
+      "type": "dashboard",
+      "title": "Operational health",
+      "_note": "The Reports hub cards six log surfaces, which answer 'what happened to this one thing'. Nothing aggregated them, so 'how is it going' had no page at all. Every series here reads an enum already declared on the schema, so no widget invents a value: synchronization_run.status, execution_trace.status, event_message.status and sync_item_dead_letter.phase. Charts resolve through the same dateRange contract as the Dashboard, hence the matching dateRange block and the created/startedAt fromVar/toVar buckets.",
+      "config": {
+        "dateRange": {
+          "enabled": true,
+          "showHeaderPicker": true,
+          "persistKey": "integriq-operational-health"
+        },
+        "widgets": [
+          {
+            "id": "run-outcomes",
+            "title": "Sync run outcomes",
+            "type": "chart",
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "No synchronisation has run yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "synchronization_run",
+              "aggregate": {
+                "groupBy": "status",
+                "metric": "count"
+              }
+            }
+          },
+          {
+            "id": "trace-outcomes",
+            "title": "Trace outcomes",
+            "type": "chart",
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "Nothing has been traced yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "execution_trace",
+              "aggregate": {
+                "groupBy": "status",
+                "metric": "count"
+              }
+            }
+          },
+          {
+            "id": "delivery-outcomes",
+            "title": "Event delivery outcomes",
+            "type": "chart",
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "No event has been delivered yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "event_message",
+              "aggregate": {
+                "groupBy": "status",
+                "metric": "count"
+              }
+            }
+          },
+          {
+            "id": "failed-runs-daily",
+            "title": "Failed sync runs per day",
+            "type": "chart",
+            "props": {
+              "chartKind": "area",
+              "emptyLabel": "No run has failed in this period."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "synchronization_run",
+              "filter": {
+                "status": "failed"
+              },
+              "bucket": {
+                "field": "startedAt",
+                "interval": "day",
+                "fromVar": "from",
+                "toVar": "to"
+              }
+            }
+          },
+          {
+            "id": "dead-letters-by-phase",
+            "title": "Dead letters by phase",
+            "type": "chart",
+            "props": {
+              "chartKind": "bar",
+              "horizontal": true,
+              "emptyLabel": "No item has been dead-lettered."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "sync_item_dead_letter",
+              "filter": {
+                "status": "failed"
+              },
+              "aggregate": {
+                "groupBy": "phase",
+                "metric": "count"
+              }
+            }
+          },
+          {
+            "id": "busiest-entry-points",
+            "title": "Busiest entry points",
+            "type": "chart",
+            "props": {
+              "chartKind": "bar",
+              "horizontal": true,
+              "emptyLabel": "Nothing has been traced yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "execution_trace",
+              "aggregate": {
+                "groupBy": "entryPoint",
+                "metric": "count",
+                "topN": 8,
+                "otherBucket": true
+              }
+            }
+          }
+        ],
+        "layout": [
+          {
+            "id": "OH1",
+            "widgetId": "run-outcomes",
+            "gridX": 0,
+            "gridY": 0,
+            "gridWidth": 4,
+            "gridHeight": 4
+          },
+          {
+            "id": "OH2",
+            "widgetId": "trace-outcomes",
+            "gridX": 4,
+            "gridY": 0,
+            "gridWidth": 4,
+            "gridHeight": 4
+          },
+          {
+            "id": "OH3",
+            "widgetId": "delivery-outcomes",
+            "gridX": 8,
+            "gridY": 0,
+            "gridWidth": 4,
+            "gridHeight": 4
+          },
+          {
+            "id": "OH4",
+            "widgetId": "failed-runs-daily",
+            "gridX": 0,
+            "gridY": 4,
+            "gridWidth": 12,
+            "gridHeight": 4
+          },
+          {
+            "id": "OH5",
+            "widgetId": "dead-letters-by-phase",
+            "gridX": 0,
+            "gridY": 8,
+            "gridWidth": 6,
+            "gridHeight": 4
+          },
+          {
+            "id": "OH6",
+            "widgetId": "busiest-entry-points",
+            "gridX": 6,
+            "gridY": 8,
+            "gridWidth": 6,
+            "gridHeight": 4
+          }
+        ]
+      }
     },
     {
       "id": "Traces",
