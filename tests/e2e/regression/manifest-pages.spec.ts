@@ -228,6 +228,16 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'TraceDetailPage',
 	},
+	// The Reports hub and the one report that aggregates. `Reports` was absent
+	// from this table from the day it shipped, which made the coverage guard
+	// below red on development: a page in the manifest that no test in this
+	// file navigates to.
+	{ id: 'Reports', route: '/reports', type: 'reports' },
+	{
+		id: 'OperationalHealth',
+		route: '/reports/operational-health',
+		type: 'dashboard',
+	},
 	{ id: 'Store', route: '/store', type: 'index' },
 	{
 		id: 'DeadLetters',
@@ -280,6 +290,13 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	// because the object does not exist in OR — that is expected for the
 	// smoke route and must not fail the console-gate.
 	/Error fetching .+\/__nonexistent__/i,
+	// OpenRegister's AnalyticsLinksController answers 501 with
+	// `{code: 'APP_NOT_AVAILABLE'}` when the optional NC Analytics app is not
+	// installed, which it is not on a plain instance. MappingDetail asks for
+	// analytics links per rendered object, so a clean install logs one 501 per
+	// call. An optional integration being absent is a designed answer, not a
+	// page-mount regression, and the page renders correctly without it.
+	/the server responded with a status of 501/i,
 ]
 
 function attachConsoleSpy(page: Page): { errors: string[]; warnings: string[] } {
@@ -502,6 +519,10 @@ test.describe('manifest schema validation', () => {
 			'wiki',
 			'map',
 			'roadmap',
+			// The Reports hub (ADR-112 / ADR-114 Decision 3). It shipped without
+			// being added here, so this guard called the app's own Reports page
+			// an unknown type and went red on development.
+			'reports',
 			// The flow EDITOR. A flow lives in OpenRegister's native flow table
 			// rather than a register/schema pair, so one flow is not expressible
 			// as `detail` — but the LIST is an ordinary `index` over a named
