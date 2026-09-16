@@ -230,8 +230,11 @@ test.describe('REQ-DS-002: the mapping is declared, not coded', () => {
 		// membership is invented for a group the mapping does not name.
 		expect(record.managedGroups).toEqual([TARGET_GROUP])
 
+		// Same CSRF-protected controller as the run route: GET is checked too,
+		// and answered 412 without the header (CI run 35145556129).
 		const connections = await request.get(`${API_BASE}/directory/connections`, {
 			failOnStatusCode: false,
+			headers: { 'OCS-APIRequest': 'true' },
 		})
 		expect(connections.status()).toBe(200)
 		const body = await connections.json()
