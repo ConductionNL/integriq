@@ -19,7 +19,14 @@
 		data-testid="link-source-dialog"
 		@update:open="onOpenChanged">
 		<div class="link-source-dialog">
-			<p>{{ t('integriq', 'Link a source to a connection an app declared. The source is tested as soon as you save.') }}</p>
+			<p>
+				{{
+					t(
+						'integriq',
+						'Link a source to a connection an app declared. The source is tested as soon as you save.',
+					)
+				}}
+			</p>
 
 			<NcSelect
 				:modelValue="appFilter"
@@ -40,8 +47,12 @@
 				data-testid="link-source-connection"
 				@update:modelValue="onConnectionChanged" />
 
-			<NcNoteCard v-if="!loading && connectionOptions.length === 0" type="info">
-				{{ t('integriq', 'Every declared connection already has a source.') }}
+			<NcNoteCard
+				v-if="!loading && connectionOptions.length === 0"
+				type="info">
+				{{
+					t('integriq', 'Every declared connection already has a source.')
+				}}
 			</NcNoteCard>
 
 			<template v-if="selectedConnection && !linked">
@@ -53,7 +64,13 @@
 					type="radio"
 					data-testid="link-source-mode-template"
 					@update:modelValue="onModeChanged">
-					{{ t('integriq', 'Create a source from the template {template}', { template: selectedConnection.sourceTemplate }) }}
+					{{
+						t(
+							'integriq',
+							'Create a source from the template {template}',
+							{ template: selectedConnection.sourceTemplate },
+						)
+					}}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
 					v-if="selectedConnection.sourceTemplate"
@@ -82,7 +99,13 @@
 				v-if="probe"
 				:type="probe.status === 'ok' ? 'success' : 'error'"
 				data-testid="link-source-probe">
-				<p>{{ probe.status === 'ok' ? t('integriq', 'Linked. The test passed.') : t('integriq', 'Linked. The test failed.') }}</p>
+				<p>
+					{{
+						probe.status === 'ok'
+							? t('integriq', 'Linked. The test passed.')
+							: t('integriq', 'Linked. The test failed.')
+					}}
+				</p>
 				<p>{{ probe.message }}</p>
 			</NcNoteCard>
 
@@ -100,7 +123,11 @@
 					:disabled="!canSave || saving"
 					data-testid="link-source-save"
 					@click="save">
-					{{ saving ? t('integriq', 'Testing the source') : t('integriq', 'Save and test') }}
+					{{
+						saving
+							? t('integriq', 'Testing the source')
+							: t('integriq', 'Save and test')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -110,7 +137,13 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import { rowId } from '../handlers/rowId.js'
 
 export default {
@@ -156,7 +189,9 @@ export default {
 		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 		 */
 		appOptions() {
-			return [...new Set(this.connections.map((connection) => connection.app))].sort()
+			return [
+				...new Set(this.connections.map((connection) => connection.app)),
+			].sort()
 		},
 
 		/**
@@ -166,7 +201,9 @@ export default {
 		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
 		 */
 		connectionOptions() {
-			return this.connections.filter((connection) => !this.appFilter || connection.app === this.appFilter)
+			return this.connections.filter(
+				(connection) => !this.appFilter || connection.app === this.appFilter,
+			)
 		},
 
 		/**
@@ -220,8 +257,18 @@ export default {
 			this.loading = true
 			try {
 				const [connections, sources] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/objects/integriq/app_connection'), { params: { _limit: 500 } }),
-					axios.get(generateUrl('/apps/openregister/api/objects/integriq/source'), { params: { _limit: 500 } }),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/objects/integriq/app_connection',
+						),
+						{ params: { _limit: 500 } },
+					),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/objects/integriq/source',
+						),
+						{ params: { _limit: 500 } },
+					),
 				])
 				this.connections = (connections.data?.results || [])
 					.filter((row) => !row.source)
@@ -236,9 +283,13 @@ export default {
 					label: row.name || row.title || String(rowId(row)),
 				}))
 			} catch (err) {
-				this.errorMessage = t('integriq', 'Could not load connections and sources: {error}', {
-					error: err?.response?.data?.error || err?.message || '',
-				})
+				this.errorMessage = t(
+					'integriq',
+					'Could not load connections and sources: {error}',
+					{
+						error: err?.response?.data?.error || err?.message || '',
+					},
+				)
 			} finally {
 				this.loading = false
 			}
@@ -251,7 +302,11 @@ export default {
 		 */
 		onAppChanged(app) {
 			this.appFilter = app || null
-			if (this.selectedConnection && this.appFilter && this.selectedConnection.app !== this.appFilter) {
+			if (
+				this.selectedConnection
+				&& this.appFilter
+				&& this.selectedConnection.app !== this.appFilter
+			) {
 				this.selectedConnection = null
 			}
 		},
@@ -295,17 +350,25 @@ export default {
 		async save() {
 			this.saving = true
 			this.errorMessage = ''
-			const body = this.mode === 'template' ? { fromTemplate: true } : { source: this.selectedSource.id }
+			const body =
+				this.mode === 'template'
+					? { fromTemplate: true }
+					: { source: this.selectedSource.id }
 			try {
 				const { data } = await axios.post(
-					generateUrl(`/apps/integriq/api/connections/${this.selectedConnection.id}/link`),
+					generateUrl(
+						`/apps/integriq/api/connections/${this.selectedConnection.id}/link`,
+					),
 					body,
 				)
 				this.probe = data?.probe || null
 				this.linked = true
 				this.$emit('linked', data?.connection || null)
 			} catch (err) {
-				this.errorMessage = err?.response?.data?.error || err?.message || t('integriq', 'The source could not be linked.')
+				this.errorMessage =
+					err?.response?.data?.error
+					|| err?.message
+					|| t('integriq', 'The source could not be linked.')
 			} finally {
 				this.saving = false
 			}
