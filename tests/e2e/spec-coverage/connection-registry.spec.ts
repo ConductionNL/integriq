@@ -106,9 +106,10 @@ test.describe('Add integration (connection-registry)', () => {
 
 		const dialog = appDialog(page)
 		await expect(dialog).toBeVisible({ timeout: 20_000 })
-		await expect(dialog.getByTestId('link-source-app').or(dialog)).toContainText(
-			'dossiq',
-		)
+		// The App select carries the pre-filter. `.or(dialog)` used to sit here
+		// and made the locator resolve to both the select and the dialog, a
+		// strict-mode violation (CI run 35068606518) that never read the text.
+		await expect(dialog.getByTestId('link-source-app')).toContainText('dossiq')
 		await expect
 			.poll(() => new URL(page.url()).searchParams.has('link'), {
 				timeout: 10_000,
