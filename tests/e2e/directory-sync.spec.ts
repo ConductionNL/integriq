@@ -37,17 +37,19 @@ const TARGET_GROUP = 'e2e-behandelaars'
  * @param request The Playwright request context.
  * @param users The fixture users the directory answers with.
  * @param complete Whether the fixture stands for a complete read.
+ * @param name The connection name, unique where a test must find its own row.
  * @return The connection's OpenRegister id.
  */
 async function seedConnection(
 	request: APIRequestContext,
 	users: Array<Record<string, unknown>>,
 	complete = true,
+	name = 'E2E directory',
 ): Promise<string> {
 	const resp = await request.post(`${OR_BASE}/source`, {
 		failOnStatusCode: false,
 		data: {
-			name: 'E2E directory',
+			name,
 			description: 'Seeded by tests/e2e/directory-sync.spec.ts',
 			type: 'directory',
 			isEnabled: true,
@@ -94,6 +96,12 @@ async function runConnection(
 ): Promise<Record<string, any>> {
 	const resp = await request.post(`${API_BASE}/directory/connections/${id}/run`, {
 		failOnStatusCode: false,
+		// The run route is CSRF-protected, as it should be: the row actions send
+		// the page's requesttoken. A bare API request carries only the session
+		// cookie, so Nextcloud answered 412 (CI run 35068606518). The
+		// OCS-APIRequest header is the documented way an API client passes the
+		// check; it does not bypass authentication or the admin-setting guard.
+		headers: { 'OCS-APIRequest': 'true' },
 		data: {
 			dryRun: options.dryRun === true,
 			confirmRemovals: options.confirmRemovals === true,
@@ -112,7 +120,40 @@ async function runConnection(
  */
 async function openRowActions(page: Page, name: string): Promise<void> {
 	await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
-	const row = page.getByRole('row', { name: new RegExp(name) }).first()
+	const row = page
+		.getByRole('row')
+		.filter({ has: page.getByRole('cell', { name, exact: true }) })
+		.first()
+	// The Sources index is server-paginated at 20 rows and CI seeds more than
+	// that (CI run 35068606518: "Showing 20 of 31", the new row on page 2), and
+	// its search box does not query the server. The pager does, so walk it.
+	await expect(page.getByTestId('cn-object-row').first()).toBeVisible({
+		timeout: 20_000,
+	})
+	for (let hop = 0; hop < 40; hop++) {
+		const found = await row
+			.waitFor({ state: 'visible', timeout: 5_000 })
+			.then(() => true)
+			.catch(() => false)
+		if (found) {
+			break
+		}
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
+			break
+		}
+		await next.click()
+		// Wait for the pager to land on the next page before looking again, so
+		// a slow reload cannot make the loop skip the page it needs.
+		await expect(page.getByText(`Page ${hop + 2} of`).first()).toBeVisible({
+			timeout: 20_000,
+		})
+		await expect(page.getByTestId('cn-object-row').first()).toBeVisible({
+			timeout: 20_000,
+		})
+	}
 	await expect(
 		row,
 		'the seeded directory connection must be listed as a source',
@@ -237,11 +278,17 @@ test.describe('REQ-DS-005: a run can be previewed', () => {
 		page,
 		request,
 	}) => {
-		const id = await seedConnection(request, [
-			{ userName: 'admin', groups: ['OU=Vergunningen'] },
-		])
+		// Earlier scenarios leave rows named `E2E directory`, some with an empty
+		// fixture, so this one needs a name only its own row carries.
+		const name = `E2E directory preview ${Date.now().toString(36)}`
+		const id = await seedConnection(
+			request,
+			[{ userName: 'admin', groups: ['OU=Vergunningen'] }],
+			true,
+			name,
+		)
 
-		await openRowActions(page, 'E2E directory')
+		await openRowActions(page, name)
 		await page.getByRole('menuitem', { name: 'Preview directory run' }).click()
 
 		const dialog = appDialog(page)
