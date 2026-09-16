@@ -70,7 +70,10 @@ async function seedConnection(
 			},
 		},
 	})
-	expect(resp.status(), 'seeding a directory connection must succeed').toBeLessThan(300)
+	expect(
+		resp.status(),
+		'seeding a directory connection must succeed',
+	).toBeLessThan(300)
 	const body = await resp.json()
 
 	return String(body.id ?? body.uuid)
@@ -110,7 +113,10 @@ async function runConnection(
 async function openRowActions(page: Page, name: string): Promise<void> {
 	await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
 	const row = page.getByRole('row', { name: new RegExp(name) }).first()
-	await expect(row, 'the seeded directory connection must be listed as a source').toBeVisible({
+	await expect(
+		row,
+		'the seeded directory connection must be listed as a source',
+	).toBeVisible({
 		timeout: 20_000,
 	})
 	await row.getByRole('button').last().click()
@@ -118,7 +124,9 @@ async function openRowActions(page: Page, name: string): Promise<void> {
 
 test.describe('REQ-DS-001: a directory connection synchronises users and groups', () => {
 	// @e2e directory-sync::a-membership-that-ended-in-the-directory-ends-here
-	test('a membership that ended in the directory ends here', async ({ request }) => {
+	test('a membership that ended in the directory ends here', async ({
+		request,
+	}) => {
 		const id = await seedConnection(request, [
 			{ userName: 'admin', groups: ['OU=Vergunningen'] },
 		])
@@ -127,7 +135,9 @@ test.describe('REQ-DS-001: a directory connection synchronises users and groups'
 		// The directory drops admin from every mapped group. The membership must
 		// end here too, and the removal must be attributable to its run.
 		const dropped = await seedConnection(request, [])
-		const record = await runConnection(request, dropped, { confirmRemovals: true })
+		const record = await runConnection(request, dropped, {
+			confirmRemovals: true,
+		})
 
 		expect(record.removals.map((item: any) => item.userId)).toContain('admin')
 		expect(record.membershipsRemoved).toBeGreaterThan(0)
@@ -154,15 +164,21 @@ test.describe('REQ-DS-001: a directory connection synchronises users and groups'
 		const record = await runConnection(request, id)
 		expect(record.additions.map((item: any) => item.userId)).toContain('admin')
 
-		await page.goto(`${APP_BASE}/directory-runs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/directory-runs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 20_000 })
-		await expect(page.getByText('E2E directory').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.getByText('E2E directory').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })
 
 test.describe('REQ-DS-002: the mapping is declared, not coded', () => {
 	// @e2e directory-sync::an-administrator-maps-two-directory-groups-onto-one-nextcloud-group
-	test('two directory groups map onto one Nextcloud group', async ({ request }) => {
+	test('two directory groups map onto one Nextcloud group', async ({
+		request,
+	}) => {
 		const id = await seedConnection(request, [
 			{ userName: 'admin', groups: ['OU=Vergunningen'] },
 			{ userName: 'admin', groups: ['OU=Toezicht'] },
@@ -180,11 +196,12 @@ test.describe('REQ-DS-002: the mapping is declared, not coded', () => {
 		const body = await connections.json()
 		const seeded = body.results.find((row: any) => row.id === id)
 		expect(seeded, 'the mapping must be readable on the connection').toBeTruthy()
-		expect(seeded.mapping.rules.map((rule: any) => rule.directoryGroup)).toEqual([
-			'OU=Vergunningen',
-			'OU=Toezicht',
-		])
-		expect(seeded.mapping.rules.every((rule: any) => rule.group === TARGET_GROUP)).toBe(true)
+		expect(seeded.mapping.rules.map((rule: any) => rule.directoryGroup)).toEqual(
+			['OU=Vergunningen', 'OU=Toezicht'],
+		)
+		expect(
+			seeded.mapping.rules.every((rule: any) => rule.group === TARGET_GROUP),
+		).toBe(true)
 	})
 })
 
@@ -199,7 +216,9 @@ test.describe('REQ-DS-004: a leaver’s open work is reported', () => {
 		await runConnection(request, id)
 
 		const dropped = await seedConnection(request, [])
-		const record = await runConnection(request, dropped, { confirmRemovals: true })
+		const record = await runConnection(request, dropped, {
+			confirmRemovals: true,
+		})
 
 		// The account is named, and so is the consumer the connection expects an
 		// answer from. On an instance without dossiq installed the answer reads
@@ -214,7 +233,10 @@ test.describe('REQ-DS-004: a leaver’s open work is reported', () => {
 
 test.describe('REQ-DS-005: a run can be previewed', () => {
 	// @e2e directory-sync::an-administrator-sees-the-changes-before-they-happen
-	test('a preview lists both sides and changes no membership', async ({ page, request }) => {
+	test('a preview lists both sides and changes no membership', async ({
+		page,
+		request,
+	}) => {
 		const id = await seedConnection(request, [
 			{ userName: 'admin', groups: ['OU=Vergunningen'] },
 		])
@@ -224,8 +246,12 @@ test.describe('REQ-DS-005: a run can be previewed', () => {
 
 		const dialog = appDialog(page)
 		await expect(dialog).toBeVisible({ timeout: 20_000 })
-		await expect(dialog.getByTestId('directory-run-preview')).toBeVisible({ timeout: 20_000 })
-		await expect(dialog.getByTestId('directory-run-additions')).toBeVisible({ timeout: 20_000 })
+		await expect(dialog.getByTestId('directory-run-preview')).toBeVisible({
+			timeout: 20_000,
+		})
+		await expect(dialog.getByTestId('directory-run-additions')).toBeVisible({
+			timeout: 20_000,
+		})
 
 		// The preview changed nothing: running it again still reports the same
 		// addition as outstanding.
@@ -256,8 +282,12 @@ test.describe('REQ-DS-006: every run says what it changed', () => {
 		expect(record.failures).toHaveLength(2)
 		expect(String(record.failures[0].reason)).toContain('no account name')
 
-		await page.goto(`${APP_BASE}/directory-runs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/directory-runs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 20_000 })
-		await expect(page.getByText('E2E directory').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.getByText('E2E directory').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })

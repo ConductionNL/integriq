@@ -53,7 +53,10 @@
 					@click="start({ confirmRemovals: true })">
 					{{ t('integriq', 'Confirm removals') }}
 				</NcButton>
-				<NcButton :disabled="busy" data-testid="directory-run-close" @click="onClose">
+				<NcButton
+					:disabled="busy"
+					data-testid="directory-run-close"
+					@click="onClose">
 					{{ t('integriq', 'Close') }}
 				</NcButton>
 			</div>
@@ -65,12 +68,7 @@
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcModal,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcModal, NcNoteCard } from '@nextcloud/vue'
 import DirectoryRunSummary from '../../components/DirectoryRunSummary.vue'
 
 export default {
@@ -162,7 +160,9 @@ export default {
 			this.error = ''
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/integriq/api/directory/connections/${id}/run`),
+					generateUrl(
+						`/apps/integriq/api/directory/connections/${id}/run`,
+					),
 					{
 						dryRun: options.dryRun === true,
 						confirmRemovals: options.confirmRemovals === true,

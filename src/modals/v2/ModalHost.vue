@@ -142,7 +142,10 @@ export default {
 			 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 			 */
 			handler(query) {
-				if (this.$route?.name !== 'AppConnections' || String(query?.link ?? '') !== '1') {
+				if (
+					this.$route?.name !== 'AppConnections'
+					|| String(query?.link ?? '') !== '1'
+				) {
 					return
 				}
 				const app = typeof query.app === 'string' ? query.app : ''
@@ -349,7 +352,9 @@ export default {
 			if (this.$route?.name !== 'AppConnections') {
 				return
 			}
-			this.$router.replace({ query: { ...this.$route.query, _linked: String(Date.now()) } })
+			this.$router.replace({
+				query: { ...this.$route.query, _linked: String(Date.now()) },
+			})
 		},
 	},
 }
