@@ -37,17 +37,19 @@ const TARGET_GROUP = 'e2e-behandelaars'
  * @param request The Playwright request context.
  * @param users The fixture users the directory answers with.
  * @param complete Whether the fixture stands for a complete read.
+ * @param name The connection name, unique where a test must find its own row.
  * @return The connection's OpenRegister id.
  */
 async function seedConnection(
 	request: APIRequestContext,
 	users: Array<Record<string, unknown>>,
 	complete = true,
+	name = 'E2E directory',
 ): Promise<string> {
 	const resp = await request.post(`${OR_BASE}/source`, {
 		failOnStatusCode: false,
 		data: {
-			name: 'E2E directory',
+			name,
 			description: 'Seeded by tests/e2e/directory-sync.spec.ts',
 			type: 'directory',
 			isEnabled: true,
@@ -70,7 +72,10 @@ async function seedConnection(
 			},
 		},
 	})
-	expect(resp.status(), 'seeding a directory connection must succeed').toBeLessThan(300)
+	expect(
+		resp.status(),
+		'seeding a directory connection must succeed',
+	).toBeLessThan(300)
 	const body = await resp.json()
 
 	return String(body.id ?? body.uuid)
@@ -91,6 +96,12 @@ async function runConnection(
 ): Promise<Record<string, any>> {
 	const resp = await request.post(`${API_BASE}/directory/connections/${id}/run`, {
 		failOnStatusCode: false,
+		// The run route is CSRF-protected, as it should be: the row actions send
+		// the page's requesttoken. A bare API request carries only the session
+		// cookie, so Nextcloud answered 412 (CI run 35068606518). The
+		// OCS-APIRequest header is the documented way an API client passes the
+		// check; it does not bypass authentication or the admin-setting guard.
+		headers: { 'OCS-APIRequest': 'true' },
 		data: {
 			dryRun: options.dryRun === true,
 			confirmRemovals: options.confirmRemovals === true,
@@ -109,8 +120,44 @@ async function runConnection(
  */
 async function openRowActions(page: Page, name: string): Promise<void> {
 	await page.goto(`${APP_BASE}/sources`, { waitUntil: 'domcontentloaded' })
-	const row = page.getByRole('row', { name: new RegExp(name) }).first()
-	await expect(row, 'the seeded directory connection must be listed as a source').toBeVisible({
+	const row = page
+		.getByRole('row')
+		.filter({ has: page.getByRole('cell', { name, exact: true }) })
+		.first()
+	// The Sources index is server-paginated at 20 rows and CI seeds more than
+	// that (CI run 35068606518: "Showing 20 of 31", the new row on page 2), and
+	// its search box does not query the server. The pager does, so walk it.
+	await expect(page.getByTestId('cn-object-row').first()).toBeVisible({
+		timeout: 20_000,
+	})
+	for (let hop = 0; hop < 40; hop++) {
+		const found = await row
+			.waitFor({ state: 'visible', timeout: 5_000 })
+			.then(() => true)
+			.catch(() => false)
+		if (found) {
+			break
+		}
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (
+			(await next.isEnabled({ timeout: 2_000 }).catch(() => false)) === false
+		) {
+			break
+		}
+		await next.click()
+		// Wait for the pager to land on the next page before looking again, so
+		// a slow reload cannot make the loop skip the page it needs.
+		await expect(page.getByText(`Page ${hop + 2} of`).first()).toBeVisible({
+			timeout: 20_000,
+		})
+		await expect(page.getByTestId('cn-object-row').first()).toBeVisible({
+			timeout: 20_000,
+		})
+	}
+	await expect(
+		row,
+		'the seeded directory connection must be listed as a source',
+	).toBeVisible({
 		timeout: 20_000,
 	})
 	await row.getByRole('button').last().click()
@@ -118,7 +165,9 @@ async function openRowActions(page: Page, name: string): Promise<void> {
 
 test.describe('REQ-DS-001: a directory connection synchronises users and groups', () => {
 	// @e2e directory-sync::a-membership-that-ended-in-the-directory-ends-here
-	test('a membership that ended in the directory ends here', async ({ request }) => {
+	test('a membership that ended in the directory ends here', async ({
+		request,
+	}) => {
 		const id = await seedConnection(request, [
 			{ userName: 'admin', groups: ['OU=Vergunningen'] },
 		])
@@ -127,7 +176,9 @@ test.describe('REQ-DS-001: a directory connection synchronises users and groups'
 		// The directory drops admin from every mapped group. The membership must
 		// end here too, and the removal must be attributable to its run.
 		const dropped = await seedConnection(request, [])
-		const record = await runConnection(request, dropped, { confirmRemovals: true })
+		const record = await runConnection(request, dropped, {
+			confirmRemovals: true,
+		})
 
 		expect(record.removals.map((item: any) => item.userId)).toContain('admin')
 		expect(record.membershipsRemoved).toBeGreaterThan(0)
@@ -154,15 +205,21 @@ test.describe('REQ-DS-001: a directory connection synchronises users and groups'
 		const record = await runConnection(request, id)
 		expect(record.additions.map((item: any) => item.userId)).toContain('admin')
 
-		await page.goto(`${APP_BASE}/directory-runs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/directory-runs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 20_000 })
-		await expect(page.getByText('E2E directory').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.getByText('E2E directory').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })
 
 test.describe('REQ-DS-002: the mapping is declared, not coded', () => {
 	// @e2e directory-sync::an-administrator-maps-two-directory-groups-onto-one-nextcloud-group
-	test('two directory groups map onto one Nextcloud group', async ({ request }) => {
+	test('two directory groups map onto one Nextcloud group', async ({
+		request,
+	}) => {
 		const id = await seedConnection(request, [
 			{ userName: 'admin', groups: ['OU=Vergunningen'] },
 			{ userName: 'admin', groups: ['OU=Toezicht'] },
@@ -173,18 +230,22 @@ test.describe('REQ-DS-002: the mapping is declared, not coded', () => {
 		// membership is invented for a group the mapping does not name.
 		expect(record.managedGroups).toEqual([TARGET_GROUP])
 
+		// Same CSRF-protected controller as the run route: GET is checked too,
+		// and answered 412 without the header (CI run 35145556129).
 		const connections = await request.get(`${API_BASE}/directory/connections`, {
 			failOnStatusCode: false,
+			headers: { 'OCS-APIRequest': 'true' },
 		})
 		expect(connections.status()).toBe(200)
 		const body = await connections.json()
 		const seeded = body.results.find((row: any) => row.id === id)
 		expect(seeded, 'the mapping must be readable on the connection').toBeTruthy()
-		expect(seeded.mapping.rules.map((rule: any) => rule.directoryGroup)).toEqual([
-			'OU=Vergunningen',
-			'OU=Toezicht',
-		])
-		expect(seeded.mapping.rules.every((rule: any) => rule.group === TARGET_GROUP)).toBe(true)
+		expect(seeded.mapping.rules.map((rule: any) => rule.directoryGroup)).toEqual(
+			['OU=Vergunningen', 'OU=Toezicht'],
+		)
+		expect(
+			seeded.mapping.rules.every((rule: any) => rule.group === TARGET_GROUP),
+		).toBe(true)
 	})
 })
 
@@ -199,7 +260,9 @@ test.describe('REQ-DS-004: a leaver’s open work is reported', () => {
 		await runConnection(request, id)
 
 		const dropped = await seedConnection(request, [])
-		const record = await runConnection(request, dropped, { confirmRemovals: true })
+		const record = await runConnection(request, dropped, {
+			confirmRemovals: true,
+		})
 
 		// The account is named, and so is the consumer the connection expects an
 		// answer from. On an instance without dossiq installed the answer reads
@@ -214,18 +277,31 @@ test.describe('REQ-DS-004: a leaver’s open work is reported', () => {
 
 test.describe('REQ-DS-005: a run can be previewed', () => {
 	// @e2e directory-sync::an-administrator-sees-the-changes-before-they-happen
-	test('a preview lists both sides and changes no membership', async ({ page, request }) => {
-		const id = await seedConnection(request, [
-			{ userName: 'admin', groups: ['OU=Vergunningen'] },
-		])
+	test('a preview lists both sides and changes no membership', async ({
+		page,
+		request,
+	}) => {
+		// Earlier scenarios leave rows named `E2E directory`, some with an empty
+		// fixture, so this one needs a name only its own row carries.
+		const name = `E2E directory preview ${Date.now().toString(36)}`
+		const id = await seedConnection(
+			request,
+			[{ userName: 'admin', groups: ['OU=Vergunningen'] }],
+			true,
+			name,
+		)
 
-		await openRowActions(page, 'E2E directory')
+		await openRowActions(page, name)
 		await page.getByRole('menuitem', { name: 'Preview directory run' }).click()
 
 		const dialog = appDialog(page)
 		await expect(dialog).toBeVisible({ timeout: 20_000 })
-		await expect(dialog.getByTestId('directory-run-preview')).toBeVisible({ timeout: 20_000 })
-		await expect(dialog.getByTestId('directory-run-additions')).toBeVisible({ timeout: 20_000 })
+		await expect(dialog.getByTestId('directory-run-preview')).toBeVisible({
+			timeout: 20_000,
+		})
+		await expect(dialog.getByTestId('directory-run-additions')).toBeVisible({
+			timeout: 20_000,
+		})
 
 		// The preview changed nothing: running it again still reports the same
 		// addition as outstanding.
@@ -256,8 +332,12 @@ test.describe('REQ-DS-006: every run says what it changed', () => {
 		expect(record.failures).toHaveLength(2)
 		expect(String(record.failures[0].reason)).toContain('no account name')
 
-		await page.goto(`${APP_BASE}/directory-runs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/directory-runs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 20_000 })
-		await expect(page.getByText('E2E directory').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.getByText('E2E directory').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })

@@ -213,7 +213,9 @@ export function openPromotionHandler() {
  */
 export function openLinkSourceHandler() {
 	const app = getRouter()?.currentRoute?.value?.query?.app
-	modalBus.emit(EVENT_OPEN_LINK_SOURCE, { app: typeof app === 'string' ? app : '' })
+	modalBus.emit(EVENT_OPEN_LINK_SOURCE, {
+		app: typeof app === 'string' ? app : '',
+	})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

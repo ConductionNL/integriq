@@ -17,7 +17,10 @@
 -->
 <template>
 	<div class="directoryRun" data-testid="directory-run-summary">
-		<p v-if="record.dryRun" class="directoryRun__preview" data-testid="directory-run-preview">
+		<p
+			v-if="record.dryRun"
+			class="directoryRun__preview"
+			data-testid="directory-run-preview">
 			{{ t('integriq', 'Preview only. Nothing was changed.') }}
 		</p>
 
@@ -47,18 +50,29 @@
 			<div>
 				<dt>{{ t('integriq', 'Memberships added') }}</dt>
 				<dd data-testid="directory-run-added">
-					{{ record.dryRun ? additions.length : record.membershipsAdded || 0 }}
+					{{
+						record.dryRun
+							? additions.length
+							: record.membershipsAdded || 0
+					}}
 				</dd>
 			</div>
 			<div>
 				<dt>{{ t('integriq', 'Memberships removed') }}</dt>
 				<dd data-testid="directory-run-removed">
-					{{ record.dryRun ? removals.length : record.membershipsRemoved || 0 }}
+					{{
+						record.dryRun
+							? removals.length
+							: record.membershipsRemoved || 0
+					}}
 				</dd>
 			</div>
 		</dl>
 
-		<ul v-if="additions.length" class="directoryRun__list" data-testid="directory-run-additions">
+		<ul
+			v-if="additions.length"
+			class="directoryRun__list"
+			data-testid="directory-run-additions">
 			<li v-for="(item, index) in additions" :key="`add-${index}`">
 				{{
 					t('integriq', '{user} joins {group}', {
@@ -69,7 +83,10 @@
 			</li>
 		</ul>
 
-		<ul v-if="removals.length" class="directoryRun__list" data-testid="directory-run-removals">
+		<ul
+			v-if="removals.length"
+			class="directoryRun__list"
+			data-testid="directory-run-removals">
 			<li v-for="(item, index) in removals" :key="`remove-${index}`">
 				{{
 					t('integriq', '{user} leaves {group}', {
@@ -80,13 +97,19 @@
 			</li>
 		</ul>
 
-		<ul v-if="failures.length" class="directoryRun__list" data-testid="directory-run-failures">
+		<ul
+			v-if="failures.length"
+			class="directoryRun__list"
+			data-testid="directory-run-failures">
 			<li v-for="(failure, index) in failures" :key="`fail-${index}`">
 				{{ failure.userId || failure.index }}: {{ failure.reason }}
 			</li>
 		</ul>
 
-		<ul v-if="openWork.length" class="directoryRun__list" data-testid="directory-run-open-work">
+		<ul
+			v-if="openWork.length"
+			class="directoryRun__list"
+			data-testid="directory-run-open-work">
 			<li v-for="entry in openWork" :key="entry.userId">
 				{{
 					t('integriq', '{user} still holds: {answers}', {

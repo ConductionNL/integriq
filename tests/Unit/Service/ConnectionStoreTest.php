@@ -52,7 +52,7 @@ class ConnectionStoreTest extends TestCase {
 	public function testFindRowsFiltersByApp(): void {
 		$objects = $this->getMockBuilder(className: OrObjectService::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
 		$objects->expects($this->once())->method('findAll')
-			->with(['filters' => ['register' => 'integriq', 'schema' => 'app_connection', 'app' => 'dossiq'], 'limit' => 1000])
+			->with(['filters' => ['register' => 'integriq', 'schema' => 'app_connection', 'app' => 'dossiq'], 'limit' => 1000], false, false)
 			->willReturn(['results' => [$this->entity(uuid: 'a', data: ['app' => 'dossiq']), $this->entity(uuid: 'b', data: ['app' => 'shillinq'])]]);
 
 		$rows = (new ConnectionStore(objectService: $objects))->findRows('dossiq');

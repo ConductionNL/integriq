@@ -111,8 +111,15 @@ class ConnectionStore {
 			$filters['app'] = $app;
 		}
 
+		// RBAC and multitenancy off, as findEntity does. Under webcron there is
+		// no user, so a scoped read answers the empty set, and the sync then
+		// takes every declared row for new and writes it a second time.
 		$result = $this->asSystem(
-			operation: 			fn () => $this->objectService->findAll(config: ['filters' => $filters, 'limit' => self::READ_LIMIT])
+			operation: 			fn () => $this->objectService->findAll(
+				config: ['filters' => $filters, 'limit' => self::READ_LIMIT],
+				_rbac: false,
+				_multitenancy: false
+			)
 		);
 
 		$rows = [];
@@ -221,7 +228,9 @@ class ConnectionStore {
 	public function findSourceBySlug(string $slug): ?ObjectEntity {
 		$result = $this->asSystem(
 			operation: 			fn () => $this->objectService->findAll(
-				config: ['filters' => ['register' => self::REGISTER, 'schema' => 'source', 'slug' => $slug]]
+				config: ['filters' => ['register' => self::REGISTER, 'schema' => 'source', 'slug' => $slug]],
+				_rbac: false,
+				_multitenancy: false
 			)
 		);
 
