@@ -45,6 +45,7 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "mapping_version",
           "message",
           "notificaties_abonnement",
           "outbound_message",
@@ -64,6 +65,7 @@
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",
+          "verdict",
           "synchronization_log",
           "zgw_version_translation_log"
         ],
@@ -1981,7 +1983,108 @@
             "description": "Canonical UUID",
             "title": "UUID"
           },
-          "statusCode": {
+                    "target": {
+            "type": "string",
+            "description": "What was called: the source, endpoint or subscription this call went to. The call log answers what happened to this partner today, where the trace answers what happened in this execution",
+            "title": "Target"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "The execution-trace id this call belongs to, so the two views thread together",
+            "title": "Trace ID"
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "How long the call took, in milliseconds",
+            "title": "Duration"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "triggered",
+              "replayed",
+              "hand-fired",
+              "dry-run"
+            ],
+            "description": "Whether the event triggered this call, an administrator replayed it, an administrator fired it by hand, or it was a dry run that sent nothing. To the receiver a replay and a hand-fired call are identical, which is deliberate",
+            "title": "Kind"
+          },
+          "firedBy": {
+            "type": "string",
+            "description": "The principal who replayed or hand-fired this call. Empty for a triggered one",
+            "title": "Fired By"
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "The policy that governed this call's attempts, recorded so a call that stopped after two attempts can still be explained a month later when the policy has changed twice",
+            "title": "Retry Policy"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Every attempt on this call, including replays. A replay appends here and never overwrites the first attempt",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who, for a replay or a hand-fired call",
+                  "title": "By"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "triggered, replayed, hand-fired or dry-run",
+                  "title": "Kind"
+                },
+                "statusCode": {
+                  "type": "integer",
+                  "description": "What came back",
+                  "title": "Status Code"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What it said",
+                  "title": "Detail"
+                },
+                "mappingVersion": {
+                  "type": "string",
+                  "description": "The mapping version this attempt ran under",
+                  "title": "Mapping Version"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this call ran under",
+            "title": "Mapping"
+          },
+          "mappingVersion": {
+            "type": "string",
+            "description": "The version of that mapping at the time of the call. A replay offers this version and the current one, states which it used, and switches neither silently",
+            "title": "Mapping Version"
+          },
+          "deadLettered": {
+            "type": "boolean",
+            "description": "Whether this call exhausted its retries and landed in the dead-letter list, where it stays replayable",
+            "title": "Dead Lettered"
+          },
+        "statusCode": {
             "type": "integer",
             "description": "HTTP status code returned by the upstream",
             "title": "HTTP Status Code"
@@ -2277,6 +2380,58 @@
         },
         "appendOnly": true,
         "immutable": true
+      },
+      "verdict": {
+        "slug": "verdict",
+        "title": "Verdict",
+        "icon": "GavelOutline",
+        "version": "1.0.0",
+        "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "objectRef",
+          "state",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "objectRef": {
+            "type": "string",
+            "description": "The object this verdict is about, as the owning app references it",
+            "title": "Object Reference"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "pending"
+            ],
+            "description": "What the checker concluded. Pending is a real answer: a checker that has not finished has not passed anything",
+            "title": "State"
+          },
+          "source": {
+            "type": "string",
+            "description": "Which checker said it",
+            "title": "Source"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why, in the checker's own words",
+            "title": "Reason"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the verdict arrived",
+            "title": "Received At"
+          },
+          "payload": {
+            "type": "object",
+            "description": "What the checker sent, for the app that wants more than the state",
+            "title": "Payload"
+          }
+        }
       },
       "synchronization_log": {
         "slug": "synchronization_log",
@@ -3618,6 +3773,42 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "mapping_version": {
+        "slug": "mapping_version",
+        "title": "Mapping Version",
+        "icon": "SourceBranch",
+        "version": "1.0.0",
+        "summary": "A snapshot of a mapping as it stood when a call ran under it",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "mapping",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this is a version of",
+            "title": "Mapping"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version, as the mapping declared it at the time",
+            "title": "Version"
+          },
+          "snapshot": {
+            "type": "object",
+            "description": "The mapping exactly as it stood",
+            "title": "Snapshot"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the snapshot was taken",
+            "title": "Recorded At"
+          }
+        }
       },
       "message": {
         "slug": "message",
