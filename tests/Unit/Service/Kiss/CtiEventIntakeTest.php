@@ -32,7 +32,6 @@ use OCA\Integriq\Service\Kiss\CallerDirectory;
 use OCA\Integriq\Service\Kiss\CallerLookup;
 use OCA\Integriq\Service\Kiss\CallEventDeduplicator;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
-use OCA\Integriq\Service\Kiss\CallEventNormaliser;
 use OCA\Integriq\Service\Kiss\CtiProviderInterface;
 use OCA\Integriq\Service\Kiss\CtiSourceResolver;
 use OCP\EventDispatcher\Event;
@@ -98,7 +97,6 @@ class CtiEventIntakeTest extends TestCase {
 
 		return new CtiEventIntake(
 			sources: $resolver,
-			normaliser: new CallEventNormaliser(),
 			deduplicator: new CallEventDeduplicator(cacheFactory: $factory),
 			context: new CallContextService(
 				lookup: new CallerLookup(),

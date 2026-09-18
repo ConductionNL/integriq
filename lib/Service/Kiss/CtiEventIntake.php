@@ -60,7 +60,6 @@ class CtiEventIntake {
 	 * Constructor.
 	 *
 	 * @param CtiSourceResolver $sources Reads CTI sources and their bindings.
-	 * @param CallEventNormaliser $normaliser Turns a vendor payload into the shared shape.
 	 * @param CallEventDeduplicator $deduplicator Guards against a PBX's retries.
 	 * @param CallContextService $context Resolves the caller and their open cases.
 	 * @param IEventDispatcher $dispatcher Dispatches the typed event.
@@ -70,7 +69,6 @@ class CtiEventIntake {
 	 */
 	public function __construct(
 		private readonly CtiSourceResolver $sources,
-		private readonly CallEventNormaliser $normaliser,
 		private readonly CallEventDeduplicator $deduplicator,
 		private readonly CallContextService $context,
 		private readonly IEventDispatcher $dispatcher,

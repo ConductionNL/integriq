@@ -78,7 +78,8 @@ final class SystemWrite {
 	 *
 	 * @throws SystemWriteUnavailableException When it cannot.
 	 *
-	 * @spec exclude no openspec change describes this; SystemWrite came out of a code sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
+	 * @spec exclude no openspec change describes this; SystemWrite came out of a code
+	 * sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
 	 */
 	public static function refuseWhenUnavailable(bool $available, string $what): void {
 		if ($available === true) {
@@ -102,10 +103,15 @@ final class SystemWrite {
 	/**
 	 * Run an operation as the system, or throw.
 	 *
-	 * Prefers OpenRegister's `assertSystem()`, which verifies the elevation
-	 * actually took effect on both sides of the operation, and falls back to
-	 * `run()` only for an OpenRegister old enough not to have it. That fallback
-	 * is between two ELEVATED paths, not between elevated and not.
+	 * 🔑 THERE IS ONE ELEVATED PATH, NOT TWO. This preferred `assertSystem()`
+	 * over `run()` and fell back to `run()` "for an OpenRegister old enough not
+	 * to have it". No OpenRegister has it: `assertSystem` appears nowhere in
+	 * that repository, and the stub every test here runs against does not
+	 * declare it either, so `method_exists()` answered false in production and
+	 * in the suite alike. The preference read as a verification the elevation
+	 * never received. It is gone rather than stubbed, because adding the method
+	 * to the stub would make the suite assert an API the peer app does not
+	 * publish.
 	 *
 	 * @param string   $what      What is being written, for the refusal.
 	 * @param callable $operation The trusted operation.
@@ -116,15 +122,13 @@ final class SystemWrite {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is OpenRegister's static scope guard; there is no instance API.
 	 *
-	 * @spec exclude no openspec change describes this; SystemWrite came out of a code sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
+	 * @spec exclude no openspec change describes this; SystemWrite came out of a code
+	 * sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
 	 */
 	public static function run(string $what, callable $operation): mixed {
 		self::refuseWhenUnavailable(available: self::isAvailable(), what: $what);
 
 		$context = self::CONTEXT;
-		if (method_exists($context, 'assertSystem') === true) {
-			return $context::assertSystem($what, $operation);
-		}
 
 		return $context::run($operation);
 	}//end run()
