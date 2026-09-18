@@ -87,6 +87,17 @@ return [
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
 
+		// The outbound communication log (openspec/changes/outbound-communication-log).
+		// Listing the log is the declarative page over `outbound_message`; these are
+		// the acts on it. Reading a stored body sits behind its own action
+		// (`outbound.read-body`), distinct from seeing that a message was sent,
+		// because the text of a letter is a different question from the fact of it.
+		['name' => 'outboundLog#body', 'url' => '/api/outbound/messages/{id}/body', 'verb' => 'GET'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/{id}/retry', 'verb' => 'POST'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
+		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.

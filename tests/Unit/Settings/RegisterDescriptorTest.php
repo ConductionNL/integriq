@@ -100,6 +100,7 @@ class RegisterDescriptorTest extends TestCase {
 		'Message' => 'message',
 		'IntakeMessage' => 'intake_message',
 		'IntakeRoutingRule' => 'intake_routing_rule',
+		'OutboundMessage' => 'outbound_message',
 		'Rule' => 'rule',
 		'Synchronization' => 'synchronization',
 		'SynchronizationContract' => 'synchronization_contract',
