@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\CloudEventListener;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\EventService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -271,4 +272,92 @@ class CloudEventListenerTest extends TestCase {
 		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
 		$listener->handle($this->createMock(Event::class));
 	}//end testIgnoresUnrelatedEvents()
+
+	/**
+	 * A CloudEvent this app wrote is dropped on its marker alone, on a
+	 * schema id the guard does not recognise. That is the case after a
+	 * register rename, or when the schema is copied into a second register:
+	 * the ids stop matching, and only the marker still travels with the row.
+	 *
+	 * @return void
+	 */
+	public function testAMarkedEventIsSuppressedEvenOnAnUnrecognisedSchemaId(): void {
+		$object = $this->entity('someotherapp', '918');
+		$object->setObject(
+			[
+				'type' => 'com.nextcloud.openregister.object.created',
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
+			]
+		);
+
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
+		$eventService->expects($this->never())->method('handleObjectCreated');
+
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new ObjectCreatedEvent($object));
+	}//end testAMarkedEventIsSuppressedEvenOnAnUnrecognisedSchemaId()
+
+	/**
+	 * The control beside the test above. An ordinary object on the same
+	 * unrecognised schema id, with no marker, is still forwarded. Without
+	 * this, the marker test would pass equally against a listener that
+	 * suppressed everything it could not place, which is the failure that
+	 * makes an instance silently stop emitting events.
+	 *
+	 * @return void
+	 */
+	public function testAnUnmarkedObjectOnTheSameSchemaIdIsStillForwarded(): void {
+		$object = $this->entity('someotherapp', '918');
+
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
+		$eventService->expects($this->once())->method('handleObjectCreated')->with($object);
+
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener->handle(new ObjectCreatedEvent($object));
+	}//end testAnUnmarkedObjectOnTheSameSchemaIdIsStillForwarded()
+
+	/**
+	 * The case the ceiling exists for, end to end: the self-schema ids
+	 * resolve to nothing, so neither the id guard nor anything else
+	 * recognises the machinery's own rows. Forwarding still stops, after a
+	 * bounded number of events rather than never.
+	 *
+	 * Measured before any guard existed, one create produced 255 CloudEvents
+	 * and the table reached 45,715 rows, 99.3% of them generated from other
+	 * rows.
+	 *
+	 * @return void
+	 */
+	public function testWithNoResolvedIdsForwardingStopsAtTheCeiling(): void {
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->method('getSelfSchemaIds')->willReturn([]);
+		$eventService->expects($this->exactly(EventLoopGuard::MAX_CHAIN))->method('handleObjectCreated');
+
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+
+		for ($i = 0; $i < (EventLoopGuard::MAX_CHAIN + 10); $i++) {
+			$listener->handle(new ObjectCreatedEvent($this->entity('someapp', '19', 'obj-' . $i)));
+		}
+	}//end testWithNoResolvedIdsForwardingStopsAtTheCeiling()
+
+	/**
+	 * `event_subscription` joins `event` and `event_message` as machinery of
+	 * ours: a subscription write is bookkeeping and must not become an event.
+	 *
+	 * @return void
+	 */
+	public function testTheSubscriptionSchemaIsMachineryToo(): void {
+		$ref = new \ReflectionClass(CloudEventListener::class);
+		$constants = $ref->getConstant('SELF_SCHEMAS');
+
+		$this->assertContains('event_subscription', $constants);
+		$this->assertContains('event', $constants);
+		$this->assertContains('event_message', $constants);
+	}//end testTheSubscriptionSchemaIsMachineryToo()
+
 }//end class
