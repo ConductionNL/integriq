@@ -61,6 +61,10 @@ use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
+use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
+use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
 use OCA\Integriq\Repair\InitializeActions;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
@@ -78,6 +82,21 @@ use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
+use OCA\Integriq\Service\Registry\KvkMutatieProvider;
+use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
+use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Gateway\GatewayCatalogue;
+use OCA\Integriq\Gateway\GatewayRegistry;
+use OCA\Integriq\Gateway\GatewayTransport;
+use OCA\Integriq\Gateway\SourceGatewayTransport;
+use OCA\Integriq\Migration\MigrationSourceRegistry;
+use OCA\Integriq\Migration\Source\FileMigrationSource;
+use OCA\Integriq\Migration\Source\RedmineMigrationSource;
+use OCA\Integriq\PropertySource\PropertySourceRegistry;
+use OCA\Integriq\PropertySource\Provider\BagPropertySource;
+use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
+use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
@@ -321,6 +340,86 @@ class Application extends App implements IBootstrap {
 				return $c->get(PdokGeocodingClientMock::class);
 			}
 		);
+
+		// The property-source registry: one keyed list of the registry
+		// bindings a schema property can name through
+		// `x-openregister-property-source`. Registered explicitly rather than
+		// autowired so the order, and therefore the first-wins collision
+		// policy, is readable in one place.
+		$context->registerService(
+			PropertySourceRegistry::class,
+			static function ($c): PropertySourceRegistry {
+				return new PropertySourceRegistry(
+					[
+						$c->get(BagPropertySource::class),
+						$c->get(BrpPropertySource::class),
+						$c->get(KvkPropertySource::class),
+					],
+					$c->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		// The intake channel registry: one keyed list of the channel adapters
+		// this instance has. Registered explicitly rather than autowired, for
+		// the same reason as the property-source registry above: the order,
+		// and therefore the first-wins collision policy, is readable in one
+		// place instead of depending on discovery order
+		// (openspec/changes/intake-channels-beyond-mail).
+		$context->registerService(
+			IntakeChannelRegistry::class,
+			static function ($c): IntakeChannelRegistry {
+				return new IntakeChannelRegistry(
+					$c->get('Psr\Log\LoggerInterface'),
+					[
+						$c->get(FormSubmissionAdapter::class),
+						$c->get(MessagingChannelAdapter::class),
+						$c->get(PublicSpaceReportAdapter::class),
+					]
+				);
+			}
+		);
+
+		// The registry subscription bindings, keyed by registry id. The `log`
+		// binding is last, so a real registry always wins its own id and the
+		// development binding only answers to `log`.
+		$context->registerService(
+			SubscriptionRegistry::class,
+			static function ($c): SubscriptionRegistry {
+				return new SubscriptionRegistry(
+					[
+						$c->get(BrpVolgindicatieProvider::class),
+						$c->get(KvkMutatieProvider::class),
+						$c->get(LogSubscriptionProvider::class),
+					]
+				);
+			}
+		);
+
+		// The migration source adapters. A second incumbent is a class beside
+		// the Redmine one and a line here: no engine change, no consumer change.
+		$context->registerService(
+			MigrationSourceRegistry::class,
+			static function ($c): MigrationSourceRegistry {
+				return new MigrationSourceRegistry(
+					[
+						$c->get(FileMigrationSource::class),
+						$c->get(RedmineMigrationSource::class),
+					]
+				);
+			}
+		);
+
+		// The statutory gateway entries. Declared in one place so the catalogue
+		// page and the gateway overview can never disagree about which laws this
+		// instance reaches.
+		$context->registerService(
+			GatewayRegistry::class,
+			static function ($c): GatewayRegistry {
+				return new GatewayRegistry(GatewayCatalogue::entries());
+			}
+		);
+		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);
 
 		// Explicit factories for the *ClientHttp flavours so the Guzzle
 		// ClientInterface is injected via a shared singleton; NC's

@@ -68,6 +68,64 @@ return [
 		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
 		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
 
+		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// saved message and polling a mailbox both write `message` objects that
+		// other apps act on, so both sit behind the ADR-023 action matrix
+		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
+		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
+
+		// Intake channels beyond mail (openspec/changes/intake-channels-beyond-mail).
+		// The inbound leg is public and gated by a webhook signature verified over
+		// the raw bytes before the body is read, like peppol#inbound and
+		// notifyNl#inbound. The rule save and the reply are session calls behind
+		// the ADR-023 action matrix (`intake.rules`, `intake.reply`), because a
+		// rule decides what opens a case and a reply leaves the building.
+		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
+		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
+		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
+
+		// The outbound communication log (openspec/changes/outbound-communication-log).
+		// Listing the log is the declarative page over `outbound_message`; these are
+		// the acts on it. Reading a stored body sits behind its own action
+		// (`outbound.read-body`), distinct from seeing that a message was sent,
+		// because the text of a letter is a different question from the fact of it.
+		['name' => 'outboundLog#body', 'url' => '/api/outbound/messages/{id}/body', 'verb' => 'GET'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/{id}/retry', 'verb' => 'POST'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
+		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+
+		// Sender identity and deliverability
+		// (openspec/changes/outbound-sender-identity-and-deliverability). An
+		// identity is the face on an account Nextcloud Mail owns (D12), so these
+		// routes read and check identities, take a message back inside its hold
+		// window, and let a recipient stop a case's updates. The unsubscribe leg
+		// is public and needs no account: the person following it usually has
+		// neither, and asking them to make one is asking them to keep receiving
+		// the mail instead.
+		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
+		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
+		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+
+		// The outbound call log, its replay and the verdicts
+		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// means reading the request and the response it carried, so it sits
+		// behind its own action (`call-log.read`) rather than the listing's.
+		// Replaying and hand-firing share one action (`call-log.replay`),
+		// because they are the same act to the receiver. The verdict leg is
+		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
+		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/replay', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
+		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
+		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.
@@ -426,6 +484,41 @@ return [
 		// See openspec/changes/archive/2026-07-14-connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// registry-backed-field-source: openregister resolves a property that
+		// declares `x-openregister-property-source` through these routes, and the
+		// administration screen resyncs a list-shaped provider through the last
+		// one. A suggestion is never an answer, so suggest and resolve are two
+		// routes rather than one with a flag.
+		['name' => 'propertySource#index', 'url' => '/api/property-sources', 'verb' => 'GET'],
+		['name' => 'propertySource#suggest', 'url' => '/api/property-sources/{provider}/suggest', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resolve', 'url' => '/api/property-sources/{provider}/resolve', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resync', 'url' => '/api/property-sources/{provider}/resync', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+
+		// records-owned-by-an-external-source: one read answers ownership for a
+		// consuming app, so nobody has to open a contract, a synchronisation and a
+		// source to render "the registry owns this". The delete is refused here
+		// when a source owns the record, and the override is a written statement.
+		['name' => 'ownership#show', 'url' => '/api/ownership/{id}', 'verb' => 'GET'],
+		['name' => 'ownership#destroy', 'url' => '/api/ownership/{id}', 'verb' => 'DELETE'],
+		['name' => 'ownership#validatePolicy', 'url' => '/api/ownership/validate-policy', 'verb' => 'POST'],
+
+		// migration-source-adapters: integriq reads an incumbent system or a
+		// delivered file and reports what a migration would bring. It writes
+		// nothing: OpenRegister's import engine owns the writing half.
+		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
+		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
+		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+
+		// statutory-gateways-and-frameworks: which laws this instance reaches,
+		// how far it claims to meet each one, where every endpoint sits, and
+		// which bridge a call behind a firewall travels over.
+		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
+		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
+		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
+		['name' => 'gateways#testBinding', 'url' => '/api/gateways/registry-binding/test', 'verb' => 'POST'],
+		['name' => 'gateways#bridges', 'url' => '/api/gateways/bridges', 'verb' => 'GET'],
+		['name' => 'gateways#revokeBridge', 'url' => '/api/gateways/bridges/{id}/revoke', 'verb' => 'POST'],
 
 		// Connection registry (connection-registry D9): link a source to a
 		// declared connection and probe it at once. Listing goes through OR's

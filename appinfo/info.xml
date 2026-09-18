@@ -117,6 +117,11 @@
 		     version moved, probes at most 25 linked sources, oldest first,
 		     then resolves every connection row without an outbound call. -->
 		<job>OCA\Integriq\BackgroundJob\ConnectionHealthJob</job>
+		<!-- registry-subscription-connector: every fifteen minutes. Asks each
+		     registry binding what changed about the identities it follows and
+		     posts that to OpenRegister. Nothing about the changed record is
+		     written here. -->
+		<job>OCA\Integriq\BackgroundJob\RegistrySubscriptionPollJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order

@@ -1,0 +1,85 @@
+{
+  "$comment": "ADR-037 manifest fragment (outbound-communication-log). 'Did the ontvangstbevestiging leave the building' is asked weekly, and today the answer is in a container log nobody can reach. This page is the answer: filterable by status, showing the subject, the channel and how many recipients are still failed. The status colours map the schema's own enum members, so a value the schema cannot hold gets no colour rather than a wrong one. The body is not a column: it is readable behind its own action, and a table cell is not a permission boundary.",
+  "pages": [
+    {
+      "id": "OutboundMessages",
+      "route": "/messages/outbound",
+      "type": "logs",
+      "title": "Sent messages",
+      "config": {
+        "register": "integriq",
+        "schema": "outbound_message",
+        "sortKey": "createdAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "createdAt",
+            "label": "Sent",
+            "sortable": true,
+            "width": "16%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "subjectRef",
+            "label": "Subject reference",
+            "sortable": true,
+            "width": "18%"
+          },
+          {
+            "key": "subject",
+            "label": "Subject",
+            "sortable": true,
+            "width": "26%"
+          },
+          {
+            "key": "channel",
+            "label": "Channel",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "retryCount",
+            "label": "Retries",
+            "sortable": true,
+            "width": "10%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "16%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "pending": "info",
+                "sent": "success",
+                "partially failed": "warning",
+                "failed": "error"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "OperationsGroup",
+      "children": [
+        {
+          "id": "OutboundMessages",
+          "label": "Sent messages",
+          "icon": "SendOutline",
+          "route": "OutboundMessages",
+          "order": 22
+        }
+      ]
+    }
+  ]
+}
