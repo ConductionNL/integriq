@@ -471,6 +471,16 @@ return [
 		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
 		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
 
+		// statutory-gateways-and-frameworks: which laws this instance reaches,
+		// how far it claims to meet each one, where every endpoint sits, and
+		// which bridge a call behind a firewall travels over.
+		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
+		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
+		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
+		['name' => 'gateways#testBinding', 'url' => '/api/gateways/registry-binding/test', 'verb' => 'POST'],
+		['name' => 'gateways#bridges', 'url' => '/api/gateways/bridges', 'verb' => 'GET'],
+		['name' => 'gateways#revokeBridge', 'url' => '/api/gateways/bridges/{id}/revoke', 'verb' => 'POST'],
+
 		// Connection registry (connection-registry D9): link a source to a
 		// declared connection and probe it at once. Listing goes through OR's
 		// generic /api/objects/integriq/app_connection (ADR-022).

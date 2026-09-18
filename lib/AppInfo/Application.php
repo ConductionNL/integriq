@@ -86,6 +86,10 @@ use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Gateway\GatewayCatalogue;
+use OCA\Integriq\Gateway\GatewayRegistry;
+use OCA\Integriq\Gateway\GatewayTransport;
+use OCA\Integriq\Gateway\SourceGatewayTransport;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\Source\FileMigrationSource;
 use OCA\Integriq\Migration\Source\RedmineMigrationSource;
@@ -405,6 +409,17 @@ class Application extends App implements IBootstrap {
 				);
 			}
 		);
+
+		// The statutory gateway entries. Declared in one place so the catalogue
+		// page and the gateway overview can never disagree about which laws this
+		// instance reaches.
+		$context->registerService(
+			GatewayRegistry::class,
+			static function ($c): GatewayRegistry {
+				return new GatewayRegistry(GatewayCatalogue::entries());
+			}
+		);
+		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);
 
 		// Explicit factories for the *ClientHttp flavours so the Guzzle
 		// ClientInterface is injected via a shared singleton; NC's
