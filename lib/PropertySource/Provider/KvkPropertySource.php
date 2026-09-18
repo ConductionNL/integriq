@@ -1,7 +1,7 @@
 <?php
 
 /**
- * KvK organisation values, bound over the seeded kvk-api source.
+ * KvK organisation values, bound over the seeded kvk source.
  *
  * @category Provider
  * @package  OCA\Integriq\PropertySource\Provider
@@ -38,7 +38,7 @@ class KvkPropertySource implements PropertySourceProviderInterface {
 	/**
 	 * Slug of the seeded source this binding reads through.
 	 */
-	public const SOURCE_SLUG = 'kvk-api';
+	public const SOURCE_SLUG = 'kvk';
 
 	/**
 	 * Staleness budget in seconds.
