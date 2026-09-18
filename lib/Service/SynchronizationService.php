@@ -40,6 +40,8 @@ use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Ownership\DisappearanceApplier;
+use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
@@ -3843,6 +3845,37 @@ class SynchronizationService {
 		$synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
+		// records-owned-by-an-external-source REQ-SOR-002: what happens to a
+		// record the source stopped carrying is declared on the synchronisation.
+		// A value this engine does not know is refused here rather than read as
+		// the default, because silently deleting under a misspelled policy is
+		// the exact failure the declaration exists to prevent.
+		try {
+			$disappearancePolicy = DisappearancePolicy::fromSourceConfig($sourceConfig);
+		} catch (\InvalidArgumentException $policyException) {
+			$guardInfo = [
+				'guarded' => true,
+				'reason' => 'unknown_disappearance_policy',
+				'ratio' => null,
+				'threshold' => null,
+				'candidateCount' => null,
+				'totalContracts' => null,
+				'message' => $policyException->getMessage(),
+			];
+			$this->logger->warning(
+				'deleteInvalidObjects: skipped — ' . $policyException->getMessage(),
+				['synchronizationId' => $synchronizationId]
+			);
+			$this->dispatchDeletionGuardedEvent(
+				synchronizationId: (string)$synchronizationId,
+				reason: 'unknown_disappearance_policy'
+			);
+			return 0;
+		}//end try
+
+		$disappearanceApplier = new DisappearanceApplier();
+		$policyRunAt = gmdate('c');
+
 		// [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
 		// independently refuse to run against an incremental Synchronization
 		// regardless of caller, so a future caller that reaches this method
@@ -3932,6 +3965,7 @@ class SynchronizationService {
 				// that had not deleted a single record. It scales with the size of
 				// the SYNCHRONIZATION, not with what changed, so a larger source
 				// does not slow down, it runs out of memory.
+				$policyCounts = ['ended' => 0, 'flagged' => 0];
 				$allContractTargetIds = [];
 				foreach ($contractObjects as $contractObject) {
 					$contractTargetId = ($contractObject->getObject()['targetId'] ?? null);
@@ -4058,12 +4092,37 @@ class SynchronizationService {
 						continue;
 					}
 
+					// REQ-SOR-003: under `markEnded` and `keepAndFlag` the object
+					// stays. It is only ever reached here, behind the incremental,
+					// completeness and ratio guards above, so a truncated page or a
+					// 429 ends and flags exactly as much as it deletes: nothing.
+					if ($disappearancePolicy !== DisappearancePolicy::DELETE) {
+						$this->applyDisappearancePolicy(
+							policy: $disappearancePolicy,
+							applier: $disappearanceApplier,
+							targetObject: $targetObject,
+							contract: $synchronizationContract,
+							registerId: $registerId,
+							schemaId: $schemaId,
+							runAt: $policyRunAt,
+							counts: $policyCounts
+						);
+						continue;
+					}
+
 					// The updateTarget() call returns an array, so no is_array() guard.
 					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
 					$this->persistContract(contract: $synchronizationContract);
 
 					$deletedObjectsCount++;
 				}//end foreach
+
+				// REQ-SOR-003: the count of affected objects is reported on the
+				// run, so an operator can see that nothing vanished and how many
+				// records the source stopped carrying.
+				$guardInfo['endedCount'] = $policyCounts['ended'];
+				$guardInfo['flaggedCount'] = $policyCounts['flagged'];
+				$guardInfo['disappearancePolicy'] = $disappearancePolicy;
 				break;
 
 			case 'nextcloud-table':
@@ -4078,6 +4137,70 @@ class SynchronizationService {
 
 		return $deletedObjectsCount;
 	}//end deleteInvalidObjects()
+
+	/**
+	 * Apply a non-deleting disappearance policy to one record.
+	 *
+	 * The record stays where it is. Under `markEnded` it gains an end date
+	 * taken from the run that first did not see it; under `keepAndFlag` its
+	 * values are left exactly as they are and only the absence is written,
+	 * with both timestamps.
+	 *
+	 * @param string $policy The declared policy.
+	 * @param DisappearanceApplier $applier The applier.
+	 * @param ObjectEntity $targetObject The object the source stopped carrying.
+	 * @param array<string,mixed> $contract The contract that maintains it.
+	 * @param string $registerId The target register.
+	 * @param string $schemaId The target schema.
+	 * @param string $runAt ISO timestamp of this run.
+	 * @param array<string,int> $counts Per-policy counts, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+	 */
+	private function applyDisappearancePolicy(
+		string $policy,
+		DisappearanceApplier $applier,
+		ObjectEntity $targetObject,
+		array $contract,
+		string $registerId,
+		string $schemaId,
+		string $runAt,
+		array &$counts,
+	): void {
+		try {
+			$objectData = $applier->applyToObject(
+				policy: $policy,
+				objectData: $targetObject->getObject(),
+				runAt: $runAt
+			);
+
+			$this->orObjectService->saveObject(
+				object: $objectData,
+				register: $registerId,
+				schema: $schemaId,
+				uuid: (string)$targetObject->getUuid()
+			);
+
+			$this->persistContract(
+				contract: $applier->applyToContract(policy: $policy, contract: $contract, runAt: $runAt)
+			);
+		} catch (\Throwable $throwable) {
+			$this->logger->warning(
+				'deleteInvalidObjects: disappearance policy could not be applied',
+				[
+					'policy' => $policy,
+					'targetId' => (string)$targetObject->getUuid(),
+					'error' => $throwable->getMessage(),
+				]
+			);
+
+			return;
+		}//end try
+
+		$counts[$applier->countKey(policy: $policy)]++;
+	}//end applyDisappearancePolicy()
 
 	/**
 	 * `nextcloud-table` branch of {@see deleteInvalidObjects()} — extracted to
