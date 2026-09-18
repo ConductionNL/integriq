@@ -95,6 +95,8 @@ class CatalogRegistryService {
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
 		'whatsapp-cloud-api' => 'Messaging',
+		'smartdocuments' => 'Document generation',
+		'xential' => 'Document generation',
 	];
 
 	/**
@@ -251,6 +253,34 @@ class CatalogRegistryService {
 				'sourceTemplateSlug' => '',
 				'standards' => ['BBK 1.7'],
 				'icon' => 'EmailOutline',
+			],
+			[
+				'slug' => 'adapter:smartdocuments',
+				'name' => 'SmartDocuments',
+				'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
+					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
+				'category' => 'Document generation',
+				'kind' => 'adapter',
+				'mechanism' => 'mock-seeded',
+				'flagKey' => '',
+				'sourceTemplateSlug' => 'smartdocuments',
+				'standards' => ['REST API'],
+				'icon' => 'FileDocumentOutline',
+			],
+			[
+				'slug' => 'adapter:xential',
+				'name' => 'Xential',
+				'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
+					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
+				'category' => 'Document generation',
+				'kind' => 'adapter',
+				'mechanism' => 'mock-seeded',
+				'flagKey' => '',
+				'sourceTemplateSlug' => 'xential',
+				'standards' => ['REST API'],
+				'icon' => 'FileDocumentOutline',
 			],
 			[
 				'slug' => 'adapter:dso',

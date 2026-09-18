@@ -45,11 +45,13 @@ use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
 use OCA\Integriq\EventListener\NextcloudFileEventListener;
@@ -253,6 +255,13 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ConnectionRefreshRequestedEvent::class, ConnectionRefreshRequestedListener::class);
 		$context->registerEventListener(AppEnableEvent::class, ConnectionAppLifecycleListener::class);
 		$context->registerEventListener(AppDisableEvent::class, ConnectionAppLifecycleListener::class);
+		// Document generation (document-generation-vendor-adapter REQ-DGV-002):
+		// filinq asks for a vendor render with a typed command and reads the
+		// job id, or the structured refusal, off the same instance.
+		$context->registerEventListener(
+			DocumentRenderRequestedEvent::class,
+			DocumentRenderRequestedListener::class
+		);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to

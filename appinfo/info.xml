@@ -90,6 +90,11 @@
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
+		<!-- document-generation-vendor-adapter: every five minutes, ask the
+		     vendor again about a render it has not settled. This is what keeps
+		     `unreachable` a state rather than a dead end: a render nobody could
+		     ask about is unfinished business, not a failure. -->
+		<job>OCA\Integriq\BackgroundJob\DocumentGenerationStatusJob</job>
 		<!-- directory-and-group-sync: hourly. A membership that ended in the
 		     directory has to end here without anyone acting, which is the whole
 		     difference between synchronising membership and authenticating
