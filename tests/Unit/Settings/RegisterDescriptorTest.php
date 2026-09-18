@@ -97,6 +97,7 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
+		'Message' => 'message',
 		'Rule' => 'rule',
 		'Synchronization' => 'synchronization',
 		'SynchronizationContract' => 'synchronization_contract',
