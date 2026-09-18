@@ -9,7 +9,7 @@
     "schemas": {
       "documentGenerationJob": {
         "slug": "documentGenerationJob",
-        "title": "Document Generation Job",
+        "title": "Document generation job",
         "icon": "FileDocumentOutline",
         "version": "1.0.0",
         "summary": "One render asked of a vendor document generation service",
