@@ -570,6 +570,22 @@ return [
 		// #[AuthorizedAdminSetting] attribute AND again in each method body —
 		// this list is a code-execution-adjacent surface, so the guard must not
 		// live only in an attribute a hand-written route could miss.
+		// The VNG Objecten and Objecttypen APIs. Every route is #[PublicPage]
+		// and CSRF-free ON PURPOSE: the consumers are other suppliers' systems
+		// presenting "Authorization: Token <key>" with no Nextcloud session,
+		// which the requirement states outright. ObjectenTokenService is the
+		// guard and it runs FIRST on every method — a route here without that
+		// call is an unauthenticated read of a register.
+		['name' => 'objectenApi#objecttypes',       'url' => '/api/v2/objecttypes', 'verb' => 'GET'],
+		['name' => 'objectenApi#objecttype',        'url' => '/api/v2/objecttypes/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#objecttypeVersion', 'url' => '/api/v2/objecttypes/{uuid}/versions/{version}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+', 'version' => '[^/]+']],
+		['name' => 'objectenApi#objects',           'url' => '/api/v2/objects', 'verb' => 'GET'],
+		['name' => 'objectenApi#search',            'url' => '/api/v2/objects/search', 'verb' => 'POST'],
+		['name' => 'objectenApi#createObject',      'url' => '/api/v2/objects', 'verb' => 'POST'],
+		['name' => 'objectenApi#object',            'url' => '/api/v2/objects/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
