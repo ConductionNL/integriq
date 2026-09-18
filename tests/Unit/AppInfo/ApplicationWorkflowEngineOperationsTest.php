@@ -45,12 +45,15 @@ use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\Integriq\Tests\Helpers\AppContainerInjection;
 
 /**
  * @covers \OCA\Integriq\AppInfo\Application
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
  */
 class ApplicationWorkflowEngineOperationsTest extends TestCase {
+	use AppContainerInjection;
+
 
 	/**
 	 * Build an Application instance whose getContainer() resolves IAppManager
@@ -65,7 +68,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 	 */
 	private function makeApp(?IAppManager $appManager, ?LoggerInterface $logger = null): Application {
 		$logger = ($logger ?? $this->createMock(LoggerInterface::class));
-		$container = $this->createMock(IAppContainer::class);
+		$container = $this->createMock($this->appContainerType());
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($appManager, $logger) {
 				if ($id === IAppManager::class) {
@@ -86,13 +89,9 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase {
 
 		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
 
-		// Inject the mock container into App's protected $container property.
-		$appReflection = new ReflectionClass(\OCP\AppFramework\App::class);
-		if ($appReflection->hasProperty('container') === true) {
-			$prop = $appReflection->getProperty('container');
-			$prop->setAccessible(true);
-			$prop->setValue($app, $container);
-		}
+		// Inject the container double. The helper reads App::$container's own
+		// declared type, because NC 35 types it and NC 32-34 do not.
+		$this->injectAppContainer($app, $container);
 
 		return $app;
 	}//end makeApp()
