@@ -4897,7 +4897,7 @@ class SynchronizationService {
 				);
 
 				if (($sourceConfig['events'] ?? true) === false) {
-					$target = \OCA\OpenRegister\Service\SystemOperationContext::run($writeTarget);
+					$target = SystemWrite::run(what: 'a synchronised target object', operation: $writeTarget);
 				} else {
 					$target = $writeTarget();
 				}
@@ -5179,7 +5179,7 @@ class SynchronizationService {
 		);
 
 		if ($group['events'] === false) {
-			$bulkResult = \OCA\OpenRegister\Service\SystemOperationContext::run($writeBatch);
+			$bulkResult = SystemWrite::run(what: 'a batch of synchronised target objects', operation: $writeBatch);
 		} else {
 			$bulkResult = $writeBatch();
 		}

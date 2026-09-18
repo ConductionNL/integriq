@@ -292,15 +292,16 @@ class SynchronizationContractService {
 		// `trim($object['id'])` upsert probe, so drop it either way.
 		unset($object['id']);
 
-		// Wrapped in SystemOperationContext because `silent` is NOT enough on its
+		// Wrapped in a declared system write because `silent` is NOT enough on its
 		// own: it gates the audit row and inverse-relation work inside SaveObject,
 		// while the ObjectCreated/Updated dispatch lives a layer lower in
 		// MagicMapper, which checks this context instead. With `silent` set but
 		// no context, mm:EVENT-DISPATCH was still the single largest remaining
 		// cost of a 374-record sync — 6,866ms — spent dispatching events for rows
 		// nothing subscribes to.
-		$saved = \OCA\OpenRegister\Service\SystemOperationContext::run(
-			fn (): mixed => $this->orObjectService->saveObject(
+		$saved = SystemWrite::run(
+			what: 'a synchronization contract',
+			operation: fn (): mixed => $this->orObjectService->saveObject(
 				object: $object,
 				register: self::REGISTER,
 				schema: self::SCHEMA,
@@ -379,8 +380,9 @@ class SynchronizationContractService {
 			return [];
 		}
 
-		return \OCA\OpenRegister\Service\SystemOperationContext::run(
-			fn (): array => $this->orObjectService->saveObjects(
+		return SystemWrite::run(
+			what: 'a batch of synchronization contracts',
+			operation: fn (): array => $this->orObjectService->saveObjects(
 				objects: $rows,
 				register: self::REGISTER,
 				schema: self::SCHEMA,

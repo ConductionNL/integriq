@@ -328,8 +328,7 @@ class ConnectionStore {
 	/**
 	 * Run an operation as OpenRegister's system principal.
 	 *
-	 * Guarded by class_exists so the app degrades to a plain call if a future
-	 * OpenRegister drops the context. MaterializeCatalogItems does the same.
+	 * Refuses rather than degrading when the context is absent: see SystemWrite.
 	 *
 	 * @param callable $operation The operation.
 	 *
@@ -338,10 +337,10 @@ class ConnectionStore {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is OpenRegister's static scope guard; there is no instance API.
 	 */
 	private function asSystem(callable $operation): mixed {
-		if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
-			return \OCA\OpenRegister\Service\SystemOperationContext::run($operation);
-		}
-
-		return $operation();
+		// 🔴 NO FALLBACK. This used to call $operation() plainly when the
+		// context was absent, which ran the identical write as whoever was
+		// signed in and returned the same value, so nothing distinguished it
+		// from having elevated. SystemWrite throws instead.
+		return SystemWrite::run(what: 'a connection registry write', operation: $operation);
 	}//end asSystem()
 }//end class
