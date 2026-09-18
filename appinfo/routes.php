@@ -68,6 +68,13 @@ return [
 		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
 		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
 
+		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// saved message and polling a mailbox both write `message` objects that
+		// other apps act on, so both sit behind the ADR-023 action matrix
+		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
+		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.

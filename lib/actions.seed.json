@@ -24,6 +24,8 @@
     "mapping.test": ["admin"],
     "mapping.save-object": ["admin"],
     "mapping.get-objects": ["admin"],
+    "mail.import": ["admin"],
+    "mail.poll": ["admin"],
     "event.messages": ["admin"],
     "event.subscribe": ["admin"],
     "event.update-subscription": ["admin"],

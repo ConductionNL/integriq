@@ -43,6 +43,7 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "message",
           "notificaties_abonnement",
           "openformulieren_form_mapping",
           "openformulieren_submission",
@@ -128,6 +129,7 @@
               "fsc",
               "iwmo-ijw",
               "kiss",
+              "mailbox",
               "open-formulieren",
               "payment",
               "peppol",
@@ -3520,6 +3522,132 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "message": {
+        "slug": "message",
+        "title": "Message",
+        "icon": "EmailOutline",
+        "version": "1.0.0",
+        "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "required": [
+          "sourceId",
+          "messageId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "description": "The mailbox source this message arrived on",
+            "title": "Source ID"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Per-source unique message id (RFC 5322 Message-ID, Graph id, or a sha256 of the bytes). A re-poll of the same id never creates a second object",
+            "title": "Message ID"
+          },
+          "from": {
+            "type": "string",
+            "description": "Sender address",
+            "title": "From"
+          },
+          "to": {
+            "type": "array",
+            "description": "Recipient addresses",
+            "items": {
+              "type": "string"
+            },
+            "title": "To"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject line, decoded from any RFC 2047 encoded words",
+            "title": "Subject"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the mail server received the message",
+            "title": "Received At"
+          },
+          "bodyText": {
+            "type": "string",
+            "description": "Plain-text body",
+            "title": "Body Text"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body, sanitized on the way in: script, style, iframe, object, embed and form elements, event handler attributes and script targets are removed",
+            "title": "Body HTML"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata. The bytes live in integriq's file store or travel to filinq, never in this object",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileRef": {
+                  "type": "string",
+                  "description": "Reference to the stored file, empty while the bytes are still in flight",
+                  "title": "File Reference"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Attachment file name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Attachment media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Attachment size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "detectedReference": {
+            "type": "string",
+            "description": "The case reference the message names, read with the source's casePattern. Empty when the message names none, or when the configured pattern does not compile",
+            "title": "Detected Reference"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "linked",
+              "caseCreated",
+              "unassigned"
+            ],
+            "description": "Lifecycle: received (stored, offered to the owning app) -> linked (a listener linked it to an object it already had) | caseCreated (a listener created one) | unassigned (nobody claimed it; a decline lands here too)",
+            "title": "Status"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "The raw outcome the listener set: linked, created or declined. Empty when nobody answered",
+            "title": "Outcome"
+          },
+          "linkedObject": {
+            "type": "string",
+            "description": "The object reference the listener answered with",
+            "title": "Linked Object"
+          },
+          "handedToIntake": {
+            "type": "integer",
+            "description": "How many attachments the document intake inbox took. Zero means they stayed in integriq",
+            "title": "Handed To Intake"
+          },
+          "warning": {
+            "type": "string",
+            "description": "A non-fatal parse warning. A file that could not be parsed is kept whole as a single attachment and says so here",
+            "title": "Warning"
+          }
+        }
       },
       "sms_message": {
         "slug": "sms_message",
