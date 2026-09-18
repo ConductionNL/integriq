@@ -1,0 +1,133 @@
+{
+  "$comment": "ADR-037 manifest fragment (outbound-sender-identity-and-deliverability). Two pages. The identities page is where an administrator sees which address a team sends under and what that domain's DNS says about it, because an alignment result nobody can see is a check nobody acts on. The opt-out page is the list every sender in the product honours; it is worth a screen of its own because an AVG duty that lives only in a database is a duty nobody can show they met. Quoting level is a column: the whole dossier quoted back to a bezwaarmaker is a disclosure, so what each identity quotes should be visible without opening it.",
+  "pages": [
+    {
+      "id": "SenderIdentities",
+      "route": "/outbound/identities",
+      "type": "logs",
+      "title": "Sender identities",
+      "config": {
+        "register": "integriq",
+        "schema": "sender_identity",
+        "sortKey": "displayName",
+        "sortOrder": "asc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "displayName",
+            "label": "Name",
+            "sortable": true,
+            "width": "22%"
+          },
+          {
+            "key": "address",
+            "label": "Address",
+            "sortable": true,
+            "width": "26%"
+          },
+          {
+            "key": "quotingLevel",
+            "label": "Quotes",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "holdWindowSeconds",
+            "label": "Hold window",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "mailAccount",
+            "label": "Mail account",
+            "sortable": true,
+            "width": "22%"
+          }
+        ]
+      }
+    },
+    {
+      "id": "RecipientOptOuts",
+      "route": "/outbound/opt-outs",
+      "type": "logs",
+      "title": "Opt-outs",
+      "config": {
+        "register": "integriq",
+        "schema": "recipient_opt_out",
+        "sortKey": "createdAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "createdAt",
+            "label": "Since",
+            "sortable": true,
+            "width": "20%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "address",
+            "label": "Address",
+            "sortable": true,
+            "width": "30%"
+          },
+          {
+            "key": "scope",
+            "label": "Scope",
+            "sortable": true,
+            "width": "16%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "instance": "warning",
+                "case": "info"
+              }
+            }
+          },
+          {
+            "key": "caseRef",
+            "label": "Case",
+            "sortable": true,
+            "width": "18%"
+          },
+          {
+            "key": "source",
+            "label": "Added by",
+            "sortable": true,
+            "width": "16%"
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "SenderIdentities",
+          "label": "Sender identities",
+          "icon": "AccountBoxOutline",
+          "route": "SenderIdentities",
+          "order": 47
+        },
+        {
+          "id": "RecipientOptOuts",
+          "label": "Opt-outs",
+          "icon": "EmailOffOutline",
+          "route": "RecipientOptOuts",
+          "order": 48
+        }
+      ]
+    }
+  ]
+}

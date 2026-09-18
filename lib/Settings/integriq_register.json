@@ -52,8 +52,11 @@
           "openformulieren_submission",
           "payment_intent",
           "peppol_transmission",
+          "recipient_key",
+          "recipient_opt_out",
           "ris_sync_record",
           "rule",
+          "sender_identity",
           "sms_message",
           "source",
           "stuf_message",
@@ -2692,6 +2695,95 @@
         "appendOnly": false,
         "immutable": false
       },
+      "recipient_key": {
+        "slug": "recipient_key",
+        "title": "Recipient Key",
+        "icon": "KeyOutline",
+        "version": "1.0.0",
+        "summary": "A public key known for one recipient address, used to encrypt what is sent there",
+        "description": "A Recipient Key is the public key material known for one address. Where a key is known the message is signed and encrypted; where none is known it is signed and not encrypted, and the log says which of the two happened, so nobody assumes an encryption they did not get. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address",
+          "publicKey"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The recipient address this key belongs to",
+            "title": "Address"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "smime",
+              "pgp"
+            ],
+            "description": "Which kind of key material this is",
+            "title": "Type"
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "The public key material, PEM for S/MIME",
+            "title": "Public Key"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "The fingerprint an administrator can check against",
+            "title": "Fingerprint"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Added At"
+          }
+        }
+      },
+      "recipient_opt_out": {
+        "slug": "recipient_opt_out",
+        "title": "Recipient Opt Out",
+        "icon": "EmailOffOutline",
+        "version": "1.0.0",
+        "summary": "One address that asked not to be written to, honoured by every sender in the product",
+        "description": "A Recipient Opt Out is held once per address per instance and checked before every send. A recipient who asked not to be written to should not have to ask each app separately, and the AVG duty is the sender's, not the app's. Protected categories, such as a besluit, are not stopped by an opt-out; a send that overrides one is recorded as having done so. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address that opted out, lower case",
+            "title": "Address"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "case"
+            ],
+            "description": "Everything but the protected categories, or the updates on one case",
+            "title": "Scope"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case, for a case scoped opt-out",
+            "title": "Case Reference"
+          },
+          "source": {
+            "type": "string",
+            "description": "Who or what added it: the unsubscribe link, an administrator, a bounce",
+            "title": "Source"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Created At"
+          }
+        }
+      },
       "ris_sync_record": {
         "slug": "ris_sync_record",
         "title": "RIS Sync Record",
@@ -3650,6 +3742,155 @@
             "type": "string",
             "description": "A non-fatal parse warning. A file that could not be parsed is kept whole as a single attachment and says so here",
             "title": "Warning"
+          }
+        }
+      },
+      "sender_identity": {
+        "slug": "sender_identity",
+        "title": "Sender Identity",
+        "icon": "AccountBoxOutline",
+        "version": "1.0.0",
+        "summary": "The face an outgoing message wears: address, signature, quoting, hold window and keys",
+        "description": "A Sender Identity is not an account. The account holds the credentials and the OAuth grant and Nextcloud Mail owns it (decision D12); the identity holds what the recipient sees. Many identities may share one account, and moving an identity to another account changes no policy. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "displayName",
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "The name a recipient sees in the From line",
+            "title": "Display Name"
+          },
+          "address": {
+            "type": "string",
+            "description": "The address a message leaves under. A policy decision, not a deployment variable",
+            "title": "Address"
+          },
+          "replyTo": {
+            "type": "string",
+            "description": "Where replies go, when that is not the sending address",
+            "title": "Reply To"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Appended below the body, under the RFC 3676 separator",
+            "title": "Signature"
+          },
+          "mailAccount": {
+            "type": "string",
+            "description": "The Nextcloud Mail account this identity sends through. Referenced, never held here",
+            "title": "Mail Account"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Whether a message naming no identity leaves under this one",
+            "title": "Default"
+          },
+          "quotingLevel": {
+            "type": "string",
+            "enum": [
+              "none",
+              "last-message",
+              "full-history"
+            ],
+            "description": "How much case history the outgoing message quotes. The whole dossier quoted back to a bezwaarmaker is a disclosure, so none is a real option. Defaults to last-message",
+            "title": "Quoting Level"
+          },
+          "holdWindowSeconds": {
+            "type": "integer",
+            "description": "How long a message waits before the send is attempted, during which it can be withdrawn. Zero, the default, sends at once. Nothing is recalled after the window, because nothing can be",
+            "title": "Hold Window"
+          },
+          "signOutgoing": {
+            "type": "boolean",
+            "description": "Whether every message from this identity is signed",
+            "title": "Sign Outgoing"
+          },
+          "smimeCertificate": {
+            "type": "string",
+            "description": "The PEM certificate this identity signs with",
+            "title": "S/MIME Certificate"
+          },
+          "smimePrivateKey": {
+            "type": "string",
+            "description": "The PEM private key this identity signs with. Write only; it is never read back over the API",
+            "title": "S/MIME Private Key"
+          },
+          "dkimSelector": {
+            "type": "string",
+            "description": "The DKIM selector to check, default 'default'",
+            "title": "DKIM Selector"
+          },
+          "sendingHost": {
+            "type": "string",
+            "description": "The host mail actually leaves from, compared against the published SPF record",
+            "title": "Sending Host"
+          },
+          "noReply": {
+            "type": "object",
+            "description": "What happens to a reply to this address. A reply is never dropped: it is diverted or refused",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this identity takes replies",
+                "title": "Enabled"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "divert",
+                  "refuse"
+                ],
+                "description": "Send it on, or answer the sender",
+                "title": "Mode"
+              },
+              "divertTo": {
+                "type": "string",
+                "description": "The mailbox a diverted reply lands in",
+                "title": "Divert To"
+              },
+              "writeInstead": {
+                "type": "string",
+                "description": "The address a refusal points the sender at",
+                "title": "Write Instead"
+              }
+            },
+            "title": "No Reply"
+          },
+          "alignment": {
+            "type": "object",
+            "description": "What this domain's DNS says, from the last check. A failing identity still sends, with the risk shown: blocking would break an instance the day a DNS change propagates slowly",
+            "properties": {
+              "domain": {
+                "type": "string",
+                "description": "The domain checked",
+                "title": "Domain"
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was checked",
+                "title": "Checked At"
+              },
+              "spf": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "SPF"
+              },
+              "dkim": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DKIM"
+              },
+              "dmarc": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DMARC"
+              }
+            },
+            "title": "Alignment"
           }
         }
       },
