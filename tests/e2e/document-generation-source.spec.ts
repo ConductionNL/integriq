@@ -23,7 +23,9 @@ const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe.configure({ mode: 'serial' })
 
-test('a vendor source without a credential reference cannot be activated', async ({ request }) => {
+test('a vendor source without a credential reference cannot be activated', async ({
+	request,
+}) => {
 	// @e2e openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	const created = await request.post(`${OR_BASE}/source`, {
@@ -44,7 +46,9 @@ test('a vendor source without a credential reference cannot be activated', async
 	const source = await created.json()
 	const sourceId = String(source.id ?? source.uuid ?? source['@self']?.id ?? '')
 
-	const activated = await request.post(`${API_BASE}/document-generation/sources/${sourceId}/activate`)
+	const activated = await request.post(
+		`${API_BASE}/document-generation/sources/${sourceId}/activate`,
+	)
 
 	expect(
 		activated.status(),
@@ -56,7 +60,9 @@ test('a vendor source without a credential reference cannot be activated', async
 	await request.delete(`${OR_BASE}/source/${sourceId}`).catch(() => {})
 })
 
-test('a mock-mode source lists the vendor templates, and stores none of them', async ({ request }) => {
+test('a mock-mode source lists the vendor templates, and stores none of them', async ({
+	request,
+}) => {
 	// @e2e openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	const created = await request.post(`${OR_BASE}/source`, {
@@ -77,7 +83,9 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 	const source = await created.json()
 	const sourceId = String(source.id ?? source.uuid ?? source['@self']?.id ?? '')
 
-	const listed = await request.get(`${API_BASE}/document-generation/sources/${sourceId}/templates`)
+	const listed = await request.get(
+		`${API_BASE}/document-generation/sources/${sourceId}/templates`,
+	)
 	expect(listed.status(), 'list the vendor templates').toBe(200)
 	const templates = (await listed.json()).templates ?? []
 
