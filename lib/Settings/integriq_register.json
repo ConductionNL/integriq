@@ -47,6 +47,7 @@
           "mapping",
           "message",
           "notificaties_abonnement",
+          "outbound_message",
           "openformulieren_form_mapping",
           "openformulieren_submission",
           "payment_intent",
@@ -4085,6 +4086,337 @@
         ],
         "appendOnly": false,
         "immutable": false
+      },
+      "outbound_message": {
+        "slug": "outbound_message",
+        "title": "Outbound Message",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "One message the product sent to a person, per recipient and per step",
+        "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
+        "required": [
+          "channel",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string",
+            "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",
+            "title": "Subject Reference"
+          },
+          "channel": {
+            "type": "string",
+            "description": "The channel the message travelled on, which also decides what can be reported about it afterwards",
+            "title": "Channel"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The subject line",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "The rendered body as it left, redacted before the write per execution-trace REQ-003. Readable only with the outbound.read-body action",
+            "title": "Body"
+          },
+          "context": {
+            "type": "object",
+            "description": "The render context, redacted before the write",
+            "title": "Context"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Which app asked for the send",
+            "title": "Source App"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Correlation id carried from the sending app",
+            "title": "Correlation ID"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata; the bytes are the transport's business",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                },
+                "fileRef": {
+                  "type": "string",
+                  "description": "Reference to the stored file",
+                  "title": "File Reference"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "recipients": {
+            "type": "array",
+            "description": "One row per recipient, each with its own status, states and failure. An external address with no Nextcloud account is a recipient like any other",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "Where the copy went",
+                  "title": "Address"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Who that is",
+                  "title": "Name"
+                },
+                "accountId": {
+                  "type": "string",
+                  "description": "The Nextcloud account, empty for an external address",
+                  "title": "Account"
+                },
+                "external": {
+                  "type": "boolean",
+                  "description": "Whether this recipient has no account here. No account is ever created for one",
+                  "title": "External"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "sent",
+                    "failed"
+                  ],
+                  "description": "pending (not handed over yet) | sent (the transport accepted this copy, which is not the same as delivered) | failed",
+                  "title": "Status"
+                },
+                "deliveryState": {
+                  "type": "string",
+                  "enum": [
+                    "reported",
+                    "not reported",
+                    "unsupported by this channel"
+                  ],
+                  "description": "reported (the transport said so) | not reported (it can and has not) | unsupported by this channel. Never inferred from the absence of a failure",
+                  "title": "Delivery State"
+                },
+                "readState": {
+                  "type": "string",
+                  "enum": [
+                    "reported",
+                    "not reported",
+                    "unsupported by this channel"
+                  ],
+                  "description": "The same three states for a read. A read is never inferred from a delivery",
+                  "title": "Read State"
+                },
+                "failedStep": {
+                  "type": "string",
+                  "description": "The step this recipient's copy failed in",
+                  "title": "Failed Step"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "What the transport said",
+                  "title": "Reason"
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The transport's own reference for this copy",
+                  "title": "Reference"
+                },
+                "handedOverAt": {
+                  "type": "string",
+                  "description": "When the transport accepted this copy",
+                  "title": "Handed Over At"
+                },
+                "deliveredAt": {
+                  "type": "string",
+                  "description": "When the delivery was reported",
+                  "title": "Delivered At"
+                },
+                "readAt": {
+                  "type": "string",
+                  "description": "When the read was reported",
+                  "title": "Read At"
+                },
+                "deliveryDetail": {
+                  "type": "string",
+                  "description": "What the delivery receipt said",
+                  "title": "Delivery Detail"
+                },
+                "readDetail": {
+                  "type": "string",
+                  "description": "What the read receipt said",
+                  "title": "Read Detail"
+                }
+              }
+            },
+            "title": "Recipients"
+          },
+          "steps": {
+            "type": "array",
+            "description": "The ordered steps the send went through, so a failure names where it happened",
+            "items": {
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": "string",
+                  "description": "Which step",
+                  "title": "Step"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What it said",
+                  "title": "Detail"
+                }
+              }
+            },
+            "title": "Steps"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Every retry, audited with who asked for it. A retry appends here rather than replacing what happened the first time",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who retried",
+                  "title": "By"
+                },
+                "recipients": {
+                  "type": "array",
+                  "description": "Which recipients were retried",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Recipients"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What happened",
+                  "title": "Detail"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "retryCount": {
+            "type": "integer",
+            "description": "How many retries this message has had",
+            "title": "Retry Count"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "sent",
+              "partially failed",
+              "failed"
+            ],
+            "description": "What the recipient rows add up to: pending (not every recipient is settled) | sent (every copy accepted) | partially failed (some accepted, some not) | failed (none left)",
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the record was opened, which is before the first transport call",
+            "title": "Created At"
+          },
+          "bodyReads": {
+            "type": "array",
+            "description": "Every read of the stored body. Reading what a letter said is itself an act worth recording",
+            "items": {
+              "type": "object",
+              "properties": {
+                "by": {
+                  "type": "string",
+                  "description": "Who read it",
+                  "title": "By"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                }
+              }
+            },
+            "title": "Body Reads"
+          },
+          "forwardedFrom": {
+            "type": "string",
+            "description": "The message this one forwards, read from this end of the link",
+            "title": "Forwarded From"
+          },
+          "forwardedBy": {
+            "type": "string",
+            "description": "Who forwarded it",
+            "title": "Forwarded By"
+          },
+          "forwardedTo": {
+            "type": "array",
+            "description": "The forwards made from this message, read from the other end of the link. The rest of this record is left exactly as it was, because it is the evidence",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "The forward record",
+                  "title": "Message"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who forwarded it",
+                  "title": "By"
+                }
+              }
+            },
+            "title": "Forwarded To"
+          }
+        }
       },
       "openformulieren_form_mapping": {
         "slug": "openformulieren_form_mapping",
