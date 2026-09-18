@@ -104,6 +104,8 @@ class RegisterDescriptorTest extends TestCase {
 		'SenderIdentity' => 'sender_identity',
 		'RecipientOptOut' => 'recipient_opt_out',
 		'RecipientKey' => 'recipient_key',
+		'MappingVersion' => 'mapping_version',
+		'Verdict' => 'verdict',
 		'Rule' => 'rule',
 		'Synchronization' => 'synchronization',
 		'SynchronizationContract' => 'synchronization_contract',
