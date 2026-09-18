@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Migration\Source;
 
+use InvalidArgumentException;
 use OCA\Integriq\Migration\ColumnMapping;
 use OCA\Integriq\Migration\ColumnMappingValidator;
 use OCA\Integriq\Migration\MigrationRecord;
 use OCA\Integriq\Migration\Source\FileMigrationSource;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -71,6 +73,40 @@ class FileMigrationSourceTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end source()
+
+	/**
+	 * An adapter whose root folder answers a FOLDER for every path.
+	 *
+	 * @return FileMigrationSource The adapter.
+	 */
+	private function sourceOverAFolder(): FileMigrationSource {
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('get')->willReturn($this->createMock(Folder::class));
+
+		return new FileMigrationSource(
+			$root,
+			new ColumnMappingValidator(),
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end sourceOverAFolder()
+
+	/**
+	 * 🔴 A path that names a folder is refused as a folder, not as unreadable.
+	 *
+	 * `IRootFolder::get()` answers a Node, and only a File can be read. The
+	 * folder case used to fall through to `getContent()`, which Node does not
+	 * declare, and the catch-all below turned that into "could not be read" —
+	 * the sentence for a corrupt delivery. An operator who typed a directory
+	 * path was sent looking at the file.
+	 *
+	 * @return void
+	 */
+	public function testAPathNamingAFolderIsRefusedAsAFolder(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('is a folder, not a file');
+
+		$this->sourceOverAFolder()->read('case', ['path' => '/deliveries', 'mapping' => $this->storedMapping()]);
+	}//end testAPathNamingAFolderIsRefusedAsAFolder()
 
 	/**
 	 * A second delivery of the same shape is read with the stored mapping,

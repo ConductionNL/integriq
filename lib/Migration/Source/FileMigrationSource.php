@@ -25,6 +25,7 @@ use OCA\Integriq\Migration\ColumnMapping;
 use OCA\Integriq\Migration\ColumnMappingValidator;
 use OCA\Integriq\Migration\MigrationRecord;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
@@ -272,9 +273,26 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		try {
 			$node = $this->rootFolder->get($path);
+			if (($node instanceof File) === false) {
+				// `get()` answers a Node, and only a File can be read. Without
+				// this the folder case fell through to `getContent()`, which
+				// Node does not declare: the Throwable below caught it and
+				// reported "could not be read", so an operator who typed a
+				// directory path got the message for a corrupt file.
+				throw new InvalidArgumentException(
+					sprintf('The delivered file "%s" is a folder, not a file.', $path)
+				);
+			}
+
 			$read = $node->getContent();
 		} catch (NotFoundException $e) {
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" is not there.', $path));
+		} catch (InvalidArgumentException $e) {
+			// The folder refusal above is already the message the operator
+			// needs. Without this clause the Throwable catch would swallow it
+			// and hand back "could not be read", which is the generic sentence
+			// the specific one was written to replace.
+			throw $e;
 		} catch (\Throwable $e) {
 			$this->logger->warning('migration-source.file.unreadable', ['path' => $path, 'error' => $e->getMessage()]);
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" could not be read.', $path));
