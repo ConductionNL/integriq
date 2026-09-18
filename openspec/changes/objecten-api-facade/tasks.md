@@ -1,5 +1,15 @@
 # Tasks: objecten-api-facade
 
+> 🔑 **Pass 2 (#this PR) serves the routes.** Ten of them: six read and four
+> write. The table in the PR body is updated route by route and is the honest
+> record of what a consumer can reach today. Two things are still NOT true of
+> this facade and are named there rather than implied: the geometry search has
+> not been run against any spatial engine, and a write is REFUSED while the
+> `objecten` kanaal is unwired, because a change nobody is told about is a
+> change the rest of the landscape does not have.
+>
+> Pass 1's note, kept because it is still why those three came first:
+>
 > 🔑 **This PR builds the three pieces that decide correctness, and no HTTP.**
 > The mapping (who a uuid stands for), the token matrix (who may touch it) and
 > the record shape (what leaves the building). Each is pure, each is the thing
@@ -33,8 +43,16 @@
 ### Task 2: The Objecttypen API v2
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-the-objecttypen-api-serves-the-schema-it-stands-for-req-oaf-002`
 - **files**: `lib/Service/Objecten/ObjecttypeEndpointHandler.php`, the endpoint seeds
-- [ ] The Objecttypen API handler and its three routes. Not started.
-- [ ] Test
+- [x] `ObjecttypeEndpointHandler` and its three routes. The `jsonSchema` is
+      RENDERED from the OpenRegister schema at read time, never stored beside
+      the objecttype: a stored copy is a second source of truth, and the
+      failure is quiet — an administrator edits the schema, the API keeps
+      serving last month's shape, a counterparty validates against it and
+      writes something the register then refuses. An unreadable schema answers
+      an EMPTY object rather than a fabricated one. The register and schema
+      NAMES do not go out: the published uuid is the whole of what a consumer
+      addresses.
+- [x] Test
 
 ### Task 3: The Objecten API v2 read path
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-the-objecten-api-reads-objects-in-the-standards-shape-req-oaf-003`
@@ -47,17 +65,41 @@
       the translator without being added to the vocabulary fails a test rather
       than shipping to every counterparty in a release nobody connects to the
       leak.
-- [ ] The QUERY half: `type`, `data_attrs`, `date`, `registrationDate`,
-      `ordering`, pagination and the geometry search. Each needs the object
-      service and a seeded register, and the geometry query plan must be read
-      against one rather than assumed — which the change's own verification
-      section already says.
+- [x] The QUERY half: `type`, `data_attrs`, `date`, `registrationDate`,
+      `ordering` and page-based pagination. A list with no `type` is REFUSED,
+      not answered with everything — the token carries a permission per
+      objecttype, so a list across types would silently answer with only the
+      ones this token may see, which is an untruth in the shape of a success.
+      A malformed `data_attrs` clause matches NOTHING rather than being
+      ignored, and `count` is the TOTAL rather than the page size.
+- [x] The geometry search, as a bounding-free haversine over the candidate
+      set, so it needs no spatial extension.
+      🔴 **RUN AGAINST NO SPATIAL ENGINE.** The arithmetic is exercised in PHP
+      against fixed coordinates with no database at all. Its limit is the other
+      side of the same coin: on a large register it reads more rows than a
+      spatial index would. Both are stated in the handler's docblock and the PR
+      body rather than implied by a green suite.
+- [ ] The query plan read against a seeded register, which the change's own
+      verification section asks for and which needs an instance.
 - [x] Test, including the leak guard AND a control proving the guard reports a foreign field rather than reporting nothing whatever it is given.
 
 ### Task 4: The Objecten API write path
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-write-lands-in-openregister-and-announces-req-oaf-004`
 - **files**: `lib/Service/Objecten/ObjectEndpointHandler.php`, `lib/Service/NotificatiesPublisher.php`
-- [ ] The write path and the announcement. Not started: both want the object service and the publisher.
+- [x] `ObjectWriteHandler`: create, replace, partial update and delete, all
+      through OpenRegister's object service so validation, audit, versioning,
+      RBAC and multitenancy apply unchanged, with the token's PRINCIPAL on
+      every write. A PATCH MERGES — sending one through the replace path drops
+      every field the caller did not mention and the response looks like a
+      successful update.
+      🔴 **A write that cannot announce is REFUSED with 503, not performed.**
+      The requirement pairs writing and announcing in one sentence because they
+      are one contract: an object that changed without an announcement is an
+      object the landscape does not know changed. A loud temporary refusal
+      beats a quiet permanent divergence.
+- [ ] Wiring the announcer to `EventService::publishNotificatiesAction()`. The
+      handler takes it as a seam and refuses without it, so this cannot ship
+      as an unannounced write by accident.
 - [ ] Test
 
 ### Task 5: Tokens with a permission per objecttype
