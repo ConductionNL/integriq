@@ -3653,6 +3653,124 @@
           }
         }
       },
+      "digitalPostMessage": {
+        "slug": "digitalPostMessage",
+        "title": "Digital Post Message",
+        "icon": "EmailOutline",
+        "version": "1.0.0",
+        "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
+        "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
+        "required": [
+          "recipient",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the app that asked for this letter (e.g. dossiq)",
+            "title": "Source App"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Slug of the digital post source the letter was sent over",
+            "title": "Source"
+          },
+          "providerId": {
+            "type": "string",
+            "description": "The binding that handled this letter (log|berichtenbox|postex)",
+            "title": "Provider"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "The recipient identity the provider addresses, for example a BSN for Berichtenbox",
+            "title": "Recipient"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The letter's subject",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "The letter's body",
+            "title": "Body"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "References to the documents sent with the letter. They stay on a failed message, so it can be retried rather than rewritten",
+            "title": "Attachments",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Identifier of the document in the app that owns it",
+                  "title": "Id"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "File name as the recipient sees it",
+                  "title": "Name"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where the document is held. The letter carries a reference, not a copy",
+                  "title": "URL"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Media type of the document",
+                  "title": "MIME type"
+                }
+              }
+            }
+          },
+          "requestedBy": {
+            "type": "string",
+            "description": "The acting user or system id that asked for this letter",
+            "title": "Requested By"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Caller-generated id, echoed on every status change",
+            "title": "Correlation ID"
+          },
+          "providerReference": {
+            "type": "string",
+            "description": "The provider's own reference, for example the logiusKenmerk. Empty until the provider accepts the send",
+            "title": "Provider Reference"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "read",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (provider accepted) -> delivered -> read, or failed at any point",
+            "title": "Status"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "The provider's reason, when the status is failed. Empty otherwise",
+            "title": "Last Error"
+          },
+          "simulated": {
+            "type": "boolean",
+            "description": "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived",
+            "title": "Simulated"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp the message was tracked from",
+            "title": "Created"
+          }
+        }
+      },
       "sms_message": {
         "slug": "sms_message",
         "title": "SMS Message",
