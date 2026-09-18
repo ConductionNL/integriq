@@ -444,6 +444,14 @@ return [
 		['name' => 'propertySource#resolve', 'url' => '/api/property-sources/{provider}/resolve', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
 		['name' => 'propertySource#resync', 'url' => '/api/property-sources/{provider}/resync', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
 
+		// records-owned-by-an-external-source: one read answers ownership for a
+		// consuming app, so nobody has to open a contract, a synchronisation and a
+		// source to render "the registry owns this". The delete is refused here
+		// when a source owns the record, and the override is a written statement.
+		['name' => 'ownership#show', 'url' => '/api/ownership/{id}', 'verb' => 'GET'],
+		['name' => 'ownership#destroy', 'url' => '/api/ownership/{id}', 'verb' => 'DELETE'],
+		['name' => 'ownership#validatePolicy', 'url' => '/api/ownership/validate-policy', 'verb' => 'POST'],
+
 		// Connection registry (connection-registry D9): link a source to a
 		// declared connection and probe it at once. Listing goes through OR's
 		// generic /api/objects/integriq/app_connection (ADR-022).
