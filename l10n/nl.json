@@ -1150,7 +1150,11 @@
         "Shown while the connection is switched off. Default: Switched off in the app's settings.": "Getoond zolang de koppeling uitgeschakeld is. Standaard: Switched off in the app's settings.",
         "App-config key that holds the JSON object.": "App-configuratiesleutel die het JSON-object bevat.",
         "Dot path to the value, such as enabled or sync.enabled.": "Pad met punten naar de waarde, zoals enabled of sync.enabled.",
-        "Settings of the declaring app that must all be filled. Each entry is an app-config key, always read as the whole key even when it contains dots, or {configKey, jsonPath} to read one value inside a JSON setting. An empty string, false, 0, null, an empty JSON list or object, or a missing path reads as not filled.": "Instellingen van de declarerende app die allemaal gevuld moeten zijn. Elk item is een app-configuratiesleutel, altijd gelezen als de hele sleutel, ook met punten erin, of {configKey, jsonPath} om één waarde in een JSON-instelling te lezen. Een lege tekst, false, 0, null, een lege JSON-lijst of een leeg JSON-object, of een ontbrekend pad telt als niet gevuld."
+        "Settings of the declaring app that must all be filled. Each entry is an app-config key, always read as the whole key even when it contains dots, or {configKey, jsonPath} to read one value inside a JSON setting. An empty string, false, 0, null, an empty JSON list or object, or a missing path reads as not filled.": "Instellingen van de declarerende app die allemaal gevuld moeten zijn. Elk item is een app-configuratiesleutel, altijd gelezen als de hele sleutel, ook met punten erin, of {configKey, jsonPath} om één waarde in een JSON-instelling te lezen. Een lege tekst, false, 0, null, een lege JSON-lijst of een leeg JSON-object, of een ontbrekend pad telt als niet gevuld.",
+        "Digital post binding": "Digitale-postkoppeling",
+        "Select a digital post binding": "Kies een digitale-postkoppeling",
+        "Which service this source posts letters through. Each binding asks for its own settings once you pick it.": "Via welke dienst deze bron brieven verstuurt. Elke koppeling vraagt om haar eigen instellingen zodra je die kiest.",
+        "This instance has no digital post binding installed, so a letter cannot be sent from here yet.": "Op deze omgeving is geen digitale-postkoppeling geïnstalleerd, dus vanaf hier kan nog geen brief worden verstuurd."
     },
     "plurals": {}
 }

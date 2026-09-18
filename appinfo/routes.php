@@ -83,6 +83,10 @@ return [
 		// rule decides what opens a case and a reply leaves the building.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// What digital post bindings this instance has, so the source form's
+		// provider picker is built from the registry rather than from a list
+		// written beside it and left to go stale.
+		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],

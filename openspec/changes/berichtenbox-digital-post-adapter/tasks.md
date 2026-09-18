@@ -29,7 +29,10 @@
 ### Task 5: Source form, i18n, docs
 - Provider picker and config fields on the source page; Dutch and English strings; docs with screenshots.
 - [x] Implement the half the form reads: every binding describes the configuration it needs through `getConfigSchema()`, so the picker and its fields can be built from the registry rather than hardcoded.
-- [ ] The source page's provider picker itself, its Dutch and English strings, and the docs with screenshots.
+- [x] The source page's provider picker itself, its Dutch and English strings, and the prose docs.
+- [ ] Screenshots for the docs. They need a running instance with a binding configured, which this lane does not have and must not borrow. Everything around them is written, so it is one pass with a browser.
+- **note**: the picker reads `GET /apps/integriq/api/digital-post/providers`, which returns `DigitalPostProviderRegistry::describeAll()`. Built from the registry deliberately: a list written beside it goes stale in silence. A binding added is invisible until somebody remembers the form, and a binding removed leaves an option that saves a provider id nothing answers to. Neither says anything on screen, and the first evidence either way is a letter nobody posted.
+- **note**: a stored provider this instance does NOT carry renders as itself rather than being cleared, so a source configured elsewhere reads as "set to something not installed here" instead of "nothing is set".
 - [x] Test (`tests/e2e/digital-post-source.spec.ts`)
 
 ### Task 6: The feature flag selects the binding
