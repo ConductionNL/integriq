@@ -25,6 +25,13 @@
 - [x] Implement the half that does not depend on the wire shape: `SubscriptionRequestHandler` takes the request as a payload, subscribes through the matching binding, records the identity on the roster and reports the state back.
 - [x] Test
 - [ ] Bind it to `RegistrySubscriptionRequestedEvent` once OpenRegister ships the event and its delivery mechanism is confirmed. Still blocked, and still deliberately not guessed at.
+  - RE-MEASURED 2026-09-18 AND STILL BLOCKED. The event name appears exactly
+    once in this repo, in a docblock on `SubscriptionRequestHandler`, and
+    nowhere in `vendor/`. It is not defined and nothing dispatches it, so there
+    is no wire shape to bind to and guessing one would produce a listener that
+    never fires and a test that proves nothing.
+  - The half that does not depend on the wire shape IS built and tested. What is
+    left is one binding, and it is one line once the event exists.
 
 ### Task 4: The poll job and the outbound update
 - **spec_ref**: `openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003`
