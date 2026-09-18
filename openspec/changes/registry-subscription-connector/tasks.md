@@ -24,14 +24,31 @@
 - **Depends on**: Task 1's blocked item.
 - [x] Implement the half that does not depend on the wire shape: `SubscriptionRequestHandler` takes the request as a payload, subscribes through the matching binding, records the identity on the roster and reports the state back.
 - [x] Test
-- [ ] Bind it to `RegistrySubscriptionRequestedEvent` once OpenRegister ships the event and its delivery mechanism is confirmed. Still blocked, and still deliberately not guessed at.
-  - RE-MEASURED 2026-09-18 AND STILL BLOCKED. The event name appears exactly
-    once in this repo, in a docblock on `SubscriptionRequestHandler`, and
-    nowhere in `vendor/`. It is not defined and nothing dispatches it, so there
-    is no wire shape to bind to and guessing one would produce a listener that
-    never fires and a test that proves nothing.
-  - The half that does not depend on the wire shape IS built and tested. What is
-    left is one binding, and it is one line once the event exists.
+- [x] Bind it to `RegistrySubscriptionRequestedEvent`.
+  - 🔴 IT WAS NOT BLOCKED, AND I MEASURED THE WRONG REPO TO CONCLUDE THAT IT
+    WAS. On 2026-09-18 I reported it still blocked because the event name
+    appears once in THIS repo, in a docblock. That is the wrong place to look
+    for a cross-app dependency: OpenRegister owns and emits it, and it has
+    shipped. `lib/Event/RegistrySubscriptionRequestedEvent.php` exists there and
+    `RegistrySubscriptionNotifier` dispatches it.
+  - The wire shape is therefore READ, not guessed: five fields (`objectUuid`,
+    `register`, `schema`, `registry`, `identityValue`) and a `getPayload()`
+    returning exactly those keys. Two of them, `registry` and `identityValue`,
+    are spellings `SubscriptionRequestHandler` already accepted, so the binding
+    really was one line, as this file predicted.
+  - THE LISTENER READS `getPayload()` RATHER THAN ASSEMBLING ONE FROM THE
+    GETTERS. Assembling it here would be a second definition of the wire shape,
+    and the two would drift the first time OpenRegister added a field.
+  - 🔑 IT SWALLOWS ITS OWN FAILURES. The event is dispatched inside
+    OpenRegister's own work, so a registry integriq cannot reach must fail as a
+    subscription that did not happen, not as a save that failed for a reason the
+    person saving cannot act on. Mutation-checked by narrowing the catch and
+    watching the exception escape.
+  - The stub under `tests/stubs/` was DIFFED against the real class rather than
+    written from the docblock: same five constructor arguments in the same
+    order, same five getters, same five payload keys. A stub that drifts from
+    the real class can only pass, which is the same defect as a double that adds
+    a method the real class lacks.
 
 ### Task 4: The poll job and the outbound update
 - **spec_ref**: `openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003`
