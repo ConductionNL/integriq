@@ -78,6 +78,10 @@ use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\Integriq\PropertySource\PropertySourceRegistry;
+use OCA\Integriq\PropertySource\Provider\BagPropertySource;
+use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
+use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
@@ -319,6 +323,25 @@ class Application extends App implements IBootstrap {
 				}
 
 				return $c->get(PdokGeocodingClientMock::class);
+			}
+		);
+
+		// The property-source registry: one keyed list of the registry
+		// bindings a schema property can name through
+		// `x-openregister-property-source`. Registered explicitly rather than
+		// autowired so the order, and therefore the first-wins collision
+		// policy, is readable in one place.
+		$context->registerService(
+			PropertySourceRegistry::class,
+			static function ($c): PropertySourceRegistry {
+				return new PropertySourceRegistry(
+					[
+						$c->get(BagPropertySource::class),
+						$c->get(BrpPropertySource::class),
+						$c->get(KvkPropertySource::class),
+					],
+					$c->get('Psr\Log\LoggerInterface')
+				);
 			}
 		);
 

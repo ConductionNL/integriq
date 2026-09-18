@@ -427,6 +427,16 @@ return [
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
 
+		// registry-backed-field-source: openregister resolves a property that
+		// declares `x-openregister-property-source` through these routes, and the
+		// administration screen resyncs a list-shaped provider through the last
+		// one. A suggestion is never an answer, so suggest and resolve are two
+		// routes rather than one with a flag.
+		['name' => 'propertySource#index', 'url' => '/api/property-sources', 'verb' => 'GET'],
+		['name' => 'propertySource#suggest', 'url' => '/api/property-sources/{provider}/suggest', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resolve', 'url' => '/api/property-sources/{provider}/resolve', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resync', 'url' => '/api/property-sources/{provider}/resync', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+
 		// Connection registry (connection-registry D9): link a source to a
 		// declared connection and probe it at once. Listing goes through OR's
 		// generic /api/objects/integriq/app_connection (ADR-022).
