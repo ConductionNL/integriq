@@ -10,32 +10,70 @@ cluster 4. Waits on nothing.
 ### Task 1: The prefixed source contract
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-a-prefixed-value-source-is-resolved-through-one-contract-req-evs-001`
 - **files**: `lib/Expression/ExpressionValueSourceInterface.php`, `lib/Expression/ExpressionValueSourceRegistry.php`, `lib/AppInfo/Application.php` (DI tag)
-- [ ] Implement (`prefix`, `resolve`, `describe`; first-wins collision policy as `IntegrationRegistry`; no parsing and no evaluation)
-- [ ] Test (an unregistered prefix fails naming itself and consults no other source)
+- [x] Implement. `ExpressionValueSourceInterface` carries `prefix()`,
+      `resolve()`, `describe()` and `isSecret()`; the registry is first-wins and
+      keeps the collision VISIBLE rather than swallowing the loser, because
+      resolving by "last registered" would make the answer depend on app load
+      order. It parses nothing and evaluates nothing.
+- [x] Test, and the "consults no other source" half is asserted by counting
+      calls on a second registered source — not by reading the code.
 
 ### Task 2: The `env:` source and its allowlist
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-env-resolves-only-an-allowlisted-key-req-evs-002`
 - **files**: `lib/Expression/Source/EnvironmentValueSource.php`, the allowlist storage
-- [ ] Implement (exact-key match only; a refusal that names the key and returns neither the value nor an empty string; wildcard, pattern and empty entries refused at save)
-- [ ] Test (an allowlisted key, a key absent from the list, and a `*` entry)
+- [x] Implement. 🔴 **What the allowlist admits: exact keys, one at a time.**
+      No wildcard, no prefix pattern, no empty entry, no regular expression, no
+      case-insensitive match — every one of those is a RULE rather than a list,
+      and a rule also admits whatever is added to the environment next year,
+      which is where the database password lives. `DB_*` looks like a careful
+      narrowing until somebody names a variable `DB_ROOT_PASSWORD`.
+      A refusal names the KEY and never the value, and throws rather than
+      answering `''`: an empty string renders as nothing, so an email goes out
+      with a blank host and the refusal is invisible exactly when it mattered.
+      An unreadable stored list allows NOTHING, and a wildcard smuggled into
+      storage is dropped on READ as well as on write.
+- [x] Test, plus the case-sensitivity of the match and allowlisted-but-unset as its own answer.
 
 ### Task 3: The administration surface
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-the-allowlist-is-administered-and-every-change-is-recorded-req-evs-003`
 - **files**: the admin settings panel, the audit write
-- [ ] Implement (administrator only, each key with its principal and timestamp, additions and removals recorded, the value never printed)
-- [ ] Test (a non-administrator refused, and a rendered list with no values)
+- [x] Implement. 🔴 **Who may change it: an instance administrator, enforced
+      TWICE** — `#[AuthorizedAdminSetting]` before the controller runs, and
+      `requireAdmin()` again in every method body. A guard that lives only in an
+      attribute disappears the moment somebody adds a route by hand or calls
+      the method from another service, and this list is code-execution-adjacent.
+      Each key is listed with its principal and timestamp; the value is never
+      stored, never returned and never logged. Not even "is it set": telling a
+      reader which allowlisted variables happen to be populated is a map of what
+      is worth asking for.
+- [x] Test. The least privileged principal that should be refused is probed:
+      an ordinary signed-in user adding `DATABASE_PASSWORD` gets 403 and the
+      list is unchanged. A test also asserts BOTH guards are present on all
+      three endpoints.
 
 ### Task 4: Redaction before buffering
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-a-resolved-external-value-is-redacted-before-it-is-buffered-req-evs-004`
 - **files**: the resolver, the redaction path of `execution-trace` REQ-003
-- [ ] Implement (a source may declare a resolved value a secret; redaction before the write, never on read)
-- [ ] Test (a buffered step inspected directly holds no value)
+- [x] The declaration half: `isSecret()` on the contract, and the registry
+      answers it for a reference. `env:` declares EVERY value a secret — the
+      distinction between `SMTP_HOST` and `SMTP_PASSWORD` is not one a key name
+      draws reliably, and redacting all of them costs a hostname in a log while
+      redacting by guess costs a password. An unresolvable reference is a
+      secret too.
+- [ ] The redaction CALL from `execution-trace` REQ-003's buffering path. The
+      recorder is the caller; wiring it wants that change's owner, and asserting
+      "the buffer holds no value" wants the recorder rather than a double.
+- [ ] Test, with the wiring above.
 
 ### Task 5: Declared write capability
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-writing-back-is-declared-and-absent-unless-declared-req-evs-005`
 - **files**: the contract, the `env:` source
-- [ ] Implement (`describe()` states it; `env:` declares no write; a refused write is an error, never a silent success)
-- [ ] Test
+- [x] Implement. `describe()` states `writable: false`, so a caller can ask
+      BEFORE it tries; `store()` throws naming the prefix. The Valtimo interface
+      this mirrors has a `store()` half, so a caller written against it WILL
+      try, and answering "done" while changing nothing is how a screen reports
+      a saved value that was never saved.
+- [x] Test
 
 ### Task 6: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, this change's row in `competitor-parity-2026-09`
