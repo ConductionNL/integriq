@@ -67,7 +67,8 @@
           "synchronization_contract_log",
           "verdict",
           "synchronization_log",
-          "zgw_version_translation_log"
+          "zgw_version_translation_log",
+          "digitalPostMessage"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
