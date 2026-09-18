@@ -51,13 +51,12 @@ final class BerichtenboxClientMock extends BerichtenboxClient {
 	 * Dormant dispatch — returns a synthetic Logius envelope.
 	 *
 	 * @param array<string,mixed> $message Message (ignored).
-	 * @param string $pkiCert PKIoverheid cert (ignored).
-	 * @param string $pkiKey Private key (ignored).
+	 * @param string $certificateRef Certificate reference (ignored).
 	 *
 	 * @return array<string,mixed>
 	 */
-	public function dispatch(array $message, string $pkiCert, string $pkiKey): array {
-		unset($message, $pkiCert, $pkiKey);
+	public function dispatch(array $message, string $certificateRef): array {
+		unset($message, $certificateRef);
 		return [
 			'logiusKenmerk' => 'bbk-mock-' . bin2hex(random_bytes(8)),
 			'deliveryStatus' => 'queued',

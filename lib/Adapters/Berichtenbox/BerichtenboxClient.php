@@ -54,23 +54,24 @@ abstract class BerichtenboxClient {
 	/**
 	 * Dispatch a BBK 1.7 message envelope to Logius.
 	 *
+	 * The signing material is named, never passed. A live binding resolves
+	 * the certificate and its key inside integriq, through
+	 * {@see \OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver},
+	 * exactly as `WusProfileService` does. A PEM has no business travelling
+	 * through a method argument, a source configuration value or an app-config
+	 * string, and this signature is what keeps that true (REQ-DPA-004).
+	 *
 	 * @param array<string,mixed> $message BBK 1.7-shaped envelope.
-	 * @param string $pkiCert PEM-encoded
-	 *                        PKIoverheid
-	 *                        Services-server
-	 *                        cert —
-	 *                        required by
-	 *                        live
-	 *                        binding,
-	 *                        ignored by
-	 *                        mock.
-	 * @param string $pkiKey PEM-encoded private key.
+	 * @param string $certificateRef Reference to the PKIoverheid
+	 *                               Services-server certificate the credential
+	 *                               broker holds. Required by a live binding,
+	 *                               ignored by the mock.
 	 *
 	 * @return array<string,mixed> Logius response envelope —
 	 *                             logiusKenmerk, deliveryStatus,
 	 *                             receivedAt.
 	 */
-	abstract public function dispatch(array $message, string $pkiCert, string $pkiKey): array;
+	abstract public function dispatch(array $message, string $certificateRef): array;
 
 	/**
 	 * Verify the HMAC signature on an inbound Logius delivery-receipt
