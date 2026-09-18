@@ -20,7 +20,28 @@
 - **files**: `lib/Service/Ownership/DisappearancePolicy.php`, `lib/Service/SynchronizationService.php`, `lib/Controller/OwnershipController.php`
 - [x] Implement (`delete` default, `markEnded`, `keepAndFlag`, refusal on an unknown value)
 - [x] Test
-- [ ] The refusal at the moment of the save itself. The synchronisation is written through OpenRegister's objects API, so integriq owns the check (`POST /api/ownership/validate-policy`, called before the save and by the engine on every run) and OpenRegister owns the schema-level refusal.
+- [~] The refusal at the moment of the save itself.
+  - MEASURED 2026-09-18, and the line above was STALE IN BOTH HALVES.
+    `POST /api/ownership/validate-policy` EXISTS (route, controller method and
+    `DisappearancePolicy::fromSourceConfig`), and the ENGINE already refuses on
+    every run: `SynchronizationService::deleteInvalidObjects()` reads the policy
+    through the throwing reader and, on an unknown value, skips the whole
+    deletion step, sets `guardInfo.reason = unknown_disappearance_policy`, logs
+    it and dispatches the guarded event. It fails closed.
+  - 🔴 WHAT WAS ACTUALLY MISSING WAS THE TEST, AND IT WAS THE ONE THAT MATTERS.
+    `DisappearancePolicy` is well covered as a value object, so the refusal it
+    THROWS was asserted. Nothing asserted that the engine CATCHES it and deletes
+    nothing. A value object that throws into a caller which swallows the throw
+    is the same as no refusal at all, and a misspelled `markEnded` would have
+    deleted the records it was written to preserve while reporting an ordinary
+    deletion count. Now covered by
+    `tests/Unit/Service/SynchronizationServiceUnknownPolicyTest.php`, with a
+    control so an engine that guarded every run could not pass.
+  - STILL OPEN, and it is FRONTEND: nothing calls `validate-policy`. The edit
+    screen that should ask it does not exist in this repo (`src/modals/` holds
+    only `SyncDeadLetterDetailModal.vue`, and `grep -rn ownership src/` returns
+    nothing). A check with no caller is the same shape as no check, so this stays
+    open rather than being ticked because the endpoint exists.
 
 ### Task 4: End and flag, with the counts on the run
 - **spec_ref**: `openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003`
@@ -51,6 +72,13 @@
 
 - [x] `openspec validate records-owned-by-an-external-source --strict` passes
 - [x] PHPUnit run, exit code read rather than the summary line
+- [x] `DisappearanceApplier::applyToContract()` covered. It had NO test: every
+      assertion in this change was about the object, and the contract is the half
+      the ENGINE reads on the next run, so it is what stops a flagged record being
+      re-flagged or a returning record being missed. The policy difference is
+      pinned too: `keepAndFlag` must not write an end date, because that would
+      claim the record ended, which is a statement about the subject rather than
+      about the source. Mutation-checked.
 - [ ] A run against a fixture source that drops a record under each of the three policies, with the run counts read back. Written as `tests/e2e/source-owned-records.spec.ts` and left for the nightly.
 
 ## Handover
