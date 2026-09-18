@@ -245,7 +245,11 @@ class ObjectEndpointHandler {
 			return [];
 		}
 
-		return (is_array($objects) === true ? array_values(array_filter($objects, 'is_array')) : []);
+		if (is_array($objects) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($objects, 'is_array'));
 	}//end readObjects()
 
 	/**
@@ -368,7 +372,11 @@ class ObjectEndpointHandler {
 				$right = (string)($this->translator->dataOf(object: $b)[$field] ?? '');
 				$compared = strcmp($left, $right);
 
-				return ($descending === true ? -$compared : $compared);
+				if ($descending === true) {
+					return -$compared;
+				}
+
+				return $compared;
 			}
 		);
 
@@ -398,6 +406,16 @@ class ObjectEndpointHandler {
 			$results[] = $this->translator->toRecord(object: $object, objecttype: $type, baseUrl: $baseUrl);
 		}
 
+		$next = null;
+		if (($page * $size) < $total) {
+			$next = ($page + 1);
+		}
+
+		$previous = null;
+		if ($page > 1) {
+			$previous = ($page - 1);
+		}
+
 		return [
 			'status' => 200,
 			'body' => [
@@ -405,8 +423,8 @@ class ObjectEndpointHandler {
 				// this to know when to stop, and answering the page size makes
 				// every list look like exactly one page.
 				'count' => $total,
-				'next' => (($page * $size) < $total ? ($page + 1) : null),
-				'previous' => ($page > 1 ? ($page - 1) : null),
+				'next' => $next,
+				'previous' => $previous,
 				'results' => $results,
 			],
 		];

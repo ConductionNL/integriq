@@ -194,7 +194,11 @@ class ObjecttypeEndpointHandler {
 			return [];
 		}
 
-		return (is_array($schema) === true ? $schema : []);
+		if (is_array($schema) === false) {
+			return [];
+		}
+
+		return $schema;
 	}//end schemaFor()
 
 	/**

@@ -109,6 +109,12 @@
 		     posts that to OpenRegister. Nothing about the changed record is
 		     written here. -->
 		<job>OCA\Integriq\BackgroundJob\RegistrySubscriptionPollJob</job>
+		<!-- berichtenbox-digital-post-adapter: the status job asks the providers
+		     what became of the letters they took, every ten minutes, and only
+		     about letters still on their way. The inbound job offers what
+		     arrived to the document intake inbox. -->
+		<job>OCA\Integriq\BackgroundJob\DigitalPostStatusJob</job>
+		<job>OCA\Integriq\BackgroundJob\DigitalPostInboundJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order

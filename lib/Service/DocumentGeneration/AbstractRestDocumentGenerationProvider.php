@@ -145,11 +145,11 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	 */
 	public function assertActivatable(array $sourceConfiguration): void {
-		if ($this->isMockMode($sourceConfiguration) === true) {
+		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
 			return;
 		}
 
-		if ($this->hasCredentialRef($sourceConfiguration) === false) {
+		if ($this->hasCredentialRef(sourceConfiguration: $sourceConfiguration) === false) {
 			throw new DocumentGenerationException(
 				message: 'The ' . $this->getProviderId() . ' binding needs '
 					. '`configuration.authentication.credentialRef`, and this source carries none. '
@@ -177,11 +177,11 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @throws DocumentGenerationException When the source is unconfigured or the vendor cannot be reached.
 	 */
 	public function listTemplates(array $sourceConfiguration): array {
-		if ($this->isMockMode($sourceConfiguration) === true) {
+		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
 			return $this->fixtureTemplates();
 		}
 
-		$this->assertActivatable($sourceConfiguration);
+		$this->assertActivatable(sourceConfiguration: $sourceConfiguration);
 
 		$decoded = $this->dispatchJson(
 			sourceConfiguration: $sourceConfiguration,
@@ -214,7 +214,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return RenderOutcome What the vendor answered.
 	 */
 	public function render(array $sourceConfiguration, string $templateId, array $data): RenderOutcome {
-		if ($this->isMockMode($sourceConfiguration) === true) {
+		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
 			return RenderOutcome::queued(
 				providerJobId: 'MOCK-' . strtoupper($this->getProviderId()) . '-' . substr(
 					hash('sha256', $templateId . json_encode($data)),
@@ -226,7 +226,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 		}
 
 		try {
-			$this->assertActivatable($sourceConfiguration);
+			$this->assertActivatable(sourceConfiguration: $sourceConfiguration);
 
 			$decoded = $this->dispatchJson(
 				sourceConfiguration: $sourceConfiguration,
@@ -255,7 +255,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return RenderOutcome The current outcome.
 	 */
 	public function status(array $sourceConfiguration, string $providerJobId): RenderOutcome {
-		if ($this->isMockMode($sourceConfiguration) === true) {
+		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
 			return RenderOutcome::rendered(
 				providerJobId: $providerJobId,
 				fileReference: 'mock:' . $providerJobId,
@@ -267,7 +267,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 			$decoded = $this->dispatchJson(
 				sourceConfiguration: $sourceConfiguration,
 				method: 'GET',
-				path: $this->statusPath($providerJobId)
+				path: $this->statusPath(providerJobId: $providerJobId)
 			);
 		} catch (DocumentGenerationException $exception) {
 			if ($exception->isUnreachable() === true) {
@@ -295,11 +295,11 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @throws DocumentGenerationException When the document cannot be fetched.
 	 */
 	public function fetch(array $sourceConfiguration, string $fileReference): string {
-		if ($this->isMockMode($sourceConfiguration) === true) {
+		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
 			return "%PDF-1.4 fixture\nReference: " . $fileReference . "\n";
 		}
 
-		$this->assertActivatable($sourceConfiguration);
+		$this->assertActivatable(sourceConfiguration: $sourceConfiguration);
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,

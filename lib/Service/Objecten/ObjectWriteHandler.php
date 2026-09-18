@@ -259,15 +259,25 @@ class ObjectWriteHandler {
 			return $this->problem(status: 400, title: 'Validation refused', detail: $e->getMessage());
 		}
 
+		$written = $data;
+		if (is_array($stored) === true) {
+			$written = $stored;
+		}
+
 		$rendered = $this->translator->toRecord(
-			object: (is_array($stored) === true ? $stored : $data),
+			object: $written,
 			objecttype: $type,
 			baseUrl: $baseUrl
 		);
 
 		$this->publish(type: $type, uuid: (string)$rendered['uuid'], action: $action);
 
-		return ['status' => ($uuid === null ? 201 : 200), 'body' => $rendered];
+		$status = 200;
+		if ($uuid === null) {
+			$status = 201;
+		}
+
+		return ['status' => $status, 'body' => $rendered];
 	}//end write()
 
 	/**

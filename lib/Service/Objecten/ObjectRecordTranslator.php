@@ -100,8 +100,13 @@ class ObjectRecordTranslator {
 			'correctedBy' => null,
 		];
 
+		$url = '';
+		if ($baseUrl !== '') {
+			$url = rtrim($baseUrl, '/') . '/objects/' . $uuid;
+		}
+
 		return [
-			'url' => ($baseUrl === '' ? '' : rtrim($baseUrl, '/') . '/objects/' . $uuid),
+			'url' => $url,
 			'uuid' => $uuid,
 			'type' => $objecttype,
 			'record' => $record,

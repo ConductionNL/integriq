@@ -336,9 +336,19 @@ class DocumentGenerationService {
 
 		$data['attempts'] = $attempts;
 		$data['status'] = $outcome->status;
-		$data['providerJobId'] = ($outcome->providerJobId !== '' ? $outcome->providerJobId : (string)($data['providerJobId'] ?? ''));
+		$providerJobId = (string)($data['providerJobId'] ?? '');
+		if ($outcome->providerJobId !== '') {
+			$providerJobId = $outcome->providerJobId;
+		}
+
+		$lastError = '';
+		if ($outcome->isTerminal() === true && $outcome->status === 'failed') {
+			$lastError = $outcome->detail;
+		}
+
+		$data['providerJobId'] = $providerJobId;
 		$data['fileReference'] = $outcome->fileReference;
-		$data['lastError'] = ($outcome->isTerminal() === true && $outcome->status === 'failed' ? $outcome->detail : '');
+		$data['lastError'] = $lastError;
 
 		if ($outcome->status === 'unreachable') {
 			// Kept apart from lastError on purpose: "we could not ask" is

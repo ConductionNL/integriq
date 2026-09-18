@@ -283,7 +283,11 @@ class ObjectenTokenService {
 
 		$key = trim($parts[1]);
 
-		return ($key === '' ? null : $key);
+		if ($key === '') {
+			return null;
+		}
+
+		return $key;
 	}//end keyFrom()
 
 	/**
@@ -325,7 +329,11 @@ class ObjectenTokenService {
 
 		$resolved = ($this->credentialRead)($reference);
 
-		return (is_string($resolved) === true && $resolved !== '' ? $resolved : null);
+		if (is_string($resolved) === false || $resolved === '') {
+			return null;
+		}
+
+		return $resolved;
 	}//end resolveKey()
 
 	/**

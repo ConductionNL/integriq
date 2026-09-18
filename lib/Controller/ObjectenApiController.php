@@ -95,7 +95,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer($this->types->index(baseUrl: $this->baseUrl()));
+		return $this->answer(answer: $this->types->index(baseUrl: $this->baseUrl()));
 	}//end objecttypes()
 
 	/**
@@ -118,7 +118,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer($this->types->show(uuid: $uuid, baseUrl: $this->baseUrl()));
+		return $this->answer(answer: $this->types->show(uuid: $uuid, baseUrl: $this->baseUrl()));
 	}//end objecttype()
 
 	/**
@@ -142,7 +142,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer($this->types->version(uuid: $uuid, version: $version, baseUrl: $this->baseUrl()));
+		return $this->answer(answer: $this->types->version(uuid: $uuid, version: $version, baseUrl: $this->baseUrl()));
 	}//end objecttypeVersion()
 
 	/**
@@ -165,7 +165,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(
+		return $this->answer(answer:
 			$this->objects->index(query: $this->queryParameters(), baseUrl: $this->baseUrl())
 		);
 	}//end objects()
@@ -198,7 +198,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer($this->objects->show(type: $type, uuid: $uuid, baseUrl: $this->baseUrl()));
+		return $this->answer(answer: $this->objects->show(type: $type, uuid: $uuid, baseUrl: $this->baseUrl()));
 	}//end object()
 
 	/**
@@ -221,7 +221,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(
+		return $this->answer(answer:
 			$this->objects->search(
 				type: $type,
 				body: ['geometry' => (array)$this->request->getParam('geometry', [])],
@@ -250,7 +250,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(
+		return $this->answer(answer:
 			$this->writes->create(
 				type: $type,
 				body: ['record' => (array)$this->request->getParam('record', [])],
@@ -282,7 +282,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(
+		return $this->answer(answer:
 			$this->writes->replace(
 				type: $type,
 				uuid: $uuid,
@@ -322,10 +322,10 @@ class ObjectenApiController extends Controller {
 
 		$current = $this->objects->show(type: $type, uuid: $uuid);
 		if ($current['status'] !== 200) {
-			return $this->answer($current);
+			return $this->answer(answer: $current);
 		}
 
-		return $this->answer(
+		return $this->answer(answer:
 			$this->writes->update(
 				type: $type,
 				uuid: $uuid,
@@ -339,6 +339,14 @@ class ObjectenApiController extends Controller {
 
 	/**
 	 * `DELETE /api/v2/objects/{uuid}`.
+	 *
+	 * The uuid is resolved under the objecttype the token was approved for,
+	 * before the delete, for the same reason the replace and the partial update
+	 * do it: the uuid comes from the caller and the token grants a permission
+	 * per objecttype, so a uuid belonging to another type has to answer the
+	 * read path's 404 rather than reach a delete that was never authorised for
+	 * it. It also makes the two write shapes one shape — an endpoint that
+	 * refuses differently from its siblings is the one somebody probes.
 	 *
 	 * @param string $uuid The object.
 	 *
@@ -359,8 +367,15 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(
-			$this->writes->delete(type: $type, uuid: $uuid, principal: $this->principalFor(objecttype: $type))
+		$principal = $this->principalFor(objecttype: $type);
+
+		$current = $this->objects->show(type: $type, uuid: $uuid);
+		if ($current['status'] !== 200) {
+			return $this->answer(answer: $current);
+		}
+
+		return $this->answer(answer:
+			$this->writes->delete(type: $type, uuid: $uuid, principal: $principal)
 		);
 	}//end deleteObject()
 
