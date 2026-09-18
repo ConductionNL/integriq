@@ -83,6 +83,10 @@ return [
 		// rule decides what opens a case and a reply leaves the building.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
+		// here with no Nextcloud session, authenticated by the source's own
+		// binding, and every refusal is the same undifferentiated 401.
+		['name' => 'cti#events', 'url' => '/api/cti/{sourceId}/events', 'verb' => 'POST', 'requirements' => ['sourceId' => '[A-Za-z0-9\\-]+']],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],

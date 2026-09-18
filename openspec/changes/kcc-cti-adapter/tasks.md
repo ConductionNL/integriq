@@ -1,8 +1,7 @@
 # Tasks: kcc-cti-adapter
 
-> The seam is built: the provider interface, the shared normaliser, the typed
-> event and the retry guard, with 51 tests. The controller, the caller lookup
-> and the contact-moment path are open and named below.
+> Tasks 1 and 2 are done. Task 3, the contact moment on request and the
+> 30-day retention, is open. Task 4, the source form and the docs, is open.
 >
 > Two things found while building, recorded rather than worked around:
 >
@@ -27,9 +26,18 @@
 - **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005`
 - **files**: `lib/Service/Kiss/CtiProviderInterface.php`, `lib/Service/Kiss/CallEventNormaliser.php`, `lib/Service/Kiss/CallEventDeduplicator.php`, `tests/Unit/Service/Kiss/CallEventNormaliserTest.php`, `tests/Unit/Service/Kiss/CallEventDeduplicatorTest.php`
 - [x] The seam: interface, shared normaliser, retry guard
-- [ ] The bindings and the endpoint: `LogCtiProvider`, `WebhookCtiProvider`, `CtiController`, `appinfo/routes.php`
+- [x] The bindings and the endpoint: `LogCtiProvider`, `WebhookCtiProvider`, `CtiSourceResolver`, `CtiEventIntake`, `CtiController`, `appinfo/routes.php`
 - [x] Test the seam (an unplaceable number is refused; a repeated event is claimed once; no cache lets everything through)
-- [ ] Test the endpoint (unverified request is 401)
+- [x] Test the endpoint (a binding that throws has not said yes; a source naming no installed binding is refused rather than falling back to the sandbox; a retry dispatches nothing)
+- **note**: `WebhookCtiProvider` verifies through the existing
+  `WebhookSignatureService`, the same HMAC-over-the-raw-body check four other
+  inbound endpoints use, rather than a scheme of its own. A source configuring
+  NEITHER a signature nor a shared secret is refused: an unauthenticated public
+  endpoint is not a configuration anybody chooses on purpose.
+- **note**: `CtiSourceResolver` does NOT fall back to the log binding for an
+  unknown provider id, unlike `KissSyncService::resolveProvider()`. A typo
+  would otherwise look like a working integration quietly delivering to a log
+  file. Said here because the two now differ deliberately.
 - **note on idempotency**: `CallEventDeduplicator` is a distributed cache, not a
   ledger. Two nodes in the same millisecond can both pass, and an evicted entry
   lets a late retry through. That is survivable because nothing here WRITES: a
@@ -47,13 +55,24 @@
 - **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006`
 - **files**: `lib/Event/CallEvent.php`, `tests/Unit/Event/CallEventTest.php`
 - [x] `CallEvent`, with its kinds, its CloudEvents type and the caller context
-- [ ] `CallContextService`: resolve the number to a partij and read the open cases
+- [x] `CallerLookup`, `CallerDirectory`, `CallContextService`: resolve the number to a partij and read the open cases
 - [x] Test the event
-- [ ] Test the lookup
-- **note**: `KlantinteractiesProviderInterface` has NO way to find a partij by
-  phone number. The lookup needs a new method on the interface and on both
-  bindings, so it is its own task rather than a line inside this one. The VNG
-  field is `betrokkene.digitaleAdressen`.
+- [x] Test the lookup, probed with numbers differing only by their prefix
+- [ ] A binding that implements `CallerSearchInterface`. Until one exists, every caller reads as unknown, which is true and visible.
+- **note**: the search seam is `CallerSearchInterface`, kept OFF
+  `KlantinteractiesProviderInterface` deliberately. Adding a method there would
+  force the log sandbox and the REST client to answer a question neither was
+  written for. A binding that can search implements this as well; one that
+  cannot simply does not.
+- **note on the lookup, which is where the wrong-person risk lives**: the
+  comparison is EXACT over full E.164 strings. Not a suffix match, not the last
+  nine digits, not a LIKE. `+31612345678` and `+49612345678` differ only by
+  their prefix and are different people, and an agent reading the panel says a
+  name out loud before anybody can check it. More than one party on a number is
+  no match either: a shared landline is common, and picking the first is
+  picking at random. When no party matches there are no open cases either,
+  because a case list beside a null caller is somebody's cases on screen under
+  "unknown caller".
 - **note**: the event distinguishes a WITHHELD number from an UNKNOWN one.
   Both give `caller = null`, but only one is worth asking the caller for their
   number, and the panel says different things. `isAnonymous()` tells them
