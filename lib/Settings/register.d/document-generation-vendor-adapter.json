@@ -1,0 +1,135 @@
+{
+  "$comment": "ADR-037 register fragment (document-generation-vendor-adapter). Declares the `documentGenerationJob` schema, one row per render integriq takes from filinq, and seeds two dormant vendor sources (SmartDocuments, Xential) in mock mode so the whole path is walkable without a licence. The job deliberately carries a hash of the merge data and never the data: the merge data of a beschikking is the case, and integriq is not where a second copy of the case belongs. `unreachableSince` is kept apart from `lastError` on purpose: a vendor nobody could reach has not refused anything, and the two must be tellable apart without reading prose. Does NOT edit lib/Settings/integriq_register.json, whose declared schema count is asserted by tests/Unit/Settings/RegisterDescriptorTest.php.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": ["documentGenerationJob"]
+      }
+    },
+    "schemas": {
+      "documentGenerationJob": {
+        "slug": "documentGenerationJob",
+        "title": "Document Generation Job",
+        "icon": "FileDocumentOutline",
+        "version": "1.0.0",
+        "summary": "One render asked of a vendor document generation service",
+        "description": "One row per render integriq takes on filinq's behalf. See openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002.",
+        "required": ["sourceId", "providerId", "templateId", "dataHash", "status"],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "title": "Source",
+            "description": "The document generation source this render went through"
+          },
+          "providerId": {
+            "type": "string",
+            "title": "Provider",
+            "description": "The binding that served the render: log, smartdocuments or xential"
+          },
+          "templateId": {
+            "type": "string",
+            "title": "Template",
+            "description": "The vendor's own template id. Integriq stores no copy of the template itself"
+          },
+          "dataHash": {
+            "type": "string",
+            "title": "Data hash",
+            "description": "sha256 over the canonicalised merge data. The data itself is never stored here"
+          },
+          "requestedBy": {
+            "type": "string",
+            "title": "Requested by",
+            "description": "The user the render was made for"
+          },
+          "requestedByApp": {
+            "type": "string",
+            "title": "Requested by app",
+            "description": "The app that asked, normally filinq"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "enum": ["queued", "rendered", "failed", "unreachable"],
+            "default": "queued",
+            "description": "queued: the vendor took it. rendered: a document came back and was fetched whole. failed: the vendor answered no. unreachable: nobody got an answer, so nobody knows yet whether a document exists"
+          },
+          "providerJobId": {
+            "type": "string",
+            "title": "Vendor job id",
+            "description": "The vendor's own render id, when it named one"
+          },
+          "fileReference": {
+            "type": "string",
+            "title": "Document reference",
+            "description": "The reference to the produced document. Empty unless the job is rendered"
+          },
+          "documentBytes": {
+            "type": "integer",
+            "title": "Document size",
+            "description": "The size of the fetched document. A render reported done with nothing to fetch is never filed as rendered"
+          },
+          "lastError": {
+            "type": "string",
+            "title": "Last error",
+            "description": "Why the vendor refused. Empty for every status other than failed"
+          },
+          "unreachableSince": {
+            "type": "string",
+            "title": "Unreachable since",
+            "description": "When the vendor stopped answering about this render. Empty once anybody hears back"
+          },
+          "attempts": {
+            "type": "array",
+            "title": "Attempts",
+            "description": "One entry per call: when, what came back, and the detail"
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "smartdocuments"
+        },
+        "name": "SmartDocuments",
+        "description": "SmartDocuments document generation, reached by filinq as a template backend (ADR-075). Ships in mock mode so the path works without a licence: three fixture templates and a fixture document, no network call and no credential. To go live: set `configuration.mockMode` to false, set `configuration.baseUrl` to your SmartDocuments API, register the API key with the OpenRegister credential broker and reference it from `configuration.authentication.credentialRef`. An API key written into this source is refused.",
+        "type": "documentGeneration",
+        "location": "https://api.smartdocuments.example/v1",
+        "auth": "apikey",
+        "isEnabled": false,
+        "configuration": {
+          "providerId": "smartdocuments",
+          "baseUrl": "https://api.smartdocuments.example/v1",
+          "mockMode": true,
+          "authentication": {
+            "credentialRef": ""
+          }
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "xential"
+        },
+        "name": "Xential",
+        "description": "Xential document generation, reached by filinq as a template backend (ADR-075). Ships in mock mode so the path works without a licence: three fixture templates and a fixture document, no network call and no credential. To go live: set `configuration.mockMode` to false, set `configuration.baseUrl` to your Xential API, register the API key with the OpenRegister credential broker and reference it from `configuration.authentication.credentialRef`. An API key written into this source is refused.",
+        "type": "documentGeneration",
+        "location": "https://api.xential.example",
+        "auth": "apikey",
+        "isEnabled": false,
+        "configuration": {
+          "providerId": "xential",
+          "baseUrl": "https://api.xential.example",
+          "mockMode": true,
+          "authentication": {
+            "credentialRef": ""
+          }
+        }
+      }
+    ]
+  }
+}
