@@ -452,6 +452,13 @@ return [
 		['name' => 'ownership#destroy', 'url' => '/api/ownership/{id}', 'verb' => 'DELETE'],
 		['name' => 'ownership#validatePolicy', 'url' => '/api/ownership/validate-policy', 'verb' => 'POST'],
 
+		// migration-source-adapters: integriq reads an incumbent system or a
+		// delivered file and reports what a migration would bring. It writes
+		// nothing: OpenRegister's import engine owns the writing half.
+		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
+		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
+		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+
 		// Connection registry (connection-registry D9): link a source to a
 		// declared connection and probe it at once. Listing goes through OR's
 		// generic /api/objects/integriq/app_connection (ADR-022).
