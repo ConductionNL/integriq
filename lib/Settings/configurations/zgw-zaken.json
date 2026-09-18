@@ -1,0 +1,39 @@
+{
+  "slug": "zgw-zaken",
+  "title": "Zaken API",
+  "version": "1.0.0",
+  "description": "Cases as the Zaken API holds them. Bound to whichever schema the operator keeps cases in.",
+  "component": "Zaken API",
+  "resource": "zaak",
+  "auth": "jwt-zgw",
+  "apiVersion": "1.6",
+  "supportedApiVersions": [
+    "1.0",
+    "1.2",
+    "1.3",
+    "1.5",
+    "1.6"
+  ],
+  "translator": "ZgwResourceTranslatorInterface",
+  "synchronizations": [
+    "zgw-zaken-pull",
+    "zgw-zaken-push"
+  ],
+  "mappings": [
+    "zgw-zaak-to-object",
+    "object-to-zgw-zaak"
+  ],
+  "storageStrategy": "external",
+  "writesBack": true,
+  "target": {
+    "register": "",
+    "schema": "",
+    "chosenBy": "operator"
+  },
+  "source": {
+    "name": "Zaken API",
+    "type": "api",
+    "location": "",
+    "isEnabled": false
+  }
+}
