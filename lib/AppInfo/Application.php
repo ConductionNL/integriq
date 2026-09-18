@@ -82,6 +82,10 @@ use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
+use OCA\Integriq\Service\Registry\KvkMutatieProvider;
+use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
+use OCA\Integriq\Service\Registry\SubscriptionRegistry;
 use OCA\Integriq\PropertySource\PropertySourceRegistry;
 use OCA\Integriq\PropertySource\Provider\BagPropertySource;
 use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
@@ -364,6 +368,22 @@ class Application extends App implements IBootstrap {
 						$c->get(FormSubmissionAdapter::class),
 						$c->get(MessagingChannelAdapter::class),
 						$c->get(PublicSpaceReportAdapter::class),
+					]
+				);
+			}
+		);
+
+		// The registry subscription bindings, keyed by registry id. The `log`
+		// binding is last, so a real registry always wins its own id and the
+		// development binding only answers to `log`.
+		$context->registerService(
+			SubscriptionRegistry::class,
+			static function ($c): SubscriptionRegistry {
+				return new SubscriptionRegistry(
+					[
+						$c->get(BrpVolgindicatieProvider::class),
+						$c->get(KvkMutatieProvider::class),
+						$c->get(LogSubscriptionProvider::class),
 					]
 				);
 			}

@@ -1,0 +1,42 @@
+{
+  "$comment": "ADR-037 register fragment (seed-kvk-mutatieservice-source). Seeds the `kvk-mutatieservice` source that `KvkMutatieProvider` subscribes and polls through (registry-subscription-connector REQ-RSC-001). MOCK MODE: ships with `configuration.mock:true` and a canned mutatie body so the binding is exercisable without a KvK subscription contract. The real KvK mutatieservice is a separate product from the Handelsregister Zoeken API seeded by kvk-source.json, which is why it is its own source rather than another endpoint on that one. To go live: set your KvK API key on `configuration.headers.apikey` and REMOVE `configuration.mock`.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "kvk-mutatieservice"
+        },
+        "name": "KvK mutatieservice",
+        "description": "Subscription and change feed for companies in the KvK Handelsregister. Integriq subscribes a KvK number here and polls what changed; the company record itself stays in OpenRegister.",
+        "type": "api",
+        "location": "https://api.kvk.nl/api/v1/mutatieservice",
+        "auth": "apikey",
+        "isEnabled": false,
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "mock": true,
+          "mockResponse": {
+            "mutaties": [
+              {
+                "kvkNummer": "69599084",
+                "mutatieId": "kvk-mut-2026-09-18-0001",
+                "gewijzigd": {
+                  "adres": {
+                    "straatnaam": "Stationsplein",
+                    "huisnummer": 12,
+                    "postcode": "3511ED",
+                    "plaats": "Utrecht"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
