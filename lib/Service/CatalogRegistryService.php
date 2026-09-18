@@ -242,8 +242,13 @@ class CatalogRegistryService {
 			[
 				'slug' => 'adapter:berichtenbox',
 				'name' => 'Berichtenbox (Logius)',
-				'description' => 'Logius Berichtenbox voor Bedrijven (BBK 1.7) — the government-to-business message box bridging '
-					. 'MijnOverheid-style delivery. Ships mock by default; flip `logius.berichtenbox.feature_flag` to activate the live HTTP flavour.',
+				'description' => 'Logius Berichtenbox voor Burgers, over the Berichtenbox Koppelvlak (BBK 1.7): the message '
+					. 'box a citizen reads in MijnOverheid. It needs two credentials, and it sends nothing without either: '
+					. 'Logius BBK OAuth 2.0 client credentials, and a PKIoverheid Services-server certificate, held by the '
+					. 'credential broker and named on the source by reference rather than by value. Ships mock while '
+					. '`logius.berichtenbox.feature_flag` is unset, and every send is then reported as simulated. With the '
+					. 'flag set the mock is not served at all: a send is refused, naming what is missing, because a '
+					. 'simulated delivery on a flagged instance is indistinguishable from a real one.',
 				'category' => 'Government messaging',
 				'kind' => 'adapter',
 				'mechanism' => 'flag-gated',

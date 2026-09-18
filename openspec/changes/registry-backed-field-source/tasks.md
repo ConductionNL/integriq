@@ -52,7 +52,16 @@ openregister, wave 1, and on dossiq CT-1 for the declaration.
 
 ### Task 8: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalog entry, this change's row in `competitor-parity-2026-09`
-- [ ] Ask the openregister lane for `x-openregister-property-source` on a schema property, by that name, and for the slug it opens the change under. Record whichever slug it picks here.
+- [~] Ask the openregister lane for `x-openregister-property-source` on a schema property, by that name, and for the slug it opens the change under. Record whichever slug it picks here.
+  - MEASURED 2026-09-18 RATHER THAN ASKED, against an openregister clone on its
+    `parity/round2`: `x-openregister-property-source` is NOT in the property
+    vocabulary. `grep -rn 'property-source\|propertySource'
+    lib/Service/Schemas/PropertyValidatorHandler.php` returns nothing, and that
+    table is what `vocabularyKeys()` publishes, so the key would fail a schema
+    save today.
+  - So the answer to "has it shipped" is no, and the integriq half above is
+    built and waiting. Recorded here so the next lane reads a measurement
+    instead of repeating the question.
 - [ ] Say in the same message that it is not `x-openregister-object-source`, which `object-source-providers` already uses for a whole schema
 - [ ] Hand dossiq the declaration half: the source input on `propertyDefinition`, which rides dossiq's CT-1 change, and the fixed slots it retires
 - [x] Test (`tests/e2e/registry-backed-field-source.spec.ts`, `openspec validate registry-backed-field-source --strict`)

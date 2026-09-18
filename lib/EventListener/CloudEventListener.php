@@ -20,6 +20,7 @@
 
 namespace OCA\Integriq\EventListener;
 
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\EventService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -55,7 +56,7 @@ class CloudEventListener implements IEventListener {
 	 *
 	 * @var array<int, string>
 	 */
-	private const SELF_SCHEMAS = ['event', 'event_message'];
+	private const SELF_SCHEMAS = ['event', 'event_message', 'event_subscription'];
 
 	/**
 	 * The register whose objects are exempted by {@see self::SELF_SCHEMAS}.
@@ -75,6 +76,15 @@ class CloudEventListener implements IEventListener {
 	private static ?array $selfSchemaIds = null;
 
 	/**
+	 * Decides, per object, whether forwarding it would feed the machinery
+	 * its own output. One instance per listener, and the listener is built
+	 * once per request, so its chain counter bounds one request.
+	 *
+	 * @var EventLoopGuard
+	 */
+	private EventLoopGuard $guard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param EventService $eventService Service for managing CloudEvents.
@@ -84,6 +94,7 @@ class CloudEventListener implements IEventListener {
 		private readonly EventService $eventService,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->guard = new EventLoopGuard();
 
 	}//end __construct()
 
@@ -191,16 +202,44 @@ class CloudEventListener implements IEventListener {
 		// object creates taking >120s.
 		//
 		// Compare id-to-id instead, resolving the slugs once.
-		$schemaId = (string)$object->getSchema();
-		if ($schemaId === '') {
-			return false;
-		}
-
 		if (self::$selfSchemaIds === null) {
 			self::$selfSchemaIds = $this->resolveSelfSchemaIds();
 		}
 
-		return in_array($schemaId, self::$selfSchemaIds, true);
+		$decision = $this->guard->decide(
+			payload: $object->getObject(),
+			schemaId: (string)$object->getSchema(),
+			selfSchemaIds: self::$selfSchemaIds
+		);
+
+		if ($decision['forward'] === true) {
+			return false;
+		}
+
+		// One line per suppression, naming which guard stopped it. The
+		// ceiling in particular must be loud: reaching it means the marker
+		// and the schema ids both failed to recognise our own output, and
+		// the only thing standing between this instance and the storm is a
+		// counter. It is also the one refusal an operator can act on.
+		if ($decision['reason'] === EventLoopGuard::REFUSED_CEILING) {
+			$this->logger->warning(
+				'[CloudEventListener] stopped forwarding: ' . $decision['reason']
+				. ' after ' . $decision['chain'] . ' events in one request'
+				. ($decision['identified'] === false
+					? '; the event-machinery schema ids resolved to nothing, so only the ceiling was left'
+					: ''),
+				['uuid' => $object->getUuid()]
+			);
+
+			return true;
+		}
+
+		$this->logger->debug(
+			'[CloudEventListener] suppressed: ' . $decision['reason'],
+			['uuid' => $object->getUuid()]
+		);
+
+		return true;
 	}//end isSelfReference()
 
 	/**

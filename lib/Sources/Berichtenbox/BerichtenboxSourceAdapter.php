@@ -114,13 +114,13 @@ final class BerichtenboxSourceAdapter {
 	 * Dispatch a BBK 1.7 message envelope.
 	 *
 	 * @param array<string,mixed> $message BBK 1.7-shaped envelope.
-	 * @param string $pkiCert PEM-encoded PKIoverheid
-	 *                        Services-server cert.
-	 * @param string $pkiKey PEM-encoded private key.
+	 * @param string $certificateRef Reference to the PKIoverheid
+	 *                               Services-server certificate the credential
+	 *                               broker holds. Never the material itself.
 	 *
 	 * @return array<string,mixed> Logius response envelope.
 	 */
-	public function dispatch(array $message, string $pkiCert, string $pkiKey): array {
+	public function dispatch(array $message, string $certificateRef): array {
 		// Compute a non-PII-bearing summary of the message for the
 		// debug log — never log the recipientBsn, body, or
 		// attachment bytes.
@@ -146,7 +146,7 @@ final class BerichtenboxSourceAdapter {
 			]
 		);
 
-		return $this->berichtenboxClient->dispatch($message, $pkiCert, $pkiKey);
+		return $this->berichtenboxClient->dispatch($message, $certificateRef);
 	}//end dispatch()
 
 	/**
