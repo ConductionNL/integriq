@@ -87,6 +87,10 @@ return [
 		// here with no Nextcloud session, authenticated by the source's own
 		// binding, and every refusal is the same undifferentiated 401.
 		['name' => 'cti#events', 'url' => '/api/cti/{sourceId}/events', 'verb' => 'POST', 'requirements' => ['sourceId' => '[A-Za-z0-9\\-]+']],
+		// What digital post bindings this instance has, so the source form's
+		// provider picker is built from the registry rather than from a list
+		// written beside it and left to go stale.
+		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
