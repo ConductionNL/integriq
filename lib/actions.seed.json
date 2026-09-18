@@ -30,6 +30,8 @@
     "outbound.read-body": ["admin"],
     "outbound.retry": ["admin"],
     "outbound.forward": ["admin"],
+    "outbound.identities": ["admin"],
+    "outbound.withdraw": ["admin"],
     "mail.poll": ["admin"],
     "event.messages": ["admin"],
     "event.subscribe": ["admin"],

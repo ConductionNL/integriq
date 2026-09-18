@@ -98,6 +98,19 @@ return [
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
 
+		// Sender identity and deliverability
+		// (openspec/changes/outbound-sender-identity-and-deliverability). An
+		// identity is the face on an account Nextcloud Mail owns (D12), so these
+		// routes read and check identities, take a message back inside its hold
+		// window, and let a recipient stop a case's updates. The unsubscribe leg
+		// is public and needs no account: the person following it usually has
+		// neither, and asking them to make one is asking them to keep receiving
+		// the mail instead.
+		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
+		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
+		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.
