@@ -43,6 +43,11 @@ use Throwable;
  * plaintext fallback.
  *
  * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome::queued(), ::rendered(), ::failed() and
+ * ::unreachable() are that value object's named constructors. Static access to a value
+ * object's own constructors is how it is built; the alternative is a `new` with four
+ * positional arguments and no name for which state is being expressed.
  */
 abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerationProviderInterface {
 

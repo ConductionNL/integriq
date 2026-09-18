@@ -222,9 +222,9 @@ class ObjectEndpointHandler {
 		$dLat = ($lat2 - $lat1);
 		$dLon = deg2rad($b[0] - $a[0]);
 
-		$h = ((sin($dLat / 2) ** 2) + (cos($lat1) * cos($lat2) * (sin($dLon / 2) ** 2)));
+		$haversine = ((sin($dLat / 2) ** 2) + (cos($lat1) * cos($lat2) * (sin($dLon / 2) ** 2)));
 
-		return (2 * self::EARTH_RADIUS * asin(min(1.0, sqrt($h))));
+		return (2 * self::EARTH_RADIUS * asin(min(1.0, sqrt($haversine))));
 	}//end metresBetween()
 
 	/**

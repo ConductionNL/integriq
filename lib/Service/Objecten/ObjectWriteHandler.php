@@ -201,6 +201,12 @@ class ObjectWriteHandler {
 	 * @param string               $action    The announced action.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Every branch here is a refusal with its own
+	 * status and its own sentence: no objecttype, no principal, no write path, no announcer, a
+	 * schema that rejected the record. Folding them into fewer branches would fold the reasons
+	 * into fewer messages, and the message is what the caller acts on.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same branches, counted the other way.
 	 */
 	private function write(
 		string $type,

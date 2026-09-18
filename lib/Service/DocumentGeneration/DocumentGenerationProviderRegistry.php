@@ -38,12 +38,12 @@ class DocumentGenerationProviderRegistry {
 	 * Constructor.
 	 *
 	 * @param LogDocumentGenerationProvider $logProvider The sandbox binding.
-	 * @param SmartDocumentsProvider $smartDocumentsProvider The SmartDocuments binding.
+	 * @param SmartDocumentsProvider $smartDocuments The SmartDocuments binding.
 	 * @param XentialProvider $xentialProvider The Xential binding.
 	 */
 	public function __construct(
 		private readonly LogDocumentGenerationProvider $logProvider,
-		private readonly SmartDocumentsProvider $smartDocumentsProvider,
+		private readonly SmartDocumentsProvider $smartDocuments,
 		private readonly XentialProvider $xentialProvider,
 	) {
 
@@ -57,7 +57,7 @@ class DocumentGenerationProviderRegistry {
 	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	public function all(): array {
-		return [$this->logProvider, $this->smartDocumentsProvider, $this->xentialProvider];
+		return [$this->logProvider, $this->smartDocuments, $this->xentialProvider];
 
 	}//end all()
 

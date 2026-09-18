@@ -46,6 +46,10 @@ namespace OCA\Integriq\Service\Objecten;
  * Resolves a token and decides what it may do with one objecttype.
  *
  * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) verdictFor(..., $writing) reads one permission
+ * matrix for both questions; splitting it would duplicate the matrix and let the two answers
+ * drift apart.
  */
 class ObjectenTokenService {
 

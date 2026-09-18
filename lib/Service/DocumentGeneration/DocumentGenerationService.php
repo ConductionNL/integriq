@@ -51,6 +51,8 @@ use Throwable;
  *    fetched and verified, or it carries none and says why.
  *
  * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome's named constructors, as above.
  */
 class DocumentGenerationService {
 

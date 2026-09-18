@@ -51,6 +51,13 @@ use OCP\IRequest;
  * Serves both standards' read routes.
  *
  * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Ten of the eleven are the VNG standard's own
+ * routes. Splitting the controller to get under the threshold would put the one token check
+ * in two places, which is the failure this class is arranged to prevent.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) refuse($objecttype, $writing) takes the flag
+ * because a token carries read or read-and-write PER objecttype, so the same lookup answers
+ * both questions. Two methods would be two chances to call the wrong one.
  */
 class ObjectenApiController extends Controller {
 

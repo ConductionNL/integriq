@@ -42,6 +42,10 @@ namespace OCA\Integriq\Service\Zgw;
 
 /**
  * The refusals an operator meets before a set is installed.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
+ * state to instantiate; injecting it would suggest it could differ per instance, which is
+ * the opposite of what a packaged set list is.
  */
 class ZgwSetInstallGuard {
 

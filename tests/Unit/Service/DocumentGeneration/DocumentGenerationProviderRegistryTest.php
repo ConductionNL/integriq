@@ -62,7 +62,7 @@ class DocumentGenerationProviderRegistryTest extends TestCase {
 		$this->logProvider = new LogDocumentGenerationProvider();
 		$this->registry = new DocumentGenerationProviderRegistry(
 			logProvider: $this->logProvider,
-			smartDocumentsProvider: new SmartDocumentsProvider(
+			smartDocuments: new SmartDocumentsProvider(
 				brokeredCallService: $broker,
 				logger: new NullLogger()
 			),

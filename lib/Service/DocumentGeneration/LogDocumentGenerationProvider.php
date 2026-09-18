@@ -32,6 +32,8 @@ use OCA\Integriq\Exception\DocumentGenerationException;
  * The development binding. It renders a placeholder and says it is one.
  *
  * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome's named constructors, as above.
  */
 class LogDocumentGenerationProvider implements DocumentGenerationProviderInterface {
 
