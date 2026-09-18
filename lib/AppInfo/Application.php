@@ -61,6 +61,10 @@ use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
+use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
+use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
 use OCA\Integriq\Repair\InitializeActions;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
@@ -341,6 +345,26 @@ class Application extends App implements IBootstrap {
 						$c->get(KvkPropertySource::class),
 					],
 					$c->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		// The intake channel registry: one keyed list of the channel adapters
+		// this instance has. Registered explicitly rather than autowired, for
+		// the same reason as the property-source registry above: the order,
+		// and therefore the first-wins collision policy, is readable in one
+		// place instead of depending on discovery order
+		// (openspec/changes/intake-channels-beyond-mail).
+		$context->registerService(
+			IntakeChannelRegistry::class,
+			static function ($c): IntakeChannelRegistry {
+				return new IntakeChannelRegistry(
+					$c->get('Psr\Log\LoggerInterface'),
+					[
+						$c->get(FormSubmissionAdapter::class),
+						$c->get(MessagingChannelAdapter::class),
+						$c->get(PublicSpaceReportAdapter::class),
+					]
 				);
 			}
 		);

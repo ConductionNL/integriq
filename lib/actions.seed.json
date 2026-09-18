@@ -25,6 +25,8 @@
     "mapping.save-object": ["admin"],
     "mapping.get-objects": ["admin"],
     "mail.import": ["admin"],
+    "intake.rules": ["admin"],
+    "intake.reply": ["admin"],
     "mail.poll": ["admin"],
     "event.messages": ["admin"],
     "event.subscribe": ["admin"],
