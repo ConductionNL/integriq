@@ -60,6 +60,23 @@ interface DocumentGenerationProviderInterface {
 	public function getConfigSchema(): array;
 
 	/**
+	 * Refuse a source that cannot render, naming what is missing.
+	 *
+	 * Called when an operator activates a source, so a vendor binding without
+	 * a credential reference is refused there rather than at the first render,
+	 * where the refusal would arrive as a failed beschikking.
+	 *
+	 * @param array $sourceConfiguration The source's `configuration` object.
+	 *
+	 * @return void
+	 *
+	 * @throws DocumentGenerationException When the source cannot render.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+	 */
+	public function assertActivatable(array $sourceConfiguration): void;
+
+	/**
 	 * The vendor's templates for this source.
 	 *
 	 * Read from the vendor at call time. Integriq stores no copy of a vendor

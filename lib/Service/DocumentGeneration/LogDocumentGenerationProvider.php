@@ -93,6 +93,19 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	/**
 	 * {@inheritDoc}
 	 *
+	 * The sandbox binding needs nothing, so there is nothing to refuse.
+	 *
+	 * @param array $sourceConfiguration Unused.
+	 *
+	 * @return void
+	 */
+	public function assertActivatable(array $sourceConfiguration): void {
+
+	}//end assertActivatable()
+
+	/**
+	 * {@inheritDoc}
+	 *
 	 * @param array $sourceConfiguration Unused.
 	 *
 	 * @return array<int, array{id: string, name: string}> Three placeholder templates.

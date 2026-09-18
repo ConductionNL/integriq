@@ -296,6 +296,14 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
+		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// The operator's half only: read the vendor's own template list for a
+		// source, and activate a source that can actually render. Filinq asks
+		// for a render through the typed DocumentRenderRequestedEvent, not
+		// through a route, so there is no render endpoint here.
+		['name' => 'documentGeneration#templates', 'url' => '/api/document-generation/sources/{sourceId}/templates', 'verb' => 'GET'],
+		['name' => 'documentGeneration#activate', 'url' => '/api/document-generation/sources/{sourceId}/activate', 'verb' => 'POST'],
+
 		// ZGW Notificaties API subscriber/publisher (openspec/changes/archive/2026-07-15-notificaties-api-subscriber).
 		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
 		// controller — NOT the generic OR object CRUD a CnIndexPage would drive,
