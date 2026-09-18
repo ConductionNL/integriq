@@ -1047,12 +1047,12 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
+            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties'|'flow'|'mapping', sink?, synchronizationId?, jobId?, sourceId?, flowId?, mappingId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["webhook", "synchronization", "job", "notificaties"],
+                "enum": ["webhook", "synchronization", "job", "notificaties", "flow", "mapping"],
                 "description": "Which delivery mechanism a matched event drives",
                 "title": "Action Kind"
               },
@@ -1072,6 +1072,16 @@
                 "format": "uuid",
                 "description": "Target job UUID for kind=job",
                 "title": "Job ID"
+              },
+              "flowId": {
+                "type": "string",
+                "description": "Target flow id for kind=flow: the OpenRegister flow a matched event starts",
+                "title": "Flow ID"
+              },
+              "mappingId": {
+                "type": "string",
+                "description": "Target mapping id for kind=mapping: the answer-to-target transform a matched event runs",
+                "title": "Mapping ID"
               },
               "sourceId": {
                 "type": "string",
