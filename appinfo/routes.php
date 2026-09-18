@@ -111,6 +111,21 @@ return [
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 
+		// The outbound call log, its replay and the verdicts
+		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// means reading the request and the response it carried, so it sits
+		// behind its own action (`call-log.read`) rather than the listing's.
+		// Replaying and hand-firing share one action (`call-log.replay`),
+		// because they are the same act to the receiver. The verdict leg is
+		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
+		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/replay', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
+		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
+		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.
