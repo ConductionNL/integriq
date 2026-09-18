@@ -75,6 +75,18 @@ return [
 		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
 		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
 
+		// Intake channels beyond mail (openspec/changes/intake-channels-beyond-mail).
+		// The inbound leg is public and gated by a webhook signature verified over
+		// the raw bytes before the body is read, like peppol#inbound and
+		// notifyNl#inbound. The rule save and the reply are session calls behind
+		// the ADR-023 action matrix (`intake.rules`, `intake.reply`), because a
+		// rule decides what opens a case and a reply leaves the building.
+		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
+		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
+		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.

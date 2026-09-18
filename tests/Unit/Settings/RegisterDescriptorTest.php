@@ -98,6 +98,8 @@ class RegisterDescriptorTest extends TestCase {
 		'Job' => 'job',
 		'Mapping' => 'mapping',
 		'Message' => 'message',
+		'IntakeMessage' => 'intake_message',
+		'IntakeRoutingRule' => 'intake_routing_rule',
 		'Rule' => 'rule',
 		'Synchronization' => 'synchronization',
 		'SynchronizationContract' => 'synchronization_contract',

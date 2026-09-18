@@ -34,6 +34,8 @@
           "event_subscription",
           "fsc_call",
           "fsc_service",
+          "intake_message",
+          "intake_routing_rule",
           "iwmo_ijw_message",
           "job",
           "job_log",
@@ -127,6 +129,7 @@
               "database",
               "file",
               "fsc",
+              "intake-channel",
               "iwmo-ijw",
               "kiss",
               "mailbox",
@@ -4442,6 +4445,269 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "intake_message": {
+        "slug": "intake_message",
+        "title": "Intake Message",
+        "icon": "InboxArrowDown",
+        "version": "1.0.0",
+        "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
+        "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "required": [
+          "channelId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The channel that delivered the message",
+            "title": "Channel"
+          },
+          "externalId": {
+            "type": "string",
+            "description": "The channel's own id for the message, unique per channel",
+            "title": "External ID"
+          },
+          "correspondent": {
+            "type": "object",
+            "description": "Who wrote: whatever of id, name, address and phone the channel knows. A reply goes back here",
+            "title": "Correspondent"
+          },
+          "text": {
+            "type": "string",
+            "description": "The message text",
+            "title": "Text"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata; the bytes travel with the hand-off, not in this object",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "media": {
+            "type": "array",
+            "description": "Ordered media metadata, kept as files rather than pasted into the text",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Media"
+          },
+          "location": {
+            "type": "object",
+            "description": "Latitude, longitude and address, written only when the channel supplied them. A channel with no location writes none",
+            "title": "Location"
+          },
+          "fields": {
+            "type": "object",
+            "description": "Structured fields the channel supplied, which a routing rule reads as fields.<name>",
+            "title": "Fields"
+          },
+          "rawPayload": {
+            "type": "object",
+            "description": "What the channel actually sent, kept so a channel can be debugged without a second integration",
+            "title": "Raw Payload"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the channel delivered the message",
+            "title": "Received At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "routed",
+              "held",
+              "failed",
+              "rejected"
+            ],
+            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel)",
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the message is held, failed or rejected. Empty on a routed message",
+            "title": "Reason"
+          },
+          "ruleName": {
+            "type": "string",
+            "description": "The routing rule that matched",
+            "title": "Rule"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The case type the rule names",
+            "title": "Target Case Type"
+          },
+          "targetRef": {
+            "type": "string",
+            "description": "The object the owning app opened for this message",
+            "title": "Target Reference"
+          },
+          "replies": {
+            "type": "array",
+            "description": "Every reply attempt, sent or not: an attempt nobody can see failing is an attempt everybody assumes arrived",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "sent, failed, or unsupported by this channel",
+                  "title": "Status"
+                },
+                "channelId": {
+                  "type": "string",
+                  "description": "The channel the reply was meant for",
+                  "title": "Channel"
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The channel's own id for the sent reply",
+                  "title": "Reference"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "Why it failed, or why the channel cannot reply",
+                  "title": "Detail"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "What was sent",
+                  "title": "Text"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the attempt was made",
+                  "title": "At"
+                }
+              }
+            },
+            "title": "Replies"
+          }
+        }
+      },
+      "intake_routing_rule": {
+        "slug": "intake_routing_rule",
+        "title": "Intake Routing Rule",
+        "icon": "SignDirection",
+        "version": "1.0.0",
+        "summary": "Maps a channel and an optional condition onto the case type a message opens",
+        "description": "An Intake Routing Rule is the configuration that makes routing changeable without a release: a channel, an optional condition over the normalised message, the case type to open, and the mapping from message to target fields. A mapping naming a field the case type does not have is refused when the rule is saved, not at every submission afterwards. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "required": [
+          "name",
+          "channelId",
+          "targetSchema"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What this rule is called on screen and on the messages it routed",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Why this rule exists",
+            "title": "Description"
+          },
+          "channelId": {
+            "type": "string",
+            "description": "The channel this rule applies to",
+            "title": "Channel"
+          },
+          "condition": {
+            "type": "object",
+            "description": "Optional condition over the normalised message. A rule with no condition matches every message on its channel",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "A source expression: text, channelId, externalId, location, receivedAt, correspondent.<key> or fields.<key>",
+                "title": "Field"
+              },
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "equals",
+                  "contains",
+                  "exists",
+                  "in"
+                ],
+                "description": "How to compare",
+                "title": "Operator"
+              },
+              "value": {
+                "type": "string",
+                "description": "What to compare against",
+                "title": "Value"
+              }
+            },
+            "title": "Condition"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The case type a matching message opens. Integriq owns no case type and checks this one exists when the rule is saved",
+            "title": "Target Case Type"
+          },
+          "fieldMapping": {
+            "type": "object",
+            "description": "Target field to source expression. Every target field must exist on the case type",
+            "title": "Field Mapping"
+          },
+          "locationField": {
+            "type": "string",
+            "description": "The target's location field, written only when the message carries a location",
+            "title": "Location Field"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Evaluation order on the channel; the first matching rule wins",
+            "title": "Order"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether this rule is evaluated",
+            "title": "Enabled"
+          }
+        }
       },
       "iwmo_ijw_message": {
         "x-wire-standard": "iWMO / iJW (iStandaarden) — berichttype and kenmerk are the standard's own field names. MUST NOT be internationalised.",
