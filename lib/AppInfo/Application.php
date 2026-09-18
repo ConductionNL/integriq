@@ -86,6 +86,9 @@ use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Migration\MigrationSourceRegistry;
+use OCA\Integriq\Migration\Source\FileMigrationSource;
+use OCA\Integriq\Migration\Source\RedmineMigrationSource;
 use OCA\Integriq\PropertySource\PropertySourceRegistry;
 use OCA\Integriq\PropertySource\Provider\BagPropertySource;
 use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
@@ -384,6 +387,20 @@ class Application extends App implements IBootstrap {
 						$c->get(BrpVolgindicatieProvider::class),
 						$c->get(KvkMutatieProvider::class),
 						$c->get(LogSubscriptionProvider::class),
+					]
+				);
+			}
+		);
+
+		// The migration source adapters. A second incumbent is a class beside
+		// the Redmine one and a line here: no engine change, no consumer change.
+		$context->registerService(
+			MigrationSourceRegistry::class,
+			static function ($c): MigrationSourceRegistry {
+				return new MigrationSourceRegistry(
+					[
+						$c->get(FileMigrationSource::class),
+						$c->get(RedmineMigrationSource::class),
 					]
 				);
 			}
