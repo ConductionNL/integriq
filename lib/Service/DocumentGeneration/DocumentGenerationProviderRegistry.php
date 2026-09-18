@@ -53,6 +53,8 @@ class DocumentGenerationProviderRegistry {
 	 * Every binding this instance ships.
 	 *
 	 * @return array<int, DocumentGenerationProviderInterface> The bindings.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	public function all(): array {
 		return [$this->logProvider, $this->smartDocumentsProvider, $this->xentialProvider];
@@ -67,6 +69,8 @@ class DocumentGenerationProviderRegistry {
 	 * @return DocumentGenerationProviderInterface The binding.
 	 *
 	 * @throws DocumentGenerationException When the configuration names no binding, or names one that does not exist.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	public function resolve(array $sourceConfiguration): DocumentGenerationProviderInterface {
 		$providerId = trim((string)($sourceConfiguration['providerId'] ?? ''));

@@ -87,6 +87,8 @@ class DocumentGenerationStatusJob extends TimedJob {
 	 * @param mixed $argument Unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	protected function run($argument): void {
 		foreach (['queued', 'unreachable'] as $status) {

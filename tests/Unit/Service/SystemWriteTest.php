@@ -23,7 +23,13 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/three-degrading-system-writes/specs/system-writes/spec.md
+ * There is deliberately no @spec here. The tag this file carried named
+ * `openspec/changes/three-degrading-system-writes/`, and no such change was ever
+ * written, in this repo or any other. A citation that resolves to nothing is
+ * worse than none: it reads as coverage and stops anyone looking for the
+ * requirement. SystemWrite came out of a code sweep, not a spec, and the rule it
+ * enforces — that a write which cannot be elevated refuses instead of running as
+ * whoever is signed in — is pinned by the assertions below and by nothing else.
  */
 
 declare(strict_types=1);

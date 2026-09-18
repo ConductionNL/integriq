@@ -63,6 +63,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * The vendor's path for listing templates.
 	 *
 	 * @return string The path, relative to the source's base URL.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	abstract protected function templatesPath(): string;
 
@@ -70,6 +72,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * The vendor's path for starting a render.
 	 *
 	 * @return string The path, relative to the source's base URL.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	abstract protected function renderPath(): string;
 
@@ -79,6 +83,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @param string $providerJobId The vendor's job id.
 	 *
 	 * @return string The path, relative to the source's base URL.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	abstract protected function statusPath(string $providerJobId): string;
 
@@ -89,6 +95,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @param array $data The merge data.
 	 *
 	 * @return array<string, mixed> The request body.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	abstract protected function renderEnvelope(string $templateId, array $data): array;
 
@@ -96,6 +104,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * The fixtures this binding answers with in mock mode.
 	 *
 	 * @return array<int, array{id: string, name: string}> The fixture templates.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	abstract protected function fixtureTemplates(): array;
 
@@ -103,6 +113,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * {@inheritDoc}
 	 *
 	 * @return array<string, mixed> The configuration schema every vendor binding shares.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -175,6 +187,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return array<int, array{id: string, name: string}> The vendor's templates.
 	 *
 	 * @throws DocumentGenerationException When the source is unconfigured or the vendor cannot be reached.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function listTemplates(array $sourceConfiguration): array {
 		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
@@ -212,6 +226,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @param array $data The merge data.
 	 *
 	 * @return RenderOutcome What the vendor answered.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function render(array $sourceConfiguration, string $templateId, array $data): RenderOutcome {
 		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
@@ -253,6 +269,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @param string $providerJobId The vendor's job id.
 	 *
 	 * @return RenderOutcome The current outcome.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function status(array $sourceConfiguration, string $providerJobId): RenderOutcome {
 		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
@@ -293,6 +311,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return string The document bytes.
 	 *
 	 * @throws DocumentGenerationException When the document cannot be fetched.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function fetch(array $sourceConfiguration, string $fileReference): string {
 		if ($this->isMockMode(sourceConfiguration: $sourceConfiguration) === true) {
@@ -379,6 +399,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @param array $sourceConfiguration The source's `configuration` object.
 	 *
 	 * @return boolean True when the broker has something to resolve.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	protected function hasCredentialRef(array $sourceConfiguration): bool {
 		return $this->brokeredCallService->hasCredentialRef(
@@ -398,6 +420,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return array<string, mixed> The decoded body.
 	 *
 	 * @throws DocumentGenerationException On a refusal, and marked unreachable on a transport failure.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	protected function dispatchJson(
 		array $sourceConfiguration,
@@ -452,6 +476,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 * @return Response The raw response.
 	 *
 	 * @throws DocumentGenerationException On a configuration or transport failure.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	protected function dispatch(
 		array $sourceConfiguration,

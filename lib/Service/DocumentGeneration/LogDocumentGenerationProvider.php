@@ -98,6 +98,8 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	 * @param array $sourceConfiguration Unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
 	 */
 	public function assertActivatable(array $sourceConfiguration): void {
 
@@ -109,6 +111,8 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	 * @param array $sourceConfiguration Unused.
 	 *
 	 * @return array<int, array{id: string, name: string}> Three placeholder templates.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
 	 */
 	public function listTemplates(array $sourceConfiguration): array {
 		return self::TEMPLATES;
@@ -123,6 +127,8 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	 * @param array $data The merge data, hashed into the placeholder and then dropped.
 	 *
 	 * @return RenderOutcome A rendered placeholder.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
 	 */
 	public function render(array $sourceConfiguration, string $templateId, array $data): RenderOutcome {
 		self::$counter++;
@@ -150,6 +156,8 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	 * @param string $providerJobId The synthetic job id.
 	 *
 	 * @return RenderOutcome The same rendered outcome, or a refusal when this process never made it.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
 	 */
 	public function status(array $sourceConfiguration, string $providerJobId): RenderOutcome {
 		if (array_key_exists($providerJobId, $this->documents) === false) {
@@ -178,6 +186,8 @@ class LogDocumentGenerationProvider implements DocumentGenerationProviderInterfa
 	 * @return string The placeholder bytes.
 	 *
 	 * @throws DocumentGenerationException When this process rendered no such document.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-log-binding-answers-a-placeholder
 	 */
 	public function fetch(array $sourceConfiguration, string $fileReference): string {
 		$jobId = substr($fileReference, strlen('log:'));

@@ -93,6 +93,8 @@ class SubscriptionSigningPolicy {
 	 * @param array<string, mixed> $subscription The subscription being saved.
 	 *
 	 * @return string|null The refusal, or null when it may be saved.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function refuse(array $subscription): ?string {
 		if ((string)($subscription['style'] ?? '') !== self::STYLE_PUSH) {
@@ -122,6 +124,8 @@ class SubscriptionSigningPolicy {
 	 * @param DateTimeImmutable|null $now          The moment, for a frozen clock.
 	 *
 	 * @return array<string, mixed> The settings to store.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function settingsForNew(array $subscription, string $user = '', ?DateTimeImmutable $now = null): array {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -163,6 +167,8 @@ class SubscriptionSigningPolicy {
 	 * @param DateTimeImmutable|null $now      The moment.
 	 *
 	 * @return array<string, mixed> The settings to store.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function settingsForExisting(
 		array $existing,
@@ -199,6 +205,8 @@ class SubscriptionSigningPolicy {
 	 * @param array<string, mixed> $subscription The subscription as stored.
 	 *
 	 * @return bool True when a delivery carries a signature.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function isSigned(array $subscription): bool {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -221,6 +229,8 @@ class SubscriptionSigningPolicy {
 	 * @param array<string, mixed> $subscription The subscription as stored.
 	 *
 	 * @return array<string, mixed> The read shape.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function forReading(array $subscription): array {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -255,6 +265,8 @@ class SubscriptionSigningPolicy {
 	 * @param string               $kind         immediate, retry or replay.
 	 *
 	 * @return array<string, mixed> What the attempt records.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function attemptRecord(array $subscription, string $kind = 'immediate'): array {
 		$signed = $this->isSigned(subscription: $subscription);
@@ -289,6 +301,8 @@ class SubscriptionSigningPolicy {
 	 * reveal. A recipe that appears only at creation is a recipe nobody reads.
 	 *
 	 * @return array<string, mixed> The verification recipe.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
 	 */
 	public function verificationRecipe(): array {
 		return [

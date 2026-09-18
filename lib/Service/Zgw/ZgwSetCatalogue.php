@@ -133,6 +133,8 @@ final class ZgwSetCatalogue {
 	 * @param string $slug The set slug.
 	 *
 	 * @return bool True when it has a write-back.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public static function writesBack(string $slug): bool {
 		return in_array($slug, self::WRITE_BACK_SETS, true);

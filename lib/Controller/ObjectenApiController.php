@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Objecten\ObjectenTokenService;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -89,6 +90,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objecttypes(): JSONResponse {
 		$refusal = $this->refuse(objecttype: '');
 		if ($refusal !== null) {
@@ -112,6 +114,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objecttype(string $uuid): JSONResponse {
 		$refusal = $this->refuse(objecttype: $uuid);
 		if ($refusal !== null) {
@@ -136,6 +139,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objecttypeVersion(string $uuid, string $version): JSONResponse {
 		$refusal = $this->refuse(objecttype: $uuid);
 		if ($refusal !== null) {
@@ -157,6 +161,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objects(): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -190,6 +195,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function object(string $uuid): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -213,6 +219,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function search(): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -242,6 +249,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function createObject(): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -274,6 +282,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function replaceObject(string $uuid): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -312,6 +321,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function updateObject(string $uuid): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 
@@ -359,6 +369,7 @@ class ObjectenApiController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function deleteObject(string $uuid): JSONResponse {
 		$type = (string)$this->request->getParam('type', '');
 

@@ -76,6 +76,8 @@ final class RenderOutcome {
 	 * @param string $detail Optional detail.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function queued(string $providerJobId, string $detail = ''): self {
 		return new self(status: 'queued', providerJobId: $providerJobId, detail: $detail);
@@ -90,6 +92,8 @@ final class RenderOutcome {
 	 * @param string $detail Optional detail.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function rendered(string $providerJobId, string $fileReference, string $detail = ''): self {
 		return new self(
@@ -108,6 +112,8 @@ final class RenderOutcome {
 	 * @param string $providerJobId The vendor's job id, when it named one.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function failed(string $detail, string $providerJobId = ''): self {
 		return new self(status: 'failed', providerJobId: $providerJobId, detail: $detail);
@@ -121,6 +127,8 @@ final class RenderOutcome {
 	 * @param string $providerJobId The vendor's job id, when one was already known.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function unreachable(string $detail, string $providerJobId = ''): self {
 		return new self(status: 'unreachable', providerJobId: $providerJobId, detail: $detail);
@@ -147,6 +155,8 @@ final class RenderOutcome {
 	 * The plain array shape persisted onto a `documentGenerationJob`.
 	 *
 	 * @return array{status: string, providerJobId: string, fileReference: string, detail: string}
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public function toArray(): array {
 		return [

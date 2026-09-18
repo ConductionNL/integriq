@@ -53,6 +53,8 @@ class ZgwSetInstallGuard {
 	 * @param array<string, string>       $bindings Schema key to the set slug holding it.
 	 *
 	 * @return string|null The refusal, or null when the install may proceed.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function refuse(string $slug, array $target, array $bindings): ?string {
 		if (ZgwSetCatalogue::isPackaged($slug) === false) {
@@ -100,6 +102,8 @@ class ZgwSetInstallGuard {
 	 * @param array<string, mixed> $template The set's declaration.
 	 *
 	 * @return string[] The refusals, empty when the template is sound.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function refuseTemplate(string $slug, array $template): array {
 		$refusals = [];
@@ -142,6 +146,8 @@ class ZgwSetInstallGuard {
 	 * @param string $schema   The schema.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function bindingKey(string $register, string $schema): string {
 		return $register.'/'.$schema;

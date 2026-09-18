@@ -63,6 +63,8 @@ class RecipientResolver {
 	 * @param array<int, array<string, mixed>> $suppressions The suppressions asked for.
 	 *
 	 * @return string[] The refusals, empty when the request may be sent.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
 	 */
 	public function refusals(array $standing, array $suppressions): array {
 		$byAddress = [];
@@ -126,6 +128,8 @@ class RecipientResolver {
 	 * @return RecipientDecision The decision.
 	 *
 	 * @throws RecipientRefusedException When the request may not be sent.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
 	 */
 	public function resolve(
 		array $standing,
@@ -205,6 +209,8 @@ class RecipientResolver {
 	 * @return array<string, mixed> The same three parts the send would record.
 	 *
 	 * @throws RecipientRefusedException When the request would be refused.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
 	 */
 	public function preview(
 		array $standing,

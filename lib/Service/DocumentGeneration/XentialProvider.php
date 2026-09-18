@@ -53,6 +53,8 @@ class XentialProvider extends AbstractRestDocumentGenerationProvider {
 	 * {@inheritDoc}
 	 *
 	 * @return string The templates path.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function templatesPath(): string {
 		return '/api/template/list';
@@ -63,6 +65,8 @@ class XentialProvider extends AbstractRestDocumentGenerationProvider {
 	 * {@inheritDoc}
 	 *
 	 * @return string The render path.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function renderPath(): string {
 		return '/api/document/start';
@@ -75,6 +79,8 @@ class XentialProvider extends AbstractRestDocumentGenerationProvider {
 	 * @param string $providerJobId The vendor's job id.
 	 *
 	 * @return string The status path.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function statusPath(string $providerJobId): string {
 		return '/api/document/' . rawurlencode($providerJobId) . '/status';
@@ -91,6 +97,8 @@ class XentialProvider extends AbstractRestDocumentGenerationProvider {
 	 * @param array $data The merge data.
 	 *
 	 * @return array<string, mixed> The request body.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function renderEnvelope(string $templateId, array $data): array {
 		return [
@@ -105,6 +113,8 @@ class XentialProvider extends AbstractRestDocumentGenerationProvider {
 	 * {@inheritDoc}
 	 *
 	 * @return array<int, array{id: string, name: string}> The fixture templates.
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function fixtureTemplates(): array {
 		return [

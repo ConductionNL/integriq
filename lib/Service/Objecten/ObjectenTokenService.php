@@ -265,6 +265,8 @@ class ObjectenTokenService {
 	 * @param string|null $authorization The header.
 	 *
 	 * @return string|null The key.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	public function keyFrom(?string $authorization): ?string {
 		$header = trim((string)$authorization);

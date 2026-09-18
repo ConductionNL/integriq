@@ -77,6 +77,8 @@ final class SystemWrite {
 	 * @return void
 	 *
 	 * @throws SystemWriteUnavailableException When it cannot.
+	 *
+	 * @spec exclude no openspec change describes this; SystemWrite came out of a code sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
 	 */
 	public static function refuseWhenUnavailable(bool $available, string $what): void {
 		if ($available === true) {
@@ -113,6 +115,8 @@ final class SystemWrite {
 	 * @throws SystemWriteUnavailableException When elevation cannot be granted.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is OpenRegister's static scope guard; there is no instance API.
+	 *
+	 * @spec exclude no openspec change describes this; SystemWrite came out of a code sweep and its rule is pinned by tests/Unit/Service/SystemWriteTest.php
 	 */
 	public static function run(string $what, callable $operation): mixed {
 		self::refuseWhenUnavailable(available: self::isAvailable(), what: $what);
