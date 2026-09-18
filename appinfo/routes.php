@@ -98,6 +98,34 @@ return [
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
 
+		// Sender identity and deliverability
+		// (openspec/changes/outbound-sender-identity-and-deliverability). An
+		// identity is the face on an account Nextcloud Mail owns (D12), so these
+		// routes read and check identities, take a message back inside its hold
+		// window, and let a recipient stop a case's updates. The unsubscribe leg
+		// is public and needs no account: the person following it usually has
+		// neither, and asking them to make one is asking them to keep receiving
+		// the mail instead.
+		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
+		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
+		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+
+		// The outbound call log, its replay and the verdicts
+		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// means reading the request and the response it carried, so it sits
+		// behind its own action (`call-log.read`) rather than the listing's.
+		// Replaying and hand-firing share one action (`call-log.replay`),
+		// because they are the same act to the receiver. The verdict leg is
+		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
+		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/replay', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
+		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
+		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.
@@ -537,6 +565,14 @@ return [
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
+		// The environment allowlist: what an expression may read out of the
+		// process, and who said so. Administrator only, enforced by the
+		// #[AuthorizedAdminSetting] attribute AND again in each method body —
+		// this list is a code-execution-adjacent surface, so the guard must not
+		// live only in an attribute a hand-written route could miss.
+		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
+		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
+		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 

@@ -58,6 +58,7 @@ use OCA\Integriq\EventListener\NextcloudFileTagEventListener;
 use OCA\Integriq\EventListener\NextcloudFormsEventListener;
 use OCA\Integriq\EventListener\NextcloudTablesEventListener;
 use OCA\Integriq\EventListener\ObjectCreatedEventListener;
+use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
@@ -114,6 +115,7 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -218,6 +220,15 @@ class Application extends App implements IBootstrap {
 
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
+
+		// registry-subscription-connector Task 3: the binding that was blocked
+		// on OpenRegister shipping the event. It has, and dispatches it from
+		// RegistrySubscriptionNotifier, so the wire shape is read rather than
+		// guessed.
+		$dispatcher->addServiceListener(
+			eventName: RegistrySubscriptionRequestedEvent::class,
+			className: RegistrySubscriptionRequestedListener::class
+		);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);

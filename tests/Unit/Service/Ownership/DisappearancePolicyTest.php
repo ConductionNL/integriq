@@ -154,4 +154,99 @@ class DisappearancePolicyTest extends TestCase {
 
 		$this->assertFalse($outcome['cleared']);
 	}//end testARecordThatWasNeverFlaggedReportsNoClearing()
+
+	/**
+	 * 🔴 THE CONTRACT IS THE HALF NOTHING ASSERTED, AND IT IS THE HALF THAT
+	 * SURVIVES.
+	 *
+	 * `applyToObject()` writes the absence onto the record a person reads.
+	 * `applyToContract()` writes it onto the contract the ENGINE reads on the
+	 * next run, and that is what stops a flagged record being re-flagged, or a
+	 * returning record being missed. It had no test at all: every assertion in
+	 * this file was about the object.
+	 *
+	 * @return void
+	 */
+	public function testMarkEndedWritesTheEndDateOntoTheContractToo(): void {
+		$after = (new DisappearanceApplier())->applyToContract(
+			DisappearancePolicy::MARK_ENDED,
+			['targetId' => 'target-1'],
+			'2026-09-18T08:00:00+00:00'
+		);
+
+		$this->assertSame('2026-09-18T08:00:00+00:00', $after['endedAt']);
+		$this->assertTrue($after['absentAtSource']);
+		$this->assertSame('2026-09-18T08:00:00+00:00', $after['sourceAbsentSince']);
+		$this->assertSame('target-1', $after['targetId'], 'The contract keeps what it already carried.');
+	}//end testMarkEndedWritesTheEndDateOntoTheContractToo()
+
+	/**
+	 * Under keepAndFlag the contract records the absence but NOT an end date.
+	 *
+	 * 🔑 THE DIFFERENCE BETWEEN THE TWO POLICIES IS THE WHOLE POINT OF HAVING
+	 * TWO. `keepAndFlag` says "the source stopped carrying this and we are
+	 * keeping it as it stands"; writing an end date would say the record ended,
+	 * which is a claim about the subject rather than about the source.
+	 *
+	 * @return void
+	 */
+	public function testKeepAndFlagFlagsTheContractWithoutEndingIt(): void {
+		$after = (new DisappearanceApplier())->applyToContract(
+			DisappearancePolicy::KEEP_AND_FLAG,
+			['targetId' => 'target-1'],
+			'2026-09-18T08:00:00+00:00'
+		);
+
+		$this->assertArrayNotHasKey('endedAt', $after, 'keepAndFlag must not claim the record ended.');
+		$this->assertTrue($after['absentAtSource']);
+		$this->assertSame('2026-09-18T08:00:00+00:00', $after['sourceAbsentSince']);
+	}//end testKeepAndFlagFlagsTheContractWithoutEndingIt()
+
+	/**
+	 * Under delete the contract is left alone.
+	 *
+	 * The control for the two above: without it, an applier that wrote the
+	 * absence for every policy would pass both while making the declaration
+	 * meaningless.
+	 *
+	 * @return void
+	 */
+	public function testDeleteLeavesTheContractUntouched(): void {
+		$before = ['targetId' => 'target-1'];
+
+		$after = (new DisappearanceApplier())->applyToContract(
+			DisappearancePolicy::DELETE,
+			$before,
+			'2026-09-18T08:00:00+00:00'
+		);
+
+		$this->assertSame($before, $after, 'Under delete the object goes; there is no contract state to write.');
+	}//end testDeleteLeavesTheContractUntouched()
+
+	/**
+	 * A record that comes back clears exactly what the contract carried.
+	 *
+	 * `markSeen()` is covered for the flag, but not for the END DATE. A
+	 * returning record that kept its `endedAt` would read as ended forever
+	 * while being perfectly present at the source.
+	 *
+	 * @return void
+	 */
+	public function testAReturningRecordAlsoLosesItsEndDate(): void {
+		$outcome = (new DisappearanceApplier())->markSeen(
+			[
+				'targetId' => 'target-1',
+				'absentAtSource' => true,
+				'sourceAbsentSince' => '2026-09-18T08:00:00+00:00',
+				'endedAt' => '2026-09-18T08:00:00+00:00',
+			],
+			'2026-09-19T08:00:00+00:00'
+		);
+
+		$this->assertTrue($outcome['cleared']);
+		$this->assertNull($outcome['contract']['endedAt'], 'A record that is back has not ended.');
+		$this->assertNull($outcome['contract']['sourceAbsentSince']);
+		$this->assertFalse($outcome['contract']['absentAtSource']);
+	}//end testAReturningRecordAlsoLosesItsEndDate()
+
 }//end class

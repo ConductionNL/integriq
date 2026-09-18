@@ -45,6 +45,7 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "mapping_version",
           "message",
           "notificaties_abonnement",
           "outbound_message",
@@ -52,8 +53,11 @@
           "openformulieren_submission",
           "payment_intent",
           "peppol_transmission",
+          "recipient_key",
+          "recipient_opt_out",
           "ris_sync_record",
           "rule",
+          "sender_identity",
           "sms_message",
           "source",
           "stuf_message",
@@ -61,6 +65,7 @@
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",
+          "verdict",
           "synchronization_log",
           "zgw_version_translation_log"
         ],
@@ -1042,12 +1047,12 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
+            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties'|'flow'|'mapping', sink?, synchronizationId?, jobId?, sourceId?, flowId?, mappingId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["webhook", "synchronization", "job", "notificaties"],
+                "enum": ["webhook", "synchronization", "job", "notificaties", "flow", "mapping"],
                 "description": "Which delivery mechanism a matched event drives",
                 "title": "Action Kind"
               },
@@ -1067,6 +1072,16 @@
                 "format": "uuid",
                 "description": "Target job UUID for kind=job",
                 "title": "Job ID"
+              },
+              "flowId": {
+                "type": "string",
+                "description": "Target flow id for kind=flow: the OpenRegister flow a matched event starts",
+                "title": "Flow ID"
+              },
+              "mappingId": {
+                "type": "string",
+                "description": "Target mapping id for kind=mapping: the answer-to-target transform a matched event runs",
+                "title": "Mapping ID"
               },
               "sourceId": {
                 "type": "string",
@@ -1978,7 +1993,108 @@
             "description": "Canonical UUID",
             "title": "UUID"
           },
-          "statusCode": {
+                    "target": {
+            "type": "string",
+            "description": "What was called: the source, endpoint or subscription this call went to. The call log answers what happened to this partner today, where the trace answers what happened in this execution",
+            "title": "Target"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "The execution-trace id this call belongs to, so the two views thread together",
+            "title": "Trace ID"
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "How long the call took, in milliseconds",
+            "title": "Duration"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "triggered",
+              "replayed",
+              "hand-fired",
+              "dry-run"
+            ],
+            "description": "Whether the event triggered this call, an administrator replayed it, an administrator fired it by hand, or it was a dry run that sent nothing. To the receiver a replay and a hand-fired call are identical, which is deliberate",
+            "title": "Kind"
+          },
+          "firedBy": {
+            "type": "string",
+            "description": "The principal who replayed or hand-fired this call. Empty for a triggered one",
+            "title": "Fired By"
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "The policy that governed this call's attempts, recorded so a call that stopped after two attempts can still be explained a month later when the policy has changed twice",
+            "title": "Retry Policy"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Every attempt on this call, including replays. A replay appends here and never overwrites the first attempt",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who, for a replay or a hand-fired call",
+                  "title": "By"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "triggered, replayed, hand-fired or dry-run",
+                  "title": "Kind"
+                },
+                "statusCode": {
+                  "type": "integer",
+                  "description": "What came back",
+                  "title": "Status Code"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What it said",
+                  "title": "Detail"
+                },
+                "mappingVersion": {
+                  "type": "string",
+                  "description": "The mapping version this attempt ran under",
+                  "title": "Mapping Version"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this call ran under",
+            "title": "Mapping"
+          },
+          "mappingVersion": {
+            "type": "string",
+            "description": "The version of that mapping at the time of the call. A replay offers this version and the current one, states which it used, and switches neither silently",
+            "title": "Mapping Version"
+          },
+          "deadLettered": {
+            "type": "boolean",
+            "description": "Whether this call exhausted its retries and landed in the dead-letter list, where it stays replayable",
+            "title": "Dead Lettered"
+          },
+        "statusCode": {
             "type": "integer",
             "description": "HTTP status code returned by the upstream",
             "title": "HTTP Status Code"
@@ -2274,6 +2390,58 @@
         },
         "appendOnly": true,
         "immutable": true
+      },
+      "verdict": {
+        "slug": "verdict",
+        "title": "Verdict",
+        "icon": "GavelOutline",
+        "version": "1.0.0",
+        "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "objectRef",
+          "state",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "objectRef": {
+            "type": "string",
+            "description": "The object this verdict is about, as the owning app references it",
+            "title": "Object Reference"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "pending"
+            ],
+            "description": "What the checker concluded. Pending is a real answer: a checker that has not finished has not passed anything",
+            "title": "State"
+          },
+          "source": {
+            "type": "string",
+            "description": "Which checker said it",
+            "title": "Source"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why, in the checker's own words",
+            "title": "Reason"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the verdict arrived",
+            "title": "Received At"
+          },
+          "payload": {
+            "type": "object",
+            "description": "What the checker sent, for the app that wants more than the state",
+            "title": "Payload"
+          }
+        }
       },
       "synchronization_log": {
         "slug": "synchronization_log",
@@ -2691,6 +2859,95 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "recipient_key": {
+        "slug": "recipient_key",
+        "title": "Recipient Key",
+        "icon": "KeyOutline",
+        "version": "1.0.0",
+        "summary": "A public key known for one recipient address, used to encrypt what is sent there",
+        "description": "A Recipient Key is the public key material known for one address. Where a key is known the message is signed and encrypted; where none is known it is signed and not encrypted, and the log says which of the two happened, so nobody assumes an encryption they did not get. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address",
+          "publicKey"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The recipient address this key belongs to",
+            "title": "Address"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "smime",
+              "pgp"
+            ],
+            "description": "Which kind of key material this is",
+            "title": "Type"
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "The public key material, PEM for S/MIME",
+            "title": "Public Key"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "The fingerprint an administrator can check against",
+            "title": "Fingerprint"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Added At"
+          }
+        }
+      },
+      "recipient_opt_out": {
+        "slug": "recipient_opt_out",
+        "title": "Recipient Opt Out",
+        "icon": "EmailOffOutline",
+        "version": "1.0.0",
+        "summary": "One address that asked not to be written to, honoured by every sender in the product",
+        "description": "A Recipient Opt Out is held once per address per instance and checked before every send. A recipient who asked not to be written to should not have to ask each app separately, and the AVG duty is the sender's, not the app's. Protected categories, such as a besluit, are not stopped by an opt-out; a send that overrides one is recorded as having done so. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address that opted out, lower case",
+            "title": "Address"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "case"
+            ],
+            "description": "Everything but the protected categories, or the updates on one case",
+            "title": "Scope"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case, for a case scoped opt-out",
+            "title": "Case Reference"
+          },
+          "source": {
+            "type": "string",
+            "description": "Who or what added it: the unsubscribe link, an administrator, a bounce",
+            "title": "Source"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Created At"
+          }
+        }
       },
       "ris_sync_record": {
         "slug": "ris_sync_record",
@@ -3527,6 +3784,42 @@
         "appendOnly": false,
         "immutable": false
       },
+      "mapping_version": {
+        "slug": "mapping_version",
+        "title": "Mapping Version",
+        "icon": "SourceBranch",
+        "version": "1.0.0",
+        "summary": "A snapshot of a mapping as it stood when a call ran under it",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "mapping",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this is a version of",
+            "title": "Mapping"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version, as the mapping declared it at the time",
+            "title": "Version"
+          },
+          "snapshot": {
+            "type": "object",
+            "description": "The mapping exactly as it stood",
+            "title": "Snapshot"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the snapshot was taken",
+            "title": "Recorded At"
+          }
+        }
+      },
       "message": {
         "slug": "message",
         "title": "Message",
@@ -3768,6 +4061,155 @@
             "format": "date-time",
             "description": "ISO 8601 timestamp the message was tracked from",
             "title": "Created"
+          }
+        }
+      },
+      "sender_identity": {
+        "slug": "sender_identity",
+        "title": "Sender Identity",
+        "icon": "AccountBoxOutline",
+        "version": "1.0.0",
+        "summary": "The face an outgoing message wears: address, signature, quoting, hold window and keys",
+        "description": "A Sender Identity is not an account. The account holds the credentials and the OAuth grant and Nextcloud Mail owns it (decision D12); the identity holds what the recipient sees. Many identities may share one account, and moving an identity to another account changes no policy. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "displayName",
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "The name a recipient sees in the From line",
+            "title": "Display Name"
+          },
+          "address": {
+            "type": "string",
+            "description": "The address a message leaves under. A policy decision, not a deployment variable",
+            "title": "Address"
+          },
+          "replyTo": {
+            "type": "string",
+            "description": "Where replies go, when that is not the sending address",
+            "title": "Reply To"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Appended below the body, under the RFC 3676 separator",
+            "title": "Signature"
+          },
+          "mailAccount": {
+            "type": "string",
+            "description": "The Nextcloud Mail account this identity sends through. Referenced, never held here",
+            "title": "Mail Account"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Whether a message naming no identity leaves under this one",
+            "title": "Default"
+          },
+          "quotingLevel": {
+            "type": "string",
+            "enum": [
+              "none",
+              "last-message",
+              "full-history"
+            ],
+            "description": "How much case history the outgoing message quotes. The whole dossier quoted back to a bezwaarmaker is a disclosure, so none is a real option. Defaults to last-message",
+            "title": "Quoting Level"
+          },
+          "holdWindowSeconds": {
+            "type": "integer",
+            "description": "How long a message waits before the send is attempted, during which it can be withdrawn. Zero, the default, sends at once. Nothing is recalled after the window, because nothing can be",
+            "title": "Hold Window"
+          },
+          "signOutgoing": {
+            "type": "boolean",
+            "description": "Whether every message from this identity is signed",
+            "title": "Sign Outgoing"
+          },
+          "smimeCertificate": {
+            "type": "string",
+            "description": "The PEM certificate this identity signs with",
+            "title": "S/MIME Certificate"
+          },
+          "smimePrivateKey": {
+            "type": "string",
+            "description": "The PEM private key this identity signs with. Write only; it is never read back over the API",
+            "title": "S/MIME Private Key"
+          },
+          "dkimSelector": {
+            "type": "string",
+            "description": "The DKIM selector to check, default 'default'",
+            "title": "DKIM Selector"
+          },
+          "sendingHost": {
+            "type": "string",
+            "description": "The host mail actually leaves from, compared against the published SPF record",
+            "title": "Sending Host"
+          },
+          "noReply": {
+            "type": "object",
+            "description": "What happens to a reply to this address. A reply is never dropped: it is diverted or refused",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this identity takes replies",
+                "title": "Enabled"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "divert",
+                  "refuse"
+                ],
+                "description": "Send it on, or answer the sender",
+                "title": "Mode"
+              },
+              "divertTo": {
+                "type": "string",
+                "description": "The mailbox a diverted reply lands in",
+                "title": "Divert To"
+              },
+              "writeInstead": {
+                "type": "string",
+                "description": "The address a refusal points the sender at",
+                "title": "Write Instead"
+              }
+            },
+            "title": "No Reply"
+          },
+          "alignment": {
+            "type": "object",
+            "description": "What this domain's DNS says, from the last check. A failing identity still sends, with the risk shown: blocking would break an instance the day a DNS change propagates slowly",
+            "properties": {
+              "domain": {
+                "type": "string",
+                "description": "The domain checked",
+                "title": "Domain"
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was checked",
+                "title": "Checked At"
+              },
+              "spf": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "SPF"
+              },
+              "dkim": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DKIM"
+              },
+              "dmarc": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DMARC"
+              }
+            },
+            "title": "Alignment"
           }
         }
       },

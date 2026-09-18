@@ -1,0 +1,78 @@
+{
+  "$comment": "ADR-037 manifest fragment (outbound-call-delivery-and-replay). The call log itself already has pages (SourceLogs, EndpointLogs, CloudEventLogs over call_log), so this adds no fourth one. What had nowhere to be seen is the verdict: integriq stores what an outside checker said and acts on it never, and a fact nobody can look at is a fact that may as well not have arrived. The state colours map the schema's own enum members, and pending is deliberately not green: a checker that has not finished has not passed anything.",
+  "pages": [
+    {
+      "id": "Verdicts",
+      "route": "/verdicts",
+      "type": "logs",
+      "title": "External verdicts",
+      "config": {
+        "register": "integriq",
+        "schema": "verdict",
+        "sortKey": "receivedAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "receivedAt",
+            "label": "Received",
+            "sortable": true,
+            "width": "18%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "objectRef",
+            "label": "About",
+            "sortable": true,
+            "width": "24%"
+          },
+          {
+            "key": "source",
+            "label": "Checker",
+            "sortable": true,
+            "width": "18%"
+          },
+          {
+            "key": "reason",
+            "label": "Reason",
+            "sortable": false,
+            "width": "26%"
+          },
+          {
+            "key": "state",
+            "label": "State",
+            "sortable": true,
+            "width": "14%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "pass": "success",
+                "fail": "error",
+                "pending": "info"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "OperationsGroup",
+      "children": [
+        {
+          "id": "Verdicts",
+          "label": "External verdicts",
+          "icon": "GavelOutline",
+          "route": "Verdicts",
+          "order": 24
+        }
+      ]
+    }
+  ]
+}

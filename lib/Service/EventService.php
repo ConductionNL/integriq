@@ -26,6 +26,7 @@ use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -2389,6 +2390,10 @@ class EventService {
 				'subject' => $subject,
 				'data' => $data,
 				'userId' => $userId,
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
@@ -2445,6 +2450,10 @@ class EventService {
 					'payload' => $request->getPayload(),
 				],
 				'userId' => $request->getUserId(),
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
@@ -2492,6 +2501,10 @@ class EventService {
 				'subject' => ($payload['subject'] ?? null),
 				'data' => ($payload['data'] ?? []),
 				'userId' => ($payload['userId'] ?? null),
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
@@ -2526,6 +2539,10 @@ class EventService {
 					'attributes' => $objectData,
 				],
 				'userId' => ($objectData['userId'] ?? null),
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
@@ -2566,6 +2583,10 @@ class EventService {
 					],
 				],
 				'userId' => ($newData['userId'] ?? null),
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
@@ -2600,6 +2621,10 @@ class EventService {
 					'id' => $object->getUuid(),
 				],
 				'userId' => ($objectData['userId'] ?? null),
+				// Marks this row as our own output so CloudEventListener drops it
+				// even when the schema ids cannot identify it (a renamed register, or
+				// the schema copied elsewhere).
+				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
 			schema: 'event'
