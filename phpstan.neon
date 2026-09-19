@@ -129,10 +129,26 @@ parameters:
                 - lib/Controller/EventsController.php
                 - lib/Controller/JobsController.php
                 - lib/Controller/LogsController.php
+                # MailIntakeService::intake() and ForwardService::forward() both
+                # return OCA\OpenRegister\Db\ObjectEntity, so getObject() on the
+                # result is an error type and the whole JSON payload reads as
+                # unresolvable. Same cause, same remedy, as the entries around it.
+                - lib/Controller/MailIntakeController.php
+                - lib/Controller/OutboundLogController.php
                 - lib/Controller/OpenFormulierenController.php
                 - lib/Controller/SourcesController.php
                 - lib/Controller/SynchronizationsController.php
                 - lib/Service/EndpointService.php
+        # The same OpenRegister-is-runtime-only effect, one layer further on.
+        # IntakeRoutingService::firstMatchingRule() fills $rules from
+        # ObjectEntity::getObject(), which resolves to an error type, so usort
+        # over that array is reported as unresolvable rather than the OR symbol
+        # itself. Scoped to the one file, like the JSONResponse block above.
+        -
+            message: '#Parameter \#?1? ?\$array of function usort contains unresolvable type#'
+            identifier: argument.unresolvableType
+            path: lib/Intake/IntakeRoutingService.php
+
         # MappingService::executeMapping()'s `is_array($output) === false` guard.
         # The comment directly above it already records the situation: "The
         # is_array() guard is dead per static analysis but kept for safety
