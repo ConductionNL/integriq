@@ -25,8 +25,12 @@ use OCA\Integriq\Migration\ColumnMappingValidator;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
+use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -39,9 +43,12 @@ class MigrationSourcesControllerTest extends TestCase {
 	/**
 	 * Build the controller over one adapter double.
 	 *
+	 * @param bool $signedIn Whether anybody is signed in.
+	 * @param bool $allowed Whether the caller holds migration.preview.
+	 *
 	 * @return MigrationSourcesController The controller under test.
 	 */
-	private function controller(): MigrationSourcesController {
+	private function controller(bool $signedIn = true, bool $allowed = true): MigrationSourcesController {
 		$adapter = $this->createMock(MigrationSourceAdapterInterface::class);
 		$adapter->method('id')->willReturn('redmine');
 		$adapter->method('describe')->willReturn(
@@ -56,14 +63,67 @@ class MigrationSourcesControllerTest extends TestCase {
 
 		$registry = new MigrationSourceRegistry([$adapter]);
 
+		$user = null;
+		if ($signedIn === true) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn('anna');
+		}
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$actionAuth = $this->createMock(ActionAuthService::class);
+		if ($allowed === false) {
+			$actionAuth->method('requireAction')
+				->willThrowException(new OCSForbiddenException('not allowed'));
+		}
+
 		return new MigrationSourcesController(
 			'integriq',
 			$this->createMock(IRequest::class),
 			$registry,
 			new MigrationPreviewReader($registry),
-			new ColumnMappingValidator()
+			new ColumnMappingValidator(),
+			$session,
+			$actionAuth
 		);
 	}//end controller()
+
+	/**
+	 * A caller without migration.preview cannot read an incumbent system.
+	 *
+	 * The preview returns counts AND a sample of the records themselves. With
+	 * #[NoAdminRequired] and no guard, every authenticated account could read
+	 * any configured source by naming it. The least privileged principal that
+	 * should be refused is a signed-in caller who does not hold the action;
+	 * an admin success would prove nothing here.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 */
+	public function testACallerWithoutTheActionCannotPreviewASource(): void {
+		$this->expectException(OCSForbiddenException::class);
+		$this->controller(allowed: false)->preview('redmine');
+	}//end testACallerWithoutTheActionCannotPreviewASource()
+
+	/**
+	 * Nobody signed in reads nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 */
+	public function testAnAnonymousCallerCannotPreviewASource(): void {
+		$response = $this->controller(signedIn: false)->preview('redmine');
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertArrayNotHasKey(
+			'kinds',
+			$response->getData(),
+			'the refusal must not carry any part of the preview'
+		);
+	}//end testAnAnonymousCallerCannotPreviewASource()
 
 	/**
 	 * The inventory lists every adapter and what it can yield.
