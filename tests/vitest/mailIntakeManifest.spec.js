@@ -32,7 +32,7 @@ describe('mail intake manifest fragment', () => {
 		expect(page).toBeDefined()
 		expect(page.route).toBe('/messages/mail')
 		expect(page.config.register).toBe('integriq')
-		expect(page.config.schema).toBe('message')
+		expect(page.config.schema).toBe('mail_message')
 	})
 
 	it('shows the columns an operator triages on', () => {
@@ -47,7 +47,7 @@ describe('mail intake manifest fragment', () => {
 
 	it('colours only the statuses the schema can hold', () => {
 		const register = read('lib/Settings/integriq_register.json')
-		const allowed = register.components.schemas.message.properties.status.enum
+		const allowed = register.components.schemas.mail_message.properties.status.enum
 		const status = page.config.columns.find((column) => column.key === 'status')
 
 		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual(
