@@ -65,8 +65,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
-			'/ingeschrevenpersonen/' . rawurlencode($identity) . '/volgindicaties',
-			'PUT'
+			endpoint: '/ingeschrevenpersonen/' . rawurlencode($identity) . '/volgindicaties',
+			method: 'PUT'
 		);
 
 		if ($outcome['error'] !== '') {
@@ -85,8 +85,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 */
 	public function unsubscribe(string $identity): void {
 		$this->callSource(
-			'/ingeschrevenpersonen/' . rawurlencode($identity) . '/volgindicaties',
-			'DELETE'
+			endpoint: '/ingeschrevenpersonen/' . rawurlencode($identity) . '/volgindicaties',
+			method: 'DELETE'
 		);
 	}//end unsubscribe()
 
@@ -103,9 +103,9 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 		}
 
 		$outcome = $this->callSource(
-			'/ingeschrevenpersonen',
-			'GET',
-			['query' => ['volgindicatie' => 'true', 'burgerservicenummer' => implode(',', $identities)]]
+			endpoint: '/ingeschrevenpersonen',
+			method: 'GET',
+			config: ['query' => ['volgindicatie' => 'true', 'burgerservicenummer' => implode(',', $identities)]]
 		);
 
 		if ($outcome['error'] !== '') {

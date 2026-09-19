@@ -98,7 +98,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 		$mailbox = trim((string)($configuration['mailbox'] ?? ''));
 		$token = trim((string)($configuration['accessToken'] ?? ''));
 		if ($mailbox === '' || $token === '') {
-			throw new MailboxTransportException('A Graph mailbox needs both a mailbox address and an access token.');
+			throw new MailboxTransportException(message: 'A Graph mailbox needs both a mailbox address and an access token.');
 		}
 
 		$folder = trim((string)($configuration['folder'] ?? 'Inbox'));
@@ -243,11 +243,11 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			);
 			$decoded = json_decode((string)$response->getBody(), true);
 		} catch (Throwable $exception) {
-			throw new MailboxTransportException('Graph refused the mailbox read: ' . $exception->getMessage());
+			throw new MailboxTransportException(message: 'Graph refused the mailbox read: ' . $exception->getMessage());
 		}
 
 		if (is_array($decoded) === false) {
-			throw new MailboxTransportException('Graph answered something that is not JSON.');
+			throw new MailboxTransportException(message: 'Graph answered something that is not JSON.');
 		}
 
 		return $decoded;

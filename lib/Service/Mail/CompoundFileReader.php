@@ -130,11 +130,11 @@ final class CompoundFileReader {
 	 */
 	public function __construct(private readonly string $raw) {
 		if (self::isCompoundFile(raw: $raw) === false) {
-			throw new MessageParseException('Not a compound file: the MS-CFB signature is missing.');
+			throw new MessageParseException(message: 'Not a compound file: the MS-CFB signature is missing.');
 		}
 
 		if (strlen($raw) < 512) {
-			throw new MessageParseException('Truncated compound file: the header is incomplete.');
+			throw new MessageParseException(message: 'Truncated compound file: the header is incomplete.');
 		}
 
 		$this->sectorSize = (1 << $this->uint16(offset: 30));
@@ -142,7 +142,7 @@ final class CompoundFileReader {
 		$this->miniCutoff = $this->uint32(offset: 56);
 
 		if ($this->sectorSize < 128 || $this->miniSectorSize < 16) {
-			throw new MessageParseException('Unsupported compound file: implausible sector size.');
+			throw new MessageParseException(message: 'Unsupported compound file: implausible sector size.');
 		}
 
 		$this->readFat();
@@ -207,7 +207,7 @@ final class CompoundFileReader {
 	public function readStream(int $entryId): string {
 		$entry = ($this->entries[$entryId] ?? null);
 		if ($entry === null) {
-			throw new MessageParseException('Unknown directory entry ' . $entryId . '.');
+			throw new MessageParseException(message: 'Unknown directory entry ' . $entryId . '.');
 		}
 
 		$size = (int)$entry['size'];
@@ -382,7 +382,7 @@ final class CompoundFileReader {
 		}
 
 		if (isset($this->entries[0]) === false || $this->entries[0]['type'] !== self::TYPE_ROOT) {
-			throw new MessageParseException('Compound file has no root directory entry.');
+			throw new MessageParseException(message: 'Compound file has no root directory entry.');
 		}
 
 	}//end readDirectory()

@@ -85,7 +85,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 				config: $config,
 			);
 		} catch (Throwable $exception) {
-			throw new CallDispatchException('The call could not be made: ' . $exception->getMessage());
+			throw new CallDispatchException(message: 'The call could not be made: ' . $exception->getMessage());
 		}
 
 		$logged = $log->getObject();
@@ -126,11 +126,11 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 				schema: 'source',
 			);
 		} catch (DoesNotExistException) {
-			throw new CallDispatchException('No source "' . $target . '" to call.');
+			throw new CallDispatchException(message: 'No source "' . $target . '" to call.');
 		}
 
 		if (($source instanceof ObjectEntity) === false) {
-			throw new CallDispatchException('No source "' . $target . '" to call.');
+			throw new CallDispatchException(message: 'No source "' . $target . '" to call.');
 		}
 
 		return $source;

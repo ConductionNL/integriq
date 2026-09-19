@@ -109,7 +109,7 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 		$handle = trim((string)($from['phone'] ?? $from['handle'] ?? ''));
 		if ($externalId === '' || $handle === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" message must carry a messageId and a sender handle, '
+				message: 'A "' . self::CHANNEL_ID . '" message must carry a messageId and a sender handle, '
 				. 'because a reply has nowhere to go without one.'
 			);
 		}

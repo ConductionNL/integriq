@@ -41,7 +41,7 @@ class UnknownMigrationSourceException extends RuntimeException {
 		}
 
 		parent::__construct(
-			sprintf(
+			message: sprintf(
 				'No migration source adapter is registered under the id "%s". Registered ids: %s. Nothing was read.',
 				$sourceId,
 				$knownText

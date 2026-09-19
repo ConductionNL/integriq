@@ -110,7 +110,7 @@ class IntakeChannelRegistry {
 	public function get(string $channelId): IntakeChannelAdapterInterface {
 		if (isset($this->adapters[$channelId]) === false) {
 			throw new IntakeChannelException(
-				'No intake channel adapter answers to "' . $channelId . '".'
+				message: 'No intake channel adapter answers to "' . $channelId . '".'
 			);
 		}
 

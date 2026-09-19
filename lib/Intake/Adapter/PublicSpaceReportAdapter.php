@@ -86,7 +86,7 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 		$externalId = trim((string)($payload['id'] ?? ''));
 		if ($externalId === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" report must carry an id, so the same report cannot arrive twice.'
+				message: 'A "' . self::CHANNEL_ID . '" report must carry an id, so the same report cannot arrive twice.'
 			);
 		}
 

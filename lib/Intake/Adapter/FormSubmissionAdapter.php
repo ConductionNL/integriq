@@ -90,7 +90,7 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		$formId = trim((string)($payload['formId'] ?? ''));
 		if ($submissionId === '' || $formId === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" payload must carry a submissionId and a formId.'
+				message: 'A "' . self::CHANNEL_ID . '" payload must carry a submissionId and a formId.'
 			);
 		}
 

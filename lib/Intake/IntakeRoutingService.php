@@ -221,19 +221,19 @@ class IntakeRoutingService {
 		$channelId = trim((string)($rule['channelId'] ?? ''));
 		if ($registry->has($channelId) === false) {
 			throw new IntakeRoutingException(
-				'No intake channel adapter answers to "' . $channelId . '".'
+				message: 'No intake channel adapter answers to "' . $channelId . '".'
 			);
 		}
 
 		$targetSchema = trim((string)($rule['targetSchema'] ?? ''));
 		if ($targetSchema === '') {
-			throw new IntakeRoutingException('A routing rule must name the case type it opens.');
+			throw new IntakeRoutingException(message: 'A routing rule must name the case type it opens.');
 		}
 
 		$properties = $this->targetProperties(targetSchema: $targetSchema);
 		$mapped = ($rule['fieldMapping'] ?? []);
 		if (is_array($mapped) === false) {
-			throw new IntakeRoutingException('The field mapping must be an object of target field to source.');
+			throw new IntakeRoutingException(message: 'The field mapping must be an object of target field to source.');
 		}
 
 		$locationField = trim((string)($rule['locationField'] ?? ''));
@@ -245,7 +245,7 @@ class IntakeRoutingService {
 		foreach ($targets as $field) {
 			if (array_key_exists((string)$field, $properties) === false) {
 				throw new IntakeRoutingException(
-					'Case type "' . $targetSchema . '" has no field "' . $field . '".'
+					message: 'Case type "' . $targetSchema . '" has no field "' . $field . '".'
 				);
 			}
 		}
@@ -482,12 +482,12 @@ class IntakeRoutingService {
 	private function targetProperties(string $targetSchema): array {
 		$schema = $this->schemaMapper->find($targetSchema);
 		if ($schema === null) {
-			throw new IntakeRoutingException('No case type "' . $targetSchema . '" on this instance.');
+			throw new IntakeRoutingException(message: 'No case type "' . $targetSchema . '" on this instance.');
 		}
 
 		if (method_exists($schema, 'getProperties') === false) {
 			throw new IntakeRoutingException(
-				'Case type "' . $targetSchema . '" does not declare its fields, so a mapping cannot be checked.'
+				message: 'Case type "' . $targetSchema . '" does not declare its fields, so a mapping cannot be checked.'
 			);
 		}
 

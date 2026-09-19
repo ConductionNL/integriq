@@ -158,13 +158,13 @@ class MailboxSourceHandler {
 
 		if ($transport === null) {
 			throw new MailboxTransportException(
-				'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
+				message: 'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
 			);
 		}
 
 		if ($transport->isUsable() === false) {
 			throw new MailboxTransportException(
-				'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
+				message: 'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
 			);
 		}
 

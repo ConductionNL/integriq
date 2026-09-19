@@ -60,7 +60,7 @@ class OwnershipController extends Controller {
 		private readonly OrObjectService $objectService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 
 	/**

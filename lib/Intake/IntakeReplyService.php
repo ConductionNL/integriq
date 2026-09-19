@@ -103,11 +103,11 @@ class IntakeReplyService {
 				schema: IntakeRoutingService::SCHEMA_MESSAGE,
 			);
 		} catch (DoesNotExistException) {
-			throw new IntakeChannelException('No inbound message "' . $messageUuid . '".');
+			throw new IntakeChannelException(message: 'No inbound message "' . $messageUuid . '".');
 		}
 
 		if (($stored instanceof ObjectEntity) === false) {
-			throw new IntakeChannelException('No inbound message "' . $messageUuid . '".');
+			throw new IntakeChannelException(message: 'No inbound message "' . $messageUuid . '".');
 		}
 
 		return $stored;
