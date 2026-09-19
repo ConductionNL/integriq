@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.7-unstable.20260918150001</version>
+	<version>0.4.7-unstable.20260918152001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -90,6 +90,11 @@
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
+		<!-- document-generation-vendor-adapter: every five minutes, ask the
+		     vendor again about a render it has not settled. This is what keeps
+		     `unreachable` a state rather than a dead end: a render nobody could
+		     ask about is unfinished business, not a failure. -->
+		<job>OCA\Integriq\BackgroundJob\DocumentGenerationStatusJob</job>
 		<!-- directory-and-group-sync: hourly. A membership that ended in the
 		     directory has to end here without anyone acting, which is the whole
 		     difference between synchronising membership and authenticating
