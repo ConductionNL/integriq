@@ -27,7 +27,10 @@ test.describe('statutory gateway catalogue', () => {
 		expect(body.results.length).toBeGreaterThan(0)
 
 		for (const row of body.results) {
-			expect(row.standard, 'a gateway with no standard cannot register').toBeTruthy()
+			expect(
+				row.standard,
+				'a gateway with no standard cannot register',
+			).toBeTruthy()
 			expect(['conformant', 'partial', 'planned']).toContain(row.claim.level)
 			expect(row.claim.evidence).toBeTruthy()
 		}

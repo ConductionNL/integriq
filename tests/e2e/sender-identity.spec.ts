@@ -22,7 +22,10 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
 
 test.describe('sender identity', () => {
-	test('two teams have their own identity, and the page shows what each quotes', async ({ page, request }) => {
+	test('two teams have their own identity, and the page shows what each quotes', async ({
+		page,
+		request,
+	}) => {
 		const seed = await request.post(`${OR_BASE}/sender_identity`, {
 			failOnStatusCode: false,
 			data: {
@@ -37,8 +40,13 @@ test.describe('sender identity', () => {
 		})
 		expect(seed.status(), 'seeding an identity must succeed').toBeLessThan(300)
 
-		await page.goto(`${APP_BASE}/outbound/identities`, { waitUntil: 'domcontentloaded' })
-		const row = page.getByRole('row').filter({ hasText: 'E2E Belastingen' }).first()
+		await page.goto(`${APP_BASE}/outbound/identities`, {
+			waitUntil: 'domcontentloaded',
+		})
+		const row = page
+			.getByRole('row')
+			.filter({ hasText: 'E2E Belastingen' })
+			.first()
 		await expect(row).toBeVisible({ timeout: 20_000 })
 		await expect(
 			row,
@@ -58,11 +66,14 @@ test.describe('sender identity', () => {
 		})
 		const id = String((await seed.json()).id ?? '')
 
-		const resp = await request.post(`${API_BASE}/outbound/identities/${id}/alignment`, {
-			failOnStatusCode: false,
-			headers: { 'OCS-APIRequest': 'true' },
-			data: {},
-		})
+		const resp = await request.post(
+			`${API_BASE}/outbound/identities/${id}/alignment`,
+			{
+				failOnStatusCode: false,
+				headers: { 'OCS-APIRequest': 'true' },
+				data: {},
+			},
+		)
 		expect(resp.status(), 'the check must answer, not error').toBe(200)
 
 		const body = await resp.json()
@@ -70,7 +81,10 @@ test.describe('sender identity', () => {
 			body.alignment.dkim.publish,
 			'an absent record comes with the record to publish, not just a red tick',
 		).toContain('v=DKIM1')
-		expect(body.atRisk, 'a domain with nothing published is at risk, and says so').toBe(true)
+		expect(
+			body.atRisk,
+			'a domain with nothing published is at risk, and says so',
+		).toBe(true)
 	})
 
 	test('a recipient stops the updates on one case without an account', async () => {
@@ -80,9 +94,12 @@ test.describe('sender identity', () => {
 			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
 		})
 
-		const resp = await anonymous.get('/index.php/apps/integriq/unsubscribe/not-a-real-token', {
-			failOnStatusCode: false,
-		})
+		const resp = await anonymous.get(
+			'/index.php/apps/integriq/unsubscribe/not-a-real-token',
+			{
+				failOnStatusCode: false,
+			},
+		)
 
 		expect(
 			resp.status(),
@@ -94,7 +111,10 @@ test.describe('sender identity', () => {
 		await anonymous.dispose()
 	})
 
-	test('the opt-outs every sender honours are on a page', async ({ page, request }) => {
+	test('the opt-outs every sender honours are on a page', async ({
+		page,
+		request,
+	}) => {
 		const seed = await request.post(`${OR_BASE}/recipient_opt_out`, {
 			failOnStatusCode: false,
 			data: {
@@ -106,8 +126,12 @@ test.describe('sender identity', () => {
 		})
 		expect(seed.status(), 'seeding an opt-out must succeed').toBeLessThan(300)
 
-		await page.goto(`${APP_BASE}/outbound/opt-outs`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('e2e-optout@example.org').first()).toBeVisible({ timeout: 20_000 })
+		await page.goto(`${APP_BASE}/outbound/opt-outs`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.getByText('e2e-optout@example.org').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
 	test('an anonymous caller cannot read the identities', async () => {

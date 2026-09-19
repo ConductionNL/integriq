@@ -44,10 +44,13 @@ describe('intake channels manifest fragment', () => {
 
 	it('colours only the statuses the schema can hold', () => {
 		const register = read('lib/Settings/integriq_register.json')
-		const allowed = register.components.schemas.intake_message.properties.status.enum
+		const allowed =
+			register.components.schemas.intake_message.properties.status.enum
 		const status = inbox.config.columns.find((column) => column.key === 'status')
 
-		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual([...allowed].sort())
+		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual(
+			[...allowed].sort(),
+		)
 		expect(status.widgetProps.colorMap.held).toBe('warning')
 	})
 

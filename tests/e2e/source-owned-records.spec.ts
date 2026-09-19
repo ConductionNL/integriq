@@ -194,7 +194,8 @@ test.describe('records owned by an external source', () => {
 		expect(contracts.status()).toBe(200)
 		const rows = (await contracts.json()).results ?? []
 		const contract = rows.find(
-			(row: Record<string, unknown>) => String(row.originId) === `pw-${stamp}-a`,
+			(row: Record<string, unknown>) =>
+				String(row.originId) === `pw-${stamp}-a`,
 		)
 		expect(contract, 'the first run has to have written a contract').toBeTruthy()
 
@@ -242,7 +243,8 @@ test.describe('records owned by an external source', () => {
 		)
 		const rows = (await contracts.json()).results ?? []
 		const contract = rows.find(
-			(row: Record<string, unknown>) => String(row.originId) === `pw-${stamp}-b`,
+			(row: Record<string, unknown>) =>
+				String(row.originId) === `pw-${stamp}-b`,
 		)
 		expect(contract, 'the first run has to have written a contract').toBeTruthy()
 
@@ -288,7 +290,8 @@ test.describe('records owned by an external source', () => {
 		)
 		const rows = (await contracts.json()).results ?? []
 		const contract = rows.find(
-			(row: Record<string, unknown>) => String(row.originId) === `pw-${stamp}-c`,
+			(row: Record<string, unknown>) =>
+				String(row.originId) === `pw-${stamp}-c`,
 		)
 		expect(contract, 'the run has to have written a contract').toBeTruthy()
 

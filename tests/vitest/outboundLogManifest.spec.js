@@ -44,23 +44,29 @@ describe('outbound message log manifest fragment', () => {
 
 	it('colours only the statuses the schema can hold', () => {
 		const register = read('lib/Settings/integriq_register.json')
-		const allowed = register.components.schemas.outbound_message.properties.status.enum
+		const allowed =
+			register.components.schemas.outbound_message.properties.status.enum
 		const status = page.config.columns.find((column) => column.key === 'status')
 
-		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual([...allowed].sort())
+		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual(
+			[...allowed].sort(),
+		)
 		expect(status.widgetProps.colorMap['partially failed']).toBe('warning')
 	})
 
 	it('keeps the three recipient states the schema declares', () => {
 		const register = read('lib/Settings/integriq_register.json')
-		const recipient = register.components.schemas.outbound_message.properties.recipients.items
+		const recipient =
+			register.components.schemas.outbound_message.properties.recipients.items
 
 		expect(recipient.properties.deliveryState.enum).toEqual([
 			'reported',
 			'not reported',
 			'unsupported by this channel',
 		])
-		expect(recipient.properties.readState.enum).toEqual(recipient.properties.deliveryState.enum)
+		expect(recipient.properties.readState.enum).toEqual(
+			recipient.properties.deliveryState.enum,
+		)
 	})
 
 	it('lands in Operations, next to the other run logs', () => {

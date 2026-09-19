@@ -280,7 +280,10 @@
 					}}
 				</span>
 				<div
-					v-if="!digitalPostLoading && digitalPostProviderOptions.length === 0"
+					v-if="
+						!digitalPostLoading
+						&& digitalPostProviderOptions.length === 0
+					"
 					class="cn-source-form-fields__note">
 					{{
 						t(
@@ -450,7 +453,9 @@ export default {
 			const id = String(this.formData?.configuration?.provider ?? '')
 			if (!id) return null
 			return (
-				this.digitalPostProviderOptions.find((option) => option.id === id) ?? {
+				this.digitalPostProviderOptions.find(
+					(option) => option.id === id,
+				) ?? {
 					id,
 					label: id,
 				}
@@ -484,7 +489,11 @@ export default {
 			// The type can be switched after the form opened. Without this the
 			// picker would render with an empty list and read as "no binding
 			// installed" on an instance that has three.
-			if (this.showsDigitalPostPicker && this.digitalPostProviders.length === 0 && !this.digitalPostLoading) {
+			if (
+				this.showsDigitalPostPicker
+				&& this.digitalPostProviders.length === 0
+				&& !this.digitalPostLoading
+			) {
 				this.fetchDigitalPostProviders()
 			}
 		},

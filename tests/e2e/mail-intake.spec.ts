@@ -53,7 +53,10 @@ async function seedMailbox(request: APIRequestContext): Promise<string> {
 }
 
 test.describe('mail intake', () => {
-	test('an operator imports a saved Outlook message', async ({ page, request }) => {
+	test('an operator imports a saved Outlook message', async ({
+		page,
+		request,
+	}) => {
 		const sourceId = await seedMailbox(request)
 		const file = readFileSync(join(__dirname, 'fixtures', 'outlook-message.msg'))
 
@@ -86,28 +89,33 @@ test.describe('mail intake', () => {
 		).toBe('ZAAK-2026-0042')
 
 		// The message is on the page an operator actually looks at.
-		await page.goto(`${APP_BASE}/messages/mail`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/messages/mail`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(
 			page.getByText('Vraag over ZAAK-2026-0042').first(),
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	test('a second import of the same message creates nothing new', async ({ request }) => {
+	test('a second import of the same message creates nothing new', async ({
+		request,
+	}) => {
 		const sourceId = await seedMailbox(request)
 		const file = readFileSync(join(__dirname, 'fixtures', 'outlook-message.msg'))
 
-		const importOnce = async () => await request.post(`${API_BASE}/mail-intake/import`, {
-			failOnStatusCode: false,
-			headers: { 'OCS-APIRequest': 'true' },
-			multipart: {
-				sourceId,
-				file: {
-					name: 'outlook-message.msg',
-					mimeType: 'application/vnd.ms-outlook',
-					buffer: file,
+		const importOnce = async () =>
+			await request.post(`${API_BASE}/mail-intake/import`, {
+				failOnStatusCode: false,
+				headers: { 'OCS-APIRequest': 'true' },
+				multipart: {
+					sourceId,
+					file: {
+						name: 'outlook-message.msg',
+						mimeType: 'application/vnd.ms-outlook',
+						buffer: file,
+					},
 				},
-			},
-		})
+			})
 
 		const first = await importOnce()
 		const second = await importOnce()
