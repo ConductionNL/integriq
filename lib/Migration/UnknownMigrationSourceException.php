@@ -35,11 +35,16 @@ class UnknownMigrationSourceException extends RuntimeException {
 	 * @param array<int,string> $known Source ids that do exist.
 	 */
 	public function __construct(private readonly string $sourceId, array $known = []) {
+		$knownText = '(none)';
+		if ($known !== []) {
+			$knownText = implode(', ', $known);
+		}
+
 		parent::__construct(
 			sprintf(
 				'No migration source adapter is registered under the id "%s". Registered ids: %s. Nothing was read.',
 				$sourceId,
-				($known === [] ? '(none)' : implode(', ', $known))
+				$knownText
 			)
 		);
 	}//end __construct()

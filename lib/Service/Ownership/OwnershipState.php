@@ -145,12 +145,17 @@ final class OwnershipState {
 	 * @return array<string,mixed> Serialisable ownership state.
 	 */
 	public function toArray(): array {
+		$lastSeen = 'known';
+		if ($this->lastSeenUnknown === true) {
+			$lastSeen = 'unknown';
+		}
+
 		return [
 			'mode' => $this->mode,
 			'source' => $this->source,
 			'originId' => $this->originId,
 			'lastSeenAt' => $this->lastSeenAt,
-			'lastSeen' => ($this->lastSeenUnknown === true ? 'unknown' : 'known'),
+			'lastSeen' => $lastSeen,
 			'absentAtSource' => $this->absentAtSource,
 			'endedAt' => $this->endedAt,
 			'synchronization' => [

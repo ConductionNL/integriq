@@ -190,8 +190,13 @@ class SenderIdentityService {
 		$address = (string)($identity['address'] ?? '');
 		$displayName = (string)($identity['displayName'] ?? '');
 
+		$from = $address;
+		if ($displayName !== '') {
+			$from = $displayName . ' <' . $address . '>';
+		}
+
 		return [
-			'from' => ($displayName === '' ? $address : $displayName . ' <' . $address . '>'),
+			'from' => $from,
 			'replyTo' => (string)($identity['replyTo'] ?? $address),
 			'signature' => (string)($identity['signature'] ?? ''),
 			'account' => (string)($identity['mailAccount'] ?? ''),

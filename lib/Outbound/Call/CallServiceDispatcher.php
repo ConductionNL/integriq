@@ -94,10 +94,15 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 			$response = ['body' => $response];
 		}
 
+		$responseHeaders = ($response['headers'] ?? null);
+		if (is_array($responseHeaders) === false) {
+			$responseHeaders = [];
+		}
+
 		return [
 			'statusCode' => (int)($logged['statusCode'] ?? ($response['statusCode'] ?? 0)),
 			'body' => ($response['body'] ?? null),
-			'headers' => (is_array(($response['headers'] ?? null)) === true ? $response['headers'] : []),
+			'headers' => $responseHeaders,
 			'durationMs' => (int)round(((microtime(true) - $started) * 1000)),
 			'detail' => (string)($logged['statusMessage'] ?? ''),
 		];

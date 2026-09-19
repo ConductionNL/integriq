@@ -226,16 +226,26 @@ class IntakeChannelsController extends Controller {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
+		$targetUuid = $id;
+		if ($targetUuid === '') {
+			$targetUuid = null;
+		}
+
+		$status = Http::STATUS_OK;
+		if ($id === '') {
+			$status = Http::STATUS_CREATED;
+		}
+
 		$saved = $this->orObjectService->saveObject(
 			object: $rule,
 			register: IntakeRoutingService::REGISTER,
 			schema: IntakeRoutingService::SCHEMA_RULE,
-			uuid: ($id === '' ? null : $id),
+			uuid: $targetUuid,
 		);
 
 		return new JSONResponse(
 			['id' => (string)$saved->getUuid(), 'rule' => $saved->getObject()],
-			($id === '' ? Http::STATUS_CREATED : Http::STATUS_OK)
+			$status
 		);
 
 	}//end saveRule()

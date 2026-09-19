@@ -177,9 +177,13 @@ class EmlParser {
 			return;
 		}
 
+		if ($mime === '') {
+			$mime = 'application/octet-stream';
+		}
+
 		$collected['attachments'][] = [
 			'name' => ($filename ?? 'attachment'),
-			'mime' => ($mime === '' ? 'application/octet-stream' : $mime),
+			'mime' => $mime,
 			'size' => strlen($decoded),
 			'content' => $decoded,
 		];

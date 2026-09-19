@@ -105,9 +105,13 @@ class SourceGatewayTransport implements GatewayTransport {
 
 		$identifier = ($body['identificatie'] ?? $body['identifier'] ?? $body['id'] ?? null);
 
+		if ($identifier !== null) {
+			$identifier = (string)$identifier;
+		}
+
 		return GatewayDelivery::delivered(
 			$gatewayId,
-			($identifier !== null ? (string)$identifier : null),
+			$identifier,
 			$transport
 		);
 	}//end send()

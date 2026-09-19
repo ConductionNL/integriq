@@ -102,11 +102,16 @@ final class DisappearancePolicy {
 	 * @return string The message.
 	 */
 	public static function refusalMessage(mixed $declared): string {
+		$declaredText = gettype($declared);
+		if (is_scalar($declared) === true) {
+			$declaredText = (string)$declared;
+		}
+
 		return sprintf(
 			'sourceConfig.%s must be one of %s. "%s" is not a policy this engine knows, and it is not treated as the default.',
 			self::CONFIG_KEY,
 			implode(', ', self::ACCEPTED),
-			(is_scalar($declared) === true ? (string)$declared : gettype($declared))
+			$declaredText
 		);
 	}//end refusalMessage()
 }//end class

@@ -159,10 +159,15 @@ class RecordOwnershipService {
 		}
 
 		if (in_array($declared, OwnershipState::MODES, true) === false) {
+			$declaredText = gettype($declared);
+			if (is_scalar($declared) === true) {
+				$declaredText = (string)$declared;
+			}
+
 			$this->logger->warning(
 				'ownership.unknown-mode',
 				[
-					'declared' => (is_scalar($declared) === true ? (string)$declared : gettype($declared)),
+					'declared' => $declaredText,
 					'synchronization' => ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
 				]
 			);

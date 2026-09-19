@@ -142,9 +142,13 @@ class MappingVersionService {
 		$snapshot = $this->find($slug, $wanted);
 		if ($snapshot !== null) {
 			$mapping = ($snapshot['snapshot'] ?? []);
+			if (is_array($mapping) === false) {
+				$mapping = [];
+			}
+
 			return [
 				'version' => $wanted,
-				'mapping' => (is_array($mapping) === true ? $mapping : []),
+				'mapping' => $mapping,
 			];
 		}
 

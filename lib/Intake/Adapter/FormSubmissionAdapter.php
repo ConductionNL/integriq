@@ -109,6 +109,11 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		$fields['formId'] = $formId;
 		$fields['submissionId'] = $submissionId;
 
+		$submittedAt = ($payload['submittedAt'] ?? null);
+		if ($submittedAt !== null) {
+			$submittedAt = (string)$submittedAt;
+		}
+
 		return new InboundMessage(
 			self::CHANNEL_ID,
 			$submissionId,
@@ -123,7 +128,7 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 			null,
 			[],
 			$payload,
-			(($payload['submittedAt'] ?? null) === null ? null : (string)$payload['submittedAt']),
+			$submittedAt,
 			$fields,
 		);
 

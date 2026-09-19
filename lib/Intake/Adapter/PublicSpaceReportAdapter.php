@@ -96,6 +96,11 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 			$reporter = [];
 		}
 
+		$reportedAt = ($payload['reportedAt'] ?? null);
+		if ($reportedAt !== null) {
+			$reportedAt = (string)$reportedAt;
+		}
+
 		return new InboundMessage(
 			self::CHANNEL_ID,
 			$externalId,
@@ -109,7 +114,7 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 			$this->location($payload),
 			$this->media($payload),
 			$payload,
-			(($payload['reportedAt'] ?? null) === null ? null : (string)$payload['reportedAt']),
+			$reportedAt,
 			[
 				'category' => (string)($payload['category'] ?? ''),
 				'description' => (string)($payload['description'] ?? ''),

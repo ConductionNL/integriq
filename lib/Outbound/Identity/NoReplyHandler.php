@@ -89,9 +89,10 @@ class NoReplyHandler {
 		$mode = (string)($noReply['mode'] ?? self::MODE_DIVERT);
 		if ($mode === self::MODE_REFUSE) {
 			$writeInstead = trim((string)($noReply['writeInstead'] ?? ''));
-			$notice = ($writeInstead === ''
-				? 'This address takes no replies.'
-				: 'This address takes no replies. Please write to ' . $writeInstead . ' instead.');
+			$notice = 'This address takes no replies.';
+			if ($writeInstead !== '') {
+				$notice = 'This address takes no replies. Please write to ' . $writeInstead . ' instead.';
+			}
 			$this->record($identity, $message, self::MODE_REFUSE, $writeInstead, $notice);
 
 			return ['outcome' => self::MODE_REFUSE, 'target' => $writeInstead, 'notice' => $notice];
@@ -125,6 +126,11 @@ class NoReplyHandler {
 	 * @return void
 	 */
 	private function record(array $identity, array $message, string $outcome, string $target, string $notice): void {
+		$targetSuffix = '';
+		if ($target !== '') {
+			$targetSuffix = ' to ' . $target;
+		}
+
 		$this->objectService->saveObject(
 			object: [
 				'channelId' => 'mail',
@@ -133,7 +139,7 @@ class NoReplyHandler {
 				'text' => (string)($message['text'] ?? ''),
 				'status' => 'held',
 				'reason' => 'Reply to the no-reply identity "' . (string)($identity['address'] ?? '') . '": '
-					. $outcome . ($target === '' ? '' : ' to ' . $target) . '. ' . $notice,
+					. $outcome . $targetSuffix . '. ' . $notice,
 				'receivedAt' => (new DateTimeImmutable())->format('c'),
 			],
 			register: MessageRecorder::REGISTER,

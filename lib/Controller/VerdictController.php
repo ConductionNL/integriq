@@ -133,13 +133,18 @@ class VerdictController extends Controller {
 
 		$body = $this->request->getParams();
 
+		$verdictPayload = ($body['payload'] ?? null);
+		if (is_array($verdictPayload) === false) {
+			$verdictPayload = [];
+		}
+
 		try {
 			$verdict = $this->verdicts->record(
 				(string)($body['objectRef'] ?? ''),
 				(string)($body['state'] ?? ''),
 				(string)($body['source'] ?? ''),
 				(string)($body['reason'] ?? ''),
-				(is_array(($body['payload'] ?? null)) === true ? $body['payload'] : []),
+				$verdictPayload,
 			);
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);

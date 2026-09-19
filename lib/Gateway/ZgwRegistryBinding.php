@@ -162,6 +162,11 @@ class ZgwRegistryBinding {
 	 * @return void
 	 */
 	private function markUsable(bool $usable): void {
-		$this->appConfig->setValueString(self::APP_ID, self::USABLE_KEY, ($usable === true ? '1' : '0'));
+		$flag = '0';
+		if ($usable === true) {
+			$flag = '1';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::USABLE_KEY, $flag);
 	}//end markUsable()
 }//end class

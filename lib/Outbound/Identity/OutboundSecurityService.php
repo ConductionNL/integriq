@@ -144,9 +144,14 @@ class OutboundSecurityService {
 			return ['verified' => false, 'detail' => 'The signature did not verify.'];
 		}
 
+		$detail = 'Signature verified.';
+		if ($certificates !== '') {
+			$detail = 'Signature verified against the sender certificate.';
+		}
+
 		return [
 			'verified' => true,
-			'detail' => ($certificates === '' ? 'Signature verified.' : 'Signature verified against the sender certificate.'),
+			'detail' => $detail,
 		];
 
 	}//end verify()

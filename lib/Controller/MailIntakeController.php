@@ -144,10 +144,15 @@ class MailIntakeController extends Controller {
 
 		$parsed = $this->messageParser->parse((string)($upload['name'] ?? 'message.eml'), $raw);
 		$configuration = $this->configurationOf($source);
+		$casePattern = ($configuration['casePattern'] ?? null);
+		if ($casePattern !== null) {
+			$casePattern = (string)$casePattern;
+		}
+
 		$message = $this->intakeService->intake(
 			$sourceId,
 			$parsed,
-			(($configuration['casePattern'] ?? null) === null ? null : (string)$configuration['casePattern'])
+			$casePattern
 		);
 
 		return new JSONResponse(

@@ -189,13 +189,18 @@ class OutboundLogController extends Controller {
 			$recipients = [];
 		}
 
+		$channel = $this->request->getParam('channel');
+		if ($channel !== null) {
+			$channel = (string)$channel;
+		}
+
 		try {
 			$forward = $this->forwardService->forward(
 				$id,
 				$recipients,
 				$user->getUID(),
 				(string)$this->request->getParam('note', ''),
-				($this->request->getParam('channel') === null ? null : (string)$this->request->getParam('channel')),
+				$channel,
 			);
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);

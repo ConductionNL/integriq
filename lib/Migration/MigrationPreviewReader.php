@@ -77,6 +77,11 @@ class MigrationPreviewReader {
 			}
 
 			$kindComplete = ((bool)($counted['complete'] ?? false));
+			$countIs = 'partial';
+			if ($kindComplete === true) {
+				$countIs = 'complete';
+			}
+
 			$complete = ($complete && $kindComplete);
 
 			$kinds[] = [
@@ -86,7 +91,7 @@ class MigrationPreviewReader {
 				'count' => (int)($counted['count'] ?? 0),
 				// The two are reported side by side on purpose. A count is
 				// only a size when the read that produced it was complete.
-				'countIs' => ($kindComplete === true ? 'complete' : 'partial'),
+				'countIs' => $countIs,
 				'complete' => $kindComplete,
 				'sample' => array_map(
 					static fn (MigrationRecord $record): array => $record->toArray(),

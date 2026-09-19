@@ -136,12 +136,17 @@ class MockMailboxTransport implements MailboxTransportInterface {
 			];
 		}
 
+		$receivedAt = ($entry['receivedAt'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
+
 		return new ParsedMessage(
 			(string)($entry['messageId'] ?? ('fixture-' . $index)),
 			(string)($entry['from'] ?? ''),
 			array_map('strval', $to),
 			(string)($entry['subject'] ?? ''),
-			($entry['receivedAt'] ?? null) === null ? null : (string)$entry['receivedAt'],
+			$receivedAt,
 			(string)($entry['bodyText'] ?? ''),
 			HtmlSanitizer::sanitize((string)($entry['bodyHtml'] ?? '')),
 			$attachments,
