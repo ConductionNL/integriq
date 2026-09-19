@@ -87,9 +87,13 @@ class MsgParser {
 
 		$html = $this->property($properties, '1013');
 
+		if ($from === '') {
+			$from = (string)($headers['from'] ?? '');
+		}
+
 		return new ParsedMessage(
 			$messageId,
-			($from !== '' ? $from : (string)($headers['from'] ?? '')),
+			$from,
 			$this->recipients($this->property($properties, '0E04'), $headers),
 			$subject,
 			$this->parseDate((string)($headers['date'] ?? '')),
@@ -176,9 +180,17 @@ class MsgParser {
 
 			$content = $this->property($properties, '3701');
 			$mime = $this->property($properties, '370E');
+			if ($name === '') {
+				$name = 'attachment';
+			}
+
+			if ($mime === '') {
+				$mime = 'application/octet-stream';
+			}
+
 			$attachments[] = [
-				'name' => ($name !== '' ? $name : 'attachment'),
-				'mime' => ($mime !== '' ? $mime : 'application/octet-stream'),
+				'name' => $name,
+				'mime' => $mime,
 				'size' => strlen($content),
 				'content' => $content,
 			];

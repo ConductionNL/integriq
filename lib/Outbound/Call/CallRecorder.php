@@ -108,6 +108,11 @@ class CallRecorder {
 		$kind = (string)($call['kind'] ?? self::KIND_TRIGGERED);
 		$statusCode = (int)($call['statusCode'] ?? 0);
 
+		$outcome = 'failed';
+		if ($this->isSuccess($statusCode) === true) {
+			$outcome = 'succeeded';
+		}
+
 		$record = [
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
@@ -131,7 +136,7 @@ class CallRecorder {
 					'by' => (string)($call['firedBy'] ?? ''),
 					'kind' => $kind,
 					'statusCode' => $statusCode,
-					'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+					'outcome' => $outcome,
 					'detail' => (string)($call['statusMessage'] ?? ''),
 					'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 				],
@@ -162,12 +167,17 @@ class CallRecorder {
 		$record = $this->read($uuid);
 		$statusCode = (int)($attempt['statusCode'] ?? 0);
 
+		$outcome = 'failed';
+		if ($this->isSuccess($statusCode) === true) {
+			$outcome = 'succeeded';
+		}
+
 		$record['attempts'][] = [
 			'at' => (new DateTimeImmutable())->format('c'),
 			'by' => (string)($attempt['by'] ?? ''),
 			'kind' => (string)($attempt['kind'] ?? self::KIND_REPLAYED),
 			'statusCode' => $statusCode,
-			'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+			'outcome' => $outcome,
 			'detail' => (string)($attempt['detail'] ?? ''),
 			'mappingVersion' => (string)($attempt['mappingVersion'] ?? ($record['mappingVersion'] ?? '')),
 		];

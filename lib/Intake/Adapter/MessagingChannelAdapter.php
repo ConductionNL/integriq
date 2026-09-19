@@ -115,6 +115,11 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
+		$timestamp = ($payload['timestamp'] ?? null);
+		if ($timestamp !== null) {
+			$timestamp = (string)$timestamp;
+		}
+
 		return new InboundMessage(
 			self::CHANNEL_ID,
 			$externalId,
@@ -128,7 +133,7 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			null,
 			[],
 			$payload,
-			(($payload['timestamp'] ?? null) === null ? null : (string)$payload['timestamp']),
+			$timestamp,
 			[
 				'text' => (string)($payload['text'] ?? ''),
 				'service' => (string)($payload['service'] ?? ''),
@@ -187,7 +192,12 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			$reference = (string)($decoded['messageId'] ?? $decoded['id'] ?? '');
 		}
 
-		return ReplyResult::sent(self::CHANNEL_ID, ($reference === '' ? null : $reference));
+		$sentReference = $reference;
+		if ($sentReference === '') {
+			$sentReference = null;
+		}
+
+		return ReplyResult::sent(self::CHANNEL_ID, $sentReference);
 
 	}//end reply()
 

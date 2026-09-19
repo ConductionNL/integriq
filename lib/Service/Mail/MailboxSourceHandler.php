@@ -85,15 +85,26 @@ class MailboxSourceHandler {
 
 		$transport = $this->resolveTransport($configuration);
 		$cursor = ($configuration['sinceCursor'] ?? null);
-		$messages = $transport->fetch($configuration, ($cursor === null ? null : (string)$cursor));
+
+		// The stored cursor is read three times below and is nullable, so it is
+		// narrowed once here rather than at each use.
+		$cursorText = null;
+		if ($cursor !== null) {
+			$cursorText = (string)$cursor;
+		}
+
+		$messages = $transport->fetch($configuration, $cursorText);
 
 		$created = 0;
 		$skipped = 0;
-		$latest = (string)$cursor;
-		if ($cursor === null) {
-			$latest = null;
-		}
+		$latest = $cursorText;
+
 		$pattern = ($configuration['casePattern'] ?? null);
+		$patternText = null;
+		if ($pattern !== null) {
+			$patternText = (string)$pattern;
+		}
+
 		foreach ($messages as $message) {
 			if ($this->intakeService->findByMessageId($sourceId, $message->getMessageId()) !== null) {
 				$skipped++;
@@ -103,13 +114,13 @@ class MailboxSourceHandler {
 			$this->intakeService->intake(
 				$sourceId,
 				$message,
-				($pattern === null ? null : (string)$pattern)
+				$patternText
 			);
 			$created++;
 			$latest = $this->later($latest, $message->getReceivedAt());
 		}
 
-		if ($latest !== ($cursor === null ? null : (string)$cursor)) {
+		if ($latest !== $cursorText) {
 			$this->storeCursor($source, $object, $configuration, $latest);
 		}
 

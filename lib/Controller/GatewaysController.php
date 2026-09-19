@@ -85,12 +85,17 @@ class GatewaysController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $standard = ''): JSONResponse {
+		$standardFilter = null;
+		if ($standard !== '') {
+			$standardFilter = $standard;
+		}
+
 		return new JSONResponse(
 			[
 				'standards' => $this->registry->standards(),
 				'results' => array_map(
 					static fn (GatewayDescriptor $g): array => $g->toArray(),
-					$this->registry->all(($standard !== '' ? $standard : null))
+					$this->registry->all($standardFilter)
 				),
 			]
 		);
@@ -155,9 +160,19 @@ class GatewaysController extends Controller {
 			return $refusal;
 		}
 
-		$verdict = $this->binding->test(($binding === [] ? null : $binding));
+		$candidate = $binding;
+		if ($candidate === []) {
+			$candidate = null;
+		}
 
-		return new JSONResponse($verdict, ($verdict['ok'] === true ? Http::STATUS_OK : Http::STATUS_BAD_REQUEST));
+		$verdict = $this->binding->test($candidate);
+
+		$status = Http::STATUS_BAD_REQUEST;
+		if ($verdict['ok'] === true) {
+			$status = Http::STATUS_OK;
+		}
+
+		return new JSONResponse($verdict, $status);
 	}//end testBinding()
 
 	/**

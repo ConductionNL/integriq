@@ -141,13 +141,17 @@ class MessageRecorder {
 	): ObjectEntity {
 		$now = $this->now();
 		$context = ($options['context'] ?? []);
+		$contextData = $context;
+		if (is_array($contextData) === false) {
+			$contextData = [];
+		}
 
 		$record = [
 			'subjectRef' => $subjectRef,
 			'channel' => $channel,
 			'subject' => $subject,
 			'body' => $this->redactor->redactBody($body),
-			'context' => $this->redactor->redactContext(is_array($context) === true ? $context : []),
+			'context' => $this->redactor->redactContext($contextData),
 			'sourceApp' => (string)($options['sourceApp'] ?? ''),
 			'correlationId' => (string)($options['correlationId'] ?? ''),
 			'attachments' => $this->describeAttachments(($options['attachments'] ?? [])),
@@ -373,11 +377,16 @@ class MessageRecorder {
 			$attempts = [];
 		}
 
+		$outcome = self::OUTCOME_FAILED;
+		if ($succeeded === true) {
+			$outcome = self::OUTCOME_SUCCEEDED;
+		}
+
 		$attempts[] = [
 			'at' => $this->now(),
 			'by' => $actorUid,
 			'recipients' => $addresses,
-			'outcome' => ($succeeded === true ? self::OUTCOME_SUCCEEDED : self::OUTCOME_FAILED),
+			'outcome' => $outcome,
 			'detail' => $detail,
 		];
 		$record['attempts'] = $attempts;

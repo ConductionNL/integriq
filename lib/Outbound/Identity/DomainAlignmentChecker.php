@@ -117,8 +117,12 @@ class DomainAlignmentChecker {
 	 */
 	private function checkSpf(string $domain, string $sendingHost): array {
 		$published = $this->firstMatching($this->resolver->txt($domain), 'v=spf1');
-		$suggested = 'v=spf1 ' . ($sendingHost === '' ? 'include:_spf.example.org' : 'include:' . $sendingHost)
-			. ' -all';
+		$include = 'include:_spf.example.org';
+		if ($sendingHost !== '') {
+			$include = 'include:' . $sendingHost;
+		}
+
+		$suggested = 'v=spf1 ' . $include . ' -all';
 
 		if ($published === null) {
 			return ['state' => self::ABSENT, 'published' => '', 'publish' => $domain . '. IN TXT "' . $suggested . '"'];
@@ -133,10 +137,17 @@ class DomainAlignmentChecker {
 			$aligned = false;
 		}
 
+		$state = self::MISALIGNED;
+		$publish = $domain . '. IN TXT "' . $suggested . '"';
+		if ($aligned === true) {
+			$state = self::ALIGNED;
+			$publish = '';
+		}
+
 		return [
-			'state' => ($aligned === true ? self::ALIGNED : self::MISALIGNED),
+			'state' => $state,
 			'published' => $published,
-			'publish' => ($aligned === true ? '' : $domain . '. IN TXT "' . $suggested . '"'),
+			'publish' => $publish,
 		];
 
 	}//end checkSpf()

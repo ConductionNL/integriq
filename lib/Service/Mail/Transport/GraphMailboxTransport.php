@@ -157,14 +157,28 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			$messageId = (string)($raw['id'] ?? '');
 		}
 
+		$receivedAt = ($raw['receivedDateTime'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
+
+		// A Graph message carries either a preview plus sanitised HTML, or a
+		// plain-text body and no HTML at all.
+		$text = $body;
+		$html = '';
+		if ($isHtml === true) {
+			$text = (string)($raw['bodyPreview'] ?? '');
+			$html = HtmlSanitizer::sanitize($body);
+		}
+
 		return new ParsedMessage(
 			$messageId,
 			(string)($raw['from']['emailAddress']['address'] ?? ''),
 			$recipients,
 			(string)($raw['subject'] ?? ''),
-			(($raw['receivedDateTime'] ?? null) === null ? null : (string)$raw['receivedDateTime']),
-			($isHtml === true ? (string)($raw['bodyPreview'] ?? '') : $body),
-			($isHtml === true ? HtmlSanitizer::sanitize($body) : ''),
+			$receivedAt,
+			$text,
+			$html,
 			$attachments,
 		);
 
