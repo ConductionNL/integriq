@@ -49,19 +49,20 @@ describe('sender identity manifest fragment', () => {
 
 	it('colours only the opt-out scopes the schema can hold', () => {
 		const register = read('lib/Settings/integriq_register.json')
-		const allowed = register.components.schemas.recipient_opt_out.properties.scope.enum
+		const allowed =
+			register.components.schemas.recipient_opt_out.properties.scope.enum
 		const scope = optOuts.config.columns.find((column) => column.key === 'scope')
 
-		expect(Object.keys(scope.widgetProps.colorMap).sort()).toEqual([...allowed].sort())
+		expect(Object.keys(scope.widgetProps.colorMap).sort()).toEqual(
+			[...allowed].sort(),
+		)
 	})
 
 	it('keeps the three quoting levels the schema declares', () => {
 		const register = read('lib/Settings/integriq_register.json')
 
-		expect(register.components.schemas.sender_identity.properties.quotingLevel.enum).toEqual([
-			'none',
-			'last-message',
-			'full-history',
-		])
+		expect(
+			register.components.schemas.sender_identity.properties.quotingLevel.enum,
+		).toEqual(['none', 'last-message', 'full-history'])
 	})
 })

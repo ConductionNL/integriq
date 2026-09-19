@@ -18,7 +18,8 @@ import { expect, test } from '@playwright/test'
 
 const API_BASE = '/index.php/apps/integriq/api/migration-sources'
 
-const DELIVERY = 'zaaknummer,naam,plaats\nZ-1,De Vries,Utrecht\nZ-2,Jansen,Amsterdam\n'
+const DELIVERY =
+	'zaaknummer,naam,plaats\nZ-1,De Vries,Utrecht\nZ-2,Jansen,Amsterdam\n'
 const SECOND_DELIVERY = 'zaaknummer,naam,plaats\nZ-3,Bakker,Veenendaal\n'
 
 /** The mapping an administrator authors once and stores. */
@@ -86,9 +87,7 @@ test.describe('migration sources', () => {
 		const secondBody = await second.json()
 		expect(secondBody.kinds[0].count).toBe(1)
 		expect(secondBody.kinds[0].sample[0].data.requesterName).toBe('Bakker')
-		expect(secondBody.kinds[0].sample[0].provenance.sourceIdentifier).toBe(
-			'Z-3',
-		)
+		expect(secondBody.kinds[0].sample[0].provenance.sourceIdentifier).toBe('Z-3')
 	})
 
 	// @e2e migration-sources::a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save

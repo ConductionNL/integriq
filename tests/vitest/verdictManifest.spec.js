@@ -45,7 +45,9 @@ describe('outbound call log manifest fragment', () => {
 		const allowed = register.components.schemas.verdict.properties.state.enum
 		const state = page.config.columns.find((column) => column.key === 'state')
 
-		expect(Object.keys(state.widgetProps.colorMap).sort()).toEqual([...allowed].sort())
+		expect(Object.keys(state.widgetProps.colorMap).sort()).toEqual(
+			[...allowed].sort(),
+		)
 		expect(state.widgetProps.colorMap.pending).not.toBe('success')
 	})
 
@@ -64,7 +66,10 @@ describe('outbound call log manifest fragment', () => {
 		expect(properties.attempts).toBeDefined()
 		expect(properties.retryPolicy).toBeDefined()
 		expect(properties.mappingVersion).toBeDefined()
-		expect(properties.statusCode, 'the fields the log pages already read stay').toBeDefined()
+		expect(
+			properties.statusCode,
+			'the fields the log pages already read stay',
+		).toBeDefined()
 		expect(properties.request).toBeDefined()
 	})
 })

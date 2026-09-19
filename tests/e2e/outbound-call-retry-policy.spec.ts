@@ -20,12 +20,15 @@ import { APP_BASE } from './spec-coverage/_helpers.ts'
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 
 test.describe('outbound call retry policy', () => {
-	test('a connection gets its own schedule, and no release is needed', async ({ request }) => {
+	test('a connection gets its own schedule, and no release is needed', async ({
+		request,
+	}) => {
 		const created = await request.post(`${OR_BASE}/source`, {
 			failOnStatusCode: false,
 			data: {
 				name: 'E2E Digikoppeling partner',
-				description: 'Seeded by tests/e2e/outbound-call-retry-policy.spec.ts',
+				description:
+					'Seeded by tests/e2e/outbound-call-retry-policy.spec.ts',
 				type: 'api',
 				isEnabled: true,
 				location: 'https://partner.e2e.example',
@@ -37,7 +40,9 @@ test.describe('outbound call retry policy', () => {
 				},
 			},
 		})
-		expect(created.status(), 'seeding the connection must succeed').toBeLessThan(300)
+		expect(created.status(), 'seeding the connection must succeed').toBeLessThan(
+			300,
+		)
 		const id = String((await created.json()).id ?? '')
 
 		// Changing the schedule is an edit to the connection, not a release.
@@ -48,16 +53,25 @@ test.describe('outbound call retry policy', () => {
 				type: 'api',
 				isEnabled: true,
 				location: 'https://partner.e2e.example',
-				retryPolicy: { maxAttempts: 3, backoffStrategy: 'fixed', baseDelayMs: 500 },
+				retryPolicy: {
+					maxAttempts: 3,
+					backoffStrategy: 'fixed',
+					baseDelayMs: 500,
+				},
 			},
 		})
-		expect(updated.status(), 'the schedule is editable in place').toBeLessThan(300)
+		expect(updated.status(), 'the schedule is editable in place').toBeLessThan(
+			300,
+		)
 
 		const after = await (await request.get(`${OR_BASE}/source/${id}`)).json()
 		expect(after.retryPolicy.maxAttempts).toBe(3)
 	})
 
-	test('the policy that governed a call is on the call', async ({ page, request }) => {
+	test('the policy that governed a call is on the call', async ({
+		page,
+		request,
+	}) => {
 		const seeded = await request.post(`${OR_BASE}/call_log`, {
 			failOnStatusCode: false,
 			data: {
@@ -71,8 +85,18 @@ test.describe('outbound call retry policy', () => {
 				retryPolicy: { maxAttempts: 6, backoffStrategy: 'exponential' },
 				created: new Date().toISOString(),
 				attempts: [
-					{ at: new Date().toISOString(), kind: 'triggered', statusCode: 504, outcome: 'failed' },
-					{ at: new Date().toISOString(), kind: 'triggered', statusCode: 504, outcome: 'failed' },
+					{
+						at: new Date().toISOString(),
+						kind: 'triggered',
+						statusCode: 504,
+						outcome: 'failed',
+					},
+					{
+						at: new Date().toISOString(),
+						kind: 'triggered',
+						statusCode: 504,
+						outcome: 'failed',
+					},
 				],
 			},
 		})
@@ -85,7 +109,11 @@ test.describe('outbound call retry policy', () => {
 			'a call that stopped after two attempts names the policy that let it stop',
 		).toBe(6)
 
-		await page.goto(`${APP_BASE}/sources/logs`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('E2E partner antwoordde niet').first()).toBeVisible({ timeout: 20_000 })
+		await page.goto(`${APP_BASE}/sources/logs`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(
+			page.getByText('E2E partner antwoordde niet').first(),
+		).toBeVisible({ timeout: 20_000 })
 	})
 })

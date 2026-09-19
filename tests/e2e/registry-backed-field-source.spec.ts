@@ -97,13 +97,10 @@ test.describe('registry-backed property sources', () => {
 	})
 
 	// @e2e registry-field-source::an-unknown-provider-fails-loudly
-	test('an unknown provider is a 404 that names the id', async ({
-		request,
-	}) => {
-		const resp = await request.get(
-			`${API_BASE}/kadaster/resolve?identifier=x`,
-			{ failOnStatusCode: false },
-		)
+	test('an unknown provider is a 404 that names the id', async ({ request }) => {
+		const resp = await request.get(`${API_BASE}/kadaster/resolve?identifier=x`, {
+			failOnStatusCode: false,
+		})
 
 		expect(resp.status()).toBe(404)
 		expect(String((await resp.json()).error)).toContain('kadaster')
