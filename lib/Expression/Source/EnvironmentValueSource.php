@@ -106,7 +106,11 @@ class EnvironmentValueSource implements ExpressionValueSourceInterface {
 			);
 		}
 
-		$value = ($this->environmentRead === null ? getenv($key) : ($this->environmentRead)($key));
+		if ($this->environmentRead === null) {
+			$value = getenv($key);
+		} else {
+			$value = ($this->environmentRead)($key);
+		}
 
 		if ($value === false || $value === null) {
 			// 🔑 ALLOWED BUT UNSET IS ITS OWN ANSWER. Returning null here would

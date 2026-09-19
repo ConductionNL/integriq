@@ -223,7 +223,7 @@ class Application extends App implements IBootstrap {
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
 
-		// registry-subscription-connector Task 3: the binding that was blocked
+		// Spec registry-subscription-connector Task 3: the binding that was blocked
 		// on OpenRegister shipping the event. It has, and dispatches it from
 		// RegistrySubscriptionNotifier, so the wire shape is read rather than
 		// guessed.
@@ -445,7 +445,7 @@ class Application extends App implements IBootstrap {
 			DigitalPostProviderRegistry::class,
 			static function ($c): DigitalPostProviderRegistry {
 				return new DigitalPostProviderRegistry(
-					[
+					providers: [
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),

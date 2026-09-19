@@ -113,7 +113,10 @@ class DigitalPostStatusJob extends TimedJob {
 
 		$open = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+		if ($entity instanceof ObjectEntity === true) {
+			$data = $entity->getObject();
+		}
 			if (is_array($data) === false) {
 				continue;
 			}

@@ -73,7 +73,7 @@ class DigitalPostService {
 	 * @return void
 	 */
 	public function handleSendRequest(DigitalPostSendRequestedEvent $event): void {
-		$config = $this->sourceConfig($event->getSourceId());
+		$config = $this->sourceConfig(sourceId: $event->getSourceId());
 		if ($config === null) {
 			$event->setHandled(true);
 			$event->setRefusal(
@@ -116,7 +116,7 @@ class DigitalPostService {
 			'created' => gmdate('c'),
 		];
 
-		$messageId = $this->persist($message, null);
+		$messageId = $this->persist(message: $message, uuid: null);
 		$event->setHandled(true);
 
 		if ($messageId === null) {
@@ -125,15 +125,15 @@ class DigitalPostService {
 			return;
 		}
 
-		$result = $this->sendThroughProvider($providerId, $message, $config);
+		$result = $this->sendThroughProvider(providerId: $providerId, message: $message, config: $config);
 
 		// The attachments stay on the message whatever happened, which is what
 		// "a failed send keeps the letter" means: the PDF is still there to
 		// retry with.
 		$message = array_merge($message, $result->toArray());
-		$this->persist($message, $messageId);
+		$this->persist(message: $message, uuid: $messageId);
 
-		$this->announce($messageId, DigitalPostResult::STATUS_QUEUED, $result, $event->getRequestedBy());
+		$this->announce(messageId: $messageId, previousStatus: DigitalPostResult::STATUS_QUEUED, result: $result, requestedBy: $event->getRequestedBy());
 
 		if ($result->isRefused() === true) {
 			$event->setRefusal($result->getError(), 'provider_refused');
@@ -164,7 +164,7 @@ class DigitalPostService {
 				continue;
 			}
 
-			$config = ($this->sourceConfig((string)($message['sourceId'] ?? '')) ?? []);
+			$config = ($this->sourceConfig(sourceId: (string)($message['sourceId'] ?? '')) ?? []);
 
 			try {
 				$result = $this->providers->get($providerId)->status($reference, $config);
@@ -180,8 +180,8 @@ class DigitalPostService {
 				continue;
 			}
 
-			$this->persist(array_merge($message, $result->toArray()), $messageId);
-			$this->announce($messageId, $previous, $result, (string)($message['requestedBy'] ?? ''));
+			$this->persist(message: array_merge($message, $result->toArray()), uuid: $messageId);
+			$this->announce(messageId: $messageId, previousStatus: $previous, result: $result, requestedBy: (string)($message['requestedBy'] ?? ''));
 			$changed++;
 		}//end foreach
 
@@ -252,12 +252,12 @@ class DigitalPostService {
 	private function announce(string $messageId, string $previousStatus, DigitalPostResult $result, string $requestedBy): void {
 		$this->eventDispatcher->dispatchTyped(
 			new DigitalPostDeliveredEvent(
-				$messageId,
-				$result->getStatus(),
-				$requestedBy,
-				$previousStatus,
-				$result->isSimulated(),
-				$result->getError()
+				messageId: $messageId,
+				status: $result->getStatus(),
+				requestedBy: $requestedBy,
+				previousStatus: $previousStatus,
+				simulated: $result->isSimulated(),
+				lastError: $result->getError()
 			)
 		);
 	}//end announce()
@@ -285,7 +285,11 @@ class DigitalPostService {
 			$config = json_decode($config, true);
 		}
 
-		return (is_array($config) === true ? $config : []);
+		if (is_array($config) === true) {
+			return $config;
+		}
+
+		return [];
 	}//end sourceConfig()
 
 	/**
@@ -310,6 +314,11 @@ class DigitalPostService {
 			return null;
 		}
 
-		return ((string)$saved->getUuid() ?: $uuid);
+		$savedUuid = (string)$saved->getUuid();
+		if ($savedUuid === '') {
+			return $uuid;
+		}
+
+		return $savedUuid;
 	}//end persist()
 }//end class

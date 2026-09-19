@@ -67,7 +67,7 @@ class DigitalPostProvidersController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
 
