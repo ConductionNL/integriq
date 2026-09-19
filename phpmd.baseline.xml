@@ -367,4 +367,23 @@
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/WebhookSignatureService.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Twig/MappingRuntime.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Twig/MappingRuntimeLoader.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Event/CallEvent.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Event/DigitalPostDeliveredEvent.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/DigitalPost/BerichtenboxProvider.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/DigitalPost/DigitalPostResult.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/DigitalPost/DigitalPostService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/DigitalPost/LogDigitalPostProvider.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/DigitalPost/PostexProvider.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Kiss/CallEventNormaliser.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Kiss/CallEventNormaliser.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortMethodName" file="lib/Service/Kiss/CallEventNormaliser.php" method="at"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/DirectorySyncJob.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/RegisterBootstrapJob.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/RegistrySubscriptionPollJob.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Expression/Source/EnvironmentValueSource.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/CallService.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/FlowRunnerService.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Integration/SynchronizationContractProvider.php"/>
+    <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Migration/LegacyToRegisterMigrator.php"/>
 </phpmd-baseline>

@@ -83,40 +83,17 @@ class RecordOwnershipService {
 
 		$lastSeenAt = ($contract['sourceLastSeen'] ?? null);
 
-		// Each of these is an "empty means absent" narrowing. Written as
-		// statements rather than as `?:` or a ternary because the coding
-		// standard forbids both, and because an absent source id is a
-		// different fact from an empty one.
-		$sourceId = (string)($synchronization['sourceId'] ?? '');
-		if ($sourceId === '') {
-			$sourceId = null;
-		}
-
-		$originId = (string)($contract['originId'] ?? '');
-		if ($originId === '') {
-			$originId = null;
-		}
-
-		$synchronizationId = (string)($contract['synchronizationId'] ?? '');
-		if ($synchronizationId === '') {
-			$synchronizationId = null;
-		}
-
-		$synchronizationName = (string)($synchronization['name'] ?? '');
-		if ($synchronizationName === '') {
-			$synchronizationName = null;
-		}
-
-		$lastSeenText = null;
-		if ($lastSeenAt !== null) {
-			$lastSeenText = (string)$lastSeenAt;
-		}
-
-		$endedAt = ($contract['endedAt'] ?? null);
-		$endedAtText = null;
-		if ($endedAt !== null) {
-			$endedAtText = (string)$endedAt;
-		}
+		// Each of these is an "empty means absent" narrowing, delegated to a
+		// helper rather than written out four times. Four inline `if`s here put
+		// forObject() at an NPath complexity of 256 against a threshold of 200 —
+		// the branches multiply, even though none of them is a decision worth
+		// reading. An absent source id stays a different fact from an empty one.
+		$sourceId = self::absentWhenEmpty(value: ($synchronization['sourceId'] ?? ''));
+		$originId = self::absentWhenEmpty(value: ($contract['originId'] ?? ''));
+		$synchronizationId = self::absentWhenEmpty(value: ($contract['synchronizationId'] ?? ''));
+		$synchronizationName = self::absentWhenEmpty(value: ($synchronization['name'] ?? ''));
+		$lastSeenText = self::textOrNull(value: $lastSeenAt);
+		$endedAtText = self::textOrNull(value: ($contract['endedAt'] ?? null));
 
 		return new OwnershipState(
 			$mode,
@@ -249,4 +226,34 @@ class RecordOwnershipService {
 
 		return null;
 	}//end findOne()
+	/**
+	 * The value as a string, or null when it is empty.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The text, or null when there is none.
+	 */
+	private static function absentWhenEmpty(mixed $value): ?string {
+		$text = (string)$value;
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end absentWhenEmpty()
+
+	/**
+	 * The value as a string, keeping null as null.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The text, or null when the value was null.
+	 */
+	private static function textOrNull(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end textOrNull()
 }//end class
