@@ -27,6 +27,7 @@ use OCA\Integriq\Migration\MigrationRecord;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\IUserSession;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
 
@@ -49,11 +50,13 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @param IRootFolder $rootFolder Nextcloud's root folder, for the delivered file.
 	 * @param ColumnMappingValidator $validator The mapping validator.
 	 * @param LoggerInterface $logger Structured logger.
+	 * @param IUserSession|null $userSession The acting user, whose folder bounds the read.
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
 		private readonly ColumnMappingValidator $validator,
 		private readonly LoggerInterface $logger,
+		private readonly ?IUserSession $userSession = null,
 	) {
 	}//end __construct()
 
@@ -276,8 +279,26 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 			throw new InvalidArgumentException('A file migration needs a path to the delivered file.');
 		}
 
+		// SCOPED TO THE CALLER'S OWN FOLDER.
+		//
+		// This read `$this->rootFolder->get($path)` — the SERVER root — with a
+		// path taken straight from the request, on an endpoint that is
+		// #[NoAdminRequired]. Any authenticated account could name any path on
+		// the instance and get the bytes back in the preview. Resolving through
+		// the acting user's folder makes the path mean what an operator typing
+		// it would assume it means, and makes another user's files unreachable
+		// rather than merely undocumented.
+		$user = null;
+		if ($this->userSession !== null) {
+			$user = $this->userSession->getUser();
+		}
+
+		if ($user === null) {
+			throw new InvalidArgumentException('A file migration needs a signed-in user to read the delivered file as.');
+		}
+
 		try {
-			$node = $this->rootFolder->get($path);
+			$node = $this->rootFolder->getUserFolder($user->getUID())->get($path);
 			if (($node instanceof File) === false) {
 				// `get()` answers a Node, and only a File can be read. Without
 				// this the folder case fell through to `getContent()`, which

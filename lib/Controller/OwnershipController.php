@@ -22,6 +22,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
+use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -69,7 +70,22 @@ class OwnershipController extends Controller {
 	 * An object no synchronisation maintains answers `local` and the call
 	 * succeeds. It is not an error to ask about a record nobody follows.
 	 *
+	 * SCOPED TO THE CALLER, WITHOUT BREAKING THE UNKNOWN-ANSWERS-LOCAL CONTRACT.
+	 *
+	 * The ownership answer names the synchronisation, the source id and when the
+	 * record was last seen — facts about a record, not about the asker — and this
+	 * used to answer for any id at all.
+	 *
+	 * A 404 for an unreadable id would have contradicted the scenario this
+	 * method is tagged with: an object nobody follows answers `local` and the
+	 * call succeeds. So an id the caller cannot read answers `local` too. That
+	 * is the same answer an unknown id gets, which is the point — the two are
+	 * indistinguishable, so the endpoint cannot be used to discover that a
+	 * record exists or who maintains it.
+	 *
 	 * @param string $id The object's id.
+	 * @param string $register The register the object lives in.
+	 * @param string $schema The schema the object lives in.
 	 *
 	 * @return JSONResponse The ownership answer.
 	 *
@@ -80,7 +96,11 @@ class OwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function show(string $id): JSONResponse {
+	public function show(string $id, string $register = 'integriq', string $schema = ''): JSONResponse {
+		if ($this->readObject(id: $id, register: $register, schema: $schema) === []) {
+			return new JSONResponse(OwnershipState::local()->toArray());
+		}
+
 		return new JSONResponse($this->ownership->forObject($id)->toArray());
 	}//end show()
 
@@ -165,6 +185,8 @@ class OwnershipController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#scenario-a-misspelled-policy-is-refused-at-save
+	 *
+	 * @no-admin-idor-exempt Pure validation of a sourceConfig supplied in the request. Reads no storage and accepts no object id.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
