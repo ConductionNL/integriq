@@ -91,9 +91,15 @@ class BridgeRegistry {
 	public function register(string $bridgeId, string $label = ''): array {
 		$token = $this->random->generate(64);
 		$bridges = $this->all();
+
+		$resolvedLabel = $label;
+		if ($resolvedLabel === '') {
+			$resolvedLabel = $bridgeId;
+		}
+
 		$bridges[$bridgeId] = [
 			'id' => $bridgeId,
-			'label' => ($label ?: $bridgeId),
+			'label' => $resolvedLabel,
 			'state' => self::STATE_ACTIVE,
 			'tokenHash' => hash('sha256', $token),
 			'registeredAt' => gmdate('c'),
@@ -165,6 +171,11 @@ class BridgeRegistry {
 	 * @return void
 	 */
 	private function store(array $bridges): void {
-		$this->appConfig->setValueString(self::APP_ID, self::BRIDGES_KEY, (json_encode($bridges) ?: '{}'));
+		$encoded = json_encode($bridges);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::BRIDGES_KEY, $encoded);
 	}//end store()
 }//end class

@@ -69,7 +69,12 @@ class UnsubscribeTokenService {
 	 * @return string The token.
 	 */
 	public function mint(string $address, string $caseRef): string {
-		$payload = base64_encode(json_encode(['a' => strtolower(trim($address)), 'c' => $caseRef]) ?: '');
+		$claims = json_encode(['a' => strtolower(trim($address)), 'c' => $caseRef]);
+		if ($claims === false) {
+			$claims = '';
+		}
+
+		$payload = base64_encode($claims);
 		$payload = rtrim(strtr($payload, '+/', '-_'), '=');
 
 		return $payload . '.' . $this->sign($payload);

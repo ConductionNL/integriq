@@ -154,7 +154,12 @@ class DigikoppelingBrokerResolver {
 		];
 
 		$this->appConfig->setValueString(self::APP_ID, self::SELECTED_KEY, $brokerId);
-		$this->appConfig->setValueString(self::APP_ID, self::AUDIT_KEY, (json_encode($audit) ?: '[]'));
+		$encoded = json_encode($audit);
+		if ($encoded === false) {
+			$encoded = '[]';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::AUDIT_KEY, $encoded);
 
 		$this->logger->info('digikoppeling.broker.changed', ['from' => $previous, 'to' => $brokerId, 'by' => $userId]);
 

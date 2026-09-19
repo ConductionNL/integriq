@@ -251,7 +251,12 @@ class MsgParser {
 	private function recipients(string $displayTo, array $headers): array {
 		$source = ($displayTo !== '' ? $displayTo : (string)($headers['to'] ?? ''));
 		$recipients = [];
-		foreach (preg_split('/[;,]/', $source) ?: [] as $entry) {
+		$parts = preg_split('/[;,]/', $source);
+		if ($parts === false) {
+			$parts = [];
+		}
+
+		foreach ($parts as $entry) {
 			$entry = trim($entry);
 			if ($entry === '') {
 				continue;

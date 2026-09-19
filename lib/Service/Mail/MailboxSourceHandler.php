@@ -175,7 +175,11 @@ class MailboxSourceHandler {
 			return $candidate;
 		}
 
-		return (strtotime($candidate) > strtotime($current) ? $candidate : $current);
+		if (strtotime($candidate) > strtotime($current)) {
+			return $candidate;
+		}
+
+		return $current;
 
 	}//end later()
 

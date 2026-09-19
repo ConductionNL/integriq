@@ -83,16 +83,51 @@ class RecordOwnershipService {
 
 		$lastSeenAt = ($contract['sourceLastSeen'] ?? null);
 
+		// Each of these is an "empty means absent" narrowing. Written as
+		// statements rather than as `?:` or a ternary because the coding
+		// standard forbids both, and because an absent source id is a
+		// different fact from an empty one.
+		$sourceId = (string)($synchronization['sourceId'] ?? '');
+		if ($sourceId === '') {
+			$sourceId = null;
+		}
+
+		$originId = (string)($contract['originId'] ?? '');
+		if ($originId === '') {
+			$originId = null;
+		}
+
+		$synchronizationId = (string)($contract['synchronizationId'] ?? '');
+		if ($synchronizationId === '') {
+			$synchronizationId = null;
+		}
+
+		$synchronizationName = (string)($synchronization['name'] ?? '');
+		if ($synchronizationName === '') {
+			$synchronizationName = null;
+		}
+
+		$lastSeenText = null;
+		if ($lastSeenAt !== null) {
+			$lastSeenText = (string)$lastSeenAt;
+		}
+
+		$endedAt = ($contract['endedAt'] ?? null);
+		$endedAtText = null;
+		if ($endedAt !== null) {
+			$endedAtText = (string)$endedAt;
+		}
+
 		return new OwnershipState(
 			$mode,
-			(string)($synchronization['sourceId'] ?? '') ?: null,
-			(string)($contract['originId'] ?? '') ?: null,
-			($lastSeenAt !== null ? (string)$lastSeenAt : null),
+			$sourceId,
+			$originId,
+			$lastSeenText,
 			($lastSeenAt === null),
 			((bool)($contract['absentAtSource'] ?? false)),
-			(($contract['endedAt'] ?? null) !== null ? (string)$contract['endedAt'] : null),
-			(string)($contract['synchronizationId'] ?? '') ?: null,
-			(string)($synchronization['name'] ?? '') ?: null
+			$endedAtText,
+			$synchronizationId,
+			$synchronizationName
 		);
 	}//end forObject()
 

@@ -130,8 +130,13 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 				$foreignId = (string)$row[$identifierColumn];
 			}
 
+			$kind = $mapping->getKind();
+			if ($kind === '') {
+				$kind = 'row';
+			}
+
 			$records[] = new MigrationRecord(
-				($mapping->getKind() ?: 'row'),
+				$kind,
 				$mapping->apply($row),
 				self::ID,
 				$foreignId,

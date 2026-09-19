@@ -3845,8 +3845,8 @@ class SynchronizationService {
 		$synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
-		// records-owned-by-an-external-source REQ-SOR-002: what happens to a
-		// record the source stopped carrying is declared on the synchronisation.
+		// Spec records-owned-by-an-external-source REQ-SOR-002: what happens to
+		// a record the source stopped carrying is declared on the synchronisation.
 		// A value this engine does not know is refused here rather than read as
 		// the default, because silently deleting under a misspelled policy is
 		// the exact failure the declaration exists to prevent.

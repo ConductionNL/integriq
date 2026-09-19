@@ -135,7 +135,12 @@ class ListResyncService {
 		}//end try
 
 		$changed = $this->countChanges($previous, $fetched);
-		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, (json_encode($fetched) ?: '[]'));
+		$encodedList = json_encode($fetched);
+		if ($encodedList === false) {
+			$encodedList = '[]';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, $encodedList);
 
 		return $this->storeReport(
 			$providerId,
@@ -193,10 +198,15 @@ class ListResyncService {
 	 * @return array<string,mixed> The same report.
 	 */
 	private function storeReport(string $providerId, array $report): array {
+		$encodedReport = json_encode($report);
+		if ($encodedReport === false) {
+			$encodedReport = '{}';
+		}
+
 		$this->appConfig->setValueString(
 			self::APP_ID,
 			self::REPORT_KEY_PREFIX . $providerId,
-			(json_encode($report) ?: '{}')
+			$encodedReport
 		);
 
 		return $report;
