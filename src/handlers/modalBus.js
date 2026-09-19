@@ -42,6 +42,11 @@ export const EVENT_OPEN_ADD_ENDPOINT_RULE = 'open-add-endpoint-rule'
 // is `{ target: 'synchronization'|'job', mode: 'run'|'test', item }`; the pair
 // selects a descriptor in src/modals/v2/runTargets.js.
 export const EVENT_OPEN_RUN_ACTION = 'open-run-action'
+
+// directory-and-group-sync: run or preview one directory connection. The modal
+// owns the request because the run is gated — a removal over the connection's
+// ratio stops before writing and offers a confirmation.
+export const EVENT_OPEN_DIRECTORY_RUN = 'open-directory-run'
 export const EVENT_OPEN_SUBSCRIPTION_SIGNING = 'open-subscription-signing'
 // connector-catalog-ui: Catalog detail dialog + configuration import/export dialogs.
 export const EVENT_OPEN_CATALOG_ITEM_DETAIL = 'open-catalog-item-detail'
@@ -49,3 +54,5 @@ export const EVENT_OPEN_CONFIGURATION_IMPORT = 'open-configuration-import'
 export const EVENT_OPEN_CONFIGURATION_EXPORT = 'open-configuration-export'
 // environments-and-promotion: promote-configuration flow modal.
 export const EVENT_OPEN_PROMOTION = 'open-promotion'
+// connection-registry D9: link a source to a declared connection. Payload is `{ app }`.
+export const EVENT_OPEN_LINK_SOURCE = 'open-link-source'

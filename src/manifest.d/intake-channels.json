@@ -1,0 +1,142 @@
+{
+  "$comment": "ADR-037 manifest fragment (intake-channels-beyond-mail). The held message is the whole point of the design: a message that matches no rule is neither dropped nor turned into a default case, it waits for a human. Without this page nobody is that human. Columns are declared schema properties; the status colours map the schema's own enum members, so a value the schema cannot hold gets no colour rather than a wrong one. The rules page beside it is what makes routing configuration rather than a release.",
+  "pages": [
+    {
+      "id": "IntakeMessages",
+      "route": "/messages/intake",
+      "type": "logs",
+      "title": "Intake inbox",
+      "config": {
+        "register": "integriq",
+        "schema": "intake_message",
+        "sortKey": "receivedAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "receivedAt",
+            "label": "Received",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "channelId",
+            "label": "Channel",
+            "sortable": true,
+            "width": "15%"
+          },
+          {
+            "key": "text",
+            "label": "Message",
+            "sortable": false,
+            "width": "25%"
+          },
+          {
+            "key": "ruleName",
+            "label": "Rule",
+            "sortable": true,
+            "width": "15%"
+          },
+          {
+            "key": "reason",
+            "label": "Reason",
+            "sortable": false,
+            "width": "18%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "received": "info",
+                "routed": "success",
+                "held": "warning",
+                "failed": "error",
+                "rejected": "error"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "IntakeRoutingRules",
+      "route": "/intake/routing-rules",
+      "type": "logs",
+      "title": "Intake routing",
+      "config": {
+        "register": "integriq",
+        "schema": "intake_routing_rule",
+        "sortKey": "order",
+        "sortOrder": "asc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "order",
+            "label": "Order",
+            "sortable": true,
+            "width": "10%"
+          },
+          {
+            "key": "name",
+            "label": "Name",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "channelId",
+            "label": "Channel",
+            "sortable": true,
+            "width": "20%"
+          },
+          {
+            "key": "targetSchema",
+            "label": "Opens",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "isEnabled",
+            "label": "Enabled",
+            "sortable": true,
+            "width": "20%"
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "IntakeMessages",
+          "label": "Intake inbox",
+          "icon": "InboxArrowDown",
+          "route": "IntakeMessages",
+          "order": 45
+        },
+        {
+          "id": "IntakeRoutingRules",
+          "label": "Intake routing",
+          "icon": "SignDirection",
+          "route": "IntakeRoutingRules",
+          "order": 46
+        }
+      ]
+    }
+  ]
+}

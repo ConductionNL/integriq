@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Service\SystemWrite;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -170,11 +171,9 @@ class MaterializeCatalogItems implements IRepairStep {
 			return $upserted;
 		};
 
-		if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
-			$upserted = \OCA\OpenRegister\Service\SystemOperationContext::run($materialise);
-		} else {
-			$upserted = $materialise();
-		}
+		// 🔴 NO FALLBACK. See SystemWrite: the else branch here ran the same
+		// upsert as the acting user and reported the same count.
+		$upserted = SystemWrite::run(what: 'materialising catalog items', operation: $materialise);
 
 		$output->info('Integriq: materialized ' . $upserted . ' of ' . count($entries) . ' catalog_item entries.');
 

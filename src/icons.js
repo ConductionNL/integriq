@@ -13,6 +13,7 @@
 // vue-material-design-icons.
 
 import AccountArrowRightOutline from 'vue-material-design-icons/AccountArrowRightOutline.vue'
+import AccountBoxOutline from 'vue-material-design-icons/AccountBoxOutline.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountKeyOutline from 'vue-material-design-icons/AccountKeyOutline.vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
@@ -50,6 +51,8 @@ import Earth from 'vue-material-design-icons/Earth.vue'
 import Email from 'vue-material-design-icons/Email.vue'
 import EmailAlertOutline from 'vue-material-design-icons/EmailAlertOutline.vue'
 import EmailFast from 'vue-material-design-icons/EmailFast.vue'
+import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
@@ -62,10 +65,13 @@ import FormatListCheckbox from 'vue-material-design-icons/FormatListCheckbox.vue
 import FormSelect from 'vue-material-design-icons/FormSelect.vue'
 import ForumOutline from 'vue-material-design-icons/ForumOutline.vue'
 import Gauge from 'vue-material-design-icons/Gauge.vue'
+import Gavel from 'vue-material-design-icons/Gavel.vue'
 import HeartPulse from 'vue-material-design-icons/HeartPulse.vue'
 import History from 'vue-material-design-icons/History.vue'
 import HomeCityOutline from 'vue-material-design-icons/HomeCityOutline.vue'
 import HospitalBoxOutline from 'vue-material-design-icons/HospitalBoxOutline.vue'
+import InboxArrowDown from 'vue-material-design-icons/InboxArrowDown.vue'
+import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
@@ -87,6 +93,7 @@ import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
 import ShieldKeyOutline from 'vue-material-design-icons/ShieldKeyOutline.vue'
+import SignDirection from 'vue-material-design-icons/SignDirection.vue'
 import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
@@ -108,6 +115,7 @@ import Webhook from 'vue-material-design-icons/Webhook.vue'
 
 export default {
 	AccountArrowRightOutline,
+	AccountBoxOutline,
 	AccountGroup,
 	AccountKeyOutline,
 	AccountMultipleOutline,
@@ -145,6 +153,8 @@ export default {
 	Email,
 	EmailAlertOutline,
 	EmailFast,
+	EmailOffOutline,
+	EmailOutline,
 	EyeOutline,
 	FileCogOutline,
 	FileDocumentMultipleOutline,
@@ -157,10 +167,13 @@ export default {
 	FormatListCheckbox,
 	ForumOutline,
 	Gauge,
+	Gavel,
 	HeartPulse,
 	History,
 	HomeCityOutline,
 	HospitalBoxOutline,
+	InboxArrowDown,
+	KeyOutline,
 	LanConnect,
 	LinkVariant,
 	MapMarkerPath,
@@ -182,6 +195,7 @@ export default {
 	ServerNetwork,
 	ShieldCheckOutline,
 	ShieldKeyOutline,
+	SignDirection,
 	Sitemap,
 	SitemapOutline,
 	SourceBranch,

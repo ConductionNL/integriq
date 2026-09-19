@@ -76,4 +76,4 @@ Contingent on Phase 1's first-run output. If volume is small, this phase collaps
 
   **README updated:** Quality-gates table added under `### Code quality` — lists PHPCS/PHPMD/PHPStan/Psalm status, baseline files, and instructions for legitimately updating baselines.
   **app-config.json:** File does not exist in this repository; skip.
-  **Tracking issue:** https://codeberg.org/Conduction/openconnector/issues/13 — remains open until phpmd.baseline.xml and phpstan-baseline.neon reach 0 violations.
+  **Tracking issue:** Codeberg issue `openconnector#13` (pre-migration, not migrated to GitHub) — remains open until phpmd.baseline.xml and phpstan-baseline.neon reach 0 violations.

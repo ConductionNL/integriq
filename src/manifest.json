@@ -263,6 +263,14 @@
           "order": 10
         },
         {
+          "id": "AppConnections",
+          "label": "App connections",
+          "icon": "PowerPlugOutline",
+          "route": "AppConnections",
+          "order": 15,
+          "permission": "admin"
+        },
+        {
           "id": "Synchronizations",
           "label": "Synchronizations",
           "icon": "CloudSyncOutline",
@@ -355,6 +363,14 @@
           "icon": "PlayCircleOutline",
           "route": "FlowRuns",
           "order": 15
+        },
+        {
+          "id": "DirectoryRuns",
+          "label": "Directory runs",
+          "icon": "AccountGroup",
+          "route": "DirectoryRuns",
+          "order": 18,
+          "permission": "admin"
         },
         {
           "id": "DeadLetters",
@@ -818,6 +834,85 @@
       }
     },
     {
+      "id": "AppConnections",
+      "route": "/connections",
+      "type": "index",
+      "title": "App connections",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "app_connection",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
+        "columns": [
+          {
+            "key": "app",
+            "label": "App"
+          },
+          {
+            "key": "title",
+            "label": "Connection"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "formatter": "connectionStatus"
+          },
+          {
+            "key": "statusMessage",
+            "label": "Status message",
+            "sortable": false
+          },
+          {
+            "key": "checkedAt",
+            "label": "Last checked"
+          },
+          {
+            "key": "settingsUrl",
+            "label": "Settings",
+            "sortable": false,
+            "formatter": "connectionSettingsLabel",
+            "widget": "link",
+            "widgetProps": {
+              "href": "{settingsUrl}"
+            }
+          }
+        ],
+        "folderSidebar": {
+          "source": "field",
+          "field": "app",
+          "allLabel": "All apps"
+        },
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "actionToggles": {
+          "showAdd": false,
+          "showFormDialog": false,
+          "showEditAction": false,
+          "showCopyAction": false,
+          "showDeleteAction": false,
+          "showMassImport": false,
+          "showMassCopy": false,
+          "showMassDelete": false
+        },
+        "headerActions": [
+          {
+            "id": "add-integration",
+            "label": "Add integration",
+            "icon": "LinkVariant",
+            "handler": "openLinkSourceHandler"
+          }
+        ],
+        "documentationUrl": "https://integriq.conduction.nl"
+      },
+      "_note": "connection-registry (hydra umbrella design D8): every app's declared connections in one admin-only list. Rows are written by the declaration sync, the status resolver, app reports and the hourly health job, so the built-in add, edit, copy, delete and import actions are off: a row nothing declared has nothing to check, and a hand edit would be overwritten by the next resolve. Add integration links a source to a declared connection through LinkSourceDialog; ?app=<id>&link=1 opens the same dialog pre-filtered (ModalHost watches the query)."
+    },
+    {
       "id": "Sources",
       "route": "/sources",
       "type": "index",
@@ -873,6 +968,18 @@
             "label": "Test connection",
             "icon": "CheckCircleOutline",
             "handler": "testSourceHandler"
+          },
+          {
+            "id": "preview-directory-run",
+            "label": "Preview directory run",
+            "icon": "EyeOutline",
+            "handler": "previewDirectorySyncHandler"
+          },
+          {
+            "id": "run-directory-sync",
+            "label": "Run directory sync",
+            "icon": "Sync",
+            "handler": "runDirectorySyncHandler"
           },
           {
             "id": "view-source-logs",
@@ -3922,6 +4029,79 @@
         },
         "documentationUrl": "https://integriq.conduction.nl",
         "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
+      }
+    },
+    {
+      "id": "DirectoryRuns",
+      "route": "/directory-runs",
+      "type": "logs",
+      "title": "Directory runs",
+      "_note": "The run record a directory connection writes, read back. It is the shared synchronization_log schema rather than a table of its own, because a directory sync is a synchronization: same run log, same retention, same per-item failure capture. See openspec/changes/directory-and-group-sync.",
+      "config": {
+        "register": "integriq",
+        "schema": "synchronization_log",
+        "sortKey": "created",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "created",
+            "label": "Time",
+            "sortable": true,
+            "width": "16%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "result.connectionName",
+            "label": "Connection",
+            "sortable": false,
+            "width": "16%"
+          },
+          {
+            "key": "message",
+            "label": "Message",
+            "sortable": true,
+            "width": "20%"
+          },
+          {
+            "key": "result.membershipsAdded",
+            "label": "Added",
+            "sortable": false,
+            "width": "9%"
+          },
+          {
+            "key": "result.membershipsRemoved",
+            "label": "Removed",
+            "sortable": false,
+            "width": "9%"
+          },
+          {
+            "key": "result.usersRead",
+            "label": "Users read",
+            "sortable": false,
+            "width": "10%"
+          },
+          {
+            "key": "test",
+            "label": "Preview",
+            "sortable": true,
+            "width": "10%"
+          },
+          {
+            "key": "executionTime",
+            "label": "Duration",
+            "sortable": true,
+            "width": "10%",
+            "format": {
+              "style": "duration",
+              "unit": "milliseconds"
+            }
+          }
+        ]
       }
     },
     {

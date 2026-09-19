@@ -248,6 +248,51 @@
 					</div>
 				</template>
 			</template>
+
+			<!-- Digital post: the binding a source sends letters through.
+			     Built from the registry over /api/digital-post/providers, never
+			     from a list written here. A hardcoded picker goes stale in
+			     silence: a binding added is invisible and a binding removed
+			     leaves an option that saves a provider id nothing answers to,
+			     and the first evidence either way is a letter nobody posted. -->
+			<template v-if="showsDigitalPostPicker">
+				<label
+					for="cn-source-form-digitalpost-provider"
+					class="cn-source-form-fields__label">
+					{{ t('integriq', 'Digital post binding') }}
+				</label>
+				<NcSelect
+					inputId="cn-source-form-digitalpost-provider"
+					:inputLabel="t('integriq', 'Digital post binding')"
+					:aria-label-combobox="t('integriq', 'Digital post binding')"
+					:modelValue="selectedDigitalPostProvider"
+					:options="digitalPostProviderOptions"
+					:loading="digitalPostLoading"
+					:clearable="true"
+					:placeholder="t('integriq', 'Select a digital post binding')"
+					@update:modelValue="onDigitalPostProviderPick" />
+				<span class="cn-source-form-fields__helper">
+					{{
+						t(
+							'integriq',
+							'Which service this source posts letters through. Each binding asks for its own settings once you pick it.',
+						)
+					}}
+				</span>
+				<div
+					v-if="
+						!digitalPostLoading
+						&& digitalPostProviderOptions.length === 0
+					"
+					class="cn-source-form-fields__note">
+					{{
+						t(
+							'integriq',
+							'This instance has no digital post binding installed, so a letter cannot be sent from here yet.',
+						)
+					}}
+				</div>
+			</template>
 		</div>
 	</div>
 </template>
@@ -312,6 +357,9 @@ export default {
 			brokerUnavailable: false,
 			credentialOptions: [],
 			credentialsLoading: false,
+			/** Digital post bindings this instance carries, from the registry. */
+			digitalPostProviders: [],
+			digitalPostLoading: false,
 			/** Per-key json editor drafts (invalid intermediate strings held here). */
 			jsonDrafts: {},
 			jsonErrors: {},
@@ -367,6 +415,53 @@ export default {
 		 * @return {object|null} The selected credential option.
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
+		/**
+		 * Whether this source sends digital post, and so needs the picker.
+		 *
+		 * @return {boolean} True for a digital post source.
+		 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+		 */
+		showsDigitalPostPicker() {
+			return String(this.formData?.type ?? '') === 'digitalPost'
+		},
+
+		/**
+		 * The bindings this instance carries, as picker options.
+		 *
+		 * @return {object[]} The options.
+		 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+		 */
+		digitalPostProviderOptions() {
+			return this.digitalPostProviders.map((provider) => ({
+				id: provider.providerId,
+				label: provider.providerId,
+			}))
+		},
+
+		/**
+		 * The option matching the written provider id, if this instance has it.
+		 *
+		 * A stored provider this instance does NOT carry is shown as itself
+		 * with a note, never silently cleared: a source configured on another
+		 * instance, or before a binding was removed, must read as "this is set
+		 * to something not installed here" rather than as "nothing is set".
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+		 */
+		selectedDigitalPostProvider() {
+			const id = String(this.formData?.configuration?.provider ?? '')
+			if (!id) return null
+			return (
+				this.digitalPostProviderOptions.find(
+					(option) => option.id === id,
+				) ?? {
+					id,
+					label: id,
+				}
+			)
+		},
+
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
 			if (!id) return null
@@ -390,12 +485,23 @@ export default {
 		 */
 		formData() {
 			this.brokeredEnabled = isBrokered(this.formData)
+
+			// The type can be switched after the form opened. Without this the
+			// picker would render with an empty list and read as "no binding
+			// installed" on an instance that has three.
+			if (
+				this.showsDigitalPostPicker
+				&& this.digitalPostProviders.length === 0
+				&& !this.digitalPostLoading
+			) {
+				this.fetchDigitalPostProviders()
+			}
 		},
 	},
 
 	/**
-	 * Preload the user's credentials when editing an already-brokered source so
-	 * the picker resolves its current selection to a labelled option.
+	 * Preload the pickers' options so each resolves its current selection to a
+	 * labelled option rather than to a bare id.
 	 *
 	 * @return {void}
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
@@ -403,6 +509,10 @@ export default {
 	created() {
 		if (this.brokeredEnabled) {
 			this.fetchCredentials()
+		}
+
+		if (this.showsDigitalPostPicker) {
+			this.fetchDigitalPostProviders()
 		}
 	},
 
@@ -487,6 +597,50 @@ export default {
 		 * @return {Promise<void>} Resolves once the options are loaded.
 		 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
 		 */
+		/**
+		 * Write the picked binding onto the source's configuration.
+		 *
+		 * @param {object|null} option The picked option, or null when cleared.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+		 */
+		onDigitalPostProviderPick(option) {
+			const configuration = { ...(this.formData?.configuration ?? {}) }
+			configuration.provider = option?.id ?? ''
+			this.updateField('configuration', configuration)
+		},
+
+		/**
+		 * Ask the instance which digital post bindings it carries.
+		 *
+		 * Soft-fails to an empty list, like the credential fetch above: an
+		 * instance without the endpoint shows "no binding installed", which is
+		 * true, rather than tearing down the editor.
+		 *
+		 * @return {Promise<void>} Resolves once the bindings are loaded.
+		 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+		 */
+		async fetchDigitalPostProviders() {
+			this.digitalPostLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/integriq/api/digital-post/providers'),
+				)
+				const providers = response?.data?.providers
+				this.digitalPostProviders = Array.isArray(providers) ? providers : []
+			} catch (err) {
+				this.digitalPostProviders = []
+				// eslint-disable-next-line no-console
+				console.warn(
+					'[SourceFormFields] digital post provider fetch failed',
+					err,
+				)
+			} finally {
+				this.digitalPostLoading = false
+			}
+		},
+
 		async fetchCredentials() {
 			this.credentialsLoading = true
 			this.brokerUnavailable = false

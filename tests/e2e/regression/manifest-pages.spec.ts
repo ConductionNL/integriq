@@ -154,7 +154,7 @@ type ManifestPage = {
 }
 
 /**
- * All 37 manifest pages. Kept in manifest order so a diff against
+ * Every manifest page (49 on 2026-09-16). Kept in manifest order so a diff against
  * `src/manifest.json` reads straight down.
  *
  * Guarded by `manifest page table is complete and current` — do not edit this
@@ -163,6 +163,7 @@ type ManifestPage = {
 const MANIFEST_PAGES: ManifestPage[] = [
 	{ id: 'FeaturesRoadmap', route: '/features-roadmap', type: 'roadmap' },
 	{ id: 'Dashboard', route: '/', type: 'dashboard' },
+	{ id: 'AppConnections', route: '/connections', type: 'index' },
 	{ id: 'Sources', route: '/sources', type: 'index' },
 	{ id: 'SourceDetail', route: '/sources/:id', type: 'detail' },
 	{ id: 'SourceLogs', route: '/sources/logs', type: 'logs' },
@@ -259,6 +260,7 @@ const MANIFEST_PAGES: ManifestPage[] = [
 	{ id: 'RisSyncRecords', route: '/messages/ris', type: 'logs' },
 	{ id: 'FormSubmissions', route: '/messages/form-submissions', type: 'logs' },
 	{ id: 'Store', route: '/store', type: 'index' },
+	{ id: 'DirectoryRuns', route: '/directory-runs', type: 'logs' },
 	{
 		id: 'DeadLetters',
 		route: '/dead-letters',

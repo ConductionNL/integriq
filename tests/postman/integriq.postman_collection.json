@@ -1046,6 +1046,258 @@
       ]
     },
     {
+      "name": "15 — SCIM provisioning (directory-and-group-sync)",
+      "description": "The SCIM 2.0 endpoint an identity system calls. Every request here is sent WITHOUT the collection basic auth: the SCIM credential is the auth body of these routes, so a request carrying a Nextcloud session would prove something else. The contract asserted is the one REQ-DS-003 names, that an unauthenticated call is rejected before any user is read and the rejection says nothing about which check failed. The authenticated paths (create, change, deactivate) are covered by PHPUnit, because provisioning a real credential is a setup step this collection has no seed for.",
+      "item": [
+        {
+          "name": "GET /scim/v2/Users (no credential)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /scim/v2/Users/{id} (no credential)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users/admin",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users", "admin"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /scim/v2/Users (no credential)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"], \"userName\": \"scim-probe\"}" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /scim/v2/Users/{id} (no credential)",
+          "request": {
+            "method": "PUT",
+            "auth": { "type": "noauth" },
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"], \"active\": false}" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users/admin",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users", "admin"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /scim/v2/Users/{id} (no credential)",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users/admin",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users", "admin"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /scim/v2/Groups (no credential)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Groups",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Groups"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /scim/v2/Groups/{id} (no credential)",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "noauth" },
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"schemas\": [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"], \"members\": []}" },
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Groups/admin",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Groups", "admin"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected before any user is read (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers a SCIM error, not a user list', () => {",
+                  "    pm.expect(body.schemas).to.include('urn:ietf:params:scim:api:messages:2.0:Error');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "    pm.expect(JSON.stringify(body)).to.not.include('userName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /scim/v2/Users (invalid bearer token)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "header": [
+              { "key": "Authorization", "value": "Bearer not-a-real-credential" }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/scim/v2/Users",
+              "host": ["{{ocBase}}"],
+              "path": ["scim", "v2", "Users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('an invalid credential is rejected the same way (401)', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('the rejection says nothing about which check failed', () => {",
+                  "    pm.expect(body.detail).to.eql('Unauthorized');",
+                  "    pm.expect(body).to.not.have.property('Resources');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [

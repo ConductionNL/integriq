@@ -1,0 +1,39 @@
+# Tasks: competitor-parity-2026-09
+
+- [ ] 1.1 Build `signed-outbound-webhooks`. Archive it on merge and tick it here.
+- [ ] 1.2 Build `objecten-api-facade`. Archive it on merge and tick it here.
+- [ ] 1.3 Build `document-generation-vendor-adapter`. Archive it on merge and tick it here.
+- [ ] 2.1 Ask the filinq lane for a template `engine` per template on `document-creatie-sjablonen`, so a template can select a vendor source.
+- [ ] 2.2 Hand the dossiq halves of rows 12.11 and 12.3 to the dossiq lane, with the row ids and the owner slug each half consumes.
+- [ ] 3.1 Re-point row Q6.20's `covered` column at `webhook-signing` instead of `events-cloudevents`.
+- [ ] 3.2 Re-point row 12.3's owner from openregister to integriq, citing ADR-091 §6.
+- [ ] 3.3 Add any later integriq change that cites the gap register to the index above, in the same PR that opens it.
+- [ ] 4.1 Build `registry-backed-field-source` (discovery cluster 26 and CT-5, decision D2). Archive it on merge and tick it here.
+- [ ] 4.2 Ask the openregister lane for `x-openregister-property-source` on a schema property, by that name, and record the slug it opens the change under.
+- [ ] 4.3 Hand dossiq the declaration half of cluster 26: the source input on `propertyDefinition`, which rides dossiq's CT-1 change.
+- [ ] 4.4 Re-read cluster 60 (outbound sender identity) against D12 as answered: the account is Nextcloud Mail's, not integriq's, so the sender identity sits on a Nextcloud Mail account.
+- [ ] 4.5 Add each later discovery cluster integriq opens to the wave table, in the PR that opens it.
+- [ ] 5.1 Build `statutory-gateways-and-frameworks` (discovery cluster 56, decisions D21 and D6). Archive it on merge and tick it here.
+- [ ] 5.2 Build `outbound-communication-log` (cluster 23). Archive it on merge and tick it here.
+- [ ] 5.3 Build `outbound-call-delivery-and-replay` (cluster 27, depends on 5.2). Archive it on merge and tick it here.
+- [ ] 5.4 Build `directory-and-group-sync` (cluster 33, number 7 of the twenty-five loudest). Archive it on merge and tick it here.
+- [ ] 5.5 Build `intake-channels-beyond-mail` (cluster 45). Archive it on merge and tick it here.
+- [ ] 5.6 Build `migration-source-adapters` (integriq's half of cluster 8, numbers 2 and 13 of the twenty-five loudest). Archive it on merge and tick it here.
+- [ ] 5.7 Build `allowlisted-expression-sources` (depth study D-casetype-20). Archive it on merge and tick it here.
+- [ ] 6.1 Ask the openregister lane for cluster 8's import engine, its preview and its conflict policy, and agree the record shape and the match signal `migration-source-adapters` yields.
+- [ ] 6.2 Tell the openregister lane that the prefixed value-source registry exists, so the rule and calculation engines ask it rather than reading the environment themselves, and that cluster 4 stays theirs.
+- [ ] 6.3 Ask the portaliq lane, cluster 51, for the form definition a submission mapping names, and agree what happens when it is missing.
+- [ ] 6.4 Tell the opencatalogi lane, cluster 50, that the Wet elektronisch publiceren gateway sits under it, and agree the publication instruction shape.
+- [ ] 6.5 Hand dossiq its wave 3 halves: the send history and the `lastTold` projection, the retirement of the hardcoded `StufRetryJob` schedule, `case.intakeChannel` written from the delivering channel, the WKPB flag and the registry binding declaration, and draft replies.
+- [ ] 7.1 Record cluster 60 as still closed, with the reason: D12 moved the account to Nextcloud Mail and the cluster needs a re-read. `outbound-communication-log` adds the sender identity as a field when it lands.
+- [ ] 7.2 Keep the recorded-and-not-built table current, so a candidate with a reason is never rediscovered as a gap.
+- [ ] 8.1 Build `outbound-sender-identity-and-deliverability` (discovery cluster 61, decisions D12 and D21). Archive it on merge and tick it here.
+- [ ] 8.2 Retire task 4.4: the re-read against D12 is done and its answer is in the wave 4 section. The cluster is 61, not 60, in both sources.
+- [ ] 8.3 Hand dossiq its wave 4 half: the sender identity declared per team on the case type, replacing the single `EmailSettings.php` address.
+- [ ] 8.4 Confirm with the Nextcloud Mail boundary that an identity only references an account and holds no credential.
+
+- [ ] 9.1 Build `records-owned-by-an-external-source` (pending proposal row 5.19). Archive it on merge and tick it here.
+- [ ] 9.2 Build `one-off-and-suppressed-recipients` (pending proposal row 6.23, depends on 5.2). Archive it on merge and tick it here.
+- [ ] 9.3 Mark rows 6.24 and 6.27 as covered by `outbound-communication-log`, REQ-OCL-006 and REQ-OCL-001 with REQ-OCL-005, rather than opening a change for them.
+- [ ] 9.4 Ask whoever implements REQ-OCL-006 to decide whether "last reached" means the transport handover or the confirmed delivery of REQ-OCL-005, and to record the answer in the spec.
+- [ ] 9.5 Hand dossiq its pending-proposal halves: the ownership and disappearance declaration on `register.d/25-brp-kvk.json` with the party rendering, and the send screen that adds or suppresses a recipient with a reason.

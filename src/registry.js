@@ -60,7 +60,10 @@ import {
 	manageSigningHandler,
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
+	openLinkSourceHandler,
 	openPromotionHandler,
+	previewDirectorySyncHandler,
+	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
 	testJobHandler,
@@ -84,6 +87,11 @@ export default {
 	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	// Directory connections are Sources, so their run and preview actions sit on
+	// the Sources index. Both open DirectoryRunModal, which owns the POST so a
+	// guarded removal can be shown and confirmed rather than silently dropped.
+	runDirectorySyncHandler,
+	previewDirectorySyncHandler,
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
 	// the modal bus). See openconnector-webhook-signing.
 	manageSigningHandler,
@@ -99,6 +107,9 @@ export default {
 	// Environments page header action (environments-and-promotion): open the
 	// promote-configuration flow via the modal bus.
 	openPromotionHandler,
+	// App connections page header action (connection-registry D9): open the
+	// link-a-source dialog via the modal bus.
+	openLinkSourceHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.

@@ -95,6 +95,8 @@ class CatalogRegistryService {
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
 		'whatsapp-cloud-api' => 'Messaging',
+		'smartdocuments' => 'Document generation',
+		'xential' => 'Document generation',
 	];
 
 	/**
@@ -242,8 +244,13 @@ class CatalogRegistryService {
 			[
 				'slug' => 'adapter:berichtenbox',
 				'name' => 'Berichtenbox (Logius)',
-				'description' => 'Logius Berichtenbox voor Bedrijven (BBK 1.7) — the government-to-business message box bridging '
-					. 'MijnOverheid-style delivery. Ships mock by default; flip `logius.berichtenbox.feature_flag` to activate the live HTTP flavour.',
+				'description' => 'Logius Berichtenbox voor Burgers, over the Berichtenbox Koppelvlak (BBK 1.7): the message '
+					. 'box a citizen reads in MijnOverheid. It needs two credentials, and it sends nothing without either: '
+					. 'Logius BBK OAuth 2.0 client credentials, and a PKIoverheid Services-server certificate, held by the '
+					. 'credential broker and named on the source by reference rather than by value. Ships mock while '
+					. '`logius.berichtenbox.feature_flag` is unset, and every send is then reported as simulated. With the '
+					. 'flag set the mock is not served at all: a send is refused, naming what is missing, because a '
+					. 'simulated delivery on a flagged instance is indistinguishable from a real one.',
 				'category' => 'Government messaging',
 				'kind' => 'adapter',
 				'mechanism' => 'flag-gated',
@@ -251,6 +258,34 @@ class CatalogRegistryService {
 				'sourceTemplateSlug' => '',
 				'standards' => ['BBK 1.7'],
 				'icon' => 'EmailOutline',
+			],
+			[
+				'slug' => 'adapter:smartdocuments',
+				'name' => 'SmartDocuments',
+				'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
+					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
+				'category' => 'Document generation',
+				'kind' => 'adapter',
+				'mechanism' => 'mock-seeded',
+				'flagKey' => '',
+				'sourceTemplateSlug' => 'smartdocuments',
+				'standards' => ['REST API'],
+				'icon' => 'FileDocumentOutline',
+			],
+			[
+				'slug' => 'adapter:xential',
+				'name' => 'Xential',
+				'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
+					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
+				'category' => 'Document generation',
+				'kind' => 'adapter',
+				'mechanism' => 'mock-seeded',
+				'flagKey' => '',
+				'sourceTemplateSlug' => 'xential',
+				'standards' => ['REST API'],
+				'icon' => 'FileDocumentOutline',
 			],
 			[
 				'slug' => 'adapter:dso',

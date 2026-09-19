@@ -26,6 +26,8 @@ import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
+	EVENT_OPEN_DIRECTORY_RUN,
+	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
@@ -45,6 +47,31 @@ export function testSourceHandler({ item }) {
 	// Open the interactive Test-connection modal (method + endpoint + body input,
 	// live request, full response panel) instead of the old fire-and-forget POST.
 	modalBus.emit(EVENT_OPEN_TEST_SOURCE, { source: item })
+}
+
+/**
+ * Open the directory-run modal for a source's "Run directory sync" row action.
+ *
+ * A directory connection is a Source, so the action lives on the Sources index
+ * rather than on a page of its own. The modal owns the POST because the run is
+ * gated: removals over the connection's ratio stop before writing and offer a
+ * confirmation, which a fire-and-forget handler could neither show nor accept.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+ */
+export function runDirectorySyncHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_DIRECTORY_RUN, { source: item, mode: 'run' })
+}
+
+/**
+ * Open the directory-run modal for a source's "Preview directory run" action.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
+ */
+export function previewDirectorySyncHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_DIRECTORY_RUN, { source: item, mode: 'preview' })
 }
 
 // Modal-opening handlers — see src/modals/v2/ModalHost.vue. These do NOT
@@ -175,6 +202,20 @@ export function openConfigurationExportHandler() {
  */
 export function openPromotionHandler() {
 	modalBus.emit(EVENT_OPEN_PROMOTION, {})
+}
+
+/**
+ * Open the link-a-source dialog (connection-registry D9), pre-filtered by the
+ * App connections page's `?app=` query when it carries one. Wired to that
+ * page's "Add integration" header action.
+ *
+ * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+ */
+export function openLinkSourceHandler() {
+	const app = getRouter()?.currentRoute?.value?.query?.app
+	modalBus.emit(EVENT_OPEN_LINK_SOURCE, {
+		app: typeof app === 'string' ? app : '',
+	})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

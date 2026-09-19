@@ -8,6 +8,7 @@
   * [synchronysation](administrators/synchronysation/README.md)
     * [Synchronysation Contract](administrators/synchronysation/contract.md)
     * [Synchronysation](administrators/synchronysation/synchronysation.md)
+  * [Directory and group synchronisation](administrators/directory-and-group-sync.md)
   * [sources](administrators/sources/README.md)
     * [Source Configuration](administrators/sources/source.md)
     * [xxllnc To Publication](administrators/sources/xxllnctopublication.md)

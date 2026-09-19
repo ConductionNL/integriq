@@ -1,0 +1,139 @@
+{
+  "$comment": "connection-registry (ADR-037 register fragment). Adds the app_connection schema (hydra umbrella D11: stackiq already owns the global slug `connection`): one row per outside connection an app declares in its lib/Settings/connections.json. Rows are written by ConnectionRegistryService (sync, resolver, reports, health job, link-a-source), never by hand, which is why the overview page hides the built-in create and edit actions. Access is admin-only for every verb, following 99-source-lockdown.json: a row links a source uuid, and the page is an admin page in every app that adopts it. Contract: hydra openspec/changes/connection-registry/design.md, sections D3, D6 and D12. Version 1.1.0 adds the limited status. Version 1.2.0 adds refreshedAt: a refresh retires older reports and probes. Version 1.3.0 adds the disabled status: an admin switched the connection off.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "app_connection"
+        ]
+      }
+    },
+    "schemas": {
+      "app_connection": {
+        "slug": "app_connection",
+        "title": "App connection",
+        "icon": "TransitConnectionVariant",
+        "version": "1.3.0",
+        "summary": "An outside connection an app declares, with its current status",
+        "description": "One row per entry in an app's connections.json. The status says whether the connection is configured, works in part, is simulated, switched off, unavailable, failing or not checked yet.",
+        "required": [
+          "app",
+          "key",
+          "title"
+        ],
+        "type": "object",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Stable identifier connection-{app}-{key}."
+          },
+          "app": {
+            "type": "string",
+            "title": "App",
+            "description": "The app that declares this connection."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The connection key from the declaration file."
+          },
+          "title": {
+            "type": "string",
+            "title": "Connection",
+            "description": "The name of the connection."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What the connection is for."
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "description": "Sort order on the page."
+          },
+          "settingsUrl": {
+            "type": "string",
+            "title": "Settings",
+            "description": "Where an admin configures this connection."
+          },
+          "declaration": {
+            "type": "object",
+            "title": "Declaration",
+            "description": "The entry as the app declared it."
+          },
+          "declaredVersion": {
+            "type": "string",
+            "title": "Declared version",
+            "description": "The app version the declaration was read at."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Whether the connection works, works in part or not at all, as integriq last worked it out.",
+            "enum": [
+              "configured",
+              "limited",
+              "unconfigured",
+              "simulated",
+              "disabled",
+              "unavailable",
+              "error"
+            ],
+            "x-enum-labels": {
+              "configured": "Configured",
+              "limited": "Limited",
+              "unconfigured": "Not configured",
+              "simulated": "Simulated",
+              "disabled": "Switched off",
+              "unavailable": "Not available",
+              "error": "Error"
+            }
+          },
+          "statusMessage": {
+            "type": "string",
+            "title": "Status message",
+            "description": "Why the connection has this status."
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last checked",
+            "description": "When the fact behind the status was observed."
+          },
+          "source": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/source",
+            "x-openregister-onDelete": "SET_NULL",
+            "title": "Source",
+            "description": "The integriq source this connection is checked against."
+          },
+          "lastProbe": {
+            "type": "object",
+            "title": "Last probe",
+            "description": "The last test of the linked source: status, message and time."
+          },
+          "lastReport": {
+            "type": "object",
+            "title": "Last report",
+            "description": "The last status the app reported: status, message and time. A report of simulated stands against any probe."
+          },
+          "refreshedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last refresh",
+            "description": "When the app last asked for a fresh status after a settings save. Older reports and probes no longer count."
+          }
+        }
+      }
+    }
+  }
+}

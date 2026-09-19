@@ -375,6 +375,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// and mocking them would not exercise the
 		// getObject()/getNewObject()/getOldObject() shape this listener
 		// depends on).
+		if (class_exists('OCA\\OpenRegister\\Event\\RegistrySubscriptionRequestedEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/RegistrySubscriptionRequestedEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatedEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatedEvent.php';
 		}

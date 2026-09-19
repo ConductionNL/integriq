@@ -18,6 +18,7 @@ import { generateUrl } from '@nextcloud/router'
 import { createApp, defineAsyncComponent, h } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import formatters from './formatters.js'
 import { setRouter } from './handlers/routerRef.js'
 import appIcons from './icons.js'
 import bundledManifest from './manifest.json'
@@ -246,6 +247,9 @@ const customComponentsProp = { ...customComponents }
 // resolve `type:"custom"` page components under nc-vue@2. Shallow-cloned for the
 // same extensibility reason as the maps above.
 const registryProp = { ...registry }
+// Column formatters (connection-registry D8): shallow-cloned for the same
+// extensibility reason as the maps above.
+const formattersProp = { ...formatters }
 
 const app = createApp({
 	// Pure Vue 3 (ADR-066): native render() with `h` from 'vue'. Props pass
@@ -255,6 +259,7 @@ const app = createApp({
 			manifest: mergedManifest,
 			customComponents: customComponentsProp,
 			registry: registryProp,
+			formatters: formattersProp,
 			pageTypes: pageTypesProp,
 		}),
 })
