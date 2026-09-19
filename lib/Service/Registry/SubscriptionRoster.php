@@ -101,10 +101,15 @@ class SubscriptionRoster {
 	 * @return void
 	 */
 	private function store(string $registryId, array $roster): void {
+		$encoded = json_encode($roster);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
 		$this->appConfig->setValueString(
 			self::APP_ID,
 			(self::KEY_PREFIX . $registryId),
-			(json_encode($roster) ?: '{}')
+			$encoded
 		);
 	}//end store()
 }//end class

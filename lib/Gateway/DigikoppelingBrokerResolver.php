@@ -140,8 +140,14 @@ class DigikoppelingBrokerResolver {
 
 		$previous = $this->appConfig->getValueString(self::APP_ID, self::SELECTED_KEY, '');
 		$audit = $this->audit();
+
+		$from = $previous;
+		if ($from === '') {
+			$from = null;
+		}
+
 		$audit[] = [
-			'from' => ($previous ?: null),
+			'from' => $from,
 			'to' => $brokerId,
 			'by' => $userId,
 			'at' => gmdate('c'),

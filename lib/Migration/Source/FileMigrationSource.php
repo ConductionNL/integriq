@@ -25,6 +25,7 @@ use OCA\Integriq\Migration\ColumnMapping;
 use OCA\Integriq\Migration\ColumnMappingValidator;
 use OCA\Integriq\Migration\MigrationRecord;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
@@ -272,9 +273,26 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		try {
 			$node = $this->rootFolder->get($path);
+
+			// `IRootFolder::get()` answers a Node, and only a File carries
+			// getContent(). A path that resolves to a folder used to reach
+			// getContent() anyway and land in the Throwable arm below, which
+			// reports "could not be read" — true but unhelpful, since the real
+			// answer is that the path is a directory.
+			if ($node instanceof File === false) {
+				throw new InvalidArgumentException(
+					sprintf('The delivered file "%s" is a folder, not a file.', $path)
+				);
+			}
+
 			$read = $node->getContent();
 		} catch (NotFoundException $e) {
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" is not there.', $path));
+		} catch (InvalidArgumentException $e) {
+			// Ours, thrown just above: it already says precisely what is wrong.
+			// Without this arm the Throwable catch below swallows it and reports
+			// the generic "could not be read" instead.
+			throw $e;
 		} catch (\Throwable $e) {
 			$this->logger->warning('migration-source.file.unreadable', ['path' => $path, 'error' => $e->getMessage()]);
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" could not be read.', $path));
