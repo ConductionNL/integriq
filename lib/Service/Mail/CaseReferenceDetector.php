@@ -53,6 +53,8 @@ class CaseReferenceDetector {
 	 * @param string|null $pattern The source's `casePattern`, or null for the default.
 	 *
 	 * @return string|null The reference, or null when the message names none.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function detect(ParsedMessage $message, ?string $pattern = null): ?string {
 		$effective = $this->resolvePattern(pattern: $pattern);

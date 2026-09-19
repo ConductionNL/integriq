@@ -76,6 +76,8 @@ class MockMailboxTransport implements MailboxTransportInterface {
 	 *                            `receivedAt` is skipped, so a cursor behaves as it does live.
 	 *
 	 * @return array<int,ParsedMessage> The fixture messages.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		$fixture = ($configuration['fixture'] ?? []);

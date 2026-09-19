@@ -41,6 +41,8 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * The registry id.
 	 *
 	 * @return string Registry id.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function registryId(): string {
 		return self::REGISTRY_ID;
@@ -50,6 +52,8 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * The seeded source this binding works through.
 	 *
 	 * @return string Source slug.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	protected function sourceSlug(): string {
 		return self::SOURCE_SLUG;
@@ -61,6 +65,8 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param string $identity The KvK number.
 	 *
 	 * @return SubscriptionResult Active, or failed with the source's error text.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
@@ -82,6 +88,8 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param string $identity The KvK number.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function unsubscribe(string $identity): void {
 		$this->callSource(endpoint: '/abonnementen/' . rawurlencode($identity), method: 'DELETE');
@@ -93,6 +101,8 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param array<int,string> $identities KvK numbers with an active subscription.
 	 *
 	 * @return iterable<SubscriptionChange> The changes.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function pollChanges(array $identities = []): iterable {
 		if ($identities === []) {

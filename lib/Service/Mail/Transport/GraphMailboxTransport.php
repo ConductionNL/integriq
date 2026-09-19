@@ -93,6 +93,8 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 	 * @return array<int,ParsedMessage> The messages, oldest first.
 	 *
 	 * @throws MailboxTransportException When the mailbox is not configured or Graph refuses.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		$mailbox = trim((string)($configuration['mailbox'] ?? ''));

@@ -117,7 +117,7 @@ class IntakeChannelsController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-submission-arrives-over-a-signed-webhook-and-maps-to-a-case-type-req-ic-003
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -324,6 +324,8 @@ class IntakeChannelsController extends Controller {
 	 * framework's normalised params, which would desync.
 	 *
 	 * @return string The raw request body.
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md
 	 */
 	protected function getRawContent(): string {
 		$content = file_get_contents(filename: 'php://input');

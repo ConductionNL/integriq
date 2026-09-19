@@ -64,6 +64,8 @@ final class DisappearancePolicy {
 	 * @return string One of the accepted values.
 	 *
 	 * @throws InvalidArgumentException When the declared value is not one the engine knows.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function fromSourceConfig(array $sourceConfig): string {
 		$declared = ($sourceConfig[self::CONFIG_KEY] ?? null);
@@ -84,6 +86,8 @@ final class DisappearancePolicy {
 	 * @param array<string,mixed> $sourceConfig The synchronisation's sourceConfig.
 	 *
 	 * @return bool True when the declaration is absent or accepted.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function isValid(array $sourceConfig): bool {
 		try {
@@ -100,6 +104,8 @@ final class DisappearancePolicy {
 	 * @param mixed $declared What was declared.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function refusalMessage(mixed $declared): string {
 		$declaredText = gettype($declared);

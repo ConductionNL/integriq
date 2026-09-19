@@ -67,6 +67,8 @@ class RecordOwnershipService {
 	 * @param string $targetId The object's id at the target, which is its OpenRegister uuid.
 	 *
 	 * @return OwnershipState The ownership answer. Never null, never an exception for an unknown id.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState {
 		$contract = $this->findContract(targetId: $targetId);

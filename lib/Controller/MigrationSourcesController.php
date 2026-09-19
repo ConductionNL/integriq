@@ -89,7 +89,9 @@ class MigrationSourcesController extends Controller {
 	 *
 	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 *
-	 * @no-admin-idor-exempt Takes no object id. The one adapter that reaches storage, FileMigrationSource, resolves the path through the ACTING USER's folder (IRootFolder::getUserFolder), so another account's files are unreachable rather than merely undocumented.
+	 * @no-admin-idor-exempt Takes no object id. The one adapter that reaches storage, FileMigrationSource,
+	 *     resolves the path through the ACTING USER's folder (IRootFolder::getUserFolder), so another
+	 *     account's files are unreachable rather than merely undocumented.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -115,7 +117,8 @@ class MigrationSourcesController extends Controller {
 	 *
 	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
 	 *
-	 * @no-admin-idor-exempt Pure validation of values supplied in the request: a column mapping is checked against field lists the caller also supplied. Reads no storage and accepts no object id.
+	 * @no-admin-idor-exempt Pure validation of values supplied in the request: a column mapping is checked
+	 *     against field lists the caller also supplied. Reads no storage and accepts no object id.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

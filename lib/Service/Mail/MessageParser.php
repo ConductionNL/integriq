@@ -56,6 +56,8 @@ class MessageParser {
 	 * @param string $raw The file bytes.
 	 *
 	 * @return ParsedMessage The parsed message, carrying a warning when the parse fell back.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function parse(string $filename, string $raw): ParsedMessage {
 		try {

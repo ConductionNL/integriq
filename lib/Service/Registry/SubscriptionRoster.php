@@ -55,6 +55,8 @@ class SubscriptionRoster {
 	 * @param string $registryId Registry id.
 	 *
 	 * @return array<string,string> Identity value to subscription reference.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function identities(string $registryId): array {
 		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}');
@@ -75,6 +77,8 @@ class SubscriptionRoster {
 	 * @param string $reference The registry's own subscription reference.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function add(string $registryId, string $identity, string $reference = ''): void {
 		$roster = $this->identities(registryId: $registryId);
@@ -89,6 +93,8 @@ class SubscriptionRoster {
 	 * @param string $identity The identity value.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function remove(string $registryId, string $identity): void {
 		$roster = $this->identities(registryId: $registryId);

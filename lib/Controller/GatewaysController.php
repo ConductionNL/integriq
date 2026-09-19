@@ -82,7 +82,9 @@ class GatewaysController extends Controller {
 	 *
 	 * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#scenario-the-catalogue-answers-which-laws-the-instance-reaches
 	 *
-	 * @no-admin-idor-exempt Reads the static gateway catalogue — which laws this instance reaches — which is instance configuration, not per-caller data. No object id is accepted and no stored record is read.
+	 * @no-admin-idor-exempt Reads the static gateway catalogue — which laws this instance reaches — which
+	 *     is instance configuration, not per-caller data. No object id is accepted and no stored record is
+	 *     read.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

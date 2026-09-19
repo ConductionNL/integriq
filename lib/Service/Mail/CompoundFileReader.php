@@ -182,6 +182,8 @@ final class CompoundFileReader {
 	 * @param int $entryId The storage's directory id.
 	 *
 	 * @return array<int,int> The children's directory ids.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function getChildren(int $entryId): array {
 		$entry = ($this->entries[$entryId] ?? null);
@@ -203,6 +205,8 @@ final class CompoundFileReader {
 	 * @return string The stream bytes.
 	 *
 	 * @throws MessageParseException When the directory id is unknown.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function readStream(int $entryId): string {
 		$entry = ($this->entries[$entryId] ?? null);

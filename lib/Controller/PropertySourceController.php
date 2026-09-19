@@ -102,7 +102,9 @@ class PropertySourceController extends Controller {
 	 *
 	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
 	 *
-	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by search term. The identifier is a registry key, not an id of a record this app stores, so there is no per-object owner to compare against.
+	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by search
+	 *     term. The identifier is a registry key, not an id of a record this app stores, so there is no per-
+	 *     object owner to compare against.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -128,7 +130,9 @@ class PropertySourceController extends Controller {
 	 *
 	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
 	 *
-	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by registry identifier. Not a read of a record this app stores, so there is no per-object owner to compare against.
+	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by registry
+	 *     identifier. Not a read of a record this app stores, so there is no per-object owner to compare
+	 *     against.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

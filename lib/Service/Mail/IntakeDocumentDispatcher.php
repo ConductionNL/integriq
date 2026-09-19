@@ -79,6 +79,8 @@ class IntakeDocumentDispatcher {
 	 *                                     sender, subject, sourceRef, receivedAt.
 	 *
 	 * @return bool True when the event was dispatched, false when nothing here can receive it.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function dispatch(array $payload): bool {
 		if ($this->isAvailable() === false) {

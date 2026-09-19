@@ -71,6 +71,8 @@ class DigitalPostService {
 	 * @param DigitalPostSendRequestedEvent $event The request.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function handleSendRequest(DigitalPostSendRequestedEvent $event): void {
 		$config = $this->sourceConfig(sourceId: $event->getSourceId());
@@ -150,6 +152,8 @@ class DigitalPostService {
 	 * @param array<int,array<string,mixed>> $messages The tracked messages to poll, keyed by `uuid`.
 	 *
 	 * @return int How many messages changed status.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function pollStatuses(array $messages): int {
 		$changed = 0;
@@ -194,6 +198,8 @@ class DigitalPostService {
 	 * @param array<int,array<string,mixed>> $messages The tracked messages for that source.
 	 *
 	 * @return array<string,mixed> Last send, last error and queue depth.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function health(array $messages): array {
 		$lastSend = null;

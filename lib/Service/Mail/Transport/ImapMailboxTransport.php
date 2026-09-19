@@ -80,6 +80,8 @@ class ImapMailboxTransport implements MailboxTransportInterface {
 	 *
 	 * @throws MailboxTransportException When the extension is absent, the mailbox is
 	 *                                   misconfigured, or the server refuses.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		if ($this->isUsable() === false) {

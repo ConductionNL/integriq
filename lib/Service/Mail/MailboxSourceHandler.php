@@ -74,6 +74,8 @@ class MailboxSourceHandler {
 	 * @return array{created:int,skipped:int,cursor:string|null} What the poll did.
 	 *
 	 * @throws MailboxTransportException When the source is not a usable mailbox.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function poll(ObjectEntity $source): array {
 		$object = $source->getObject();
@@ -143,6 +145,8 @@ class MailboxSourceHandler {
 	 * @return MailboxTransportInterface The binding.
 	 *
 	 * @throws MailboxTransportException When the protocol is unknown or unusable here.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function resolveTransport(array $configuration): MailboxTransportInterface {
 		if (($configuration['mock'] ?? false) === true) {

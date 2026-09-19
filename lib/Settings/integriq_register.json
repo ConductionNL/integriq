@@ -46,7 +46,7 @@
           "lti_tool",
           "mapping",
           "mapping_version",
-          "message",
+          "mail_message",
           "notificaties_abonnement",
           "outbound_message",
           "openformulieren_form_mapping",
@@ -3821,8 +3821,8 @@
           }
         }
       },
-      "message": {
-        "slug": "message",
+      "mail_message": {
+        "slug": "mail_message",
         "title": "Message",
         "icon": "EmailOutline",
         "version": "1.0.0",

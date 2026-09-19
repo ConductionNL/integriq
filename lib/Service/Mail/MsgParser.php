@@ -60,6 +60,8 @@ class MsgParser {
 	 * @return ParsedMessage The parsed message.
 	 *
 	 * @throws \OCA\Integriq\Exception\MessageParseException When the bytes are not a readable compound file.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function parse(string $raw): ParsedMessage {
 		$reader = new CompoundFileReader($raw);

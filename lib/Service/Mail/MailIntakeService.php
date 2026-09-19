@@ -55,7 +55,7 @@ class MailIntakeService {
 	 *
 	 * @var string
 	 */
-	public const SCHEMA_MESSAGE = 'message';
+	public const SCHEMA_MESSAGE = 'mail_message';
 
 	/**
 	 * The `source.type` a mailbox is.
@@ -129,6 +129,8 @@ class MailIntakeService {
 	 * @param string|null $casePattern The source's `casePattern`, or null for the default.
 	 *
 	 * @return ObjectEntity The stored `message` object.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function intake(string $sourceId, ParsedMessage $message, ?string $casePattern = null): ObjectEntity {
 		$existing = $this->findByMessageId(sourceId: $sourceId, messageId: $message->getMessageId());
@@ -184,6 +186,8 @@ class MailIntakeService {
 	 * @param string $messageId The per-source message id.
 	 *
 	 * @return ObjectEntity|null The stored message, or null.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function findByMessageId(string $sourceId, string $messageId): ?ObjectEntity {
 		$matches = $this->objectService->findAll(

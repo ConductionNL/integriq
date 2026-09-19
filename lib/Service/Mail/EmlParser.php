@@ -43,6 +43,8 @@ class EmlParser {
 	 * @param string $raw The raw message bytes.
 	 *
 	 * @return ParsedMessage The parsed message.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function parse(string $raw): ParsedMessage {
 		$normalised = str_replace(["\r\n", "\r"], "\n", $raw);

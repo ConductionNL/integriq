@@ -59,6 +59,8 @@ class DigitalPostProviderRegistry {
 	 * @param string $providerId Provider id.
 	 *
 	 * @return bool True when one is registered.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function has(string $providerId): bool {
 		return isset($this->providers[$providerId]);
@@ -72,6 +74,8 @@ class DigitalPostProviderRegistry {
 	 * @return DigitalPostProviderInterface The binding.
 	 *
 	 * @throws RuntimeException When nothing answers to the id.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function get(string $providerId): DigitalPostProviderInterface {
 		if (isset($this->providers[$providerId]) === false) {
@@ -96,6 +100,8 @@ class DigitalPostProviderRegistry {
 	 * Every registered provider id.
 	 *
 	 * @return array<int,string> Provider ids.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function ids(): array {
 		return array_keys($this->providers);
@@ -105,6 +111,8 @@ class DigitalPostProviderRegistry {
 	 * Every binding with the configuration it needs.
 	 *
 	 * @return array<int,array<string,mixed>> The bindings.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function describeAll(): array {
 		$described = [];

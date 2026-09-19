@@ -42,6 +42,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * The registry id.
 	 *
 	 * @return string Registry id.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function registryId(): string {
 		return self::REGISTRY_ID;
@@ -51,6 +53,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * The seeded source this binding works through.
 	 *
 	 * @return string Source slug.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	protected function sourceSlug(): string {
 		return self::SOURCE_SLUG;
@@ -62,6 +66,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param string $identity The BSN.
 	 *
 	 * @return SubscriptionResult Active, or failed with the source's error text.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
@@ -82,6 +88,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param string $identity The BSN.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function unsubscribe(string $identity): void {
 		$this->callSource(
@@ -96,6 +104,8 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @param array<int,string> $identities BSNs with an active subscription.
 	 *
 	 * @return iterable<SubscriptionChange> The changes.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function pollChanges(array $identities = []): iterable {
 		if ($identities === []) {
