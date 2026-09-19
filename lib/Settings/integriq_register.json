@@ -2395,7 +2395,7 @@
       "verdict": {
         "slug": "verdict",
         "title": "Verdict",
-        "icon": "GavelOutline",
+        "icon": "Gavel",
         "version": "1.0.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
         "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
