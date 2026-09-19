@@ -83,6 +83,14 @@ return [
 		// rule decides what opens a case and a reply leaves the building.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
+		// here with no Nextcloud session, authenticated by the source's own
+		// binding, and every refusal is the same undifferentiated 401.
+		['name' => 'cti#events', 'url' => '/api/cti/{sourceId}/events', 'verb' => 'POST', 'requirements' => ['sourceId' => '[A-Za-z0-9\\-]+']],
+		// What digital post bindings this instance has, so the source form's
+		// provider picker is built from the registry rather than from a list
+		// written beside it and left to go stale.
+		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
@@ -230,7 +238,10 @@ return [
 		// Platform/Tool, never by an NC session; authentication is the
 		// protocol itself (signed id_token / RFC 7523 client assertion /
 		// previously-issued access token), enforced inside LtiController.
-		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET'],
+		// Both verbs are the OIDC third-party login initiation. A route name
+		// carries no verb, so without a 'postfix' this entry and the POST below
+		// register as one name and only the last one survives.
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET', 'postfix' => 'Get'],
 		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'POST'],
 		['name' => 'lti#launch', 'url' => '/api/lti/{deployment}/launch', 'verb' => 'POST'],
 		['name' => 'lti#token', 'url' => '/api/lti/token', 'verb' => 'POST'],
@@ -291,6 +302,14 @@ return [
 		// (admin action RBAC — grants access to real card data). The scheduled
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
+
+		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// The operator's half only: read the vendor's own template list for a
+		// source, and activate a source that can actually render. Filinq asks
+		// for a render through the typed DocumentRenderRequestedEvent, not
+		// through a route, so there is no render endpoint here.
+		['name' => 'documentGeneration#templates', 'url' => '/api/document-generation/sources/{sourceId}/templates', 'verb' => 'GET'],
+		['name' => 'documentGeneration#activate', 'url' => '/api/document-generation/sources/{sourceId}/activate', 'verb' => 'POST'],
 
 		// ZGW Notificaties API subscriber/publisher (openspec/changes/archive/2026-07-15-notificaties-api-subscriber).
 		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
@@ -565,6 +584,30 @@ return [
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
+		// The environment allowlist: what an expression may read out of the
+		// process, and who said so. Administrator only, enforced by the
+		// #[AuthorizedAdminSetting] attribute AND again in each method body —
+		// this list is a code-execution-adjacent surface, so the guard must not
+		// live only in an attribute a hand-written route could miss.
+		// The VNG Objecten and Objecttypen APIs. Every route is #[PublicPage]
+		// and CSRF-free ON PURPOSE: the consumers are other suppliers' systems
+		// presenting "Authorization: Token <key>" with no Nextcloud session,
+		// which the requirement states outright. ObjectenTokenService is the
+		// guard and it runs FIRST on every method — a route here without that
+		// call is an unauthenticated read of a register.
+		['name' => 'objectenApi#objecttypes',       'url' => '/api/v2/objecttypes', 'verb' => 'GET'],
+		['name' => 'objectenApi#objecttype',        'url' => '/api/v2/objecttypes/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#objecttypeVersion', 'url' => '/api/v2/objecttypes/{uuid}/versions/{version}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+', 'version' => '[^/]+']],
+		['name' => 'objectenApi#objects',           'url' => '/api/v2/objects', 'verb' => 'GET'],
+		['name' => 'objectenApi#search',            'url' => '/api/v2/objects/search', 'verb' => 'POST'],
+		['name' => 'objectenApi#createObject',      'url' => '/api/v2/objects', 'verb' => 'POST'],
+		['name' => 'objectenApi#object',            'url' => '/api/v2/objects/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
+		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
+		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -587,7 +630,14 @@ return [
 		['name' => 'genericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
-		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
+		// The 'postfix' goes on THIS entry, not on the catch-all further down.
+		// Both name the same controller action, so one of the two had to be
+		// renamed, and the catch-all is the one that already answers to
+		// 'integriq.ui.dashboard': info.xml navigation and
+		// Flow\SynchronizationLogActions both resolve that name, and the latter
+		// passes ['path' => ''], which only the catch-all takes as a path
+		// segment rather than as a query string.
+		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET', 'postfix' => 'Index'],
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'ui#sourcesLogs', 'url' => '/sources/logs', 'verb' => 'GET'],
 		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],

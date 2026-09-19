@@ -68,7 +68,7 @@
         {
           "id": "Verdicts",
           "label": "External verdicts",
-          "icon": "GavelOutline",
+          "icon": "Gavel",
           "route": "Verdicts",
           "order": 24
         }

@@ -114,3 +114,33 @@ This results in the following example for the `configuration.authentication` obj
 	"payload": "{\"iss\":\"my_zgw_client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"my_zgw_client\",\"user_id\":\"my_zgw_client\",\"user_representation\":\"me@company.com\",\"aud\":\"my_zgw_client\"}"
 }
 ```
+
+## Digital post on a source
+
+A source of type `digitalPost` sends letters. Which service it sends them
+through is one field: `configuration.provider`.
+
+Pick it on the source form. The picker lists what this instance actually
+carries, because it reads `GET /apps/integriq/api/digital-post/providers`
+rather than a list written beside it. A binding added to the registry shows up
+without anybody editing the form, and a binding that is gone stops being
+offered.
+
+Three bindings ship today:
+
+* `log` writes the letter to the log and delivers nothing. Use it to try a flow
+  without posting anything to a citizen.
+* `berichtenbox` posts to the recipient's Berichtenbox through Logius. It needs
+  an OIN and a certificate reference, and refuses to activate without both,
+  naming the one that is missing.
+* `postex` posts through Postex, over the shared gateway transport.
+
+Each binding describes the settings it needs through its own config schema, so
+the fields under the picker change with your choice.
+
+If the picker says no binding is installed, none is: the instance carries no
+digital post provider and a letter cannot be sent from it. Install one, or
+point the source at an instance that has one.
+
+Set `configuration.provider` to `log` first and send one letter. The log line
+tells you the source is wired before any credential is involved.

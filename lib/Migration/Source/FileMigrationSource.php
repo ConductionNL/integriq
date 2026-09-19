@@ -99,7 +99,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 */
 	public function count(string $kind, array $config = []): array {
 		try {
-			$rows = $this->parse(content: $this->readFile(config: $config), config: $config);
+			$rows = $this->parse($this->readFile($config), $config);
 		} catch (InvalidArgumentException $e) {
 			return ['count' => 0, 'complete' => false];
 		}
@@ -118,8 +118,8 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @throws InvalidArgumentException When the mapping cannot read this file.
 	 */
 	public function read(string $kind, array $config = []): iterable {
-		$mapping = $this->mapping(config: $config);
-		$rows = $this->parse(content: $this->readFile(config: $config), config: $config);
+		$mapping = $this->mapping($config);
+		$rows = $this->parse($this->readFile($config), $config);
 		$readAt = time();
 		$identifierColumn = $mapping->getIdentifierColumn();
 
@@ -130,17 +130,12 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 				$foreignId = (string)$row[$identifierColumn];
 			}
 
-			$kind = $mapping->getKind();
-			if ($kind === '') {
-				$kind = 'row';
-			}
-
 			$records[] = new MigrationRecord(
-				kind: $kind,
-				data: $mapping->apply($row),
-				sourceId: self::ID,
-				foreignId: $foreignId,
-				readAt: $readAt
+				($mapping->getKind() ?: 'row'),
+				$mapping->apply($row),
+				self::ID,
+				$foreignId,
+				$readAt
 			);
 		}
 
@@ -157,7 +152,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @return array<int,MigrationRecord> The sample.
 	 */
 	public function sample(string $kind, array $config = [], int $limit = 5): array {
-		return array_slice((array)$this->read(kind: $kind, config: $config), 0, max(0, $limit));
+		return array_slice((array)$this->read($kind, $config), 0, max(0, $limit));
 	}//end sample()
 
 	/**
@@ -170,7 +165,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @return array<int,string> The refusals, empty when the run may start.
 	 */
 	public function preflight(array $config, array $schemaFields, array $requiredFields): array {
-		$mapping = $this->mapping(config: $config);
+		$mapping = $this->mapping($config);
 
 		$refusals = array_merge(
 			$this->validator->validateTargets($mapping, $schemaFields),
@@ -179,7 +174,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		$content = ($config['content'] ?? null);
 		if (is_string($content) === true) {
-			$headers = $this->headers(content: $content, config: $config);
+			$headers = $this->headers($content, $config);
 			$refusals = array_merge($refusals, $this->validator->validateColumns($mapping, $headers));
 		}
 
@@ -278,13 +273,12 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		try {
 			$node = $this->rootFolder->get($path);
-
-			// `IRootFolder::get()` answers a Node, and only a File carries
-			// getContent(). A path that resolves to a folder used to reach
-			// getContent() anyway and land in the Throwable arm below, which
-			// reports "could not be read" — true but unhelpful, since the real
-			// answer is that the path is a directory.
-			if ($node instanceof File === false) {
+			if (($node instanceof File) === false) {
+				// `get()` answers a Node, and only a File can be read. Without
+				// this the folder case fell through to `getContent()`, which
+				// Node does not declare: the Throwable below caught it and
+				// reported "could not be read", so an operator who typed a
+				// directory path got the message for a corrupt file.
 				throw new InvalidArgumentException(
 					sprintf('The delivered file "%s" is a folder, not a file.', $path)
 				);
@@ -294,19 +288,16 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 		} catch (NotFoundException $e) {
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" is not there.', $path));
 		} catch (InvalidArgumentException $e) {
-			// Ours, thrown just above: it already says precisely what is wrong.
-			// Without this arm the Throwable catch below swallows it and reports
-			// the generic "could not be read" instead.
+			// The folder refusal above is already the message the operator
+			// needs. Without this clause the Throwable catch would swallow it
+			// and hand back "could not be read", which is the generic sentence
+			// the specific one was written to replace.
 			throw $e;
 		} catch (\Throwable $e) {
 			$this->logger->warning('migration-source.file.unreadable', ['path' => $path, 'error' => $e->getMessage()]);
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" could not be read.', $path));
 		}
 
-		if (is_string($read) === true) {
-			return $read;
-		}
-
-		return '';
+		return (is_string($read) === true ? $read : '');
 	}//end readFile()
 }//end class

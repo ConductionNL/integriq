@@ -87,6 +87,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
@@ -260,11 +261,10 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 * one-line helper so the static call is the whole of its surface.
 	 */
 	private function runAsSystem(callable $migrate): array {
-		if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
-			return \OCA\OpenRegister\Service\SystemOperationContext::run($migrate);
-		}
-
-		return $migrate();
+		// 🔴 NO FALLBACK. A repair step that silently migrates stored job
+		// classes as the acting user rewrites rows with the wrong principal
+		// recorded, during an upgrade, when nobody is watching a screen.
+		return SystemWrite::run(what: 'the stored job class migration', operation: $migrate);
 	}//end runAsSystem()
 
 	/**

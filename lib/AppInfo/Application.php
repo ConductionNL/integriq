@@ -30,6 +30,7 @@ use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientUnavailable;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -45,11 +46,13 @@ use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
 use OCA\Integriq\EventListener\NextcloudFileEventListener;
@@ -57,6 +60,7 @@ use OCA\Integriq\EventListener\NextcloudFileTagEventListener;
 use OCA\Integriq\EventListener\NextcloudFormsEventListener;
 use OCA\Integriq\EventListener\NextcloudTablesEventListener;
 use OCA\Integriq\EventListener\ObjectCreatedEventListener;
+use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
@@ -86,7 +90,13 @@ use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
+use OCA\Integriq\EventListener\DigitalPostSendRequestedListener;
 use OCA\Integriq\Gateway\GatewayCatalogue;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
+use OCA\Integriq\Service\DigitalPost\PostexProvider;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Gateway\SourceGatewayTransport;
@@ -107,6 +117,7 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -211,6 +222,15 @@ class Application extends App implements IBootstrap {
 
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
+
+		// registry-subscription-connector Task 3: the binding that was blocked
+		// on OpenRegister shipping the event. It has, and dispatches it from
+		// RegistrySubscriptionNotifier, so the wire shape is read rather than
+		// guessed.
+		$dispatcher->addServiceListener(
+			eventName: RegistrySubscriptionRequestedEvent::class,
+			className: RegistrySubscriptionRequestedListener::class
+		);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
@@ -233,6 +253,7 @@ class Application extends App implements IBootstrap {
 		// same CloudEvents pipeline (subscription routing, retry, dead-letter,
 		// replay) and writes the synchronous result slot back on the event.
 		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
 		// Connection registry (connection-registry D5/D6): apps report a
 		// connection status or ask for a fresh resolve with two typed events,
 		// and enabling or disabling an app syncs or resolves its declared
@@ -242,6 +263,13 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ConnectionRefreshRequestedEvent::class, ConnectionRefreshRequestedListener::class);
 		$context->registerEventListener(AppEnableEvent::class, ConnectionAppLifecycleListener::class);
 		$context->registerEventListener(AppDisableEvent::class, ConnectionAppLifecycleListener::class);
+		// Document generation (document-generation-vendor-adapter REQ-DGV-002):
+		// filinq asks for a vendor render with a typed command and reads the
+		// job id, or the structured refusal, off the same instance.
+		$context->registerEventListener(
+			DocumentRenderRequestedEvent::class,
+			DocumentRenderRequestedListener::class
+		);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to
@@ -410,6 +438,22 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The digital post bindings. `log` is registered last so a real binding
+		// always wins its own id and the development one only ever answers to
+		// `log`.
+		$context->registerService(
+			DigitalPostProviderRegistry::class,
+			static function ($c): DigitalPostProviderRegistry {
+				return new DigitalPostProviderRegistry(
+					[
+						$c->get(BerichtenboxProvider::class),
+						$c->get(PostexProvider::class),
+						$c->get(LogDigitalPostProvider::class),
+					]
+				);
+			}
+		);
+
 		// The statutory gateway entries. Declared in one place so the catalogue
 		// page and the gateway overview can never disagree about which laws this
 		// instance reaches.
@@ -493,6 +537,20 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			BerichtenboxClient::class,
 			static function ($c) {
+				$config = $c->get('OCP\IAppConfig');
+				$raw = $config->getValueString('integriq', 'logius.berichtenbox.feature_flag', '0');
+				$live = ($raw === '1' || strtolower($raw) === 'true');
+
+				// REQ-DPA-005: the flag selects the binding, and on a flagged
+				// instance the mock is not served at all. An operator who turns
+				// the flag on is asking for real letters; a simulated delivery
+				// there would be indistinguishable from a real one. Until
+				// BerichtenboxClientHttp exists, a flagged instance resolves to
+				// a binding that refuses and names what is missing.
+				if ($live === true) {
+					return $c->get(BerichtenboxClientUnavailable::class);
+				}
+
 				return $c->get(BerichtenboxClientMock::class);
 			}
 		);

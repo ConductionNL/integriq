@@ -4,24 +4,24 @@ Ordered so the bleeding stops first. Task 1 alone ends the storm; everything
 after it is hardening, performance, and cleanup.
 
 ## 1. Break the loop (ship first, independently)
-- [ ] 1.1 `CloudEventListener::handle()` — return early when the object's
+- [x] 1.1 `CloudEventListener::handle()` — return early when the object's
       register is `openconnector` AND its schema is one of
       `event` / `event_message` / `event_subscription`. Resolve register+schema
       from the `ObjectEntity` (`getRegister()` / `getSchema()`), never from the
       payload, so a crafted `type` cannot bypass it.
-- [ ] 1.2 Log ONE debug line per suppressed object (not per recursion level) so
+- [x] 1.2 Log ONE debug line per suppressed object (not per recursion level) so
       the guard is observable without recreating the flood.
-- [ ] 1.3 Regression test: dispatching `ObjectCreatedEvent` for an object in
+- [x] 1.3 Regression test: dispatching `ObjectCreatedEvent` for an object in
       `openconnector/event` MUST NOT call `EventService::handleObjectCreated`.
       This is the test that would have caught the bug.
 
 ## 2. Provenance guard (defence in depth)
-- [ ] 2.1 Stamp CloudEvents created by `EventService` with an explicit
+- [x] 2.1 Stamp CloudEvents created by `EventService` with an explicit
       generated-by marker.
-- [ ] 2.2 `CloudEventListener` drops any object carrying that marker regardless
+- [x] 2.2 `CloudEventListener` drops any object carrying that marker regardless
       of register/schema — survives a register rename or a same-slug schema
       copied into another register (the #2150 collision shape).
-- [ ] 2.3 Test: a marked object in a DIFFERENT register is still suppressed.
+- [x] 2.3 Test: a marked object in a DIFFERENT register is still suppressed.
 
 ## 3. Move processing off the request path
 - [ ] 3.1 New `lib/BackgroundJob/ProcessEventJob.php` (QueuedJob) taking the
@@ -59,3 +59,27 @@ after it is hardening, performance, and cleanup.
 - [ ] 6.3 larpingapp `crud-persistence` suite passes end-to-end, and the 24
       parked detail tests can be seeded and unparked.
 - [ ] 6.4 `composer check:strict` green.
+
+## What this branch landed, and what it deliberately did not
+
+Sections 1 and 2 are done, and section 2 is where the real hole was. When
+this change was written the listener had no guard at all. One landed since
+(via `outbound-webhooks-activation`) and it works, but it identifies the
+machinery's own rows by resolving schema ids from an existing row per
+schema, caching the answer statically for the PHP process. On an instance
+whose event table is empty, which is a fresh install and also the moment
+after section 5's purge, that resolves to nothing and the process keeps the
+empty answer. The guard is then inert for the rest of that worker's life,
+and nothing bounds what follows.
+
+So this branch adds the two things that survive that: a generated-by marker
+stamped on every CloudEvent this app writes, read back on the way in, which
+travels with the row and needs no lookup; and a per-request ceiling, so the
+answer to "what does a loop do before it is stopped" is at most
+`EventLoopGuard::MAX_CHAIN` events and a named refusal, rather than 255
+events per create and 45,398 rows.
+
+Sections 3 to 6 stay open on purpose. Moving processing to a queued job,
+caching the subscription set, the purge command and the instance-level
+verification are each a change of their own, and none of them is what stops
+the loop.
