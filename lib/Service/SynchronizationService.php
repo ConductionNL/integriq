@@ -4714,6 +4714,24 @@ class SynchronizationService {
 			}
 		}
 
+		// The source DID carry this record on this run, which is the whole
+		// meaning of reaching this point. DisappearanceApplier::markSeen()
+		// exists to answer that and had no caller: once a sweep flagged a
+		// record `absentAtSource`, or wrote it an `endedAt`, nothing ever
+		// cleared it again. A record that came back read as gone for ever, on
+		// every screen that asks RecordOwnershipService, and nothing said so.
+		$seen = (new DisappearanceApplier())->markSeen(
+			contract: $synchronizationContract,
+			runAt: gmdate('c')
+		);
+		$synchronizationContract = $seen['contract'];
+		if ($seen['cleared'] === true) {
+			$this->logger->info(
+				'synchronizeContract: the source carries this record again, so its absence flag is cleared',
+				['contractId' => ($synchronizationContract['uuid'] ?? ($synchronizationContract['id'] ?? null))]
+			);
+		}
+
 		$this->assignContractIdentity(contract: $synchronizationContract);
 
 		if ($this->lastTargetWriteBuffered === true) {

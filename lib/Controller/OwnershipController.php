@@ -186,7 +186,9 @@ class OwnershipController extends Controller {
 	 *
 	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#scenario-a-misspelled-policy-is-refused-at-save
 	 *
-	 * @no-admin-idor-exempt Pure validation of a sourceConfig supplied in the request. Reads no storage and accepts no object id.
+	 * @no-admin-idor-exempt Pure computation over the caller's own argument. The sourceConfig
+	 *   arrives in the request and the answer is whether its policy value is one this engine
+	 *   knows; no storage is read and no object is named, so there is nothing to scope.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

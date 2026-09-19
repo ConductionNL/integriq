@@ -26,12 +26,14 @@ use OCA\Integriq\Migration\ColumnMappingValidator;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\UnknownMigrationSourceException;
+use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Reads only. Nothing here writes to an incumbent system, and nothing here
@@ -41,6 +43,16 @@ use OCP\IRequest;
  */
 class MigrationSourcesController extends Controller {
 	/**
+	 * Reading an incumbent system's contents. Unset, this resolves to admin
+	 * only, which is what the spec scenario asks for: "an administrator sees
+	 * the size before committing". An operator can widen it in the action
+	 * matrix.
+	 *
+	 * @var string
+	 */
+	public const ACTION_PREVIEW = 'migration.preview';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
@@ -48,6 +60,8 @@ class MigrationSourcesController extends Controller {
 	 * @param MigrationSourceRegistry $registry The adapters.
 	 * @param MigrationPreviewReader $previewReader The read-only pass.
 	 * @param ColumnMappingValidator $validator The column mapping validator.
+	 * @param IUserSession $userSession Who is asking.
+	 * @param ActionAuthService $actionAuth Whether they may.
 	 */
 	public function __construct(
 		string $appName,
@@ -55,6 +69,8 @@ class MigrationSourcesController extends Controller {
 		private readonly MigrationSourceRegistry $registry,
 		private readonly MigrationPreviewReader $previewReader,
 		private readonly ColumnMappingValidator $validator,
+		private readonly IUserSession $userSession,
+		private readonly ActionAuthService $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -96,6 +112,20 @@ class MigrationSourcesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function preview(string $source, array $config = [], int $sampleSize = MigrationPreviewReader::DEFAULT_SAMPLE_SIZE): JSONResponse {
+		// 🔴 THIS RETURNS A SAMPLE OF AN INCUMBENT SYSTEM'S RECORDS. Counts
+		// alone would be revealing; the sample is the records themselves. With
+		// #[NoAdminRequired] and nothing else, every authenticated account on
+		// the instance could read any configured migration source by naming
+		// it. The spec scenario is "an administrator sees the size before
+		// committing", and an unset action resolves to admin only, so this
+		// restores the posture the spec already described.
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_PREVIEW);
+
 		try {
 			return new JSONResponse($this->previewReader->preview($source, $config, $sampleSize));
 		} catch (UnknownMigrationSourceException $e) {
@@ -117,8 +147,10 @@ class MigrationSourcesController extends Controller {
 	 *
 	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
 	 *
-	 * @no-admin-idor-exempt Pure validation of values supplied in the request: a column mapping is checked
-	 *     against field lists the caller also supplied. Reads no storage and accepts no object id.
+	 * @no-admin-idor-exempt Pure computation over the caller's own arguments. It reads no
+	 *   storage and names no object: the mapping, the schema fields and the required fields
+	 *   all arrive in the request, and the answer is derived from them alone. There is no
+	 *   object here to scope to a caller.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
