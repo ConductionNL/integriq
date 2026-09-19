@@ -189,9 +189,13 @@ class EnvironmentValueSource implements ExpressionValueSourceInterface {
 	 *
 	 * @param string $key The environment key.
 	 *
-	 * @return string|false The value, or false when it is not set.
+	 * The injected reader is an arbitrary `callable`, so it may answer null
+	 * where getenv() answers false. Both are "unset" to the caller, and the
+	 * check above distinguishes them from an empty string.
+	 *
+	 * @return string|false|null The value, or false/null when it is not set.
 	 */
-	private function readEnvironment(string $key): string|false {
+	private function readEnvironment(string $key): string|false|null {
 		if ($this->environmentRead !== null) {
 			return ($this->environmentRead)($key);
 		}

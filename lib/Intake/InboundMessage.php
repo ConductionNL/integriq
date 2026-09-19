@@ -206,12 +206,12 @@ final class InboundMessage {
 		// statements because the coding standard allows neither `?:` nor a
 		// ternary; `location` keeps null rather than [] because "no location"
 		// and "an empty location" are different answers.
-		$correspondent = self::arrayOr(value: ($object['correspondent'] ?? []), fallback: []);
-		$attachments = self::arrayOr(value: ($object['attachments'] ?? null), fallback: []);
-		$media = self::arrayOr(value: ($object['media'] ?? null), fallback: []);
-		$rawPayload = self::arrayOr(value: ($object['rawPayload'] ?? null), fallback: []);
-		$fields = self::arrayOr(value: ($object['fields'] ?? null), fallback: []);
-		$location = self::arrayOr(value: ($object['location'] ?? null), fallback: null);
+		$correspondent = self::mapOrEmpty(value: ($object['correspondent'] ?? []));
+		$attachments = self::listOrEmpty(value: ($object['attachments'] ?? null));
+		$media = self::listOrEmpty(value: ($object['media'] ?? null));
+		$rawPayload = self::mapOrEmpty(value: ($object['rawPayload'] ?? null));
+		$fields = self::mapOrEmpty(value: ($object['fields'] ?? null));
+		$location = self::mapOrNull(value: ($object['location'] ?? null));
 
 		$receivedAt = ($object['receivedAt'] ?? null);
 		if ($receivedAt !== null) {
@@ -234,20 +234,57 @@ final class InboundMessage {
 	}//end fromObject()
 
 	/**
-	 * The value when it is an array, the fallback when it is anything else.
+	 * The value when it is a list of records, an empty list otherwise.
+	 *
+	 * Separate from {@see self::mapOrEmpty()} because the constructor's
+	 * `attachments` and `media` are `array<int,array<string,mixed>>`, and a
+	 * single helper returning `array<string,mixed>|null` satisfies neither
+	 * that shape nor its non-nullability.
 	 *
 	 * @param mixed $value The stored value.
-	 * @param array<string,mixed>|null $fallback What a non-array becomes.
 	 *
-	 * @return array<string,mixed>|null The narrowed value.
+	 * @return array<int,array<string,mixed>> The list.
 	 */
-	private static function arrayOr(mixed $value, ?array $fallback): ?array {
+	private static function listOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return array_values($value);
+		}
+
+		return [];
+	}//end listOrEmpty()
+
+	/**
+	 * The value when it is a map, an empty map otherwise.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed> The map.
+	 */
+	private static function mapOrEmpty(mixed $value): array {
 		if (is_array($value) === true) {
 			return $value;
 		}
 
-		return $fallback;
-	}//end arrayOr()
+		return [];
+	}//end mapOrEmpty()
+
+	/**
+	 * The value when it is a map, null otherwise.
+	 *
+	 * `location` keeps null rather than an empty map, because "no location"
+	 * and "an empty location" are different answers.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed>|null The map, or null.
+	 */
+	private static function mapOrNull(mixed $value): ?array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return null;
+	}//end mapOrNull()
 
 	/**
 	 * Strip the bytes out of a file list.
