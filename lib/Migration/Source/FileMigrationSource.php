@@ -279,26 +279,10 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 			throw new InvalidArgumentException('A file migration needs a path to the delivered file.');
 		}
 
-		// SCOPED TO THE CALLER'S OWN FOLDER.
-		//
-		// This read `$this->rootFolder->get($path)` — the SERVER root — with a
-		// path taken straight from the request, on an endpoint that is
-		// #[NoAdminRequired]. Any authenticated account could name any path on
-		// the instance and get the bytes back in the preview. Resolving through
-		// the acting user's folder makes the path mean what an operator typing
-		// it would assume it means, and makes another user's files unreachable
-		// rather than merely undocumented.
-		$user = null;
-		if ($this->userSession !== null) {
-			$user = $this->userSession->getUser();
-		}
-
-		if ($user === null) {
-			throw new InvalidArgumentException('A file migration needs a signed-in user to read the delivered file as.');
-		}
+		$uid = $this->actingUid();
 
 		try {
-			$node = $this->rootFolder->getUserFolder($user->getUID())->get($path);
+			$node = $this->rootFolder->getUserFolder($uid)->get($path);
 			if (($node instanceof File) === false) {
 				// `get()` answers a Node, and only a File can be read. Without
 				// this the folder case fell through to `getContent()`, which
@@ -330,4 +314,36 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		return '';
 	}//end readFile()
+	/**
+	 * The uid whose folder bounds a delivered-file read.
+	 *
+	 * SCOPED TO THE CALLER'S OWN FOLDER. readFile() used to resolve the path
+	 * through `IRootFolder::get()` — the SERVER root — with a path taken
+	 * straight from the request, on an endpoint that is #[NoAdminRequired]. Any
+	 * authenticated account could name any path on the instance and get the
+	 * bytes back in the preview. Resolving through the acting user's folder
+	 * makes the path mean what an operator typing it would assume it means, and
+	 * makes another user's files unreachable rather than merely undocumented.
+	 *
+	 * Its own method because readFile() is at the cyclomatic limit, and because
+	 * "whose files is this" deserves to be findable.
+	 *
+	 * @return string The acting user's uid.
+	 *
+	 * @throws InvalidArgumentException When nobody is signed in.
+	 *
+	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md
+	 */
+	private function actingUid(): string {
+		$user = null;
+		if ($this->userSession !== null) {
+			$user = $this->userSession->getUser();
+		}
+
+		if ($user === null) {
+			throw new InvalidArgumentException('A file migration needs a signed-in user to read the delivered file as.');
+		}
+
+		return $user->getUID();
+	}//end actingUid()
 }//end class
