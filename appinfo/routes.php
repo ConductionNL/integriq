@@ -238,7 +238,10 @@ return [
 		// Platform/Tool, never by an NC session; authentication is the
 		// protocol itself (signed id_token / RFC 7523 client assertion /
 		// previously-issued access token), enforced inside LtiController.
-		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET'],
+		// Both verbs are the OIDC third-party login initiation. A route name
+		// carries no verb, so without a 'postfix' this entry and the POST below
+		// register as one name and only the last one survives.
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET', 'postfix' => 'Get'],
 		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'POST'],
 		['name' => 'lti#launch', 'url' => '/api/lti/{deployment}/launch', 'verb' => 'POST'],
 		['name' => 'lti#token', 'url' => '/api/lti/token', 'verb' => 'POST'],
@@ -627,7 +630,14 @@ return [
 		['name' => 'genericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
-		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
+		// The 'postfix' goes on THIS entry, not on the catch-all further down.
+		// Both name the same controller action, so one of the two had to be
+		// renamed, and the catch-all is the one that already answers to
+		// 'integriq.ui.dashboard': info.xml navigation and
+		// Flow\SynchronizationLogActions both resolve that name, and the latter
+		// passes ['path' => ''], which only the catch-all takes as a path
+		// segment rather than as a query string.
+		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET', 'postfix' => 'Index'],
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'ui#sourcesLogs', 'url' => '/sources/logs', 'verb' => 'GET'],
 		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],
