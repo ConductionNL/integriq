@@ -248,7 +248,10 @@ class EmlParser {
 			return null;
 		}
 
-		$value = ($matches[2] !== '' ? $matches[2] : ($matches[3] ?? ''));
+		$value = ($matches[3] ?? '');
+		if ($matches[2] !== '') {
+			$value = $matches[2];
+		}
 		return $this->decodeWords(trim($value));
 
 	}//end parameter()

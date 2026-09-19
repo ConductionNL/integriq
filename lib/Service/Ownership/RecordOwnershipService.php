@@ -149,7 +149,10 @@ class RecordOwnershipService {
 		}
 
 		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$declared = (is_array($sourceConfig) === true ? ($sourceConfig[self::MODE_KEY] ?? null) : null);
+		$declared = null;
+		if (is_array($sourceConfig) === true) {
+			$declared = ($sourceConfig[self::MODE_KEY] ?? null);
+		}
 
 		if ($declared === null || $declared === '') {
 			return OwnershipState::MODE_SOURCE;
@@ -226,7 +229,10 @@ class RecordOwnershipService {
 		}
 
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+			if ($entity instanceof ObjectEntity === true) {
+				$data = $entity->getObject();
+			}
 			if (is_array($data) === false) {
 				continue;
 			}

@@ -303,6 +303,10 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 			throw new InvalidArgumentException(sprintf('The delivered file "%s" could not be read.', $path));
 		}
 
-		return (is_string($read) === true ? $read : '');
+		if (is_string($read) === true) {
+			return $read;
+		}
+
+		return '';
 	}//end readFile()
 }//end class

@@ -134,7 +134,10 @@ class MappingVersionService {
 	 * @return array{version:string,mapping:array<string,mixed>} The version used and its mapping.
 	 */
 	public function resolve(string $slug, string $recordedVersion, ?string $requested = null): array {
-		$wanted = (($requested === null || trim($requested) === '') ? $recordedVersion : trim($requested));
+		$wanted = $recordedVersion;
+		if ($requested !== null && trim($requested) !== '') {
+			$wanted = trim($requested);
+		}
 
 		$snapshot = $this->find($slug, $wanted);
 		if ($snapshot !== null) {

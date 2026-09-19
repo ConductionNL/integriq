@@ -201,23 +201,53 @@ final class InboundMessage {
 	 * @return self The message.
 	 */
 	public static function fromObject(array $object): self {
-		$correspondent = ($object['correspondent'] ?? []);
-		$location = ($object['location'] ?? null);
+		// A stored payload is whatever was written, so every list-shaped field
+		// is narrowed to an array before it reaches the constructor. Written as
+		// statements because the coding standard allows neither `?:` nor a
+		// ternary; `location` keeps null rather than [] because "no location"
+		// and "an empty location" are different answers.
+		$correspondent = self::arrayOr(($object['correspondent'] ?? []), []);
+		$attachments = self::arrayOr(($object['attachments'] ?? null), []);
+		$media = self::arrayOr(($object['media'] ?? null), []);
+		$rawPayload = self::arrayOr(($object['rawPayload'] ?? null), []);
+		$fields = self::arrayOr(($object['fields'] ?? null), []);
+		$location = self::arrayOr(($object['location'] ?? null), null);
+
+		$receivedAt = ($object['receivedAt'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
 
 		return new self(
 			(string)($object['channelId'] ?? ''),
 			(string)($object['externalId'] ?? ''),
-			(is_array($correspondent) === true ? $correspondent : []),
+			$correspondent,
 			(string)($object['text'] ?? ''),
-			(is_array(($object['attachments'] ?? null)) === true ? $object['attachments'] : []),
-			(is_array($location) === true ? $location : null),
-			(is_array(($object['media'] ?? null)) === true ? $object['media'] : []),
-			(is_array(($object['rawPayload'] ?? null)) === true ? $object['rawPayload'] : []),
-			(($object['receivedAt'] ?? null) === null ? null : (string)$object['receivedAt']),
-			(is_array(($object['fields'] ?? null)) === true ? $object['fields'] : []),
+			$attachments,
+			$location,
+			$media,
+			$rawPayload,
+			$receivedAt,
+			$fields,
 		);
 
 	}//end fromObject()
+
+	/**
+	 * The value when it is an array, the fallback when it is anything else.
+	 *
+	 * @param mixed $value The stored value.
+	 * @param array<string,mixed>|null $fallback What a non-array becomes.
+	 *
+	 * @return array<string,mixed>|null The narrowed value.
+	 */
+	private static function arrayOr(mixed $value, ?array $fallback): ?array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return $fallback;
+	}//end arrayOr()
 
 	/**
 	 * Strip the bytes out of a file list.

@@ -60,7 +60,11 @@ class SubscriptionRoster {
 		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
 	}//end identities()
 
 	/**

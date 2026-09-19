@@ -132,7 +132,10 @@ class MsgParser {
 			$value = $reader->readStream($childId);
 			if ($type === '001F') {
 				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $value);
-				$value = ($converted === false ? '' : $converted);
+				$value = $converted;
+				if ($converted === false) {
+					$value = '';
+				}
 			}
 
 			// A property present twice keeps the first, matching the EML reader.
@@ -249,7 +252,10 @@ class MsgParser {
 	 * @return array<int,string> The recipients.
 	 */
 	private function recipients(string $displayTo, array $headers): array {
-		$source = ($displayTo !== '' ? $displayTo : (string)($headers['to'] ?? ''));
+		$source = (string)($headers['to'] ?? '');
+		if ($displayTo !== '') {
+			$source = $displayTo;
+		}
 		$recipients = [];
 		$parts = preg_split('/[;,]/', $source);
 		if ($parts === false) {

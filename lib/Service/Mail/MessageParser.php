@@ -80,7 +80,10 @@ class MessageParser {
 	 * @return ParsedMessage The fallback message.
 	 */
 	private function fallback(string $filename, string $raw, string $reason): ParsedMessage {
-		$safeName = (basename($filename) !== '' ? basename($filename) : 'message');
+		$safeName = 'message';
+		if (basename($filename) !== '') {
+			$safeName = basename($filename);
+		}
 
 		return new ParsedMessage(
 			'sha256:' . hash('sha256', $raw),

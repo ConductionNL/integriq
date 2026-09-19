@@ -216,10 +216,17 @@ class OutboundSecurityService {
 			$signed = false;
 		}
 
-		$payload = ($signed === true ? (string)@file_get_contents($output) : null);
+		$payload = null;
+		if ($signed === true) {
+			$payload = (string)@file_get_contents($output);
+		}
 		$this->remove([$input, $output]);
 
-		return (($payload === null || $payload === '') ? null : $payload);
+		if (($payload === null || $payload === '')) {
+			return null;
+		}
+
+		return $payload;
 
 	}//end sign()
 
@@ -244,10 +251,17 @@ class OutboundSecurityService {
 			$encrypted = false;
 		}
 
-		$payload = ($encrypted === true ? (string)@file_get_contents($output) : null);
+		$payload = null;
+		if ($encrypted === true) {
+			$payload = (string)@file_get_contents($output);
+		}
 		$this->remove([$input, $output]);
 
-		return (($payload === null || $payload === '') ? null : $payload);
+		if (($payload === null || $payload === '')) {
+			return null;
+		}
+
+		return $payload;
 
 	}//end encrypt()
 

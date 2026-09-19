@@ -350,7 +350,10 @@ final class CompoundFileReader {
 			if ($nameLength > 2) {
 				$utf16 = substr($raw, $base, ($nameLength - 2));
 				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $utf16);
-				$name = ($converted === false ? '' : $converted);
+				$name = $converted;
+				if ($converted === false) {
+					$name = '';
+				}
 			}
 
 			$type = ord(substr($raw, ($base + 66), 1));

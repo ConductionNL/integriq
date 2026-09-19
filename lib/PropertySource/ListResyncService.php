@@ -72,7 +72,11 @@ class ListResyncService {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, '[]');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
 	}//end currentList()
 
 	/**

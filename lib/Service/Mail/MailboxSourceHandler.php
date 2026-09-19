@@ -89,7 +89,10 @@ class MailboxSourceHandler {
 
 		$created = 0;
 		$skipped = 0;
-		$latest = ($cursor === null ? null : (string)$cursor);
+		$latest = (string)$cursor;
+		if ($cursor === null) {
+			$latest = null;
+		}
 		$pattern = ($configuration['casePattern'] ?? null);
 		foreach ($messages as $message) {
 			if ($this->intakeService->findByMessageId($sourceId, $message->getMessageId()) !== null) {

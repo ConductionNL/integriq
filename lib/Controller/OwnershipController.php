@@ -208,6 +208,10 @@ class OwnershipController extends Controller {
 
 		$data = $entity->getObject();
 
-		return (is_array($data) === true ? $data : []);
+		if (is_array($data) === true) {
+			return $data;
+		}
+
+		return [];
 	}//end readObject()
 }//end class

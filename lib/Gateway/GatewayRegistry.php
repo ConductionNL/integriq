@@ -62,7 +62,11 @@ class GatewayRegistry {
 	 * @throws InvalidArgumentException When the entry cannot be registered.
 	 */
 	public function register(array|GatewayDescriptor $entry): GatewayDescriptor {
-		$descriptor = ($entry instanceof GatewayDescriptor ? $entry : GatewayDescriptor::fromArray($entry));
+		if ($entry instanceof GatewayDescriptor) {
+			$descriptor = $entry;
+		} else {
+			$descriptor = GatewayDescriptor::fromArray($entry);
+		}
 		$this->gateways[$descriptor->getId()] = $descriptor;
 
 		return $descriptor;
