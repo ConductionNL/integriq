@@ -112,14 +112,14 @@ class CallRecorder {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			'request' => $this->redactor->redactContext($this->asArray(($call['request'] ?? []))),
-			'response' => $this->redactor->redactContext($this->asArray(($call['response'] ?? []))),
+			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
+			'response' => $this->redactor->redactContext($this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
 			'durationMs' => (int)($call['durationMs'] ?? 0),
 			'kind' => $kind,
 			'firedBy' => (string)($call['firedBy'] ?? ''),
-			'retryPolicy' => $this->asArray(($call['retryPolicy'] ?? [])),
+			'retryPolicy' => $this->asArray(value: ($call['retryPolicy'] ?? [])),
 			'mapping' => (string)($call['mapping'] ?? ''),
 			'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 			'deadLettered' => false,
@@ -131,7 +131,7 @@ class CallRecorder {
 					'by' => (string)($call['firedBy'] ?? ''),
 					'kind' => $kind,
 					'statusCode' => $statusCode,
-					'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+					'outcome' => $this->outcomeOf(statusCode: $statusCode),
 					'detail' => (string)($call['statusMessage'] ?? ''),
 					'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 				],
@@ -159,7 +159,7 @@ class CallRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function appendAttempt(string $uuid, array $attempt): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$statusCode = (int)($attempt['statusCode'] ?? 0);
 
 		$record['attempts'][] = [
@@ -167,19 +167,19 @@ class CallRecorder {
 			'by' => (string)($attempt['by'] ?? ''),
 			'kind' => (string)($attempt['kind'] ?? self::KIND_REPLAYED),
 			'statusCode' => $statusCode,
-			'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+			'outcome' => $this->outcomeOf(statusCode: $statusCode),
 			'detail' => (string)($attempt['detail'] ?? ''),
 			'mappingVersion' => (string)($attempt['mappingVersion'] ?? ($record['mappingVersion'] ?? '')),
 		];
 
 		if (isset($attempt['response']) === true) {
-			$record['response'] = $this->redactor->redactContext($this->asArray($attempt['response']));
+			$record['response'] = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
 		}
 
 		$record['statusCode'] = $statusCode;
 		$record['statusMessage'] = (string)($attempt['detail'] ?? $record['statusMessage'] ?? '');
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end appendAttempt()
 
@@ -192,11 +192,11 @@ class CallRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function markDeadLettered(string $uuid, string $deadLetterRef = ''): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$record['deadLettered'] = true;
 		$record['deadLetterRef'] = $deadLetterRef;
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end markDeadLettered()
 
@@ -240,6 +240,24 @@ class CallRecorder {
 		return ($statusCode >= 200 && $statusCode < 300);
 
 	}//end isSuccess()
+
+	/**
+	 * How an attempt that ended on this status is recorded.
+	 *
+	 * @param int $statusCode The HTTP status the call ended on.
+	 *
+	 * @return string 'succeeded' for 2xx, 'failed' otherwise.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md
+	 */
+	private function outcomeOf(int $statusCode): string {
+		if ($this->isSuccess(statusCode: $statusCode) === true) {
+			return 'succeeded';
+		}
+
+		return 'failed';
+
+	}//end outcomeOf()
 
 	/**
 	 * Coerce a request or response bag to an array.

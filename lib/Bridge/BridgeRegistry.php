@@ -76,7 +76,11 @@ class BridgeRegistry {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::BRIDGES_KEY, '{}');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
 	}//end all()
 
 	/**
@@ -91,16 +95,22 @@ class BridgeRegistry {
 	public function register(string $bridgeId, string $label = ''): array {
 		$token = $this->random->generate(64);
 		$bridges = $this->all();
+
+		$displayLabel = $bridgeId;
+		if ($label !== '') {
+			$displayLabel = $label;
+		}
+
 		$bridges[$bridgeId] = [
 			'id' => $bridgeId,
-			'label' => ($label ?: $bridgeId),
+			'label' => $displayLabel,
 			'state' => self::STATE_ACTIVE,
 			'tokenHash' => hash('sha256', $token),
 			'registeredAt' => gmdate('c'),
 			'revokedAt' => null,
 		];
 
-		$this->store($bridges);
+		$this->store(bridges: $bridges);
 		$this->logger->info('bridge.registered', ['bridge' => $bridgeId]);
 
 		return ($bridges[$bridgeId] + ['token' => $token]);
@@ -121,7 +131,7 @@ class BridgeRegistry {
 
 		$bridges[$bridgeId]['state'] = self::STATE_REVOKED;
 		$bridges[$bridgeId]['revokedAt'] = gmdate('c');
-		$this->store($bridges);
+		$this->store(bridges: $bridges);
 		$this->logger->warning('bridge.revoked', ['bridge' => $bridgeId]);
 
 		return true;
@@ -165,6 +175,11 @@ class BridgeRegistry {
 	 * @return void
 	 */
 	private function store(array $bridges): void {
-		$this->appConfig->setValueString(self::APP_ID, self::BRIDGES_KEY, (json_encode($bridges) ?: '{}'));
+		$encoded = json_encode($bridges);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::BRIDGES_KEY, $encoded);
 	}//end store()
 }//end class

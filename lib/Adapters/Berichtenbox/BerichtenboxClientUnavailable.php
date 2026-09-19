@@ -62,7 +62,7 @@ class BerichtenboxClientUnavailable extends BerichtenboxClient {
 	public function dispatch(array $message, string $certificateRef): array {
 		unset($message);
 
-		throw new RuntimeException($this->refusal($certificateRef));
+		throw new RuntimeException($this->refusal(certificateRef: $certificateRef));
 	}//end dispatch()
 
 	/**
@@ -79,7 +79,7 @@ class BerichtenboxClientUnavailable extends BerichtenboxClient {
 	public function verifyWebhook(string $rawBody, array $headers): array {
 		unset($rawBody, $headers);
 
-		throw new RuntimeException($this->refusal(''));
+		throw new RuntimeException($this->refusal(certificateRef: ''));
 	}//end verifyWebhook()
 
 	/**
@@ -94,7 +94,7 @@ class BerichtenboxClientUnavailable extends BerichtenboxClient {
 	public function checkMailbox(string $bsn): array {
 		unset($bsn);
 
-		throw new RuntimeException($this->refusal(''));
+		throw new RuntimeException($this->refusal(certificateRef: ''));
 	}//end checkMailbox()
 
 	/**

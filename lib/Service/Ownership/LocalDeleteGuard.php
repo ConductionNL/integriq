@@ -53,7 +53,7 @@ class LocalDeleteGuard {
 		}
 
 		if ($reason === null) {
-			throw new InvalidArgumentException($this->refusalMessage($ownership));
+			throw new InvalidArgumentException($this->refusalMessage(ownership: $ownership));
 		}
 
 		if (trim($reason) === '') {

@@ -72,7 +72,11 @@ class DigikoppelingBrokerResolver {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::BROKERS_KEY, '{}');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
 	}//end available()
 
 	/**
@@ -87,11 +91,16 @@ class DigikoppelingBrokerResolver {
 		$available = $this->available();
 
 		if ($selected === '') {
+			$none = '(no brokers configured)';
+			if ($available !== []) {
+				$none = implode(', ', array_keys($available));
+			}
+
 			throw new BrokerConfigurationException(
 				sprintf(
 					'No Digikoppeling broker is selected. Set "%s" to one of: %s. Nothing was sent.',
 					self::SELECTED_KEY,
-					($available === [] ? '(no brokers configured)' : implode(', ', array_keys($available)))
+					$none
 				)
 			);
 		}
@@ -101,7 +110,7 @@ class DigikoppelingBrokerResolver {
 				sprintf(
 					'The selected Digikoppeling broker "%s" is not configured. Configured brokers: %s. Nothing was sent.',
 					$selected,
-					($available === [] ? '(none)' : implode(', ', array_keys($available)))
+					self::describe(brokers: $available)
 				)
 			);
 		}
@@ -133,22 +142,33 @@ class DigikoppelingBrokerResolver {
 				sprintf(
 					'"%s" is not a configured Digikoppeling broker. Configured brokers: %s.',
 					$brokerId,
-					($available === [] ? '(none)' : implode(', ', array_keys($available)))
+					self::describe(brokers: $available)
 				)
 			);
 		}
 
 		$previous = $this->appConfig->getValueString(self::APP_ID, self::SELECTED_KEY, '');
+
+		$from = null;
+		if ($previous !== '') {
+			$from = $previous;
+		}
+
 		$audit = $this->audit();
 		$audit[] = [
-			'from' => ($previous ?: null),
+			'from' => $from,
 			'to' => $brokerId,
 			'by' => $userId,
 			'at' => gmdate('c'),
 		];
 
+		$encoded = json_encode($audit);
+		if ($encoded === false) {
+			$encoded = '[]';
+		}
+
 		$this->appConfig->setValueString(self::APP_ID, self::SELECTED_KEY, $brokerId);
-		$this->appConfig->setValueString(self::APP_ID, self::AUDIT_KEY, (json_encode($audit) ?: '[]'));
+		$this->appConfig->setValueString(self::APP_ID, self::AUDIT_KEY, $encoded);
 
 		$this->logger->info('digikoppeling.broker.changed', ['from' => $previous, 'to' => $brokerId, 'by' => $userId]);
 
@@ -164,6 +184,27 @@ class DigikoppelingBrokerResolver {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::AUDIT_KEY, '[]');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
 	}//end audit()
+
+	/**
+	 * Name the configured brokers for a refusal message.
+	 *
+	 * @param array<string,mixed> $brokers The configured brokers.
+	 *
+	 * @return string The broker ids, or '(none)' when none are configured.
+	 *
+	 * @spec openspec/specs/digikoppeling-broker/spec.md
+	 */
+	private static function describe(array $brokers): string {
+		if ($brokers === []) {
+			return '(none)';
+		}
+
+		return implode(', ', array_keys($brokers));
+	}//end describe()
 }//end class

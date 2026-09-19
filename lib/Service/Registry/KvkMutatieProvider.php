@@ -64,9 +64,9 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
-			'/abonnementen',
-			'POST',
-			['body' => ['kvkNummer' => $identity]]
+			endpoint: '/abonnementen',
+			method: 'POST',
+			config: ['body' => ['kvkNummer' => $identity]]
 		);
 
 		if ($outcome['error'] !== '') {
@@ -84,7 +84,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * @return void
 	 */
 	public function unsubscribe(string $identity): void {
-		$this->callSource('/abonnementen/' . rawurlencode($identity), 'DELETE');
+		$this->callSource(endpoint: '/abonnementen/' . rawurlencode($identity), method: 'DELETE');
 	}//end unsubscribe()
 
 	/**
@@ -100,9 +100,9 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 		}
 
 		$outcome = $this->callSource(
-			'/mutaties',
-			'GET',
-			['query' => ['kvkNummer' => implode(',', $identities)]]
+			endpoint: '/mutaties',
+			method: 'GET',
+			config: ['query' => ['kvkNummer' => implode(',', $identities)]]
 		);
 
 		if ($outcome['error'] !== '') {

@@ -126,13 +126,18 @@ final class GatewayDescriptor {
 
 		$jurisdiction = ($entry['jurisdiction'] ?? null);
 
+		$where = null;
+		if ($jurisdiction !== null && $jurisdiction !== '') {
+			$where = (string)$jurisdiction;
+		}
+
 		return new self(
 			$id,
 			(string)($entry['label'] ?? $id),
 			$standard,
 			$claimLevel,
 			$claimEvidence,
-			(($jurisdiction === null || $jurisdiction === '') ? null : (string)$jurisdiction),
+			$where,
 			array_values((array)($entry['wmebvMet'] ?? [])),
 			array_values((array)($entry['wmebvHandedToConsumer'] ?? [])),
 			(string)($entry['transport'] ?? 'https')

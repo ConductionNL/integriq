@@ -66,7 +66,7 @@ class RegistrySourceGateway {
 	public function read(string $providerId, string $sourceSlug, string $endpoint, array $query = []): array {
 		$source = $this->connectionStore->findSourceBySlug(slug: $sourceSlug);
 		if ($source instanceof ObjectEntity === false) {
-			throw new MissingSourceConfigurationException($providerId, $sourceSlug);
+			throw new MissingSourceConfigurationException(providerId: $providerId, sourceSlug: $sourceSlug);
 		}
 
 		try {
@@ -85,15 +85,15 @@ class RegistrySourceGateway {
 					'error' => $e->getMessage(),
 				]
 			);
-			throw new SourceUnreachableException($providerId, sprintf('Source "%s" did not answer: %s', $sourceSlug, $e->getMessage()));
+			throw new SourceUnreachableException(providerId: $providerId, message: sprintf('Source "%s" did not answer: %s', $sourceSlug, $e->getMessage()));
 		}
 
 		$data = $callLog->getObject();
 		$status = (int)($data['statusCode'] ?? 0);
 		if ($status < 200 || $status > 299) {
 			throw new SourceUnreachableException(
-				$providerId,
-				sprintf('Source "%s" answered HTTP %d.', $sourceSlug, $status)
+				providerId: $providerId,
+				message: sprintf('Source "%s" answered HTTP %d.', $sourceSlug, $status)
 			);
 		}
 
@@ -104,8 +104,8 @@ class RegistrySourceGateway {
 
 		if (is_array($body) === false) {
 			throw new SourceUnreachableException(
-				$providerId,
-				sprintf('Source "%s" answered a body this binding cannot read.', $sourceSlug)
+				providerId: $providerId,
+				message: sprintf('Source "%s" answered a body this binding cannot read.', $sourceSlug)
 			);
 		}
 

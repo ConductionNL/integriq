@@ -83,14 +83,25 @@ class MailboxSourceHandler {
 			$configuration = [];
 		}
 
-		$transport = $this->resolveTransport($configuration);
+		$transport = $this->resolveTransport(configuration: $configuration);
+
 		$cursor = ($configuration['sinceCursor'] ?? null);
-		$messages = $transport->fetch($configuration, ($cursor === null ? null : (string)$cursor));
+		$since = null;
+		if ($cursor !== null) {
+			$since = (string)$cursor;
+		}
+
+		$messages = $transport->fetch($configuration, $since);
 
 		$created = 0;
 		$skipped = 0;
-		$latest = ($cursor === null ? null : (string)$cursor);
+		$latest = $since;
+
 		$pattern = ($configuration['casePattern'] ?? null);
+		if ($pattern !== null) {
+			$pattern = (string)$pattern;
+		}
+
 		foreach ($messages as $message) {
 			if ($this->intakeService->findByMessageId($sourceId, $message->getMessageId()) !== null) {
 				$skipped++;
@@ -100,14 +111,14 @@ class MailboxSourceHandler {
 			$this->intakeService->intake(
 				$sourceId,
 				$message,
-				($pattern === null ? null : (string)$pattern)
+				$pattern
 			);
 			$created++;
-			$latest = $this->later($latest, $message->getReceivedAt());
+			$latest = $this->later(current: $latest, candidate: $message->getReceivedAt());
 		}
 
-		if ($latest !== ($cursor === null ? null : (string)$cursor)) {
-			$this->storeCursor($source, $object, $configuration, $latest);
+		if ($latest !== $since) {
+			$this->storeCursor(source: $source, object: $object, configuration: $configuration, cursor: $latest);
 		}
 
 		return [
@@ -144,13 +155,13 @@ class MailboxSourceHandler {
 
 		if ($transport === null) {
 			throw new MailboxTransportException(
-				'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
+				message: 'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
 			);
 		}
 
 		if ($transport->isUsable() === false) {
 			throw new MailboxTransportException(
-				'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
+				message: 'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
 			);
 		}
 
@@ -175,7 +186,11 @@ class MailboxSourceHandler {
 			return $candidate;
 		}
 
-		return (strtotime($candidate) > strtotime($current) ? $candidate : $current);
+		if (strtotime($candidate) > strtotime($current)) {
+			return $candidate;
+		}
+
+		return $current;
 
 	}//end later()
 

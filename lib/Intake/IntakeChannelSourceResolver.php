@@ -106,7 +106,7 @@ class IntakeChannelSourceResolver {
 	 * @return array<string,mixed>|null The configuration, or null when the channel has no source.
 	 */
 	public function configurationFor(string $channelId): ?array {
-		$source = $this->sourceFor($channelId);
+		$source = $this->sourceFor(channelId: $channelId);
 		if ($source === null) {
 			return null;
 		}

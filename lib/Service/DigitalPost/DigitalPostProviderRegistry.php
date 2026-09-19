@@ -75,11 +75,16 @@ class DigitalPostProviderRegistry {
 	 */
 	public function get(string $providerId): DigitalPostProviderInterface {
 		if (isset($this->providers[$providerId]) === false) {
+			$registered = '(none)';
+			if ($this->ids() !== []) {
+				$registered = implode(', ', $this->ids());
+			}
+
 			throw new RuntimeException(
 				sprintf(
 					'No digital post provider is registered under "%s". Registered providers: %s. Nothing was sent.',
 					$providerId,
-					($this->ids() === [] ? '(none)' : implode(', ', $this->ids()))
+					$registered
 				)
 			);
 		}

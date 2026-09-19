@@ -108,7 +108,7 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * @return DigitalPostResult What Postex answered, or the refusal.
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult {
-		$refusals = $this->activationRefusals($config);
+		$refusals = $this->activationRefusals(config: $config);
 		if ($refusals !== []) {
 			return DigitalPostResult::refused(implode(' ', $refusals));
 		}

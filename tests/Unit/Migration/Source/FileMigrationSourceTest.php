@@ -293,4 +293,38 @@ class FileMigrationSourceTest extends TestCase {
 
 		ColumnMapping::fromArray(['name' => 'leeg', 'columns' => []]);
 	}//end testAMappingWithNoColumnsIsRefused()
+
+	/**
+	 * The record kind comes from the stored mapping, not from the kind the
+	 * caller asked to read.
+	 *
+	 * Every other test in this file passes 'case' on both sides, so both
+	 * readings produce the same answer and neither can be told apart. They
+	 * differ here on purpose: reading the caller's kind instead of the
+	 * mapping's would send every record to the wrong target.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordKindComesFromTheMapping(): void {
+		$mapping = $this->storedMapping();
+		$mapping['kind'] = 'besluit';
+
+		$records = $this->source()->read('case', ['content' => self::DELIVERY, 'mapping' => $mapping]);
+
+		$this->assertSame('besluit', $records[0]->getKind());
+	}//end testTheRecordKindComesFromTheMapping()
+
+	/**
+	 * A mapping that names no kind produces plain rows.
+	 *
+	 * @return void
+	 */
+	public function testAMappingWithoutAKindProducesRows(): void {
+		$mapping = $this->storedMapping();
+		$mapping['kind'] = '';
+
+		$records = $this->source()->read('case', ['content' => self::DELIVERY, 'mapping' => $mapping]);
+
+		$this->assertSame('row', $records[0]->getKind());
+	}//end testAMappingWithoutAKindProducesRows()
 }//end class

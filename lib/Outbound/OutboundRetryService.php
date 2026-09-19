@@ -73,7 +73,7 @@ class OutboundRetryService {
 	 */
 	public function retry(string $uuid, string $actorUid): array {
 		$record = $this->recorder->read($uuid);
-		$addresses = $this->failedRecipients($record);
+		$addresses = $this->failedRecipients(record: $record);
 		if ($addresses === []) {
 			return [
 				'message' => $uuid,
@@ -83,7 +83,7 @@ class OutboundRetryService {
 			];
 		}
 
-		[$succeeded, $detail] = $this->redispatch($uuid, $record, $addresses);
+		[$succeeded, $detail] = $this->redispatch(uuid: $uuid, record: $record, addresses: $addresses);
 		$this->recorder->appendAttempt($uuid, $actorUid, $addresses, $succeeded, $detail);
 
 		return [
@@ -112,7 +112,7 @@ class OutboundRetryService {
 		$failed = 0;
 		foreach ($uuids as $uuid) {
 			try {
-				$outcome = $this->retry((string)$uuid, $actorUid);
+				$outcome = $this->retry(uuid: (string)$uuid, actorUid: $actorUid);
 			} catch (Throwable $exception) {
 				$outcome = [
 					'message' => (string)$uuid,
@@ -146,20 +146,20 @@ class OutboundRetryService {
 	 */
 	private function redispatch(string $uuid, array $record, array $addresses): array {
 		$request = new DeliveryRequestedEvent(
-			(string)($record['sourceApp'] ?? 'integriq'),
-			MessageRecorder::REGISTER,
-			MessageRecorder::SCHEMA,
-			$uuid,
-			(string)($record['subject'] ?? ''),
-			self::DELIVERY_KIND,
-			(string)($record['channel'] ?? ''),
-			[
+			sourceApp: (string)($record['sourceApp'] ?? 'integriq'),
+			subjectRegister: MessageRecorder::REGISTER,
+			subjectSchema: MessageRecorder::SCHEMA,
+			subjectId: $uuid,
+			subjectLabel: (string)($record['subject'] ?? ''),
+			deliveryKind: self::DELIVERY_KIND,
+			channel: (string)($record['channel'] ?? ''),
+			payload: [
 				'subjectRef' => (string)($record['subjectRef'] ?? ''),
 				'subject' => (string)($record['subject'] ?? ''),
 				'recipients' => $addresses,
 				'attachments' => ($record['attachments'] ?? []),
 			],
-			(string)($record['correlationId'] ?? $uuid),
+			correlationId: (string)($record['correlationId'] ?? $uuid),
 		);
 
 		try {

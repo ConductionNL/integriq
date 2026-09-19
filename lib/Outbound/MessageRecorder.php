@@ -142,16 +142,20 @@ class MessageRecorder {
 		$now = $this->now();
 		$context = ($options['context'] ?? []);
 
+		if (is_array($context) === false) {
+			$context = [];
+		}
+
 		$record = [
 			'subjectRef' => $subjectRef,
 			'channel' => $channel,
 			'subject' => $subject,
 			'body' => $this->redactor->redactBody($body),
-			'context' => $this->redactor->redactContext(is_array($context) === true ? $context : []),
+			'context' => $this->redactor->redactContext($context),
 			'sourceApp' => (string)($options['sourceApp'] ?? ''),
 			'correlationId' => (string)($options['correlationId'] ?? ''),
-			'attachments' => $this->describeAttachments(($options['attachments'] ?? [])),
-			'recipients' => $this->buildRecipients($recipients, $channel),
+			'attachments' => $this->describeAttachments(attachments: ($options['attachments'] ?? [])),
+			'recipients' => $this->buildRecipients(recipients: $recipients, channel: $channel),
 			'steps' => [
 				[
 					'step' => 'rendered',
@@ -185,7 +189,7 @@ class MessageRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function stepSucceeded(string $uuid, string $step, string $detail = ''): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$record['steps'][] = [
 			'step' => $step,
 			'outcome' => self::OUTCOME_SUCCEEDED,
@@ -193,7 +197,7 @@ class MessageRecorder {
 			'detail' => $detail,
 		];
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end stepSucceeded()
 
@@ -208,7 +212,7 @@ class MessageRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function stepFailed(string $uuid, string $step, string $reason, ?array $addresses = null): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$record['steps'][] = [
 			'step' => $step,
 			'outcome' => self::OUTCOME_FAILED,
@@ -231,9 +235,9 @@ class MessageRecorder {
 			$record['recipients'][$index]['reason'] = $reason;
 		}
 
-		$record['status'] = $this->deriveStatus($record['recipients']);
+		$record['status'] = $this->deriveStatus(recipients: $record['recipients']);
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end stepFailed()
 
@@ -250,17 +254,17 @@ class MessageRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function handedOver(string $uuid, string $address, ?string $reference = null): ObjectEntity {
-		$record = $this->read($uuid);
-		$index = $this->indexOf($record, $address);
+		$record = $this->read(uuid: $uuid);
+		$index = $this->indexOf(record: $record, address: $address);
 
 		$record['recipients'][$index]['status'] = RecipientState::STATUS_SENT;
 		$record['recipients'][$index]['handedOverAt'] = $this->now();
 		$record['recipients'][$index]['reference'] = (string)$reference;
 		$record['recipients'][$index]['failedStep'] = '';
 		$record['recipients'][$index]['reason'] = '';
-		$record['status'] = $this->deriveStatus($record['recipients']);
+		$record['status'] = $this->deriveStatus(recipients: $record['recipients']);
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end handedOver()
 
@@ -275,15 +279,15 @@ class MessageRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function recipientFailed(string $uuid, string $address, string $step, string $reason): ObjectEntity {
-		$record = $this->read($uuid);
-		$index = $this->indexOf($record, $address);
+		$record = $this->read(uuid: $uuid);
+		$index = $this->indexOf(record: $record, address: $address);
 
 		$record['recipients'][$index]['status'] = RecipientState::STATUS_FAILED;
 		$record['recipients'][$index]['failedStep'] = $step;
 		$record['recipients'][$index]['reason'] = $reason;
-		$record['status'] = $this->deriveStatus($record['recipients']);
+		$record['status'] = $this->deriveStatus(recipients: $record['recipients']);
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end recipientFailed()
 
@@ -300,7 +304,7 @@ class MessageRecorder {
 	 *                          cannot produce would be a state nobody can trust.
 	 */
 	public function deliveryReported(string $uuid, string $address, string $detail = ''): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$channel = (string)($record['channel'] ?? '');
 		if ($this->capabilities->reportsDelivery($channel) === false) {
 			throw new RuntimeException(
@@ -308,12 +312,12 @@ class MessageRecorder {
 			);
 		}
 
-		$index = $this->indexOf($record, $address);
+		$index = $this->indexOf(record: $record, address: $address);
 		$record['recipients'][$index]['deliveryState'] = RecipientState::REPORTED;
 		$record['recipients'][$index]['deliveredAt'] = $this->now();
 		$record['recipients'][$index]['deliveryDetail'] = $detail;
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end deliveryReported()
 
@@ -332,7 +336,7 @@ class MessageRecorder {
 	 * @throws RuntimeException When the channel cannot report reads.
 	 */
 	public function readReported(string $uuid, string $address, string $detail = ''): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$channel = (string)($record['channel'] ?? '');
 		if ($this->capabilities->reportsRead($channel) === false) {
 			throw new RuntimeException(
@@ -340,12 +344,12 @@ class MessageRecorder {
 			);
 		}
 
-		$index = $this->indexOf($record, $address);
+		$index = $this->indexOf(record: $record, address: $address);
 		$record['recipients'][$index]['readState'] = RecipientState::REPORTED;
 		$record['recipients'][$index]['readAt'] = $this->now();
 		$record['recipients'][$index]['readDetail'] = $detail;
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end readReported()
 
@@ -367,17 +371,22 @@ class MessageRecorder {
 		bool $succeeded,
 		string $detail,
 	): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$attempts = ($record['attempts'] ?? []);
 		if (is_array($attempts) === false) {
 			$attempts = [];
+		}
+
+		$outcome = self::OUTCOME_FAILED;
+		if ($succeeded === true) {
+			$outcome = self::OUTCOME_SUCCEEDED;
 		}
 
 		$attempts[] = [
 			'at' => $this->now(),
 			'by' => $actorUid,
 			'recipients' => $addresses,
-			'outcome' => ($succeeded === true ? self::OUTCOME_SUCCEEDED : self::OUTCOME_FAILED),
+			'outcome' => $outcome,
 			'detail' => $detail,
 		];
 		$record['attempts'] = $attempts;
@@ -400,9 +409,9 @@ class MessageRecorder {
 			$record['recipients'][$index]['reason'] = $detail;
 		}
 
-		$record['status'] = $this->deriveStatus($record['recipients']);
+		$record['status'] = $this->deriveStatus(recipients: $record['recipients']);
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end appendAttempt()
 

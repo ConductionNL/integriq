@@ -34,8 +34,8 @@ class MissingSourceConfigurationException extends PropertySourceException {
 	 */
 	public function __construct(string $providerId, string $sourceSlug) {
 		parent::__construct(
-			$providerId,
-			sprintf(
+			providerId: $providerId,
+			message: sprintf(
 				'Provider "%s" has no source configured under "%s", so no call was made.',
 				$providerId,
 				$sourceSlug

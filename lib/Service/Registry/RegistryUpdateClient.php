@@ -76,11 +76,16 @@ class RegistryUpdateClient {
 			$headers['Authorization'] = 'Basic ' . $credential;
 		}
 
+		$body = json_encode($payload);
+		if ($body === false) {
+			$body = '{}';
+		}
+
 		try {
 			$response = $this->clientService->newClient()->post(
 				$url,
 				[
-					'body' => (json_encode($payload) ?: '{}'),
+					'body' => $body,
 					'headers' => $headers,
 					'timeout' => 15,
 				]

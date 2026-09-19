@@ -81,12 +81,12 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
-			self::CHANNEL_ID,
-			'Messaging',
-			true,
-			false,
-			true,
-			['text', 'service'],
+			channelId: self::CHANNEL_ID,
+			label: 'Messaging',
+			canReply: true,
+			supportsLocation: false,
+			supportsMedia: true,
+			fields: ['text', 'service'],
 		);
 
 	}//end describe()
@@ -110,26 +110,31 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 		$handle = trim((string)($from['phone'] ?? $from['handle'] ?? ''));
 		if ($externalId === '' || $handle === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" message must carry a messageId and a sender handle, '
+				message: 'A "' . self::CHANNEL_ID . '" message must carry a messageId and a sender handle, '
 				. 'because a reply has nowhere to go without one.'
 			);
 		}
 
+		$receivedAt = ($payload['timestamp'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
+
 		return new InboundMessage(
-			self::CHANNEL_ID,
-			$externalId,
-			[
+			channelId: self::CHANNEL_ID,
+			externalId: $externalId,
+			correspondent: [
 				'id' => $handle,
 				'phone' => $handle,
 				'name' => (string)($from['name'] ?? ''),
 			],
-			(string)($payload['text'] ?? ''),
-			$this->attachments($payload),
-			null,
-			[],
-			$payload,
-			(($payload['timestamp'] ?? null) === null ? null : (string)$payload['timestamp']),
-			[
+			text: (string)($payload['text'] ?? ''),
+			attachments: $this->attachments(payload: $payload),
+			location: null,
+			media: [],
+			rawPayload: $payload,
+			receivedAt: $receivedAt,
+			fields: [
 				'text' => (string)($payload['text'] ?? ''),
 				'service' => (string)($payload['service'] ?? ''),
 			],
@@ -172,7 +177,7 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			$response = $this->clientService->newClient()->post(
 				$endpoint,
 				[
-					'headers' => $this->replyHeaders($configuration),
+					'headers' => $this->replyHeaders(configuration: $configuration),
 					'json' => ['to' => $handle, 'text' => $text, 'inReplyTo' => $message->getExternalId()],
 					'timeout' => 30,
 				]
@@ -187,7 +192,11 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			$reference = (string)($decoded['messageId'] ?? $decoded['id'] ?? '');
 		}
 
-		return ReplyResult::sent(self::CHANNEL_ID, ($reference === '' ? null : $reference));
+		if ($reference === '') {
+			$reference = null;
+		}
+
+		return ReplyResult::sent(self::CHANNEL_ID, $reference);
 
 	}//end reply()
 

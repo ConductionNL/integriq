@@ -63,20 +63,20 @@ class MsgParser {
 	 */
 	public function parse(string $raw): ParsedMessage {
 		$reader = new CompoundFileReader($raw);
-		$properties = $this->readProperties($reader, 0);
-		$headers = $this->parseTransportHeaders($this->property($properties, '007D'));
+		$properties = $this->readProperties(reader: $reader, storageId: 0);
+		$headers = $this->parseTransportHeaders(block: $this->property(properties: $properties, propertyId: '007D'));
 
-		$subject = $this->property($properties, '0037');
+		$subject = $this->property(properties: $properties, propertyId: '0037');
 		if ($subject === '') {
-			$subject = $this->property($properties, '0E1D');
+			$subject = $this->property(properties: $properties, propertyId: '0E1D');
 		}
 
-		$from = $this->property($properties, '5D01');
+		$from = $this->property(properties: $properties, propertyId: '5D01');
 		if ($from === '') {
-			$from = $this->property($properties, '0C1F');
+			$from = $this->property(properties: $properties, propertyId: '0C1F');
 		}
 
-		$messageId = trim($this->property($properties, '1035'), " <>\t");
+		$messageId = trim($this->property(properties: $properties, propertyId: '1035'), " <>\t");
 		if ($messageId === '') {
 			$messageId = trim((string)($headers['message-id'] ?? ''), " <>\t");
 		}
@@ -85,17 +85,22 @@ class MsgParser {
 			$messageId = 'sha256:' . hash('sha256', $raw);
 		}
 
-		$html = $this->property($properties, '1013');
+		$html = $this->property(properties: $properties, propertyId: '1013');
+
+		$sender = $from;
+		if ($from === '') {
+			$sender = (string)($headers['from'] ?? '');
+		}
 
 		return new ParsedMessage(
 			$messageId,
-			($from !== '' ? $from : (string)($headers['from'] ?? '')),
-			$this->recipients($this->property($properties, '0E04'), $headers),
+			$sender,
+			$this->recipients(displayTo: $this->property(properties: $properties, propertyId: '0E04'), headers: $headers),
 			$subject,
-			$this->parseDate((string)($headers['date'] ?? '')),
-			$this->property($properties, '1000'),
+			$this->parseDate(header: (string)($headers['date'] ?? '')),
+			$this->property(properties: $properties, propertyId: '1000'),
 			HtmlSanitizer::sanitize($html),
-			$this->readAttachments($reader),
+			$this->readAttachments(reader: $reader),
 		);
 
 	}//end parse()
@@ -132,7 +137,10 @@ class MsgParser {
 			$value = $reader->readStream($childId);
 			if ($type === '001F') {
 				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $value);
-				$value = ($converted === false ? '' : $converted);
+				$value = '';
+				if ($converted !== false) {
+					$value = $converted;
+				}
 			}
 
 			// A property present twice keeps the first, matching the EML reader.
@@ -165,17 +173,27 @@ class MsgParser {
 				continue;
 			}
 
-			$properties = $this->readProperties($reader, $childId);
-			$name = $this->property($properties, '3707');
+			$properties = $this->readProperties(reader: $reader, storageId: $childId);
+			$name = $this->property(properties: $properties, propertyId: '3707');
 			if ($name === '') {
-				$name = $this->property($properties, '3704');
+				$name = $this->property(properties: $properties, propertyId: '3704');
 			}
 
-			$content = $this->property($properties, '3701');
-			$mime = $this->property($properties, '370E');
+			$content = $this->property(properties: $properties, propertyId: '3701');
+			$mime = $this->property(properties: $properties, propertyId: '370E');
+			$attachmentName = 'attachment';
+			if ($name !== '') {
+				$attachmentName = $name;
+			}
+
+			$attachmentMime = 'application/octet-stream';
+			if ($mime !== '') {
+				$attachmentMime = $mime;
+			}
+
 			$attachments[] = [
-				'name' => ($name !== '' ? $name : 'attachment'),
-				'mime' => ($mime !== '' ? $mime : 'application/octet-stream'),
+				'name' => $attachmentName,
+				'mime' => $attachmentMime,
 				'size' => strlen($content),
 				'content' => $content,
 			];
@@ -249,9 +267,18 @@ class MsgParser {
 	 * @return array<int,string> The recipients.
 	 */
 	private function recipients(string $displayTo, array $headers): array {
-		$source = ($displayTo !== '' ? $displayTo : (string)($headers['to'] ?? ''));
+		$source = (string)($headers['to'] ?? '');
+		if ($displayTo !== '') {
+			$source = $displayTo;
+		}
+
+		$parts = preg_split('/[;,]/', $source);
+		if ($parts === false) {
+			$parts = [];
+		}
+
 		$recipients = [];
-		foreach (preg_split('/[;,]/', $source) ?: [] as $entry) {
+		foreach ($parts as $entry) {
 			$entry = trim($entry);
 			if ($entry === '') {
 				continue;

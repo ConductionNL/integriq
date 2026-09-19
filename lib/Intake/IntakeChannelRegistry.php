@@ -55,7 +55,7 @@ class IntakeChannelRegistry {
 		array $adapters = [],
 	) {
 		foreach ($adapters as $adapter) {
-			$this->register($adapter);
+			$this->register(adapter: $adapter);
 		}
 
 	}//end __construct()
@@ -110,7 +110,7 @@ class IntakeChannelRegistry {
 	public function get(string $channelId): IntakeChannelAdapterInterface {
 		if (isset($this->adapters[$channelId]) === false) {
 			throw new IntakeChannelException(
-				'No intake channel adapter answers to "' . $channelId . '".'
+				message: 'No intake channel adapter answers to "' . $channelId . '".'
 			);
 		}
 

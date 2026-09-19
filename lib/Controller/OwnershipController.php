@@ -60,7 +60,7 @@ class OwnershipController extends Controller {
 		private readonly OrObjectService $objectService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 
 	/**
@@ -134,7 +134,7 @@ class OwnershipController extends Controller {
 				// Written onto the object before it goes, so the statement
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
-					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject($id, $register, $schema)),
+					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
 					register: $register,
 					schema: $schema,
 					uuid: $id
@@ -211,7 +211,10 @@ class OwnershipController extends Controller {
 		}
 
 		$data = $entity->getObject();
+		if (is_array($data) === false) {
+			return [];
+		}
 
-		return (is_array($data) === true ? $data : []);
+		return $data;
 	}//end readObject()
 }//end class

@@ -48,7 +48,7 @@ class GatewayRegistry {
 	 */
 	public function __construct(array $entries = []) {
 		foreach ($entries as $entry) {
-			$this->register($entry);
+			$this->register(entry: $entry);
 		}
 	}//end __construct()
 
@@ -62,7 +62,10 @@ class GatewayRegistry {
 	 * @throws InvalidArgumentException When the entry cannot be registered.
 	 */
 	public function register(array|GatewayDescriptor $entry): GatewayDescriptor {
-		$descriptor = ($entry instanceof GatewayDescriptor ? $entry : GatewayDescriptor::fromArray($entry));
+		$descriptor = $entry;
+		if ($entry instanceof GatewayDescriptor === false) {
+			$descriptor = GatewayDescriptor::fromArray($entry);
+		}
 		$this->gateways[$descriptor->getId()] = $descriptor;
 
 		return $descriptor;

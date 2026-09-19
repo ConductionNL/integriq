@@ -55,7 +55,7 @@ class CaseReferenceDetector {
 	 * @return string|null The reference, or null when the message names none.
 	 */
 	public function detect(ParsedMessage $message, ?string $pattern = null): ?string {
-		$effective = $this->resolvePattern($pattern);
+		$effective = $this->resolvePattern(pattern: $pattern);
 		if ($effective === null) {
 			return null;
 		}
@@ -88,7 +88,7 @@ class CaseReferenceDetector {
 	 * @return bool True when the pattern compiles.
 	 */
 	public function isUsable(string $pattern): bool {
-		return $this->resolvePattern($pattern) !== null;
+		return $this->resolvePattern(pattern: $pattern) !== null;
 
 	}//end isUsable()
 

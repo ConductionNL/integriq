@@ -46,15 +46,15 @@ class EmlParser {
 	 */
 	public function parse(string $raw): ParsedMessage {
 		$normalised = str_replace(["\r\n", "\r"], "\n", $raw);
-		[$headerBlock, $body] = $this->split($normalised);
-		$headers = $this->parseHeaders($headerBlock);
+		[$headerBlock, $body] = $this->split(message: $normalised);
+		$headers = $this->parseHeaders(headerBlock: $headerBlock);
 
 		$collected = [
 			'text' => '',
 			'html' => '',
 			'attachments' => [],
 		];
-		$this->walkPart($headers, $body, $collected);
+		$this->walkPart(headers: $headers, body: $body, collected: $collected);
 
 		$messageId = trim((string)($headers['message-id'] ?? ''), " <>\t");
 		if ($messageId === '') {
@@ -63,10 +63,10 @@ class EmlParser {
 
 		return new ParsedMessage(
 			$messageId,
-			$this->firstAddress((string)($headers['from'] ?? '')),
-			$this->addressList((string)($headers['to'] ?? '')),
-			$this->decodeWords((string)($headers['subject'] ?? '')),
-			$this->parseDate((string)($headers['date'] ?? '')),
+			$this->firstAddress(header: (string)($headers['from'] ?? '')),
+			$this->addressList(header: (string)($headers['to'] ?? '')),
+			$this->decodeWords(value: (string)($headers['subject'] ?? '')),
+			$this->parseDate(header: (string)($headers['date'] ?? '')),
 			$collected['text'],
 			HtmlSanitizer::sanitize($collected['html']),
 			$collected['attachments'],
@@ -145,26 +145,26 @@ class EmlParser {
 		$contentType = strtolower((string)($headers['content-type'] ?? 'text/plain'));
 		$mime = trim(explode(';', $contentType)[0]);
 		$disposition = strtolower((string)($headers['content-disposition'] ?? ''));
-		$filename = $this->parameter((string)($headers['content-disposition'] ?? ''), 'filename');
+		$filename = $this->parameter(headerValue: (string)($headers['content-disposition'] ?? ''), name: 'filename');
 		if ($filename === null) {
-			$filename = $this->parameter((string)($headers['content-type'] ?? ''), 'name');
+			$filename = $this->parameter(headerValue: (string)($headers['content-type'] ?? ''), name: 'name');
 		}
 
 		if (str_starts_with($mime, 'multipart/') === true) {
-			$boundary = $this->parameter((string)($headers['content-type'] ?? ''), 'boundary');
+			$boundary = $this->parameter(headerValue: (string)($headers['content-type'] ?? ''), name: 'boundary');
 			if ($boundary === null) {
 				return;
 			}
 
-			foreach ($this->splitMultipart($body, $boundary) as $rawPart) {
-				[$partHeaders, $partBody] = $this->split($rawPart);
-				$this->walkPart($this->parseHeaders($partHeaders), $partBody, $collected);
+			foreach ($this->splitMultipart(body: $body, boundary: $boundary) as $rawPart) {
+				[$partHeaders, $partBody] = $this->split(message: $rawPart);
+				$this->walkPart(headers: $this->parseHeaders(headerBlock: $partHeaders), body: $partBody, collected: $collected);
 			}
 
 			return;
 		}
 
-		$decoded = $this->decodeBody($body, strtolower((string)($headers['content-transfer-encoding'] ?? '7bit')));
+		$decoded = $this->decodeBody(body: $body, encoding: strtolower((string)($headers['content-transfer-encoding'] ?? '7bit')));
 		$isAttachment = (str_contains($disposition, 'attachment') === true || $filename !== null);
 
 		if ($isAttachment === false && $mime === 'text/plain') {
@@ -177,9 +177,14 @@ class EmlParser {
 			return;
 		}
 
+		$mimeType = $mime;
+		if ($mime === '') {
+			$mimeType = 'application/octet-stream';
+		}
+
 		$collected['attachments'][] = [
 			'name' => ($filename ?? 'attachment'),
-			'mime' => ($mime === '' ? 'application/octet-stream' : $mime),
+			'mime' => $mimeType,
 			'size' => strlen($decoded),
 			'content' => $decoded,
 		];
@@ -248,8 +253,12 @@ class EmlParser {
 			return null;
 		}
 
-		$value = ($matches[2] !== '' ? $matches[2] : ($matches[3] ?? ''));
-		return $this->decodeWords(trim($value));
+		$value = ($matches[3] ?? '');
+		if ($matches[2] !== '') {
+			$value = $matches[2];
+		}
+
+		return $this->decodeWords(value: trim($value));
 
 	}//end parameter()
 
@@ -298,7 +307,7 @@ class EmlParser {
 	 * @return string The bare address, or an empty string.
 	 */
 	private function firstAddress(string $header): string {
-		$addresses = $this->addressList($header);
+		$addresses = $this->addressList(header: $header);
 		return ($addresses[0] ?? '');
 
 	}//end firstAddress()
@@ -311,7 +320,7 @@ class EmlParser {
 	 * @return array<int,string> The addresses.
 	 */
 	private function addressList(string $header): array {
-		$header = $this->decodeWords($header);
+		$header = $this->decodeWords(value: $header);
 		$addresses = [];
 		foreach (explode(',', $header) as $entry) {
 			$entry = trim($entry);

@@ -102,13 +102,13 @@ class OptOutRegistry {
 	 * @return array{send:bool,overridden:bool,reason:string} The decision.
 	 */
 	public function decide(string $address, string $category, ?string $caseRef = null): array {
-		$optOut = $this->find($address, $caseRef);
+		$optOut = $this->find(address: $address, caseRef: $caseRef);
 		if ($optOut === null) {
 			return ['send' => true, 'overridden' => false, 'reason' => ''];
 		}
 
 		$scope = (string)($optOut['scope'] ?? self::SCOPE_INSTANCE);
-		if ($this->isProtected($category) === true) {
+		if ($this->isProtected(category: $category) === true) {
 			return [
 				'send' => true,
 				'overridden' => true,

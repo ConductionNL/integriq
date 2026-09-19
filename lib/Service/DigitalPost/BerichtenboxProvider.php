@@ -128,7 +128,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @return DigitalPostResult What Logius answered, or the refusal.
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult {
-		$refusals = $this->activationRefusals($config);
+		$refusals = $this->activationRefusals(config: $config);
 		if ($refusals !== []) {
 			return DigitalPostResult::refused(implode(' ', $refusals));
 		}
@@ -155,7 +155,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 		}
 
 		$simulated = ($this->client->flavour() === 'mock');
-		$status = $this->mapStatus((string)($answer['deliveryStatus'] ?? ''));
+		$status = $this->mapStatus(deliveryStatus: (string)($answer['deliveryStatus'] ?? ''));
 
 		return DigitalPostResult::accepted(
 			$status,

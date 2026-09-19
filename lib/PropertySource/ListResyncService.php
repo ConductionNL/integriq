@@ -72,7 +72,11 @@ class ListResyncService {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, '[]');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
 	}//end currentList()
 
 	/**
@@ -109,7 +113,7 @@ class ListResyncService {
 	 */
 	public function resync(string $providerId, array $config = []): array {
 		$provider = $this->registry->get($providerId);
-		$previous = $this->currentList($providerId);
+		$previous = $this->currentList(providerId: $providerId);
 
 		try {
 			$fetched = $provider->suggest('', $config);
@@ -123,9 +127,9 @@ class ListResyncService {
 			);
 
 			return $this->storeReport(
-				$providerId,
-				[
-					'lastResyncAt' => $this->lastReport($providerId)['lastResyncAt'],
+				providerId: $providerId,
+				report: [
+					'lastResyncAt' => $this->lastReport(providerId: $providerId)['lastResyncAt'],
 					'changed' => 0,
 					'succeeded' => false,
 					'message' => $e->getMessage(),
@@ -134,12 +138,18 @@ class ListResyncService {
 			);
 		}//end try
 
-		$changed = $this->countChanges($previous, $fetched);
-		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, (json_encode($fetched) ?: '[]'));
+		$changed = $this->countChanges(previous: $previous, fetched: $fetched);
+
+		$encoded = json_encode($fetched);
+		if ($encoded === false) {
+			$encoded = '[]';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, $encoded);
 
 		return $this->storeReport(
-			$providerId,
-			[
+			providerId: $providerId,
+			report: [
 				'lastResyncAt' => time(),
 				'changed' => $changed,
 				'succeeded' => true,
@@ -193,10 +203,15 @@ class ListResyncService {
 	 * @return array<string,mixed> The same report.
 	 */
 	private function storeReport(string $providerId, array $report): array {
+		$encoded = json_encode($report);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
 		$this->appConfig->setValueString(
 			self::APP_ID,
 			self::REPORT_KEY_PREFIX . $providerId,
-			(json_encode($report) ?: '{}')
+			$encoded
 		);
 
 		return $report;

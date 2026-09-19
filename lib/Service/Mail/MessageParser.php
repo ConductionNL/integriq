@@ -65,7 +65,7 @@ class MessageParser {
 
 			return $this->emlParser->parse($raw);
 		} catch (Throwable $exception) {
-			return $this->fallback($filename, $raw, $exception->getMessage());
+			return $this->fallback(filename: $filename, raw: $raw, reason: $exception->getMessage());
 		}
 
 	}//end parse()
@@ -80,7 +80,10 @@ class MessageParser {
 	 * @return ParsedMessage The fallback message.
 	 */
 	private function fallback(string $filename, string $raw, string $reason): ParsedMessage {
-		$safeName = (basename($filename) !== '' ? basename($filename) : 'message');
+		$safeName = basename($filename);
+		if ($safeName === '') {
+			$safeName = 'message';
+		}
 
 		return new ParsedMessage(
 			'sha256:' . hash('sha256', $raw),

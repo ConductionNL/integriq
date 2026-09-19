@@ -38,7 +38,7 @@ class PropertySourceException extends RuntimeException {
 		private readonly string $providerId,
 		string $message,
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 	}//end __construct()
 
 	/**

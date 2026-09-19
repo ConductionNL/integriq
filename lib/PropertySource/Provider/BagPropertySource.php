@@ -73,7 +73,7 @@ class BagPropertySource implements PropertySourceProviderInterface {
 		try {
 			$hits = $this->geocoding->suggest($query, $rows);
 		} catch (Throwable $e) {
-			throw new SourceUnreachableException(self::ID, 'The PDOK Locatieserver did not answer a suggest: ' . $e->getMessage());
+			throw new SourceUnreachableException(providerId: self::ID, message: 'The PDOK Locatieserver did not answer a suggest: ' . $e->getMessage());
 		}
 
 		$out = [];
@@ -106,11 +106,11 @@ class BagPropertySource implements PropertySourceProviderInterface {
 		try {
 			$address = $this->geocoding->lookup($identifier);
 		} catch (Throwable $e) {
-			throw new SourceUnreachableException(self::ID, 'The PDOK Locatieserver did not answer a lookup: ' . $e->getMessage());
+			throw new SourceUnreachableException(providerId: self::ID, message: 'The PDOK Locatieserver did not answer a lookup: ' . $e->getMessage());
 		}
 
 		if (is_array($address) === false) {
-			throw new SourceUnreachableException(self::ID, sprintf('The PDOK Locatieserver returned no address for "%s".', $identifier));
+			throw new SourceUnreachableException(providerId: self::ID, message: sprintf('The PDOK Locatieserver returned no address for "%s".', $identifier));
 		}
 
 		return $address;

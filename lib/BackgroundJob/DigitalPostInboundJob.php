@@ -92,7 +92,7 @@ class DigitalPostInboundJob extends TimedJob {
 		unset($argument);
 
 		foreach ($this->activeSources() as $source) {
-			$this->pollSource($source);
+			$this->pollSource(source: $source);
 		}
 	}//end run()
 
@@ -171,7 +171,11 @@ class DigitalPostInboundJob extends TimedJob {
 
 		$sources = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+			if ($entity instanceof ObjectEntity === true) {
+				$data = $entity->getObject();
+			}
+
 			if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
 				continue;
 			}

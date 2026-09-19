@@ -73,19 +73,19 @@ class BridgeTransport implements GatewayTransport {
 			);
 		}
 
-		$outcome = $this->inner->send($gatewayId, $payload, ($config + ['transport' => $this->transportName($bridgeId)]));
+		$outcome = $this->inner->send($gatewayId, $payload, ($config + ['transport' => $this->transportName(bridgeId: $bridgeId)]));
 		$recorded = $outcome->toArray();
 
 		// The call log names the bridge, so a call that travelled over the
 		// customer's network is not indistinguishable from a direct one.
 		return new GatewayDelivery(
-			$gatewayId,
-			(bool)$recorded['delivered'],
-			($recorded['identifier'] ?? null),
-			(string)$recorded['reason'],
-			(bool)$recorded['transmitted'],
-			(bool)$recorded['replayable'],
-			$this->transportName($bridgeId)
+			gatewayId: $gatewayId,
+			delivered: (bool)$recorded['delivered'],
+			identifier: ($recorded['identifier'] ?? null),
+			reason: (string)$recorded['reason'],
+			transmitted: (bool)$recorded['transmitted'],
+			replayable: (bool)$recorded['replayable'],
+			transport: $this->transportName(bridgeId: $bridgeId)
 		);
 	}//end send()
 

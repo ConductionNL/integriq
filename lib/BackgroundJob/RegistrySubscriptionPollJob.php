@@ -98,7 +98,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 				continue;
 			}
 
-			$this->postChanges((string)$registryId, $changes);
+			$this->postChanges(registryId: (string)$registryId, changes: $changes);
 		}
 	}//end run()
 

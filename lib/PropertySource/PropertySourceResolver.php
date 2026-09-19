@@ -111,8 +111,8 @@ class PropertySourceResolver {
 	public function resolve(string $providerId, string $identifier, array $config = [], bool $fresh = false): ResolvedValue {
 		$provider = $this->registry->get($providerId);
 		$budget = (int)($provider->describe()['stalenessBudget'] ?? 0);
-		$key = $this->cacheKey($providerId, $identifier);
-		$entry = $this->readEntry($key);
+		$key = $this->cacheKey(providerId: $providerId, identifier: $identifier);
+		$entry = $this->readEntry(key: $key);
 		$now = time();
 
 		if ($fresh === false && $entry !== null) {
@@ -173,7 +173,7 @@ class PropertySourceResolver {
 			throw new \InvalidArgumentException('A suggestion without an identifier cannot be stored as a value.');
 		}
 
-		return $this->resolve($providerId, $identifier, $config, true);
+		return $this->resolve(providerId: $providerId, identifier: $identifier, config: $config, fresh: true);
 	}//end resolveSuggestion()
 
 	/**

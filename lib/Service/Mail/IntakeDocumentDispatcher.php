@@ -90,7 +90,7 @@ class IntakeDocumentDispatcher {
 		}
 
 		try {
-			$event = $this->construct($payload);
+			$event = $this->construct(payload: $payload);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'Integriq mail intake: the document intake event could not be constructed.',

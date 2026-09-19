@@ -85,7 +85,7 @@ class CallReplayService {
 		$record = $this->recorder->read($uuid);
 
 		return [
-			'request' => (is_array(($record['request'] ?? null)) === true ? $record['request'] : []),
+			'request' => self::requestOf(record: $record),
 			'versions' => $this->mappingVersions->choices(
 				(string)($record['mapping'] ?? ''),
 				(string)($record['mappingVersion'] ?? '')
@@ -106,13 +106,18 @@ class CallReplayService {
 	public function replay(string $uuid, string $actorUid, array $options = []): array {
 		$record = $this->recorder->read($uuid);
 		$dryRun = (($options['dryRun'] ?? false) === true);
+		$wantedVersion = ($options['mappingVersion'] ?? null);
+		if ($wantedVersion !== null) {
+			$wantedVersion = (string)$wantedVersion;
+		}
+
 		$resolved = $this->mappingVersions->resolve(
 			(string)($record['mapping'] ?? ''),
 			(string)($record['mappingVersion'] ?? ''),
-			(($options['mappingVersion'] ?? null) === null ? null : (string)$options['mappingVersion'])
+			$wantedVersion
 		);
 
-		$request = (is_array(($record['request'] ?? null)) === true ? $record['request'] : []);
+		$request = self::requestOf(record: $record);
 
 		if ($dryRun === true) {
 			// A dry run writes nothing at all: no call, no attempt, no record.
@@ -142,7 +147,7 @@ class CallReplayService {
 					'mappingVersion' => $resolved['version'],
 				]
 			);
-			$this->deadLetterIfExhausted($uuid);
+			$this->deadLetterIfExhausted(uuid: $uuid);
 
 			return [
 				'call' => $uuid,
@@ -168,7 +173,7 @@ class CallReplayService {
 
 		$succeeded = ((int)$response['statusCode'] >= 200 && (int)$response['statusCode'] < 300);
 		if ($succeeded === false) {
-			$this->deadLetterIfExhausted($uuid);
+			$this->deadLetterIfExhausted(uuid: $uuid);
 		}
 
 		return [
@@ -198,7 +203,7 @@ class CallReplayService {
 		$failed = 0;
 		foreach ($uuids as $uuid) {
 			try {
-				$outcome = $this->replay((string)$uuid, $actorUid, $options);
+				$outcome = $this->replay(uuid: (string)$uuid, actorUid: $actorUid, options: $options);
 			} catch (Throwable $exception) {
 				$outcome = [
 					'call' => (string)$uuid,
@@ -306,7 +311,12 @@ class CallReplayService {
 		}
 
 		$policy = ($record['retryPolicy'] ?? []);
-		$maxAttempts = (int)(is_array($policy) === true ? ($policy['maxAttempts'] ?? 1) : 1);
+
+		$maxAttempts = 1;
+		if (is_array($policy) === true) {
+			$maxAttempts = (int)($policy['maxAttempts'] ?? 1);
+		}
+
 		if ($maxAttempts < 1) {
 			$maxAttempts = 1;
 		}
@@ -320,7 +330,7 @@ class CallReplayService {
 				'synchronization' => '',
 				'originId' => $uuid,
 				'phase' => 'outbound-call',
-				'payload' => (is_array(($record['request'] ?? null)) === true ? $record['request'] : []),
+				'payload' => self::requestOf(record: $record),
 				'error' => (string)($record['statusMessage'] ?? 'The call exhausted its retry policy.'),
 				'status' => 'failed',
 				'retryCount' => count($record['attempts']),
@@ -335,13 +345,33 @@ class CallReplayService {
 			schema: self::SCHEMA_DEAD_LETTER,
 		);
 
-		$this->recorder->markDeadLettered(
-			$uuid,
-			(($entry instanceof ObjectEntity) === true ? (string)$entry->getUuid() : '')
-		);
+		$deadLetterId = '';
+		if ($entry instanceof ObjectEntity) {
+			$deadLetterId = (string)$entry->getUuid();
+		}
+
+		$this->recorder->markDeadLettered($uuid, $deadLetterId);
 
 		return true;
 
 	}//end deadLetterIfExhausted()
+
+	/**
+	 * The recorded request of a call, as an array.
+	 *
+	 * @param array<string,mixed> $record The call record.
+	 *
+	 * @return array<string,mixed> The request, or an empty array when none was recorded.
+	 *
+	 * @spec openspec/specs/outbound-call-replay/spec.md
+	 */
+	private static function requestOf(array $record): array {
+		$request = ($record['request'] ?? null);
+		if (is_array($request) === false) {
+			return [];
+		}
+
+		return $request;
+	}//end requestOf()
 
 }//end class

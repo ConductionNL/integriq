@@ -73,7 +73,7 @@ class WkpbGateway {
 			}
 		}
 
-		if ($this->resolves($propertyReference) === false) {
+		if ($this->resolves(propertyReference: $propertyReference) === false) {
 			return GatewayDelivery::notSent(
 				self::ID,
 				sprintf('The property reference "%s" does not resolve. Nothing was sent.', $propertyReference)

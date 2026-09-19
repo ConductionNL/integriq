@@ -172,13 +172,18 @@ class ExpressionValueSourceRegistry {
 
 		$source = $this->sourceFor(prefix: $prefix);
 		if ($source === null) {
+			$known = 'none';
+			if ($this->sources !== []) {
+				$known = implode(', ', array_keys($this->sources));
+			}
+
 			throw new ExpressionValueRefused(
 				prefix: $prefix,
 				key: $key,
 				message: sprintf(
 					'No value source answers to the prefix "%s". Known prefixes: %s.',
 					$prefix,
-					($this->sources === [] ? 'none' : implode(', ', array_keys($this->sources)))
+					$known
 				)
 			);
 		}

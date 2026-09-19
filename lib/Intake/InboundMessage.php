@@ -180,8 +180,8 @@ final class InboundMessage {
 			'externalId' => $this->externalId,
 			'correspondent' => $this->correspondent,
 			'text' => $this->text,
-			'attachments' => $this->describeFiles($this->attachments),
-			'media' => $this->describeFiles($this->media),
+			'attachments' => $this->describeFiles(files: $this->attachments),
+			'media' => $this->describeFiles(files: $this->media),
 			'location' => $this->location,
 			'fields' => $this->fields,
 			'rawPayload' => $this->rawPayload,
@@ -201,23 +201,71 @@ final class InboundMessage {
 	 * @return self The message.
 	 */
 	public static function fromObject(array $object): self {
-		$correspondent = ($object['correspondent'] ?? []);
-		$location = ($object['location'] ?? null);
-
 		return new self(
-			(string)($object['channelId'] ?? ''),
-			(string)($object['externalId'] ?? ''),
-			(is_array($correspondent) === true ? $correspondent : []),
-			(string)($object['text'] ?? ''),
-			(is_array(($object['attachments'] ?? null)) === true ? $object['attachments'] : []),
-			(is_array($location) === true ? $location : null),
-			(is_array(($object['media'] ?? null)) === true ? $object['media'] : []),
-			(is_array(($object['rawPayload'] ?? null)) === true ? $object['rawPayload'] : []),
-			(($object['receivedAt'] ?? null) === null ? null : (string)$object['receivedAt']),
-			(is_array(($object['fields'] ?? null)) === true ? $object['fields'] : []),
+			channelId: (string)($object['channelId'] ?? ''),
+			externalId: (string)($object['externalId'] ?? ''),
+			correspondent: self::arrayOrEmpty(value: ($object['correspondent'] ?? null)),
+			text: (string)($object['text'] ?? ''),
+			attachments: self::arrayOrEmpty(value: ($object['attachments'] ?? null)),
+			location: self::arrayOrNull(value: ($object['location'] ?? null)),
+			media: self::arrayOrEmpty(value: ($object['media'] ?? null)),
+			rawPayload: self::arrayOrEmpty(value: ($object['rawPayload'] ?? null)),
+			receivedAt: self::stringOrNull(value: ($object['receivedAt'] ?? null)),
+			fields: self::arrayOrEmpty(value: ($object['fields'] ?? null)),
 		);
 
 	}//end fromObject()
+
+	/**
+	 * Read a stored field that must be an array.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<mixed> The value, or an empty array when it is anything else.
+	 *
+	 * @spec openspec/specs/inbound-messages/spec.md
+	 */
+	private static function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOrEmpty()
+
+	/**
+	 * Read a stored field that is either an array or absent.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<mixed>|null The value, or null when it is anything else.
+	 *
+	 * @spec openspec/specs/inbound-messages/spec.md
+	 */
+	private static function arrayOrNull(mixed $value): ?array {
+		if (is_array($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end arrayOrNull()
+
+	/**
+	 * Read a stored field that is either a string or absent.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The value as a string, or null when it was absent.
+	 *
+	 * @spec openspec/specs/inbound-messages/spec.md
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
 
 	/**
 	 * Strip the bytes out of a file list.

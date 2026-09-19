@@ -72,7 +72,7 @@ final class DisappearancePolicy {
 		}
 
 		if (is_string($declared) === false || in_array($declared, self::ACCEPTED, true) === false) {
-			throw new InvalidArgumentException(self::refusalMessage($declared));
+			throw new InvalidArgumentException(self::refusalMessage(declared: $declared));
 		}
 
 		return $declared;
@@ -87,7 +87,7 @@ final class DisappearancePolicy {
 	 */
 	public static function isValid(array $sourceConfig): bool {
 		try {
-			self::fromSourceConfig($sourceConfig);
+			self::fromSourceConfig(sourceConfig: $sourceConfig);
 			return true;
 		} catch (InvalidArgumentException $e) {
 			return false;
@@ -106,7 +106,27 @@ final class DisappearancePolicy {
 			'sourceConfig.%s must be one of %s. "%s" is not a policy this engine knows, and it is not treated as the default.',
 			self::CONFIG_KEY,
 			implode(', ', self::ACCEPTED),
-			(is_scalar($declared) === true ? (string)$declared : gettype($declared))
+			self::describe(value: $declared)
 		);
 	}//end refusalMessage()
+
+	/**
+	 * Render a configured value for a log line or a refusal message.
+	 *
+	 * A scalar is shown as itself; anything else is shown as its type, because
+	 * printing an array or an object into a message tells the reader nothing.
+	 *
+	 * @param mixed $value The value as it was configured.
+	 *
+	 * @return string The value, or its type name when it cannot be printed.
+	 *
+	 * @spec openspec/specs/records-owned-by-an-external-source/spec.md
+	 */
+	private static function describe(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return gettype($value);
+	}//end describe()
 }//end class

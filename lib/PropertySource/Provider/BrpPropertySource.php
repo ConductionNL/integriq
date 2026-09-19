@@ -118,8 +118,8 @@ class BrpPropertySource implements PropertySourceProviderInterface {
 
 		if (($body['burgerservicenummer'] ?? null) === null && ($body['identifier'] ?? null) === null) {
 			throw new SourceUnreachableException(
-				self::ID,
-				sprintf('The brp registry returned no record for "%s".', $identifier)
+				providerId: self::ID,
+				message: sprintf('The brp registry returned no record for "%s".', $identifier)
 			);
 		}
 

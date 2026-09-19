@@ -67,7 +67,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 	 * @throws CallDispatchException When the target is unknown or the engine refused outright.
 	 */
 	public function dispatch(string $target, array $request): array {
-		$source = $this->source($target);
+		$source = $this->source(target: $target);
 
 		$config = [];
 		foreach (['headers', 'query', 'body'] as $key) {
@@ -85,7 +85,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 				config: $config,
 			);
 		} catch (Throwable $exception) {
-			throw new CallDispatchException('The call could not be made: ' . $exception->getMessage());
+			throw new CallDispatchException(message: 'The call could not be made: ' . $exception->getMessage());
 		}
 
 		$logged = $log->getObject();
@@ -94,10 +94,15 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 			$response = ['body' => $response];
 		}
 
+		$headers = ($response['headers'] ?? null);
+		if (is_array($headers) === false) {
+			$headers = [];
+		}
+
 		return [
 			'statusCode' => (int)($logged['statusCode'] ?? ($response['statusCode'] ?? 0)),
 			'body' => ($response['body'] ?? null),
-			'headers' => (is_array(($response['headers'] ?? null)) === true ? $response['headers'] : []),
+			'headers' => $headers,
 			'durationMs' => (int)round(((microtime(true) - $started) * 1000)),
 			'detail' => (string)($logged['statusMessage'] ?? ''),
 		];
@@ -121,11 +126,11 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 				schema: 'source',
 			);
 		} catch (DoesNotExistException) {
-			throw new CallDispatchException('No source "' . $target . '" to call.');
+			throw new CallDispatchException(message: 'No source "' . $target . '" to call.');
 		}
 
 		if (($source instanceof ObjectEntity) === false) {
-			throw new CallDispatchException('No source "' . $target . '" to call.');
+			throw new CallDispatchException(message: 'No source "' . $target . '" to call.');
 		}
 
 		return $source;

@@ -95,6 +95,21 @@ final class OwnershipState {
 	}//end getMode()
 
 	/**
+	 * Whether the source has been seen since the contract was written.
+	 *
+	 * @return string 'unknown' when no last-seen moment was recorded, 'known' otherwise.
+	 *
+	 * @spec openspec/specs/records-owned-by-an-external-source/spec.md
+	 */
+	private function lastSeenLabel(): string {
+		if ($this->lastSeenUnknown === true) {
+			return 'unknown';
+		}
+
+		return 'known';
+	}//end lastSeenLabel()
+
+	/**
 	 * Whether an external source owns this record.
 	 *
 	 * @return bool True for `source` and `source with local additions`.
@@ -150,7 +165,7 @@ final class OwnershipState {
 			'source' => $this->source,
 			'originId' => $this->originId,
 			'lastSeenAt' => $this->lastSeenAt,
-			'lastSeen' => ($this->lastSeenUnknown === true ? 'unknown' : 'known'),
+			'lastSeen' => $this->lastSeenLabel(),
 			'absentAtSource' => $this->absentAtSource,
 			'endedAt' => $this->endedAt,
 			'synchronization' => [

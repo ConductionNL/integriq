@@ -159,7 +159,11 @@ class MessageReceivedEvent extends Event {
 		}
 
 		$this->outcome = $outcome;
-		$this->objectRef = ($objectRef === null ? null : trim($objectRef));
+
+		$this->objectRef = null;
+		if ($objectRef !== null) {
+			$this->objectRef = trim($objectRef);
+		}
 
 	}//end setOutcome()
 

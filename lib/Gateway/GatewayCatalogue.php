@@ -108,7 +108,8 @@ final class GatewayCatalogue {
 				'label' => 'Officiele publicatie',
 				'standard' => 'Wet elektronisch publiceren',
 				'claimLevel' => GatewayDescriptor::CLAIM_PLANNED,
-				'claimEvidence' => 'The gateway publishes by reference and records the identifier the platform returns. No connection to the publication platform has been made.',
+				'claimEvidence' => 'The gateway publishes by reference and records the identifier the platform returns. '
+					. 'No connection to the publication platform has been made.',
 				'jurisdiction' => 'NL',
 				'transport' => 'https',
 			],

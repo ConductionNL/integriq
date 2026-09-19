@@ -33,12 +33,17 @@ class UnknownPropertySourceException extends PropertySourceException {
 	 * @param array<int,string> $known Provider ids that do exist.
 	 */
 	public function __construct(string $providerId, array $known = []) {
+		$registered = '(none)';
+		if ($known !== []) {
+			$registered = implode(', ', $known);
+		}
+
 		parent::__construct(
-			$providerId,
-			sprintf(
+			providerId: $providerId,
+			message: sprintf(
 				'No property source provider is registered under the id "%s". Registered ids: %s.',
 				$providerId,
-				($known === [] ? '(none)' : implode(', ', $known))
+				$registered
 			)
 		);
 	}//end __construct()

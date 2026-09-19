@@ -64,12 +64,12 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
-			self::CHANNEL_ID,
-			'Public space report',
-			false,
-			true,
-			true,
-			['category', 'description', 'street', 'reportedAt'],
+			channelId: self::CHANNEL_ID,
+			label: 'Public space report',
+			canReply: false,
+			supportsLocation: true,
+			supportsMedia: true,
+			fields: ['category', 'description', 'street', 'reportedAt'],
 		);
 
 	}//end describe()
@@ -87,7 +87,7 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 		$externalId = trim((string)($payload['id'] ?? ''));
 		if ($externalId === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" report must carry an id, so the same report cannot arrive twice.'
+				message: 'A "' . self::CHANNEL_ID . '" report must carry an id, so the same report cannot arrive twice.'
 			);
 		}
 
@@ -96,21 +96,26 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 			$reporter = [];
 		}
 
+		$receivedAt = ($payload['reportedAt'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
+
 		return new InboundMessage(
-			self::CHANNEL_ID,
-			$externalId,
-			[
+			channelId: self::CHANNEL_ID,
+			externalId: $externalId,
+			correspondent: [
 				'name' => (string)($reporter['name'] ?? ''),
 				'address' => (string)($reporter['email'] ?? ''),
 				'phone' => (string)($reporter['phone'] ?? ''),
 			],
-			(string)($payload['description'] ?? ''),
-			[],
-			$this->location($payload),
-			$this->media($payload),
-			$payload,
-			(($payload['reportedAt'] ?? null) === null ? null : (string)$payload['reportedAt']),
-			[
+			text: (string)($payload['description'] ?? ''),
+			attachments: [],
+			location: $this->location(payload: $payload),
+			media: $this->media(payload: $payload),
+			rawPayload: $payload,
+			receivedAt: $receivedAt,
+			fields: [
 				'category' => (string)($payload['category'] ?? ''),
 				'description' => (string)($payload['description'] ?? ''),
 				'street' => (string)($payload['location']['address'] ?? ''),

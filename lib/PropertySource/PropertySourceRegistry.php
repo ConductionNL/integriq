@@ -44,7 +44,7 @@ class PropertySourceRegistry {
 	 */
 	public function __construct(iterable $providers = [], private readonly ?LoggerInterface $logger = null) {
 		foreach ($providers as $provider) {
-			$this->register($provider);
+			$this->register(provider: $provider);
 		}
 	}//end __construct()
 
@@ -95,7 +95,7 @@ class PropertySourceRegistry {
 	 */
 	public function get(string $id): PropertySourceProviderInterface {
 		if (isset($this->providers[$id]) === false) {
-			throw new UnknownPropertySourceException($id, $this->ids());
+			throw new UnknownPropertySourceException(providerId: $id, known: $this->ids());
 		}
 
 		return $this->providers[$id];

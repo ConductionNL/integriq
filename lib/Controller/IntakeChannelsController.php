@@ -128,7 +128,7 @@ class IntakeChannelsController extends Controller {
 		if ($configuration === null) {
 			// No source, no secret to verify against: fail closed rather than
 			// accepting an unverifiable payload on an unconfigured channel.
-			return $this->refused($channel, 'no configured channel source');
+			return $this->refused(channel: $channel, reason: 'no configured channel source');
 		}
 
 		$signature = ($configuration['webhookSignature'] ?? []);
@@ -149,7 +149,7 @@ class IntakeChannelsController extends Controller {
 		);
 
 		if ($verified === false) {
-			return $this->refused($channel, 'invalid signature');
+			return $this->refused(channel: $channel, reason: 'invalid signature');
 		}
 
 		try {
@@ -226,16 +226,23 @@ class IntakeChannelsController extends Controller {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
+		$uuid = $id;
+		$status = Http::STATUS_OK;
+		if ($id === '') {
+			$uuid = null;
+			$status = Http::STATUS_CREATED;
+		}
+
 		$saved = $this->orObjectService->saveObject(
 			object: $rule,
 			register: IntakeRoutingService::REGISTER,
 			schema: IntakeRoutingService::SCHEMA_RULE,
-			uuid: ($id === '' ? null : $id),
+			uuid: $uuid,
 		);
 
 		return new JSONResponse(
 			['id' => (string)$saved->getUuid(), 'rule' => $saved->getObject()],
-			($id === '' ? Http::STATUS_CREATED : Http::STATUS_OK)
+			$status
 		);
 
 	}//end saveRule()
